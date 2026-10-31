@@ -19,6 +19,8 @@ export type PlanSceneOptions = {
   calibration: { pixelDistance: number; realDistanceMetres: number; evidence: string; actor: string };
   confirmedCandidateIds: string[];
   confirmedRegionIds?: string[];
+  /** Accepted semantic links (semantic_spatial_map.v1). Labels only; never geometry. */
+  regionSemanticLinks?: Array<{ regionId: string; elementId: string; label: string }>;
   regions?: PlanRegionCandidate[];
   candidates: PixelWallCandidate[];
   wall: { heightM: number; thicknessM: number };
@@ -173,12 +175,15 @@ export function createPlanScene(options: PlanSceneOptions): SceneTransaction {
       }
     }
     const roomProvenance = provenance('derived', 'unreviewed', recordedAt, { evidence: `Polígono ${region.id} proposto a partir de ${region.boundaryCandidateIds.length} segmentos raster; confiança heurística ${region.confidence}. A inclusão pelo utilizador não certifica a geometria.` });
+    const semantic = options.regionSemanticLinks?.find((link) => link.regionId === region.id);
+    const semanticProvenance = semantic && options.technicalDocumentRef ? provenance('technical_document', 'unreviewed', recordedAt, { documentRef: { documentId: options.technicalDocumentRef.documentId, schema: 'technical_document.v1', elementId: semantic.elementId }, evidence: `Associação semântica aceite pelo utilizador (semantic_spatial_map.v1) para o elemento ${semantic.elementId}; apenas o rótulo foi associado, sem conversão de nome/área/cota em geometria.` }) : roomProvenance;
     const roomId = region.id;
     const room: Node = {
-      id: roomId, label: `Divisão proposta ${selectedRegions.indexOf(region) + 1}`, nodeType: 'component', parentId: null,
+      id: roomId, label: semantic?.label ?? `Divisão proposta ${selectedRegions.indexOf(region) + 1}`, nodeType: 'component', parentId: null,
       transform: { translationM: [0, 0, 0], rotation: [0, 0, 0, 1], scale: [1, 1, 1], provenance: { translationM: roomProvenance, rotation: roomProvenance, scale: roomProvenance } },
       geometry: { kind: 'polygon', verticesM: polygonVertices, provenance: roomProvenance },
       component: { kind: 'room', dependsOn: wallIds, properties: {
+        ...(semantic ? { semanticElementId: { value: semantic.elementId, provenance: semanticProvenance }, semanticLabel: { value: semantic.label, provenance: semanticProvenance } } : {}),
         sourceRegion: { value: region.id, provenance: roomProvenance },
         boundaryCandidateIds: { value: JSON.stringify(region.boundaryCandidateIds), provenance: roomProvenance },
         boundaryRefs: { value: JSON.stringify(boundaryRefs), provenance: roomProvenance },

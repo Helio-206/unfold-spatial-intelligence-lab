@@ -15,6 +15,7 @@ import { BrowserVoiceInput, type VoiceStatus } from './voice-input';
 import { HandInteractionModel, WebcamHandTracker, type HandInteractionState, type HandLandmark, type HandTrackerMetrics } from './hand-tracking';
 import './style.css';
 
+const escapeHtml = (value: string): string => value.replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]!));
 const INITIAL_VARIANT = 'A' as const;
 const API_BASE_URL = '/api';
 const PHASE4A_MECHANISM_ID = 'phase-4a-design-sandbox';
@@ -372,7 +373,7 @@ function updateComposerSuggestions(): void {
     return;
   }
   suggestions.hidden = false;
-  suggestions.innerHTML = `<button type="button" data-suggestion="focus ${role}">Focus ${role}</button><button type="button" data-suggestion="fit mechanism">Fit mechanism</button>`;
+  suggestions.innerHTML = `<button type="button" data-suggestion="focus ${escapeHtml(role)}">Focus ${escapeHtml(role)}</button><button type="button" data-suggestion="fit mechanism">Fit mechanism</button>`;
 }
 
 function closeComposerActions(): void {
@@ -431,13 +432,13 @@ function render2d(): void {
   const state = engine.state();
   svg.innerHTML = activePlan.elements.map((element) => {
     const classes = `${state.highlighted.includes(element.id) ? 'highlighted' : ''} ${state.selected.includes(element.id) ? 'selected' : ''} ${state.hidden.includes(element.id) ? 'hidden' : ''}`;
-    if (element.kind === 'wall') return `<line class="wall ${classes}" data-id="${element.id}" x1="${element.start.x}" y1="${element.start.y}" x2="${element.end.x}" y2="${element.end.y}" />`;
-    if (element.kind === 'room') return `<polygon class="room ${classes}" data-id="${element.id}" points="${element.polygon.map((point) => `${point.x},${point.y}`).join(' ')}" />`;
+    if (element.kind === 'wall') return `<line class="wall ${classes}" data-id="${escapeHtml(element.id)}" x1="${element.start.x}" y1="${element.start.y}" x2="${element.end.x}" y2="${element.end.y}" />`;
+    if (element.kind === 'room') return `<polygon class="room ${classes}" data-id="${escapeHtml(element.id)}" points="${element.polygon.map((point) => `${point.x},${point.y}`).join(' ')}" />`;
     const wall = getWallFor(element);
     if (!wall) return '';
     const x = wall.start.x + (wall.end.x - wall.start.x) * element.position;
     const y = wall.start.y + (wall.end.y - wall.start.y) * element.position;
-    return `<circle class="opening ${element.kind} ${classes}" data-id="${element.id}" cx="${x}" cy="${y}" r="${Math.max(element.width / 10, 8)}" />`;
+    return `<circle class="opening ${element.kind} ${classes}" data-id="${escapeHtml(element.id)}" cx="${x}" cy="${y}" r="${Math.max(element.width / 10, 8)}" />`;
   }).join('');
   svg.querySelectorAll<SVGElement>('[data-id]').forEach((element) => element.addEventListener('click', () => selectIds([element.dataset.id ?? ''])));
 }

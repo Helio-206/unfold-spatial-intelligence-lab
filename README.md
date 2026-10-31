@@ -60,9 +60,17 @@ Useful routes in the frontend include `/demo` and `/spatial-editor` (see `src/ma
 
 ## Tests
 
-- `npm test` runs the Vitest suite (43 test files / 240 tests in the source version, all passing before publication; see Known limitations for the three evidence-dependent files excluded from this snapshot).
+- `npm test` runs the Vitest suite (42 test files / 238 tests, all passing; see Known limitations for the three evidence-dependent files excluded from this snapshot). Phase 10 adds `tests/phase-10-grounded-flow.test.ts`, a fully offline grounded E2E: synthetic image → wall/region detection → semantic association proposal/acceptance → scene built from the validated graph → grounded answers → +50 cm alteration via preview/commit → undo.
 - `npm run build` runs `tsc --noEmit` and the Vite production build; it passed before publication.
 - CDP scripts in `tests/e2e/` require a local Chrome/Chromium and, for the real-plan cases, the private plan images/evidence that are not published, so they are not runnable from this snapshot alone.
+
+## Phase 10 — Grounded Spatial Intelligence
+
+- `semantic_spatial_map.v1` (`src/semantic-spatial-map.ts`) explicitly links accepted technical-document elements → candidate plan regions → wall candidates → scene-graph components, with evidence and human review state (`proposed`/`accepted`/`rejected`). The proposal is shown before acceptance; document names, areas and dimensions are never converted into walls or coordinates, and the original document is preserved.
+- Well-defined candidate regions (closed contour, confidence ≥ 0.7) are pre-selected for review in the spatial editor; construction still requires explicit scale calibration, boundary confirmation and height/thickness parameters.
+- Accepted links label room nodes in the built scene (provenance: `technical_document`), so contextual commands such as “Mostra-me a cozinha” resolve to real scene components.
+- Deterministic grounded answers (`answerGroundedQuery`) cover identification, showing a linked division, selected-wall dimensions and “what changed”, returning an explicit clarification instead of fabricating when context is missing. Mutations continue through the existing Muse Spark agent + deterministic executor with preview, confirmation and undo/redo; no model output writes directly to the Scene Graph.
+- Untrusted labels/ids are escaped before `innerHTML` interpolation in the spatial editor and workspace.
 
 ## Known limitations
 

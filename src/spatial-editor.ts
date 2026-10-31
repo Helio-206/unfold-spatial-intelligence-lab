@@ -12,6 +12,7 @@ import { clearSpatialSourceImage, readSpatialSourceImage } from './spatial-sourc
 import { createSpatialCommandEnvelope, parseSpatialIntentV1, resolveSpatialTarget, type SpatialCommandOrigin, type SpatialCommandState, type SpatialCommandV1 } from './spatial-command-protocol';
 import { registerSpatialCommandHandler, type SpatialCommandOutcome } from './spatial-command-runtime';
 import { prepareSpatialHandoff } from './spatial-handoff';
+import { acceptSemanticLink, answerGroundedQuery, createSemanticSpatialMap, describeSemanticProposal, proposeSemanticLink, rejectSemanticLink, resolveSemanticSceneLinks, selectWellDefinedRegionIds, type SemanticSpatialMapV1 } from './semantic-spatial-map';
 import { parseSpatialAgentResult, SPATIAL_AGENT_REQUEST_SCHEMA, spatialDomainConflict, type SpatialAgentRequestV1, type SpatialAgentAction } from './spatial-agent';
 import type { TechnicalDocumentV1 } from './technical-document';
 import { cameraFrameAspect, createSpatialCameraView, createSpatialFocusView } from './spatial-camera';
@@ -37,7 +38,7 @@ app.innerHTML = `<main class="spatial-lab" data-state="empty">
       <div class="trace-tools"><button id="detect-lines" type="button">Detectar linhas</button><button id="trace-mode" type="button" aria-pressed="false">Traçar parede</button><button id="scale-mode" type="button" aria-pressed="false">Marcar escala</button><button id="split-segment" type="button" disabled>Dividir</button><button id="join-segments" type="button" disabled>Unir colineares</button></div>
       <label class="field">Sensibilidade das linhas <output id="detection-threshold-value">150</output><input id="detection-threshold" type="range" min="80" max="220" step="5" value="150"></label>
       <p class="micro-copy">O detector só propõe linhas axiais. Confirme visualmente cada segmento; não usa cotas, áreas ou nomes de divisões para inventar escala.</p>
-      <div class="candidate-heading"><span>SEGMENTOS A INCLUIR</span><button id="clear-selection" type="button">Limpar</button></div><p id="contour-summary" class="micro-copy">Contornos não avaliados; área métrica não confirmada.</p><div id="candidate-list" class="candidate-list"></div><div class="candidate-heading"><span>REGIÕES FECHADAS CANDIDATAS</span></div><div id="region-list" class="candidate-list"></div><div class="candidate-heading"><span>DESCONTINUIDADES / ABERTURAS AMBÍGUAS</span></div><div id="opening-candidate-list" class="candidate-list"></div>
+      <div class="candidate-heading"><span>SEGMENTOS A INCLUIR</span><button id="clear-selection" type="button">Limpar</button></div><p id="contour-summary" class="micro-copy">Contornos não avaliados; área métrica não confirmada.</p><div id="candidate-list" class="candidate-list"></div><div class="candidate-heading"><span>REGIÕES FECHADAS CANDIDATAS</span></div><div id="region-list" class="candidate-list"></div><div class="candidate-heading"><span>DESCONTINUIDADES / ABERTURAS AMBÍGUAS</span></div><div id="opening-candidate-list" class="candidate-list"></div><div class="candidate-heading"><span>ASSOCIAÇÃO SEMÂNTICA → REGIÃO (semantic_spatial_map.v1)</span></div><div id="semantic-map-panel"><label class="field">Divisão reconhecida (documento aceite)<select id="semantic-element"><option value="">Sem documento aceite</option></select></label><button id="semantic-propose" type="button">Propor associação à região seleccionada</button><p id="semantic-proposal" class="micro-copy" aria-live="polite">A proposta é mostrada antes de aceitar. Nenhum nome/área/cota vira geometria.</p><div class="trace-tools"><button id="semantic-accept" type="button" disabled>Aceitar proposta</button><button id="semantic-reject" type="button" disabled>Rejeitar proposta</button></div><div id="semantic-link-list" class="candidate-list"></div></div>
       </details>
       <details class="workflow-section">
       <summary>03 / CALIBRAR E CONSTRUIR</summary>
@@ -72,6 +73,8 @@ app.innerHTML = `<main class="spatial-lab" data-state="empty">
 type UiElement = HTMLElement & Pick<HTMLInputElement, 'value'> & Pick<HTMLButtonElement, 'disabled'>;
 const $ = <T extends HTMLElement = UiElement>(selector: string) => app!.querySelector<T>(selector)!;
 const status = (text: string) => { $('#spatial-status').textContent = text; };
+/** Escape untrusted labels/ids (document, model or user data) before any innerHTML interpolation. */
+const escapeHtml = (value: string): string => value.replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]!));
 const scene = new Scene();
 scene.background = new Color('#111412');
 const camera = new PerspectiveCamera(42, 1, 0.02, 10_000);
@@ -114,6 +117,7 @@ let currentImageUrl: string | undefined;
 let imageInfo: { sha256: string; width: number; height: number; mimeType: string } | undefined;
 let sourceDocumentRef: { documentId: string; sha256: string } | undefined;
 let activeTechnicalDocument: TechnicalDocumentV1 | undefined;
+let semanticMap: SemanticSpatialMapV1 | undefined;
 let spatialAgentHistory: Array<{ role: 'user' | 'assistant'; text: string }> = [];
 let spatialAgentAbort: AbortController | undefined;
 let selectionOutline: Box3Helper | undefined;
@@ -347,7 +351,7 @@ function updateToolbar(): void {
   $('#stage-empty').hidden = Boolean(transaction);
   $('#scene-components').hidden = !transaction;
   $('#component-count').textContent = transaction ? String(transaction.scene.nodes.length) : '';
-  $('#component-list').innerHTML = (transaction?.scene.nodes ?? []).map((node) => `<button class="component-row ${node.id === selectedId ? 'is-selected' : ''}" type="button" data-scene-node="${node.id}"><span>${node.label}</span><small>${node.component?.kind ?? node.nodeType} · ${node.geometry?.provenance.validation ?? 'sem geometria'}</small></button>`).join('');
+  $('#component-list').innerHTML = (transaction?.scene.nodes ?? []).map((node) => `<button class="component-row ${node.id === selectedId ? 'is-selected' : ''}" type="button" data-scene-node="${escapeHtml(node.id)}"><span>${escapeHtml(node.label)}</span><small>${escapeHtml(node.component?.kind ?? node.nodeType)} · ${escapeHtml(node.geometry?.provenance.validation ?? 'sem geometria')}</small></button>`).join('');
   updateSourceState();
 }
 
@@ -379,22 +383,22 @@ function updateCandidates(): void {
   }
   const topologyTolerance = Math.max(6, Math.min(imageInfo.width, imageInfo.height) * 0.008);
   const vectorModel = buildPlanVectorModel(candidates, { tolerancePx: topologyTolerance, imageSize: { width: imageInfo.width, height: imageInfo.height }, ...(vectorScale ? { scale: vectorScale } : {}) });
-  const regionShapes = vectorModel.regions.filter((region) => region.eligibility === 'construction_candidate').map((region) => `<polygon data-region="${region.id}" data-selected="${selectedRegions.has(region.id)}" points="${region.vertices.map((point) => `${point.x},${point.y}`).join(' ')}" fill="#c8a873" fill-opacity="${selectedRegions.has(region.id) ? '0.22' : '0.09'}" stroke="${selectedRegions.has(region.id) ? '#efbf68' : '#b99968'}" stroke-opacity=".8" stroke-width="3"/>`).join('');
-  const gapMarks = vectorModel.openingCandidates.map((item) => `<line data-opening-candidate="${item.id}" x1="${item.start.x}" y1="${item.start.y}" x2="${item.end.x}" y2="${item.end.y}" stroke="#a65e36" stroke-width="6" stroke-dasharray="4 3" opacity=".9"/>`).join('');
+  const regionShapes = vectorModel.regions.filter((region) => region.eligibility === 'construction_candidate').map((region) => `<polygon data-region="${escapeHtml(region.id)}" data-selected="${selectedRegions.has(region.id)}" points="${region.vertices.map((point) => `${point.x},${point.y}`).join(' ')}" fill="#c8a873" fill-opacity="${selectedRegions.has(region.id) ? '0.22' : '0.09'}" stroke="${selectedRegions.has(region.id) ? '#efbf68' : '#b99968'}" stroke-opacity=".8" stroke-width="3"/>`).join('');
+  const gapMarks = vectorModel.openingCandidates.map((item) => `<line data-opening-candidate="${escapeHtml(item.id)}" x1="${item.start.x}" y1="${item.start.y}" x2="${item.end.x}" y2="${item.end.y}" stroke="#a65e36" stroke-width="6" stroke-dasharray="4 3" opacity=".9"/>`).join('');
   const intersectionMarks = vectorModel.intersections.map((item) => `<circle data-intersection="${item.firstId}:${item.secondId}" cx="${item.point.x}" cy="${item.point.y}" r="3.5" fill="#e4b05d" stroke="#392b1d" stroke-width="1"/>`).join('');
   svg.innerHTML = regionShapes + gapMarks + candidates.map((candidate) => {
     const active = selectedCandidates.has(candidate.id);
     const linked = transaction?.scene.nodes.find((node) => node.id === selectedId)?.component?.properties.sourceCandidate?.value === candidate.id;
     const width = Math.max(3.2, candidate.thicknessPx);
-    const handles = active && !transaction ? `<circle data-endpoint="start" data-candidate-id="${candidate.id}" cx="${candidate.start.x}" cy="${candidate.start.y}" r="7"/><circle data-endpoint="end" data-candidate-id="${candidate.id}" cx="${candidate.end.x}" cy="${candidate.end.y}" r="7"/>` : '';
-    return `<line data-id="${candidate.id}" data-thickness="${candidate.thicknessPx}" data-confidence="${candidate.confidence}" x1="${candidate.start.x}" y1="${candidate.start.y}" x2="${candidate.end.x}" y2="${candidate.end.y}" stroke="${linked ? '#fff1ca' : active ? '#e0a943' : '#9a6535'}" stroke-width="${linked ? width + 2 : width}" stroke-linecap="round" opacity="${active || linked ? 1 : 0.78}"/>${handles}`;
+    const handles = active && !transaction ? `<circle data-endpoint="start" data-candidate-id="${escapeHtml(candidate.id)}" cx="${candidate.start.x}" cy="${candidate.start.y}" r="7"/><circle data-endpoint="end" data-candidate-id="${escapeHtml(candidate.id)}" cx="${candidate.end.x}" cy="${candidate.end.y}" r="7"/>` : '';
+    return `<line data-id="${escapeHtml(candidate.id)}" data-thickness="${candidate.thicknessPx}" data-confidence="${candidate.confidence}" x1="${candidate.start.x}" y1="${candidate.start.y}" x2="${candidate.end.x}" y2="${candidate.end.y}" stroke="${linked ? '#fff1ca' : active ? '#e0a943' : '#9a6535'}" stroke-width="${linked ? width + 2 : width}" stroke-linecap="round" opacity="${active || linked ? 1 : 0.78}"/>${handles}`;
   }).join('') + intersectionMarks + (traceStart && traceEnd ? `<line id="manual-preview" x1="${traceStart.point.x}" y1="${traceStart.point.y}" x2="${traceEnd.x}" y2="${traceEnd.y}" stroke="#d5a55e" stroke-width="3"/>` : '');
   const list = $('#candidate-list');
-  list.innerHTML = candidates.map((candidate) => `<button type="button" class="candidate-row ${selectedCandidates.has(candidate.id) ? 'is-selected' : ''}" data-candidate="${candidate.id}" aria-pressed="${selectedCandidates.has(candidate.id)}"><span>${candidate.id}</span><small>${candidate.origin === 'manual_trace' ? 'traçado manual' : candidate.origin === 'manual_correction' ? 'correcção manual' : 'detecção automática'} · ${candidate.orientation} · ${Math.round(Math.hypot(candidate.end.x-candidate.start.x,candidate.end.y-candidate.start.y))} px · confiança heurística ${candidate.confidence.toFixed(2)}</small></button>`).join('') || '<p class="micro-copy">Sem candidatos. Use tracing manual.</p>';
+  list.innerHTML = candidates.map((candidate) => `<button type="button" class="candidate-row ${selectedCandidates.has(candidate.id) ? 'is-selected' : ''}" data-candidate="${candidate.id}" aria-pressed="${selectedCandidates.has(candidate.id)}"><span>${escapeHtml(candidate.id)}</span><small>${candidate.origin === 'manual_trace' ? 'traçado manual' : candidate.origin === 'manual_correction' ? 'correcção manual' : 'detecção automática'} · ${candidate.orientation} · ${Math.round(Math.hypot(candidate.end.x-candidate.start.x,candidate.end.y-candidate.start.y))} px · confiança heurística ${candidate.confidence.toFixed(2)}</small></button>`).join('') || '<p class="micro-copy">Sem candidatos. Use tracing manual.</p>';
   const regionCandidates = vectorModel.regions.filter((region) => region.eligibility === 'construction_candidate');
   const rejectedRegionCount = vectorModel.regions.length - regionCandidates.length;
-  $('#region-list').innerHTML = regionCandidates.map((region) => `<button type="button" class="candidate-row ${selectedRegions.has(region.id) ? 'is-selected' : ''}" data-region="${region.id}" aria-label="${selectedRegions.has(region.id) ? 'Remover' : 'Rever'} divisão proposta ${region.id}" aria-pressed="${selectedRegions.has(region.id)}"><span>Divisão proposta ${region.id.slice(6)}</span><small>${region.boundaryCandidateIds.length} segmentos de suporte · ${Math.round(region.areaPx2).toLocaleString()} px² · confiança heurística ${region.confidence.toFixed(2)} · por confirmar</small></button>`).join('') + (rejectedRegionCount ? `<p class="micro-copy">${rejectedRegionCount} faces adicionais excluídas por qualidade geométrica insuficiente.</p>` : '') || '<p class="micro-copy">Sem contornos com suporte suficiente. Isto não exclui divisões abertas ou linhas não detectadas.</p>';
-  $('#opening-candidate-list').innerHTML = vectorModel.openingCandidates.map((opening) => `<button type="button" class="candidate-row" data-opening-candidate="${opening.id}"><span>${opening.id}</span><small>${Math.hypot(opening.end.x - opening.start.x, opening.end.y - opening.start.y).toFixed(1)} px · ambígua · confirmar manualmente</small></button>`).join('') || '<p class="micro-copy">Nenhuma descontinuidade candidata no intervalo heurístico configurado; isto não confirma ausência de portas/janelas.</p>';
+  $('#region-list').innerHTML = regionCandidates.map((region) => `<button type="button" class="candidate-row ${selectedRegions.has(region.id) ? 'is-selected' : ''}" data-region="${escapeHtml(region.id)}" aria-label="${selectedRegions.has(region.id) ? 'Remover' : 'Rever'} divisão proposta ${escapeHtml(region.id)}" aria-pressed="${selectedRegions.has(region.id)}"><span>Divisão proposta ${region.id.slice(6)}</span><small>${region.boundaryCandidateIds.length} segmentos de suporte · ${Math.round(region.areaPx2).toLocaleString()} px² · confiança heurística ${region.confidence.toFixed(2)} · por confirmar</small></button>`).join('') + (rejectedRegionCount ? `<p class="micro-copy">${rejectedRegionCount} faces adicionais excluídas por qualidade geométrica insuficiente.</p>` : '') || '<p class="micro-copy">Sem contornos com suporte suficiente. Isto não exclui divisões abertas ou linhas não detectadas.</p>';
+  $('#opening-candidate-list').innerHTML = vectorModel.openingCandidates.map((opening) => `<button type="button" class="candidate-row" data-opening-candidate="${escapeHtml(opening.id)}"><span>${escapeHtml(opening.id)}</span><small>${Math.hypot(opening.end.x - opening.start.x, opening.end.y - opening.start.y).toFixed(1)} px · ambígua · confirmar manualmente</small></button>`).join('') || '<p class="micro-copy">Nenhuma descontinuidade candidata no intervalo heurístico configurado; isto não confirma ausência de portas/janelas.</p>';
   $('#split-segment').disabled = selectedCandidates.size !== 1 || !!transaction;
   $('#join-segments').disabled = selectedCandidates.size < 2 || !!transaction;
   $('#build-scene').disabled = !imageInfo || selectedCandidates.size === 0 && selectedRegions.size === 0;
@@ -434,6 +438,51 @@ function setTraceMode(mode: 'none' | 'wall' | 'scale'): void {
   $('#plan-overlay').classList.toggle('is-calibrating', mode === 'scale');
 }
 
+
+function refreshSemanticPanel(): void {
+  const select = document.querySelector<HTMLSelectElement>('#semantic-element');
+  if (select && activeTechnicalDocument) {
+    const rooms = activeTechnicalDocument.elements.filter((item) => /room|division|compartment|divis/i.test(item.kind));
+    select.replaceChildren(...rooms.map((item) => { const option = document.createElement('option'); option.value = item.id; option.textContent = `${item.label} (${item.id})`; return option; }));
+    if (!rooms.length) { const option = document.createElement('option'); option.value = ''; option.textContent = 'Sem divisões reconhecidas no documento'; select.append(option); }
+  }
+  const list = document.querySelector<HTMLElement>('#semantic-link-list');
+  if (list) list.innerHTML = (semanticMap?.links ?? []).map((link) => `<p class="micro-copy">${escapeHtml(link.elementLabel)} → ${escapeHtml(link.regionId)} · ${escapeHtml(link.review.state)}${link.review.actor ? ` · ${escapeHtml(link.review.actor)}` : ''} · nós: ${link.sceneNodeIds.map(escapeHtml).join(', ') || '—'}</p>`).join('') || '<p class="micro-copy">Sem associações registadas.</p>';
+}
+function currentSemanticProposalId(): string | undefined {
+  return semanticMap?.links.find((link) => link.review.state === 'proposed')?.id;
+}
+document.addEventListener('click', () => undefined);
+
+$('#semantic-propose').addEventListener('click', () => {
+  try {
+    if (!semanticMap || !activeTechnicalDocument) throw new Error('É necessário um documento técnico aceite associado à imagem.');
+    const elementId = document.querySelector<HTMLSelectElement>('#semantic-element')?.value ?? '';
+    const regionId = [...selectedRegions][0];
+    if (!elementId) throw new Error('Seleccione uma divisão reconhecida.');
+    if (!regionId) throw new Error('Seleccione primeiro uma região candidata na planta.');
+    const model = buildPlanVectorModel(candidates, { tolerancePx: Math.max(6, Math.min(imageInfo!.width, imageInfo!.height) * 0.008), imageSize: { width: imageInfo!.width, height: imageInfo!.height } });
+    const region = model.regions.find((item) => item.id === regionId);
+    if (!region) throw new Error('Região candidata já não existe; repita a detecção.');
+    semanticMap = proposeSemanticLink(semanticMap, activeTechnicalDocument, region, elementId);
+    const proposalId = currentSemanticProposalId()!;
+    $('#semantic-proposal').textContent = describeSemanticProposal(semanticMap, proposalId);
+    ($('#semantic-accept') as HTMLButtonElement).disabled = false; ($('#semantic-reject') as HTMLButtonElement).disabled = false;
+    refreshSemanticPanel(); status('Proposta semântica criada e mostrada. Ainda não foi aplicada; aceite ou rejeite.');
+  } catch (error) { status(error instanceof Error ? error.message : 'Não foi possível propor a associação.'); }
+});
+$('#semantic-accept').addEventListener('click', () => {
+  const proposalId = currentSemanticProposalId(); if (!semanticMap || !proposalId) return;
+  semanticMap = acceptSemanticLink(semanticMap, proposalId, 'local-user-input');
+  ($('#semantic-accept') as HTMLButtonElement).disabled = true; ($('#semantic-reject') as HTMLButtonElement).disabled = true;
+  refreshSemanticPanel(); status('Associação aceite e registada (semantic_spatial_map.v1). A cena só a usa no próximo build confirmado.');
+});
+$('#semantic-reject').addEventListener('click', () => {
+  const proposalId = currentSemanticProposalId(); if (!semanticMap || !proposalId) return;
+  semanticMap = rejectSemanticLink(semanticMap, proposalId, 'local-user-input');
+  ($('#semantic-accept') as HTMLButtonElement).disabled = true; ($('#semantic-reject') as HTMLButtonElement).disabled = true;
+  refreshSemanticPanel(); status('Proposta semântica rejeitada; documento e região preservados.');
+});
 async function loadPlanFile(file: File, technicalDocumentRef?: { documentId: string; sha256: string }): Promise<void> {
   try {
     status('A verificar o ficheiro local e a preparar a referência raster…');
@@ -458,7 +507,12 @@ $('#detect-lines').addEventListener('click', async () => {
   try {
     const raster = await decodePlanImage(currentImageFile);
     candidates = detectWallCandidates(raster, { threshold: Number($('#detection-threshold').value), minimumLengthPx: Math.max(24, Math.floor(Math.min(raster.width, raster.height) * 0.045)), gapTolerancePx: 3 });
-    selectedCandidates.clear(); updateCandidates();
+    selectedCandidates.clear();
+    const autoModel = buildPlanVectorModel(candidates, { tolerancePx: Math.max(6, Math.min(raster.width, raster.height) * 0.008), imageSize: { width: raster.width, height: raster.height } });
+    const wellDefined = selectWellDefinedRegionIds(autoModel.regions);
+    wellDefined.forEach((regionId) => { selectedRegions.add(regionId); autoModel.regions.find((region) => region.id === regionId)?.boundaryCandidateIds.forEach((id) => selectedCandidates.add(id)); });
+    updateCandidates();
+    if (wellDefined.length) status(`${candidates.length} segmentos candidatos. ${wellDefined.length} região(ões) com contorno bem definido pré-seleccionada(s) para revisão — a construção continua a exigir escala, altura/espessura e confirmação explícita.`);
     status(`${candidates.length} segmentos axiais candidatos. Seleccione apenas os que confirmar no desenho; linhas de texto podem ser falsos positivos.`);
   } catch (error) { status(`Detecção indisponível: ${error instanceof Error ? error.message : 'erro'}`); }
 });
@@ -611,8 +665,9 @@ $('#build-scene').addEventListener('click', () => {
     const selectedRegionCandidates = vectorModel.regions.filter((region) => selectedRegions.has(region.id));
     const selectedRegionBoundaryIds = new Set(selectedRegionCandidates.flatMap((region) => region.boundaryCandidateIds));
     const candidateIds = [...selectedCandidates].filter((id) => !selectedRegionBoundaryIds.has(id));
-    const next = createPlanScene({ sceneId: `plan-${imageInfo.sha256.slice(0, 12)}`, title: 'Reconstrução geométrica proposta', image: imageInfo, ...(sourceDocumentRef ? { technicalDocumentRef: sourceDocumentRef } : {}), calibration: { pixelDistance, realDistanceMetres, evidence, actor: 'local-user-input' }, confirmedCandidateIds: candidateIds, confirmedRegionIds: [...selectedRegions], regions: vectorModel.regions, candidates, wall: { heightM, thicknessM } });
-    transaction = next; preview = undefined; compoundPreview = undefined; compoundPreviewBaseRevision = undefined; compare = false; selectedId = undefined; currentViewMode = 'compare'; persistScene();
+    const semanticLinks = (semanticMap?.links ?? []).filter((link) => link.review.state === 'accepted' && selectedRegions.has(link.regionId)).map((link) => ({ regionId: link.regionId, elementId: link.documentElementId, label: link.elementLabel }));
+    const next = createPlanScene({ sceneId: `plan-${imageInfo.sha256.slice(0, 12)}`, title: 'Reconstrução geométrica proposta', ...(semanticLinks.length ? { regionSemanticLinks: semanticLinks } : {}), image: imageInfo, ...(sourceDocumentRef ? { technicalDocumentRef: sourceDocumentRef } : {}), calibration: { pixelDistance, realDistanceMetres, evidence, actor: 'local-user-input' }, confirmedCandidateIds: candidateIds, confirmedRegionIds: [...selectedRegions], regions: vectorModel.regions, candidates, wall: { heightM, thicknessM } });
+    transaction = next; if (semanticMap) { semanticMap = resolveSemanticSceneLinks(semanticMap, next.scene); refreshSemanticPanel(); } preview = undefined; compoundPreview = undefined; compoundPreviewBaseRevision = undefined; compare = false; selectedId = undefined; currentViewMode = 'compare'; persistScene();
     // animateBuild owns the camera for the construction sequence and computes
     // its framing from the committed geometry. A subsequent fit would cancel it.
     renderModel(transaction.scene, true);
@@ -810,6 +865,10 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
     setSpatialCommandState('Rejected', message);
     return { status: 'clarification', message };
   }
+  const grounded = answerGroundedQuery(input, { document: activeTechnicalDocument ?? null, map: semanticMap ?? null, scene: transaction?.scene ?? null, selectedId: selectedId ?? null, undoDepth: transaction?.undoStack.length ?? 0 });
+  if (grounded?.kind === 'ANSWER') { setSpatialCommandState('Completed', grounded.text); return { status: 'completed', message: grounded.evidenceIds.length ? `${grounded.text} · Evidência: ${grounded.evidenceIds.join(', ')}` : grounded.text }; }
+  if (grounded?.kind === 'CLARIFICATION') { setSpatialCommandState('Rejected', grounded.text); return { status: 'clarification', message: grounded.text }; }
+  if (grounded?.kind === 'FOCUS') { selectNode(grounded.nodeId); focusNode(grounded.nodeId); setSpatialCommandState('Completed', grounded.text); return { status: 'completed', message: grounded.text }; }
   const originalRevision = transaction?.scene.revision.id;
   const originalSelection = selectedId;
   const request = createSpatialAgentRequest(input);
@@ -1211,6 +1270,7 @@ if (acceptedDocumentSource) {
     await loadPlanFile(file.file, file.technicalDocumentRef);
     if (file.technicalDocumentRef && file.technicalDocument) {
       activeTechnicalDocument = file.technicalDocument;
+      try { semanticMap = createSemanticSpatialMap(file.technicalDocument, file.technicalDocumentRef.documentId, imageInfo!.sha256); refreshSemanticPanel(); } catch { semanticMap = undefined; }
       const handoff = prepareSpatialHandoff(file.technicalDocument, file.technicalDocumentRef.documentId, imageInfo!.sha256);
       const context = $('#accepted-document-context');
       context.hidden = false;
