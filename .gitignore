@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+# Private evidence, uploaded images and live Meta responses are not published.
+reports/**/evidence/
+reports/**/live/
+reports/**/live-acceptance/
+reports/**/raw/
+input/
+*.blend1

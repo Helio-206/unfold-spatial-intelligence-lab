@@ -1,0 +1,73 @@
+{
+  "schema": "spatial_scene.v1",
+  "id": "residential-plan-scene",
+  "title": "Exemplo de contrato; não é uma reconstrução documental",
+  "coordinateSystem": {
+    "handedness": "right",
+    "upAxis": "Y",
+    "horizontalPlane": ["X", "Z"],
+    "unit": "m"
+  },
+  "sourceDocuments": [
+    {
+      "documentId": "residential-plan-01",
+      "schema": "technical_document.v1",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "immutable": true
+    }
+  ],
+  "imageWorldMapping": null,
+  "nodes": [
+    {
+      "id": "room-office",
+      "label": "Escritório",
+      "nodeType": "component",
+      "parentId": null,
+      "transform": {
+        "translationM": [0, 0, 0],
+        "rotation": [0, 0, 0, 1],
+        "scale": [1, 1, 1],
+        "provenance": {
+          "translationM": { "source": "system", "validation": "unreviewed", "recordedAt": "2026-01-01T00:00:00.000Z" },
+          "rotation": { "source": "system", "validation": "unreviewed", "recordedAt": "2026-01-01T00:00:00.000Z" },
+          "scale": { "source": "system", "validation": "unreviewed", "recordedAt": "2026-01-01T00:00:00.000Z" }
+        }
+      },
+      "geometry": null,
+      "component": {
+        "kind": "room",
+        "properties": {
+          "area": {
+            "value": 10.06,
+            "unit": "m2",
+            "provenance": {
+              "source": "technical_document",
+              "validation": "unreviewed",
+              "documentRef": {
+                "documentId": "residential-plan-01",
+                "schema": "technical_document.v1",
+                "elementId": "office-area"
+              },
+              "sourceValue": "10,06 m²",
+              "sourceUnit": "m²",
+              "evidence": "Transcrição do documento; requer revisão humana.",
+              "recordedAt": "2026-01-01T00:00:00.000Z"
+            }
+          }
+        },
+        "dependsOn": []
+      },
+      "properties": {}
+    }
+  ],
+  "relations": [],
+  "constraints": [],
+  "revision": {
+    "id": "residential-plan-scene:r0",
+    "number": 0,
+    "parentId": null,
+    "operationId": null,
+    "createdAt": "2026-01-01T00:00:00.000Z",
+    "createdBy": "fixture example"
+  }
+}

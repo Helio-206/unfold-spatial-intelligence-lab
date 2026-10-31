@@ -1,0 +1,281 @@
+{
+  "schema": "mechanical_graph.v1",
+  "source": {
+    "caseId": "paderborn",
+    "imagePath": "/home/helio/HEr/META/unfold-app/input/mechanism-paderborn.jpg",
+    "sourceUrl": "https://mb.uni-paderborn.de/en/ldm/lehre/pojektseminar",
+    "title": "Vier-Gelenkkette — Dynamics and Mechatronics, Paderborn University"
+  },
+  "nodes": [
+    {
+      "id": "node-1-b1",
+      "sourceElementId": "b1",
+      "label": "barra escura horizontal",
+      "kind": "support",
+      "provenance": "inferred",
+      "evidence": "Meta observou bar: faixa alongada escura horizontal visivel no lado esquerdo da imagem",
+      "confidence": 0.95,
+      "candidates": [
+        "link",
+        "shaft",
+        "coupler",
+        "handle",
+        "disc",
+        "unknown"
+      ],
+      "review": "pending",
+      "reviewNote": "Candidato a ground: barra escura horizontal, fixação não confirmada."
+    },
+    {
+      "id": "node-2-b2",
+      "sourceElementId": "b2",
+      "label": "barra clara inclinada esquerda",
+      "kind": "link",
+      "provenance": "inferred",
+      "evidence": "Meta observou bar: segmento metalico claro inclinado do centro-esquerda ate ao topo-central",
+      "confidence": 0.95,
+      "candidates": [
+        "link",
+        "shaft",
+        "coupler",
+        "handle",
+        "disc",
+        "unknown"
+      ],
+      "review": "pending",
+      "reviewNote": "Barra clara inclinada visualmente compatível com link."
+    },
+    {
+      "id": "node-3-b3",
+      "sourceElementId": "b3",
+      "label": "barra clara diagonal longa central",
+      "kind": "link",
+      "provenance": "inferred",
+      "evidence": "Meta observou bar: segmento metalico claro longo do topo-central ate a zona inferior-direita",
+      "confidence": 0.95,
+      "candidates": [
+        "link",
+        "shaft",
+        "coupler",
+        "handle",
+        "disc",
+        "unknown"
+      ],
+      "review": "pending",
+      "reviewNote": "Barra clara diagonal visualmente compatível com link."
+    },
+    {
+      "id": "node-4-b4",
+      "sourceElementId": "b4",
+      "label": "barra clara curta direita",
+      "kind": "unknown",
+      "provenance": "ambiguous",
+      "evidence": "Meta observou bar: segmento metalico claro curto na extremidade direita em contacto com a barra longa",
+      "confidence": 0.85,
+      "candidates": [
+        "link",
+        "shaft",
+        "coupler",
+        "handle",
+        "disc",
+        "unknown"
+      ],
+      "review": "pending",
+      "reviewNote": "Terminal direito: link, suporte ou terminal não distinguíveis pela fotografia."
+    },
+    {
+      "id": "node-5-j1",
+      "sourceElementId": "j1",
+      "label": "uniao esquerda",
+      "kind": "unknown",
+      "provenance": "ambiguous",
+      "evidence": "Meta observou joint: peca metalica com fixadores onde a barra escura e a barra clara esquerda se encontram",
+      "confidence": 0.9,
+      "candidates": [
+        "joint",
+        "coupler",
+        "support",
+        "unknown"
+      ],
+      "review": "pending",
+      "reviewNote": "Junta visível, subtipo e eixo não confirmáveis."
+    },
+    {
+      "id": "node-6-j2",
+      "sourceElementId": "j2",
+      "label": "uniao superior central",
+      "kind": "unknown",
+      "provenance": "ambiguous",
+      "evidence": "Meta observou joint: fixador circular visivel no encontro das duas barras claras longas no topo",
+      "confidence": 0.9,
+      "candidates": [
+        "joint",
+        "coupler",
+        "support",
+        "unknown"
+      ],
+      "review": "pending",
+      "reviewNote": "Junta visível, subtipo e eixo não confirmáveis."
+    },
+    {
+      "id": "node-7-j3",
+      "sourceElementId": "j3",
+      "label": "uniao inferior direita",
+      "kind": "unknown",
+      "provenance": "ambiguous",
+      "evidence": "Meta observou joint: fixador circular visivel no encontro da barra diagonal longa com a barra curta direita",
+      "confidence": 0.9,
+      "candidates": [
+        "joint",
+        "coupler",
+        "support",
+        "unknown"
+      ],
+      "review": "pending",
+      "reviewNote": "Junta visível, subtipo e eixo não confirmáveis."
+    }
+  ],
+  "connections": [
+    {
+      "id": "connection-1",
+      "sourceConnectionIndex": 0,
+      "from": "node-1-b1",
+      "to": "node-5-j1",
+      "relation": "connected",
+      "provenance": "observed",
+      "evidence": "contacto visivel entre a barra escura e a peca de uniao esquerda",
+      "review": "pending"
+    },
+    {
+      "id": "connection-2",
+      "sourceConnectionIndex": 1,
+      "from": "node-2-b2",
+      "to": "node-5-j1",
+      "relation": "connected",
+      "provenance": "observed",
+      "evidence": "contacto visivel entre a barra clara esquerda e a peca de uniao esquerda",
+      "review": "pending"
+    },
+    {
+      "id": "connection-3",
+      "sourceConnectionIndex": 2,
+      "from": "node-2-b2",
+      "to": "node-6-j2",
+      "relation": "connected",
+      "provenance": "observed",
+      "evidence": "contacto visivel entre a barra clara esquerda e o fixador superior central",
+      "review": "pending"
+    },
+    {
+      "id": "connection-4",
+      "sourceConnectionIndex": 3,
+      "from": "node-3-b3",
+      "to": "node-6-j2",
+      "relation": "connected",
+      "provenance": "observed",
+      "evidence": "contacto visivel entre a barra diagonal longa e o fixador superior central",
+      "review": "pending"
+    },
+    {
+      "id": "connection-5",
+      "sourceConnectionIndex": 4,
+      "from": "node-3-b3",
+      "to": "node-7-j3",
+      "relation": "connected",
+      "provenance": "observed",
+      "evidence": "contacto visivel entre a barra diagonal longa e o fixador inferior direito",
+      "review": "pending"
+    },
+    {
+      "id": "connection-6",
+      "sourceConnectionIndex": 5,
+      "from": "node-4-b4",
+      "to": "node-7-j3",
+      "relation": "connected",
+      "provenance": "ambiguous",
+      "evidence": "contacto visivel entre a barra curta direita e o fixador inferior direito",
+      "review": "pending",
+      "reviewNote": "Ligação ao terminal direito visível como contacto, mas papel cinemático não confirmável."
+    }
+  ],
+  "dimensions": [],
+  "review": {
+    "status": "pending",
+    "proposedActions": [
+      {
+        "action": "correct_kind",
+        "nodeId": "node-1-b1",
+        "kind": "support",
+        "note": "Candidato a ground: barra escura horizontal, fixação não confirmada."
+      },
+      {
+        "action": "correct_kind",
+        "nodeId": "node-2-b2",
+        "kind": "link",
+        "note": "Barra clara inclinada visualmente compatível com link."
+      },
+      {
+        "action": "correct_kind",
+        "nodeId": "node-3-b3",
+        "kind": "link",
+        "note": "Barra clara diagonal visualmente compatível com link."
+      },
+      {
+        "action": "mark_uncertain",
+        "target": "node",
+        "id": "node-4-b4",
+        "note": "Terminal direito: link, suporte ou terminal não distinguíveis pela fotografia."
+      },
+      {
+        "action": "mark_uncertain",
+        "target": "node",
+        "id": "node-5-j1",
+        "note": "Junta visível, subtipo e eixo não confirmáveis."
+      },
+      {
+        "action": "mark_uncertain",
+        "target": "node",
+        "id": "node-6-j2",
+        "note": "Junta visível, subtipo e eixo não confirmáveis."
+      },
+      {
+        "action": "mark_uncertain",
+        "target": "node",
+        "id": "node-7-j3",
+        "note": "Junta visível, subtipo e eixo não confirmáveis."
+      },
+      {
+        "action": "approve",
+        "target": "connection",
+        "id": "connection-1"
+      },
+      {
+        "action": "approve",
+        "target": "connection",
+        "id": "connection-2"
+      },
+      {
+        "action": "approve",
+        "target": "connection",
+        "id": "connection-3"
+      },
+      {
+        "action": "approve",
+        "target": "connection",
+        "id": "connection-4"
+      },
+      {
+        "action": "approve",
+        "target": "connection",
+        "id": "connection-5"
+      },
+      {
+        "action": "mark_uncertain",
+        "target": "connection",
+        "id": "connection-6",
+        "note": "Ligação ao terminal direito visível como contacto, mas papel cinemático não confirmável."
+      }
+    ],
+    "changes": []
+  }
+}

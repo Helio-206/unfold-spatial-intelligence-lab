@@ -1,0 +1,36 @@
+{
+  "name": "unfold-core-proof",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:phase4c": "vite --host 127.0.0.1 --port 5173",
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run",
+    "server": "tsx server/index.ts",
+    "server:phase4c": "UNFOLD_BACKEND_PORT=8787 tsx server/index.ts",
+    "server:phase4c:mock": "UNFOLD_PHASE4C_MOCK=1 UNFOLD_BACKEND_PORT=8791 tsx server/phase4c-mock.ts",
+    "meta:probe": "tsx server/probe.ts",
+    "meta:image-probe": "tsx server/image-probe.ts",
+    "meta:phase2b:collect": "tsx server/phase2b.ts collect",
+    "meta:phase2b:review": "tsx server/phase2b.ts review",
+    "meta:phase2d:prepare": "tsx server/phase2d.ts prepare",
+    "meta:phase2d:confirm": "tsx server/phase2d.ts confirm",
+    "meta:phase3d": "tsx server/phase3d.ts"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^0.10.35",
+    "gsap": "^3.15.0",
+    "lucide-static": "^1.65.0",
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.8.0",
+    "@types/three": "^0.180.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.7",
+    "vitest": "^5.0.5"
+  }
+}

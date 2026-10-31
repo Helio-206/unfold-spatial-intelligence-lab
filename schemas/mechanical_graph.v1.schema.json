@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://unfold.local/schemas/mechanical_graph.v1.schema.json",
+  "title": "UNFOLD mechanical_graph.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "source", "nodes", "connections", "dimensions", "review"],
+  "properties": {
+    "schema": { "const": "mechanical_graph.v1" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["caseId", "imagePath", "sourceUrl", "title"],
+      "properties": {
+        "caseId": { "type": "string", "minLength": 1 },
+        "imagePath": { "type": "string", "minLength": 1 },
+        "sourceUrl": { "type": "string", "format": "uri" },
+        "title": { "type": "string", "minLength": 1 }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/node" }
+    },
+    "connections": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/connection" }
+    },
+    "dimensions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label", "value", "provenance", "evidence"],
+        "properties": {
+          "label": { "type": "string", "minLength": 1 },
+          "value": { "type": "string", "minLength": 1 },
+          "provenance": { "const": "observed" },
+          "evidence": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "proposedActions", "changes"],
+      "properties": {
+        "status": { "enum": ["pending", "verified"] },
+        "proposedActions": { "type": "array", "items": { "$ref": "#/$defs/action" } },
+        "changes": { "type": "array", "items": { "$ref": "#/$defs/change" } },
+        "reviewer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name"],
+          "properties": { "name": { "type": "string", "minLength": 1 } }
+        },
+        "confirmedAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "$defs": {
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sourceElementId", "label", "kind", "provenance", "evidence", "confidence", "candidates", "review"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "sourceElementId": { "type": "string", "minLength": 1 },
+        "label": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["link", "joint", "support", "shaft", "coupler", "handle", "disc", "unknown"] },
+        "provenance": { "enum": ["observed", "inferred", "ambiguous"] },
+        "evidence": { "type": "string", "minLength": 1 },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "candidates": { "type": "array", "items": { "$ref": "#/$defs/kind" } },
+        "review": { "enum": ["pending", "verified"] },
+        "reviewNote": { "type": "string", "minLength": 1 }
+      }
+    },
+    "connection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sourceConnectionIndex", "from", "to", "relation", "provenance", "evidence", "review"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "sourceConnectionIndex": { "type": "integer", "minimum": 0 },
+        "from": { "type": "string", "minLength": 1 },
+        "to": { "type": "string", "minLength": 1 },
+        "relation": { "type": "string", "minLength": 1 },
+        "provenance": { "enum": ["observed", "inferred", "ambiguous"] },
+        "evidence": { "type": "string", "minLength": 1 },
+        "review": { "enum": ["pending", "verified"] },
+        "reviewNote": { "type": "string", "minLength": 1 }
+      }
+    },
+    "kind": { "enum": ["link", "joint", "support", "shaft", "coupler", "handle", "disc", "unknown"] },
+    "action": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["action", "target", "id"],
+          "properties": { "action": { "const": "approve" }, "target": { "enum": ["node", "connection"] }, "id": { "type": "string", "minLength": 1 }, "note": { "type": "string" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["action", "nodeId", "kind", "note"],
+          "properties": { "action": { "const": "correct_kind" }, "nodeId": { "type": "string", "minLength": 1 }, "kind": { "$ref": "#/$defs/kind" }, "note": { "type": "string", "minLength": 1 } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["action", "connectionId", "from", "to", "relation", "note"],
+          "properties": { "action": { "const": "correct_connection" }, "connectionId": { "type": "string", "minLength": 1 }, "from": { "type": "string", "minLength": 1 }, "to": { "type": "string", "minLength": 1 }, "relation": { "type": "string", "minLength": 1 }, "note": { "type": "string", "minLength": 1 } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["action", "target", "id", "note"],
+          "properties": { "action": { "const": "mark_uncertain" }, "target": { "enum": ["node", "connection"] }, "id": { "type": "string", "minLength": 1 }, "note": { "type": "string", "minLength": 1 } }
+        }
+      ]
+    },
+    "change": {
+      "allOf": [
+        { "$ref": "#/$defs/action" },
+        {
+          "type": "object",
+          "required": ["author", "confirmedAt"],
+          "properties": { "author": { "type": "string", "minLength": 1 }, "confirmedAt": { "type": "string", "format": "date-time" } }
+        }
+      ]
+    }
+  }
+}
