@@ -31,7 +31,9 @@ const MAX_BODY_BYTES = 64 * 1024;
 const MAX_IMAGE_BODY_BYTES = 14 * 1024 * 1024;
 const MAX_PREVIEW_BODY_BYTES = 16 * 1024;
 const MAX_SPATIAL_AGENT_BODY_BYTES = 48 * 1024;
-const ALLOWED_ORIGINS = new Set(['http://127.0.0.1:5173', 'http://localhost:5173']);
+const ALLOWED_ORIGINS = new Set(['http://127.0.0.1:5173', 'http://localhost:5173',
+  // Extra local dev origins are opt-in only, e.g. UNFOLD_ALLOWED_ORIGINS=http://127.0.0.1:5194
+  ...(process.env.UNFOLD_ALLOWED_ORIGINS?.split(',').map((origin) => origin.trim()).filter(Boolean) ?? [])]);
 export const BACKEND_CONTRACT = 'unfold.phase4c' as const;
 
 export type PreviewMechanismResolution =
@@ -204,7 +206,7 @@ export function createMetaServer(options: ServerOptions = {}): Server {
     capabilities: {
       imageAnalysis: { available: true, apiKeyConfigured: Boolean(apiKey), responseContract: IMAGE_RESPONSE_CONTRACT },
       contextualConversation: { available: true, apiKeyConfigured: Boolean(apiKey) },
-      spatialAgent: { available: true, apiKeyConfigured: Boolean(apiKey), contract: 'spatial_agent_result.v1', maxOutputTokens: 1_600, reasoningEffort: 'medium' },
+      spatialAgent: { available: true, apiKeyConfigured: Boolean(apiKey), contract: 'spatial_agent_result.v1', maxOutputTokens: 4_096, reasoningEffort: 'medium' },
       imageRegionVerification: { available: true, apiKeyConfigured: Boolean(apiKey) },
     },
     metaCallBudget: { limit: metaCallLimit ?? null, used: metaCallsUsed, remaining: metaCallLimit === undefined ? null : Math.max(0, metaCallLimit - metaCallsUsed) },
@@ -283,7 +285,7 @@ export function createMetaServer(options: ServerOptions = {}): Server {
         let result: Awaited<ReturnType<typeof requestMetaStructuredText>> | undefined;
         try {
           reserveMetaCall();
-          result = await requestMetaStructuredText(prompt, apiKey, SPATIAL_AGENT_JSON_SCHEMA as unknown as Record<string, unknown>, options.fetchImpl, 1_600, 'medium', 'spatial_agent_result_v1', abort.signal);
+          result = await requestMetaStructuredText(prompt, apiKey, SPATIAL_AGENT_JSON_SCHEMA as unknown as Record<string, unknown>, options.fetchImpl, 4_096, 'medium', 'spatial_agent_result_v1', abort.signal);
           if (abort.signal.aborted) return;
           const parsed = parseSpatialAgentResult(result.text, agentRequest);
           console.info(JSON.stringify({ event: 'spatial_agent.completed', httpStatus: result.log.httpStatus, latencyMs: result.log.latencyMs, requestId: result.log.requestId, usage: result.log.usage, estimatedCostUsd: result.log.estimatedCostUsd, kind: parsed.kind, mode: agentRequest.mode }));

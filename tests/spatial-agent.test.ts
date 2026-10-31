@@ -96,7 +96,7 @@ describe('spatial agent HTTP boundary', () => {
       expect(response.status).toBe(200);
       expect(body).toMatchObject({ result: { kind: 'PROPOSE_ACTION', action: { value: 0.3, valueMode: 'increase_by' } }, sceneRevisionId: 'revision-2', meta: { requestId: 'spatial-test-id' } });
       const request = JSON.parse(String(transport.mock.calls[0]?.[1]?.body));
-      expect(request).toMatchObject({ model: 'muse-spark-1.3', max_output_tokens: 1600, reasoning: { effort: 'medium' }, text: { format: { type: 'json_schema', strict: true, name: 'spatial_agent_result_v1' } } });
+      expect(request).toMatchObject({ model: 'muse-spark-1.3', max_output_tokens: 4096, reasoning: { effort: 'medium' }, text: { format: { type: 'json_schema', strict: true, name: 'spatial_agent_result_v1' } } });
       expect(request.response_format).toBeUndefined();
       expect(transport).toHaveBeenCalledOnce();
       expect(body).not.toHaveProperty('scene');
