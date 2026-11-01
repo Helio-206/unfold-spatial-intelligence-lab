@@ -31,7 +31,7 @@ export function isConfirmedValidation(validation: unknown): validation is Confir
 }
 
 const quantity = (property: { value: unknown; unit?: string }) => ({ value: property.value, unit: property.unit ?? null });
-const withoutProvenance = <T extends { provenance: PropertyProvenance }>(item: T): Omit<T, 'provenance'> => {
+export const withoutProvenance = <T extends { provenance: PropertyProvenance }>(item: T): Omit<T, 'provenance'> => {
   const { provenance: _provenance, ...rest } = item;
   return rest;
 };

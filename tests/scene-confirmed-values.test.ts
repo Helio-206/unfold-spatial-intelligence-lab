@@ -187,3 +187,140 @@ describe('F1 — UpdateParameter trata verified e corrected como confirmados', (
     }
   });
 });
+
+// ---------------------------------------------------------------------------------------------------------------------
+// F2 — Move, Rotate, Resize e UpdateGeometry
+// ---------------------------------------------------------------------------------------------------------------------
+import { editWallInScene } from '../src/plan-scene';
+import { CONFIRMED_LOCATIONS, provenanceFor } from './helpers/scenes';
+
+const wall = (scene: ReturnType<typeof confirmedScene>) => scene.nodes.find((node) => node.id === 'wall-1')!;
+const door = (scene: ReturnType<typeof confirmedScene>) => scene.nodes.find((node) => node.id === 'door-1')!;
+const BOX: SpatialCommand = { type: 'UpdateGeometry', nodeId: 'wall-1', geometry: { kind: 'box', sizeM: [6, 2.7, 0.2], provenance: { source: 'derived', validation: 'unreviewed', recordedAt: at } } };
+
+/** Para cada sítio confirmado, o comando que o escreve e o valor original que deve ficar em sourceValue. */
+const COMMANDS = [
+  { location: 'geometry', label: 'ResizeComponent', field: 'geometry', command: { type: 'ResizeComponent', nodeId: 'wall-1', scale: [1.5, 1, 1] } as SpatialCommand, original: { kind: 'box', sizeM: [4, 2.7, 0.2] }, read: (s: ReturnType<typeof confirmedScene>) => wall(s).geometry!.provenance },
+  { location: 'geometry', label: 'UpdateGeometry', field: 'geometry', command: BOX, original: { kind: 'box', sizeM: [4, 2.7, 0.2] }, read: (s: ReturnType<typeof confirmedScene>) => wall(s).geometry!.provenance },
+  { location: 'transform.translationM', label: 'MoveComponent', field: 'transform.translationM', command: { type: 'MoveComponent', nodeId: 'wall-1', translationM: [1, 0, 0] } as SpatialCommand, original: [0, 0, 0], read: (s: ReturnType<typeof confirmedScene>) => wall(s).transform.provenance.translationM },
+  { location: 'transform.rotation', label: 'RotateComponent', field: 'transform.rotation', command: { type: 'RotateComponent', nodeId: 'wall-1', axis: [0, 1, 0], angleRad: Math.PI / 2 } as SpatialCommand, original: [0, 0, 0, 1], read: (s: ReturnType<typeof confirmedScene>) => wall(s).transform.provenance.rotation },
+  { location: 'node.properties', label: 'UpdateParameter (node.properties)', field: 'properties.note', command: { type: 'UpdateParameter', nodeId: 'wall-1', property: 'note', value: 'tijolo' } as SpatialCommand, original: 'reboco', read: (s: ReturnType<typeof confirmedScene>) => wall(s).properties.note!.provenance },
+] as const;
+
+describe.each(COMMANDS)('F2 — $label sobre $location confirmado', ({ location, field, command, original, read }) => {
+  it.each(['verified', 'corrected'] as const)('"%s": o preview exige autorização, o commit sem ela falha e a cena fica intacta', (validation) => {
+    const transaction = transactionOf(confirmedScene([{ name: location, validation }]));
+    const before = snapshot(transaction);
+    const preview = previewSceneCommand(transaction, command, 'reviewer', clock);
+    expect(preview.status).toBe('ready');
+    expect(preview).toMatchObject({ requiresAuthorization: true, touchesConfirmed: [{ entityId: 'wall-1', field, validation }] });
+    expect(failure(() => commitScenePreview(transaction, preview))).toBe('AUTHORIZATION_REQUIRED');
+    expect(failure(() => executeSceneCommand(transaction, command, 'reviewer', clock))).toBe('AUTHORIZATION_REQUIRED');
+    expect(snapshot(transaction)).toBe(before);
+  });
+
+  it.each(['verified', 'corrected'] as const)('"%s": com a autorização certa fica corrected, com o valor anterior, a evidência e o id da autorização', (validation) => {
+    const transaction = transactionOf(confirmedScene([{ name: location, validation }]));
+    const ledger = newLedger();
+    const preview = previewSceneCommand(transaction, command, 'reviewer', clock);
+    // O candidato do preview (o que a interface desenha) já leva o valor original, antes de haver autorização.
+    expect(read(preview.candidate!)).toMatchObject({ validation: 'corrected', sourceValue: original });
+    expect(read(preview.candidate!).authorizationId).toBeUndefined();
+    const authorization = ledger.issue(preview.operation!, human, 'ui_direct');
+    const next = commitScenePreview(transaction, preview, { ledger, authorizationId: authorization.id });
+    const provenance = read(next.scene);
+    expect(provenance).toMatchObject({ source: 'user', validation: 'corrected', sourceValue: original, actor: 'reviewer', authorizationId: authorization.id, recordedAt: later });
+    expect(provenance.evidence).toContain(authorization.id);
+    expect(() => validateSpatialScene(JSON.parse(serializeSpatialScene(next.scene)))).not.toThrow();
+  });
+
+  it('sem confirmação nada muda: sem autorização, e fica unreviewed como hoje', () => {
+    const transaction = transactionOf(confirmedScene());
+    const preview = previewSceneCommand(transaction, command, 'reviewer', clock);
+    expect(preview).toMatchObject({ requiresAuthorization: false, touchesConfirmed: [] });
+    const { transaction: next } = executeSceneCommand(transaction, command, 'reviewer', clock);
+    // UpdateGeometry traz a sua própria proveniência (a do cálculo que a produziu); os outros escrevem a do utilizador.
+    expect(read(next.scene)).toMatchObject(command.type === 'UpdateGeometry' ? { source: 'derived', validation: 'unreviewed' } : { source: 'user', validation: 'unreviewed', actor: 'reviewer' });
+    expect(read(next.scene).authorizationId).toBeUndefined();
+  });
+});
+
+describe('F2 — cada comando só toca o que escreve', () => {
+  it('mover não toca na proveniência da rotação nem da escala', () => {
+    const transaction = transactionOf(confirmedScene());
+    const scene = structuredClone(transaction.scene);
+    CONFIRMED_LOCATIONS.find((l) => l.name === 'transform.rotation')!.confirm(scene, 'verified');
+    CONFIRMED_LOCATIONS.find((l) => l.name === 'transform.scale')!.confirm(scene, 'verified');
+    CONFIRMED_LOCATIONS.find((l) => l.name === 'geometry')!.confirm(scene, 'verified');
+    const preview = previewSceneCommand(transactionOf(validateSpatialScene(scene)), { type: 'MoveComponent', nodeId: 'wall-1', translationM: [1, 0, 0] }, 'reviewer', clock);
+    expect(preview).toMatchObject({ requiresAuthorization: false, touchesConfirmed: [] });
+  });
+
+  it('rodar não toca na translação nem na geometria, e redimensionar não toca nos transforms', () => {
+    const scene = structuredClone(confirmedScene());
+    CONFIRMED_LOCATIONS.find((l) => l.name === 'transform.translationM')!.confirm(scene, 'verified');
+    CONFIRMED_LOCATIONS.find((l) => l.name === 'transform.scale')!.confirm(scene, 'corrected');
+    const transaction = transactionOf(validateSpatialScene(scene));
+    expect(previewSceneCommand(transaction, { type: 'RotateComponent', nodeId: 'wall-1', axis: [0, 1, 0], angleRad: 1 }, 'reviewer', clock).requiresAuthorization).toBe(false);
+    expect(previewSceneCommand(transaction, { type: 'ResizeComponent', nodeId: 'wall-1', scale: [2, 1, 1] }, 'reviewer', clock).requiresAuthorization).toBe(false);
+  });
+
+  it('dois comandos sobre o mesmo valor confirmado preservam o valor original em sourceValue', () => {
+    const transaction = transactionOf(confirmedScene(['geometry']));
+    const ledger = newLedger();
+    const first = previewSceneCommand(transaction, COMMANDS[0].command, 'reviewer', clock);
+    const afterFirst = commitScenePreview(transaction, first, { ledger, authorizationId: ledger.issue(first.operation!, human, 'ui_direct').id });
+    const second = previewSceneCommand(afterFirst, COMMANDS[0].command, 'reviewer', clock);
+    expect(second.requiresAuthorization).toBe(true);
+    const afterSecond = commitScenePreview(afterFirst, second, { ledger, authorizationId: ledger.issue(second.operation!, human, 'ui_direct').id });
+    expect(wall(afterSecond.scene).geometry!.provenance).toMatchObject({ validation: 'corrected', sourceValue: { kind: 'box', sizeM: [6, 2.7, 0.2] } });
+  });
+});
+
+describe('F2 — ResizeComponent já não contorna o bloqueio de geometria confirmada', () => {
+  it('antes: reescrevia a geometria confirmada para unreviewed sem pedir nada', () => {
+    const transaction = transactionOf(confirmedScene(['geometry']));
+    expect(failure(() => executeSceneCommand(transaction, { type: 'ResizeComponent', nodeId: 'wall-1', scale: [2, 1, 1] }, 'reviewer', clock))).toBe('AUTHORIZATION_REQUIRED');
+    expect(wall(transaction.scene).geometry!.provenance.validation).toBe('verified');
+  });
+
+  it('UpdateGeometry sobre geometria confirmada deixou de ser um bloqueio absoluto: pede autorização, como os outros', () => {
+    const transaction = transactionOf(confirmedScene(['geometry']));
+    const preview = previewSceneCommand(transaction, BOX, 'reviewer', clock);
+    expect(preview).toMatchObject({ status: 'ready', requiresAuthorization: true });
+    expect(preview.issues).toEqual([]);
+  });
+
+  it('UpdateGeometry não pode reivindicar verified nem corrected na geometria que traz', () => {
+    const transaction = transactionOf(confirmedScene());
+    for (const validation of ['verified', 'corrected'] as const) {
+      const command: SpatialCommand = { type: 'UpdateGeometry', nodeId: 'wall-1', geometry: { kind: 'box', sizeM: [6, 2.7, 0.2], provenance: provenanceFor(validation) } };
+      expect(previewSceneCommand(transaction, command, 'reviewer', clock)).toMatchObject({ status: 'blocked', issues: [{ code: 'NEW_GEOMETRY_CANNOT_CLAIM_HUMAN_VERIFICATION' }] });
+    }
+  });
+});
+
+describe('F2 — editWallInScene com geometria confirmada', () => {
+  const edit = { start: { x: -2.5, y: 0 }, end: { x: 2.5, y: 0 }, actor: 'reviewer' };
+
+  it('já não apaga a confirmação sem pedir: recusa e a cena fica intacta', () => {
+    const transaction = transactionOf(confirmedScene(['geometry']));
+    const before = snapshot(transaction);
+    expect(failure(() => editWallInScene(transaction, 'wall-1', edit))).toBe('AUTHORIZATION_REQUIRED');
+    expect(snapshot(transaction)).toBe(before);
+    expect(wall(transaction.scene).geometry!.provenance.validation).toBe('verified');
+  });
+
+  it('numa parede sem nada confirmado comporta-se como hoje', () => {
+    const transaction = transactionOf(confirmedScene());
+    const next = editWallInScene(transaction, 'wall-1', edit);
+    expect(wall(next.scene).geometry).toMatchObject({ kind: 'box', sizeM: [5, 2.7, 0.2], provenance: { source: 'user', validation: 'unreviewed', actor: 'reviewer' } });
+    expect(wall(next.scene).component!.properties.length).toMatchObject({ value: 5, unit: 'm', provenance: { source: 'user', validation: 'unreviewed', actor: 'reviewer' } });
+    expect(door(next.scene).transform.translationM[0]).toBeCloseTo(-1.55);
+    expect(door(next.scene).transform.translationM[1]).toBeCloseTo(1.05);
+    expect(door(next.scene).component!.properties.offset).toMatchObject({ value: 0.5, provenance: { validation: 'unreviewed' } });
+    expect(next.scene.revision.number).toBe(9);
+    expect(next.undoStack).toHaveLength(1);
+    expect(next.redoStack).toEqual([]);
+  });
+});

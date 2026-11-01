@@ -2,7 +2,7 @@ import type { TechnicalDocumentV1 } from './technical-document';
 import { parseSpatialCommand, type SpatialAction } from './spatial-command';
 import type { BarName } from './kinematics';
 import { AuthorizationError, operationDigest, type Actor, type AuthorizationLedger, type CanonicalOperation, type CommandOrigin } from './core';
-import { PENDING_AUTHORIZATION_EVIDENCE, isConfirmedValidation, sceneOperation, stampAuthorization, touchedConfirmed, type ConfirmedReference } from './scene-authorization';
+import { PENDING_AUTHORIZATION_EVIDENCE, isConfirmedValidation, sceneOperation, stampAuthorization, touchedConfirmed, withoutProvenance, type ConfirmedReference } from './scene-authorization';
 
 export const SPATIAL_SCENE_SCHEMA = 'spatial_scene.v1' as const;
 export type VerificationState = 'unreviewed' | 'ambiguous' | 'verified' | 'rejected' | 'corrected';
@@ -211,6 +211,16 @@ function multiplyQuaternion(left: number[], right: number[]): [number, number, n
   const [x2, y2, z2, w2] = right as [number, number, number, number];
   return [w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2, w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2, w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2, w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2];
 }
+/**
+ * Proveniência de um valor que um comando acabou de reescrever. Um valor confirmado (verified ou corrected) nunca passa a
+ * unreviewed: fica corrected com o valor anterior; o id da autorização e a evidência definitiva entram no commit.
+ */
+function rewrittenProvenance(current: PropertyProvenance, previousValue: unknown, actor: string, clock: () => Date): PropertyProvenance {
+  const recordedAt = clock().toISOString();
+  return isConfirmedValidation(current.validation)
+    ? { source: 'user', validation: 'corrected', sourceValue: previousValue, evidence: PENDING_AUTHORIZATION_EVIDENCE, actor, recordedAt }
+    : { source: 'user', validation: 'unreviewed', actor, recordedAt };
+}
 function applyCommand(scene: SpatialSceneV1, command: SpatialCommand, actor: string, clock: () => Date): SpatialSceneV1 {
   const nodes = scene.nodes.map((node) => structuredClone(node));
   let relations = structuredClone(scene.relations);
@@ -219,8 +229,11 @@ function applyCommand(scene: SpatialSceneV1, command: SpatialCommand, actor: str
   switch (command.type) {
     case 'AddComponent': nodes.push(structuredClone(command.node)); break;
     case 'UpdateGeometry': {
-      if (!node!.geometry || ['verified', 'corrected'].includes(node!.geometry.provenance.validation)) throw new Error('CONFIRMED_GEOMETRY_LOCKED');
-      node!.geometry = structuredClone(command.geometry);
+      if (!node!.geometry) throw new Error('CONFIRMED_GEOMETRY_LOCKED');
+      // Geometria confirmada já não é um bloqueio absoluto: altera-se com autorização e fica corrected, como o resto.
+      node!.geometry = isConfirmedValidation(node!.geometry.provenance.validation)
+        ? { ...structuredClone(command.geometry), provenance: rewrittenProvenance(node!.geometry.provenance, structuredClone(withoutProvenance(node!.geometry)), actor, clock) }
+        : structuredClone(command.geometry);
       break;
     }
     case 'RemoveComponent': {
@@ -230,19 +243,21 @@ function applyCommand(scene: SpatialSceneV1, command: SpatialCommand, actor: str
       if (dependent || referenced) throw new Error('REMOVE_HAS_DEPENDENCIES');
       return sceneWithRevision({ ...scene, nodes: nodes.filter((item) => item.id !== target.id) }, command.type, actor, clock);
     }
-    case 'MoveComponent': node!.transform.translationM = [...command.translationM]; node!.transform.provenance.translationM = { source: 'user', validation: 'unreviewed', actor, recordedAt: clock().toISOString() }; break;
+    case 'MoveComponent': node!.transform.provenance.translationM = rewrittenProvenance(node!.transform.provenance.translationM, [...node!.transform.translationM], actor, clock); node!.transform.translationM = [...command.translationM]; break;
     case 'RotateComponent': {
+      const previousRotation = [...node!.transform.rotation];
       const norm = Math.hypot(...command.axis);
       const half = command.angleRad / 2;
       const delta = command.axis.map((value) => value / norm * Math.sin(half)).concat(Math.cos(half));
       const rotated = multiplyQuaternion(delta, node!.transform.rotation);
       const length = Math.hypot(...rotated);
       node!.transform.rotation = rotated.map((item) => item / length) as Transform['rotation'];
-      node!.transform.provenance.rotation = { source: 'user', validation: 'unreviewed', actor, recordedAt: clock().toISOString() };
+      node!.transform.provenance.rotation = rewrittenProvenance(node!.transform.provenance.rotation, previousRotation, actor, clock);
       break;
     }
     case 'ResizeComponent': {
       if (!node!.geometry) throw new Error('RESIZE_GEOMETRY_REQUIRED');
+      const previousGeometry = structuredClone(withoutProvenance(node!.geometry));
       if (node!.geometry.kind === 'box') node!.geometry.sizeM = node!.geometry.sizeM.map((item, index) => item * command.scale[index]!) as [number, number, number];
       else if (node!.geometry.kind === 'segment') {
         if (command.scale[1] !== 1 || command.scale[2] !== 1) throw new Error('SEGMENT_RESIZE_AXIS_UNSUPPORTED');
@@ -250,7 +265,7 @@ function applyCommand(scene: SpatialSceneV1, command: SpatialCommand, actor: str
       }
       else if (node!.geometry.kind === 'mesh_reference') node!.geometry.boundsM = node!.geometry.boundsM.map((item, index) => item * command.scale[index]!) as [number, number, number];
       else throw new Error('RESIZE_GEOMETRY_UNSUPPORTED');
-      node!.geometry.provenance = { source: 'user', validation: 'unreviewed', actor, recordedAt: clock().toISOString() };
+      node!.geometry.provenance = rewrittenProvenance(node!.geometry.provenance, previousGeometry, actor, clock);
       break;
     }
     case 'UpdateParameter': {
@@ -306,7 +321,7 @@ export function conversationEditToSceneCommand(message: string, selected: BarNam
   return { status: 'ready', command: { type: 'UpdateParameter', nodeId: action.componentId, property: 'length', value: action.value, unit: action.unit } };
 }
 /** Comandos cuja alteração de valores confirmados já passa pela guarda. */
-const GUARDED_COMMANDS = new Set<SpatialCommand['type']>(['UpdateParameter']);
+const GUARDED_COMMANDS = new Set<SpatialCommand['type']>(['UpdateParameter', 'MoveComponent', 'RotateComponent', 'ResizeComponent', 'UpdateGeometry']);
 
 export function previewSceneCommand(transaction: SceneTransaction, command: SpatialCommand, actor = 'user', clock: () => Date = () => new Date(), context?: SceneCommandContext): ScenePreview {
   const resolved: SceneCommandContext = context ?? { origin: 'ui_direct', actor: { kind: 'human', id: actor } };
@@ -327,6 +342,7 @@ export function previewSceneCommand(transaction: SceneTransaction, command: Spat
     if (command.type === 'AddComponent' && !validateNode(command.node)) throw new Error('COMPONENT_INVALID');
     if (command.type === 'AddComponent' && nodeContainsConfirmedProperty(command.node)) throw new Error('NEW_COMPONENT_CANNOT_CLAIM_HUMAN_VERIFICATION');
     if (command.type === 'UpdateGeometry' && (!validateGeometry(command.geometry) || command.geometry === null)) throw new Error('GEOMETRY_INVALID');
+    if (command.type === 'UpdateGeometry' && isConfirmedValidation(command.geometry.provenance.validation)) throw new Error('NEW_GEOMETRY_CANNOT_CLAIM_HUMAN_VERIFICATION');
     if (command.type === 'MoveComponent' && !vector(command.translationM, 3)) throw new Error('TRANSLATION_INVALID');
     if (command.type === 'RotateComponent' && (!vector(command.axis, 3) || Math.hypot(...command.axis) < 1e-9 || !finite(command.angleRad) || Math.abs(command.angleRad) > Math.PI * 100)) throw new Error('ROTATION_INVALID');
     if (command.type === 'ResizeComponent' && (!vector(command.scale, 3) || command.scale.some((value) => value <= 0))) throw new Error('SCALE_INVALID');
