@@ -3,7 +3,7 @@ import type { SpatialSceneV1 } from './spatial-scene';
 export const SPATIAL_COMMAND_SCHEMA = 'spatial_command.v1' as const;
 
 export type SpatialIntentKind = 'Select' | 'Inspect' | 'Focus' | 'Move' | 'Rotate' | 'Resize' | 'UpdateParameter' | 'AddComponent' | 'RemoveComponent' | 'AddOpening' | 'RemoveOpening' | 'Undo' | 'Redo' | 'Save' | 'Restore' | 'RequestClarification';
-export type SpatialCommandState = 'Idle' | 'Listening' | 'Understanding' | 'ProposedAction' | 'Preview' | 'AwaitingConfirmation' | 'Executing' | 'Completed' | 'Rejected' | 'Failed';
+export type SpatialCommandState = 'Idle' | 'Listening' | 'Understanding' | 'RequestClarification' | 'ProposedAction' | 'Preview' | 'AwaitingConfirmation' | 'Executing' | 'Completed' | 'Rejected' | 'Failed';
 export type SpatialCommandOrigin = 'local_deterministic' | 'speech_transcript' | 'muse_spark';
 export type SpatialCommandV1 = {
   schema: typeof SPATIAL_COMMAND_SCHEMA;
@@ -28,7 +28,7 @@ export type SpatialTargetResolution = { status: 'resolved'; nodeId: string | nul
 
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
 const INTENTS = new Set<SpatialIntentKind>(['Select', 'Inspect', 'Focus', 'Move', 'Rotate', 'Resize', 'UpdateParameter', 'AddComponent', 'RemoveComponent', 'AddOpening', 'RemoveOpening', 'Undo', 'Redo', 'Save', 'Restore', 'RequestClarification']);
-const STATES = new Set<SpatialCommandState>(['Idle', 'Listening', 'Understanding', 'ProposedAction', 'Preview', 'AwaitingConfirmation', 'Executing', 'Completed', 'Rejected', 'Failed']);
+const STATES = new Set<SpatialCommandState>(['Idle', 'Listening', 'Understanding', 'RequestClarification', 'ProposedAction', 'Preview', 'AwaitingConfirmation', 'Executing', 'Completed', 'Rejected', 'Failed']);
 const ORIGINS = new Set<SpatialCommandOrigin>(['local_deterministic', 'speech_transcript', 'muse_spark']);
 const UNITS = new Set(['m', 'rad']);
 const MUTATING_INTENTS = new Set<SpatialIntentKind>(['Move', 'Rotate', 'Resize', 'UpdateParameter', 'AddComponent', 'RemoveComponent', 'AddOpening', 'RemoveOpening']);

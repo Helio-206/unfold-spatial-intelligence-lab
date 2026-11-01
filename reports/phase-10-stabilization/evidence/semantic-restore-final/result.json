@@ -1,0 +1,24 @@
+{
+  "browser": "Chrome/155.0.8059.84",
+  "sourceSha256": "54f4162e73cc1563b403a18a56ece8a99dc8d98e27c6edc48663a645cb8f0fc8",
+  "provider": "offline test fixture",
+  "metaCalls": 0,
+  "requests": [],
+  "checks": [
+    "IndexedDB e workspace local preparados com a mesma origem/hash, via fixture explícita",
+    "reload/handoff manteve proposta legada do mesmo documento+imagem para revisão explícita",
+    "snapshot de região que não existe na vectorização restaurada é recusado; a proposta continua proposed"
+  ],
+  "errors": [],
+  "restored": {
+    "list": "Cozinha fixture → region-e2e-restore · proposed · nós: —",
+    "acceptDisabled": false,
+    "rejectDisabled": false,
+    "stored": "proposed"
+  },
+  "staleAcceptance": {
+    "state": "proposed",
+    "status": "Associação não confirmada: Região candidata já não existe; a proposta foi invalidada."
+  },
+  "status": "passed"
+}

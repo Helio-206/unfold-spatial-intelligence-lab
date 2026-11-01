@@ -195,7 +195,7 @@ async function requestMetaInput(input: MetaInput, apiKey: string | undefined, fe
     status: response.ok && payload.status === 'completed' && Boolean(readOutputText(payload)) ? 'success' : 'error',
   };
   const excerpt = sanitizeMetaEvidenceExcerpt(readOutputText(payload));
-  if (!response.ok) throw new MetaApiError(payload.error?.message ?? `Meta respondeu HTTP ${response.status}.`, log, 'http_error', excerpt);
+  if (!response.ok) throw new MetaApiError(`Meta respondeu HTTP ${response.status}.`, log, 'http_error', sanitizeMetaEvidenceExcerpt(payload.error?.message) ?? excerpt);
   if (invalidJson) throw new MetaApiError('A resposta da Meta não contém JSON válido.', { ...log, status: 'error' }, 'invalid_json');
   if (payload.status === 'incomplete') throw new MetaApiError(`Resposta incompleta${payload.incomplete_details?.reason ? ` (${payload.incomplete_details.reason})` : ''}.`, { ...log, status: 'error' }, 'incomplete', excerpt);
   if (payload.status === 'failed' || payload.status === 'error' || payload.error) throw new MetaApiError('O fornecedor devolveu um estado de erro sem resposta utilizável.', { ...log, status: 'error' }, 'model_error', excerpt);

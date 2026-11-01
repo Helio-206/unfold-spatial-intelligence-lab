@@ -66,9 +66,9 @@ export type SpatialCommand =
   | { type: 'AddComponent'; node: Node }
   | { type: 'UpdateGeometry'; nodeId: string; geometry: Geometry }
   | { type: 'RemoveComponent'; nodeId: string }
-  | { type: 'MoveComponent'; nodeId: string; translationM: [number, number, number] }
-  | { type: 'RotateComponent'; nodeId: string; axis: [number, number, number]; angleRad: number }
-  | { type: 'ResizeComponent'; nodeId: string; scale: [number, number, number] }
+  | { type: 'MoveComponent'; nodeId: string; translationM: [number, number, number]; acknowledgeVerifiedChange?: boolean }
+  | { type: 'RotateComponent'; nodeId: string; axis: [number, number, number]; angleRad: number; acknowledgeVerifiedChange?: boolean }
+  | { type: 'ResizeComponent'; nodeId: string; scale: [number, number, number]; acknowledgeVerifiedChange?: boolean }
   | { type: 'UpdateParameter'; nodeId: string; property: string; value: string | number | boolean | null; unit?: string; acknowledgeVerifiedChange?: boolean }
   | { type: 'ConfirmParameter'; nodeId: string; property: string; note: string }
   | { type: 'ConnectComponents'; relation: SceneRelation }
@@ -79,6 +79,27 @@ export type SceneIssue = { code: string; path: string; message: string };
 export type SceneTransaction = { scene: SpatialSceneV1; undoStack: SpatialSceneV1[]; redoStack: SpatialSceneV1[] };
 export type ScenePreview = { status: 'ready' | 'blocked'; baseRevisionId: string; evaluatedAt: string; actor: string; command: SpatialCommand; candidate: SpatialSceneV1 | null; issues: SceneIssue[] };
 export type ConversationSceneCommand = { status: 'ready'; command: Extract<SpatialCommand, { type: 'UpdateParameter' }> } | { status: 'blocked'; reason: string };
+
+/** Refuse edits when the scene has geometric relations/constraints but no solver can preserve them. */
+export function assertGeometryMutationSupported(scene: SpatialSceneV1, nodeIds: Iterable<string>, preservedRelationIds: Iterable<string> = []): void {
+  const affected = new Set(nodeIds);
+  let expanded = true;
+  while (expanded) {
+    expanded = false;
+    for (const node of scene.nodes) {
+      if (affected.has(node.id)) continue;
+      if (node.parentId && affected.has(node.parentId) || node.component?.dependsOn.some((dependency) => affected.has(dependency))) {
+        affected.add(node.id);
+        expanded = true;
+      }
+    }
+  }
+  const conflict = scene.constraints.find((constraint) => constraint.nodeIds.some((nodeId) => affected.has(nodeId)));
+  if (conflict) throw new Error(`GEOMETRIC_CONSTRAINT_REQUIRES_SOLVER:${conflict.id}`);
+  const preserved = new Set(preservedRelationIds);
+  const relation = scene.relations.find((item) => item.kind !== 'labels' && !preserved.has(item.id) && (affected.has(item.fromNodeId) || affected.has(item.toNodeId)));
+  if (relation) throw new Error(`GEOMETRIC_RELATION_REQUIRES_SUPPORTED_EDIT:${relation.id}`);
+}
 
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
@@ -128,6 +149,171 @@ function nodeContainsConfirmedProperty(node: Node): boolean {
   return properties.some((property) => property.provenance.validation === 'verified' || property.provenance.validation === 'corrected') || Object.values(node.transform.provenance).some((item) => item.validation === 'verified' || item.validation === 'corrected') || node.geometry?.provenance.validation === 'verified' || node.geometry?.provenance.validation === 'corrected';
 }
 
+function closeEnough(left: number, right: number, tolerance = 1e-5): boolean { return Math.abs(left - right) <= tolerance; }
+const lengthToMetres: Record<string, number> = { m: 1, cm: 0.01, mm: 0.001 };
+function propertyInMetres(property: SpatialProperty): number | undefined {
+  if (typeof property.value !== 'number' || !property.unit || !(property.unit in lengthToMetres)) return undefined;
+  return property.value * lengthToMetres[property.unit]!;
+}
+function metresInUnit(value: number, unit: string): number {
+  const factor = lengthToMetres[unit];
+  if (!factor) throw new Error('WALL_DIMENSION_UNIT_UNSUPPORTED');
+  return value / factor;
+}
+function isUnitScale(scale: number[]): boolean { return scale.every((value) => closeEnough(value, 1)); }
+function polygonAreaXZ(vertices: number[][]): number {
+  return Math.abs(vertices.reduce((sum, point, index) => {
+    const next = vertices[(index + 1) % vertices.length]!;
+    return sum + point[0]! * next[2]! - next[0]! * point[2]!;
+  }, 0)) / 2;
+}
+function segmentsIntersect(a: number[], b: number[], c: number[], d: number[]): boolean {
+  const orient = (p: number[], q: number[], r: number[]) => (q[0]! - p[0]!) * (r[2]! - p[2]!) - (q[2]! - p[2]!) * (r[0]! - p[0]!);
+  const abC = orient(a,b,c); const abD = orient(a,b,d); const cdA = orient(c,d,a); const cdB = orient(c,d,b);
+  return abC * abD < -1e-12 && cdA * cdB < -1e-12;
+}
+type WorldTransform = { translation: [number, number, number]; rotation: [number, number, number, number]; scale: [number, number, number] };
+function wallEndpoints(node: Node, world: WorldTransform): [[number, number, number], [number, number, number]] | undefined {
+  if (node.component?.kind !== 'wall' || node.geometry?.kind !== 'box') return undefined;
+  const offset = rotateByQuaternion([node.geometry.sizeM[0] * world.scale[0] / 2, 0, 0], world.rotation);
+  return [
+    world.translation.map((value, axis) => value - offset[axis]!) as [number, number, number],
+    world.translation.map((value, axis) => value + offset[axis]!) as [number, number, number],
+  ];
+}
+function rotateByQuaternion(vector: number[], quaternion: number[]): [number, number, number] {
+  const [x, y, z, w] = quaternion as [number, number, number, number];
+  const [vx, vy, vz] = vector as [number, number, number];
+  const tx = 2 * (y * vz - z * vy); const ty = 2 * (z * vx - x * vz); const tz = 2 * (x * vy - y * vx);
+  return [vx + w * tx + y * tz - z * ty, vy + w * ty + z * tx - x * tz, vz + w * tz + x * ty - y * tx];
+}
+export function spatialWorldTransforms(nodes: Node[]): Map<string, WorldTransform> {
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const resolved = new Map<string, WorldTransform>();
+  const resolve = (node: Node): WorldTransform => {
+    const cached = resolved.get(node.id);
+    if (cached) return cached;
+    const parent = node.parentId ? byId.get(node.parentId) : undefined;
+    const local = node.transform;
+    if (!parent) {
+      const value = { translation: [...local.translationM] as [number, number, number], rotation: [...local.rotation] as [number, number, number, number], scale: [...local.scale] as [number, number, number] };
+      resolved.set(node.id, value); return value;
+    }
+    const parentWorld = resolve(parent);
+    const scaledLocal = local.translationM.map((value, axis) => value * parentWorld.scale[axis]!);
+    const translated = rotateByQuaternion(scaledLocal, parentWorld.rotation);
+    const value: WorldTransform = {
+      translation: translated.map((value, axis) => value + parentWorld.translation[axis]!) as [number, number, number],
+      rotation: multiplyQuaternion(parentWorld.rotation, local.rotation),
+      scale: local.scale.map((value, axis) => value * parentWorld.scale[axis]!) as [number, number, number],
+    };
+    resolved.set(node.id, value); return value;
+  };
+  for (const node of nodes) resolve(node);
+  return resolved;
+}
+export function spatialWorldTransform(nodes: Node[], nodeId: string): WorldTransform | undefined {
+  return spatialWorldTransforms(nodes).get(nodeId);
+}
+export function rotateSpatialVector(vector: [number, number, number], quaternion: [number, number, number, number]): [number, number, number] {
+  return rotateByQuaternion(vector, quaternion);
+}
+export function spatialWorldPoseToLocal(nodes: Node[], parentId: string | null, translation: [number, number, number], rotation: [number, number, number, number]): { translation: [number, number, number]; rotation: [number, number, number, number] } {
+  if (parentId === null) return { translation: [...translation], rotation: [...rotation] };
+  const parent = spatialWorldTransform(nodes, parentId);
+  if (!parent || parent.scale.some((value) => !Number.isFinite(value) || value <= 0)) throw new Error('SCENE_PARENT_TRANSFORM_INVALID');
+  const inverse: [number, number, number, number] = [-parent.rotation[0], -parent.rotation[1], -parent.rotation[2], parent.rotation[3]];
+  const delta = translation.map((value, axis) => value - parent.translation[axis]!) as [number, number, number];
+  const unrotated = rotateByQuaternion(delta, inverse);
+  const localTranslation = unrotated.map((value, axis) => value / parent.scale[axis]!) as [number, number, number];
+  const localRotation = multiplyQuaternion(inverse, rotation);
+  return { translation: localTranslation, rotation: localRotation };
+}
+function validateDependentGeometry(nodes: Node[]): void {
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const world = spatialWorldTransforms(nodes);
+  for (const node of nodes) {
+    if (node.component?.kind === 'wall' && node.geometry?.kind === 'box') {
+      for (const [key, dimension] of [['length', 0], ['height', 1], ['thickness', 2]] as const) {
+        const param = node.component.properties[key];
+        if (param) {
+          const metres = propertyInMetres(param);
+          if (metres === undefined || !closeEnough(metres, node.geometry.sizeM[dimension])) throw new Error('SCENE_WALL_PARAMETER_GEOMETRY_MISMATCH');
+        }
+      }
+    }
+    if (node.component?.kind === 'door' || node.component?.kind === 'window') {
+      const wall = byId.get(node.component.dependsOn[0] ?? '');
+      if (node.component.dependsOn.length !== 1 || wall?.component?.kind !== 'wall' || wall.geometry?.kind !== 'box' || node.geometry?.kind !== 'box') throw new Error('SCENE_OPENING_WALL_REFERENCE_INVALID');
+      if (!isUnitScale(world.get(node.id)!.scale)) throw new Error('SCENE_OPENING_SCALE_UNSUPPORTED');
+      const parameter = (key: string) => node.component!.properties[key]?.value;
+      if (Object.values(node.component.properties).some((item) => item.unit !== 'm')) throw new Error('SCENE_OPENING_UNIT_UNSUPPORTED');
+      const offset = parameter('offset'); const width = parameter('width'); const height = parameter('height'); const sill = parameter('sill');
+      const wallWorld = world.get(wall.id)!;
+      if (![offset, width, height, sill].every((value) => typeof value === 'number' && Number.isFinite(value)) || Number(offset) < 0 || Number(width) <= 0 || Number(height) <= 0 || Number(sill) < 0 || Number(offset) + Number(width) > wall.geometry.sizeM[0] * wallWorld.scale[0] + 1e-5 || Number(sill) + Number(height) > wall.geometry.sizeM[1] * wallWorld.scale[1] + 1e-5) throw new Error('SCENE_OPENING_OUTSIDE_WALL');
+      if (!closeEnough(node.geometry.sizeM[0], Number(width)) || !closeEnough(node.geometry.sizeM[1], Number(height))) throw new Error('SCENE_OPENING_GEOMETRY_PARAMETER_MISMATCH');
+      const openingWorld = world.get(node.id)!;
+      const wallAngle = 2 * Math.atan2(wallWorld.rotation[1], wallWorld.rotation[3]);
+      const localX = (Number(offset) + Number(width) / 2) / wallWorld.scale[0] - wall.geometry.sizeM[0] / 2;
+      const localY = (Number(sill) + Number(height) / 2) / wallWorld.scale[1];
+      const scaledOffset: [number, number, number] = [localX * wallWorld.scale[0], localY * wallWorld.scale[1], 0];
+      const alongWall = rotateByQuaternion(scaledOffset, wallWorld.rotation);
+      const expected = wallWorld.translation.map((value, axis) => value + alongWall[axis]!);
+      if (openingWorld.translation.some((value, axis) => !closeEnough(value, expected[axis]!))) throw new Error('SCENE_OPENING_TRANSFORM_STALE');
+      const actualAngle = 2 * Math.atan2(openingWorld.rotation[1], openingWorld.rotation[3]);
+      if (Math.abs(Math.atan2(Math.sin(actualAngle - wallAngle), Math.cos(actualAngle - wallAngle))) > 1e-5) throw new Error('SCENE_OPENING_ROTATION_STALE');
+    }
+    if (node.component?.kind === 'room') {
+      const raw = node.component.properties.boundaryRefs?.value;
+      if (typeof raw !== 'string') continue; // Legacy rooms without endpoint bindings remain review-only.
+      if (node.geometry?.kind !== 'polygon') throw new Error('SCENE_ROOM_GEOMETRY_INVALID');
+      if (node.geometry.verticesM.length > 512) throw new Error('SCENE_ROOM_VERTEX_LIMIT_EXCEEDED');
+      if (!isUnitScale(node.transform.scale) || polygonAreaXZ(node.geometry.verticesM) <= 1e-8) throw new Error('SCENE_ROOM_POLYGON_DEGENERATE');
+      for (let first = 0; first < node.geometry.verticesM.length; first += 1) {
+        const firstNext = (first + 1) % node.geometry.verticesM.length;
+        for (let second = first + 1; second < node.geometry.verticesM.length; second += 1) {
+          const secondNext = (second + 1) % node.geometry.verticesM.length;
+          if (first === second || firstNext === second || secondNext === first) continue;
+          if (segmentsIntersect(node.geometry.verticesM[first]!, node.geometry.verticesM[firstNext]!, node.geometry.verticesM[second]!, node.geometry.verticesM[secondNext]!)) throw new Error('SCENE_ROOM_POLYGON_SELF_INTERSECTION');
+        }
+      }
+      let refs: unknown;
+      try { refs = JSON.parse(raw); } catch { throw new Error('SCENE_ROOM_BOUNDARY_REFS_INVALID'); }
+      if (!Array.isArray(refs)) throw new Error('SCENE_ROOM_BOUNDARY_REFS_INVALID');
+      const roomWorld = world.get(node.id)!;
+      const toWorld = (point: [number, number, number]): [number, number, number] => {
+        const scaled: [number, number, number] = [point[0] * roomWorld.scale[0], point[1] * roomWorld.scale[1], point[2] * roomWorld.scale[2]];
+        const rotated = rotateByQuaternion(scaled, roomWorld.rotation);
+        return rotated.map((value, axis) => value + roomWorld.translation[axis]!) as [number, number, number];
+      };
+      const referencedWalls = new Set<string>();
+      const referencedEdges = new Set<string>();
+      for (const ref of refs) {
+        if (!object(ref) || !node.component.dependsOn.includes(String(ref.wallId)) || !Number.isInteger(ref.startIndex) || !Number.isInteger(ref.endIndex) || !['a', 'b'].includes(String(ref.startEndpoint)) || !['a', 'b'].includes(String(ref.endEndpoint))) throw new Error('SCENE_ROOM_BOUNDARY_REF_INVALID');
+        const wall = byId.get(String(ref.wallId));
+        const endpoints = wall && wallEndpoints(wall, world.get(wall.id)!);
+        const startLocal = node.geometry.verticesM[Number(ref.startIndex)]; const endLocal = node.geometry.verticesM[Number(ref.endIndex)];
+        const start = startLocal ? toWorld(startLocal) : undefined; const end = endLocal ? toWorld(endLocal) : undefined;
+        if (!endpoints || !start || !end) throw new Error('SCENE_ROOM_BOUNDARY_REF_INVALID');
+        if (ref.startIndex === ref.endIndex || (Number(ref.startIndex) + 1) % node.geometry.verticesM.length !== Number(ref.endIndex)) throw new Error('SCENE_ROOM_BOUNDARY_REF_INVALID');
+        const edgeKey = `${ref.startIndex}:${ref.endIndex}`;
+        if (referencedEdges.has(edgeKey)) throw new Error('SCENE_ROOM_BOUNDARY_REF_INVALID');
+        referencedEdges.add(edgeKey); referencedWalls.add(String(ref.wallId));
+        const expectedStart = endpoints[ref.startEndpoint === 'a' ? 0 : 1]; const expectedEnd = endpoints[ref.endEndpoint === 'a' ? 0 : 1];
+        if (start.some((value, axis) => !closeEnough(value, expectedStart[axis]!)) || end.some((value, axis) => !closeEnough(value, expectedEnd[axis]!))) throw new Error('SCENE_ROOM_BOUNDARY_STALE');
+      }
+      if (referencedEdges.size !== node.geometry.verticesM.length || referencedWalls.size !== node.component.dependsOn.length || node.component.dependsOn.some((id) => !referencedWalls.has(id))) throw new Error('SCENE_ROOM_BOUNDARY_BINDINGS_INCOMPLETE');
+    }
+  }
+}
+function changedProvenance(previous: PropertyProvenance, actor: string, recordedAt: string, acknowledged: boolean, replacedValue?: unknown, replacedUnit?: string): PropertyProvenance {
+  if (['verified', 'corrected'].includes(previous.validation)) {
+    if (!acknowledged) throw new Error(previous.source === 'user' ? 'CONFIRMED_TRANSFORM_LOCKED' : 'CONFIRMED_GEOMETRY_LOCKED');
+    return { source: 'user', validation: 'corrected', sourceValue: replacedValue ?? previous.sourceValue ?? null, ...((replacedUnit ?? previous.sourceUnit) ? { sourceUnit: replacedUnit ?? previous.sourceUnit } : {}), evidence: `Alteração explícita confirmada; valor imediatamente anterior preservado para auditoria.`, actor, recordedAt };
+  }
+  return { source: 'user', validation: 'unreviewed', actor, recordedAt };
+}
+
 export function validateSpatialScene(value: unknown): SpatialSceneV1 {
   if (!object(value) || value.schema !== SPATIAL_SCENE_SCHEMA || !idPattern.test(String(value.id)) || typeof value.title !== 'string' || value.title.length > 200 || !object(value.coordinateSystem) || value.coordinateSystem.handedness !== 'right' || value.coordinateSystem.upAxis !== 'Y' || value.coordinateSystem.unit !== 'm' || JSON.stringify(value.coordinateSystem.horizontalPlane) !== '["X","Z"]' || !Array.isArray(value.sourceDocuments) || !Array.isArray(value.nodes) || !Array.isArray(value.relations) || !Array.isArray(value.constraints) || !object(value.revision)) throw new Error('SCENE_SCHEMA_INVALID');
   if (!value.sourceDocuments.every((doc) => object(doc) && idPattern.test(String(doc.documentId)) && doc.schema === 'technical_document.v1' && /^[a-f0-9]{64}$/i.test(String(doc.sha256)) && doc.immutable === true) || new Set(value.sourceDocuments.map((doc) => object(doc) ? doc.documentId : null)).size !== value.sourceDocuments.length) throw new Error('SCENE_SOURCE_DOCUMENT_INVALID');
@@ -157,6 +343,7 @@ export function validateSpatialScene(value: unknown): SpatialSceneV1 {
     return false;
   };
   if ([...dependencyGraph.keys()].some(hasCycle)) throw new Error('SCENE_DEPENDENCY_CYCLE');
+  validateDependentGeometry(value.nodes as Node[]);
   const relationIds = value.relations.map((relation) => object(relation) ? relation.id : undefined);
   if (!value.relations.every((relation) => object(relation) && idPattern.test(String(relation.id)) && typeof relation.kind === 'string' && idPattern.test(relation.kind) && known.has(String(relation.fromNodeId)) && known.has(String(relation.toNodeId)) && relation.fromNodeId !== relation.toNodeId && object(relation.properties) && Object.values(relation.properties).every(validateProperty) && validateProvenance(relation.provenance)) || new Set(relationIds).size !== relationIds.length) throw new Error('SCENE_RELATION_INVALID_OR_DUPLICATE');
   if ((value.relations as SceneRelation[]).some((relation) => !provenanceReferencesValid(relation.provenance) || Object.values(relation.properties).some((item) => !provenanceReferencesValid(item.provenance)))) throw new Error('SCENE_PROVENANCE_REFERENCE_INVALID');
@@ -200,6 +387,9 @@ function applyCommand(scene: SpatialSceneV1, command: SpatialCommand, actor: str
   let relations = structuredClone(scene.relations);
   let constraints = structuredClone(scene.constraints);
   const node = 'nodeId' in command ? nodes.find((item) => item.id === command.nodeId) : undefined;
+  if (node && ['UpdateGeometry', 'MoveComponent', 'RotateComponent', 'ResizeComponent', 'UpdateParameter'].includes(command.type)) {
+    assertGeometryMutationSupported(scene, [node.id]);
+  }
   switch (command.type) {
     case 'AddComponent': nodes.push(structuredClone(command.node)); break;
     case 'UpdateGeometry': {
@@ -214,19 +404,29 @@ function applyCommand(scene: SpatialSceneV1, command: SpatialCommand, actor: str
       if (dependent || referenced) throw new Error('REMOVE_HAS_DEPENDENCIES');
       return sceneWithRevision({ ...scene, nodes: nodes.filter((item) => item.id !== target.id) }, command.type, actor, clock);
     }
-    case 'MoveComponent': node!.transform.translationM = [...command.translationM]; node!.transform.provenance.translationM = { source: 'user', validation: 'unreviewed', actor, recordedAt: clock().toISOString() }; break;
+    case 'MoveComponent': {
+      const replaced = [...node!.transform.translationM];
+      node!.transform.translationM = [...command.translationM]; node!.transform.provenance.translationM = changedProvenance(node!.transform.provenance.translationM, actor, clock().toISOString(), command.acknowledgeVerifiedChange === true, replaced); break;
+    }
     case 'RotateComponent': {
+      const replaced = [...node!.transform.rotation];
       const norm = Math.hypot(...command.axis);
       const half = command.angleRad / 2;
       const delta = command.axis.map((value) => value / norm * Math.sin(half)).concat(Math.cos(half));
       const rotated = multiplyQuaternion(delta, node!.transform.rotation);
       const length = Math.hypot(...rotated);
       node!.transform.rotation = rotated.map((item) => item / length) as Transform['rotation'];
-      node!.transform.provenance.rotation = { source: 'user', validation: 'unreviewed', actor, recordedAt: clock().toISOString() };
+      node!.transform.provenance.rotation = changedProvenance(node!.transform.provenance.rotation, actor, clock().toISOString(), command.acknowledgeVerifiedChange === true, replaced);
       break;
     }
     case 'ResizeComponent': {
       if (!node!.geometry) throw new Error('RESIZE_GEOMETRY_REQUIRED');
+      const dimensionalProperties = node!.component?.kind === 'wall' ? [['length', 0], ['height', 1], ['thickness', 2]] as const : [];
+      for (const [key] of dimensionalProperties) {
+        const current = node!.component?.properties[key];
+        if (current && ['verified', 'corrected'].includes(current.provenance.validation) && command.acknowledgeVerifiedChange !== true) throw new Error('CONFIRMED_GEOMETRY_LOCKED');
+      }
+      const replacedGeometry = structuredClone(node!.geometry);
       if (node!.geometry.kind === 'box') node!.geometry.sizeM = node!.geometry.sizeM.map((item, index) => item * command.scale[index]!) as [number, number, number];
       else if (node!.geometry.kind === 'segment') {
         if (command.scale[1] !== 1 || command.scale[2] !== 1) throw new Error('SEGMENT_RESIZE_AXIS_UNSUPPORTED');
@@ -234,14 +434,29 @@ function applyCommand(scene: SpatialSceneV1, command: SpatialCommand, actor: str
       }
       else if (node!.geometry.kind === 'mesh_reference') node!.geometry.boundsM = node!.geometry.boundsM.map((item, index) => item * command.scale[index]!) as [number, number, number];
       else throw new Error('RESIZE_GEOMETRY_UNSUPPORTED');
-      node!.geometry.provenance = { source: 'user', validation: 'unreviewed', actor, recordedAt: clock().toISOString() };
+      node!.geometry.provenance = changedProvenance(node!.geometry.provenance, actor, clock().toISOString(), command.acknowledgeVerifiedChange === true, replacedGeometry);
+      if (node!.component?.kind === 'wall' && node!.geometry.kind === 'box') {
+        for (const [key, dimension] of dimensionalProperties) {
+          const current = node!.component.properties[key];
+          if (!current) continue;
+          node!.component.properties[key] = { ...current, value: metresInUnit(node!.geometry.sizeM[dimension]!, current.unit ?? ''), provenance: changedProvenance(current.provenance, actor, clock().toISOString(), command.acknowledgeVerifiedChange === true, current.value, current.unit) };
+        }
+      }
       break;
     }
     case 'UpdateParameter': {
       const current = node!.component?.properties[command.property] ?? node!.properties[command.property];
-      if (current?.provenance.validation === 'verified' && command.acknowledgeVerifiedChange !== true) throw new Error('VERIFIED_PARAMETER_REQUIRES_ACKNOWLEDGEMENT');
+      const currentIsConfirmed = current !== undefined && ['verified', 'corrected'].includes(current.provenance.validation);
+      if (currentIsConfirmed && command.acknowledgeVerifiedChange !== true) throw new Error('VERIFIED_PARAMETER_REQUIRES_ACKNOWLEDGEMENT');
       if (typeof command.value === 'number' && !finite(command.value) || command.unit !== undefined && !unitSet.has(command.unit)) throw new Error('PARAMETER_VALUE_INVALID');
-      const next: SpatialProperty = { value: command.value, ...(command.unit ? { unit: command.unit } : {}), provenance: { source: 'user', validation: current?.provenance.validation === 'verified' ? 'corrected' : 'unreviewed', ...(current?.provenance.validation === 'verified' ? { sourceValue: current.value, sourceUnit: current.unit, evidence: 'O utilizador autorizou explicitamente a alteração de um parâmetro previamente confirmado.' } : {}), actor, recordedAt: clock().toISOString() } };
+      const wallDimensions: Record<string, number> = { length: 0, height: 1, thickness: 2 };
+      if (node!.component?.kind === 'wall' && Object.hasOwn(wallDimensions, command.property)) {
+        if (typeof command.value !== 'number' || !command.unit || !(command.unit in lengthToMetres) || command.value <= 0 || node!.geometry?.kind !== 'box') throw new Error('WALL_DIMENSION_PARAMETER_INVALID');
+        const replacedGeometry = structuredClone(node!.geometry);
+        node!.geometry.sizeM[wallDimensions[command.property] as 0 | 1 | 2] = command.value * lengthToMetres[command.unit]!;
+        node!.geometry.provenance = changedProvenance(node!.geometry.provenance, actor, clock().toISOString(), command.acknowledgeVerifiedChange === true, replacedGeometry);
+      }
+      const next: SpatialProperty = { value: command.value, ...(command.unit ? { unit: command.unit } : {}), provenance: { source: 'user', validation: currentIsConfirmed ? 'corrected' : 'unreviewed', ...(currentIsConfirmed ? { sourceValue: current.value, ...(current.unit ? { sourceUnit: current.unit } : {}), evidence: 'O utilizador autorizou explicitamente a alteração de um parâmetro previamente confirmado.' } : {}), actor, recordedAt: clock().toISOString() } };
       if (node!.component && Object.hasOwn(node!.component.properties, command.property)) node!.component.properties[command.property] = next;
       else node!.properties[command.property] = next;
       break;
@@ -279,6 +494,28 @@ export function deserializeSceneTransaction(serialized: string): SceneTransactio
   const transaction = { scene: validateSpatialScene(candidate.scene), undoStack: candidate.undoStack.map(validateSpatialScene), redoStack: candidate.redoStack.map(validateSpatialScene) };
   if ([transaction.scene, ...transaction.undoStack, ...transaction.redoStack].some((scene) => scene.id !== transaction.scene.id)) throw new Error('SCENE_TRANSACTION_INVALID');
   return transaction;
+}
+
+/** Scene files are untrusted input. Keep their values, but never import a claimed human review as an authenticated review. */
+export function deserializeImportedSceneTransaction(serialized: string): SceneTransaction {
+  const transaction = deserializeSceneTransaction(serialized);
+  const untrust = (provenance: PropertyProvenance): PropertyProvenance => ['verified', 'corrected'].includes(provenance.validation)
+    ? { ...provenance, source: 'system', validation: 'unreviewed', actor: undefined }
+    : provenance;
+  const sanitizeScene = (scene: SpatialSceneV1): SpatialSceneV1 => ({
+    ...scene,
+    imageWorldMapping: scene.imageWorldMapping ? { ...scene.imageWorldMapping, provenance: untrust(scene.imageWorldMapping.provenance) } : null,
+    nodes: scene.nodes.map((node) => ({
+      ...node,
+      transform: { ...node.transform, provenance: Object.fromEntries(Object.entries(node.transform.provenance).map(([key, value]) => [key, untrust(value)])) as Transform['provenance'] },
+      geometry: node.geometry ? { ...node.geometry, provenance: untrust(node.geometry.provenance) } : null,
+      properties: Object.fromEntries(Object.entries(node.properties).map(([key, value]) => [key, { ...value, provenance: untrust(value.provenance) }])),
+      component: node.component ? { ...node.component, properties: Object.fromEntries(Object.entries(node.component.properties).map(([key, value]) => [key, { ...value, provenance: untrust(value.provenance) }])) } : null,
+    })),
+    relations: scene.relations.map((relation) => ({ ...relation, provenance: untrust(relation.provenance), properties: Object.fromEntries(Object.entries(relation.properties).map(([key, value]) => [key, { ...value, provenance: untrust(value.provenance) }])) })),
+    constraints: scene.constraints.map((constraint) => ({ ...constraint, provenance: untrust(constraint.provenance) })),
+  });
+  return { scene: sanitizeScene(transaction.scene), undoStack: transaction.undoStack.map(sanitizeScene), redoStack: transaction.redoStack.map(sanitizeScene) };
 }
 
 /** Converts only an explicit, matching four-bar length instruction; the result is still preview-only. */

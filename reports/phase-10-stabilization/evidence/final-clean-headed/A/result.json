@@ -1,0 +1,486 @@
+{
+  "case": "A",
+  "image": "/home/helio/HEr/META/unfold-app-phase-9/reports/phase-7e4/evidence/architecture-source.png",
+  "sha256": "54f4162e73cc1563b403a18a56ece8a99dc8d98e27c6edc48663a645cb8f0fc8",
+  "method": "manual tracing proposals; dimensions and geometry unreviewed",
+  "metaCalls": 0,
+  "checks": [
+    "upload actualiza o estado para source e revela workflow raster antes do tracing",
+    "segmento candidato dividido e unido novamente pelo editor vectorial, sem construir geometria",
+    "porta e janela adicionadas por parâmetros hipotéticos explícitos; largura da porta alterada com preview, commit, undo e redo",
+    "comando local relativo de 50 cm identificou o provider, criou preview e aplicou uma transacção mantendo o offset da janela",
+    "comparação alterna para a revisão anterior real sem substituir a revisão canónica mais recente",
+    "pedido sem alvo pediu esclarecimento; “Parede 1” retomou a intenção vinculada à mesma revisão, criou apenas preview e permitiu commit/undo sem /api/conversation",
+    "reconstrução repetida foi recusada sem perder a cena editada ou o histórico",
+    "refresh completo recupera a imagem original persistida e associa-a ao hash da cena",
+    "cena spatial_scene.v1 guardada e restaurada dentro de /demo"
+  ],
+  "requests": [
+    "http://127.0.0.1:5194/api/spatial-agent",
+    "http://127.0.0.1:5194/api/spatial-agent"
+  ],
+  "errors": [],
+  "browser": {
+    "product": "Chrome/155.0.8059.84",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+  },
+  "tabletEmptyLayout": {
+    "width": 710,
+    "documentWidth": 710,
+    "panel": {
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "bottom": 0,
+      "width": 0,
+      "height": 0
+    },
+    "empty": {
+      "left": 94.80000305175781,
+      "right": 614.8000030517578,
+      "top": 295.78125,
+      "bottom": 604.21875,
+      "width": 520,
+      "height": 308.4375
+    },
+    "emptyVisible": true,
+    "importVisible": true,
+    "sourceHidden": true,
+    "toolbarHidden": true
+  },
+  "detectedCandidates": 16,
+  "detectedClosedRegions": 0,
+  "detectedRegionGeometry": [],
+  "ambiguousOpeningCandidates": 0,
+  "detectedCandidateIds": [
+    "line-0",
+    "line-1",
+    "line-2",
+    "line-3",
+    "line-4",
+    "line-5",
+    "line-6",
+    "line-7",
+    "line-8",
+    "line-9",
+    "line-10",
+    "line-11",
+    "line-12",
+    "line-13",
+    "line-14",
+    "line-15"
+  ],
+  "detectedCandidateGeometry": [
+    {
+      "id": "line-0",
+      "start": [
+        156,
+        87
+      ],
+      "end": [
+        233,
+        87
+      ],
+      "strokeWidth": 3.2,
+      "thicknessPx": 1,
+      "confidence": 1
+    },
+    {
+      "id": "line-1",
+      "start": [
+        156,
+        87
+      ],
+      "end": [
+        156,
+        116
+      ],
+      "strokeWidth": 3.2,
+      "thicknessPx": 1,
+      "confidence": 1
+    },
+    {
+      "id": "line-2",
+      "start": [
+        332,
+        110
+      ],
+      "end": [
+        395,
+        110
+      ],
+      "strokeWidth": 3.2,
+      "thicknessPx": 1,
+      "confidence": 1
+    },
+    {
+      "id": "line-3",
+      "start": [
+        156,
+        116
+      ],
+      "end": [
+        247,
+        116
+      ],
+      "strokeWidth": 3.2,
+      "thicknessPx": 1,
+      "confidence": 1
+    },
+    {
+      "id": "line-4",
+      "start": [
+        293,
+        128
+      ],
+      "end": [
+        293,
+        257
+      ],
+      "strokeWidth": 3.2,
+      "thicknessPx": 1,
+      "confidence": 1
+    },
+    {
+      "id": "line-5",
+      "start": [
+        380,
+        183
+      ],
+      "end": [
+        380,
+        254
+      ],
+      "strokeWidth": 3.2,
+      "thicknessPx": 1,
+      "confidence": 1
+    },
+    {
+      "id": "line-6",
+      "start": [
+        430,
+        184
+      ],
+      "end": [
+        430,
+        274
+      ],
+      "strokeWidth": 3.2,
+      "thicknessPx": 1,
+      "confidence": 1
+    },
+    {
+      "id": "line-7",
+      "start": [
+        380,
+        184.5
+      ],
+      "end": [
+        430,
+        184.5
+      ],
+      "strokeWidth": 3.2,
+      "thicknessPx": 2,
+      "confidence": 1
+    },
+    {
+      "id": "line-8",
+      "start": [
+        406,
+        198
+      ],
+      "end": [
+        430,
+        198
+      ],
+      "strokeWidth": 3.2,
+      "thicknessPx": 1,
+      "confidence": 1
+    },
+    {
+      "id": "line-9",
+      "start": [
+        407,
+        253
+      ],
+      "end": [
+        407,
+        304
+      ],
+      "strokeWidth": 3.2,
+      "thicknessPx": 1,
+      "confidence": 1
+    },
+    {
+      "id": "line-10",
+      "start": [
+        290.375,
+        253.5
+      ],
+      "end": [
+        325,
+        253.5
+      ],
+      "strokeWidth": 8,
+      "thicknessPx": 8,
+      "confidence": 1
+    },
+    {
+      "id": "line-11",
+      "start": [
+        407,
+        273
+      ],
+      "end": [
+        531.3333333333334,
+        273
+      ],
+      "strokeWidth": 3.2,
+      "thicknessPx": 3,
+      "confidence": 1
+    },
+    {
+      "id": "line-12",
+      "start": [
+        420.5,
+        330.45
+      ],
+      "end": [
+        420.5,
+        377
+      ],
+      "strokeWidth": 20,
+      "thicknessPx": 20,
+      "confidence": 1
+    },
+    {
+      "id": "line-13",
+      "start": [
+        297.5,
+        331.1
+      ],
+      "end": [
+        297.5,
+        377
+      ],
+      "strokeWidth": 20,
+      "thicknessPx": 20,
+      "confidence": 1
+    },
+    {
+      "id": "line-14",
+      "start": [
+        288,
+        340.5
+      ],
+      "end": [
+        314,
+        340.5
+      ],
+      "strokeWidth": 3.2,
+      "thicknessPx": 2,
+      "confidence": 1
+    },
+    {
+      "id": "line-15",
+      "start": [
+        402,
+        341.5
+      ],
+      "end": [
+        430,
+        341.5
+      ],
+      "strokeWidth": 3.2,
+      "thicknessPx": 2,
+      "confidence": 1
+    }
+  ],
+  "vectorModelStatus": "0 divisão(ões) proposta(s) com suporte de parede · 0 face(s) de baixa qualidade excluída(s) · 0 ciclo(s) fechados exactos. Sem escala validada, áreas apenas em px².",
+  "manualTracingClosedRegions": 5,
+  "regionBoundarySelectionCount": 6,
+  "firstRenderedWall": {
+    "size": [
+      9.66315897143145,
+      2.7200011536786555,
+      0.15000000223517418
+    ],
+    "center": [
+      15.783158501151046,
+      1.3600005768393277,
+      -1.9705262660932616
+    ],
+    "meshes": [
+      {
+        "name": "wall_core",
+        "visible": true,
+        "bounds": [
+          9.66315897143145,
+          2.7200011536786555,
+          0.15000000223517418
+        ],
+        "material": "0xddd8cd"
+      }
+    ]
+  },
+  "wallCount": 13,
+  "roomCount": 1,
+  "renderedRoom": {
+    "size": [
+      1.7132644653320312,
+      0.03299999935552478,
+      3.229051113128662
+    ],
+    "center": [
+      15.442106246948242,
+      -0.012499999487772584,
+      -8.583158731460571
+    ],
+    "meshes": [
+      {
+        "name": "region-1:mesh",
+        "visible": true,
+        "bounds": [
+          1.7132644653320312,
+          0.03299999935552478,
+          3.229051113128662
+        ],
+        "material": "0xb9b09f"
+      }
+    ]
+  },
+  "mapping": {
+    "sourceImageSha256": "54f4162e73cc1563b403a18a56ece8a99dc8d98e27c6edc48663a645cb8f0fc8",
+    "imageSizePx": {
+      "width": 650,
+      "height": 446
+    },
+    "pixelToWorldXZ": [
+      0.037894738936471425,
+      0,
+      0,
+      0,
+      -0.037894738936471425,
+      0
+    ],
+    "worldY": 0,
+    "provenance": {
+      "source": "user",
+      "validation": "unreviewed",
+      "recordedAt": "2026-11-01T07:42:36.948Z",
+      "actor": "unidentified-local-user",
+      "evidence": "Cota impressa, âncoras manuais aproximadas; altura e espessura hipotéticas. Nenhuma medida é certificada."
+    }
+  },
+  "metrics": {
+    "readout": "49 FPS · 36 draw calls · 2,500 triângulos · 32 geometrias · cena 2.3 ms",
+    "renderer": "ANGLE (AMD, AMD Radeon Graphics (radeonsi renoir ACO), OpenGL ES 3.2)",
+    "dpr": 1.0000000149011612,
+    "canvases": [
+      {
+        "parent": "demo-scene",
+        "contextLost": true
+      },
+      {
+        "parent": "spatial-canvas",
+        "contextLost": false
+      }
+    ],
+    "renderTimesMs": [
+      11955.599999964237,
+      11972.399999976158,
+      11988.799999952316,
+      12005.399999976158,
+      12022.199999988079,
+      12038.899999976158,
+      12055.399999976158,
+      12072.099999964237,
+      12088.799999952316,
+      12105.399999976158,
+      12122.599999964237,
+      12138.899999976158,
+      12155.899999976158,
+      12172.199999988079,
+      12188.899999976158,
+      12205.699999988079,
+      12222.199999988079,
+      12238.699999988079,
+      12255.599999964237,
+      12272.099999964237,
+      12288.799999952316,
+      12305.5,
+      12322.699999988079,
+      12338.699999988079,
+      12356,
+      12372.199999988079,
+      12388.799999952316,
+      12405.5,
+      12421.899999976158,
+      12438.899999976158,
+      12455.599999964237,
+      12472.099999964237,
+      12488.899999976158,
+      12505.5,
+      12522.199999988079,
+      12538.799999952316,
+      12555.599999964237,
+      12572.199999988079,
+      12588.899999976158,
+      12605.599999964237,
+      12622.199999988079,
+      12638.699999988079,
+      12655.699999988079
+    ]
+  },
+  "mobile": {
+    "width": 390,
+    "documentWidth": 390,
+    "conversation": {
+      "left": 12,
+      "right": 378.3999938964844,
+      "top": 577.7999877929688,
+      "bottom": 757.7999877929688,
+      "width": 366.3999938964844,
+      "height": 180,
+      "visible": true,
+      "headerClientWidth": 345,
+      "headerScrollWidth": 345
+    },
+    "command": {
+      "left": 12,
+      "right": 378.3999938964844,
+      "top": 771,
+      "bottom": 829,
+      "width": 366.3999938964844,
+      "height": 58
+    },
+    "toolbar": {
+      "left": 10,
+      "right": 380.3999938964844,
+      "top": 60,
+      "bottom": 137.5999984741211,
+      "width": 370.3999938964844,
+      "height": 77.5999984741211,
+      "scrollWidth": 369,
+      "clientWidth": 369
+    },
+    "source": {
+      "left": -217,
+      "right": -7,
+      "top": 64,
+      "bottom": 112.20000076293945,
+      "width": 210,
+      "height": 48.20000076293945,
+      "visible": false
+    },
+    "inspector": {
+      "left": 112.4000015258789,
+      "right": 382.4000015258789,
+      "top": 146,
+      "bottom": 736,
+      "width": 270,
+      "height": 590,
+      "visible": true
+    }
+  }
+}

@@ -315,6 +315,28 @@
   .demo-tools { right: 20px; }
 }
 
+@media (min-width: 701px) and (max-width: 900px) {
+  .demo-header { padding: 18px 22px; }
+  .demo-brand-copy strong { font-size: 19px; }
+  .demo-brand-copy small { font-size: 8px; }
+  .demo-nav { gap: 18px; padding: 8px 13px; }
+  .demo-nav a, .demo-nav button { font-size: 9px; }
+  .demo-runtime { top: 70px; right: 24px; }
+  .demo-process-rail { top: 78px; gap: 4px; padding: 5px; }
+  .demo-process-step { min-height: 36px; gap: 8px; padding: 0 13px; }
+  .demo-process-step span { font-size: 9px; }
+  .demo-process-step strong { font-size: 9px; }
+  .demo-empty-state { top: 45%; width: min(620px, calc(100vw - 52px)); }
+  .demo-empty-state h1 { font-size: clamp(38px, 5.2vw, 46px); }
+  .demo-empty-state > p { max-width: 470px; font-size: 13px; }
+  .demo-empty-actions { margin-top: 25px; }
+  .demo-empty-actions button { min-height: 78px; gap: 12px; padding: 13px; }
+  .demo-empty-action-icon { width: 40px; height: 40px; }
+  .demo-empty-actions button strong { font-size: 12px; }
+  .demo-empty-actions button small { font-size: 10px; }
+  .demo-command { bottom: max(20px, env(safe-area-inset-bottom)); width: min(620px, calc(100vw - 52px)); }
+}
+
 @media (max-width: 700px) {
   .demo-shell { min-height: 0; }
   .demo-header { align-items: flex-start; padding: max(14px, env(safe-area-inset-top)) 14px 0; }
@@ -400,3 +422,23 @@
 .demo-spatial-host { position: fixed; z-index: 70; inset: 0; isolation: isolate; }
 .demo-spatial-host .demo-command { z-index: 120; opacity: 1; transform: translate(calc(-50% + var(--command-offset-x, 0px)), var(--command-offset-y, 0px)); }
 .demo-spatial-host .demo-command:has(#demo-question:disabled)::after { opacity: 0; animation: none; }
+.demo-spatial-host .spatial-toolbar { top: 78px; bottom: auto; }
+.demo-spatial-host .spatial-status { display: none; }
+.demo-spatial-host .demo-conversation { display: flex; flex-direction: column; width: min(100%, 400px); max-height: min(22dvh, 190px); overflow: hidden; padding: 12px; }
+.demo-spatial-host .demo-conversation-header { flex: none; }
+.demo-spatial-host .demo-messages { min-height: 0; max-height: none; flex: 1 1 auto; overscroll-behavior: contain; }
+@media (max-width: 700px) {
+  .demo-spatial-host .demo-conversation { width: calc(100vw - 24px); max-height: min(22dvh, 180px); left: 50%; transform: translateX(-50%); padding: 10px; }
+  .demo-spatial-host .demo-conversation-header { gap: 5px; }
+  .demo-spatial-host .demo-conversation-header > strong { flex: none; font-size: 9px; }
+  .demo-spatial-host .demo-conversation-header div { min-width: 0; flex: 1 1 auto; justify-content: flex-end; gap: 2px; }
+  .demo-spatial-host .demo-conversation-header button { flex: none; padding: 4px 5px; font-size: 9px; white-space: nowrap; }
+  .demo-spatial-host .demo-conversation-header #demo-chat-image { padding: 4px 6px; }
+  .demo-spatial-host .demo-messages { font-size: 11px; }
+  .demo-spatial-host .spatial-toolbar { top: 60px; bottom: auto; left: 50%; right: auto; width: min(calc(100vw - 20px), 520px); max-width: calc(100vw - 20px); flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; transform: translateX(-50%); scrollbar-width: none; }
+  .demo-spatial-host .spatial-toolbar::-webkit-scrollbar { display: none; }
+  .demo-spatial-host .spatial-lab:has(.inspector:not([hidden])) .inspector { top: 146px; max-height: calc(100dvh - 254px); }
+}
+@media (min-width: 701px) and (max-width: 900px) {
+  .demo-spatial-host .spatial-toolbar { left: calc(50% + min(21vw, 150px)); width: min(420px, calc(100vw - min(38vw, 310px) - 40px)); }
+}

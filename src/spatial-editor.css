@@ -11,3 +11,70 @@
 .spatial-lab .source-panel.source-collapsed{width:210px;bottom:auto;padding:12px 16px;overflow:visible}.source-panel.source-collapsed>.panel-heading{margin:0}.source-panel.source-collapsed>:not(.panel-heading){display:none}
 .document-handoff{margin:10px 0;padding:11px 12px;border:1px solid rgba(213,165,94,.24);border-radius:9px;background:rgba(37,35,28,.48);color:#d4d0c2;font-size:10px;line-height:1.55}.document-handoff strong{display:block;margin-bottom:4px;color:#e7c78f;font-size:9px;letter-spacing:.08em;text-transform:uppercase}.document-handoff ul{margin:6px 0 0;padding-left:16px;color:#aeb0a5}.document-handoff[hidden]{display:none}
 .source-image-frame svg polygon[data-region]{cursor:pointer;pointer-events:all}.source-image-frame svg polygon[data-region]:hover{fill-opacity:.24;stroke-opacity:.9}
+
+/* Keep the model dominant; renderer counters are test diagnostics, not product chrome. */
+.spatial-lab .spatial-metrics{display:none!important}
+.source-panel,.inspector{border-color:rgba(212,204,184,.16);background:rgba(22,26,24,.97);box-shadow:0 18px 46px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.025)}
+.source-panel{width:310px;padding:15px}
+.source-panel.source-compact{width:286px}
+.inspector{width:280px;padding:15px}
+.field{font-size:11px;line-height:1.45}
+.field input,.field select{min-height:36px;border-radius:8px;font-size:12px}
+.micro-copy,.source-state{font-size:11px;line-height:1.55}
+.panel-heading{font-size:10px;letter-spacing:.13em}
+.trace-tools{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.trace-tools button{min-height:34px;font-size:11px}
+.candidate-row span,.component-row span{font-size:11px}
+.candidate-row small,.component-row small{font-size:10px;line-height:1.4}
+.source-panel.source-collapsed{width:56px;padding:10px 6px;overflow:hidden}
+.source-panel.source-collapsed>.panel-heading{justify-content:center}
+.source-panel.source-collapsed>.panel-heading span,.source-panel.source-collapsed>:not(.panel-heading){display:none!important}
+
+@media(max-width:900px){
+  .source-panel{width:min(310px,38vw)}
+  .source-panel.source-compact{width:min(286px,38vw)}
+  .inspector{width:min(280px,34vw)}
+  .spatial-toolbar{flex-wrap:wrap;justify-content:center;overflow:visible;max-width:calc(100vw - 28px)}
+  .spatial-toolbar button{flex:0 0 auto}
+  .stage-empty{left:calc(50% + min(20vw,155px));width:min(440px,calc(100vw - min(38vw,310px) - 48px))}
+}
+@media(max-width:620px){
+  .source-panel{width:min(300px,calc(100vw - 16px));padding:13px}
+  .source-panel.source-compact{width:min(286px,calc(100vw - 16px))}
+  .source-panel.source-collapsed{width:46px;padding:10px 6px}
+  .source-panel.source-collapsed .panel-heading span{display:none}
+  .inspector{width:min(270px,calc(100vw - 16px));padding:13px}
+  .stage-empty{display:none}
+  .spatial-toolbar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;width:min(420px,calc(100vw - 16px));padding:5px}
+  .spatial-toolbar button{min-width:0;width:100%;height:32px;padding:3px;font-size:10px}
+  .spatial-toolbar #compare-scene,.spatial-toolbar #undo-scene,.spatial-toolbar #redo-scene{font-size:8px}
+  .spatial-lab:has(.inspector:not([hidden])) .source-panel{transform:translateX(calc(-100% - 15px));opacity:0;pointer-events:none}
+}
+
+/* Empty-state: one intentional entry point instead of competing panels and tools. */
+.spatial-lab[data-state="empty"] .source-panel,
+.spatial-lab[data-state="empty"] .spatial-toolbar,
+.spatial-lab[data-state="empty"] .spatial-status{display:none!important}
+.spatial-lab[data-state="empty"] .stage-empty{
+  top:50%;left:50%;width:min(520px,calc(100vw - 40px));padding:34px 38px 30px;
+  border:1px solid rgba(220,210,188,.14);border-radius:22px;
+  background:linear-gradient(145deg,rgba(27,31,28,.91),rgba(17,21,19,.88));
+  box-shadow:0 28px 90px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.035);
+  backdrop-filter:blur(18px);text-align:left;pointer-events:auto
+}
+.spatial-lab[data-state="empty"] .stage-empty::before{content:"";display:block;width:34px;height:2px;margin-bottom:24px;background:#d5a55e}
+.spatial-lab[data-state="empty"] .stage-empty span{color:#d0b782;font-size:9px;letter-spacing:.2em}
+.spatial-lab[data-state="empty"] .stage-empty h1{max-width:420px;margin:13px 0 12px;font-size:clamp(36px,4.5vw,52px);letter-spacing:-.035em}
+.spatial-lab[data-state="empty"] .stage-empty p{max-width:390px;margin:0;color:#b0b4aa;font-size:13px;line-height:1.7}
+.spatial-lab[data-state="empty"] .stage-empty button{display:inline-flex;align-items:center;gap:28px;margin-top:23px;padding:12px 15px;border:1px solid rgba(213,165,94,.52);border-radius:10px;background:rgba(213,165,94,.1);color:#f1dfbb;font-size:12px;letter-spacing:.025em}
+.spatial-lab[data-state="empty"] .stage-empty button:hover{background:rgba(213,165,94,.17);border-color:#d5a55e}
+.spatial-lab[data-state="empty"] .stage-empty button span{color:#e2bb79;font-size:16px}
+.spatial-lab[data-state="empty"] .stage-empty small{display:block;margin-top:12px;color:#858b81;font-size:10px;letter-spacing:.04em}
+.spatial-lab[data-state="source"] .stage-empty{display:none}
+@media(max-width:620px){
+  .spatial-lab[data-state="empty"] .stage-empty{display:block;top:46%;width:calc(100vw - 28px);padding:25px 22px 22px;border-radius:18px}
+  .spatial-lab[data-state="empty"] .stage-empty::before{margin-bottom:18px}
+  .spatial-lab[data-state="empty"] .stage-empty h1{font-size:36px}
+  .spatial-lab[data-state="empty"] .stage-empty p{font-size:12px}
+  .spatial-lab[data-state="empty"] .stage-empty button{margin-top:18px}
+}

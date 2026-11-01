@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { persistSceneTransaction, type SpatialLockManager } from '../src/spatial-persistence';
 import { readFileSync } from 'node:fs';
-import { commitScenePreview, conversationEditToSceneCommand, createSceneTransaction, deserializeSceneTransaction, deserializeSpatialScene, executeSceneCommand, previewSceneCommand, serializeSceneTransaction, serializeSpatialScene, validateSpatialScene, type SpatialSceneV1 } from '../src/spatial-scene';
+import { commitScenePreview, conversationEditToSceneCommand, createSceneTransaction, deserializeImportedSceneTransaction, deserializeSceneTransaction, deserializeSpatialScene, executeSceneCommand, previewSceneCommand, serializeSceneTransaction, serializeSpatialScene, validateSpatialScene, type SpatialSceneV1 } from '../src/spatial-scene';
 
 const provenance = { source: 'user' as const, validation: 'unreviewed' as const, recordedAt: '2026-01-01T00:00:00.000Z' };
 const property = (value: number, validation: 'unreviewed' | 'verified' = 'unreviewed') => ({ value, unit: 'mm', provenance: { ...provenance, validation, ...(validation === 'verified' ? { actor: 'fixture reviewer', evidence: 'Fixture explícita de teste.' } : {}) } });
+const metreProperty = (value: number) => ({ value, unit: 'm', provenance });
+const lockManager: SpatialLockManager = { request: async (_name, _options, callback) => callback() };
 const makeScene = (): SpatialSceneV1 => validateSpatialScene({
   schema: 'spatial_scene.v1', id: 'scene-main', title: 'Cena de teste',
   coordinateSystem: { handedness: 'right', upAxis: 'Y', horizontalPlane: ['X', 'Z'], unit: 'm' },
@@ -35,6 +38,13 @@ describe('spatial_scene.v1 contract', () => {
     expect(() => validateSpatialScene({ ...scene, imageWorldMapping: { sourceImageSha256: 'b'.repeat(64), imageSizePx: { width: 1000, height: 800 }, pixelToWorldXZ: [0, 0, 0, 0, 0, 0], worldY: 0, provenance } })).toThrow('SCENE_IMAGE_MAPPING_INVALID');
     expect(() => deserializeSpatialScene('{')).toThrow('SCENE_JSON_INVALID');
   });
+
+  it('rejects parent cycles before resolving dependent world transforms', () => {
+    const scene = makeScene();
+    const first = structuredClone(scene.nodes[1]!); first.id = 'group-first'; first.nodeType = 'group'; first.parentId = 'group-second';
+    const second = structuredClone(scene.nodes[1]!); second.id = 'group-second'; second.nodeType = 'group'; second.parentId = 'group-first';
+    expect(() => validateSpatialScene({ ...scene, nodes: [...scene.nodes, first, second] })).toThrow('SCENE_DEPENDENCY_CYCLE');
+  });
 });
 
 describe('spatial scene transactions', () => {
@@ -60,9 +70,123 @@ describe('spatial scene transactions', () => {
     expect(redone.scene.revision.number).toBe(3);
   });
 
-  it('blocks edits to verified values unless explicitly acknowledged and records correction provenance', () => {
+  it('does not report a durable scene write when storage fails', async () => {
+    const transaction = createSceneTransaction(makeScene());
+    const values = new Map([['unfold-spatial-scene.v1', 'previous-good-snapshot']]);
+    const storage = { setItem: (key: string, value: string) => { if (key === 'unfold-spatial-scene.v1') throw new DOMException('quota', 'QuotaExceededError'); values.set(key, value); } };
+    await expect(persistSceneTransaction(storage, transaction, undefined, undefined, lockManager)).rejects.toThrow('quota');
+    expect(values.get('unfold-spatial-scene.v1')).toBe('previous-good-snapshot');
+    expect(transaction.scene.revision.number).toBe(0);
+  });
+
+  it('rejects stale writes from another tab instead of overwriting the newer revision', async () => {
+    const values = new Map<string, string>();
+    const storage = { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => { values.set(key, value); } };
+    const initial = createSceneTransaction(makeScene());
+    await persistSceneTransaction(storage, initial, undefined, undefined, lockManager);
+    const tabA = executeSceneCommand(initial, { type: 'MoveComponent', nodeId: 'wall-a', translationM: [1, 0, 0] }).transaction;
+    const tabB = executeSceneCommand(initial, { type: 'MoveComponent', nodeId: 'wall-a', translationM: [0, 0, 1] }).transaction;
+    await persistSceneTransaction(storage, tabA, undefined, undefined, lockManager);
+    await expect(persistSceneTransaction(storage, tabB, undefined, undefined, lockManager)).rejects.toThrow('SCENE_PERSISTENCE_CONFLICT');
+    expect(deserializeSceneTransaction(values.get('unfold-spatial-scene.v1')!).scene.nodes[0]?.transform.translationM).toEqual([1, 0, 0]);
+  });
+
+  it('serializes truly concurrent tab writes and rejects the second stale parent revision', async () => {
+    const values = new Map<string, string>();
+    const storage = { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => { values.set(key, value); } };
+    let tail = Promise.resolve();
+    const serializedLocks: SpatialLockManager = { request: async (_name, _options, callback) => {
+      const previous = tail; let release!: () => void; tail = new Promise<void>((resolve) => { release = resolve; });
+      await previous;
+      try { return await callback(); } finally { release(); }
+    } };
+    const initial = createSceneTransaction(makeScene());
+    await persistSceneTransaction(storage, initial, undefined, undefined, serializedLocks);
+    const tabA = executeSceneCommand(initial, { type: 'MoveComponent', nodeId: 'wall-a', translationM: [1, 0, 0] }).transaction;
+    const tabB = executeSceneCommand(initial, { type: 'MoveComponent', nodeId: 'wall-a', translationM: [0, 0, 1] }).transaction;
+    const results = await Promise.allSettled([
+      persistSceneTransaction(storage, tabA, undefined, undefined, serializedLocks),
+      persistSceneTransaction(storage, tabB, undefined, undefined, serializedLocks),
+    ]);
+    expect(results.map((result) => result.status)).toEqual(['fulfilled', 'rejected']);
+    expect(results[1]).toMatchObject({ reason: new Error('SCENE_PERSISTENCE_CONFLICT') });
+    expect(deserializeSceneTransaction(values.get('unfold-spatial-scene.v1')!).scene.nodes[0]?.transform.translationM).toEqual([1, 0, 0]);
+  });
+
+  it('binds confirmed rebuilds to the revision the user actually confirmed', async () => {
+    const values = new Map<string, string>();
+    const storage = { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => { values.set(key, value); } };
+    const original = createSceneTransaction(makeScene());
+    await persistSceneTransaction(storage, original, undefined, undefined, lockManager);
+    const concurrentlyEdited = executeSceneCommand(original, { type: 'MoveComponent', nodeId: 'wall-a', translationM: [2, 0, 0] }).transaction;
+    await persistSceneTransaction(storage, concurrentlyEdited, undefined, undefined, lockManager);
+    const rebuild = createSceneTransaction({ ...makeScene(), title: 'Rebuild' });
+    await expect(persistSceneTransaction(storage, rebuild, undefined, { allowReplace: true, expectedRevisionId: original.scene.revision.id }, lockManager)).rejects.toThrow('SCENE_PERSISTENCE_CONFLICT');
+    expect(deserializeSceneTransaction(values.get('unfold-spatial-scene.v1')!).scene.revision.id).toBe(concurrentlyEdited.scene.revision.id);
+  });
+
+  it('fails closed when cross-tab locking is unavailable', async () => {
+    await expect(persistSceneTransaction({ setItem: () => undefined }, createSceneTransaction(makeScene()), undefined, undefined, null)).rejects.toThrow('SCENE_PERSISTENCE_CROSS_TAB_LOCK_UNAVAILABLE');
+  });
+
+  it('downgrades claimed human reviews in imported scene files', () => {
     const scene = makeScene();
     scene.nodes[0]!.component!.properties.thickness = property(100, 'verified');
+    const imported = deserializeImportedSceneTransaction(serializeSceneTransaction(createSceneTransaction(scene)));
+    expect(imported.scene.nodes[0]?.component?.properties.thickness?.provenance).toMatchObject({ source: 'system', validation: 'unreviewed' });
+    expect(imported.scene.nodes[0]?.component?.properties.thickness?.provenance.actor).toBeUndefined();
+  });
+
+  it('rejects oversized room contours before quadratic self-intersection validation', () => {
+    const scene = makeScene();
+    const count = 513;
+    const verticesM = Array.from({ length: count }, (_, index) => { const angle = index * 2 * Math.PI / count; return [Math.cos(angle), 0, Math.sin(angle)] as [number, number, number]; });
+    const room = { ...scene.nodes[1]!, id: 'room-large', label: 'Região', nodeType: 'component' as const, geometry: { kind: 'polygon' as const, verticesM, provenance }, component: { kind: 'room', properties: { boundaryRefs: { value: '[]', provenance } }, dependsOn: [] } };
+    expect(() => validateSpatialScene({ ...scene, nodes: [...scene.nodes, room] })).toThrow('SCENE_ROOM_VERTEX_LIMIT_EXCEEDED');
+  });
+
+  it('validates opening attachment in world space through transformed parents', () => {
+    const scene = makeScene();
+    const wall = structuredClone(scene.nodes[0]!);
+    wall.geometry = { kind: 'box', sizeM: [2, 2.7, 0.1], provenance };
+    wall.component!.properties = { length: metreProperty(2), height: metreProperty(2.7), thickness: metreProperty(0.1) };
+    const group = structuredClone(scene.nodes[1]!);
+    group.id = 'group-offset'; group.nodeType = 'group'; group.component = null; group.geometry = null;
+    group.transform.translationM = [5, 0, 0];
+    group.transform.scale = [2, 1, 1];
+    wall.parentId = group.id;
+    const door = structuredClone(wall);
+    door.id = 'door-a'; door.label = 'Porta'; door.parentId = null;
+    door.component = { kind: 'door', dependsOn: [wall.id], properties: { offset: metreProperty(1), width: metreProperty(1), height: metreProperty(2), sill: metreProperty(0) } };
+    door.geometry = { kind: 'box', sizeM: [1, 2, 0.04], provenance };
+    door.transform.translationM = [4.5, 1, 0];
+    expect(() => validateSpatialScene({ ...scene, nodes: [wall, group, door] })).not.toThrow();
+    door.transform.translationM = [6, 1, 0];
+    expect(() => validateSpatialScene({ ...scene, nodes: [wall, group, door] })).toThrow('SCENE_OPENING_TRANSFORM_STALE');
+  });
+
+  it('rejects transformations that break an opening dependency without mutating the base transaction', () => {
+    const scene = makeScene();
+    const wall: import('../src/spatial-scene').Node = { ...scene.nodes[0]!, geometry: { kind: 'box', sizeM: [2, 2.7, 0.1], provenance }, component: { ...scene.nodes[0]!.component!, properties: {} } };
+    const opening = structuredClone(wall);
+    opening.id = 'opening-a'; opening.label = 'Porta';
+    opening.component = { kind: 'door', dependsOn: [wall.id], properties: { offset: metreProperty(1), width: metreProperty(1), height: metreProperty(2), sill: metreProperty(0) } };
+    opening.geometry = { kind: 'box', sizeM: [1, 2, 0.04], provenance };
+    opening.transform.translationM = [0.5, 1, 0];
+    const scaledOpening = structuredClone(opening); scaledOpening.transform.scale = [2, 1, 1];
+    expect(() => validateSpatialScene({ ...scene, nodes: [wall, scene.nodes[1]!, scaledOpening] })).toThrow('SCENE_OPENING_SCALE_UNSUPPORTED');
+    const withOpening = createSceneTransaction({ ...scene, nodes: [wall, scene.nodes[1]!, opening] });
+    const preview = previewSceneCommand(withOpening, { type: 'MoveComponent', nodeId: wall.id, translationM: [1, 0, 0] });
+    expect(preview.status).toBe('blocked');
+    expect(preview.issues[0]?.code).toBe('SCENE_OPENING_TRANSFORM_STALE');
+    expect(withOpening.scene.nodes[0]?.transform.translationM).toEqual([0, 0, 0]);
+  });
+
+  it('blocks edits to verified values unless explicitly acknowledged and records correction provenance', () => {
+    const scene = makeScene();
+    const wall = scene.nodes[0]!;
+    wall.geometry = { kind: 'box', sizeM: [2, 2.7, 0.1], provenance };
+    wall.component!.properties = { length: { value: 2, unit: 'm', provenance }, height: { value: 2.7, unit: 'm', provenance }, thickness: property(100, 'verified') };
     const transaction = createSceneTransaction(scene);
     const blocked = previewSceneCommand(transaction, { type: 'UpdateParameter', nodeId: 'wall-a', property: 'thickness', value: 120, unit: 'mm' });
     expect(blocked.status).toBe('blocked');
@@ -70,9 +194,62 @@ describe('spatial scene transactions', () => {
     const accepted = previewSceneCommand(transaction, { type: 'UpdateParameter', nodeId: 'wall-a', property: 'thickness', value: 120, unit: 'mm', acknowledgeVerifiedChange: true }, 'reviewer');
     expect(accepted.status).toBe('ready');
     expect(accepted.candidate?.nodes[0]?.component?.properties.thickness).toMatchObject({ value: 120, provenance: { validation: 'corrected', source: 'user', sourceValue: 100, sourceUnit: 'mm', actor: 'reviewer' } });
+    expect(accepted.candidate?.nodes[0]?.geometry).toMatchObject({ kind: 'box', sizeM: [2, 2.7, 0.12] });
+    expect(() => deserializeSpatialScene(serializeSpatialScene(accepted.candidate!))).not.toThrow();
     const confirmation = previewSceneCommand(createSceneTransaction(makeScene()), { type: 'ConfirmParameter', nodeId: 'wall-a', property: 'thickness', note: 'Confirmado pelo utilizador após inspecção.' }, 'reviewer');
     expect(confirmation.candidate?.nodes[0]?.component?.properties.thickness?.provenance).toMatchObject({ validation: 'verified', actor: 'reviewer', evidence: 'Confirmado pelo utilizador após inspecção.' });
     expect(previewSceneCommand(transaction, { type: 'UpdateParameter', nodeId: 'wall-a', property: 'thickness', value: { value: 100, unit: 'mm', provenance: { ...provenance, validation: 'verified' } } as never }).status).toBe('blocked');
+  });
+
+  it('requires a new explicit acknowledgement to change a corrected value and retains the correction chain', () => {
+    const scene = makeScene();
+    const wall = scene.nodes[0]!;
+    wall.geometry = { kind: 'box', sizeM: [2, 2.7, 0.12], provenance };
+    wall.component!.properties = {
+      length: metreProperty(2), height: metreProperty(2.7),
+      thickness: { value: 120, unit: 'mm', provenance: { source: 'user', validation: 'corrected', sourceValue: 100, sourceUnit: 'mm', evidence: 'Leitura corrigida após inspecção.', actor: 'local-user', recordedAt: '2026-01-01T00:00:00.000Z' } },
+    };
+    const transaction = createSceneTransaction(scene);
+    const blocked = previewSceneCommand(transaction, { type: 'UpdateParameter', nodeId: wall.id, property: 'thickness', value: 130, unit: 'mm' });
+    expect(blocked.status).toBe('blocked');
+    expect(blocked.issues[0]?.code).toBe('VERIFIED_PARAMETER_REQUIRES_ACKNOWLEDGEMENT');
+    const acknowledged = previewSceneCommand(transaction, { type: 'UpdateParameter', nodeId: wall.id, property: 'thickness', value: 130, unit: 'mm', acknowledgeVerifiedChange: true }, 'local-user');
+    expect(acknowledged.status).toBe('ready');
+    expect(acknowledged.candidate?.nodes[0]?.component?.properties.thickness).toMatchObject({
+      value: 130,
+      provenance: { validation: 'corrected', sourceValue: 120, sourceUnit: 'mm', actor: 'local-user', evidence: 'O utilizador autorizou explicitamente a alteração de um parâmetro previamente confirmado.' },
+    });
+    expect(acknowledged.candidate?.nodes[0]?.geometry).toMatchObject({ kind: 'box', sizeM: [2, 2.7, 0.13] });
+  });
+
+  it('keeps wall parameters and geometry consistent across accepted units and reads legacy scaled walls', () => {
+    const scene = makeScene();
+    const wall = scene.nodes[0]!;
+    wall.geometry = { kind: 'box', sizeM: [2, 2.7, 0.1], provenance };
+    wall.component!.properties = { length: { value: 200, unit: 'cm', provenance }, height: { value: 270, unit: 'cm', provenance }, thickness: { value: 100, unit: 'mm', provenance } };
+    const transaction = createSceneTransaction(scene);
+    const resized = executeSceneCommand(transaction, { type: 'ResizeComponent', nodeId: wall.id, scale: [1.5, 1, 1] }).transaction;
+    expect(resized.scene.nodes[0]?.component?.properties.length).toMatchObject({ value: 300, unit: 'cm' });
+    expect(resized.scene.nodes[0]?.geometry).toMatchObject({ kind: 'box', sizeM: [3, 2.7, 0.1] });
+    const updated = previewSceneCommand(transaction, { type: 'UpdateParameter', nodeId: wall.id, property: 'thickness', value: 120, unit: 'mm' });
+    expect(updated.status).toBe('ready');
+    expect(updated.candidate?.nodes[0]?.geometry).toMatchObject({ kind: 'box', sizeM: [2, 2.7, 0.12] });
+    const scaled = structuredClone(scene); scaled.nodes[0]!.transform.scale = [2, 1, 1];
+    expect(validateSpatialScene(scaled).nodes[0]?.transform.scale).toEqual([2, 1, 1]);
+    expect(deserializeSpatialScene(serializeSpatialScene(scaled)).nodes[0]?.transform.scale).toEqual([2, 1, 1]);
+  });
+
+  it('records the immediately previous confirmed value across consecutive resizes', () => {
+    const scene = makeScene();
+    const wall = scene.nodes[0]!;
+    wall.geometry = { kind: 'box', sizeM: [2, 2.7, 0.1], provenance };
+    wall.component!.properties = { length: metreProperty(2), height: metreProperty(2.7), thickness: property(100, 'verified') };
+    const initial = createSceneTransaction(scene);
+    const first = executeSceneCommand(initial, { type: 'ResizeComponent', nodeId: wall.id, scale: [1, 1, 1.2], acknowledgeVerifiedChange: true }).transaction;
+    expect(first.scene.nodes[0]?.component?.properties.thickness?.provenance.sourceValue).toBe(100);
+    const second = executeSceneCommand(first, { type: 'ResizeComponent', nodeId: wall.id, scale: [1, 1, 130 / 120], acknowledgeVerifiedChange: true }).transaction;
+    expect(second.scene.nodes[0]?.component?.properties.thickness).toMatchObject({ provenance: { validation: 'corrected', sourceValue: 120, sourceUnit: 'mm' } });
+    expect(second.scene.nodes[0]?.component?.properties.thickness?.value).toBeCloseTo(130, 10);
   });
 
   it('validates operation IDs, units, dimensions, relation endpoints, and protects referenced removals', () => {
@@ -128,5 +305,56 @@ describe('spatial scene transactions', () => {
     const candidate = structuredClone(preview.candidate!);
     candidate.nodes[0]!.component!.properties.thickness!.provenance = { source: 'user', validation: 'verified', actor: 'forged caller', evidence: 'Forged state', recordedAt: '2026-01-01T00:00:00.000Z' };
     expect(() => commitScenePreview(transaction, { ...preview, candidate })).toThrow('PREVIEW_TAMPERED');
+  });
+
+  it('refuses geometric mutations on constrained nodes when no constraint solver can preserve them', () => {
+    const unconstrained = makeScene();
+    const constrained = validateSpatialScene({ ...unconstrained, constraints: [{ id: 'fixed-wall-a', kind: 'fixed', nodeIds: ['wall-a'], value: null, unit: null, provenance }] });
+    const transaction = createSceneTransaction(constrained);
+
+    for (const command of [
+      { type: 'MoveComponent' as const, nodeId: 'wall-a', translationM: [1, 0, 0] as [number, number, number] },
+      { type: 'RotateComponent' as const, nodeId: 'wall-a', axis: [0, 1, 0] as [number, number, number], angleRad: Math.PI / 2 },
+      { type: 'ResizeComponent' as const, nodeId: 'wall-a', scale: [2, 1, 1] as [number, number, number] },
+      { type: 'UpdateGeometry' as const, nodeId: 'wall-a', geometry: { kind: 'box' as const, sizeM: [2, 2.7, 0.1] as [number, number, number], provenance } },
+      { type: 'UpdateParameter' as const, nodeId: 'wall-a', property: 'length', value: 3, unit: 'm' },
+    ]) {
+      const preview = previewSceneCommand(transaction, command);
+      expect(preview.status).toBe('blocked');
+      expect(preview.issues[0]?.code).toBe('GEOMETRIC_CONSTRAINT_REQUIRES_SOLVER:fixed-wall-a');
+      expect(preview.candidate).toBeNull();
+      expect(transaction.scene.nodes[0]?.transform.translationM).toEqual([0, 0, 0]);
+      expect(transaction.scene.nodes[0]?.geometry?.kind).toBe('segment');
+      expect(transaction.scene.revision.number).toBe(0);
+    }
+  });
+
+  it('includes descendants and dependent nodes when checking mutation constraints', () => {
+    const base = makeScene();
+    const child = structuredClone(base.nodes[1]!);
+    child.id = 'child-group'; child.label = 'Subgrupo'; child.nodeType = 'group'; child.component = null; child.parentId = 'wall-a'; child.geometry = null;
+    const constrained = validateSpatialScene({
+      ...base,
+      nodes: [...base.nodes, child],
+      constraints: [{ id: 'fixed-descendant', kind: 'fixed', nodeIds: [child.id], value: null, unit: null, provenance }],
+    });
+    const preview = previewSceneCommand(createSceneTransaction(constrained), { type: 'MoveComponent', nodeId: 'wall-a', translationM: [1, 0, 0] });
+    expect(preview.status).toBe('blocked');
+    expect(preview.issues[0]?.code).toBe('GEOMETRIC_CONSTRAINT_REQUIRES_SOLVER:fixed-descendant');
+  });
+
+  it('refuses generic geometry edits that would silently invalidate a spatial relation', () => {
+    const base = makeScene();
+    const connected = validateSpatialScene({
+      ...base,
+      relations: [{ id: 'wall-joint', fromNodeId: 'wall-a', toNodeId: 'annotation-a', kind: 'joined_to', properties: {}, provenance }],
+    });
+    const transaction = createSceneTransaction(connected);
+    const preview = previewSceneCommand(transaction, { type: 'MoveComponent', nodeId: 'wall-a', translationM: [1, 0, 0] });
+    expect(preview.status).toBe('blocked');
+    expect(preview.issues[0]?.code).toBe('GEOMETRIC_RELATION_REQUIRES_SUPPORTED_EDIT:wall-joint');
+    expect(preview.candidate).toBeNull();
+    expect(transaction.scene.nodes[0]?.transform.translationM).toEqual([0, 0, 0]);
+    expect(transaction.scene.revision.number).toBe(0);
   });
 });

@@ -2,7 +2,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { createHash, randomUUID } from 'node:crypto';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs';
+import { closeSync, lstatSync, mkdirSync, openSync, readFileSync, readdirSync, renameSync, rmdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import {
   executeKinematicOperation,
   buildKinematicOperationPrompt,
@@ -51,6 +51,123 @@ export type ServerOptions = {
 
 class MetaCallBudgetExceeded extends Error {
   constructor() { super('O limite de chamadas Meta desta execução foi atingido.'); }
+}
+
+function withBudgetFileLock<T>(budgetPath: string, action: () => T): T {
+  const lockPath = `${budgetPath}.lock`;
+  const reclaimPath = `${lockPath}.reclaim`;
+  const reclaimOwnerPath = `${reclaimPath}/owner.json`;
+  const started = Date.now();
+  let fd: number | undefined;
+  let ownedInode: { dev: number; ino: number } | undefined;
+  while (fd === undefined) {
+    try {
+      fd = openSync(lockPath, 'wx', 0o600);
+      ownedInode = lstatSync(lockPath);
+      try { writeFileSync(fd, JSON.stringify({ pid: process.pid, createdAt: new Date().toISOString() })); }
+      catch (error) {
+        closeSync(fd); fd = undefined;
+        try {
+          const current = lstatSync(lockPath);
+          if (ownedInode.dev === current.dev && ownedInode.ino === current.ino) unlinkSync(lockPath);
+        } catch { /* keep the original write error */ }
+        throw error;
+      }
+    } catch (error) {
+      if (!(error && typeof error === 'object' && 'code' in error && error.code === 'EEXIST')) throw error;
+      try {
+        const lockStat = lstatSync(lockPath);
+        let lock: { pid?: unknown; createdAt?: unknown };
+        try { lock = JSON.parse(readFileSync(lockPath, 'utf8')) as { pid?: unknown; createdAt?: unknown }; }
+        catch {
+          if (Date.now() - lockStat.mtimeMs > 1000) throw new Error('META_BUDGET_LOCK_CORRUPT: lock persistente inválido; confirme que não existe backend activo antes de o remover.');
+          throw new Error('META_BUDGET_LOCK_BUSY');
+        }
+        const pid = Number(lock.pid);
+        const age = Date.now() - Date.parse(String(lock.createdAt));
+        let ownerAlive = true;
+        if (Number.isInteger(pid) && pid > 0) {
+          try { process.kill(pid, 0); } catch (probe) { ownerAlive = !(probe && typeof probe === 'object' && 'code' in probe && probe.code === 'ESRCH'); }
+        }
+        if (!ownerAlive && Number.isFinite(age) && age > 1000) {
+          let reclaimHeld = false;
+          let reclaimInode: { dev: number; ino: number } | undefined;
+          try {
+            mkdirSync(reclaimPath, { mode: 0o700 });
+            reclaimInode = lstatSync(reclaimPath);
+            writeFileSync(reclaimOwnerPath, JSON.stringify({ pid: process.pid, createdAt: new Date().toISOString() }), { mode: 0o600, flag: 'wx' });
+            reclaimHeld = true;
+          }
+          catch (reclaimError) {
+            if (!(reclaimError && typeof reclaimError === 'object' && 'code' in reclaimError && reclaimError.code === 'EEXIST')) throw reclaimError;
+            try {
+              const markerStat = lstatSync(reclaimPath);
+              let markerOwner: { pid?: unknown; createdAt?: unknown } | undefined;
+              try { markerOwner = JSON.parse(readFileSync(reclaimOwnerPath, 'utf8')) as { pid?: unknown; createdAt?: unknown }; } catch { /* recover a marker whose owner died before finishing initialization */ }
+              const markerPid = Number(markerOwner?.pid);
+              let markerAlive = true;
+              if (Number.isInteger(markerPid) && markerPid > 0) {
+                try { process.kill(markerPid, 0); } catch (probe) { markerAlive = !(probe && typeof probe === 'object' && 'code' in probe && probe.code === 'ESRCH'); }
+              }
+              const markerAge = Date.now() - (Date.parse(String(markerOwner?.createdAt)) || markerStat.mtimeMs);
+              if (!markerAlive && markerAge > 1000 || !markerOwner && Date.now() - markerStat.mtimeMs > 10_000) {
+                try { unlinkSync(reclaimOwnerPath); } catch (error) { if (!(error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT')) throw error; }
+                const latestMarkerStat = lstatSync(reclaimPath);
+                if (latestMarkerStat.dev === markerStat.dev && latestMarkerStat.ino === markerStat.ino) rmdirSync(reclaimPath);
+              }
+            } catch (markerError) {
+              if (markerError && typeof markerError === 'object' && 'code' in markerError && markerError.code !== 'ENOENT' && markerError.code !== 'ENOTEMPTY') throw markerError;
+            }
+          }
+          if (reclaimHeld) {
+            try {
+              const current = lstatSync(lockPath);
+              const latest = JSON.parse(readFileSync(lockPath, 'utf8')) as { pid?: unknown; createdAt?: unknown };
+              const latestPid = Number(latest.pid);
+              let latestAlive = true;
+              if (Number.isInteger(latestPid) && latestPid > 0) {
+                try { process.kill(latestPid, 0); } catch (probe) { latestAlive = !(probe && typeof probe === 'object' && 'code' in probe && probe.code === 'ESRCH'); }
+              }
+              if (current.dev === lockStat.dev && current.ino === lockStat.ino && !latestAlive && Date.now() - Date.parse(String(latest.createdAt)) > 1000) unlinkSync(lockPath);
+            } finally {
+              try {
+                const currentMarker = lstatSync(reclaimPath);
+                if (reclaimInode && currentMarker.dev === reclaimInode.dev && currentMarker.ino === reclaimInode.ino) {
+                  try { unlinkSync(reclaimOwnerPath); } catch (error) { if (!(error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT')) throw error; }
+                  rmdirSync(reclaimPath);
+                }
+              } catch (error) { if (!(error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT')) throw error; }
+            }
+            continue;
+          }
+        }
+      } catch (readError) {
+        if (readError instanceof Error && readError.message.startsWith('META_BUDGET_LOCK_CORRUPT')) throw readError;
+        if (readError && typeof readError === 'object' && 'code' in readError && readError.code === 'ENOENT') continue;
+      }
+      if (Date.now() - started > 10_000) throw new Error('META_BUDGET_LOCK_TIMEOUT');
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10);
+    }
+  }
+  try { return action(); }
+  finally {
+    closeSync(fd);
+    try {
+      const current = lstatSync(lockPath);
+      if (ownedInode && current.dev === ownedInode.dev && current.ino === ownedInode.ino) unlinkSync(lockPath);
+    } catch (error) { if (!(error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT')) throw error; }
+  }
+}
+
+function readBudgetUsage(path: string, limit: number | undefined): number {
+  try {
+    const saved = JSON.parse(readFileSync(path, 'utf8')) as { limit?: unknown; used?: unknown };
+    if (saved.limit !== (limit ?? null) || !Number.isSafeInteger(saved.used) || Number(saved.used) < 0) throw new Error('O ficheiro de orçamento não corresponde ao limite activo.');
+    return Number(saved.used);
+  } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') throw new Error('META_CALL_BUDGET_FILE_MISSING: o ledger configurado não existe; recusando reinicializar o orçamento.');
+    throw error;
+  }
 }
 
 function readCallLimit(option: number | undefined): number | undefined {
@@ -171,28 +288,27 @@ export function createMetaServer(options: ServerOptions = {}): Server {
   const apiKey = options.apiKey ?? process.env.MODEL_API_KEY;
   const metaCallLimit = readCallLimit(options.maxMetaCalls);
   const metaCallBudgetFile = options.metaCallBudgetFile ?? process.env.UNFOLD_ACCEPTANCE_BUDGET_FILE;
-  const savedBudget = metaCallBudgetFile ? (() => {
-    try {
-      const saved = JSON.parse(readFileSync(metaCallBudgetFile, 'utf8')) as { limit?: unknown; used?: unknown };
-      if (saved.limit !== (metaCallLimit ?? null) || !Number.isSafeInteger(saved.used) || Number(saved.used) < 0) throw new Error('O ficheiro de orçamento não corresponde ao limite activo.');
-      return Number(saved.used);
-    } catch (error) {
-      if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') return 0;
-      throw error;
-    }
-  })() : 0;
+  if (metaCallLimit !== undefined && !metaCallBudgetFile) throw new Error('UNFOLD_ACCEPTANCE_BUDGET_FILE é obrigatório quando existe um limite rígido de chamadas Meta.');
+  const savedBudget = metaCallBudgetFile ? readBudgetUsage(metaCallBudgetFile, metaCallLimit) : 0;
   let metaCallsUsed = savedBudget;
   const startedAt = new Date().toISOString();
   const buildId = process.env.UNFOLD_BUILD_ID ?? createSourceBuildId();
   const reserveMetaCall = () => {
-    if (metaCallLimit !== undefined && metaCallsUsed >= metaCallLimit) throw new MetaCallBudgetExceeded();
-    const nextCount = metaCallsUsed + 1;
     if (metaCallBudgetFile) {
       mkdirSync(dirname(metaCallBudgetFile), { recursive: true });
-      const temporaryFile = `${metaCallBudgetFile}.${process.pid}.tmp`;
-      writeFileSync(temporaryFile, JSON.stringify({ limit: metaCallLimit ?? null, used: nextCount }) + '\n', { mode: 0o600 });
-      renameSync(temporaryFile, metaCallBudgetFile);
+      metaCallsUsed = withBudgetFileLock(metaCallBudgetFile, () => {
+        const used = readBudgetUsage(metaCallBudgetFile, metaCallLimit);
+        if (metaCallLimit !== undefined && used >= metaCallLimit) throw new MetaCallBudgetExceeded();
+        const next = used + 1;
+        const temporaryFile = `${metaCallBudgetFile}.${process.pid}.${randomUUID()}.tmp`;
+        writeFileSync(temporaryFile, JSON.stringify({ limit: metaCallLimit ?? null, used: next }) + '\n', { mode: 0o600, flag: 'wx' });
+        renameSync(temporaryFile, metaCallBudgetFile);
+        return next;
+      });
+      return;
     }
+    if (metaCallLimit !== undefined && metaCallsUsed >= metaCallLimit) throw new MetaCallBudgetExceeded();
+    const nextCount = metaCallsUsed + 1;
     metaCallsUsed = nextCount;
   };
   const diagnostics = () => ({
@@ -209,9 +325,9 @@ export function createMetaServer(options: ServerOptions = {}): Server {
       spatialAgent: { available: true, apiKeyConfigured: Boolean(apiKey), contract: 'spatial_agent_result.v1', maxOutputTokens: 4_096, reasoningEffort: 'medium' },
       imageRegionVerification: { available: true, apiKeyConfigured: Boolean(apiKey) },
     },
-    metaCallBudget: { limit: metaCallLimit ?? null, used: metaCallsUsed, remaining: metaCallLimit === undefined ? null : Math.max(0, metaCallLimit - metaCallsUsed) },
+    metaCallBudget: { limit: metaCallLimit ?? null, used: metaCallBudgetFile ? readBudgetUsage(metaCallBudgetFile, metaCallLimit) : metaCallsUsed, remaining: metaCallLimit === undefined ? null : Math.max(0, metaCallLimit - (metaCallBudgetFile ? readBudgetUsage(metaCallBudgetFile, metaCallLimit) : metaCallsUsed)) },
   });
-  const conversationRequests = new Map<string, number[]>();
+  const apiRequests = new Map<string, number[]>();
   const imageRequests = new Map<string, number[]>();
   return createServer(async (request, response) => {
     const origin = typeof request.headers.origin === 'string' ? request.headers.origin : undefined;
@@ -241,20 +357,20 @@ export function createMetaServer(options: ServerOptions = {}): Server {
       return;
     }
 
-    if (request.url === '/api/conversation' || request.url === '/api/spatial-agent') {
+    {
       if ((origin && !ALLOWED_ORIGINS.has(origin)) || !request.headers['content-type']?.toLowerCase().startsWith('application/json')) {
         writeJson(response, 403, { error: { code: 'INVALID_ORIGIN', message: 'Origem ou tipo de pedido não permitido.' } }, origin);
         return;
       }
       const now = Date.now();
       const peer = request.socket.remoteAddress ?? 'unknown';
-      for (const [key, timestamps] of conversationRequests) if (!timestamps.some((time) => now - time < 60_000)) conversationRequests.delete(key);
-      const recent = (conversationRequests.get(peer) ?? []).filter((time) => now - time < 60_000);
-      if (recent.length >= 20 || conversationRequests.size >= 1000 && !conversationRequests.has(peer)) {
-        writeJson(response, 429, { error: { code: 'RATE_LIMITED', message: 'Limite de conversa atingido. Tente novamente dentro de um minuto.' } }, origin);
+      for (const [key, timestamps] of apiRequests) if (!timestamps.some((time) => now - time < 60_000)) apiRequests.delete(key);
+      const recent = (apiRequests.get(peer) ?? []).filter((time) => now - time < 60_000);
+      if (recent.length >= 20 || apiRequests.size >= 1000 && !apiRequests.has(peer)) {
+        writeJson(response, 429, { error: { code: 'RATE_LIMITED', message: 'Limite de pedidos ao modelo atingido. Tente novamente dentro de um minuto.' } }, origin);
         return;
       }
-      conversationRequests.set(peer, [...recent, now]);
+      apiRequests.set(peer, [...recent, now]);
     }
 
     const started = performance.now();
@@ -279,9 +395,12 @@ export function createMetaServer(options: ServerOptions = {}): Server {
           return;
         }
         const abort = new AbortController();
-        request.once('aborted', () => abort.abort());
-        request.socket.once('close', () => abort.abort());
-        response.once('close', () => { if (!response.writableEnded) abort.abort(); });
+        const onRequestAborted = () => abort.abort();
+        const onSocketClose = () => abort.abort();
+        const onResponseClose = () => { if (!response.writableEnded) abort.abort(); };
+        request.once('aborted', onRequestAborted);
+        request.socket.once('close', onSocketClose);
+        response.once('close', onResponseClose);
         let result: Awaited<ReturnType<typeof requestMetaStructuredText>> | undefined;
         try {
           reserveMetaCall();
@@ -309,6 +428,10 @@ export function createMetaServer(options: ServerOptions = {}): Server {
               : 'SPATIAL_AGENT_INTERNAL_ERROR';
           console.info(JSON.stringify({ event: 'spatial_agent.failed', code, category: failure.category, httpStatus: metaLog?.httpStatus ?? 502, latencyMs: metaLog?.latencyMs ?? Math.round(performance.now() - started), requestId: metaLog?.requestId, usage: metaLog?.usage }));
           writeJson(response, metaLog?.httpStatus === 429 ? 429 : 502, { error: { code, category: failure.category, message: 'A interpretação espacial não passou na validação. A cena não foi alterada.' }, meta: metaLog }, origin);
+        } finally {
+          request.removeListener('aborted', onRequestAborted);
+          request.socket.removeListener('close', onSocketClose);
+          response.removeListener('close', onResponseClose);
         }
         return;
       }
@@ -588,6 +711,10 @@ export function createMetaServer(options: ServerOptions = {}): Server {
       }
       const log = error && typeof error === 'object' && 'log' in error ? (error.log as { httpStatus?: number; latencyMs?: number; requestId?: string; usage?: unknown }) : undefined;
       console.info(JSON.stringify({ event: 'meta.text', status: 'error', httpStatus: log?.httpStatus ?? 500, latencyMs: log?.latencyMs ?? Math.round(performance.now() - started), usage: log?.usage, requestId: log?.requestId }));
+      if (error instanceof Error && error.message.startsWith('META_BUDGET_LOCK_CORRUPT')) {
+        writeJson(response, 503, { error: { code: 'META_BUDGET_LOCK_CORRUPT', message: error.message.split(':').slice(1).join(':').trim() } }, origin);
+        return;
+      }
       const status = log?.httpStatus && log.httpStatus >= 400 && log.httpStatus < 600 ? log.httpStatus : 502;
       writeJson(response, status, { error: { code: 'META_REQUEST_FAILED', message: error instanceof Error ? error.message : 'Falha na chamada Meta.' }, meta: log }, origin);
     }

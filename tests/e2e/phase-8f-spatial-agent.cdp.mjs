@@ -6,9 +6,10 @@ import WebSocket from 'ws';
 const baseUrl = process.env.UNFOLD_E2E_URL ?? 'http://127.0.0.1:5193';
 const debugUrl = process.env.UNFOLD_CDP_URL ?? 'http://127.0.0.1:9226';
 const outputDir = resolve(process.env.UNFOLD_EVIDENCE_DIR ?? 'reports/phase-8f/evidence');
-const scenePath = resolve('reports/phase-8d/evidence/plan-1d78e739dad5.spatial-scene.json');
+const scenePath = resolve(process.env.UNFOLD_SCENE_FIXTURE ?? 'reports/phase-8d/evidence/plan-1d78e739dad5.spatial-scene.json');
 await mkdir(outputDir, { recursive: true });
 const seed = await readFile(scenePath, 'utf8');
+const expectedComponentCount = JSON.parse(seed).scene.nodes.length;
 const targetResponse = await fetch(`${debugUrl}/json/new?about:blank`, { method: 'PUT' });
 assert.equal(targetResponse.status, 200, 'Chromium de teste via CDP não está disponível.');
 const target = await targetResponse.json();
@@ -18,6 +19,7 @@ let nextId = 0;
 const pending = new Map();
 const errors = [];
 const calls = [];
+const unexpectedRequests = [];
 let selectedId;
 socket.on('message', (raw) => {
   const message = JSON.parse(raw.toString());
@@ -38,8 +40,11 @@ socket.on('message', (raw) => {
       } else {
         result = { schema: 'spatial_agent_result.v1', kind: 'PROPOSE_ACTION', text: 'Proponho aumentar em 0,50 m a parede seleccionada.', basis: 'scene', evidenceIds: selectedId ? [selectedId] : [], question: null, action: { kind: 'Resize', target: { reference: 'selected', label: null, ordinal: null }, value: 0.5, valueMode: 'increase_by', unit: 'm', axis: null, opening: null } };
       }
-      const body = Buffer.from(JSON.stringify({ result, sceneRevisionId: request.scene?.revisionId ?? null, meta: { model: 'muse-spark-1.3', requestId: `offline-cdp-${calls.length}` } })).toString('base64');
+      const body = Buffer.from(JSON.stringify({ result, sceneRevisionId: request.scene?.revisionId ?? null, meta: { provider: 'test_fixture', requestId: `offline-cdp-${calls.length}` } })).toString('base64');
       void cdp('Fetch.fulfillRequest', { requestId: message.params.requestId, responseCode: 200, responseHeaders: [{ name: 'content-type', value: 'application/json' }], body });
+    } else {
+      unexpectedRequests.push(message.params.request.url);
+      void cdp('Fetch.fulfillRequest', { requestId: message.params.requestId, responseCode: 599, responseHeaders: [{ name: 'content-type', value: 'application/json' }], body: Buffer.from('{"error":{"code":"UNEXPECTED_E2E_REQUEST"}}').toString('base64') });
     }
   }
   if (message.method === 'Runtime.exceptionThrown') errors.push(message.params.exceptionDetails.text);
@@ -70,16 +75,20 @@ async function screenshot(name) {
   const shot = await cdp('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false, fromSurface: true });
   await writeFile(resolve(outputDir, name), Buffer.from(shot.data, 'base64'));
 }
+const renderBounds = (nodeId) => evaluate(`window.__unfoldSpatialInspect?.(${JSON.stringify(nodeId)}) ?? null`);
 
-const result = { browser: 'Chromium headless via CDP', baseUrl, sourceScene: scenePath, sourceSceneClassification: '8D tracing; unreviewed geometry, offline E2E seed only', MetaCalls: 0, responseMode: 'browser-intercepted deterministic fixtures; not live Muse validation', calls, checks: [], screenshots: [], errors };
+const result = { baseUrl, sourceScene: scenePath, sourceSceneClassification: '8D tracing; unreviewed geometry, offline E2E seed only', MetaCalls: 0, responseMode: 'browser-intercepted deterministic fixtures; not live Muse validation', calls, unexpectedRequests, checks: [], screenshots: [], errors };
 try {
   await cdp('Page.enable'); await cdp('Runtime.enable'); await cdp('Network.enable'); await cdp('Fetch.enable', { patterns: [{ urlPattern: `${baseUrl}/api/*`, requestStage: 'Request' }] });
+  const browserInfo = await cdp('Browser.getVersion');
+  assert.doesNotMatch(browserInfo.userAgent, /Headless/i, 'acceptance evidence must come from a headed browser');
+  result.browser = { product: browserInfo.product, userAgent: browserInfo.userAgent };
   await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 960, deviceScaleFactor: 1, mobile: false });
-  await cdp('Page.navigate', { url: `${baseUrl}/demo` });
+  await cdp('Page.navigate', { url: `${baseUrl}/demo?spatial-test=1` });
   await waitFor(`document.querySelector('#demo-open-spatial')`);
   await evaluate(`localStorage.setItem('unfold-spatial-scene.v1',${JSON.stringify(seed)})`);
   await click('#demo-open-spatial'); await click('#demo-open-spatial');
-  await waitFor(`document.querySelector('.spatial-lab') && document.querySelectorAll('#component-list [data-scene-node]').length===4`);
+  await waitFor(`document.querySelector('.spatial-lab') && document.querySelectorAll('#component-list [data-scene-node]').length===${expectedComponentCount}`);
   const wallId = await evaluate(`document.querySelector('#component-list [data-scene-node]')?.dataset.sceneNode`);
   await click(`[data-scene-node="${wallId}"]`);
   const before = await evaluate(`JSON.parse(localStorage.getItem('unfold-spatial-scene.v1'))`);
@@ -88,6 +97,8 @@ try {
   assert.equal(await evaluate(`document.querySelector('.demo-spatial-host')?.dataset.cameraView`), 'focus');
   await screenshot('01-spatial-agent-scene-selected.png'); result.screenshots.push('01-spatial-agent-scene-selected.png');
   await click('#iso-view'); await waitFor(`document.querySelector('.demo-spatial-host')?.dataset.cameraView==='isometric'`);
+  const renderer = await evaluate(`(()=>{const canvas=document.querySelector('.spatial-lab canvas');const gl=canvas?.getContext('webgl2')||canvas?.getContext('webgl');const ext=gl?.getExtension('WEBGL_debug_renderer_info');return ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):'masked'})()`);
+  result.renderer = renderer;
   await wait(800);
   await screenshot('05-camera-isometric.png'); result.screenshots.push('05-camera-isometric.png');
   await click('#top-view'); await waitFor(`document.querySelector('.demo-spatial-host')?.dataset.cameraView==='top'`);
@@ -107,24 +118,35 @@ try {
   result.preview = preview; result.checks.push('intenção estruturada mockada foi resolvida para a parede seleccionada; preview mantém Scene Graph canónico intacto');
   await screenshot('02-spatial-agent-preview-awaiting-confirmation.png'); result.screenshots.push('02-spatial-agent-preview-awaiting-confirmation.png');
   await click('#commit-preview'); await waitFor(`document.querySelector('#demo-command-state').textContent==='COMPLETE'`);
+  await wait(700);
   const committed = await evaluate(`JSON.parse(localStorage.getItem('unfold-spatial-scene.v1'))`);
   const afterLength = committed.scene.nodes.find((node) => node.id === wallId).geometry.sizeM[0];
-  assert.equal(afterLength, before.scene.nodes.find((node) => node.id === wallId).geometry.sizeM[0] + 0.5);
+  const renderedAfter = await renderBounds(wallId);
+  assert.ok(renderedAfter, 'Three.js mesh corresponding to the wall must remain queryable');
+  assert.ok(Math.abs(Math.max(renderedAfter.size[0], renderedAfter.size[2]) - afterLength) < 0.03, 'rendered Three.js bounds must reflect committed wall length');
+  assert.match(await evaluate(`document.querySelector('#demo-messages').textContent`), /Fixture E2E.*não é resposta live/);
+  assert.ok(Math.abs(afterLength - (before.scene.nodes.find((node) => node.id === wallId).geometry.sizeM[0] + 0.5)) < 1e-9);
   assert.ok(committed.scene.revision.number > before.scene.revision.number);
   result.commit = { before: before.scene.nodes.find((node) => node.id === wallId).geometry.sizeM[0], after: afterLength, revisionBefore: before.scene.revision.number, revisionAfter: committed.scene.revision.number };
-  result.checks.push('confirmação criou revisão real no spatial_scene.v1 e actualizou o modelo Three.js através do executor existente');
+  result.commit.renderedBounds = renderedAfter;
+  result.checks.push('confirmação alterou spatial_scene.v1 e a bounding box real do grupo Three.js correspondeu ao novo comprimento');
   await screenshot('03-spatial-agent-committed.png'); result.screenshots.push('03-spatial-agent-committed.png');
   await command('Desfaz a última alteração.');
   await waitFor(`document.querySelector('#demo-command-state').textContent==='COMPLETE'`);
   const undone = await evaluate(`JSON.parse(localStorage.getItem('unfold-spatial-scene.v1'))`);
   assert.equal(undone.scene.nodes.find((node) => node.id === wallId).geometry.sizeM[0], result.commit.before);
+  await wait(700);
+  const renderedUndone = await renderBounds(wallId);
+  assert.ok(renderedUndone && Math.abs(Math.max(renderedUndone.size[0], renderedUndone.size[2]) - result.commit.before) < 0.03, 'Three.js mesh bounds must return to the pre-edit length after Undo');
+  result.undoRenderedBounds = renderedUndone;
   result.checks.push('Undo interpretado pela fixture foi executado pelo mesmo executor transaccional');
   await screenshot('04-spatial-agent-undone.png'); result.screenshots.push('04-spatial-agent-undone.png');
   await command('O que mudou nesta estrutura?');
   await waitFor(`document.querySelectorAll('#demo-messages .demo-message-assistant').length>=3`);
   const answer = await evaluate(`document.querySelectorAll('#demo-messages .demo-message-assistant p')[2]?.textContent`);
-  assert.match(answer, /0,50 m/);
-  result.contextualAnswer = answer; result.checks.push('resposta contextual fixture não executou operação e aponta a alteração/histórico');
+  assert.match(answer, /A última alteração foi desfeita/);
+  result.contextualAnswer = { text: answer, provider: 'local deterministic grounded answer', reason: 'reports the redo stack after Undo rather than claiming the edit is absent' };
+  result.checks.push('pergunta grounded local reconhece a alteração desfeita e a disponibilidade de redo sem chamar o Muse nem inventar um diff');
   await cdp('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
   await click('#top-view'); await waitFor(`document.querySelector('.demo-spatial-host')?.dataset.cameraView==='top'`);
   await click('#front-view'); await waitFor(`document.querySelector('.demo-spatial-host')?.dataset.cameraView==='front'`);
@@ -133,10 +155,19 @@ try {
   result.mobileLayout = mobileLayout;
   await screenshot('08-mobile-camera-views.png'); result.screenshots.push('08-mobile-camera-views.png');
   await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 960, deviceScaleFactor: 1, mobile: false });
-  assert.equal(calls.length, 3);
+  assert.equal(calls.length, 2);
+  assert.deepEqual(unexpectedRequests, [], 'no unanticipated API route may be silently hidden by interception');
   assert.ok(calls.every((call) => call.sceneRevisionId && call.selectedId === wallId && call.mode === 'architecture'));
   assert.deepEqual(errors, [], 'sem excepções nem erros de consola');
-} finally { socket.close(); }
-result.mockCalls = calls.length;
-await writeFile(resolve(outputDir, 'spatial-agent-e2e.json'), `${JSON.stringify(result, null, 2)}\n`);
+  result.status = 'passed';
+} catch (error) {
+  result.status = 'failed';
+  result.failure = error instanceof Error ? error.message : String(error);
+  throw error;
+} finally {
+  socket.close();
+  await fetch(`${debugUrl}/json/close/${target.id}`).catch(() => undefined);
+  result.mockCalls = calls.length;
+  await writeFile(resolve(outputDir, 'spatial-agent-e2e.json'), `${JSON.stringify(result, null, 2)}\n`);
+}
 console.log(JSON.stringify(result, null, 2));

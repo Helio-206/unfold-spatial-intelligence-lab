@@ -3,9 +3,9 @@ import {
   buildPlanVectorModel, calibrateScale, candidateToWall, consolidateWallCandidates, countClosedCandidateContours, detectCandidateIntersections, detectOrthogonalRoomCandidates, detectWallCandidates,
   mergeWallCandidates, splitWallCandidate, traceWallCandidate, type PixelRaster,
 } from '../src/plan-reconstruction';
-import { addOpeningToScene, createPlanScene, editOpeningInScene, editWallInScene, removeWallFromScene, saveAndRestoreScene, sceneWallLength } from '../src/plan-scene';
+import { addOpeningToScene, createPlanScene, editOpeningInScene, editWallInScene, removeWallFromScene, saveAndRestoreScene, sceneMatchesPlanSource, sceneWallLength } from '../src/plan-scene';
 import { buildThreePlanGroup } from '../src/plan-three-adapter';
-import { executeSceneCommand } from '../src/spatial-scene';
+import { createSceneTransaction, executeSceneCommand, spatialWorldPoseToLocal, spatialWorldTransform, validateSpatialScene } from '../src/spatial-scene';
 import { Raycaster, Vector3 } from 'three';
 
 function raster(width: number, height: number, rectangles: Array<[number, number, number, number]>): PixelRaster {
@@ -17,6 +17,53 @@ function raster(width: number, height: number, rectangles: Array<[number, number
 }
 
 describe('plan reconstruction geometry', () => {
+  it('creates and edits openings using world transforms when their support wall is under a translated and rotated parent', () => {
+    const candidate = traceWallCandidate('hierarchical-wall', { x: 10, y: 20 }, { x: 110, y: 20 }, 4);
+    const base = createPlanScene({
+      sceneId: 'plan-hierarchy', title: 'Parent transform', image: { sha256: 'a'.repeat(64), width: 140, height: 100 },
+      calibration: { pixelDistance: 100, realDistanceMetres: 5, evidence: 'explicit test reference', actor: 'fixture-user' },
+      confirmedCandidateIds: [candidate.id], candidates: [candidate], wall: { heightM: 2.7, thicknessM: 0.15 },
+    });
+    const wallId = `wall-${candidate.id}`;
+    const wall = structuredClone(base.scene.nodes.find((node) => node.id === wallId)!);
+    const group = structuredClone(base.scene.nodes[0]!);
+    group.id = 'group-rotated'; group.label = 'Grupo'; group.nodeType = 'group'; group.component = null; group.geometry = null;
+    group.transform.translationM = [5, 0, 0]; group.transform.rotation = [0, Math.sin(Math.PI / 4), 0, Math.cos(Math.PI / 4)];
+    wall.parentId = group.id;
+    const transformed = createSceneTransaction({ ...base.scene, nodes: [group, wall] });
+    const withOpening = addOpeningToScene(transformed, wallId, { id: 'door-world', kind: 'door', offsetM: 1, widthM: 0.8, heightM: 2, sillM: 0 });
+    const door = withOpening.scene.nodes.find((node) => node.id === 'door-world')!;
+    expect(door.transform.translationM[0]).toBeCloseTo(4);
+    expect(door.transform.translationM[2]).toBeCloseTo(-1.9);
+    const moved = editOpeningInScene(withOpening, 'door-world', { offsetM: 2, widthM: 0.8, heightM: 2, sillM: 0 });
+    expect(moved.scene.nodes.find((node) => node.id === 'door-world')?.transform.translationM[2]).toBeCloseTo(-2.9);
+    const nestedDoor = structuredClone(moved.scene.nodes.find((node) => node.id === 'door-world')!);
+    const nestedPose = spatialWorldPoseToLocal(moved.scene.nodes, group.id, nestedDoor.transform.translationM, nestedDoor.transform.rotation);
+    nestedDoor.parentId = group.id; nestedDoor.transform.translationM = nestedPose.translation; nestedDoor.transform.rotation = nestedPose.rotation;
+    const nestedTransaction = createSceneTransaction({ ...moved.scene, nodes: moved.scene.nodes.map((node) => node.id === nestedDoor.id ? nestedDoor : node) });
+    const editedWall = editWallInScene(nestedTransaction, wallId, { start: { x: 4, y: 0 }, end: { x: 4, y: -6 } });
+    const editedNestedDoor = editedWall.scene.nodes.find((node) => node.id === nestedDoor.id)!;
+    expect(editedNestedDoor.parentId).toBe(group.id);
+    expect(spatialWorldTransform(editedWall.scene.nodes, nestedDoor.id)?.translation[2]).toBeCloseTo(-2.4);
+    expect(() => validateSpatialScene(editedWall.scene)).not.toThrow();
+  });
+
+  it('binds raster scenes to image and document identity, not reusable candidate IDs', () => {
+    const candidate = traceWallCandidate('line-0', { x: 10, y: 20 }, { x: 110, y: 20 }, 4);
+    const scene = createPlanScene({
+      sceneId: 'plan-source-check', title: 'source check',
+      image: { sha256: 'a'.repeat(64), width: 140, height: 100 },
+      technicalDocumentRef: { documentId: 'doc-a', sha256: 'b'.repeat(64) },
+      calibration: { pixelDistance: 100, realDistanceMetres: 2, evidence: 'explicit test reference', actor: 'fixture-user' },
+      confirmedCandidateIds: [candidate.id], candidates: [candidate], wall: { heightM: 2.7, thicknessM: 0.15 },
+    });
+    expect(sceneMatchesPlanSource(scene.scene, { sha256: 'a'.repeat(64) }, { documentId: 'doc-a', sha256: 'b'.repeat(64) })).toBe(true);
+    expect(sceneMatchesPlanSource(scene.scene, { sha256: 'c'.repeat(64) }, { documentId: 'doc-a', sha256: 'b'.repeat(64) })).toBe(false);
+    expect(sceneMatchesPlanSource(scene.scene, { sha256: 'a'.repeat(64) }, { documentId: 'doc-a', sha256: 'd'.repeat(64) })).toBe(false);
+    expect(sceneMatchesPlanSource(scene.scene, { sha256: 'a'.repeat(64) })).toBe(false);
+    expect(scene.scene.nodes.find((node) => node.id === 'wall-line-0')?.component?.properties.sourceCandidate?.value).toBe('line-0');
+  });
+
   it('detects horizontal and vertical wall candidates from a new raster without image-specific coordinates', () => {
     const candidates = detectWallCandidates(raster(140, 100, [[10, 20, 115, 24], [35, 24, 39, 82]]), { minimumLengthPx: 30 });
     expect(candidates.some(({ orientation }) => orientation === 'horizontal')).toBe(true);
@@ -171,6 +218,19 @@ describe('plan reconstruction geometry', () => {
     expect(widened.scene.nodes.find((node) => node.id === 'door-main')?.component?.properties.width.value).toBe(1);
     expect(executeSceneCommand(widened, { type: 'Undo' }).transaction.scene.nodes).toEqual(withDoor.scene.nodes);
     expect(() => editOpeningInScene(withDoor, 'door-main', { offsetM: 5, widthM: 1, heightM: 2, sillM: 0 })).toThrow('excede');
+    const confirmedScene = structuredClone(withDoor.scene);
+    const confirmedOpening = confirmedScene.nodes.find((node) => node.id === 'door-main')!;
+    const confirmed = { source: 'user' as const, validation: 'verified' as const, actor: 'reviewer', evidence: 'Inspeccionado pelo utilizador.', recordedAt: '2026-10-31T00:02:00.000Z' };
+    confirmedOpening.geometry!.provenance = confirmed;
+    confirmedOpening.transform.provenance.translationM = confirmed;
+    confirmedOpening.transform.provenance.rotation = confirmed;
+    for (const property of Object.values(confirmedOpening.component!.properties)) property.provenance = confirmed;
+    const verifiedDoorTransaction = createSceneTransaction(confirmedScene);
+    expect(() => editOpeningInScene(verifiedDoorTransaction, 'door-main', { offsetM: 1, widthM: 0.9, heightM: 2.05, sillM: 0 })).toThrow('REQUIRES_ACKNOWLEDGEMENT');
+    const acknowledgedOpening = editOpeningInScene(verifiedDoorTransaction, 'door-main', { offsetM: 1, widthM: 0.9, heightM: 2.05, sillM: 0, acknowledgeVerifiedChange: true, actor: 'reviewer' });
+    expect(acknowledgedOpening.scene.nodes.find((node) => node.id === 'door-main')?.component?.properties.width?.provenance).toMatchObject({ validation: 'corrected', sourceValue: 0.8, actor: 'reviewer' });
+    expect(acknowledgedOpening.scene.nodes.find((node) => node.id === 'door-main')?.component?.properties.height?.provenance).toEqual(confirmed);
+    expect(acknowledgedOpening.scene.nodes.find((node) => node.id === 'door-main')?.transform.provenance.rotation).toEqual(confirmed);
     const oldLength = sceneWallLength(withDoor.scene, wallId);
     const wall = withDoor.scene.nodes.find((node) => node.id === wallId)!;
     const originalDoorX = withDoor.scene.nodes.find((node) => node.id === 'door-main')!.transform.translationM[0];
@@ -196,6 +256,19 @@ describe('plan reconstruction geometry', () => {
     expect(door.transform.translationM[0]).toBeCloseTo(originalDoorX + 0.5);
     expect(door.component?.properties.offset?.value).toBe(1);
     expect(saveAndRestoreScene(edited).scene).toEqual(edited.scene);
+    const confirmedSource = structuredClone(withDoor.scene);
+    const confirmedWall = confirmedSource.nodes.find((node) => node.id === wallId)!;
+    confirmedWall.component!.properties.length!.provenance = { source: 'user', validation: 'verified', actor: 'reviewer', evidence: 'Comprimento confirmado manualmente.', recordedAt: '2026-10-31T00:02:00.000Z' };
+    const confirmedDoor = confirmedSource.nodes.find((node) => node.id === 'door-main')!;
+    confirmedDoor.transform.provenance.translationM = { source: 'user', validation: 'verified', actor: 'reviewer', evidence: 'Posição confirmada manualmente.', recordedAt: '2026-10-31T00:02:00.000Z' };
+    const confirmedTransaction = createSceneTransaction(confirmedSource);
+    expect(() => editWallInScene(confirmedTransaction, wallId, { start: { x: start.x + 0.5, y: start.y }, end })).toThrow('CONFIRMED_WALL_CHANGE_REQUIRES_ACKNOWLEDGEMENT');
+    const acknowledged = editWallInScene(confirmedTransaction, wallId, { start: { x: start.x + 0.5, y: start.y }, end, acknowledgeVerifiedChange: true, actor: 'reviewer' });
+    const acknowledgedWall = acknowledged.scene.nodes.find((node) => node.id === wallId)!;
+    expect(acknowledgedWall.component!.properties.length!.provenance).toMatchObject({ validation: 'corrected', sourceValue: oldLength, actor: 'reviewer' });
+    expect(acknowledgedWall.component!.properties.height!.provenance.validation).toBe('unreviewed');
+    const acknowledgedDoor = acknowledged.scene.nodes.find((node) => node.id === 'door-main')!;
+    expect(acknowledgedDoor.transform.provenance.translationM).toMatchObject({ validation: 'corrected', sourceValue: withDoor.scene.nodes.find((node) => node.id === 'door-main')!.transform.translationM });
     const threeGroup = buildThreePlanGroup(edited.scene);
     expect(threeGroup.children.map((child) => child.name)).toEqual([wallId, 'door-main']);
     const wallMesh = threeGroup.getObjectByName(wallId)?.children[0] as import('three').Mesh;
@@ -228,6 +301,44 @@ describe('plan reconstruction geometry', () => {
     expect(redone.scene.nodes).toEqual(edited.scene.nodes);
   });
 
+  it('rejects room polygons with incomplete bindings or zero planar area', () => {
+    const points = [[10, 10], [110, 10], [110, 90], [10, 90]] as const;
+    const candidates = points.map((point, index) => traceWallCandidate(
+      'edge-' + index,
+      { x: point[0], y: point[1] },
+      { x: points[(index + 1) % points.length]![0], y: points[(index + 1) % points.length]![1] },
+      6,
+    ));
+    const region = {
+      id: 'room-rect', boundaryCandidateIds: candidates.map((candidate) => candidate.id),
+      vertices: points.map(([x, y]) => ({ x, y })), areaPx2: 8000, validation: 'unreviewed' as const,
+      eligibility: 'construction_candidate' as const, confidence: 0.9, evidence: ['ciclo fechado'],
+      topologyMethod: 'closed_segment_graph' as const,
+    };
+    const transaction = createPlanScene({
+      sceneId: 'plan-topology', title: 'Room topology', image: { sha256: 'b'.repeat(64), width: 140, height: 100 },
+      calibration: { pixelDistance: 100, realDistanceMetres: 5, evidence: 'fixture de calibração', actor: 'test-fixture' },
+      confirmedCandidateIds: [], confirmedRegionIds: [region.id], regions: [region], candidates,
+      wall: { heightM: 2.7, thicknessM: 0.15 },
+    });
+    const room = transaction.scene.nodes.find((node) => node.component?.kind === 'room')!;
+    expect(room.component?.dependsOn).toHaveLength(4);
+    expect(validateSpatialScene(transaction.scene)).toEqual(transaction.scene);
+    const displacedRoom = structuredClone(transaction.scene);
+    displacedRoom.nodes.find((node) => node.id === room.id)!.transform.translationM = [3, 0, 0];
+    expect(() => validateSpatialScene(displacedRoom)).toThrow('SCENE_ROOM_BOUNDARY_STALE');
+    const incomplete = structuredClone(transaction.scene);
+    const incompleteRoom = incomplete.nodes.find((node) => node.id === room.id)!;
+    const refs = JSON.parse(String(incompleteRoom.component!.properties.boundaryRefs!.value)) as Array<{ wallId: string }>;
+    incompleteRoom.component!.properties.boundaryRefs!.value = JSON.stringify(refs.slice(1));
+    expect(() => validateSpatialScene(incomplete)).toThrow('SCENE_ROOM_BOUNDARY_BINDINGS_INCOMPLETE');
+    const degenerate = structuredClone(transaction.scene);
+    const degenerateRoom = degenerate.nodes.find((node) => node.id === room.id)!;
+    if (degenerateRoom.geometry?.kind !== 'polygon') throw new Error('Room polygon expected.');
+    degenerateRoom.geometry.verticesM = degenerateRoom.geometry.verticesM.map((_, index) => [index, 0, 0]);
+    expect(() => validateSpatialScene(degenerate)).toThrow('SCENE_ROOM_POLYGON_DEGENERATE');
+  });
+
   it('materializes confirmed image-derived regions as shared parametric walls and editable room polygons', () => {
     const candidates = [
       traceWallCandidate('top-left', { x: 10, y: 10 }, { x: 100, y: 10 }, 6),
@@ -258,11 +369,19 @@ describe('plan reconstruction geometry', () => {
     if (wall.geometry?.kind !== 'box') throw new Error('Parede da fixture deve ser uma caixa paramétrica.');
     const half = wall.geometry.sizeM[0] / 2;
     const dx = Math.cos(angle) * half; const dz = -Math.sin(angle) * half;
-    const edited = editWallInScene(scene, wall.id, { start: { x: wall.transform.translationM[0] - dx, y: wall.transform.translationM[2] - dz }, end: { x: wall.transform.translationM[0] + dx + 0.15, y: wall.transform.translationM[2] + dz }, actor: 'test-fixture' });
-    const updatedRoom = edited.scene.nodes.find((node) => node.id === room.id)!;
-    expect(updatedRoom.geometry).not.toEqual(beforeFloor);
-    expect(edited.undoStack).toHaveLength(scene.undoStack.length + 1);
-    expect(executeSceneCommand(edited, { type: 'Undo' }).transaction.scene.nodes.find((node) => node.id === room.id)?.geometry).toEqual(beforeFloor);
-    expect(executeSceneCommand(executeSceneCommand(edited, { type: 'Undo' }).transaction, { type: 'Redo' }).transaction.scene.nodes.find((node) => node.id === room.id)?.geometry).toEqual(updatedRoom.geometry);
+    const attempted = { start: { x: wall.transform.translationM[0] - dx, y: wall.transform.translationM[2] - dz }, end: { x: wall.transform.translationM[0] + dx + 0.15, y: wall.transform.translationM[2] + dz } };
+    expect(() => editWallInScene(scene, wall.id, { ...attempted, actor: 'test-fixture' })).toThrow('SCENE_ROOM_BOUNDARY_STALE');
+    expect(scene.scene.nodes.find((node) => node.id === room.id)?.geometry).toEqual(beforeFloor);
+    expect(scene.scene.revision.number).toBe(0);
+
+    const constrainedScene = validateSpatialScene({
+      ...scene.scene,
+      constraints: [{ id: 'room-wall-alignment', kind: 'custom', nodeIds: [wall.id, room.id], value: null, unit: null, provenance: room.geometry!.provenance }],
+    });
+    const constrainedTransaction = createSceneTransaction(constrainedScene);
+    expect(() => editWallInScene(constrainedTransaction, wall.id, { ...attempted, actor: 'test-fixture' })).toThrow('GEOMETRIC_CONSTRAINT_REQUIRES_SOLVER:room-wall-alignment');
+    expect(constrainedTransaction.scene.nodes.find((node) => node.id === wall.id)?.geometry).toEqual(wall.geometry);
+    expect(constrainedTransaction.scene.nodes.find((node) => node.id === room.id)?.geometry).toEqual(beforeFloor);
+    expect(constrainedTransaction.scene.revision.number).toBe(0);
   });
 });

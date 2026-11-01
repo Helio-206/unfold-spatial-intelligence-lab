@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import type { Node, SpatialSceneV1 } from './spatial-scene';
 
-const wallMaterial = new THREE.MeshStandardMaterial({ color: 0xc9c5b8, roughness: 0.88 });
+const wallFallbackMaterial = new THREE.MeshStandardMaterial({ color: 0xd2cdc1, roughness: 0.91 });
 const doorMaterial = new THREE.MeshStandardMaterial({ color: 0x765237, roughness: 0.64 });
-const windowMaterial = new THREE.MeshStandardMaterial({ color: 0x597f89, metalness: 0.18, roughness: 0.18, transparent: true, opacity: 0.72 });
-const genericMaterial = new THREE.MeshStandardMaterial({ color: 0x777d78, roughness: 0.72 });
+const windowMaterial = new THREE.MeshPhysicalMaterial({ color: 0xa9c3c4, metalness: 0.08, roughness: 0.16, transparent: true, opacity: 0.48, transmission: 0.16, thickness: 0.025 });
+const floorMaterial = new THREE.MeshStandardMaterial({ color: 0xb9b09f, roughness: 0.91, side: THREE.DoubleSide });
+const genericMaterial = new THREE.MeshStandardMaterial({ color: 0x9d9b92, roughness: 0.78 });
 
 export const ARCHITECTURAL_MODULE_DIMENSIONS: Record<string, [number, number, number]> = {
   wall_ext_3000: [3, 2.8, 0.2],
@@ -19,6 +20,9 @@ export type ArchitecturalAssets = Partial<Record<keyof typeof ARCHITECTURAL_MODU
 
 function markSharedAsset(object: THREE.Object3D): THREE.Object3D {
   object.userData.sharedAsset = true;
+  object.traverse((child) => {
+    if (child instanceof THREE.Mesh) { child.castShadow = true; child.receiveShadow = true; }
+  });
   return object;
 }
 
@@ -32,6 +36,16 @@ function rectangle(x0: number, y0: number, x1: number, y1: number): THREE.Path {
   return path;
 }
 
+function assetSurfaceMaterial(asset: THREE.Object3D | undefined): THREE.Material | undefined {
+  let result: THREE.Material | undefined;
+  asset?.traverse((object) => {
+    if (result || !(object instanceof THREE.Mesh)) return;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    result = materials.find((material) => material instanceof THREE.MeshStandardMaterial || material instanceof THREE.MeshPhysicalMaterial);
+  });
+  return result;
+}
+
 function wallMesh(node: Node, openings: Node[], assets: ArchitecturalAssets): THREE.Object3D | undefined {
   if (node.geometry?.kind !== 'box') return undefined;
   const [length, height, thickness] = node.geometry.sizeM;
@@ -42,12 +56,13 @@ function wallMesh(node: Node, openings: Node[], assets: ArchitecturalAssets): TH
     wall.position.set(-1.5 * scale[0]!, 0, 0);
     return wall;
   }
+  const bevel = openings.length ? 0 : Math.min(0.005, thickness * 0.04, length * 0.0015, height * 0.0015);
   const shape = new THREE.Shape();
-  shape.moveTo(-length / 2, 0);
-  shape.lineTo(-length / 2, height);
-  shape.lineTo(length / 2, height);
-  shape.lineTo(length / 2, 0);
-  shape.lineTo(-length / 2, 0);
+  shape.moveTo(-length / 2 + bevel, bevel);
+  shape.lineTo(-length / 2 + bevel, height - bevel);
+  shape.lineTo(length / 2 - bevel, height - bevel);
+  shape.lineTo(length / 2 - bevel, bevel);
+  shape.lineTo(-length / 2 + bevel, bevel);
   for (const opening of openings) {
     const offset = opening.component?.properties.offset?.value;
     const width = opening.component?.properties.width?.value;
@@ -59,9 +74,13 @@ function wallMesh(node: Node, openings: Node[], assets: ArchitecturalAssets): TH
     if (x0 < -length / 2 || x1 > length / 2 || Number(sill) < 0 || Number(sill) + Number(openingHeight) > height) continue;
     shape.holes.push(rectangle(x0, Number(sill), x1, Number(sill) + Number(openingHeight)));
   }
-  const geometry = new THREE.ExtrudeGeometry(shape, { depth: thickness, bevelEnabled: false, curveSegments: 1, steps: 1 });
-  geometry.translate(0, 0, -thickness / 2);
-  return new THREE.Mesh(geometry, wallMaterial);
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth: thickness - 2 * bevel, bevelEnabled: bevel > 0.001, bevelSegments: 1, bevelThickness: bevel, bevelSize: bevel, curveSegments: 1, steps: 1 });
+  geometry.translate(0, 0, -thickness / 2 + bevel);
+  const material = assetSurfaceMaterial(assets.wall_ext_3000) ?? wallFallbackMaterial;
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
 }
 
 function componentMesh(node: Node, assets: ArchitecturalAssets): THREE.Object3D | undefined {
@@ -104,11 +123,19 @@ function componentMesh(node: Node, assets: ArchitecturalAssets): THREE.Object3D 
     shape.moveTo(vertices[0]![0], vertices[0]![2]);
     for (const vertex of vertices.slice(1)) shape.lineTo(vertex[0], vertex[2]);
     shape.closePath();
-    geometry = new THREE.ShapeGeometry(shape);
+    geometry = node.component?.kind === 'room'
+      ? new THREE.ExtrudeGeometry(shape, { depth: 0.025, bevelEnabled: true, bevelSegments: 1, bevelSize: 0.004, bevelThickness: 0.004, curveSegments: 1, steps: 1 })
+      : new THREE.ShapeGeometry(shape);
     geometry.rotateX(Math.PI / 2);
   } else return undefined;
-  const material = node.component?.kind === 'door' ? doorMaterial : node.component?.kind === 'window' ? windowMaterial : genericMaterial;
-  return new THREE.Mesh(geometry, material);
+  const material = node.component?.kind === 'door' ? doorMaterial
+    : node.component?.kind === 'window' ? windowMaterial
+      : node.component?.kind === 'room' ? floorMaterial : genericMaterial;
+  const mesh = new THREE.Mesh(geometry, material);
+  if (node.component?.kind === 'room') mesh.userData.visualClassification = 'suggested_finish';
+  mesh.castShadow = node.component?.kind !== 'room';
+  mesh.receiveShadow = true;
+  return mesh;
 }
 
 function applyTransform(object: THREE.Object3D, node: Node): void {

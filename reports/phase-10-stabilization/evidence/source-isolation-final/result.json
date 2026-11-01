@@ -1,0 +1,28 @@
+{
+  "sourceA": {
+    "path": "/home/helio/HEr/META/unfold-app-phase-9/reports/phase-7e4/evidence/architecture-source.png",
+    "sha256": "54f4162e73cc1563b403a18a56ece8a99dc8d98e27c6edc48663a645cb8f0fc8"
+  },
+  "sourceB": {
+    "path": "/tmp/codex-remote-attachments/01a18850-a908-73c0-bcd7-d47d1cdf75db/D315F7CD-F25B-4809-8995-0CD1129B7634/1-Photo-1.jpg",
+    "sha256": "8b85b3f98620257932a2ef20a48f628a659e27f37ea5c61576c9ff80fcad1488"
+  },
+  "metaCalls": 0,
+  "assertions": [
+    "candidate ID recycling across two real images does not cross-link or select the prior scene",
+    "spatial command is blocked before network, preview, mutation, or persistence",
+    "direct inspector edit is blocked and previous canonical revision remains unchanged"
+  ],
+  "apiRequests": [],
+  "errors": [],
+  "browser": {
+    "product": "Chrome/155.0.8059.84",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+  },
+  "recycledCandidateId": "line-0",
+  "beforeRevision": "plan-54f4162e73cc:r0",
+  "beforeWallIds": [
+    "wall-line-0"
+  ],
+  "passed": true
+}

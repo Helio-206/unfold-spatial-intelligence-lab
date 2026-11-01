@@ -50,6 +50,12 @@ export type SpatialAgentResultV1 =
   | { schema: typeof SPATIAL_AGENT_RESULT_SCHEMA; kind: 'PROPOSE_ACTION'; text: string; basis: 'scene' | 'document' | 'history' | 'general' | 'unknown'; evidenceIds: string[]; question: null; action: SpatialAgentAction }
   | { schema: typeof SPATIAL_AGENT_RESULT_SCHEMA; kind: 'REQUEST_CLARIFICATION'; text: string; basis: 'scene' | 'document' | 'history' | 'general' | 'unknown'; evidenceIds: string[]; question: string; action: null };
 
+export type SpatialAgentContextToken = { sceneGeneration: number; sceneId: string | null; revisionId: string | null; selectedNodeId: string | null };
+export function spatialAgentContextIsCurrent(expected: SpatialAgentContextToken, actual: SpatialAgentContextToken): boolean {
+  return expected.sceneGeneration === actual.sceneGeneration && expected.sceneId === actual.sceneId
+    && expected.revisionId === actual.revisionId && expected.selectedNodeId === actual.selectedNodeId;
+}
+
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
 const ACTIONS = new Set<SpatialAgentAction['kind']>(['Select', 'Inspect', 'Focus', 'Move', 'Rotate', 'Resize', 'AddOpening', 'RemoveOpening', 'Undo', 'Redo', 'Save', 'Restore']);
 const REFERENCES = new Set<SpatialAgentAction['target']['reference']>(['selected', 'label', 'ordinal', 'visual_left', 'visual_right', 'none']);

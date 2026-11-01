@@ -1,11 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import { spawn, type ChildProcess } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createMetaServer } from '../server/meta-server';
 import { createPhase3DReferenceFixture } from '../src/phase3d-fixture';
 
-const validJpegDataUrl = 'data:image/jpeg;base64,/9j/4AA=';
+const validJpegDataUrl = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAgAAAQABAAD//gAPTGF2YzYxLjMuMTAwAP/bAEMACAQEBAQEBQUFBQUFBgYGBgYGBgYGBgYGBgcHBwgICAcHBwYGBwcICAgICQkJCAgICAkJCgoKDAwLCw4ODhERFP/EAEsAAQEAAAAAAAAAAAAAAAAAAAAHAQEAAAAAAAAAAAAAAAAAAAAAEAEAAAAAAAAAAAAAAAAAAAAAEQEAAAAAAAAAAAAAAAAAAAAA/8AAEQgACAAIAwEiAAIRAAMRAP/aAAwDAQACEQMRAD8Av4AP/9k=';
+function initializeTestBudget(path: string, limit: number): void { writeFileSync(path, JSON.stringify({ limit, used: 0 }) + '\n', { mode: 0o600, flag: 'wx' }); }
 
 function technicalDocument(domain: string, label: string, rawValue: string | null = null, unit: string | null = null) {
   const kind = domain === 'mechanical' ? 'bar' : 'room_or_component';
@@ -50,7 +54,9 @@ describe('phase 3D backend route', () => {
   });
 
   it('exposes explicit diagnostics without leaking the key and reports the bounded call budget', async () => {
-    const server = createMetaServer({ apiKey: 'fixture-secret-must-not-appear', maxMetaCalls: 2 });
+    const directory = mkdtempSync(join(tmpdir(), 'unfold-budget-diagnostics-'));
+    const budgetFile = join(directory, 'budget.json'); initializeTestBudget(budgetFile, 2);
+    const server = createMetaServer({ apiKey: 'fixture-secret-must-not-appear', maxMetaCalls: 2, metaCallBudgetFile: budgetFile });
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('Porta de teste indisponível.');
@@ -62,12 +68,76 @@ describe('phase 3D backend route', () => {
       expect(JSON.parse(text)).toMatchObject({ contractVersion: 'unfold.backend.v1', pipelineVersion: 'unfold.image_pipeline.ab.v2', recognitionSchemaVersion: 'technical_recognition.v2', metaCallBudget: { limit: 2, used: 0, remaining: 2 }, capabilities: { imageAnalysis: { apiKeyConfigured: true, responseContract: 'unfold.image_analysis.v1' } } });
     } finally {
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects a hard call limit without a durable shared budget file', () => {
+    expect(() => createMetaServer({ apiKey: 'fixture-only', maxMetaCalls: 1 })).toThrow('UNFOLD_ACCEPTANCE_BUDGET_FILE');
+  });
+
+  it('fails closed instead of treating a missing configured ledger as a fresh budget', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'unfold-budget-missing-'));
+    try { expect(() => createMetaServer({ apiKey: 'fixture-only', maxMetaCalls: 1, metaCallBudgetFile: join(directory, 'deleted-ledger.json') })).toThrow('META_CALL_BUDGET_FILE_MISSING'); }
+    finally { rmSync(directory, { recursive: true, force: true }); }
+  });
+
+  it('fails fast with an actionable error for a stale truncated budget lock', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'unfold-budget-corrupt-lock-'));
+    const budgetFile = join(directory, 'budget.json');
+    initializeTestBudget(budgetFile, 1);
+    writeFileSync(`${budgetFile}.lock`, '');
+    const old = new Date(Date.now() - 5000);
+    utimesSync(`${budgetFile}.lock`, old, old);
+    const server = createMetaServer({ apiKey: 'fixture-only', fetchImpl: vi.fn<typeof fetch>(), maxMetaCalls: 1, metaCallBudgetFile: budgetFile });
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('Porta de teste indisponível.');
+    try {
+      const before = Date.now();
+      const response = await fetch(`http://127.0.0.1:${address.port}/api/meta/text`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prompt: 'test' }) });
+      expect(response.status).toBe(503);
+      expect(Date.now() - before).toBeLessThan(1500);
+      expect((await response.json()).error.code).toBe('META_BUDGET_LOCK_CORRUPT');
+    } finally {
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it('recovers a stale budget-lock reclaimer left by a dead process', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'unfold-budget-stale-reclaimer-'));
+    const budgetFile = join(directory, 'budget.json');
+    initializeTestBudget(budgetFile, 1);
+    const lockPath = `${budgetFile}.lock`;
+    const reclaimPath = `${lockPath}.reclaim`;
+    const oldIso = new Date(Date.now() - 5_000).toISOString();
+    const old = new Date(Date.now() - 5_000);
+    writeFileSync(lockPath, JSON.stringify({ pid: 2_147_483_647, createdAt: oldIso }));
+    utimesSync(lockPath, old, old);
+    mkdirSync(reclaimPath);
+    writeFileSync(`${reclaimPath}/owner.json`, JSON.stringify({ pid: 2_147_483_646, createdAt: oldIso }));
+    utimesSync(reclaimPath, old, old);
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(metaOutput('ok', 'after-stale-reclaimer'));
+    const server = createMetaServer({ apiKey: 'fixture-only', fetchImpl: fetchMock, maxMetaCalls: 1, metaCallBudgetFile: budgetFile });
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('Porta de teste indisponível.');
+    try {
+      const response = await fetch(`http://127.0.0.1:${address.port}/api/meta/text`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prompt: 'test' }) });
+      expect(response.status).toBe(200);
+      expect(fetchMock).toHaveBeenCalledOnce();
+      expect(JSON.parse(readFileSync(budgetFile, 'utf8'))).toMatchObject({ limit: 1, used: 1 });
+    } finally {
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+      rmSync(directory, { recursive: true, force: true });
     }
   });
 
   it('keeps the acceptance call budget across a backend restart', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'unfold-budget-'));
     const budgetFile = join(directory, 'budget.json');
+    initializeTestBudget(budgetFile, 1);
     const serverFor = (fetchImpl: typeof fetch) => createMetaServer({ apiKey: 'fixture-only', fetchImpl, maxMetaCalls: 1, metaCallBudgetFile: budgetFile });
     const send = (port: number) => fetch(`http://127.0.0.1:${port}/api/meta/text`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prompt: 'test' }) });
     const start = async (server: ReturnType<typeof createMetaServer>) => {
@@ -94,6 +164,73 @@ describe('phase 3D backend route', () => {
         expect(providerMustNotRun).not.toHaveBeenCalled();
       } finally { await stop(restartedServer); }
     } finally { rmSync(directory, { recursive: true, force: true }); }
+  });
+
+  it('enforces one shared file-backed Meta call slot across concurrently active server instances', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'unfold-budget-concurrent-'));
+    const budgetFile = join(directory, 'budget.json');
+    initializeTestBudget(budgetFile, 1);
+    const provider = vi.fn<typeof fetch>().mockResolvedValue(metaOutput('ok', 'shared-budget-call'));
+    const servers = [0, 1].map(() => createMetaServer({ apiKey: 'fixture-only', fetchImpl: provider, maxMetaCalls: 1, metaCallBudgetFile: budgetFile }));
+    const ports: number[] = [];
+    try {
+      for (const server of servers) {
+        await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+        const address = server.address();
+        if (!address || typeof address === 'string') throw new Error('Porta de teste indisponível.');
+        ports.push(address.port);
+      }
+      const responses = await Promise.all(ports.map((port) => fetch(`http://127.0.0.1:${port}/api/meta/text`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prompt: 'test' }) })));
+      expect(responses.map((response) => response.status).sort()).toEqual([200, 429]);
+      expect(provider).toHaveBeenCalledOnce();
+      expect(JSON.parse(readFileSync(budgetFile, 'utf8'))).toMatchObject({ limit: 1, used: 1 });
+    } finally {
+      await Promise.all(servers.map((server) => new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()))));
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps stale-lock recovery and the hard budget serialized across OS processes', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'unfold-budget-processes-'));
+    const budgetFile = join(directory, 'budget.json');
+    initializeTestBudget(budgetFile, 1);
+    const lockPath = budgetFile + '.lock';
+    const old = new Date(Date.now() - 5000).toISOString();
+    writeFileSync(lockPath, JSON.stringify({ pid: 2147483647, createdAt: old }));
+    const stale = new Date(Date.now() - 5000);
+    utimesSync(lockPath, stale, stale);
+    const workerFile = fileURLToPath(new URL('./meta-budget-worker.mjs', import.meta.url));
+    const workers: ChildProcess[] = [];
+    const ready = (worker: ChildProcess) => new Promise<number>((resolve, reject) => {
+      let output = '';
+      const timer = setTimeout(() => reject(new Error('Worker readiness timeout: ' + output)), 10_000);
+      worker.stdout!.on('data', (chunk: Buffer) => {
+        output += chunk.toString();
+        const line = output.split('\n')[0];
+        if (!line) return;
+        clearTimeout(timer);
+        try { resolve(JSON.parse(line).port as number); } catch (error) { reject(error); }
+      });
+      worker.once('error', reject);
+      worker.once('exit', (code) => reject(new Error('Worker exited before readiness (' + code + ').')));
+    });
+    try {
+      const ports = await Promise.all([0, 1].map(async () => {
+        const worker = spawn(process.execPath, ['--import', 'tsx', workerFile], { env: { ...process.env, UNFOLD_TEST_BUDGET_FILE: budgetFile }, stdio: ['ignore', 'pipe', 'pipe'] });
+        workers.push(worker);
+        return ready(worker);
+      }));
+      const results = await Promise.all(ports.map(async (port) => {
+        const response = await fetch('http://127.0.0.1:' + port + '/api/meta/text', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prompt: 'test' }) });
+        return response.status;
+      }));
+      expect(results.sort()).toEqual([200, 429]);
+      expect(JSON.parse(readFileSync(budgetFile, 'utf8'))).toMatchObject({ limit: 1, used: 1 });
+    } finally {
+      for (const worker of workers) worker.kill('SIGTERM');
+      await Promise.all(workers.map((worker) => new Promise<void>((resolve) => worker.once('exit', () => resolve()))));
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 
   it('calls the injected Meta transport and returns the validated experiment result', async () => {
@@ -155,7 +292,10 @@ describe('phase 3D backend route', () => {
 
 describe('image understanding backend route', () => {
   async function withServer(fetchImpl: typeof fetch, callback: (port: number) => Promise<void>, options: { maxMetaCalls?: number } = {}): Promise<void> {
-    const server = createMetaServer({ apiKey: 'test-key-not-real', fetchImpl, ...options });
+    const budgetDirectory = options.maxMetaCalls === undefined ? undefined : mkdtempSync(join(tmpdir(), 'unfold-budget-stage-'));
+    const budgetFile = budgetDirectory ? join(budgetDirectory, 'budget-' + randomUUID() + '.json') : undefined;
+    if (budgetFile && options.maxMetaCalls !== undefined) initializeTestBudget(budgetFile, options.maxMetaCalls);
+    const server = createMetaServer({ apiKey: 'test-key-not-real', fetchImpl, ...options, ...(budgetFile ? { metaCallBudgetFile: budgetFile } : {}) });
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('Porta de teste indisponível.');
@@ -163,8 +303,45 @@ describe('image understanding backend route', () => {
       await callback(address.port);
     } finally {
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+      if (budgetDirectory) rmSync(budgetDirectory, { recursive: true, force: true });
     }
   }
+
+  it.each(['/api/meta/text', '/api/meta/image', '/api/meta/image/verify-region', '/api/kinematics/experiment', '/api/experiments/preview', '/api/conversation', '/api/spatial-agent'])('rejects disallowed origins on every billable API route (%s)', async (path) => {
+    const fetchMock = vi.fn<typeof fetch>();
+    await withServer(fetchMock, async (port) => {
+      const response = await fetch(`http://127.0.0.1:${port}${path}`, {
+        method: 'POST',
+        headers: { origin: 'https://attacker.invalid', 'content-type': 'application/json' },
+        body: JSON.stringify({ prompt: 'not sent upstream' }),
+      });
+      expect(response.status).toBe(403);
+      expect((await response.json()).error.code).toBe('INVALID_ORIGIN');
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
+
+  it('rejects non-JSON requests to billable routes before reading the body', async () => {
+    const fetchMock = vi.fn<typeof fetch>();
+    await withServer(fetchMock, async (port) => {
+      const response = await fetch(`http://127.0.0.1:${port}/api/meta/text`, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: 'prompt' });
+      expect(response.status).toBe(403);
+      expect((await response.json()).error.code).toBe('INVALID_ORIGIN');
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
+
+  it('applies one per-peer rate limit across billable model routes', async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockImplementation(async () => metaOutput('ok', randomUUID()));
+    await withServer(fetchMock, async (port) => {
+      const request = (path: string) => fetch(`http://127.0.0.1:${port}${path}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prompt: 'test' }) });
+      for (let index = 0; index < 20; index += 1) expect((await request('/api/meta/text')).status).toBe(200);
+      const limited = await request('/api/meta/text');
+      expect(limited.status).toBe(429);
+      expect((await limited.json()).error.code).toBe('RATE_LIMITED');
+      expect(fetchMock).toHaveBeenCalledTimes(20);
+    });
+  });
 
   it('validates the image, calls the multimodal client and returns structured JSON', async () => {
     const fetchMock = vi.fn<typeof fetch>()
@@ -414,8 +591,8 @@ describe('image understanding backend route', () => {
     });
   });
 
-  it('propagates an upstream API failure without exposing the payload image', async () => {
-    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ error: { message: 'rate limited' } }), { status: 429, headers: { 'x-request-id': 'rate-limit-id' } }));
+  it('propagates an upstream API failure without exposing payload image or echoed credentials', async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ error: { message: 'rate limited Bearer fixture-upstream-secret-123456' } }), { status: 429, headers: { 'x-request-id': 'rate-limit-id' } }));
     await withServer(fetchMock, async (port) => {
       const response = await fetch(`http://127.0.0.1:${port}/api/meta/image`, {
         method: 'POST',
@@ -427,6 +604,7 @@ describe('image understanding backend route', () => {
       expect(body.error?.code).toBe('META_HTTP_ERROR');
       expect(body.meta?.requestId).toBe('rate-limit-id');
       expect(JSON.stringify(body)).not.toContain(validJpegDataUrl);
+      expect(JSON.stringify(body)).not.toContain('fixture-upstream-secret');
     });
   });
 });

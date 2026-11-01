@@ -5,17 +5,18 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { gsap } from 'gsap';
 import { decodePlanImage } from './plan-image';
 import { buildPlanVectorModel, countClosedCandidateContours, detectCandidateIntersections, detectWallCandidates, mergeWallCandidates, splitWallCandidate, traceWallCandidate, type PixelWallCandidate, type Point2 } from './plan-reconstruction';
-import { addOpeningToScene, createPlanScene, editOpeningInScene, editWallInScene } from './plan-scene';
+import { addOpeningToScene, createPlanScene, editOpeningInScene, editWallInScene, sceneMatchesPlanSource } from './plan-scene';
 import { ARCHITECTURAL_MODULE_DIMENSIONS, buildThreePlanGroup, type ArchitecturalAssets } from './plan-three-adapter';
-import { commitScenePreview, deserializeSceneTransaction, previewSceneCommand, serializeSceneTransaction, type Node, type ScenePreview, type SceneTransaction, type SpatialCommand, type SpatialSceneV1 } from './spatial-scene';
-import { clearSpatialSourceImage, readSpatialSourceImage } from './spatial-source-store';
+import { commitScenePreview, deserializeImportedSceneTransaction, deserializeSceneTransaction, previewSceneCommand, serializeSceneTransaction, type Node, type ScenePreview, type SceneTransaction, type SpatialCommand, type SpatialSceneV1 } from './spatial-scene';
+import { clearSpatialSourceImage, readSpatialSourceImage, saveSpatialSourceImage } from './spatial-source-store';
 import { createSpatialCommandEnvelope, parseSpatialIntentV1, resolveSpatialTarget, type SpatialCommandOrigin, type SpatialCommandState, type SpatialCommandV1 } from './spatial-command-protocol';
 import { registerSpatialCommandHandler, type SpatialCommandOutcome } from './spatial-command-runtime';
 import { prepareSpatialHandoff } from './spatial-handoff';
-import { acceptSemanticLink, answerGroundedQuery, createSemanticSpatialMap, describeSemanticProposal, proposeSemanticLink, rejectSemanticLink, resolveSemanticSceneLinks, selectWellDefinedRegionIds, type SemanticSpatialMapV1 } from './semantic-spatial-map';
-import { parseSpatialAgentResult, SPATIAL_AGENT_REQUEST_SCHEMA, spatialDomainConflict, type SpatialAgentRequestV1, type SpatialAgentAction } from './spatial-agent';
+import { acceptSemanticLink, answerGroundedQuery, createSemanticSpatialMap, deserializeSemanticWorkspace, describeSemanticProposal, proposeSemanticLink, rejectSemanticLink, resolveSemanticSceneLinks, restoreSemanticSpatialMap, selectWellDefinedRegionIds, semanticWorkspaceStorageKey, serializeSemanticWorkspace, type SemanticSpatialMapV1 } from './semantic-spatial-map';
+import { parseSpatialAgentResult, spatialAgentContextIsCurrent, SPATIAL_AGENT_REQUEST_SCHEMA, spatialDomainConflict, type SpatialAgentRequestV1, type SpatialAgentAction } from './spatial-agent';
 import type { TechnicalDocumentV1 } from './technical-document';
 import { cameraFrameAspect, createSpatialCameraView, createSpatialFocusView } from './spatial-camera';
+import { persistSceneTransaction } from './spatial-persistence';
 import './spatial-editor.css';
 
 export type SpatialEditorOptions = { onExit?: () => void; source?: 'accepted-document'; onCommandState?: (state: SpatialCommandState, message: string) => void };
@@ -63,12 +64,16 @@ app.innerHTML = `<main class="spatial-lab" data-state="empty">
       <div id="opening-fields" class="opening-fields"><span>ABERTURA · PARÂMETROS EXPLÍCITOS</span><label class="field">Tipo<select id="opening-kind"><option value="door">Porta</option><option value="window">Janela</option></select></label><div class="dimensions-grid"><label class="field">Offset na parede (m)<input id="opening-offset" type="number" min="0" step="any" placeholder="m"></label><label class="field">Largura (m)<input id="opening-width" type="number" min="0.01" step="any" placeholder="m"></label><label class="field">Altura (m)<input id="opening-height" type="number" min="0.01" step="any" placeholder="m"></label><label class="field">Peitoril (m)<input id="opening-sill" type="number" min="0" step="any" placeholder="m"></label></div><button id="add-opening" type="button">Adicionar abertura</button></div>
     </div>
     <div id="opening-detail" hidden><div class="dimensions-grid"><label class="field">Offset na parede (m)<input id="edit-opening-offset" type="number" min="0" step="any"></label><label class="field">Largura (m)<input id="edit-opening-width" type="number" min="0.01" step="any"></label><label class="field">Altura (m)<input id="edit-opening-height" type="number" min="0.01" step="any"></label><label class="field">Peitoril (m)<input id="edit-opening-sill" type="number" min="0" step="any"></label></div><button id="preview-opening" type="button">Pré-visualizar abertura</button><button id="remove-opening" type="button">Remover abertura seleccionada</button></div>
+    <label id="confirmed-change-label" class="micro-copy" hidden><input id="ack-confirmed-change" type="checkbox"> Confirmo explicitamente que esta alteração substitui um valor anteriormente confirmado.</label>
     <p id="preview-status" class="preview-status" aria-live="polite"></p><div class="preview-actions"><button id="commit-preview" type="button" disabled>Aplicar</button><button id="cancel-preview" type="button" disabled>Cancelar</button></div>
   </aside>
-  <section class="stage-empty" id="stage-empty"><span>ESPAÇO LIVRE</span><h1>Uma cena começa por evidência.</h1><p>Importe uma planta real, revise os segmentos e calibre a escala antes de construir a geometria.</p><a href="/demo">Abrir experiência UNFOLD</a></section>
+  <section class="stage-empty" id="stage-empty"><span>LABORATÓRIO ESPACIAL</span><h1>Comece pela planta.</h1><p>Importe o desenho original. O UNFOLD propõe segmentos; a geometria só é construída depois da sua revisão.</p><button id="empty-import" type="button">Importar planta <span aria-hidden="true">↗</span></button><small>PNG · JPEG · WebP · até 20 MiB</small></section>
   <nav class="spatial-toolbar" aria-label="Ferramentas da cena"><button id="mode-translate" type="button" aria-label="Mover" title="Mover">↔</button><button id="mode-rotate" type="button" aria-label="Rodar" title="Rodar">↻</button><button id="mode-scale" type="button" aria-label="Escalar" title="Escalar">⤢</button><i></i><button id="fit-scene" type="button" aria-label="Enquadrar" title="Enquadrar">□</button><button id="home-scene" type="button" aria-label="Início" title="Início">⌂</button><button id="top-view" type="button" aria-label="Vista superior" title="Vista superior">T</button><button id="front-view" type="button" aria-label="Vista frontal" title="Vista frontal">F</button><button id="iso-view" type="button" aria-label="Vista isométrica" title="Vista isométrica">I</button><button id="toggle-reference" type="button" aria-pressed="true" aria-label="Mostrar ou ocultar imagem original" title="Referência">▧</button><button id="compare-scene" type="button" aria-pressed="false" disabled>Antes / Depois</button><button id="undo-scene" type="button" disabled>Desfazer</button><button id="redo-scene" type="button" disabled>Refazer</button></nav>
   <div class="spatial-status" id="spatial-status" role="status" aria-live="polite">À espera de uma planta. Geometria não presumida.</div><div id="spatial-metrics" class="spatial-metrics"></div>
 </main>`;
+
+const labRoot = app.querySelector<HTMLElement>('.spatial-lab')!;
+labRoot.dataset.diagnostics = String(new URLSearchParams(location.search).get('spatial-test') === '1');
 
 type UiElement = HTMLElement & Pick<HTMLInputElement, 'value'> & Pick<HTMLButtonElement, 'disabled'>;
 const $ = <T extends HTMLElement = UiElement>(selector: string) => app!.querySelector<T>(selector)!;
@@ -89,16 +94,17 @@ orbit.enableDamping = true;
 orbit.dampingFactor = 0.08;
 orbit.maxPolarAngle = Math.PI;
 orbit.addEventListener('start', () => { gsap.killTweensOf(camera.position); gsap.killTweensOf(orbit.target); });
-const ambient = new AmbientLight(0xc9c7bb, 1.25); scene.add(ambient);
-const keyLight = new DirectionalLight(0xffead0, 3.2); keyLight.position.set(-5, 9, 6); scene.add(keyLight);
-const fillLight = new DirectionalLight(0xa5b09a, 1.05); fillLight.position.set(7, 4, -7); scene.add(fillLight);
-const grid = new GridHelper(36, 36, 0x776e5d, 0x343a34); grid.position.y = -0.035; scene.add(grid);
+const ambient = new AmbientLight(0xd6d8d1, 1.18); scene.add(ambient);
+const keyLight = new DirectionalLight(0xfff4e2, 2.35); keyLight.position.set(-5, 9, 6); scene.add(keyLight);
+const fillLight = new DirectionalLight(0xb7c0b5, 0.92); fillLight.position.set(7, 4, -7); scene.add(fillLight);
+const grid = new GridHelper(36, 36, 0x776e5d, 0x343a34); grid.position.y = -0.035; grid.visible = false; scene.add(grid);
 const root = new Group(); scene.add(root);
 const gizmo = new TransformControls(camera, renderer.domElement);
 scene.add(gizmo.getHelper());
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const raycaster = new Raycaster(); const pointer = new Vector2();
 let transaction: SceneTransaction | undefined;
+let sceneGeneration = 0;
 let preview: ScenePreview | undefined;
 let compoundPreview: SceneTransaction | undefined;
 let compoundPreviewBaseRevision: string | undefined;
@@ -115,10 +121,14 @@ let assetReady = false;
 let currentImageFile: File | undefined;
 let currentImageUrl: string | undefined;
 let imageInfo: { sha256: string; width: number; height: number; mimeType: string } | undefined;
+let planLoadGeneration = 0;
+let detectionGeneration = 0;
 let sourceDocumentRef: { documentId: string; sha256: string } | undefined;
 let activeTechnicalDocument: TechnicalDocumentV1 | undefined;
 let semanticMap: SemanticSpatialMapV1 | undefined;
+let activeSemanticProposalId: string | undefined;
 let spatialAgentHistory: Array<{ role: 'user' | 'assistant'; text: string }> = [];
+let pendingTargetClarification: { intent: import('./spatial-command-protocol').ParsedSpatialIntent['intent']; sceneId: string; revisionId: string; originalInput: string; origin: SpatialCommandOrigin } | undefined;
 let spatialAgentAbort: AbortController | undefined;
 let selectionOutline: Box3Helper | undefined;
 let candidates: PixelWallCandidate[] = [];
@@ -194,12 +204,31 @@ function assetByName(source: Object3D | undefined, name: string): Object3D | und
   return found;
 }
 
+function setSourcePanelCollapsed(collapsed: boolean): void {
+  const panel = $('#source-panel');
+  panel.classList.toggle('source-collapsed', collapsed);
+  const toggle = $('#source-toggle');
+  toggle.textContent = collapsed ? '+' : '−';
+  toggle.setAttribute('aria-expanded', String(!collapsed));
+  toggle.setAttribute('aria-label', collapsed ? 'Expandir referência' : 'Recolher referência');
+}
+
 function selectNode(id: string | undefined): void {
   selectedId = id;
   if (imageInfo) updateCandidates();
   if (selectionOutline) { scene.remove(selectionOutline); selectionOutline.geometry.dispose(); (selectionOutline.material as import('three').Material).dispose(); selectionOutline = undefined; }
   const node = transaction?.scene.nodes.find((candidate) => candidate.id === id);
   $('#inspector').hidden = !node;
+  if (node) setSourcePanelCollapsed(true);
+  document.querySelector<HTMLInputElement>('#ack-confirmed-change')!.checked = false;
+  const confirmedStates = ['verified', 'corrected'];
+  const hasConfirmedValues = node ? [
+    ...Object.values(node.properties).map((item) => item.provenance),
+    ...Object.values(node.component?.properties ?? {}).map((item) => item.provenance),
+    ...Object.values(node.transform.provenance),
+    ...(node.geometry ? [node.geometry.provenance] : []),
+  ].some((item) => confirmedStates.includes(item.validation)) : false;
+  $('#confirmed-change-label').hidden = !hasConfirmedValues;
   if (!node) { gizmo.detach(); return; }
   $('#node-label').textContent = node.label;
   const geometry = node.geometry;
@@ -220,7 +249,8 @@ function selectNode(id: string | undefined): void {
   }
   const object = root.getObjectByName(node.id);
   if (object) {
-    gizmo.attach(object); gizmo.showY = !wall; gizmo.showX = true; gizmo.showZ = true;
+    if (activeSceneMatchesLoadedSource()) { gizmo.attach(object); gizmo.showY = !wall; gizmo.showX = true; gizmo.showZ = true; }
+    else gizmo.detach();
     root.updateMatrixWorld(true);
     selectionOutline = new Box3Helper(new Box3().setFromObject(object), new Color('#d5a55e'));
     scene.add(selectionOutline);
@@ -272,7 +302,7 @@ function animateRevision(previous: SpatialSceneV1, current: SpatialSceneV1, targ
 
 function renderModel(model = transaction?.scene, animate = false): void {
   buildTimeline?.kill();
-  if (!model) { grid.visible = true; updateReferenceView(); invalidate(); return; }
+  if (!model) { grid.visible = Boolean(imageInfo); updateReferenceView(); invalidate(); return; }
   grid.visible = false;
   const started = performance.now(); disposeSceneGroup();
   const renderGroup = buildThreePlanGroup(model, assets);
@@ -291,6 +321,26 @@ function renderModel(model = transaction?.scene, animate = false): void {
   updateToolbar();
 }
 
+if (import.meta.env.DEV && new URLSearchParams(location.search).get('spatial-test') === '1') {
+  (window as Window & { __unfoldSpatialInspect?: (nodeId: string) => { size: number[]; center: number[]; meshes: Array<{ name: string; visible: boolean; bounds: number[]; material: string }> } | null }).__unfoldSpatialInspect = (nodeId) => {
+    const object = root.getObjectByName(nodeId);
+    if (!object) return null;
+    root.updateMatrixWorld(true);
+    const bounds = new Box3().setFromObject(object);
+    if (bounds.isEmpty()) return null;
+    const size = new Vector3(); const center = new Vector3();
+    bounds.getSize(size); bounds.getCenter(center);
+    const meshes: Array<{ name: string; visible: boolean; bounds: number[]; material: string }> = [];
+    object.traverse((child) => {
+      if (!(child instanceof Mesh)) return;
+      const meshBounds = new Box3().setFromObject(child); const meshSize = new Vector3(); meshBounds.getSize(meshSize);
+      const material = Array.isArray(child.material) ? child.material[0] : child.material;
+      meshes.push({ name: child.name, visible: child.visible, bounds: meshSize.toArray(), material: `0x${material.color.getHexString()}` });
+    });
+    return { size: size.toArray(), center: center.toArray(), meshes };
+  };
+}
+
 function updateReferencePlane(model: SpatialSceneV1): void {
   if (referenceGroup) {
     scene.remove(referenceGroup);
@@ -299,7 +349,7 @@ function updateReferencePlane(model: SpatialSceneV1): void {
     referenceGroup = undefined;
   }
   const mapping = model.imageWorldMapping;
-  if (!mapping || !currentImageUrl) return;
+  if (!mapping || !currentImageUrl || !imageInfo || !sceneMatchesPlanSource(model, imageInfo, sourceDocumentRef)) return;
   if (referenceTextureUrl !== currentImageUrl) {
     referenceTexture?.dispose();
     referenceTexture = new TextureLoader().load(currentImageUrl, () => invalidate());
@@ -339,15 +389,27 @@ function updateReferenceView(): void {
   invalidate();
 }
 
+function activeSceneMatchesLoadedSource(): boolean {
+  return !transaction || !imageInfo || sceneMatchesPlanSource(transaction.scene, imageInfo, sourceDocumentRef);
+}
+
+function assertActiveSceneMatchesLoadedSource(): void {
+  if (!activeSceneMatchesLoadedSource()) {
+    throw new Error('A cena activa pertence a outra imagem/documento. Recarregue a fonte correspondente ou construa uma nova cena antes de editar.');
+  }
+}
+
 function updateToolbar(): void {
-  $('#undo-scene').disabled = !transaction?.undoStack.length || !!preview || !!compoundPreview;
-  $('#redo-scene').disabled = !transaction?.redoStack.length || !!preview || !!compoundPreview;
+  const sourceMatches = activeSceneMatchesLoadedSource();
+  $('#undo-scene').disabled = !sourceMatches || !transaction?.undoStack.length || !!preview || !!compoundPreview;
+  $('#redo-scene').disabled = !sourceMatches || !transaction?.redoStack.length || !!preview || !!compoundPreview;
   $('#save-scene').disabled = !transaction;
   $('#restore-scene').disabled = !localStorage.getItem('unfold-spatial-scene.v1');
-  $('#compare-scene').disabled = !transaction?.undoStack.length || !!preview || !!compoundPreview;
-  $('#add-module').disabled = !assetReady || !transaction || !!preview || !!compoundPreview;
+  $('#compare-scene').disabled = !sourceMatches || !transaction?.undoStack.length || !!preview || !!compoundPreview;
+  $('#add-module').disabled = !assetReady || !transaction || !sourceMatches || !!preview || !!compoundPreview;
   $('#scene-state').textContent = transaction ? `R${transaction.scene.revision.number} · ${transaction.scene.nodes.length} ELEMENTOS` : 'SEM CENA';
-  app!.setAttribute('data-state', transaction ? 'ready' : 'empty');
+  labRoot.setAttribute('data-state', transaction ? 'ready' : imageInfo ? 'source' : 'empty');
+  labRoot.setAttribute('data-source-loaded', String(Boolean(imageInfo)));
   $('#stage-empty').hidden = Boolean(transaction);
   $('#scene-components').hidden = !transaction;
   $('#component-count').textContent = transaction ? String(transaction.scene.nodes.length) : '';
@@ -356,7 +418,10 @@ function updateToolbar(): void {
 }
 
 function updateSourceState(): void {
-  const message = currentImageFile
+  const sceneMatches = activeSceneMatchesLoadedSource();
+  const message = currentImageFile && transaction && !sceneMatches
+    ? 'A planta carregada não corresponde à cena preservada. A cena anterior continua disponível, mas está isolada desta fonte até recarregar a origem correspondente ou construir uma nova cena.'
+    : currentImageFile
     ? sourceDocumentRef ? 'Imagem original e documento técnico associados a esta sessão.' : 'Imagem de referência carregada; não existe análise técnica aceite associada.'
     : transaction?.scene.sourceDocuments.length
       ? 'Cena espacial carregada com referência a documento técnico; a imagem original não está ligada a esta sessão.'
@@ -374,7 +439,8 @@ function updateCandidates(): void {
   const svg = $('#plan-overlay') as unknown as SVGSVGElement;
   if (!imageInfo) return;
   svg.setAttribute('viewBox', `0 0 ${imageInfo.width} ${imageInfo.height}`);
-  const mapping = transaction?.scene.imageWorldMapping;
+  const sourceMatches = activeSceneMatchesLoadedSource();
+  const mapping = sourceMatches ? transaction?.scene.imageWorldMapping : undefined;
   let vectorScale: { pixelsPerMetre: number; source: 'known_measurement' } | undefined;
   if (mapping && imageInfo?.sha256 === mapping.sourceImageSha256) {
     const [a, b, , d, e] = mapping.pixelToWorldXZ;
@@ -388,13 +454,13 @@ function updateCandidates(): void {
   const intersectionMarks = vectorModel.intersections.map((item) => `<circle data-intersection="${item.firstId}:${item.secondId}" cx="${item.point.x}" cy="${item.point.y}" r="3.5" fill="#e4b05d" stroke="#392b1d" stroke-width="1"/>`).join('');
   svg.innerHTML = regionShapes + gapMarks + candidates.map((candidate) => {
     const active = selectedCandidates.has(candidate.id);
-    const linked = transaction?.scene.nodes.find((node) => node.id === selectedId)?.component?.properties.sourceCandidate?.value === candidate.id;
+    const linked = sourceMatches && transaction?.scene.nodes.find((node) => node.id === selectedId)?.component?.properties.sourceCandidate?.value === candidate.id;
     const width = Math.max(3.2, candidate.thicknessPx);
     const handles = active && !transaction ? `<circle data-endpoint="start" data-candidate-id="${escapeHtml(candidate.id)}" cx="${candidate.start.x}" cy="${candidate.start.y}" r="7"/><circle data-endpoint="end" data-candidate-id="${escapeHtml(candidate.id)}" cx="${candidate.end.x}" cy="${candidate.end.y}" r="7"/>` : '';
     return `<line data-id="${escapeHtml(candidate.id)}" data-thickness="${candidate.thicknessPx}" data-confidence="${candidate.confidence}" x1="${candidate.start.x}" y1="${candidate.start.y}" x2="${candidate.end.x}" y2="${candidate.end.y}" stroke="${linked ? '#fff1ca' : active ? '#e0a943' : '#9a6535'}" stroke-width="${linked ? width + 2 : width}" stroke-linecap="round" opacity="${active || linked ? 1 : 0.78}"/>${handles}`;
   }).join('') + intersectionMarks + (traceStart && traceEnd ? `<line id="manual-preview" x1="${traceStart.point.x}" y1="${traceStart.point.y}" x2="${traceEnd.x}" y2="${traceEnd.y}" stroke="#d5a55e" stroke-width="3"/>` : '');
   const list = $('#candidate-list');
-  list.innerHTML = candidates.map((candidate) => `<button type="button" class="candidate-row ${selectedCandidates.has(candidate.id) ? 'is-selected' : ''}" data-candidate="${candidate.id}" aria-pressed="${selectedCandidates.has(candidate.id)}"><span>${escapeHtml(candidate.id)}</span><small>${candidate.origin === 'manual_trace' ? 'traçado manual' : candidate.origin === 'manual_correction' ? 'correcção manual' : 'detecção automática'} · ${candidate.orientation} · ${Math.round(Math.hypot(candidate.end.x-candidate.start.x,candidate.end.y-candidate.start.y))} px · confiança heurística ${candidate.confidence.toFixed(2)}</small></button>`).join('') || '<p class="micro-copy">Sem candidatos. Use tracing manual.</p>';
+  list.innerHTML = candidates.map((candidate) => `<button type="button" class="candidate-row ${selectedCandidates.has(candidate.id) ? 'is-selected' : ''}" data-candidate="${escapeHtml(candidate.id)}" aria-pressed="${selectedCandidates.has(candidate.id)}"><span>${escapeHtml(candidate.id)}</span><small>${candidate.origin === 'manual_trace' ? 'traçado manual' : candidate.origin === 'manual_correction' ? 'correcção manual' : 'detecção automática'} · ${candidate.orientation} · ${Math.round(Math.hypot(candidate.end.x-candidate.start.x,candidate.end.y-candidate.start.y))} px · confiança heurística ${candidate.confidence.toFixed(2)}</small></button>`).join('') || '<p class="micro-copy">Sem candidatos. Use tracing manual.</p>';
   const regionCandidates = vectorModel.regions.filter((region) => region.eligibility === 'construction_candidate');
   const rejectedRegionCount = vectorModel.regions.length - regionCandidates.length;
   $('#region-list').innerHTML = regionCandidates.map((region) => `<button type="button" class="candidate-row ${selectedRegions.has(region.id) ? 'is-selected' : ''}" data-region="${escapeHtml(region.id)}" aria-label="${selectedRegions.has(region.id) ? 'Remover' : 'Rever'} divisão proposta ${escapeHtml(region.id)}" aria-pressed="${selectedRegions.has(region.id)}"><span>Divisão proposta ${region.id.slice(6)}</span><small>${region.boundaryCandidateIds.length} segmentos de suporte · ${Math.round(region.areaPx2).toLocaleString()} px² · confiança heurística ${region.confidence.toFixed(2)} · por confirmar</small></button>`).join('') + (rejectedRegionCount ? `<p class="micro-copy">${rejectedRegionCount} faces adicionais excluídas por qualidade geométrica insuficiente.</p>` : '') || '<p class="micro-copy">Sem contornos com suporte suficiente. Isto não exclui divisões abertas ou linhas não detectadas.</p>';
@@ -448,9 +514,24 @@ function refreshSemanticPanel(): void {
   }
   const list = document.querySelector<HTMLElement>('#semantic-link-list');
   if (list) list.innerHTML = (semanticMap?.links ?? []).map((link) => `<p class="micro-copy">${escapeHtml(link.elementLabel)} → ${escapeHtml(link.regionId)} · ${escapeHtml(link.review.state)}${link.review.actor ? ` · ${escapeHtml(link.review.actor)}` : ''} · nós: ${link.sceneNodeIds.map(escapeHtml).join(', ') || '—'}</p>`).join('') || '<p class="micro-copy">Sem associações registadas.</p>';
+  const proposalId = currentSemanticProposalId();
+  const proposal = document.querySelector<HTMLElement>('#semantic-proposal');
+  if (proposal) proposal.textContent = semanticMap && proposalId ? describeSemanticProposal(semanticMap, proposalId) : 'A proposta é mostrada antes de aceitar. Nenhum nome/área/cota vira geometria.';
+  const accept = document.querySelector<HTMLButtonElement>('#semantic-accept');
+  const reject = document.querySelector<HTMLButtonElement>('#semantic-reject');
+  if (accept) accept.disabled = !proposalId;
+  if (reject) reject.disabled = !proposalId;
 }
 function currentSemanticProposalId(): string | undefined {
-  return semanticMap?.links.find((link) => link.review.state === 'proposed')?.id;
+  return semanticMap?.links.some((link) => link.id === activeSemanticProposalId && link.review.state === 'proposed') ? activeSemanticProposalId : undefined;
+}
+function persistSemanticWorkspace(candidate: SemanticSpatialMapV1 | undefined = semanticMap): void {
+  if (!candidate) return;
+  if (!activeTechnicalDocument || !imageInfo || !sourceDocumentRef
+    || candidate.documentId !== sourceDocumentRef.documentId
+    || candidate.sourceImageSha256.toLowerCase() !== imageInfo.sha256.toLowerCase()) throw new Error('SEMANTIC_MAP_SOURCE_MISMATCH');
+  const serialized = serializeSemanticWorkspace({ schema: 'semantic_spatial_workspace.v1', documentId: sourceDocumentRef.documentId, sourceImageSha256: imageInfo.sha256, document: activeTechnicalDocument, map: candidate });
+  localStorage.setItem(semanticWorkspaceStorageKey(sourceDocumentRef.documentId, imageInfo.sha256), serialized);
 }
 document.addEventListener('click', () => undefined);
 
@@ -464,38 +545,104 @@ $('#semantic-propose').addEventListener('click', () => {
     const model = buildPlanVectorModel(candidates, { tolerancePx: Math.max(6, Math.min(imageInfo!.width, imageInfo!.height) * 0.008), imageSize: { width: imageInfo!.width, height: imageInfo!.height } });
     const region = model.regions.find((item) => item.id === regionId);
     if (!region) throw new Error('Região candidata já não existe; repita a detecção.');
-    semanticMap = proposeSemanticLink(semanticMap, activeTechnicalDocument, region, elementId);
-    const proposalId = currentSemanticProposalId()!;
-    $('#semantic-proposal').textContent = describeSemanticProposal(semanticMap, proposalId);
-    ($('#semantic-accept') as HTMLButtonElement).disabled = false; ($('#semantic-reject') as HTMLButtonElement).disabled = false;
+    const nextMap = proposeSemanticLink(semanticMap, activeTechnicalDocument, region, elementId, { documentId: sourceDocumentRef?.documentId ?? '', imageSha256: imageInfo?.sha256 ?? '' });
+    persistSemanticWorkspace(nextMap);
+    semanticMap = nextMap;
+    activeSemanticProposalId = semanticMap.links.at(-1)?.id;
     refreshSemanticPanel(); status('Proposta semântica criada e mostrada. Ainda não foi aplicada; aceite ou rejeite.');
   } catch (error) { status(error instanceof Error ? error.message : 'Não foi possível propor a associação.'); }
 });
 $('#semantic-accept').addEventListener('click', () => {
   const proposalId = currentSemanticProposalId(); if (!semanticMap || !proposalId) return;
-  semanticMap = acceptSemanticLink(semanticMap, proposalId, 'local-user-input');
-  ($('#semantic-accept') as HTMLButtonElement).disabled = true; ($('#semantic-reject') as HTMLButtonElement).disabled = true;
-  refreshSemanticPanel(); status('Associação aceite e registada (semantic_spatial_map.v1). A cena só a usa no próximo build confirmado.');
+  try {
+    if (!activeTechnicalDocument || !sourceDocumentRef || !imageInfo) throw new Error('Documento ou imagem-fonte já não estão activos.');
+    const model = buildPlanVectorModel(candidates, { tolerancePx: Math.max(6, Math.min(imageInfo.width, imageInfo.height) * 0.008), imageSize: { width: imageInfo.width, height: imageInfo.height } });
+    const link = semanticMap.links.find((item) => item.id === proposalId);
+    const region = model.regions.find((item) => item.id === link?.regionId);
+    if (!region) throw new Error('Região candidata já não existe; a proposta foi invalidada.');
+    const nextMap = acceptSemanticLink(semanticMap, proposalId, 'unidentified-local-user', { document: activeTechnicalDocument, currentRegion: region, source: { documentId: sourceDocumentRef.documentId, imageSha256: imageInfo.sha256 } });
+    persistSemanticWorkspace(nextMap);
+    semanticMap = nextMap;
+    activeSemanticProposalId = undefined;
+    refreshSemanticPanel(); status('Associação aceite e registada (semantic_spatial_map.v1). A cena só a usa no próximo build confirmado.');
+  } catch (error) { status(`Associação não confirmada: ${error instanceof Error ? error.message : 'erro local'}`); }
 });
 $('#semantic-reject').addEventListener('click', () => {
   const proposalId = currentSemanticProposalId(); if (!semanticMap || !proposalId) return;
-  semanticMap = rejectSemanticLink(semanticMap, proposalId, 'local-user-input');
-  ($('#semantic-accept') as HTMLButtonElement).disabled = true; ($('#semantic-reject') as HTMLButtonElement).disabled = true;
+  const nextMap = rejectSemanticLink(semanticMap, proposalId, 'unidentified-local-user');
+  try { persistSemanticWorkspace(nextMap); } catch (error) { status(`Rejeição não persistida; proposta anterior preservada: ${error instanceof Error ? error.message : 'erro local'}`); return; }
+  semanticMap = nextMap;
+  activeSemanticProposalId = undefined;
   refreshSemanticPanel(); status('Proposta semântica rejeitada; documento e região preservados.');
 });
-async function loadPlanFile(file: File, technicalDocumentRef?: { documentId: string; sha256: string }): Promise<void> {
+async function loadPlanFile(file: File, technicalDocumentRef?: { documentId: string; sha256: string }, trustedDocument?: TechnicalDocumentV1): Promise<void> {
+  const generation = ++planLoadGeneration;
+  detectionGeneration += 1;
   try {
     status('A verificar o ficheiro local e a preparar a referência raster…');
     const decoded = await decodePlanImage(file);
+    if (generation !== planLoadGeneration) return;
+    let sourcePersistenceWarning = '';
+    try { await saveSpatialSourceImage(file, technicalDocumentRef, trustedDocument, { sourceImageSha256: decoded.sha256, setHandoff: false }); }
+    catch (error) { sourcePersistenceWarning = ` A imagem original não pôde ser preservada localmente: ${error instanceof Error ? error.message : 'armazenamento indisponível'}.`; }
+    const sameSource = imageInfo?.sha256.toLowerCase() === decoded.sha256.toLowerCase();
+    const sameDocument = sourceDocumentRef?.documentId === technicalDocumentRef?.documentId
+      && sourceDocumentRef?.sha256.toLowerCase() === technicalDocumentRef?.sha256.toLowerCase();
+    const nextDocument = trustedDocument ?? (sameSource && sameDocument ? activeTechnicalDocument : undefined);
+    const workspaceKey = technicalDocumentRef ? semanticWorkspaceStorageKey(technicalDocumentRef.documentId, decoded.sha256) : undefined;
+    const storedWorkspace = workspaceKey ? localStorage.getItem(workspaceKey) : null;
+    const legacyWorkspace = localStorage.getItem('unfold-semantic-workspace.v1');
+    let nextSemanticMap: SemanticSpatialMapV1 | undefined;
+    let semanticRestoreWarning = '';
+    if (technicalDocumentRef && nextDocument) {
+      const expected = { documentId: technicalDocumentRef.documentId, imageSha256: decoded.sha256, document: nextDocument };
+      const workspaceToRestore = storedWorkspace ?? legacyWorkspace;
+      if (workspaceToRestore !== null) {
+        const restored = restoreSemanticSpatialMap(workspaceToRestore, expected);
+        nextSemanticMap = restored.map;
+        if (restored.state === 'discarded') {
+          if (storedWorkspace !== null) {
+            const quarantineKey = `unfold-semantic-workspace.quarantine.${Date.now()}`;
+            localStorage.setItem(quarantineKey, workspaceToRestore);
+            semanticRestoreWarning = ` O mapa desta origem foi preservado em quarentena (${restored.reason}); não foi descartado silenciosamente.`;
+          }
+        } else if (storedWorkspace === null && workspaceKey) {
+          localStorage.setItem(workspaceKey, serializeSemanticWorkspace({ schema: 'semantic_spatial_workspace.v1', documentId: expected.documentId, sourceImageSha256: expected.imageSha256, document: expected.document, map: restored.map }));
+        }
+      }
+      else if (semanticMap?.documentId === technicalDocumentRef.documentId && semanticMap.sourceImageSha256.toLowerCase() === decoded.sha256.toLowerCase()) nextSemanticMap = semanticMap;
+      else nextSemanticMap = createSemanticSpatialMap(nextDocument, technicalDocumentRef.documentId, decoded.sha256);
+    }
+    const sceneHasSameSource = Boolean(transaction && sceneMatchesPlanSource(transaction.scene, decoded, technicalDocumentRef));
+    if (nextSemanticMap && sceneHasSameSource && transaction) nextSemanticMap = resolveSemanticSceneLinks(nextSemanticMap, transaction.scene);
+    const nextImageUrl = URL.createObjectURL(file);
+
+    const sourceChanged = !sameSource || !sameDocument;
+    if (sourceChanged) {
+      spatialAgentAbort?.abort();
+      pendingTargetClarification = undefined;
+      pendingCommand = undefined;
+      preview = undefined;
+      compoundPreview = undefined;
+      compoundPreviewBaseRevision = undefined;
+      selectedId = undefined;
+      $('#commit-preview').disabled = true;
+      $('#cancel-preview').disabled = true;
+    }
+    activeTechnicalDocument = nextDocument;
+    semanticMap = nextSemanticMap;
+    activeSemanticProposalId = nextSemanticMap?.links.find((link) => link.review.state === 'proposed')?.id;
     currentImageFile = file; imageInfo = { sha256: decoded.sha256, width: decoded.width, height: decoded.height, mimeType: decoded.mimeType }; sourceDocumentRef = technicalDocumentRef;
     if (currentImageUrl) URL.revokeObjectURL(currentImageUrl);
-    currentImageUrl = URL.createObjectURL(file); ($('#source-image') as HTMLImageElement).src = currentImageUrl;
+    currentImageUrl = nextImageUrl; ($('#source-image') as HTMLImageElement).src = currentImageUrl;
     ($('#source-image').parentElement as HTMLElement).style.aspectRatio = `${decoded.width} / ${decoded.height}`;
     $('#plan-workflow').hidden = false; $('#empty-source').hidden = true;
-    updateSourceState();
-    $('#plan-meta').textContent = `${file.name} · ${decoded.width} × ${decoded.height} · SHA-256 ${decoded.sha256.slice(0, 16)}… · original preservado`;
+    $('#plan-meta').textContent = `${file.name} · ${decoded.width} × ${decoded.height} · SHA-256 ${decoded.sha256.slice(0, 16)}… · original ${sourcePersistenceWarning ? 'não preservado' : 'preservado localmente'}`;
     candidates = []; selectedCandidates.clear(); selectedRegions.clear(); updateCandidates(); setTraceMode('none');
-    status('Imagem carregada. Detecção é sugestiva; revise e trace os segmentos necessários.');
+    if (transaction) renderModel(transaction.scene);
+    updateToolbar();
+    refreshSemanticPanel();
+    status(`Imagem carregada. Detecção é sugestiva; revise e trace os segmentos necessários.${semanticRestoreWarning}`);
   } catch (error) { status(`Imagem recusada: ${error instanceof Error ? error.message : 'erro de validação'}`); }
 }
 $('#plan-file').addEventListener('change', (event) => {
@@ -504,8 +651,12 @@ $('#plan-file').addEventListener('change', (event) => {
 
 $('#detect-lines').addEventListener('click', async () => {
   if (!currentImageFile) return;
+  const generation = ++detectionGeneration;
+  const sourceFile = currentImageFile;
+  const sourceSha = imageInfo?.sha256;
   try {
-    const raster = await decodePlanImage(currentImageFile);
+    const raster = await decodePlanImage(sourceFile);
+    if (generation !== detectionGeneration || currentImageFile !== sourceFile || imageInfo?.sha256 !== sourceSha) return;
     candidates = detectWallCandidates(raster, { threshold: Number($('#detection-threshold').value), minimumLengthPx: Math.max(24, Math.floor(Math.min(raster.width, raster.height) * 0.045)), gapTolerancePx: 3 });
     selectedCandidates.clear();
     const autoModel = buildPlanVectorModel(candidates, { tolerancePx: Math.max(6, Math.min(raster.width, raster.height) * 0.008), imageSize: { width: raster.width, height: raster.height } });
@@ -514,7 +665,9 @@ $('#detect-lines').addEventListener('click', async () => {
     updateCandidates();
     if (wellDefined.length) status(`${candidates.length} segmentos candidatos. ${wellDefined.length} região(ões) com contorno bem definido pré-seleccionada(s) para revisão — a construção continua a exigir escala, altura/espessura e confirmação explícita.`);
     status(`${candidates.length} segmentos axiais candidatos. Seleccione apenas os que confirmar no desenho; linhas de texto podem ser falsos positivos.`);
-  } catch (error) { status(`Detecção indisponível: ${error instanceof Error ? error.message : 'erro'}`); }
+  } catch (error) {
+    if (generation === detectionGeneration && currentImageFile === sourceFile && imageInfo?.sha256 === sourceSha) status(`Detecção indisponível: ${error instanceof Error ? error.message : 'erro'}`);
+  }
 });
 $('#detection-threshold').addEventListener('input', () => { $('#detection-threshold-value').textContent = $('#detection-threshold').value; });
 
@@ -524,7 +677,7 @@ $('#plan-overlay').addEventListener('click', (event) => {
   if (regionId && traceMode === 'none') { selectRegionCandidate(regionId); return; }
   const candidateId = target.getAttribute('data-id');
   if (candidateId && traceMode === 'none') {
-    const linkedNode = transaction?.scene.nodes.find((node) => node.component?.properties.sourceCandidate?.value === candidateId);
+    const linkedNode = activeSceneMatchesLoadedSource() ? transaction?.scene.nodes.find((node) => node.component?.properties.sourceCandidate?.value === candidateId) : undefined;
     if (linkedNode) { selectNode(linkedNode.id); focusNode(linkedNode.id); return; }
     if (selectedCandidates.has(candidateId)) selectedCandidates.delete(candidateId); else selectedCandidates.add(candidateId);
     updateCandidates();
@@ -650,9 +803,12 @@ function currentScalePixels(): number {
   if (!distancePx) throw new Error('Marque dois pontos de referência na imagem para calibrar a escala.');
   return distancePx;
 }
-$('#build-scene').addEventListener('click', () => {
+$('#build-scene').addEventListener('click', async () => {
   if (!imageInfo) return;
   try {
+    const storedBeforeBuild = localStorage.getItem('unfold-spatial-scene.v1');
+    const storedRevisionBeforeBuild = storedBeforeBuild ? deserializeSceneTransaction(storedBeforeBuild).scene.revision.id : null;
+    if ((transaction || storedBeforeBuild) && !window.confirm('Construir novamente substitui a cena e o histórico actuais. A imagem original e o traçado serão preservados. Continuar?')) return;
     const pixelDistance = currentScalePixels();
     const scaleValue = parsePositive('#scale-distance', 'Cota');
     const unit = (document.querySelector<HTMLSelectElement>('#scale-unit')?.value ?? 'm') as 'm' | 'cm' | 'mm' | 'ft' | 'in';
@@ -666,13 +822,26 @@ $('#build-scene').addEventListener('click', () => {
     const selectedRegionBoundaryIds = new Set(selectedRegionCandidates.flatMap((region) => region.boundaryCandidateIds));
     const candidateIds = [...selectedCandidates].filter((id) => !selectedRegionBoundaryIds.has(id));
     const semanticLinks = (semanticMap?.links ?? []).filter((link) => link.review.state === 'accepted' && selectedRegions.has(link.regionId)).map((link) => ({ regionId: link.regionId, elementId: link.documentElementId, label: link.elementLabel }));
-    const next = createPlanScene({ sceneId: `plan-${imageInfo.sha256.slice(0, 12)}`, title: 'Reconstrução geométrica proposta', ...(semanticLinks.length ? { regionSemanticLinks: semanticLinks } : {}), image: imageInfo, ...(sourceDocumentRef ? { technicalDocumentRef: sourceDocumentRef } : {}), calibration: { pixelDistance, realDistanceMetres, evidence, actor: 'local-user-input' }, confirmedCandidateIds: candidateIds, confirmedRegionIds: [...selectedRegions], regions: vectorModel.regions, candidates, wall: { heightM, thicknessM } });
-    transaction = next; if (semanticMap) { semanticMap = resolveSemanticSceneLinks(semanticMap, next.scene); refreshSemanticPanel(); } preview = undefined; compoundPreview = undefined; compoundPreviewBaseRevision = undefined; compare = false; selectedId = undefined; currentViewMode = 'compare'; persistScene();
+    const next = createPlanScene({ sceneId: `plan-${imageInfo.sha256.slice(0, 12)}`, title: 'Reconstrução geométrica proposta', ...(semanticLinks.length ? { regionSemanticLinks: semanticLinks } : {}), image: imageInfo, ...(sourceDocumentRef ? { technicalDocumentRef: sourceDocumentRef } : {}), calibration: { pixelDistance, realDistanceMetres, evidence, actor: 'unidentified-local-user' }, confirmedCandidateIds: candidateIds, confirmedRegionIds: [...selectedRegions], regions: vectorModel.regions, candidates, wall: { heightM, thicknessM } });
+    const resolvedMap = semanticMap ? resolveSemanticSceneLinks(semanticMap, next.scene) : undefined;
+    await persistSceneTransaction(localStorage, next, 'unfold-spatial-scene.v1', { allowReplace: true, expectedRevisionId: storedRevisionBeforeBuild });
+    if (resolvedMap) {
+      try { persistSemanticWorkspace(resolvedMap); }
+      catch { status('A cena foi guardada; as associações semânticas não foram actualizadas por falha de armazenamento.'); }
+    }
+    $('#restore-scene').disabled = false;
+    spatialAgentAbort?.abort();
+    pendingTargetClarification = undefined;
+    pendingCommand = undefined;
+    sceneGeneration += 1;
+    transaction = next;
+    if (resolvedMap) { semanticMap = resolvedMap; refreshSemanticPanel(); }
+    preview = undefined; compoundPreview = undefined; compoundPreviewBaseRevision = undefined; compare = false; selectedId = undefined; currentViewMode = 'model';
     // animateBuild owns the camera for the construction sequence and computes
     // its framing from the committed geometry. A subsequent fit would cancel it.
     renderModel(transaction.scene, true);
     $('#candidate-list').setAttribute('data-intersections', String(detected.length));
-    $('#source-panel').classList.add('source-compact');
+    setSourcePanelCollapsed(true);
     status(`Cena proposta: ${selectedRegionCandidates.length} divisão(ões), ${next.scene.nodes.filter((node) => node.component?.kind === 'wall').length} paredes únicas e ${candidateIds.length} segmentos adicionais. Escala introduzida pelo utilizador; geometria, altura e espessura não verificadas.`);
     updateToolbar();
   } catch (error) { status(error instanceof Error ? error.message : 'Não foi possível construir a cena.'); }
@@ -698,20 +867,21 @@ function alignTraceEndpoint(anchor: Point2, point: Point2): Point2 {
 
 $('#add-module').addEventListener('click', () => {
   if (!transaction || !assetReady) return;
+  if (!activeSceneMatchesLoadedSource()) { status('A cena activa pertence a outra fonte. Construa ou carregue uma cena correspondente antes de a editar.'); return; }
   const assetId = (document.querySelector<HTMLSelectElement>('#module-choice')?.value ?? '') as keyof typeof ARCHITECTURAL_MODULE_DIMENSIONS;
   const bounds = ARCHITECTURAL_MODULE_DIMENSIONS[assetId];
   if (!bounds || !assets[assetId]) { status('O módulo seleccionado não está disponível na biblioteca GLB.'); return; }
   const box = new Box3().setFromObject(root);
   const at = box.isEmpty() ? new Vector3() : new Vector3(box.max.x + bounds[0] * 0.65, 0, box.min.z);
   const recordedAt = new Date().toISOString();
-  const source = { source: 'user' as const, validation: 'unreviewed' as const, actor: 'local-user-input', recordedAt, evidence: 'Módulo Blender adicionado explicitamente como elemento conceptual; não foi reconhecido na planta.' };
+  const source = { source: 'user' as const, validation: 'unreviewed' as const, actor: 'unidentified-local-user', recordedAt, evidence: 'Módulo Blender adicionado explicitamente como elemento conceptual; não foi reconhecido na planta.' };
   const node: Node = {
     id: `module-${assetId}-${crypto.randomUUID().slice(0, 6)}`, label: `Módulo conceptual · ${assetId}`, nodeType: 'component', parentId: null,
     transform: { translationM: at.toArray() as [number, number, number], rotation: [0, 0, 0, 1], scale: [1, 1, 1], provenance: { translationM: source, rotation: source, scale: source } },
     geometry: { kind: 'mesh_reference', assetId, boundsM: [...bounds] as [number, number, number], provenance: source },
     component: { kind: 'architectural_module', dependsOn: [], properties: { assetId: { value: assetId, provenance: source } } }, properties: {},
   };
-  const candidate = previewSceneCommand(transaction, { type: 'AddComponent', node }, 'local-user-input');
+  const candidate = previewSceneCommand(transaction, { type: 'AddComponent', node }, 'unidentified-local-user');
   if (candidate.status === 'blocked') { status(candidate.issues.map((issue) => issue.message).join(' ')); return; }
   preview = candidate; compoundPreview = undefined; $('#preview-status').textContent = `Pré-visualização: adicionar ${assetId} como módulo independente.`; $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false; renderModel(candidate.candidate!); selectNode(node.id);
 });
@@ -745,14 +915,14 @@ $('#top-view').addEventListener('click', () => fitScene('top'));
 $('#front-view').addEventListener('click', () => fitScene('front'));
 $('#iso-view').addEventListener('click', () => fitScene('isometric'));
 $('#toggle-reference').addEventListener('click', () => { visibleReference = !visibleReference; $('#toggle-reference').setAttribute('aria-pressed', String(visibleReference)); updateReferenceView(); });
-$('#source-toggle').addEventListener('click', () => { const panel = $('#source-panel'); const collapsed = panel.classList.toggle('source-collapsed'); $('#source-toggle').textContent = collapsed ? '+' : '−'; $('#source-toggle').setAttribute('aria-expanded', String(!collapsed)); $('#source-toggle').setAttribute('aria-label', collapsed ? 'Expandir referência' : 'Recolher referência'); });
+$('#source-toggle').addEventListener('click', () => setSourcePanelCollapsed(!$('#source-panel').classList.contains('source-collapsed')));
 $('#clear-focus').addEventListener('click', () => selectNode(undefined));
 
-function candidateWallEdit(node: Node, length: number, height: number, thickness: number, x: number, z: number, actor = 'local-user-input'): SceneTransaction {
+function candidateWallEdit(node: Node, length: number, height: number, thickness: number, x: number, z: number, actor = 'unidentified-local-user', acknowledgeVerifiedChange = false): SceneTransaction {
   if (!transaction || node.geometry?.kind !== 'box') throw new Error('A parede seleccionada não tem geometria paramétrica.');
   const q = node.transform.rotation; const angle = 2 * Math.atan2(q[1], q[3]);
   const dx = Math.cos(angle) * length / 2; const dz = -Math.sin(angle) * length / 2;
-  return editWallInScene(transaction, node.id, { start: { x: x - dx, y: z - dz }, end: { x: x + dx, y: z + dz }, heightM: height, thicknessM: thickness, actor });
+  return editWallInScene(transaction, node.id, { start: { x: x - dx, y: z - dz }, end: { x: x + dx, y: z + dz }, heightM: height, thicknessM: thickness, actor, acknowledgeVerifiedChange });
 }
 
 function focusNode(nodeId: string): void {
@@ -857,6 +1027,11 @@ function agentIntent(action: SpatialAgentAction, nodeId: string | null): import(
 
 async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin, callerSignal?: AbortSignal): Promise<SpatialCommandOutcome> {
   if (preview || compoundPreview) return { status: 'rejected', message: 'Existe uma pré-visualização pendente. Confirme ou cancele-a antes de enviar outro comando.' };
+  if (!activeSceneMatchesLoadedSource()) {
+    const message = 'A cena activa pertence a outra imagem/documento. Recarregue a fonte correspondente ou construa uma nova cena; nenhum comando foi enviado nem aplicado.';
+    setSpatialCommandState('RequestClarification', message);
+    return { status: 'clarification', message };
+  }
   const domainConflict = spatialDomainConflict(input, 'architecture');
   if (domainConflict) {
     const message = domainConflict === 'mechanical'
@@ -865,16 +1040,39 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
     setSpatialCommandState('Rejected', message);
     return { status: 'clarification', message };
   }
-  const grounded = answerGroundedQuery(input, { document: activeTechnicalDocument ?? null, map: semanticMap ?? null, scene: transaction?.scene ?? null, selectedId: selectedId ?? null, undoDepth: transaction?.undoStack.length ?? 0 });
+  const grounded = answerGroundedQuery(input, { document: activeTechnicalDocument ?? null, map: semanticMap ?? null, scene: transaction?.scene ?? null, selectedId: selectedId ?? null, undoDepth: transaction?.undoStack.length ?? 0, redoDepth: transaction?.redoStack.length ?? 0 });
   if (grounded?.kind === 'ANSWER') { setSpatialCommandState('Completed', grounded.text); return { status: 'completed', message: grounded.evidenceIds.length ? `${grounded.text} · Evidência: ${grounded.evidenceIds.join(', ')}` : grounded.text }; }
-  if (grounded?.kind === 'CLARIFICATION') { setSpatialCommandState('Rejected', grounded.text); return { status: 'clarification', message: grounded.text }; }
+  if (grounded?.kind === 'CLARIFICATION') { setSpatialCommandState('RequestClarification', grounded.text); return { status: 'clarification', message: grounded.text }; }
   if (grounded?.kind === 'FOCUS') { selectNode(grounded.nodeId); focusNode(grounded.nodeId); setSpatialCommandState('Completed', grounded.text); return { status: 'completed', message: grounded.text }; }
   const originalRevision = transaction?.scene.revision.id;
   const originalSelection = selectedId;
+  const originalAgentContext = { sceneGeneration, sceneId: transaction?.scene.id ?? null, revisionId: transaction?.scene.revision.id ?? null, selectedNodeId: selectedId ?? null };
+  const pendingTarget = pendingTargetClarification;
+  if (pendingTarget && (!transaction || pendingTarget.sceneId !== transaction.scene.id || pendingTarget.revisionId !== transaction.scene.revision.id)) {
+    pendingTargetClarification = undefined;
+    const message = 'A cena mudou desde o pedido de esclarecimento. Repita o comando para validar a revisão actual.';
+    setSpatialCommandState('RequestClarification', message);
+    return { status: 'clarification', message };
+  }
   const request = createSpatialAgentRequest(input);
   const local = parseSpatialIntentV1(input);
   let parsed = local;
   let answerPrefix = '';
+  let commandInputText = input;
+  let pendingContinuation = false;
+  if (pendingTarget && transaction) {
+    const ordinal = input.match(/^(?:a\s+)?parede\s+(\d+)$/i);
+    const useSelected = /^(?:esta|essa|a seleccionada|a selecionada|usa esta|usa essa)$/i.test(input) && Boolean(selectedId);
+    if (ordinal || useSelected) {
+      const reference = ordinal ? `wall_ordinal:${ordinal[1]}` : null;
+      parsed = { status: 'recognized', value: { intent: { ...pendingTarget.intent, target: { nodeId: useSelected ? selectedId! : null, reference } } } };
+      origin = pendingTarget.origin;
+      commandInputText = `${pendingTarget.originalInput} → ${input}`.slice(0, 500);
+      answerPrefix = 'Clarificação espacial resolvida localmente; executor determinístico validou o alvo. ';
+      pendingTargetClarification = undefined;
+      pendingContinuation = true;
+    } else pendingTargetClarification = undefined;
+  }
   setSpatialCommandState('Understanding', 'A interpretar a instrução e a validar contexto, capacidades e revisão da cena.');
   spatialAgentAbort?.abort();
   const abort = new AbortController();
@@ -882,6 +1080,7 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
   const abortFromCaller = () => abort.abort();
   callerSignal?.addEventListener('abort', abortFromCaller, { once: true });
   try {
+    if (pendingContinuation) throw new Error('SPATIAL_AGENT_LOCAL_FALLBACK');
     const response = await fetch('/api/spatial-agent', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request), signal: abort.signal });
     const payload: unknown = await response.json().catch(() => null);
     if (!response.ok) {
@@ -891,8 +1090,10 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
     }
     if (!payload || typeof payload !== 'object' || !('result' in payload)) throw new Error('SPATIAL_AGENT_INVALID_ENVELOPE');
     const agent = parseSpatialAgentResult(JSON.stringify((payload as { result: unknown }).result), request);
-    if (transaction && (transaction.scene.revision.id !== originalRevision || selectedId !== originalSelection)) {
-      setSpatialCommandState('Rejected', 'A cena ou a selecção mudou durante a interpretação. Repita o comando para rever o contexto actual.');
+    const responseMeta = (payload as { meta?: { provider?: unknown } }).meta;
+    const currentAgentContext = { sceneGeneration, sceneId: transaction?.scene.id ?? null, revisionId: transaction?.scene.revision.id ?? null, selectedNodeId: selectedId ?? null };
+    if (!spatialAgentContextIsCurrent(originalAgentContext, currentAgentContext) || transaction && transaction.scene.revision.id !== originalRevision || selectedId !== originalSelection) {
+      setSpatialCommandState('RequestClarification', 'A cena ou a selecção mudou durante a interpretação. Repita o comando para rever o contexto actual.');
       return { status: 'clarification', message: 'A cena ou a selecção mudou durante a interpretação. Repita o comando para rever o contexto actual.' };
     }
     spatialAgentHistory = [...spatialAgentHistory, { role: 'user' as const, text: input.slice(0, 300) }, { role: 'assistant' as const, text: agent.text.slice(0, 300) }].slice(-6);
@@ -901,17 +1102,23 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
       return { status: 'completed', message: `${agent.text}${agent.evidenceIds.length ? ` · Evidência: ${agent.evidenceIds.join(', ')}` : ' · Sem referência documental directa.'}` };
     }
     if (agent.kind === 'REQUEST_CLARIFICATION') {
-      setSpatialCommandState('Rejected', agent.question);
+      setSpatialCommandState('RequestClarification', agent.question);
       return { status: 'clarification', message: agent.question };
     }
     if (activeTechnicalDocument && activeTechnicalDocument.primaryDomain !== 'architecture') {
       const message = 'O documento activo não é arquitectónico. Este editor não encaminha alterações mecânicas ou eléctricas para a geometria de paredes.';
-      setSpatialCommandState('Rejected', message); return { status: 'clarification', message };
+      setSpatialCommandState('RequestClarification', message); return { status: 'clarification', message };
     }
     const target = resolveAgentTarget(agent.action, input);
-    if (target.question) { setSpatialCommandState('Rejected', target.question); return { status: 'clarification', message: target.question }; }
+    if (target.question) {
+      pendingTargetClarification = { intent: agentIntent(agent.action, null).intent, sceneId: transaction?.scene.id ?? '', revisionId: transaction?.scene.revision.id ?? '', originalInput: input, origin: responseMeta?.provider === 'test_fixture' ? 'local_deterministic' : 'muse_spark' };
+      setSpatialCommandState('RequestClarification', target.question);
+      return { status: 'clarification', message: target.question };
+    }
     parsed = { status: 'recognized', value: agentIntent(agent.action, target.nodeId) };
-    answerPrefix = 'Muse Spark propôs; executor local validou. ';
+    answerPrefix = responseMeta?.provider === 'test_fixture'
+      ? 'Fixture E2E (não é resposta live do Muse Spark); executor local validou. '
+      : 'Muse Spark propôs; executor local validou. ';
   } catch (error) {
     if (abort.signal.aborted || error instanceof DOMException && error.name === 'AbortError') return { status: 'rejected', message: 'Interpretação cancelada. Nenhuma alteração foi aplicada.' };
     const localFallbackAllowed = error instanceof TypeError || error instanceof Error && error.message === 'SPATIAL_AGENT_LOCAL_FALLBACK';
@@ -919,15 +1126,28 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
       const message = error instanceof Error && error.message === 'SPATIAL_AGENT_ACTION_NOT_AUTHORIZED' ? 'A resposta do Muse não correspondeu a um pedido explícito. Nenhuma alteração foi proposta.' : 'Muse Spark não devolveu uma interpretação válida. A cena permaneceu intacta.';
       setSpatialCommandState('Failed', message); return { status: 'failed', message };
     }
-    if (local.status !== 'recognized') {
+    if (pendingContinuation) {
+      // The follow-up supplies only the target; the pending intent is revision-bound and remains authoritative.
+    } else if (local.status === 'clarification') {
+      spatialAgentHistory = [...spatialAgentHistory, { role: 'user' as const, text: input.slice(0, 300) }, { role: 'assistant' as const, text: local.question.slice(0, 300) }].slice(-6);
+      setSpatialCommandState('RequestClarification', local.question);
+      return { status: 'clarification', message: `Parser local determinístico: ${local.question}` };
+    } else if (local.status !== 'recognized') {
       const message = error instanceof Error && error.message.startsWith('SPATIAL_AGENT_') ? 'Muse Spark está indisponível ou a resposta não passou na validação. A cena permaneceu intacta.' : 'Muse Spark não está disponível. Nenhuma alteração foi aplicada.';
       setSpatialCommandState('Failed', message); return { status: 'failed', message };
     }
-    answerPrefix = 'Muse indisponível; parser local determinístico reconheceu o comando. ';
-    parsed = local;
+    if (!pendingContinuation) {
+      answerPrefix = 'Muse indisponível; parser local determinístico reconheceu o comando. ';
+      parsed = local;
+    }
   } finally {
     callerSignal?.removeEventListener('abort', abortFromCaller);
     if (spatialAgentAbort === abort) spatialAgentAbort = undefined;
+  }
+  if (parsed.status !== 'recognized') {
+    const message = parsed.status === 'clarification' ? parsed.question : parsed.reason;
+    setSpatialCommandState(parsed.status === 'clarification' ? 'RequestClarification' : 'Failed', message);
+    return { status: parsed.status === 'clarification' ? 'clarification' : 'failed', message };
   }
   if (!transaction) return { status: 'clarification', message: 'Não existe cena construída. Carregue e calibre uma planta antes de editar geometria.' };
 
@@ -936,17 +1156,21 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
     camera.updateMatrixWorld(true);
     const screenRight = new Vector3(1, 0, 0).applyQuaternion(camera.quaternion).toArray() as [number, number, number];
     const resolution = resolveSpatialTarget(transaction.scene, parsed.value.intent, selectedId, screenRight);
-    if (resolution.status === 'clarification') { setSpatialCommandState('Rejected', resolution.question); return Promise.resolve({ status: 'clarification', message: resolution.question }); }
+    if (resolution.status === 'clarification') {
+      pendingTargetClarification = { intent: parsed.value.intent, sceneId: transaction.scene.id, revisionId: transaction.scene.revision.id, originalInput: input, origin };
+      setSpatialCommandState('RequestClarification', resolution.question);
+      return Promise.resolve({ status: 'clarification', message: resolution.question });
+    }
     resolvedNodeId = resolution.nodeId;
   }
   const intent = { ...parsed.value.intent, target: { ...parsed.value.intent.target, nodeId: resolvedNodeId } };
   const command = createSpatialCommandEnvelope({
     intent,
     context: { sceneId: transaction.scene.id, revisionId: transaction.scene.revision.id, selectedNodeId: selectedId ?? null, documentId: sourceDocumentRef?.documentId ?? null, mode: 'architecture' },
-    inputText: input,
+    inputText: commandInputText,
     origin: answerPrefix.startsWith('Muse Spark') ? 'muse_spark' : origin,
   });
-  const actor = answerPrefix.startsWith('Muse Spark') ? 'user-confirmed:muse-spark' : 'local-user-input';
+  const actor = 'unidentified-local-user';
 
   try {
     const node = resolvedNodeId ? transaction.scene.nodes.find((item) => item.id === resolvedNodeId) : undefined;
@@ -1032,20 +1256,21 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
         return Promise.resolve({ status: 'preview', message: `${answerPrefix}Remoção de ${node.label} proposta. Confirme para aplicar.` });
       }
       case 'Undo': case 'Redo': {
-        const applied = executeHistory(intent.kind);
+        const applied = await executeHistory(intent.kind);
         const message = applied ? intent.kind === 'Undo' ? 'Última revisão desfeita.' : 'Revisão refeita.' : `Não foi possível executar ${intent.kind === 'Undo' ? 'desfazer' : 'refazer'} nesta revisão.`;
         setSpatialCommandState(applied ? 'Completed' : 'Rejected', message);
         return Promise.resolve({ status: applied ? 'completed' : 'rejected', message: `${answerPrefix}${message}` });
       }
       case 'Save':
         if (!transaction) throw new Error('Não existe cena para guardar.');
-        persistScene(); setSpatialCommandState('Completed', 'Cena guardada na persistência local.');
+        await persistScene(transaction); setSpatialCommandState('Completed', 'Cena guardada na persistência local.');
         spatialAgentHistory = [...spatialAgentHistory, { role: 'assistant' as const, text: `Cena ${transaction.scene.id} guardada na revisão ${transaction.scene.revision.number}.` }].slice(-6);
         return Promise.resolve({ status: 'completed', message: `${answerPrefix}Cena guardada na persistência local.` });
       case 'Restore':
         {
           const saved = localStorage.getItem('unfold-spatial-scene.v1');
           if (!saved) throw new Error('Não existe uma cena guardada para restaurar.');
+          spatialAgentAbort?.abort(); pendingTargetClarification = undefined; sceneGeneration += 1;
           transaction = deserializeSceneTransaction(saved); preview = undefined; compoundPreview = undefined; pendingCommand = undefined; selectedId = undefined; renderModel(transaction.scene); fitScene(); updateToolbar();
           setSpatialCommandState('Completed', 'Cena local revalidada e restaurada.');
           return Promise.resolve({ status: 'completed', message: `${answerPrefix}Cena restaurada.` });
@@ -1063,6 +1288,7 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
 
 function previewCompound(next: SceneTransaction, label: string): void {
   if (!transaction) throw new Error('SCENE_NOT_READY');
+  assertActiveSceneMatchesLoadedSource();
   compoundPreviewBaseRevision = transaction.scene.revision.id;
   compoundPreview = next; preview = undefined; $('#preview-status').textContent = `Pré-visualização: ${label}. A revisão canónica ainda não foi alterada.`;
   $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false; renderModel(next.scene); updateToolbar();
@@ -1072,7 +1298,7 @@ $('#preview-wall').addEventListener('click', () => {
     const node = transaction?.scene.nodes.find((item) => item.id === selectedId); if (!node) throw new Error('Seleccione uma parede.');
     const x = Number(document.querySelector<HTMLInputElement>('#wall-x')?.value); const z = Number(document.querySelector<HTMLInputElement>('#wall-z')?.value);
     if (!Number.isFinite(x) || !Number.isFinite(z)) throw new Error('Posições X/Z devem ser finitas.');
-    const next = candidateWallEdit(node, parsePositive('#wall-length', 'Comprimento'), parsePositive('#wall-height-edit', 'Altura'), parsePositive('#wall-thickness-edit', 'Espessura'), x, z);
+    const next = candidateWallEdit(node, parsePositive('#wall-length', 'Comprimento'), parsePositive('#wall-height-edit', 'Altura'), parsePositive('#wall-thickness-edit', 'Espessura'), x, z, 'unidentified-local-user', document.querySelector<HTMLInputElement>('#ack-confirmed-change')!.checked);
     previewCompound(next, `${node.label} · ${$('#wall-length').value} m`);
   } catch (error) { status(error instanceof Error ? error.message : 'Alteração inválida.'); }
 });
@@ -1082,7 +1308,7 @@ $('#add-opening').addEventListener('click', () => {
     const offsetText = document.querySelector<HTMLInputElement>('#opening-offset')?.value ?? ''; const sillText = document.querySelector<HTMLInputElement>('#opening-sill')?.value ?? '';
     const offset = Number(offsetText); const sill = Number(sillText);
     if (!offsetText || !sillText || !Number.isFinite(offset) || offset < 0 || !Number.isFinite(sill) || sill < 0) throw new Error('Offset e peitoril têm de ser introduzidos explicitamente.');
-    const next = addOpeningToScene(transaction!, wall.id, { id: `opening-${crypto.randomUUID().slice(0, 8)}`, kind: (document.querySelector<HTMLSelectElement>('#opening-kind')?.value ?? 'door') as 'door' | 'window', offsetM: offset, widthM: parsePositive('#opening-width', 'Largura'), heightM: parsePositive('#opening-height', 'Altura'), sillM: sill, actor: 'local-user-input' });
+    const next = addOpeningToScene(transaction!, wall.id, { id: `opening-${crypto.randomUUID().slice(0, 8)}`, kind: (document.querySelector<HTMLSelectElement>('#opening-kind')?.value ?? 'door') as 'door' | 'window', offsetM: offset, widthM: parsePositive('#opening-width', 'Largura'), heightM: parsePositive('#opening-height', 'Altura'), sillM: sill, actor: 'unidentified-local-user' });
     previewCompound(next, 'nova abertura com dimensões explicitamente fornecidas');
   } catch (error) { status(error instanceof Error ? error.message : 'A abertura não é válida.'); }
 });
@@ -1091,25 +1317,29 @@ $('#preview-opening').addEventListener('click', () => {
     if (!transaction || !selectedId) throw new Error('Seleccione uma abertura.');
     const offsetText = $('#edit-opening-offset').value; const sillText = $('#edit-opening-sill').value;
     if (!offsetText || !sillText) throw new Error('Offset e peitoril têm de ser introduzidos explicitamente.');
-    const next = editOpeningInScene(transaction, selectedId, { offsetM: Number(offsetText), widthM: parsePositive('#edit-opening-width', 'Largura'), heightM: parsePositive('#edit-opening-height', 'Altura'), sillM: Number(sillText), actor: 'local-user-input' });
+    const next = editOpeningInScene(transaction, selectedId, { offsetM: Number(offsetText), widthM: parsePositive('#edit-opening-width', 'Largura'), heightM: parsePositive('#edit-opening-height', 'Altura'), sillM: Number(sillText), actor: 'unidentified-local-user', acknowledgeVerifiedChange: document.querySelector<HTMLInputElement>('#ack-confirmed-change')!.checked });
     previewCompound(next, 'alteração da abertura e do vão na parede');
   } catch (error) { status(error instanceof Error ? error.message : 'Abertura inválida.'); }
 });
 $('#remove-opening').addEventListener('click', () => {
   if (!transaction || !selectedId) return;
-  const candidate = previewSceneCommand(transaction, { type: 'RemoveComponent', nodeId: selectedId }, 'local-user-input');
+  if (!activeSceneMatchesLoadedSource()) { status('A cena activa pertence a outra fonte. Construa ou carregue uma cena correspondente antes de a editar.'); return; }
+  const candidate = previewSceneCommand(transaction, { type: 'RemoveComponent', nodeId: selectedId }, 'unidentified-local-user');
   if (candidate.status === 'blocked') { status(candidate.issues.map((issue) => issue.message).join(' ')); return; }
   preview = candidate; compoundPreview = undefined; $('#preview-status').textContent = 'Pré-visualização: remover abertura.'; $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false; renderModel(candidate.candidate!);
 });
-$('#commit-preview').addEventListener('click', () => {
+$('#commit-preview').addEventListener('click', async () => {
   if (!transaction) return;
   try {
+    assertActiveSceneMatchesLoadedSource();
     if (compoundPreview && compoundPreviewBaseRevision !== transaction.scene.revision.id) throw new Error('STALE_SPATIAL_PREVIEW');
     setSpatialCommandState('Executing', 'A validar e aplicar a transacção espacial.');
     const priorScene = transaction.scene;
     const committedCommand = pendingCommand;
-    transaction = compoundPreview ? compoundPreview : preview ? commitScenePreview(transaction, preview) : transaction;
-    preview = undefined; compoundPreview = undefined; compoundPreviewBaseRevision = undefined; $('#preview-status').textContent = 'Alteração aplicada à cena canónica.'; $('#commit-preview').disabled = true; $('#cancel-preview').disabled = true; persistScene(); renderModel(transaction.scene); animateRevision(priorScene, transaction.scene, committedCommand?.intent.target.nodeId ?? selectedId); selectNode(selectedId); updateToolbar();
+    const nextTransaction = compoundPreview ? compoundPreview : preview ? commitScenePreview(transaction, preview) : transaction;
+    await persistScene(nextTransaction);
+    transaction = nextTransaction;
+    preview = undefined; compoundPreview = undefined; compoundPreviewBaseRevision = undefined; $('#preview-status').textContent = 'Alteração aplicada à cena canónica.'; $('#commit-preview').disabled = true; $('#cancel-preview').disabled = true; renderModel(transaction.scene); animateRevision(priorScene, transaction.scene, committedCommand?.intent.target.nodeId ?? selectedId); selectNode(selectedId); updateToolbar();
     if (committedCommand) {
       const before = committedCommand.intent.target.nodeId ? priorScene.nodes.find((node) => node.id === committedCommand.intent.target.nodeId) : undefined;
       const after = before ? transaction.scene.nodes.find((node) => node.id === before.id) : undefined;
@@ -1134,7 +1364,10 @@ gizmo.addEventListener('dragging-changed', (event) => {
   orbit.enabled = !event.value;
   if (event.value && buildTimeline) { buildTimeline.progress(1).kill(); buildTimeline = undefined; }
   const object = gizmo.object;
-  if (event.value && object) { gizmoDragStart = { position: object.position.clone(), quaternion: object.quaternion.clone(), scale: object.scale.clone() }; return; }
+  if (event.value && object) {
+    if (!activeSceneMatchesLoadedSource()) { gizmo.detach(); gizmoDragStart = undefined; status('Gizmo bloqueado: a cena pertence a outra fonte.'); return; }
+    gizmoDragStart = { position: object.position.clone(), quaternion: object.quaternion.clone(), scale: object.scale.clone() }; return;
+  }
   if (!object || !gizmoDragStart || !transaction || !selectedId) return;
   const original = gizmoDragStart; gizmoDragStart = undefined;
   const node = transaction.scene.nodes.find((item) => item.id === selectedId);
@@ -1146,7 +1379,7 @@ gizmo.addEventListener('dragging-changed', (event) => {
       const length = node.geometry.sizeM[0] * object.scale.x;
       const start = new Vector3(object.position.x, 0, object.position.z).addScaledVector(direction, -length / 2);
       const end = new Vector3(object.position.x, 0, object.position.z).addScaledVector(direction, length / 2);
-      const next = editWallInScene(transaction, node.id, { start: { x: start.x, y: start.z }, end: { x: end.x, y: end.z }, heightM: node.geometry.sizeM[1] * object.scale.y, thicknessM: node.geometry.sizeM[2] * object.scale.z, actor: 'local-user-input' });
+      const next = editWallInScene(transaction, node.id, { start: { x: start.x, y: start.z }, end: { x: end.x, y: end.z }, heightM: node.geometry.sizeM[1] * object.scale.y, thicknessM: node.geometry.sizeM[2] * object.scale.z, actor: 'unidentified-local-user' });
       previewCompound(next, 'transformação do gizmo e dependências recalculadas');
     } else {
       const deltaRotation = object.quaternion.clone().multiply(original.quaternion.clone().invert()).normalize();
@@ -1159,7 +1392,7 @@ gizmo.addEventListener('dragging-changed', (event) => {
         : gizmo.mode === 'scale'
           ? { type: 'ResizeComponent', nodeId: selectedId, scale: [object.scale.x / original.scale.x, object.scale.y / original.scale.y, object.scale.z / original.scale.z] }
           : { type: 'RotateComponent', nodeId: selectedId, axis: axis.toArray() as [number, number, number], angleRad: halfAngle * 2 };
-      const next = previewSceneCommand(transaction, command, 'local-user-input');
+      const next = previewSceneCommand(transaction, command, 'unidentified-local-user');
       if (next.status === 'blocked') throw new Error(next.issues.map((issue) => issue.message).join(' '));
       preview = next; renderModel(next.candidate!); $('#preview-status').textContent = 'Pré-visualização do gizmo; commit pendente.'; $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false;
     }
@@ -1179,35 +1412,43 @@ renderer.domElement.addEventListener('pointerdown', (event) => {
   if (object && object !== root) focusNode(object.name);
 });
 
-function persistScene(): void {
-  if (!transaction) return;
-  try { localStorage.setItem('unfold-spatial-scene.v1', serializeSceneTransaction(transaction)); $('#restore-scene').disabled = false; }
-  catch (error) { status(`Cena não foi persistida: ${error instanceof Error ? error.message : 'limite local excedido'}`); }
+async function persistScene(candidate: SceneTransaction | undefined = transaction): Promise<void> {
+  if (!candidate) throw new Error('SCENE_NOT_READY');
+  await persistSceneTransaction(localStorage, candidate);
+  $('#restore-scene').disabled = false;
 }
-$('#save-scene').addEventListener('click', () => {
+$('#save-scene').addEventListener('click', async () => {
   if (!transaction) return;
-  persistScene();
-  const blob = new Blob([serializeSceneTransaction(transaction)], { type: 'application/vnd.unfold.spatial-scene+json' });
-  const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `${transaction.scene.id}.spatial-scene.json`; link.click(); URL.revokeObjectURL(link.href);
-  status(`Cena guardada · revisão ${transaction.scene.revision.number}. A imagem fonte não foi incorporada no JSON.`);
+  try {
+    await persistScene(transaction);
+    const blob = new Blob([serializeSceneTransaction(transaction)], { type: 'application/vnd.unfold.spatial-scene+json' });
+    const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `${transaction.scene.id}.spatial-scene.json`; link.click(); URL.revokeObjectURL(link.href);
+    status(`Cena guardada · revisão ${transaction.scene.revision.number}. A imagem fonte não foi incorporada no JSON.`);
+  } catch (error) { status(`Gravação recusada; a revisão canónica foi preservada: ${error instanceof Error ? error.message : 'erro local de armazenamento'}`); }
 });
 $('#restore-scene').addEventListener('click', () => {
   const saved = localStorage.getItem('unfold-spatial-scene.v1'); if (!saved) return;
-  try { transaction = deserializeSceneTransaction(saved); preview = undefined; compoundPreview = undefined; selectedId = undefined; renderModel(transaction.scene); fitScene(); updateToolbar(); status('Cena restaurada do armazenamento local e revalidada como spatial_scene.v1.'); }
+  try {
+    const restored = deserializeSceneTransaction(saved);
+    if (imageInfo && !sceneMatchesPlanSource(restored.scene, imageInfo, sourceDocumentRef)) throw new Error('SCENE_SOURCE_MISMATCH: a cena guardada pertence a outra imagem/documento. Recarregue a fonte correspondente antes de restaurar.');
+    spatialAgentAbort?.abort(); pendingTargetClarification = undefined; sceneGeneration += 1;
+    transaction = restored; preview = undefined; compoundPreview = undefined; selectedId = undefined; renderModel(transaction.scene); fitScene(); updateToolbar(); status('Cena restaurada do armazenamento local e revalidada como spatial_scene.v1.');
+  }
   catch (error) { status(`Restauro recusado: ${error instanceof Error ? error.message : 'cena inválida'}`); }
 });
 $('#open-scene').addEventListener('click', () => $('#scene-file').click());
+$('#empty-import').addEventListener('click', () => $('#plan-file').click());
 $('#scene-file').addEventListener('change', async (event) => {
   const file = (event.target as HTMLInputElement).files?.[0]; if (!file) return;
   if (file.size > 16 * 1024 * 1024) { status('Ficheiro espacial excede 16 MiB.'); return; }
-  try { transaction = deserializeSceneTransaction(await file.text()); renderModel(transaction.scene); fitScene(); updateToolbar(); status('Cena espacial validada e carregada.'); }
+  try { const imported = deserializeImportedSceneTransaction(await file.text()); spatialAgentAbort?.abort(); pendingTargetClarification = undefined; sceneGeneration += 1; transaction = imported; renderModel(transaction.scene); fitScene(); updateToolbar(); status('Cena importada e validada. Valores e geometria preservados; confirmações humanas externas foram removidas até nova revisão local.'); }
   catch (error) { status(`Cena inválida: ${error instanceof Error ? error.message : 'erro de validação'}`); }
 });
-$('#undo-scene').addEventListener('click', () => executeHistory('Undo'));
-$('#redo-scene').addEventListener('click', () => executeHistory('Redo'));
-function executeHistory(type: 'Undo' | 'Redo'): boolean {
+$('#undo-scene').addEventListener('click', () => { void executeHistory('Undo'); });
+$('#redo-scene').addEventListener('click', () => { void executeHistory('Redo'); });
+async function executeHistory(type: 'Undo' | 'Redo'): Promise<boolean> {
   if (!transaction || preview || compoundPreview) return false;
-  try { const result = previewSceneCommand(transaction, { type }, 'local-user-input'); if (result.status === 'blocked') throw new Error(result.issues.map((issue) => issue.message).join(' ')); transaction = commitScenePreview(transaction, result); persistScene(); renderModel(); selectNode(selectedId); updateToolbar(); status(`${type === 'Undo' ? 'Desfeito' : 'Refeito'} · revisão ${transaction.scene.revision.number}.`); spatialAgentHistory = [...spatialAgentHistory, { role: 'assistant' as const, text: `${type === 'Undo' ? 'Undo' : 'Redo'} confirmado na revisão ${transaction.scene.revision.number}.` }].slice(-6); return true; }
+  try { assertActiveSceneMatchesLoadedSource(); const result = previewSceneCommand(transaction, { type }, 'unidentified-local-user'); if (result.status === 'blocked') throw new Error(result.issues.map((issue) => issue.message).join(' ')); const next = commitScenePreview(transaction, result); await persistScene(next); transaction = next; renderModel(); selectNode(selectedId); updateToolbar(); status(`${type === 'Undo' ? 'Desfeito' : 'Refeito'} · revisão ${transaction.scene.revision.number}.`); spatialAgentHistory = [...spatialAgentHistory, { role: 'assistant' as const, text: `${type === 'Undo' ? 'Undo' : 'Redo'} confirmado na revisão ${transaction.scene.revision.number}.` }].slice(-6); return true; }
   catch (error) { status(error instanceof Error ? error.message : 'Histórico indisponível.'); return false; }
 }
 $('#compare-scene').addEventListener('click', () => {
@@ -1260,17 +1501,51 @@ updateToolbar();
 if (!acceptedDocumentSource) {
   const saved = localStorage.getItem('unfold-spatial-scene.v1');
   if (saved) {
-    try { transaction = deserializeSceneTransaction(saved); renderModel(transaction.scene); fitScene(); updateToolbar(); status('Última cena espacial restaurada e revalidada; a referência raster original pode necessitar de novo carregamento.'); }
+    try {
+      sceneGeneration += 1; transaction = deserializeSceneTransaction(saved); renderModel(transaction.scene); fitScene(); updateToolbar();
+      const sourceImageSha256 = transaction.scene.imageWorldMapping?.sourceImageSha256;
+      const sourceDocumentId = transaction.scene.sourceDocuments[0]?.documentId;
+      if (sourceImageSha256) void readSpatialSourceImage(sourceImageSha256, sourceDocumentId).then(async (source) => {
+        if (!source || !transaction || transaction.scene.imageWorldMapping?.sourceImageSha256.toLowerCase() !== sourceImageSha256.toLowerCase()) return;
+        await loadPlanFile(source.file, source.technicalDocumentRef, source.technicalDocument);
+        status('Cena e imagem-fonte originais restauradas e associadas pelo SHA-256.');
+      }).catch((error: unknown) => status(`Cena restaurada; a imagem-fonte não pôde ser recuperada: ${error instanceof Error ? error.message : 'erro local'}`));
+      status('Última cena espacial restaurada e revalidada; a recuperar a imagem-fonte correspondente.');
+    }
     catch { status('A cena guardada foi recusada; carregue um ficheiro válido ou crie uma nova cena.'); }
   }
 }
 if (acceptedDocumentSource) {
   void readSpatialSourceImage().then(async (file) => {
     if (!file) { status('Não foi encontrada uma imagem transferida da análise documental. Importe a planta manualmente.'); return; }
-    await loadPlanFile(file.file, file.technicalDocumentRef);
+    await loadPlanFile(file.file, file.technicalDocumentRef, file.technicalDocument);
+    if (!transaction) {
+      const savedScene = localStorage.getItem('unfold-spatial-scene.v1');
+      if (savedScene) {
+        try {
+          const restored = deserializeSceneTransaction(savedScene);
+          const sourceMatches = Boolean(file.technicalDocumentRef && restored.scene.sourceDocuments.some((source) => source.documentId === file.technicalDocumentRef!.documentId && source.sha256 === file.technicalDocumentRef!.sha256));
+          const imageMatches = restored.scene.imageWorldMapping?.sourceImageSha256.toLowerCase() === imageInfo?.sha256.toLowerCase();
+          if (sourceMatches && imageMatches) {
+            sceneGeneration += 1; transaction = restored; renderModel(transaction.scene); fitScene(); updateToolbar();
+            status('Cena associada ao documento e imagem actuais restaurada e revalidada.');
+          }
+        } catch { status('A cena persistida não passou validação e foi mantida sem carregar.'); }
+      }
+    }
     if (file.technicalDocumentRef && file.technicalDocument) {
       activeTechnicalDocument = file.technicalDocument;
-      try { semanticMap = createSemanticSpatialMap(file.technicalDocument, file.technicalDocumentRef.documentId, imageInfo!.sha256); refreshSemanticPanel(); } catch { semanticMap = undefined; }
+      try {
+        semanticMap ??= createSemanticSpatialMap(file.technicalDocument, file.technicalDocumentRef.documentId, imageInfo!.sha256);
+        const saved = localStorage.getItem(semanticWorkspaceStorageKey(file.technicalDocumentRef.documentId, imageInfo!.sha256)) ?? localStorage.getItem('unfold-semantic-workspace.v1');
+        if (saved) semanticMap = deserializeSemanticWorkspace(saved, { documentId: file.technicalDocumentRef.documentId, imageSha256: imageInfo!.sha256, document: file.technicalDocument }).map;
+        if (transaction && semanticMap) {
+          semanticMap = resolveSemanticSceneLinks(semanticMap, transaction.scene);
+          persistSemanticWorkspace(semanticMap);
+        }
+        activeSemanticProposalId = semanticMap?.links.find((link) => link.review.state === 'proposed')?.id;
+        refreshSemanticPanel();
+      } catch { semanticMap = createSemanticSpatialMap(file.technicalDocument, file.technicalDocumentRef.documentId, imageInfo!.sha256); refreshSemanticPanel(); }
       const handoff = prepareSpatialHandoff(file.technicalDocument, file.technicalDocumentRef.documentId, imageInfo!.sha256);
       const context = $('#accepted-document-context');
       context.hidden = false;

@@ -28,7 +28,7 @@ import arrowRightIcon from 'lucide-static/icons/arrow-right.svg?raw';
 import settingsIcon from 'lucide-static/icons/settings-2.svg?raw';
 import boxIcon from 'lucide-static/icons/box.svg?raw';
 import './demo.css';
-import { saveSpatialSourceImage } from './spatial-source-store';
+import { saveSpatialSourceImage, setSpatialSourceImageHandoff } from './spatial-source-store';
 import { executeActiveSpatialCommand, hasActiveSpatialCommandHandler } from './spatial-command-runtime';
 import type { SpatialCommandOrigin, SpatialCommandState } from './spatial-command-protocol';
 
@@ -1690,13 +1690,20 @@ document.querySelector('#demo-image-example')?.addEventListener('click', () => {
 });
 document.querySelector('#demo-build-spatial')?.addEventListener('click', async () => {
   if (!selectedImageFile || imageAnalysis?.document.primaryDomain !== 'architecture') return;
+  const sourceFile = selectedImageFile;
+  const sourceAnalysis = imageAnalysis;
+  const sourceSequence = imageSequence;
   const button = document.querySelector<HTMLButtonElement>('#demo-build-spatial');
   if (button) button.disabled = true;
   try {
-    const technicalDocument = imageAnalysis.document;
+    const technicalDocument = sourceAnalysis.document;
     const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(technicalDocument)));
     const hash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
-    await saveSpatialSourceImage(selectedImageFile, { documentId: `doc-${hash.slice(0, 20)}`, sha256: hash }, technicalDocument);
+    if (selectedImageFile !== sourceFile || imageAnalysis !== sourceAnalysis || imageSequence !== sourceSequence) throw new Error('A imagem ou análise mudou durante a preparação; confirme a origem novamente.');
+    const documentId = `doc-${hash.slice(0, 20)}`;
+    const imageHash = await saveSpatialSourceImage(sourceFile, { documentId, sha256: hash }, technicalDocument, { setHandoff: false });
+    if (selectedImageFile !== sourceFile || imageAnalysis !== sourceAnalysis || imageSequence !== sourceSequence) throw new Error('A imagem ou análise mudou durante a gravação; nenhum handoff foi iniciado.');
+    setSpatialSourceImageHandoff(imageHash, documentId);
     await openSpatialEditor('accepted-document');
   } catch (error) {
     if (button) button.disabled = false;
@@ -1804,10 +1811,12 @@ async function openSpatialEditor(source?: 'accepted-document'): Promise<void> {
   if (commandBar?.parentElement) { commandReturnSlot = document.createComment('UNFOLD command bar return point'); commandBar.before(commandReturnSlot); }
   try {
     const { mountSpatialEditor } = await import('./spatial-editor');
+    sessionStorage.setItem('unfold-demo-spatial-open.v1', '1');
     spatialEditorUnmount = mountSpatialEditor(spatialEditorHost, { source, onCommandState: (state: SpatialCommandState, message: string) => {
       const uiState = state === 'Idle' ? 'IDLE' : state === 'Listening' ? 'LISTENING' : state === 'Understanding' ? 'UNDERSTANDING' : state === 'ProposedAction' ? 'PROPOSED_ACTION' : state === 'Preview' ? 'PREVIEW' : state === 'AwaitingConfirmation' ? 'AWAITING_CONFIRMATION' : state === 'Executing' ? 'EXECUTING' : state === 'Completed' ? 'COMPLETE' : state === 'Rejected' ? 'REJECTED' : 'ERROR';
       setCommandState(uiState, message);
     }, onExit: () => {
+      sessionStorage.removeItem('unfold-demo-spatial-open.v1');
       spatialEditorUnmount = undefined;
       if (commandBar && commandReturnSlot?.parentElement) commandReturnSlot.replaceWith(commandBar);
       commandReturnSlot = undefined;
@@ -1822,6 +1831,7 @@ async function openSpatialEditor(source?: 'accepted-document'): Promise<void> {
       }).catch((error: unknown) => setCommandState('ERROR', error instanceof Error ? error.message : 'Falha ao recuperar o renderer mecânico.'));
     } });
   } catch (error) {
+    sessionStorage.removeItem('unfold-demo-spatial-open.v1');
     if (commandBar && commandReturnSlot?.parentElement) commandReturnSlot.replaceWith(commandBar);
     commandReturnSlot = undefined;
     spatialEditorHost?.remove(); spatialEditorHost = undefined;
@@ -1834,6 +1844,7 @@ async function openSpatialEditor(source?: 'accepted-document'): Promise<void> {
   if (commandBar && spatialEditorHost) spatialEditorHost.append(commandBar);
   if (hasActiveSpatialCommandHandler()) setSpatialCommandBarMode(true);
 }
+if (sessionStorage.getItem('unfold-demo-spatial-open.v1') === '1') void openSpatialEditor();
 window.addEventListener('beforeunload', () => {
   cancelConversation();
   orchestrator.cancel();

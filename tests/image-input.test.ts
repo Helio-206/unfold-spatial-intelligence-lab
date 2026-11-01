@@ -2,13 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { MAX_IMAGE_BYTES, validateImageDataUrl } from '../src/image-input';
 import { parseMechanicalObservationText } from '../src/image-understanding';
 
-const jpeg = 'data:image/jpeg;base64,/9j/4AA=';
-const png = 'data:image/png;base64,iVBORw0KGgo=';
+const jpeg = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAgAAAQABAAD//gAPTGF2YzYxLjMuMTAwAP/bAEMACAQEBAQEBQUFBQUFBgYGBgYGBgYGBgYGBgcHBwgICAcHBwYGBwcICAgICQkJCAgICAkJCgoKDAwLCw4ODhERFP/EAEsAAQEAAAAAAAAAAAAAAAAAAAAHAQEAAAAAAAAAAAAAAAAAAAAAEAEAAAAAAAAAAAAAAAAAAAAAEQEAAAAAAAAAAAAAAAAAAAAA/8AAEQgACAAIAwEiAAIRAAMRAP/aAAwDAQACEQMRAD8Av4AP/9k=';
+const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAACXBIWXMAAAABAAAAAQBPJcTWAAAAD0lEQVR4nGP4jwMwDC0JALoev0Ewkwr8AAAAAElFTkSuQmCC';
 
 describe('image understanding input', () => {
-  it('accepts JPEG and PNG signatures', () => {
-    expect(validateImageDataUrl(jpeg)).toMatchObject({ mimeType: 'image/jpeg', byteLength: 5 });
-    expect(validateImageDataUrl(png)).toMatchObject({ mimeType: 'image/png', byteLength: 8 });
+  it('accepts complete JPEG and PNG test fixtures', () => {
+    expect(validateImageDataUrl(jpeg)).toMatchObject({ mimeType: 'image/jpeg' });
+    expect(validateImageDataUrl(png)).toMatchObject({ mimeType: 'image/png' });
+  });
+
+  it('rejects signature-only and truncated image payloads', () => {
+    expect(() => validateImageDataUrl('data:image/png;base64,iVBORw0KGgo=')).toThrow();
+    expect(() => validateImageDataUrl('data:image/jpeg;base64,/9j/4AA=')).toThrow();
   });
 
   it.each([
