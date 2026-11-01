@@ -1,0 +1,55 @@
+import { describe, expect, it } from 'vitest';
+import { explainSceneError } from '../src/scene-messages';
+import { commitScenePreview, previewSceneCommand } from '../src/spatial-scene';
+import { clock } from './helpers/scenes';
+import { confirmedScene, failure, transactionOf, model } from './helpers/scene-auth';
+
+// Todos os códigos de AuthorizationFailure do Core, mais os da guarda da cena.
+const CORE_CODES = ['AUTHORIZATION_REQUIRED', 'AUTHORIZATION_UNKNOWN', 'AUTHORIZATION_ALREADY_USED', 'AUTHORIZATION_EXPIRED', 'AUTHORIZATION_DIGEST_MISMATCH', 'AUTHORIZATION_REVISION_MISMATCH', 'AUTHORIZATION_SESSION_MISMATCH', 'MODEL_CANNOT_AUTHORIZE'];
+const SCENE_CODES = ['MACHINE_CANNOT_TOUCH_CONFIRMED', 'CONFIRMATION_REQUIRES_HUMAN_ACTOR', 'CONTEXT_INCONSISTENT', 'STALE_PREVIEW', 'PREVIEW_TAMPERED', 'PREVIEW_BLOCKED', 'GEOMETRY_REQUIRED', 'NEW_GEOMETRY_CANNOT_CLAIM_HUMAN_VERIFICATION', 'AUTHORIZED_VALUE_NOT_CORRECTED'];
+
+describe('mensagens para o utilizador', () => {
+  it.each([...CORE_CODES, ...SCENE_CODES])('%s tem uma explicação em português, sem o código cru', (code) => {
+    const message = explainSceneError(code);
+    expect(message).not.toBe(code);
+    expect(message).not.toContain(code);
+    expect(message.length).toBeGreaterThan(20);
+    expect(message).toMatch(/[a-zçãõáéíóú]/);
+  });
+
+  it('as mensagens não repetem "Nenhuma revisão foi aplicada", que o editor acrescenta', () => {
+    for (const code of [...CORE_CODES, ...SCENE_CODES]) expect(explainSceneError(code)).not.toMatch(/Nenhuma revisão foi aplicada/);
+  });
+
+  it('o bloqueio de uma proposta de modelo diz o que fazer em vez disso', () => {
+    expect(explainSceneError('MACHINE_CANNOT_TOUCH_CONFIRMED')).toMatch(/Muse|modelo/);
+    expect(explainSceneError('MACHINE_CANNOT_TOUCH_CONFIRMED')).toMatch(/confirm/);
+    expect(explainSceneError('MACHINE_CANNOT_TOUCH_CONFIRMED')).toMatch(/directamente|inspector/);
+  });
+
+  it('o pedido de autorização manda rever a pré-visualização e aplicar', () => {
+    expect(explainSceneError('AUTHORIZATION_REQUIRED')).toMatch(/Aplicar/);
+  });
+
+  it('as autorizações inválidas mandam pré-visualizar de novo', () => {
+    for (const code of ['AUTHORIZATION_UNKNOWN', 'AUTHORIZATION_ALREADY_USED', 'AUTHORIZATION_EXPIRED', 'AUTHORIZATION_DIGEST_MISMATCH', 'AUTHORIZATION_REVISION_MISMATCH', 'AUTHORIZATION_SESSION_MISMATCH', 'STALE_PREVIEW', 'PREVIEW_TAMPERED']) {
+      expect(explainSceneError(code), code).toMatch(/pré-visualiz/i);
+    }
+  });
+
+  it('o que não é um código conhecido passa tal e qual (mensagens já escritas em português)', () => {
+    for (const text of ['Seleccione uma parede paramétrica.', 'A abertura excede os limites da parede.', 'REMOVE_HAS_DEPENDENCIES', '', 'Falha desconhecida']) expect(explainSceneError(text)).toBe(text);
+  });
+
+  it('só traduz o código quando a mensagem é exactamente esse código', () => {
+    expect(explainSceneError('x MACHINE_CANNOT_TOUCH_CONFIRMED y')).toBe('x MACHINE_CANNOT_TOUCH_CONFIRMED y');
+  });
+
+  it('cobre os códigos que a cena realmente lança', () => {
+    const transaction = transactionOf(confirmedScene(['component.properties', 'geometry']));
+    const machine = { origin: 'model_proposal' as const, actor: model };
+    const blocked = previewSceneCommand(transaction, { type: 'ResizeComponent', nodeId: 'wall-1', scale: [2, 1, 1] }, 'muse', clock, machine);
+    const thrown = [blocked.issues[0]!.code, failure(() => commitScenePreview(transaction, previewSceneCommand(transaction, { type: 'ResizeComponent', nodeId: 'wall-1', scale: [2, 1, 1] }, 'r', clock)))];
+    for (const code of thrown) expect(explainSceneError(code), code).not.toBe(code);
+  });
+});

@@ -7,6 +7,7 @@ import { decodePlanImage } from './plan-image';
 import { buildPlanVectorModel, countClosedCandidateContours, detectCandidateIntersections, detectWallCandidates, mergeWallCandidates, splitWallCandidate, traceWallCandidate, type PixelWallCandidate, type Point2 } from './plan-reconstruction';
 import { addOpeningToScene, createPlanScene, planOpeningEdit, planWallEdit, type CompositePlan } from './plan-scene';
 import { createSceneAuthorizer } from './scene-authorizer';
+import { explainSceneError } from './scene-messages';
 import type { CommandOrigin } from './core';
 import { ARCHITECTURAL_MODULE_DIMENSIONS, buildThreePlanGroup, type ArchitecturalAssets } from './plan-three-adapter';
 import { commitScenePreview, deserializeSceneTransaction, previewSceneCommand, serializeSceneTransaction, type Node, type SceneCommandContext, type ScenePreview, type SceneTransaction, type SpatialCommand, type SpatialSceneV1 } from './spatial-scene';
@@ -663,7 +664,7 @@ $('#add-module').addEventListener('click', () => {
     component: { kind: 'architectural_module', dependsOn: [], properties: { assetId: { value: assetId, provenance: source } } }, properties: {},
   };
   const candidate = previewSceneCommand(transaction, { type: 'AddComponent', node }, 'local-user-input');
-  if (candidate.status === 'blocked') { status(candidate.issues.map((issue) => issue.message).join(' ')); return; }
+  if (candidate.status === 'blocked') { status(candidate.issues.map((issue) => explainSceneError(issue.message)).join(' ')); return; }
   preview = candidate; compoundPreview = undefined; $('#preview-status').textContent = `Pré-visualização: adicionar ${assetId} como módulo independente.`; $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false; renderModel(candidate.candidate!); selectNode(node.id);
 });
 
@@ -1005,7 +1006,7 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
         return Promise.resolve({ status: 'rejected', message: 'Esta intenção ainda não é suportada pelo executor determinístico.' });
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Comando recusado.';
+    const message = error instanceof Error ? explainSceneError(error.message) : 'Comando recusado.';
     pendingCommand = undefined; setSpatialCommandState('Rejected', `${message} Nenhuma revisão foi aplicada.`);
     return Promise.resolve({ status: 'rejected', message: `${message} Nenhuma revisão foi aplicada.` });
   }
@@ -1027,7 +1028,7 @@ $('#preview-wall').addEventListener('click', () => {
     if (!Number.isFinite(x) || !Number.isFinite(z)) throw new Error('Posições X/Z devem ser finitas.');
     const next = candidateWallEdit(node, parsePositive('#wall-length', 'Comprimento'), parsePositive('#wall-height-edit', 'Altura'), parsePositive('#wall-thickness-edit', 'Espessura'), x, z);
     previewCompound(next, `${node.label} · ${$('#wall-length').value} m`);
-  } catch (error) { status(error instanceof Error ? error.message : 'Alteração inválida.'); }
+  } catch (error) { status(error instanceof Error ? explainSceneError(error.message) : 'Alteração inválida.'); }
 });
 $('#add-opening').addEventListener('click', () => {
   try {
@@ -1037,7 +1038,7 @@ $('#add-opening').addEventListener('click', () => {
     if (!offsetText || !sillText || !Number.isFinite(offset) || offset < 0 || !Number.isFinite(sill) || sill < 0) throw new Error('Offset e peitoril têm de ser introduzidos explicitamente.');
     const next = addOpeningToScene(transaction!, wall.id, { id: `opening-${crypto.randomUUID().slice(0, 8)}`, kind: (document.querySelector<HTMLSelectElement>('#opening-kind')?.value ?? 'door') as 'door' | 'window', offsetM: offset, widthM: parsePositive('#opening-width', 'Largura'), heightM: parsePositive('#opening-height', 'Altura'), sillM: sill, actor: 'local-user-input' });
     previewCompound(next, 'nova abertura com dimensões explicitamente fornecidas');
-  } catch (error) { status(error instanceof Error ? error.message : 'A abertura não é válida.'); }
+  } catch (error) { status(error instanceof Error ? explainSceneError(error.message) : 'A abertura não é válida.'); }
 });
 $('#preview-opening').addEventListener('click', () => {
   try {
@@ -1046,12 +1047,12 @@ $('#preview-opening').addEventListener('click', () => {
     if (!offsetText || !sillText) throw new Error('Offset e peitoril têm de ser introduzidos explicitamente.');
     const next = planOpeningEdit(transaction, selectedId, { offsetM: Number(offsetText), widthM: parsePositive('#edit-opening-width', 'Largura'), heightM: parsePositive('#edit-opening-height', 'Altura'), sillM: Number(sillText), actor: 'local-user-input' });
     previewCompound(next, 'alteração da abertura e do vão na parede');
-  } catch (error) { status(error instanceof Error ? error.message : 'Abertura inválida.'); }
+  } catch (error) { status(error instanceof Error ? explainSceneError(error.message) : 'Abertura inválida.'); }
 });
 $('#remove-opening').addEventListener('click', () => {
   if (!transaction || !selectedId) return;
   const candidate = previewSceneCommand(transaction, { type: 'RemoveComponent', nodeId: selectedId }, 'local-user-input');
-  if (candidate.status === 'blocked') { status(candidate.issues.map((issue) => issue.message).join(' ')); return; }
+  if (candidate.status === 'blocked') { status(candidate.issues.map((issue) => explainSceneError(issue.message)).join(' ')); return; }
   preview = candidate; compoundPreview = undefined; $('#preview-status').textContent = 'Pré-visualização: remover abertura.'; $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false; renderModel(candidate.candidate!);
 });
 $('#commit-preview').addEventListener('click', () => {
@@ -1073,7 +1074,7 @@ $('#commit-preview').addEventListener('click', () => {
       setSpatialCommandState('Completed', `Comando confirmado na revisão ${transaction.scene.revision.number}. Undo/Redo disponíveis.`);
     }
     pendingCommand = undefined;
-  } catch (error) { status(`Commit recusado: ${error instanceof Error ? error.message : 'erro'}`); cancelPreview(); }
+  } catch (error) { status(`Commit recusado: ${error instanceof Error ? explainSceneError(error.message) : 'erro'}`); cancelPreview(); }
 });
 function cancelPreview(): void {
   const commandWasPending = Boolean(pendingCommand);
@@ -1118,7 +1119,7 @@ gizmo.addEventListener('dragging-changed', (event) => {
       if (next.status === 'blocked') throw new Error(next.issues.map((issue) => issue.message).join(' '));
       preview = next; renderModel(next.candidate!); $('#preview-status').textContent = 'Pré-visualização do gizmo; commit pendente.'; $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false;
     }
-  } catch (error) { object.position.copy(original.position); object.quaternion.copy(original.quaternion); object.scale.copy(original.scale); renderModel(); status(error instanceof Error ? error.message : 'Transformação recusada.'); }
+  } catch (error) { object.position.copy(original.position); object.quaternion.copy(original.quaternion); object.scale.copy(original.scale); renderModel(); status(error instanceof Error ? explainSceneError(error.message) : 'Transformação recusada.'); }
 });
 renderer.domElement.addEventListener('pointerdown', (event) => {
   if (gizmo.dragging || preview || compoundPreview) return;
@@ -1163,7 +1164,7 @@ $('#redo-scene').addEventListener('click', () => executeHistory('Redo'));
 function executeHistory(type: 'Undo' | 'Redo'): boolean {
   if (!transaction || preview || compoundPreview) return false;
   try { const result = previewSceneCommand(transaction, { type }, 'local-user-input'); if (result.status === 'blocked') throw new Error(result.issues.map((issue) => issue.message).join(' ')); transaction = commitScenePreview(transaction, result); persistScene(); renderModel(); selectNode(selectedId); updateToolbar(); status(`${type === 'Undo' ? 'Desfeito' : 'Refeito'} · revisão ${transaction.scene.revision.number}.`); spatialAgentHistory = [...spatialAgentHistory, { role: 'assistant' as const, text: `${type === 'Undo' ? 'Undo' : 'Redo'} confirmado na revisão ${transaction.scene.revision.number}.` }].slice(-6); return true; }
-  catch (error) { status(error instanceof Error ? error.message : 'Histórico indisponível.'); return false; }
+  catch (error) { status(error instanceof Error ? explainSceneError(error.message) : 'Histórico indisponível.'); return false; }
 }
 $('#compare-scene').addEventListener('click', () => {
   if (!transaction?.undoStack.length || preview || compoundPreview) return;

@@ -1,0 +1,30 @@
+/**
+ * O que o utilizador lê quando a guarda de valores confirmados recusa alguma coisa. Os códigos (`AUTHORIZATION_REQUIRED`,
+ * `MACHINE_CANNOT_TOUCH_CONFIRMED`, ...) são para o código e para os testes; no ecrã não dizem nada a ninguém.
+ * Só se traduz uma mensagem que seja exactamente um destes códigos; o resto (mensagens já escritas em português) passa igual.
+ */
+const REVALIDATE = 'Volte a pré-visualizar e confirme de novo.';
+
+const MESSAGES: Record<string, string> = {
+  MACHINE_CANNOT_TOUCH_CONFIRMED: 'Uma proposta do Muse (ou do sistema) não pode alterar, apagar nem repor valores que uma pessoa confirmou. Faça essa alteração directamente no inspector.',
+  AUTHORIZATION_REQUIRED: 'Esta alteração toca em valores confirmados e precisa da sua autorização: reveja a pré-visualização e carregue em «Aplicar».',
+  AUTHORIZATION_UNKNOWN: `A autorização desta alteração não é reconhecida. ${REVALIDATE}`,
+  AUTHORIZATION_ALREADY_USED: `A autorização desta alteração já foi usada. ${REVALIDATE}`,
+  AUTHORIZATION_EXPIRED: `A autorização desta alteração expirou. ${REVALIDATE}`,
+  AUTHORIZATION_DIGEST_MISMATCH: `A autorização não corresponde ao que seria aplicado agora. ${REVALIDATE}`,
+  AUTHORIZATION_REVISION_MISMATCH: `A cena mudou depois de a alteração ter sido autorizada. ${REVALIDATE}`,
+  AUTHORIZATION_SESSION_MISMATCH: `A autorização pertence a outra sessão. ${REVALIDATE}`,
+  MODEL_CANNOT_AUTHORIZE: 'Só uma pessoa, na interface, pode autorizar alterações a valores confirmados.',
+  CONFIRMATION_REQUIRES_HUMAN_ACTOR: 'Só uma pessoa pode confirmar um valor; um modelo ou o sistema não o pode fazer.',
+  CONTEXT_INCONSISTENT: 'O pedido diz vir da interface mas não tem uma pessoa associada, por isso foi recusado.',
+  STALE_PREVIEW: `A cena mudou depois da pré-visualização. ${REVALIDATE}`,
+  PREVIEW_TAMPERED: `A pré-visualização já não corresponde ao que seria aplicado agora. ${REVALIDATE}`,
+  PREVIEW_BLOCKED: 'Esta pré-visualização está bloqueada e não pode ser aplicada.',
+  GEOMETRY_REQUIRED: 'Este componente não tem geometria para alterar.',
+  NEW_GEOMETRY_CANNOT_CLAIM_HUMAN_VERIFICATION: 'Uma geometria nova não pode vir já marcada como verificada por uma pessoa.',
+  AUTHORIZED_VALUE_NOT_CORRECTED: 'Não foi possível registar a autorização desta alteração. Nada foi aplicado.',
+};
+
+export function explainSceneError(message: string): string {
+  return Object.hasOwn(MESSAGES, message) ? MESSAGES[message]! : message;
+}
