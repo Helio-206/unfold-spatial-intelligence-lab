@@ -3,8 +3,10 @@ import type { Node, SpatialSceneV1 } from './spatial-scene';
 
 const wallFallbackMaterial = new THREE.MeshStandardMaterial({ color: 0xd2cdc1, roughness: 0.91 });
 const doorMaterial = new THREE.MeshStandardMaterial({ color: 0x765237, roughness: 0.64 });
-const windowMaterial = new THREE.MeshPhysicalMaterial({ color: 0xa9c3c4, metalness: 0.08, roughness: 0.16, transparent: true, opacity: 0.48, transmission: 0.16, thickness: 0.025 });
-const floorMaterial = new THREE.MeshStandardMaterial({ color: 0xb9b09f, roughness: 0.91, side: THREE.DoubleSide });
+const windowMaterial = new THREE.MeshPhysicalMaterial({ color: 0xb2c8c7, metalness: 0.04, roughness: 0.2, transparent: true, opacity: 0.62, transmission: 0.08, thickness: 0.018, side: THREE.DoubleSide });
+const doorTrimMaterial = new THREE.MeshStandardMaterial({ color: 0x806148, roughness: 0.68 });
+const windowTrimMaterial = new THREE.MeshStandardMaterial({ color: 0x6b716c, metalness: 0.46, roughness: 0.36 });
+const floorMaterial = new THREE.MeshPhysicalMaterial({ color: 0xd0c5b1, roughness: 0.83, metalness: 0, side: THREE.DoubleSide });
 const genericMaterial = new THREE.MeshStandardMaterial({ color: 0x9d9b92, roughness: 0.78 });
 
 export const ARCHITECTURAL_MODULE_DIMENSIONS: Record<string, [number, number, number]> = {
@@ -63,6 +65,7 @@ function wallMesh(node: Node, openings: Node[], assets: ArchitecturalAssets): TH
   shape.lineTo(length / 2 - bevel, height - bevel);
   shape.lineTo(length / 2 - bevel, bevel);
   shape.lineTo(-length / 2 + bevel, bevel);
+  const validOpenings: Array<{ node: Node; x0: number; x1: number; bottom: number; top: number }> = [];
   for (const opening of openings) {
     const offset = opening.component?.properties.offset?.value;
     const width = opening.component?.properties.width?.value;
@@ -73,13 +76,40 @@ function wallMesh(node: Node, openings: Node[], assets: ArchitecturalAssets): TH
     const x1 = x0 + Number(width);
     if (x0 < -length / 2 || x1 > length / 2 || Number(sill) < 0 || Number(sill) + Number(openingHeight) > height) continue;
     shape.holes.push(rectangle(x0, Number(sill), x1, Number(sill) + Number(openingHeight)));
+    validOpenings.push({ node: opening, x0, x1, bottom: Number(sill), top: Number(sill) + Number(openingHeight) });
   }
   const geometry = new THREE.ExtrudeGeometry(shape, { depth: thickness - 2 * bevel, bevelEnabled: bevel > 0.001, bevelSegments: 1, bevelThickness: bevel, bevelSize: bevel, curveSegments: 1, steps: 1 });
   geometry.translate(0, 0, -thickness / 2 + bevel);
   const material = assetSurfaceMaterial(assets.wall_ext_3000) ?? wallFallbackMaterial;
   const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = `${node.id}:wall-assembly`;
   mesh.castShadow = true;
   mesh.receiveShadow = true;
+  for (const opening of validOpenings) {
+    const isWindow = opening.node.component?.kind === 'window';
+    const trimMaterial = isWindow ? windowTrimMaterial : doorTrimMaterial;
+    const width = opening.x1 - opening.x0;
+    const profile = Math.min(0.045, Math.max(0.025, thickness * 0.22));
+    const z = thickness / 2 + 0.002;
+    for (const side of [-1, 1]) {
+      const left = new THREE.Mesh(new THREE.BoxGeometry(profile, opening.top - opening.bottom + profile * 2, profile), trimMaterial);
+      left.position.set(opening.x0, (opening.bottom + opening.top) / 2, side * z);
+      left.castShadow = true; left.receiveShadow = true;
+      const right = left.clone();
+      right.position.x = opening.x1;
+      mesh.add(left, right);
+      const head = new THREE.Mesh(new THREE.BoxGeometry(width + profile * 2, profile, profile), trimMaterial);
+      head.position.set((opening.x0 + opening.x1) / 2, opening.top, side * z);
+      head.castShadow = true; head.receiveShadow = true;
+      mesh.add(head);
+      if (isWindow) {
+        const sill = new THREE.Mesh(new THREE.BoxGeometry(width + profile * 2, profile * 0.8, profile * 1.4), trimMaterial);
+        sill.position.set((opening.x0 + opening.x1) / 2, opening.bottom, side * (z + profile * 0.12));
+        sill.castShadow = true; sill.receiveShadow = true;
+        mesh.add(sill);
+      }
+    }
+  }
   return mesh;
 }
 
@@ -124,7 +154,7 @@ function componentMesh(node: Node, assets: ArchitecturalAssets): THREE.Object3D 
     for (const vertex of vertices.slice(1)) shape.lineTo(vertex[0], vertex[2]);
     shape.closePath();
     geometry = node.component?.kind === 'room'
-      ? new THREE.ExtrudeGeometry(shape, { depth: 0.025, bevelEnabled: true, bevelSegments: 1, bevelSize: 0.004, bevelThickness: 0.004, curveSegments: 1, steps: 1 })
+      ? new THREE.ExtrudeGeometry(shape, { depth: 0.04, bevelEnabled: false, curveSegments: 1, steps: 1 })
       : new THREE.ShapeGeometry(shape);
     geometry.rotateX(Math.PI / 2);
   } else return undefined;
@@ -132,7 +162,11 @@ function componentMesh(node: Node, assets: ArchitecturalAssets): THREE.Object3D 
     : node.component?.kind === 'window' ? windowMaterial
       : node.component?.kind === 'room' ? floorMaterial : genericMaterial;
   const mesh = new THREE.Mesh(geometry, material);
-  if (node.component?.kind === 'room') mesh.userData.visualClassification = 'suggested_finish';
+  if (node.component?.kind === 'room') {
+    mesh.position.y = 0.008;
+    mesh.userData.visualClassification = 'suggested_finish';
+    mesh.userData.sourceNodeId = node.id;
+  }
   mesh.castShadow = node.component?.kind !== 'room';
   mesh.receiveShadow = true;
   return mesh;

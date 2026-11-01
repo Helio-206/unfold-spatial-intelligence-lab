@@ -45,11 +45,20 @@
   .source-panel.source-collapsed .panel-heading span{display:none}
   .inspector{width:min(270px,calc(100vw - 16px));padding:13px}
   .stage-empty{display:none}
-  .spatial-toolbar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;width:min(420px,calc(100vw - 16px));padding:5px}
+  .spatial-toolbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;width:min(420px,calc(100vw - 16px));padding:5px}
   .spatial-toolbar button{min-width:0;width:100%;height:32px;padding:3px;font-size:10px}
   .spatial-toolbar #compare-scene,.spatial-toolbar #undo-scene,.spatial-toolbar #redo-scene{font-size:8px}
+  .spatial-toolbar #toggle-suggested-finish{font-size:8px;line-height:1.15;white-space:normal}
   .spatial-lab:has(.inspector:not([hidden])) .source-panel{transform:translateX(calc(-100% - 15px));opacity:0;pointer-events:none}
 }
+
+.source-image-frame svg text{pointer-events:none}
+.grounding-panel{margin:14px 0;padding:12px;border:1px solid rgba(220,171,93,.28);border-radius:12px;background:rgba(19,22,20,.88)}
+.grounding-row{display:grid;gap:7px}
+.grounding-row>span{font-size:13px}
+.grounding-row>small{line-height:1.45;overflow-wrap:anywhere}
+.grounding-row .trace-tools{display:flex;flex-wrap:wrap;gap:6px}
+.grounding-row .trace-tools button,#cancel-grounding{font-size:11px;padding:6px 9px}
 
 /* Empty-state: one intentional entry point instead of competing panels and tools. */
 .spatial-lab[data-state="empty"] .source-panel,

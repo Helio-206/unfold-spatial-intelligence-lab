@@ -132,6 +132,22 @@ export function detectWallCandidates(raster: PixelRaster, options: { threshold?:
   return consolidateWallCandidates(candidates).sort((a, b) => a.start.y - b.start.y || a.start.x - b.start.x || a.orientation.localeCompare(b.orientation)).map((candidate, index) => ({ ...candidate, id: `line-${index}`, origin: 'automatic_detection' }));
 }
 
+/**
+ * Reduce visual noise before human review. This is a review aid, not a wall
+ * classifier: line thickness/length cannot establish architectural meaning.
+ * Keep the full detector output when the filter would leave too little evidence.
+ */
+export function filterCandidatesForReview(candidates: PixelWallCandidate[], imageSize: { width: number; height: number }): { candidates: PixelWallCandidate[]; omitted: number; minimumThicknessPx: number; minimumLengthPx: number; usedFallback: boolean } {
+  if (!Number.isInteger(imageSize.width) || !Number.isInteger(imageSize.height) || imageSize.width < 1 || imageSize.height < 1) throw new Error('Dimensões raster inválidas.');
+  const minDimension = Math.min(imageSize.width, imageSize.height);
+  const minimumThicknessPx = Math.max(2, minDimension * 0.009);
+  const minimumLengthPx = Math.max(32, minDimension * 0.075);
+  const reviewed = candidates.filter((candidate) => Math.hypot(candidate.end.x - candidate.start.x, candidate.end.y - candidate.start.y) >= minimumLengthPx && candidate.thicknessPx >= minimumThicknessPx);
+  const usedFallback = reviewed.length < Math.min(8, candidates.length);
+  const result = usedFallback ? candidates : reviewed;
+  return { candidates: result, omitted: candidates.length - result.length, minimumThicknessPx, minimumLengthPx, usedFallback };
+}
+
 /** Merge overlapping/nearby collinear detections and suppress near-identical duplicates.
  * This is geometric consolidation only; it does not prove that a line is a wall. */
 export function consolidateWallCandidates(candidates: PixelWallCandidate[], tolerancePx = 3): PixelWallCandidate[] {
@@ -168,6 +184,7 @@ export function consolidateWallCandidates(candidates: PixelWallCandidate[], tole
     match.end = { x: last.x - -uy2 * (last.x * -uy2 + last.y * ux2 - centerOffset), y: last.y - ux2 * (last.x * -uy2 + last.y * ux2 - centerOffset) };
     match.thicknessPx = (match.thicknessPx + candidate.thicknessPx) / 2;
     match.confidence = Math.max(match.confidence, candidate.confidence);
+    if (candidate.origin === 'manual_correction' || candidate.origin === 'manual_trace' && match.origin === 'automatic_detection') match.origin = candidate.origin;
     match.sourceCandidateIds = [...new Set([...(match.sourceCandidateIds ?? [match.id]), ...(candidate.sourceCandidateIds ?? [candidate.id])])];
   }
   return output;

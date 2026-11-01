@@ -1,10 +1,10 @@
-import { AmbientLight, Box3, Box3Helper, BufferGeometry, Color, DirectionalLight, DoubleSide, Float32BufferAttribute, GridHelper, Group, Mesh, MeshBasicMaterial, Object3D, PerspectiveCamera, Quaternion, Raycaster, Scene, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer } from 'three';
+import { AmbientLight, Box3, Box3Helper, BufferGeometry, Color, DirectionalLight, DoubleSide, Float32BufferAttribute, GridHelper, Group, Mesh, MeshBasicMaterial, Object3D, PCFSoftShadowMap, PerspectiveCamera, Quaternion, Raycaster, Scene, SRGBColorSpace, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer, ACESFilmicToneMapping } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { gsap } from 'gsap';
 import { decodePlanImage } from './plan-image';
-import { buildPlanVectorModel, countClosedCandidateContours, detectCandidateIntersections, detectWallCandidates, mergeWallCandidates, splitWallCandidate, traceWallCandidate, type PixelWallCandidate, type Point2 } from './plan-reconstruction';
+import { buildPlanVectorModel, countClosedCandidateContours, detectCandidateIntersections, detectWallCandidates, filterCandidatesForReview, mergeWallCandidates, splitWallCandidate, traceWallCandidate, type PixelWallCandidate, type Point2 } from './plan-reconstruction';
 import { addOpeningToScene, createPlanScene, editOpeningInScene, editWallInScene, sceneMatchesPlanSource } from './plan-scene';
 import { ARCHITECTURAL_MODULE_DIMENSIONS, buildThreePlanGroup, type ArchitecturalAssets } from './plan-three-adapter';
 import { commitScenePreview, deserializeImportedSceneTransaction, deserializeSceneTransaction, previewSceneCommand, serializeSceneTransaction, type Node, type ScenePreview, type SceneTransaction, type SpatialCommand, type SpatialSceneV1 } from './spatial-scene';
@@ -17,6 +17,7 @@ import { parseSpatialAgentResult, spatialAgentContextIsCurrent, SPATIAL_AGENT_RE
 import type { TechnicalDocumentV1 } from './technical-document';
 import { cameraFrameAspect, createSpatialCameraView, createSpatialFocusView } from './spatial-camera';
 import { persistSceneTransaction } from './spatial-persistence';
+import { associateGroundingsToCandidates, groundingBoxToPixels, validateVisualGrounding, type GroundingAssociation, type VisualGroundingV1 } from './visual-grounding';
 import './spatial-editor.css';
 
 export type SpatialEditorOptions = { onExit?: () => void; source?: 'accepted-document'; onCommandState?: (state: SpatialCommandState, message: string) => void };
@@ -36,7 +37,8 @@ app.innerHTML = `<main class="spatial-lab" data-state="empty">
       <div class="reference-modes" role="group" aria-label="Vista da reconstrução"><button type="button" data-view-mode="original" aria-pressed="true">Original</button><button type="button" data-view-mode="trace" aria-pressed="false">Tracing</button><button type="button" data-view-mode="model" aria-pressed="false">3D</button><button type="button" data-view-mode="compare" aria-pressed="false">Sobrepor</button></div>
       <details class="workflow-section" open>
       <summary>02 / TRAÇAR E REVISAR</summary>
-      <div class="trace-tools"><button id="detect-lines" type="button">Detectar linhas</button><button id="trace-mode" type="button" aria-pressed="false">Traçar parede</button><button id="scale-mode" type="button" aria-pressed="false">Marcar escala</button><button id="split-segment" type="button" disabled>Dividir</button><button id="join-segments" type="button" disabled>Unir colineares</button></div>
+      <div class="trace-tools"><button id="detect-lines" type="button">Detectar linhas</button><button id="locate-with-muse" type="button" disabled>Localizar com Muse</button><button id="trace-mode" type="button" aria-pressed="false">Traçar parede</button><button id="scale-mode" type="button" aria-pressed="false">Marcar escala</button><button id="split-segment" type="button" disabled>Dividir</button><button id="join-segments" type="button" disabled>Unir colineares</button></div>
+      <section id="grounding-panel" class="grounding-panel" hidden aria-label="Localizações visuais propostas pelo Muse"><div class="candidate-heading"><span>PERCEPÇÃO VISUAL · PROPOSTA MUSE</span><span id="grounding-count"></span></div><p id="grounding-summary" class="micro-copy"></p><button id="cancel-grounding" type="button" hidden>Cancelar pedido</button><div id="grounding-elements" class="candidate-list"></div><p class="micro-copy">As coordenadas são aproximadas e não constituem CAD, escala ou confirmação geométrica.</p></section>
       <label class="field">Sensibilidade das linhas <output id="detection-threshold-value">150</output><input id="detection-threshold" type="range" min="80" max="220" step="5" value="150"></label>
       <p class="micro-copy">O detector só propõe linhas axiais. Confirme visualmente cada segmento; não usa cotas, áreas ou nomes de divisões para inventar escala.</p>
       <div class="candidate-heading"><span>SEGMENTOS A INCLUIR</span><button id="clear-selection" type="button">Limpar</button></div><p id="contour-summary" class="micro-copy">Contornos não avaliados; área métrica não confirmada.</p><div id="candidate-list" class="candidate-list"></div><div class="candidate-heading"><span>REGIÕES FECHADAS CANDIDATAS</span></div><div id="region-list" class="candidate-list"></div><div class="candidate-heading"><span>DESCONTINUIDADES / ABERTURAS AMBÍGUAS</span></div><div id="opening-candidate-list" class="candidate-list"></div><div class="candidate-heading"><span>ASSOCIAÇÃO SEMÂNTICA → REGIÃO (semantic_spatial_map.v1)</span></div><div id="semantic-map-panel"><label class="field">Divisão reconhecida (documento aceite)<select id="semantic-element"><option value="">Sem documento aceite</option></select></label><button id="semantic-propose" type="button">Propor associação à região seleccionada</button><p id="semantic-proposal" class="micro-copy" aria-live="polite">A proposta é mostrada antes de aceitar. Nenhum nome/área/cota vira geometria.</p><div class="trace-tools"><button id="semantic-accept" type="button" disabled>Aceitar proposta</button><button id="semantic-reject" type="button" disabled>Rejeitar proposta</button></div><div id="semantic-link-list" class="candidate-list"></div></div>
@@ -68,7 +70,7 @@ app.innerHTML = `<main class="spatial-lab" data-state="empty">
     <p id="preview-status" class="preview-status" aria-live="polite"></p><div class="preview-actions"><button id="commit-preview" type="button" disabled>Aplicar</button><button id="cancel-preview" type="button" disabled>Cancelar</button></div>
   </aside>
   <section class="stage-empty" id="stage-empty"><span>LABORATÓRIO ESPACIAL</span><h1>Comece pela planta.</h1><p>Importe o desenho original. O UNFOLD propõe segmentos; a geometria só é construída depois da sua revisão.</p><button id="empty-import" type="button">Importar planta <span aria-hidden="true">↗</span></button><small>PNG · JPEG · WebP · até 20 MiB</small></section>
-  <nav class="spatial-toolbar" aria-label="Ferramentas da cena"><button id="mode-translate" type="button" aria-label="Mover" title="Mover">↔</button><button id="mode-rotate" type="button" aria-label="Rodar" title="Rodar">↻</button><button id="mode-scale" type="button" aria-label="Escalar" title="Escalar">⤢</button><i></i><button id="fit-scene" type="button" aria-label="Enquadrar" title="Enquadrar">□</button><button id="home-scene" type="button" aria-label="Início" title="Início">⌂</button><button id="top-view" type="button" aria-label="Vista superior" title="Vista superior">T</button><button id="front-view" type="button" aria-label="Vista frontal" title="Vista frontal">F</button><button id="iso-view" type="button" aria-label="Vista isométrica" title="Vista isométrica">I</button><button id="toggle-reference" type="button" aria-pressed="true" aria-label="Mostrar ou ocultar imagem original" title="Referência">▧</button><button id="compare-scene" type="button" aria-pressed="false" disabled>Antes / Depois</button><button id="undo-scene" type="button" disabled>Desfazer</button><button id="redo-scene" type="button" disabled>Refazer</button></nav>
+  <nav class="spatial-toolbar" aria-label="Ferramentas da cena"><button id="mode-translate" type="button" aria-label="Mover" title="Mover">↔</button><button id="mode-rotate" type="button" aria-label="Rodar" title="Rodar">↻</button><button id="mode-scale" type="button" aria-label="Escalar" title="Escalar">⤢</button><i></i><button id="fit-scene" type="button" aria-label="Enquadrar" title="Enquadrar">□</button><button id="home-scene" type="button" aria-label="Início" title="Início">⌂</button><button id="top-view" type="button" aria-label="Vista superior" title="Vista superior">T</button><button id="front-view" type="button" aria-label="Vista frontal" title="Vista frontal">F</button><button id="iso-view" type="button" aria-label="Vista isométrica" title="Vista isométrica">I</button><button id="toggle-reference" type="button" aria-pressed="true" aria-label="Mostrar ou ocultar imagem original" title="Referência">▧</button><button id="toggle-suggested-finish" type="button" aria-pressed="true" title="Pavimento de acabamento conceptual">Acabamento: ligado</button><button id="compare-scene" type="button" aria-pressed="false" disabled>Antes / Depois</button><button id="undo-scene" type="button" disabled>Desfazer</button><button id="redo-scene" type="button" disabled>Refazer</button></nav>
   <div class="spatial-status" id="spatial-status" role="status" aria-live="polite">À espera de uma planta. Geometria não presumida.</div><div id="spatial-metrics" class="spatial-metrics"></div>
 </main>`;
 
@@ -87,7 +89,11 @@ camera.position.set(8, 7, 9);
 const renderer = new WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.7));
 renderer.setSize(1, 1, false);
-renderer.outputColorSpace = 'srgb';
+renderer.outputColorSpace = SRGBColorSpace;
+renderer.toneMapping = ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.08;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = PCFSoftShadowMap;
 $('#spatial-canvas').append(renderer.domElement);
 const orbit = new OrbitControls(camera, renderer.domElement);
 orbit.enableDamping = true;
@@ -95,8 +101,9 @@ orbit.dampingFactor = 0.08;
 orbit.maxPolarAngle = Math.PI;
 orbit.addEventListener('start', () => { gsap.killTweensOf(camera.position); gsap.killTweensOf(orbit.target); });
 const ambient = new AmbientLight(0xd6d8d1, 1.18); scene.add(ambient);
-const keyLight = new DirectionalLight(0xfff4e2, 2.35); keyLight.position.set(-5, 9, 6); scene.add(keyLight);
+const keyLight = new DirectionalLight(0xfff3df, 2.4); keyLight.position.set(-5, 9, 6); keyLight.castShadow = true; keyLight.shadow.mapSize.set(2048, 2048); keyLight.shadow.bias = -0.00008; keyLight.shadow.normalBias = 0.018; keyLight.shadow.radius = 3; scene.add(keyLight, keyLight.target);
 const fillLight = new DirectionalLight(0xb7c0b5, 0.92); fillLight.position.set(7, 4, -7); scene.add(fillLight);
+const rimLight = new DirectionalLight(0xd4d7cf, 0.55); rimLight.position.set(1, 6, 8); scene.add(rimLight);
 const grid = new GridHelper(36, 36, 0x776e5d, 0x343a34); grid.position.y = -0.035; grid.visible = false; scene.add(grid);
 const root = new Group(); scene.add(root);
 const gizmo = new TransformControls(camera, renderer.domElement);
@@ -112,6 +119,7 @@ let pendingCommand: SpatialCommandV1 | undefined;
 let unregisterSpatialCommands: (() => void) | undefined;
 let selectedId: string | undefined;
 let visibleReference = true;
+let suggestedFinishVisible = true;
 let compare = false;
 let cameraTween: gsap.core.Timeline | undefined;
 let raf = 0; let frameCount = 0; let fps = 0; let fpsAt = performance.now(); let buildMs = 0;
@@ -127,6 +135,11 @@ let sourceDocumentRef: { documentId: string; sha256: string } | undefined;
 let activeTechnicalDocument: TechnicalDocumentV1 | undefined;
 let semanticMap: SemanticSpatialMapV1 | undefined;
 let activeSemanticProposalId: string | undefined;
+let visualGrounding: VisualGroundingV1 | undefined;
+let groundingAssociations: GroundingAssociation[] = [];
+let groundingAssociationReviews: Record<string, { targetId: string; geometrySignature: string; review: 'accepted' | 'rejected'; method: 'automatic' | 'manual' }> = {};
+let currentGeometrySignature = '';
+let groundingAbort: AbortController | undefined;
 let spatialAgentHistory: Array<{ role: 'user' | 'assistant'; text: string }> = [];
 let pendingTargetClarification: { intent: import('./spatial-command-protocol').ParsedSpatialIntent['intent']; sceneId: string; revisionId: string; originalInput: string; origin: SpatialCommandOrigin } | undefined;
 let spatialAgentAbort: AbortController | undefined;
@@ -306,6 +319,9 @@ function renderModel(model = transaction?.scene, animate = false): void {
   grid.visible = false;
   const started = performance.now(); disposeSceneGroup();
   const renderGroup = buildThreePlanGroup(model, assets);
+  renderGroup.traverse((object) => {
+    if (object instanceof Mesh && object.userData.visualClassification === 'suggested_finish') object.visible = suggestedFinishVisible;
+  });
   root.add(renderGroup);
   root.traverse((object) => { if (object instanceof Mesh && object.parent && object.userData.id === undefined) { const node = object.parent; if (node.name && model.nodes.some((item) => item.id === node.name)) object.userData.id = node.name; } });
   buildMs = performance.now() - started;
@@ -313,6 +329,14 @@ function renderModel(model = transaction?.scene, animate = false): void {
   if (!bounds.isEmpty()) {
     const home = createSpatialCameraView(bounds, cameraFitAspect(), 'isometric');
     cameraHome = { target: home.target.clone(), position: home.position.clone() };
+    const size = new Vector3(); bounds.getSize(size);
+    const extent = Math.max(size.x, size.y, size.z, 1) * 0.72;
+    keyLight.shadow.camera.left = -extent; keyLight.shadow.camera.right = extent;
+    keyLight.shadow.camera.top = extent; keyLight.shadow.camera.bottom = -extent;
+    keyLight.shadow.camera.near = 0.1; keyLight.shadow.camera.far = Math.max(40, extent * 4);
+    keyLight.shadow.camera.updateProjectionMatrix();
+    keyLight.target.position.copy(bounds.getCenter(new Vector3()));
+    keyLight.target.updateMatrixWorld();
   }
   updateReferencePlane(model);
   updateReferenceView();
@@ -322,7 +346,7 @@ function renderModel(model = transaction?.scene, animate = false): void {
 }
 
 if (import.meta.env.DEV && new URLSearchParams(location.search).get('spatial-test') === '1') {
-  (window as Window & { __unfoldSpatialInspect?: (nodeId: string) => { size: number[]; center: number[]; meshes: Array<{ name: string; visible: boolean; bounds: number[]; material: string }> } | null }).__unfoldSpatialInspect = (nodeId) => {
+  (window as Window & { __unfoldSpatialInspect?: (nodeId: string) => { size: number[]; center: number[]; meshes: Array<{ name: string; visible: boolean; bounds: number[]; material: string }>; rootVisible: boolean; rootChildren: number; cameraPosition: number[]; cameraTarget: number[]; drawCalls: number; triangles: number } | null }).__unfoldSpatialInspect = (nodeId) => {
     const object = root.getObjectByName(nodeId);
     if (!object) return null;
     root.updateMatrixWorld(true);
@@ -337,7 +361,7 @@ if (import.meta.env.DEV && new URLSearchParams(location.search).get('spatial-tes
       const material = Array.isArray(child.material) ? child.material[0] : child.material;
       meshes.push({ name: child.name, visible: child.visible, bounds: meshSize.toArray(), material: `0x${material.color.getHexString()}` });
     });
-    return { size: size.toArray(), center: center.toArray(), meshes };
+    return { size: size.toArray(), center: center.toArray(), meshes, rootVisible: root.visible, rootChildren: root.children.length, cameraPosition: camera.position.toArray(), cameraTarget: orbit.target.toArray(), drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
   };
 }
 
@@ -407,6 +431,7 @@ function updateToolbar(): void {
   $('#restore-scene').disabled = !localStorage.getItem('unfold-spatial-scene.v1');
   $('#compare-scene').disabled = !sourceMatches || !transaction?.undoStack.length || !!preview || !!compoundPreview;
   $('#add-module').disabled = !assetReady || !transaction || !sourceMatches || !!preview || !!compoundPreview;
+  $('#locate-with-muse').disabled = !currentImageFile || Boolean(groundingAbort);
   $('#scene-state').textContent = transaction ? `R${transaction.scene.revision.number} · ${transaction.scene.nodes.length} ELEMENTOS` : 'SEM CENA';
   labRoot.setAttribute('data-state', transaction ? 'ready' : imageInfo ? 'source' : 'empty');
   labRoot.setAttribute('data-source-loaded', String(Boolean(imageInfo)));
@@ -449,15 +474,25 @@ function updateCandidates(): void {
   }
   const topologyTolerance = Math.max(6, Math.min(imageInfo.width, imageInfo.height) * 0.008);
   const vectorModel = buildPlanVectorModel(candidates, { tolerancePx: topologyTolerance, imageSize: { width: imageInfo.width, height: imageInfo.height }, ...(vectorScale ? { scale: vectorScale } : {}) });
+  currentGeometrySignature = geometrySignature(candidates, vectorModel.regions);
+  if (visualGrounding && imageInfo.sha256.toLowerCase() === visualGrounding.sourceImage.sha256.toLowerCase()) {
+    groundingAssociations = associateGroundingsToCandidates(visualGrounding, candidates, vectorModel.regions);
+    const staleReviews = Object.keys(groundingAssociationReviews).filter((id) => groundingAssociationReviews[id]?.geometrySignature !== currentGeometrySignature);
+    if (staleReviews.length) {
+      for (const id of staleReviews) delete groundingAssociationReviews[id];
+      persistGroundingAssociationReviews();
+    }
+  }
   const regionShapes = vectorModel.regions.filter((region) => region.eligibility === 'construction_candidate').map((region) => `<polygon data-region="${escapeHtml(region.id)}" data-selected="${selectedRegions.has(region.id)}" points="${region.vertices.map((point) => `${point.x},${point.y}`).join(' ')}" fill="#c8a873" fill-opacity="${selectedRegions.has(region.id) ? '0.22' : '0.09'}" stroke="${selectedRegions.has(region.id) ? '#efbf68' : '#b99968'}" stroke-opacity=".8" stroke-width="3"/>`).join('');
   const gapMarks = vectorModel.openingCandidates.map((item) => `<line data-opening-candidate="${escapeHtml(item.id)}" x1="${item.start.x}" y1="${item.start.y}" x2="${item.end.x}" y2="${item.end.y}" stroke="#a65e36" stroke-width="6" stroke-dasharray="4 3" opacity=".9"/>`).join('');
   const intersectionMarks = vectorModel.intersections.map((item) => `<circle data-intersection="${item.firstId}:${item.secondId}" cx="${item.point.x}" cy="${item.point.y}" r="3.5" fill="#e4b05d" stroke="#392b1d" stroke-width="1"/>`).join('');
-  svg.innerHTML = regionShapes + gapMarks + candidates.map((candidate) => {
+  const groundingOverlay = renderGroundingOverlay();
+  svg.innerHTML = regionShapes + groundingOverlay + gapMarks + candidates.map((candidate) => {
     const active = selectedCandidates.has(candidate.id);
     const linked = sourceMatches && transaction?.scene.nodes.find((node) => node.id === selectedId)?.component?.properties.sourceCandidate?.value === candidate.id;
-    const width = Math.max(3.2, candidate.thicknessPx);
+    const width = linked ? Math.min(14, Math.max(4, candidate.thicknessPx * 0.45)) : active ? Math.min(12, Math.max(3.5, candidate.thicknessPx * 0.42)) : Math.min(2.4, Math.max(1.2, candidate.thicknessPx * 0.12));
     const handles = active && !transaction ? `<circle data-endpoint="start" data-candidate-id="${escapeHtml(candidate.id)}" cx="${candidate.start.x}" cy="${candidate.start.y}" r="7"/><circle data-endpoint="end" data-candidate-id="${escapeHtml(candidate.id)}" cx="${candidate.end.x}" cy="${candidate.end.y}" r="7"/>` : '';
-    return `<line data-id="${escapeHtml(candidate.id)}" data-thickness="${candidate.thicknessPx}" data-confidence="${candidate.confidence}" x1="${candidate.start.x}" y1="${candidate.start.y}" x2="${candidate.end.x}" y2="${candidate.end.y}" stroke="${linked ? '#fff1ca' : active ? '#e0a943' : '#9a6535'}" stroke-width="${linked ? width + 2 : width}" stroke-linecap="round" opacity="${active || linked ? 1 : 0.78}"/>${handles}`;
+    return `<line data-id="${escapeHtml(candidate.id)}" data-thickness="${candidate.thicknessPx}" data-confidence="${candidate.confidence}" x1="${candidate.start.x}" y1="${candidate.start.y}" x2="${candidate.end.x}" y2="${candidate.end.y}" stroke="${linked ? '#fff1ca' : active ? '#e0a943' : '#68746b'}" stroke-width="${width}" stroke-linecap="round" opacity="${active || linked ? 1 : 0.34}"/>${handles}`;
   }).join('') + intersectionMarks + (traceStart && traceEnd ? `<line id="manual-preview" x1="${traceStart.point.x}" y1="${traceStart.point.y}" x2="${traceEnd.x}" y2="${traceEnd.y}" stroke="#d5a55e" stroke-width="3"/>` : '');
   const list = $('#candidate-list');
   list.innerHTML = candidates.map((candidate) => `<button type="button" class="candidate-row ${selectedCandidates.has(candidate.id) ? 'is-selected' : ''}" data-candidate="${escapeHtml(candidate.id)}" aria-pressed="${selectedCandidates.has(candidate.id)}"><span>${escapeHtml(candidate.id)}</span><small>${candidate.origin === 'manual_trace' ? 'traçado manual' : candidate.origin === 'manual_correction' ? 'correcção manual' : 'detecção automática'} · ${candidate.orientation} · ${Math.round(Math.hypot(candidate.end.x-candidate.start.x,candidate.end.y-candidate.start.y))} px · confiança heurística ${candidate.confidence.toFixed(2)}</small></button>`).join('') || '<p class="micro-copy">Sem candidatos. Use tracing manual.</p>';
@@ -472,6 +507,84 @@ function updateCandidates(): void {
   const loops = countClosedCandidateContours(candidates.filter((candidate) => selectedCandidates.has(candidate.id)), 10);
   const contour = `${regionCandidates.length} divisão(ões) proposta(s) com suporte de parede · ${vectorModel.regions.length - regionCandidates.length} face(s) de baixa qualidade excluída(s) · ${loops} ciclo(s) fechados exactos. Sem escala validada, áreas apenas em px².`;
   $('#contour-summary').textContent = transaction && transaction.scene.revision.number > 0 ? `${contour} As linhas representam o traçado original; a cena pode ter sido editada.` : contour;
+  renderGroundingPanel();
+}
+
+function renderGroundingOverlay(): string {
+  if (!visualGrounding || !imageInfo || visualGrounding.sourceImage.sha256.toLowerCase() !== imageInfo.sha256.toLowerCase()) return '';
+  const width = imageInfo.width; const height = imageInfo.height;
+  return visualGrounding.elements.map((element) => {
+    const box = element.box ? groundingBoxToPixels(element.box, { width, height }) : undefined;
+    const point = element.point ? { x: element.point.x * width / 1000, y: element.point.y * height / 1000 } : box ? { x: box.x + box.width / 2, y: box.y + box.height / 2 } : undefined;
+    if (!point) return '';
+    const color = element.review === 'rejected' ? '#a66551' : element.review === 'accepted' ? '#a8b19b' : '#e4ac58';
+    const label = escapeHtml(element.label);
+    const rect = box ? `<rect x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" fill="${color}" fill-opacity=".08" stroke="${color}" stroke-width="${Math.max(2, width / 700)}" stroke-dasharray="${Math.max(4, width / 180)} ${Math.max(3, width / 280)}"/>` : '';
+    const radius = Math.max(5, Math.min(14, Math.min(width, height) * 0.009));
+    return `<g data-grounding-overlay="${escapeHtml(element.id)}" opacity="${element.review === 'rejected' ? '.4' : '.95'}"><title>${label} · ${element.componentClass} · Muse ${(element.confidence * 100).toFixed(0)}% · ${element.review}</title>${rect}<circle cx="${point.x}" cy="${point.y}" r="${radius}" fill="${color}" stroke="#171916" stroke-width="${Math.max(1.5, width / 900)}"/><text x="${point.x + radius * 1.25}" y="${point.y - radius * 1.1}" fill="#f2eee5" stroke="#171916" stroke-width="${Math.max(2, width / 500)}" paint-order="stroke" font-size="${Math.max(12, Math.min(18, width / 60))}" font-family="sans-serif">${label}</text></g>`;
+  }).join('');
+}
+
+function renderGroundingPanel(): void {
+  const panel = $('#grounding-panel');
+  const matchesSource = Boolean(visualGrounding && imageInfo && visualGrounding.sourceImage.sha256.toLowerCase() === imageInfo.sha256.toLowerCase());
+  panel.hidden = !matchesSource;
+  $('#grounding-count').textContent = matchesSource ? `${visualGrounding!.elements.length} elementos · Muse real` : '';
+  $('#grounding-summary').textContent = matchesSource ? visualGrounding!.summary : '';
+  const associations = new Map(groundingAssociations.map((association) => [association.elementId, association]));
+  const regionsById = new Map((buildCurrentVectorModel()?.regions ?? []).map((item) => [item.id, item]));
+  $('#grounding-elements').innerHTML = matchesSource ? visualGrounding!.elements.map((element) => {
+    const association = associations.get(element.id);
+    const candidate = association?.candidateId ? candidates.find((item) => item.id === association.candidateId) : undefined;
+    const region = association?.regionId ? regionsById.get(association.regionId) : undefined;
+    const persisted = groundingAssociationReviews[element.id];
+    const accepted = Boolean(persisted && persisted.geometrySignature === currentGeometrySignature && persisted.targetId === (association?.regionId ?? association?.candidateId));
+    const assocText = association?.regionId && region
+      ? `Divisão candidata ${region.id} · sobreposição ${Math.round((association.overlap ?? 0) * 100)}% · score ${association.confidence.toFixed(2)} · ${association.status === 'ambiguous' ? (accepted ? 'ambiguidade revista manualmente pelo utilizador' : 'ambígua, rever manualmente') : accepted ? 'associação proposta confirmada pelo utilizador' : 'proposta, por confirmar'}`
+      : association?.candidateId && candidate
+        ? `Segmento local ${candidate.id} · ${Math.round(association.distancePx ?? 0)} px · score ${association.confidence.toFixed(2)} · ${association.status === 'ambiguous' ? 'ambígua' : 'proposta'}`
+        : element.componentClass === 'room' ? 'Sem região geométrica suficientemente sobreposta; nenhuma divisão foi criada a partir da caixa.' : element.componentClass === 'wall' ? 'Sem correspondência automática com os segmentos detectados.' : 'Sem associação geométrica local suficiente.';
+    const reviewButton = association?.status === 'proposed' && (association.regionId || association.candidateId) && element.review === 'accepted'
+      ? `<button type="button" data-grounding-association="${escapeHtml(element.id)}" data-association-review="${accepted ? 'rejected' : 'accepted'}">${accepted ? 'Remover associação confirmada' : 'Confirmar correspondência proposta'}</button>` : '';
+    const manualReviewButton = association?.status === 'ambiguous' && association.regionId && element.review === 'accepted' && !accepted
+      ? `<button type="button" data-grounding-association-manual="${escapeHtml(element.id)}">Confirmar esta associação após inspecção</button>` : '';
+    return `<article class="candidate-row grounding-row" data-grounding-row="${escapeHtml(element.id)}"><span>${escapeHtml(element.label)} <small>· ${escapeHtml(element.componentClass)} · confiança visual ${element.confidence.toFixed(2)} · ${element.review === 'unreviewed' ? 'não revista' : element.review === 'accepted' ? 'identificação confirmada pelo utilizador' : element.review === 'rejected' ? 'rejeitada pelo utilizador' : 'corrigida pelo utilizador'}</small></span><small>${escapeHtml(assocText)}${element.ambiguities.length ? ` · Dúvida: ${escapeHtml(element.ambiguities.join('; '))}` : ''}</small><div class="trace-tools"><button type="button" data-grounding-review="accepted" data-grounding-id="${escapeHtml(element.id)}">Confirmar identificação</button><button type="button" data-grounding-review="rejected" data-grounding-id="${escapeHtml(element.id)}">Rejeitar</button>${candidate ? `<button type="button" data-grounding-candidate="${escapeHtml(candidate.id)}">Rever segmento</button>` : ''}${association?.regionId ? `<button type="button" data-grounding-region="${escapeHtml(association.regionId)}">Inspeccionar divisão candidata</button>` : ''}${reviewButton}${manualReviewButton}</div></article>`;
+  }).join('') : '';
+}
+
+function buildCurrentVectorModel() {
+  if (!imageInfo) return undefined;
+  return buildPlanVectorModel(candidates, { tolerancePx: Math.max(6, Math.min(imageInfo.width, imageInfo.height) * 0.008), imageSize: { width: imageInfo.width, height: imageInfo.height } });
+}
+
+function geometrySignature(items: PixelWallCandidate[], regions: Array<{ id: string; vertices: Point2[] }>): string {
+  const input = JSON.stringify({ items: items.map(({ id, start, end }) => [id, Math.round(start.x * 10), Math.round(start.y * 10), Math.round(end.x * 10), Math.round(end.y * 10)]), regions: regions.map(({ id, vertices }) => [id, ...vertices.flatMap((point) => [Math.round(point.x * 10), Math.round(point.y * 10)])]) });
+  let hash = 2166136261;
+  for (let index = 0; index < input.length; index += 1) hash = Math.imul(hash ^ input.charCodeAt(index), 16777619);
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+function persistGroundingAssociationReviews(): void {
+  if (!imageInfo || !visualGrounding || imageInfo.sha256.toLowerCase() !== visualGrounding.sourceImage.sha256.toLowerCase()) return;
+  localStorage.setItem(`unfold-visual-grounding-links.v1.${imageInfo.sha256.toLowerCase()}`, JSON.stringify({ sourceImageSha256: imageInfo.sha256, geometrySignature: currentGeometrySignature, reviews: groundingAssociationReviews }));
+}
+
+function isGroundingLinkStorage(value: unknown, sourceSha256: string): value is { sourceImageSha256: string; geometrySignature: string; reviews: typeof groundingAssociationReviews } {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const entry = value as Record<string, unknown>;
+  if (entry.sourceImageSha256 !== sourceSha256 || typeof entry.geometrySignature !== 'string' || !/^[a-f0-9]{8}$/.test(entry.geometrySignature) || !entry.reviews || typeof entry.reviews !== 'object' || Array.isArray(entry.reviews)) return false;
+  const reviews = entry.reviews as Record<string, unknown>;
+  const entries = Object.entries(reviews);
+  return entries.length <= 48 && entries.every(([id, review]) => /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(id) && !!review && typeof review === 'object' && !Array.isArray(review)
+    && typeof (review as Record<string, unknown>).targetId === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test((review as Record<string, unknown>).targetId as string)
+    && (review as Record<string, unknown>).geometrySignature === entry.geometrySignature
+    && ['accepted', 'rejected'].includes(String((review as Record<string, unknown>).review))
+    && ['automatic', 'manual'].includes(String((review as Record<string, unknown>).method)));
+}
+
+function persistGrounding(): void {
+  if (!visualGrounding) return;
+  localStorage.setItem(`unfold-visual-grounding.v1.${visualGrounding.sourceImage.sha256.toLowerCase()}`, JSON.stringify(visualGrounding));
 }
 function selectRegionCandidate(regionId: string): void {
   if (!imageInfo) return;
@@ -620,6 +733,7 @@ async function loadPlanFile(file: File, technicalDocumentRef?: { documentId: str
     const sourceChanged = !sameSource || !sameDocument;
     if (sourceChanged) {
       spatialAgentAbort?.abort();
+      groundingAbort?.abort(); groundingAbort = undefined;
       pendingTargetClarification = undefined;
       pendingCommand = undefined;
       preview = undefined;
@@ -633,6 +747,19 @@ async function loadPlanFile(file: File, technicalDocumentRef?: { documentId: str
     semanticMap = nextSemanticMap;
     activeSemanticProposalId = nextSemanticMap?.links.find((link) => link.review.state === 'proposed')?.id;
     currentImageFile = file; imageInfo = { sha256: decoded.sha256, width: decoded.width, height: decoded.height, mimeType: decoded.mimeType }; sourceDocumentRef = technicalDocumentRef;
+    visualGrounding = undefined; groundingAssociations = [];
+    groundingAssociationReviews = {};
+    const savedGrounding = localStorage.getItem(`unfold-visual-grounding.v1.${decoded.sha256.toLowerCase()}`);
+    if (savedGrounding) {
+      try {
+        visualGrounding = validateVisualGrounding(JSON.parse(savedGrounding), { sha256: decoded.sha256, width: decoded.width, height: decoded.height });
+        const savedLinks = localStorage.getItem(`unfold-visual-grounding-links.v1.${decoded.sha256.toLowerCase()}`);
+        if (savedLinks) {
+          const parsedLinks: unknown = JSON.parse(savedLinks);
+          if (isGroundingLinkStorage(parsedLinks, decoded.sha256)) groundingAssociationReviews = parsedLinks.reviews;
+        }
+      } catch { /* preserve corrupted evidence for inspection; do not load it into the overlay */ }
+    }
     if (currentImageUrl) URL.revokeObjectURL(currentImageUrl);
     currentImageUrl = nextImageUrl; ($('#source-image') as HTMLImageElement).src = currentImageUrl;
     ($('#source-image').parentElement as HTMLElement).style.aspectRatio = `${decoded.width} / ${decoded.height}`;
@@ -649,6 +776,90 @@ $('#plan-file').addEventListener('change', (event) => {
   const file = (event.target as HTMLInputElement).files?.[0]; if (file) void loadPlanFile(file);
 });
 
+function readFileDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Não foi possível ler a imagem original.'));
+    reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Imagem codificada inválida.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+$('#locate-with-muse').addEventListener('click', async () => {
+  if (!currentImageFile || !imageInfo) return;
+  groundingAbort?.abort();
+  const abort = new AbortController(); groundingAbort = abort;
+  const sourceFile = currentImageFile; const sourceHash = imageInfo.sha256;
+  $('#grounding-panel').hidden = false; $('#grounding-summary').textContent = 'A enviar a imagem exacta ao Muse Spark 1.3 para grounding visual…';
+  $('#cancel-grounding').hidden = false; $('#locate-with-muse').disabled = true;
+  try {
+    const imageDataUrl = await readFileDataUrl(sourceFile);
+    if (abort.signal.aborted || currentImageFile !== sourceFile || imageInfo?.sha256 !== sourceHash) return;
+    const document = activeTechnicalDocument && sourceDocumentRef ? { documentId: sourceDocumentRef.documentId, schema: 'technical_document.v1', summary: activeTechnicalDocument.summary } : null;
+    const response = await fetch('/api/meta/grounding', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ imageDataUrl, image: imageInfo, document }), signal: abort.signal });
+    const result = await response.json().catch(() => null) as { grounding?: unknown; meta?: { requestId?: string }; error?: { code?: string; message?: string } } | null;
+    if (!response.ok || !result?.grounding) throw new Error(result?.error?.code ?? `GROUNDING_HTTP_${response.status}`);
+    if (abort.signal.aborted || currentImageFile !== sourceFile || imageInfo?.sha256 !== sourceHash) return;
+    visualGrounding = validateVisualGrounding(result.grounding, { sha256: sourceHash, width: imageInfo.width, height: imageInfo.height });
+    groundingAssociations = associateGroundingsToCandidates(visualGrounding, candidates);
+    persistGrounding();
+    renderGroundingPanel(); updateCandidates();
+    status(`Grounding real Muse Spark concluído · ${visualGrounding.elements.length} elementos · request ${result.meta?.requestId ?? 'sem ID'}. Coordenadas continuam propostas; nenhuma geometria foi alterada.`);
+  } catch (error) {
+    if (abort.signal.aborted) { $('#grounding-summary').textContent = 'Pedido cancelado; nenhuma localização foi aceite.'; status('Grounding cancelado. A cena e a geometria permanecem intactas.'); }
+    else { const message = error instanceof Error ? error.message : 'falha desconhecida'; $('#grounding-summary').textContent = `Grounding indisponível: ${message}`; status(`Muse Grounding falhou (${message}); sem fallback local e sem alteração da cena.`); }
+  } finally {
+    if (groundingAbort === abort) groundingAbort = undefined;
+    $('#cancel-grounding').hidden = true; updateToolbar();
+  }
+});
+$('#cancel-grounding').addEventListener('click', () => groundingAbort?.abort());
+$('#grounding-elements').addEventListener('click', (event) => {
+  const target = (event.target as HTMLElement).closest<HTMLButtonElement>('button');
+  if (!target || !visualGrounding) return;
+  const elementId = target.dataset.groundingId;
+  if (elementId && target.dataset.groundingReview) {
+    const element = visualGrounding.elements.find((item) => item.id === elementId);
+    if (!element) return;
+    element.review = target.dataset.groundingReview as 'accepted' | 'rejected';
+    persistGrounding(); renderGroundingPanel(); updateCandidates();
+    status(`Identificação visual ${element.review === 'accepted' ? 'confirmada pelo utilizador' : 'rejeitada'}. Isto não confirma posição CAD, escala ou geometria física.`);
+    return;
+  }
+  const associationId = target.dataset.groundingAssociation;
+  if (associationId && target.dataset.associationReview && imageInfo) {
+    const association = groundingAssociations.find((item) => item.elementId === associationId);
+    const element = visualGrounding.elements.find((item) => item.id === associationId);
+    const targetId = association?.regionId ?? association?.candidateId;
+    if (!association || association.status !== 'proposed' || !targetId || element?.review !== 'accepted') {
+      status('A associação exige identificação visual aceite e correspondência geométrica com score suficiente.'); return;
+    }
+    groundingAssociationReviews[associationId] = { targetId, geometrySignature: currentGeometrySignature, review: target.dataset.associationReview as 'accepted' | 'rejected', method: 'automatic' };
+    persistGroundingAssociationReviews(); renderGroundingPanel();
+    status(target.dataset.associationReview === 'accepted' ? 'Associação imagem↔geometria confirmada pelo utilizador. Não confirma escala nem exactidão CAD.' : 'Associação imagem↔geometria rejeitada; o vínculo foi removido da resolução contextual.');
+    return;
+  }
+  const manualAssociationId = target.dataset.groundingAssociationManual;
+  if (manualAssociationId && imageInfo) {
+    const association = groundingAssociations.find((item) => item.elementId === manualAssociationId);
+    const element = visualGrounding.elements.find((item) => item.id === manualAssociationId);
+    if (!association?.regionId || association.status !== 'ambiguous' || element?.review !== 'accepted') {
+      status('A revisão manual requer uma identificação aceite e uma região candidata apresentada para inspecção.'); return;
+    }
+    groundingAssociationReviews[manualAssociationId] = { targetId: association.regionId, geometrySignature: currentGeometrySignature, review: 'accepted', method: 'manual' };
+    persistGroundingAssociationReviews(); renderGroundingPanel();
+    status('Associação ambígua confirmada manualmente após inspecção. O score continua registado como ambíguo; a revisão humana não certifica a geometria.');
+    return;
+  }
+  const regionId = target.dataset.groundingRegion;
+  if (regionId) { selectRegionCandidate(regionId); return; }
+  const candidateId = target.dataset.groundingCandidate;
+  if (candidateId) {
+    selectedCandidates.clear(); selectedCandidates.add(candidateId); updateCandidates();
+    status(`Segmento ${candidateId} associado como candidato local; reveja-o no raster. Grounding não confirma a identidade geométrica.`);
+  }
+});
+
 $('#detect-lines').addEventListener('click', async () => {
   if (!currentImageFile) return;
   const generation = ++detectionGeneration;
@@ -657,14 +868,18 @@ $('#detect-lines').addEventListener('click', async () => {
   try {
     const raster = await decodePlanImage(sourceFile);
     if (generation !== detectionGeneration || currentImageFile !== sourceFile || imageInfo?.sha256 !== sourceSha) return;
-    candidates = detectWallCandidates(raster, { threshold: Number($('#detection-threshold').value), minimumLengthPx: Math.max(24, Math.floor(Math.min(raster.width, raster.height) * 0.045)), gapTolerancePx: 3 });
+    const rawCandidates = detectWallCandidates(raster, { threshold: Number($('#detection-threshold').value), minimumLengthPx: Math.max(24, Math.floor(Math.min(raster.width, raster.height) * 0.045)), gapTolerancePx: 3 });
+    const reviewFilter = filterCandidatesForReview(rawCandidates, { width: raster.width, height: raster.height });
+    candidates = reviewFilter.candidates;
+    if (visualGrounding && imageInfo?.sha256.toLowerCase() === visualGrounding.sourceImage.sha256.toLowerCase()) groundingAssociations = associateGroundingsToCandidates(visualGrounding, candidates);
     selectedCandidates.clear();
     const autoModel = buildPlanVectorModel(candidates, { tolerancePx: Math.max(6, Math.min(raster.width, raster.height) * 0.008), imageSize: { width: raster.width, height: raster.height } });
     const wellDefined = selectWellDefinedRegionIds(autoModel.regions);
     wellDefined.forEach((regionId) => { selectedRegions.add(regionId); autoModel.regions.find((region) => region.id === regionId)?.boundaryCandidateIds.forEach((id) => selectedCandidates.add(id)); });
     updateCandidates();
-    if (wellDefined.length) status(`${candidates.length} segmentos candidatos. ${wellDefined.length} região(ões) com contorno bem definido pré-seleccionada(s) para revisão — a construção continua a exigir escala, altura/espessura e confirmação explícita.`);
-    status(`${candidates.length} segmentos axiais candidatos. Seleccione apenas os que confirmar no desenho; linhas de texto podem ser falsos positivos.`);
+    const filteredNote = reviewFilter.omitted ? ` ${reviewFilter.omitted} linhas finas/curtas omitidas da vista inicial para reduzir ruído; não foram classificadas como não-paredes.` : '';
+    const fallbackNote = reviewFilter.usedFallback ? ' O filtro conservou todos os candidatos porque não havia suporte suficiente para restringi-los.' : '';
+    status(`${candidates.length} segmentos axiais apresentados para revisão (${rawCandidates.length} detectados).${filteredNote}${fallbackNote} A detecção é sugestiva; confirme cada segmento. Linhas de texto e mobiliário continuam possíveis falsos positivos.`);
   } catch (error) {
     if (generation === detectionGeneration && currentImageFile === sourceFile && imageInfo?.sha256 === sourceSha) status(`Detecção indisponível: ${error instanceof Error ? error.message : 'erro'}`);
   }
@@ -822,7 +1037,15 @@ $('#build-scene').addEventListener('click', async () => {
     const selectedRegionBoundaryIds = new Set(selectedRegionCandidates.flatMap((region) => region.boundaryCandidateIds));
     const candidateIds = [...selectedCandidates].filter((id) => !selectedRegionBoundaryIds.has(id));
     const semanticLinks = (semanticMap?.links ?? []).filter((link) => link.review.state === 'accepted' && selectedRegions.has(link.regionId)).map((link) => ({ regionId: link.regionId, elementId: link.documentElementId, label: link.elementLabel }));
-    const next = createPlanScene({ sceneId: `plan-${imageInfo.sha256.slice(0, 12)}`, title: 'Reconstrução geométrica proposta', ...(semanticLinks.length ? { regionSemanticLinks: semanticLinks } : {}), image: imageInfo, ...(sourceDocumentRef ? { technicalDocumentRef: sourceDocumentRef } : {}), calibration: { pixelDistance, realDistanceMetres, evidence, actor: 'unidentified-local-user' }, confirmedCandidateIds: candidateIds, confirmedRegionIds: [...selectedRegions], regions: vectorModel.regions, candidates, wall: { heightM, thicknessM } });
+    const regionGroundingLinks = (visualGrounding?.elements ?? []).flatMap((element) => {
+      const association = groundingAssociations.find((item) => item.elementId === element.id);
+      const review = groundingAssociationReviews[element.id];
+      return element.review === 'accepted' && association?.regionId && ['proposed', 'ambiguous'].includes(association.status) && selectedRegions.has(association.regionId)
+        && review?.review === 'accepted' && review.geometrySignature === geometrySignature(candidates, vectorModel.regions) && review.targetId === association.regionId
+        ? [{ regionId: association.regionId, elementId: element.id, label: element.label, sourceImageSha256: visualGrounding!.sourceImage.sha256, confidence: association.confidence, reviewMethod: review.method }]
+        : [];
+    });
+    const next = createPlanScene({ sceneId: `plan-${imageInfo.sha256.slice(0, 12)}`, title: 'Reconstrução geométrica proposta', ...(semanticLinks.length ? { regionSemanticLinks: semanticLinks } : {}), ...(regionGroundingLinks.length ? { regionGroundingLinks } : {}), image: imageInfo, ...(sourceDocumentRef ? { technicalDocumentRef: sourceDocumentRef } : {}), calibration: { pixelDistance, realDistanceMetres, evidence, actor: 'unidentified-local-user' }, confirmedCandidateIds: candidateIds, confirmedRegionIds: [...selectedRegions], regions: vectorModel.regions, candidates, wall: { heightM, thicknessM } });
     const resolvedMap = semanticMap ? resolveSemanticSceneLinks(semanticMap, next.scene) : undefined;
     await persistSceneTransaction(localStorage, next, 'unfold-spatial-scene.v1', { allowReplace: true, expectedRevisionId: storedRevisionBeforeBuild });
     if (resolvedMap) {
@@ -915,6 +1138,15 @@ $('#top-view').addEventListener('click', () => fitScene('top'));
 $('#front-view').addEventListener('click', () => fitScene('front'));
 $('#iso-view').addEventListener('click', () => fitScene('isometric'));
 $('#toggle-reference').addEventListener('click', () => { visibleReference = !visibleReference; $('#toggle-reference').setAttribute('aria-pressed', String(visibleReference)); updateReferenceView(); });
+$('#toggle-suggested-finish').addEventListener('click', () => {
+  suggestedFinishVisible = !suggestedFinishVisible;
+  const button = $('#toggle-suggested-finish');
+  button.setAttribute('aria-pressed', String(suggestedFinishVisible));
+  button.textContent = `Acabamento: ${suggestedFinishVisible ? 'ligado' : 'desligado'}`;
+  root.traverse((object) => { if (object instanceof Mesh && object.userData.visualClassification === 'suggested_finish') object.visible = suggestedFinishVisible; });
+  status(`Pavimentos de acabamento ${suggestedFinishVisible ? 'visíveis' : 'ocultos'}; são propostas visuais, não materiais lidos da planta.`);
+  invalidate();
+});
 $('#source-toggle').addEventListener('click', () => setSourcePanelCollapsed(!$('#source-panel').classList.contains('source-collapsed')));
 $('#clear-focus').addEventListener('click', () => selectNode(undefined));
 
@@ -944,10 +1176,38 @@ function focusNode(nodeId: string): void {
 
 function setSpatialCommandState(state: SpatialCommandState, message: string): void { options.onCommandState?.(state, message); }
 
+function requiresVisualGroundingAnswer(query: string): boolean {
+  if (!visualGrounding || !imageInfo || visualGrounding.sourceImage.sha256.toLowerCase() !== imageInfo.sha256.toLowerCase()) return false;
+  const normalized = query.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt');
+  return /\b(identific|localiz|onde esta|onde fica|mostra(?:-me)?|foca|relacao entre|o que mudou|alteracoes confirmadas|esta planta|nesta planta|este desenho|neste desenho)\b/.test(normalized);
+}
+
 function createSpatialAgentRequest(query: string): SpatialAgentRequestV1 {
   const nodes = transaction?.scene.nodes ?? [];
   const relevant = nodes.length <= 40 ? nodes : [...new Map([...nodes.slice(0, 39), ...(selectedId ? nodes.filter((node) => node.id === selectedId) : [])].map((node) => [node.id, node])).values()];
   const document = activeTechnicalDocument;
+  const sourceMatches = Boolean(visualGrounding && imageInfo && visualGrounding.sourceImage.sha256.toLowerCase() === imageInfo.sha256.toLowerCase());
+  const visualEvidence = sourceMatches && visualGrounding ? {
+    sourceImageSha256: visualGrounding.sourceImage.sha256,
+    summary: visualGrounding.summary.slice(0, 400),
+    elements: visualGrounding.elements.slice(0, 24).map((element) => {
+      const association = groundingAssociations.find((item) => item.elementId === element.id);
+      const targetId = association?.regionId ?? association?.candidateId;
+      const persistedReview = groundingAssociationReviews[element.id];
+      const associationReview: 'accepted' | 'rejected' | 'proposed' = persistedReview && persistedReview.geometrySignature === currentGeometrySignature && persistedReview.targetId === targetId ? persistedReview.review : 'proposed';
+      const node = activeSceneMatchesLoadedSource()
+        ? association?.regionId
+          ? nodes.find((item) => item.component?.properties.sourceRegion?.value === association.regionId)
+          : association?.candidateId ? nodes.find((item) => item.component?.properties.sourceCandidate?.value === association.candidateId) : undefined
+        : undefined;
+      return {
+        id: element.id, label: element.label.slice(0, 120), componentClass: element.componentClass,
+        point: element.point, box: element.box, confidence: element.confidence, review: element.review,
+        evidence: element.evidence.slice(0, 300), ambiguities: element.ambiguities.slice(0, 6),
+        association: association ? { candidateId: association.candidateId, regionId: association.regionId, sceneNodeId: node?.id ?? null, confidence: association.confidence, status: association.status, review: associationReview } : null,
+      };
+    }),
+  } : undefined;
   return {
     schema: SPATIAL_AGENT_REQUEST_SCHEMA,
     query,
@@ -976,11 +1236,12 @@ function createSpatialAgentRequest(query: string): SpatialAgentRequestV1 {
       uncertainties: document.ambiguities.slice(0, 20).map((item) => item.slice(0, 240)),
       missing: document.missingInformation.slice(0, 20).map((item) => item.slice(0, 240)),
     } : null,
+    ...(visualEvidence ? { visualEvidence } : {}),
     history: spatialAgentHistory.slice(-6),
   };
 }
 
-function resolveAgentTarget(action: SpatialAgentAction, query: string): { nodeId: string | null; question?: string } {
+function resolveAgentTarget(action: SpatialAgentAction, query: string, request: SpatialAgentRequestV1): { nodeId: string | null; question?: string } {
   if (!transaction) return { nodeId: null, question: 'Não existe uma cena construída. Posso explicar o documento, mas é necessário criar uma cena antes de editar geometria.' };
   const walls = transaction.scene.nodes.filter((node) => node.component?.kind === 'wall');
   if (action.target.reference === 'none') return { nodeId: null };
@@ -990,7 +1251,11 @@ function resolveAgentTarget(action: SpatialAgentAction, query: string): { nodeId
   }
   if (action.target.reference === 'label') {
     const label = action.target.label!.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt');
-    const matches = transaction.scene.nodes.filter((node) => node.label.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt') === label);
+    const directMatches = transaction.scene.nodes.filter((node) => node.label.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt') === label);
+    const groundedNodeIds = (request.visualEvidence?.elements ?? []).filter((element) => (element.review === 'accepted' || element.review === 'corrected') && element.association?.review === 'accepted')
+      .filter((element) => element.label.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt') === label)
+      .map((element) => element.association?.sceneNodeId).filter((id): id is string => Boolean(id));
+    const matches = [...new Map([...directMatches, ...groundedNodeIds.map((id) => transaction!.scene.nodes.find((node) => node.id === id)).filter((node): node is Node => Boolean(node))].map((node) => [node.id, node])).values()];
     if (matches.length === 1) return { nodeId: matches[0]!.id };
     return { nodeId: null, question: matches.length ? `Existem vários elementos chamados “${action.target.label}”. Seleccione um na cena.` : `Não encontrei “${action.target.label}” na revisão actual.` };
   }
@@ -1040,7 +1305,7 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
     setSpatialCommandState('Rejected', message);
     return { status: 'clarification', message };
   }
-  const grounded = answerGroundedQuery(input, { document: activeTechnicalDocument ?? null, map: semanticMap ?? null, scene: transaction?.scene ?? null, selectedId: selectedId ?? null, undoDepth: transaction?.undoStack.length ?? 0, redoDepth: transaction?.redoStack.length ?? 0 });
+  const grounded = requiresVisualGroundingAnswer(input) ? undefined : answerGroundedQuery(input, { document: activeTechnicalDocument ?? null, map: semanticMap ?? null, scene: transaction?.scene ?? null, selectedId: selectedId ?? null, undoDepth: transaction?.undoStack.length ?? 0, redoDepth: transaction?.redoStack.length ?? 0 });
   if (grounded?.kind === 'ANSWER') { setSpatialCommandState('Completed', grounded.text); return { status: 'completed', message: grounded.evidenceIds.length ? `${grounded.text} · Evidência: ${grounded.evidenceIds.join(', ')}` : grounded.text }; }
   if (grounded?.kind === 'CLARIFICATION') { setSpatialCommandState('RequestClarification', grounded.text); return { status: 'clarification', message: grounded.text }; }
   if (grounded?.kind === 'FOCUS') { selectNode(grounded.nodeId); focusNode(grounded.nodeId); setSpatialCommandState('Completed', grounded.text); return { status: 'completed', message: grounded.text }; }
@@ -1054,25 +1319,23 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
     setSpatialCommandState('RequestClarification', message);
     return { status: 'clarification', message };
   }
-  const request = createSpatialAgentRequest(input);
   const local = parseSpatialIntentV1(input);
   let parsed = local;
   let answerPrefix = '';
   let commandInputText = input;
+  let modelQuery = input;
   let pendingContinuation = false;
   if (pendingTarget && transaction) {
     const ordinal = input.match(/^(?:a\s+)?parede\s+(\d+)$/i);
     const useSelected = /^(?:esta|essa|a seleccionada|a selecionada|usa esta|usa essa)$/i.test(input) && Boolean(selectedId);
     if (ordinal || useSelected) {
-      const reference = ordinal ? `wall_ordinal:${ordinal[1]}` : null;
-      parsed = { status: 'recognized', value: { intent: { ...pendingTarget.intent, target: { nodeId: useSelected ? selectedId! : null, reference } } } };
       origin = pendingTarget.origin;
       commandInputText = `${pendingTarget.originalInput} → ${input}`.slice(0, 500);
-      answerPrefix = 'Clarificação espacial resolvida localmente; executor determinístico validou o alvo. ';
-      pendingTargetClarification = undefined;
+      modelQuery = `Pedido original: ${pendingTarget.originalInput}. Esclarecimento do utilizador para resolver o alvo: ${input}. Reavalie o pedido com o contexto espacial actual e devolva uma intenção estruturada; não execute.`;
       pendingContinuation = true;
     } else pendingTargetClarification = undefined;
   }
+  const request = createSpatialAgentRequest(modelQuery);
   setSpatialCommandState('Understanding', 'A interpretar a instrução e a validar contexto, capacidades e revisão da cena.');
   spatialAgentAbort?.abort();
   const abort = new AbortController();
@@ -1080,7 +1343,6 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
   const abortFromCaller = () => abort.abort();
   callerSignal?.addEventListener('abort', abortFromCaller, { once: true });
   try {
-    if (pendingContinuation) throw new Error('SPATIAL_AGENT_LOCAL_FALLBACK');
     const response = await fetch('/api/spatial-agent', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request), signal: abort.signal });
     const payload: unknown = await response.json().catch(() => null);
     if (!response.ok) {
@@ -1090,6 +1352,7 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
     }
     if (!payload || typeof payload !== 'object' || !('result' in payload)) throw new Error('SPATIAL_AGENT_INVALID_ENVELOPE');
     const agent = parseSpatialAgentResult(JSON.stringify((payload as { result: unknown }).result), request);
+    if (pendingContinuation) pendingTargetClarification = undefined;
     const responseMeta = (payload as { meta?: { provider?: unknown } }).meta;
     const currentAgentContext = { sceneGeneration, sceneId: transaction?.scene.id ?? null, revisionId: transaction?.scene.revision.id ?? null, selectedNodeId: selectedId ?? null };
     if (!spatialAgentContextIsCurrent(originalAgentContext, currentAgentContext) || transaction && transaction.scene.revision.id !== originalRevision || selectedId !== originalSelection) {
@@ -1102,6 +1365,7 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
       return { status: 'completed', message: `${agent.text}${agent.evidenceIds.length ? ` · Evidência: ${agent.evidenceIds.join(', ')}` : ' · Sem referência documental directa.'}` };
     }
     if (agent.kind === 'REQUEST_CLARIFICATION') {
+      if (pendingContinuation && pendingTarget && transaction) pendingTargetClarification = { ...pendingTarget, originalInput: commandInputText };
       setSpatialCommandState('RequestClarification', agent.question);
       return { status: 'clarification', message: agent.question };
     }
@@ -1109,7 +1373,7 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
       const message = 'O documento activo não é arquitectónico. Este editor não encaminha alterações mecânicas ou eléctricas para a geometria de paredes.';
       setSpatialCommandState('RequestClarification', message); return { status: 'clarification', message };
     }
-    const target = resolveAgentTarget(agent.action, input);
+    const target = resolveAgentTarget(agent.action, input, request);
     if (target.question) {
       pendingTargetClarification = { intent: agentIntent(agent.action, null).intent, sceneId: transaction?.scene.id ?? '', revisionId: transaction?.scene.revision.id ?? '', originalInput: input, origin: responseMeta?.provider === 'test_fixture' ? 'local_deterministic' : 'muse_spark' };
       setSpatialCommandState('RequestClarification', target.question);
@@ -1121,13 +1385,14 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
       : 'Muse Spark propôs; executor local validou. ';
   } catch (error) {
     if (abort.signal.aborted || error instanceof DOMException && error.name === 'AbortError') return { status: 'rejected', message: 'Interpretação cancelada. Nenhuma alteração foi aplicada.' };
-    const localFallbackAllowed = error instanceof TypeError || error instanceof Error && error.message === 'SPATIAL_AGENT_LOCAL_FALLBACK';
+    const localFallbackAllowed = error instanceof Error && error.message === 'SPATIAL_AGENT_LOCAL_FALLBACK';
     if (!localFallbackAllowed) {
       const message = error instanceof Error && error.message === 'SPATIAL_AGENT_ACTION_NOT_AUTHORIZED' ? 'A resposta do Muse não correspondeu a um pedido explícito. Nenhuma alteração foi proposta.' : 'Muse Spark não devolveu uma interpretação válida. A cena permaneceu intacta.';
       setSpatialCommandState('Failed', message); return { status: 'failed', message };
     }
     if (pendingContinuation) {
-      // The follow-up supplies only the target; the pending intent is revision-bound and remains authoritative.
+      setSpatialCommandState('Failed', 'O Muse não conseguiu interpretar a clarificação. O pedido permanece sem mutação; repita ou especifique o alvo.');
+      return { status: 'failed', message: 'O Muse não conseguiu interpretar a clarificação. A cena permaneceu intacta.' };
     } else if (local.status === 'clarification') {
       spatialAgentHistory = [...spatialAgentHistory, { role: 'user' as const, text: input.slice(0, 300) }, { role: 'assistant' as const, text: local.question.slice(0, 300) }].slice(-6);
       setSpatialCommandState('RequestClarification', local.question);
@@ -1465,6 +1730,7 @@ function cleanup(notifyExit = false): void {
   disposed = true;
   if (raf) cancelAnimationFrame(raf);
   spatialAgentAbort?.abort(); spatialAgentAbort = undefined;
+  groundingAbort?.abort(); groundingAbort = undefined;
   cameraTween?.kill(); buildTimeline?.kill();
   resizeObserver.disconnect();
   window.removeEventListener('beforeunload', onUnload);

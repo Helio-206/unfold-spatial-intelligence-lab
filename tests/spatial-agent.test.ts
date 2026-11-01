@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createMetaServer } from '../server/meta-server';
-import { authorizeSpatialAgentProposal, buildSpatialAgentPrompt, parseSpatialAgentResult, spatialAgentContextIsCurrent, spatialDomainConflict, SPATIAL_AGENT_REQUEST_SCHEMA, validateSpatialAgentRequest } from '../src/spatial-agent';
+import { authorizeSpatialAgentProposal, buildSpatialAgentPrompt, parseSpatialAgentModelOutput, parseSpatialAgentResult, spatialAgentContextIsCurrent, spatialDomainConflict, SPATIAL_AGENT_JSON_SCHEMA, SPATIAL_AGENT_MODEL_OUTPUT_SCHEMA, SPATIAL_AGENT_REQUEST_SCHEMA, validateSpatialAgentRequest } from '../src/spatial-agent';
 
 const validRequest = {
   schema: SPATIAL_AGENT_REQUEST_SCHEMA,
@@ -58,6 +58,19 @@ describe('spatial_agent.v1 contracts', () => {
     expect(() => validateSpatialAgentRequest({ ...validRequest, mode: 'electrical', capabilities: ['Resize'] })).toThrow('SPATIAL_AGENT_CAPABILITY_NOT_ALLOWED_FOR_MODE');
   });
 
+  it('accepts bounded visual-grounding context, exposes only its evidence IDs, and rejects invalid coordinates', () => {
+    const visualEvidence = {
+      sourceImageSha256: 'a'.repeat(64), summary: 'Planta com paredes e duas aberturas propostas.',
+      elements: [{ id: 'ground-wall-1', label: 'Parede norte', componentClass: 'wall', point: { x: 220, y: 180 }, box: null, confidence: 0.82, review: 'accepted', evidence: 'Traço contínuo escuro junto ao limite superior.', ambiguities: [], association: { candidateId: 'candidate-1', regionId: null, sceneNodeId: 'wall-a', confidence: 0.74, status: 'proposed', review: 'accepted' } }],
+    };
+    const request = validateSpatialAgentRequest({ ...validRequest, visualEvidence });
+    expect(buildSpatialAgentPrompt(request)).toContain('não geometria CAD');
+    const groundedAnswer = { schema: 'spatial_agent_result.v1', kind: 'ANSWER', text: 'A parede norte está associada como proposta à parede seleccionada.', basis: 'scene', evidenceIds: ['ground-wall-1'], question: null, action: null };
+    expect(parseSpatialAgentResult(JSON.stringify(groundedAnswer), request).kind).toBe('ANSWER');
+    expect(() => validateSpatialAgentRequest({ ...validRequest, visualEvidence: { ...visualEvidence, elements: [{ ...visualEvidence.elements[0], point: { x: 1001, y: 180 } }] } })).toThrow('INVALID_VISUAL_GROUNDING_CONTEXT');
+    expect(() => parseSpatialAgentResult(JSON.stringify({ ...groundedAnswer, evidenceIds: ['ground-wall-2'] }), request)).toThrow('SPATIAL_AGENT_INVALID_RESULT');
+  });
+
   it('accepts only answers, clarifications, and allowlisted action proposals with current evidence IDs', () => {
     const request = validateSpatialAgentRequest(validRequest);
     expect(parseSpatialAgentResult(JSON.stringify(resizeResult), request).kind).toBe('PROPOSE_ACTION');
@@ -69,6 +82,15 @@ describe('spatial_agent.v1 contracts', () => {
     expect(() => parseSpatialAgentResult(JSON.stringify({ ...resizeResult, kind: 'ANSWER' }), request)).toThrow('SPATIAL_AGENT_INVALID_RESULT_KIND');
     expect(() => parseSpatialAgentResult(JSON.stringify({ ...resizeResult, action: { ...resizeResult.action, kind: 'RemoveOpening' } }), request)).toThrow('SPATIAL_AGENT_INVALID_ACTION_PARAMETERS');
     expect(() => parseSpatialAgentResult('{bad', request)).toThrow('SPATIAL_AGENT_INVALID_JSON');
+  });
+
+  it('uses a strict discriminated transport shape and maps it to the stable canonical result', () => {
+    const request = validateSpatialAgentRequest(validRequest);
+    const transport = { outcome: { schema: SPATIAL_AGENT_MODEL_OUTPUT_SCHEMA, kind: 'PROPOSE_ACTION', text: resizeResult.text, basis: 'scene', evidenceIds: ['wall-a'], question: null, action: resizeResult.action } };
+    expect(parseSpatialAgentModelOutput(JSON.stringify(transport), request)).toEqual(resizeResult);
+    expect((SPATIAL_AGENT_JSON_SCHEMA.properties as unknown as { outcome: { anyOf: unknown[] } }).outcome.anyOf).toHaveLength(3);
+    expect(() => parseSpatialAgentModelOutput(JSON.stringify({ outcome: { ...transport.outcome, kind: 'ANSWER', question: 'Which wall?' } }), request)).toThrow('SPATIAL_AGENT_INVALID_RESULT_KIND');
+    expect(() => parseSpatialAgentModelOutput(JSON.stringify({ ...transport, unexpected: true }), request)).toThrow('SPATIAL_AGENT_INVALID_MODEL_OUTPUT');
   });
 
   it('never authorizes an action-shaped answer to a question and checks the stated measurement', () => {
@@ -94,14 +116,15 @@ describe('spatial_agent.v1 contracts', () => {
 
 describe('spatial agent HTTP boundary', () => {
   it('uses Responses API structured output, returns a proposal, and never mutates scene state', async () => {
-    const transport = vi.fn<typeof fetch>().mockResolvedValue(upstream('completed', JSON.stringify(resizeResult)));
+    const modelOutput = { outcome: { schema: SPATIAL_AGENT_MODEL_OUTPUT_SCHEMA, kind: resizeResult.kind, text: resizeResult.text, basis: resizeResult.basis, evidenceIds: [...resizeResult.evidenceIds], question: null, action: resizeResult.action } };
+    const transport = vi.fn<typeof fetch>().mockResolvedValue(upstream('completed', JSON.stringify(modelOutput)));
     await withServer(transport, async (port) => {
       const response = await fetch(`http://127.0.0.1:${port}/api/spatial-agent`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(validRequest) });
       const body = await response.json() as { result?: { kind?: string; action?: { value?: number } }; sceneRevisionId?: string; meta?: { requestId?: string } };
       expect(response.status).toBe(200);
       expect(body).toMatchObject({ result: { kind: 'PROPOSE_ACTION', action: { value: 0.3, valueMode: 'increase_by' } }, sceneRevisionId: 'revision-2', meta: { requestId: 'spatial-test-id' } });
       const request = JSON.parse(String(transport.mock.calls[0]?.[1]?.body));
-      expect(request).toMatchObject({ model: 'muse-spark-1.3', max_output_tokens: 4096, reasoning: { effort: 'medium' }, text: { format: { type: 'json_schema', strict: true, name: 'spatial_agent_result_v1' } } });
+      expect(request).toMatchObject({ model: 'muse-spark-1.3', max_output_tokens: 4096, reasoning: { effort: 'medium' }, text: { format: { type: 'json_schema', strict: true, name: 'spatial_agent_model_output_v1', schema: SPATIAL_AGENT_JSON_SCHEMA } } });
       expect(request.response_format).toBeUndefined();
       expect(transport).toHaveBeenCalledOnce();
       expect(body).not.toHaveProperty('scene');
@@ -109,6 +132,7 @@ describe('spatial agent HTTP boundary', () => {
   });
 
   it('rejects invalid input before Meta and does not retry incomplete or invalid model responses', async () => {
+    const modelOutput = { outcome: { schema: SPATIAL_AGENT_MODEL_OUTPUT_SCHEMA, kind: resizeResult.kind, text: resizeResult.text, basis: resizeResult.basis, evidenceIds: [...resizeResult.evidenceIds], question: null, action: resizeResult.action } };
     const transport = vi.fn<typeof fetch>().mockResolvedValueOnce(upstream('incomplete', '{'));
     await withServer(transport, async (port) => {
       const url = `http://127.0.0.1:${port}/api/spatial-agent`;
@@ -119,10 +143,12 @@ describe('spatial agent HTTP boundary', () => {
       expect(incomplete.status).toBe(502);
       expect((await incomplete.json()).error.code).toBe('SPATIAL_AGENT_INCOMPLETE');
       expect(transport).toHaveBeenCalledOnce();
-      transport.mockResolvedValueOnce(upstream('completed', JSON.stringify({ ...resizeResult, evidenceIds: ['forged'] })));
+      transport.mockResolvedValueOnce(upstream('completed', JSON.stringify({ outcome: { ...modelOutput.outcome, evidenceIds: ['forged'] } })));
       const invalidResponse = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(validRequest) });
       expect(invalidResponse.status).toBe(502);
-      expect((await invalidResponse.json()).error).toMatchObject({ code: 'SPATIAL_AGENT_INVALID_RESULT', category: 'schema' });
+      const invalidBody = await invalidResponse.json();
+      expect(invalidBody.error).toMatchObject({ code: 'SPATIAL_AGENT_INVALID_RESULT', category: 'schema' });
+      expect(invalidBody.meta).toMatchObject({ requestId: 'spatial-test-id', httpStatus: 200, status: 'success' });
       expect(transport).toHaveBeenCalledTimes(2);
     });
   });

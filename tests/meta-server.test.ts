@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
@@ -307,7 +307,7 @@ describe('image understanding backend route', () => {
     }
   }
 
-  it.each(['/api/meta/text', '/api/meta/image', '/api/meta/image/verify-region', '/api/kinematics/experiment', '/api/experiments/preview', '/api/conversation', '/api/spatial-agent'])('rejects disallowed origins on every billable API route (%s)', async (path) => {
+  it.each(['/api/meta/text', '/api/meta/image', '/api/meta/image/verify-region', '/api/meta/grounding', '/api/kinematics/experiment', '/api/experiments/preview', '/api/conversation', '/api/spatial-agent'])('rejects disallowed origins on every billable API route (%s)', async (path) => {
     const fetchMock = vi.fn<typeof fetch>();
     await withServer(fetchMock, async (port) => {
       const response = await fetch(`http://127.0.0.1:${port}${path}`, {
@@ -327,6 +327,36 @@ describe('image understanding backend route', () => {
       const response = await fetch(`http://127.0.0.1:${port}/api/meta/text`, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: 'prompt' });
       expect(response.status).toBe(403);
       expect((await response.json()).error.code).toBe('INVALID_ORIGIN');
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
+
+  it('uses the exact source bytes and structured Responses output for visual grounding', async () => {
+    const output = { schema: 'visual_grounding_response.v1', summary: 'Planta residencial com limites visíveis.', elements: [], relations: [], limitations: ['Sem escala.'] };
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(metaOutput(JSON.stringify(output), 'visual-grounding-request-id'));
+    const bytes = Buffer.from(validJpegDataUrl.split(',')[1]!, 'base64');
+    const source = { sha256: createHash('sha256').update(bytes).digest('hex'), width: 8, height: 8, mimeType: 'image/jpeg' };
+    await withServer(fetchMock, async (port) => {
+      const response = await fetch(`http://127.0.0.1:${port}/api/meta/grounding`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ imageDataUrl: validJpegDataUrl, image: source, document: null }) });
+      expect(response.status).toBe(200);
+      const body = await response.json() as { grounding?: { schema?: string; sourceImage?: { sha256?: string }; provider?: string; elements?: unknown[] }; meta?: { requestId?: string } };
+      expect(body.grounding).toMatchObject({ schema: 'visual_grounding.v1', provider: 'muse-spark-1.3', sourceImage: { sha256: source.sha256, width: 8, height: 8, coordinateSystem: 'normalized_0_1000_top_left' }, elements: [] });
+      expect(body.meta?.requestId).toBe('visual-grounding-request-id');
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const payload = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+      expect(payload).toMatchObject({ model: 'muse-spark-1.3', reasoning: { effort: 'low' }, max_output_tokens: 8_192, text: { format: { type: 'json_schema', name: 'visual_grounding_response_v1', strict: true } } });
+      expect(payload.input[0].content[1]).toMatchObject({ type: 'input_image', image_url: validJpegDataUrl, detail: 'high' });
+    });
+  });
+
+  it('rejects visual grounding when hash or declared dimensions do not match the uploaded bytes, without a Meta call', async () => {
+    const fetchMock = vi.fn<typeof fetch>();
+    const bytes = Buffer.from(validJpegDataUrl.split(',')[1]!, 'base64');
+    const source = { sha256: createHash('sha256').update(bytes).digest('hex'), width: 9, height: 8, mimeType: 'image/jpeg' };
+    await withServer(fetchMock, async (port) => {
+      const response = await fetch(`http://127.0.0.1:${port}/api/meta/grounding`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ imageDataUrl: validJpegDataUrl, image: source, document: null }) });
+      expect(response.status).toBe(409);
+      expect((await response.json()).error.code).toBe('GROUNDING_IMAGE_IDENTITY_MISMATCH');
       expect(fetchMock).not.toHaveBeenCalled();
     });
   });

@@ -9,7 +9,7 @@ import {
   parseKinematicOperation,
 } from '../src/ai-kinematic-experiment';
 import { adaptMechanicalGraph, type KinematicAssemblyV1 } from '../src/kinematic-assembly';
-import { MetaApiError, requestMetaStructuredImage, requestMetaStructuredText, requestMetaText, sanitizeMetaEvidenceExcerpt, type MetaCallLog } from '../src/meta';
+import { MetaApiError, requestMetaStructuredImage, requestMetaStructuredText, requestMetaText, requestMetaVisualGrounding, sanitizeMetaEvidenceExcerpt, type MetaCallLog } from '../src/meta';
 import type { MechanicalGraphV1 } from '../src/mechanical-graph';
 import { technicalAdapters } from '../src/technical-document';
 import { buildRegionVerificationPrompt, buildTechnicalRecognitionPrompt, MULTIMODAL_STAGE_CONFIG, parseRegionVerification, parseTechnicalRecognition, REGION_VERIFICATION_JSON_SCHEMA, TECHNICAL_RECOGNITION_JSON_SCHEMA } from '../src/technical-document-pipeline';
@@ -25,7 +25,8 @@ import {
   validateDesignSandboxRequest,
 } from '../src/design-sandbox';
 import { BACKEND_CONTRACT_VERSION, BACKEND_DIAGNOSTICS_SCHEMA, IMAGE_PIPELINE_VERSION, IMAGE_RESPONSE_CONTRACT, TECHNICAL_DOCUMENT_SCHEMA_VERSION, TECHNICAL_RECOGNITION_SCHEMA_VERSION } from '../src/api-contract';
-import { buildSpatialAgentPrompt, parseSpatialAgentResult, SPATIAL_AGENT_JSON_SCHEMA, validateSpatialAgentRequest } from '../src/spatial-agent';
+import { buildSpatialAgentPrompt, parseSpatialAgentModelOutput, SPATIAL_AGENT_JSON_SCHEMA, validateSpatialAgentRequest } from '../src/spatial-agent';
+import { buildVisualGroundingPrompt, parseVisualGroundingResponse, VISUAL_GROUNDING_JSON_SCHEMA } from '../src/visual-grounding';
 
 const MAX_BODY_BYTES = 64 * 1024;
 const MAX_IMAGE_BODY_BYTES = 14 * 1024 * 1024;
@@ -215,6 +216,29 @@ function writeJson(response: ServerResponse, status: number, body: unknown, orig
   response.end(JSON.stringify(body));
 }
 
+function imageDimensions(dataUrl: string): { width: number; height: number } {
+  const match = /^data:image\/(jpeg|png);base64,([A-Za-z0-9+/]+={0,2})$/.exec(dataUrl);
+  if (!match) throw new Error('INVALID_IMAGE_DATA_URL');
+  const bytes = Buffer.from(match[2]!, 'base64');
+  if (match[1] === 'png' && bytes.length >= 24 && bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
+  if (match[1] === 'jpeg' && bytes.length >= 4 && bytes[0] === 0xff && bytes[1] === 0xd8) {
+    const frames = new Set([0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf]);
+    let offset = 2;
+    while (offset + 4 <= bytes.length) {
+      if (bytes[offset] !== 0xff) { offset += 1; continue; }
+      while (bytes[offset] === 0xff) offset += 1;
+      const marker = bytes[offset++]!;
+      if (marker === 0xda || marker === 0xd9) break;
+      if (marker === 0x01 || marker >= 0xd0 && marker <= 0xd7) continue;
+      const length = bytes.readUInt16BE(offset);
+      if (length < 2 || offset + length > bytes.length) break;
+      if (frames.has(marker) && length >= 7) return { height: bytes.readUInt16BE(offset + 3), width: bytes.readUInt16BE(offset + 5) };
+      offset += length;
+    }
+  }
+  throw new Error('IMAGE_DIMENSIONS_UNAVAILABLE');
+}
+
 function readBody(request: IncomingMessage, maxBytes: number): Promise<string> {
   return new Promise((resolve, reject) => {
     let size = 0;
@@ -347,7 +371,7 @@ export function createMetaServer(options: ServerOptions = {}): Server {
       writeJson(response, 200, diagnostics(), origin);
       return;
     }
-    if (request.method !== 'POST' || !['/api/meta/text', '/api/meta/image', '/api/meta/image/verify-region', '/api/kinematics/experiment', '/api/experiments/preview', '/api/conversation', '/api/spatial-agent'].includes(request.url ?? '')) {
+    if (request.method !== 'POST' || !['/api/meta/text', '/api/meta/image', '/api/meta/image/verify-region', '/api/meta/grounding', '/api/kinematics/experiment', '/api/experiments/preview', '/api/conversation', '/api/spatial-agent'].includes(request.url ?? '')) {
       writeJson(response, 404, { error: { code: 'NOT_FOUND', message: 'Rota não encontrada.' } }, origin);
       return;
     }
@@ -376,7 +400,7 @@ export function createMetaServer(options: ServerOptions = {}): Server {
     const started = performance.now();
     try {
       const body = JSON.parse(await readBody(request,
-        request.url?.startsWith('/api/meta/image')
+        request.url?.startsWith('/api/meta/image') || request.url === '/api/meta/grounding'
           ? MAX_IMAGE_BODY_BYTES
           : request.url === '/api/experiments/preview' || request.url === '/api/conversation'
             ? MAX_PREVIEW_BODY_BYTES
@@ -384,6 +408,57 @@ export function createMetaServer(options: ServerOptions = {}): Server {
               ? MAX_SPATIAL_AGENT_BODY_BYTES
             : MAX_BODY_BYTES,
       )) as { prompt?: unknown };
+      if (request.url === '/api/meta/grounding') {
+        const input = body as { imageDataUrl?: unknown; image?: unknown; document?: unknown };
+        if (!input.image || typeof input.image !== 'object' || Array.isArray(input.image)) {
+          writeJson(response, 400, { error: { code: 'INVALID_GROUNDING_SOURCE', message: 'Metadados da imagem-fonte são obrigatórios.' } }, origin); return;
+        }
+        const imageMeta = input.image as { sha256?: unknown; width?: unknown; height?: unknown; mimeType?: unknown };
+        const documentMeta = input.document;
+        if (typeof imageMeta.sha256 !== 'string' || !/^[a-f0-9]{64}$/i.test(imageMeta.sha256) || !Number.isSafeInteger(imageMeta.width) || !Number.isSafeInteger(imageMeta.height) || Number(imageMeta.width) < 1 || Number(imageMeta.height) < 1 || Number(imageMeta.width) > 10_000 || Number(imageMeta.height) > 10_000 || Number(imageMeta.width) * Number(imageMeta.height) > 16_000_000 || !['image/jpeg', 'image/png'].includes(String(imageMeta.mimeType))) {
+          writeJson(response, 400, { error: { code: 'INVALID_GROUNDING_SOURCE', message: 'Hash, dimensões ou MIME da imagem inválidos.' } }, origin); return;
+        }
+        let image;
+        try {
+          image = validateImageDataUrl(input.imageDataUrl);
+          const bytes = Buffer.from(image.dataUrl.slice(image.dataUrl.indexOf(',') + 1), 'base64');
+          const dimensions = imageDimensions(image.dataUrl);
+          const sha256 = createHash('sha256').update(bytes).digest('hex');
+          if (sha256.toLowerCase() !== imageMeta.sha256.toLowerCase() || image.mimeType !== imageMeta.mimeType || dimensions.width !== imageMeta.width || dimensions.height !== imageMeta.height) throw new Error('GROUNDING_IMAGE_IDENTITY_MISMATCH');
+        } catch (error) {
+          const mismatch = error instanceof Error && error.message === 'GROUNDING_IMAGE_IDENTITY_MISMATCH';
+          writeJson(response, mismatch ? 409 : 400, { error: { code: mismatch ? 'GROUNDING_IMAGE_IDENTITY_MISMATCH' : 'INVALID_GROUNDING_IMAGE', message: mismatch ? 'Hash, MIME ou dimensões não correspondem aos bytes recebidos.' : 'A imagem não passou a validação.' } }, origin); return;
+        }
+        let documentRef: { documentId: string; schema: 'technical_document.v1' } | null = null;
+        let documentSummary: string | undefined;
+        if (documentMeta !== undefined && documentMeta !== null) {
+          if (typeof documentMeta !== 'object' || Array.isArray(documentMeta) || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(String((documentMeta as { documentId?: unknown }).documentId)) || (documentMeta as { schema?: unknown }).schema !== 'technical_document.v1' || typeof (documentMeta as { summary?: unknown }).summary !== 'string' || (documentMeta as { summary: string }).summary.length > 500) {
+            writeJson(response, 400, { error: { code: 'INVALID_GROUNDING_DOCUMENT_CONTEXT', message: 'Contexto documental incompatível.' } }, origin); return;
+          }
+          documentRef = { documentId: (documentMeta as { documentId: string }).documentId, schema: 'technical_document.v1' };
+          documentSummary = (documentMeta as { summary: string }).summary;
+        }
+        const abort = new AbortController();
+        request.once('aborted', () => abort.abort());
+        request.socket.once('close', () => abort.abort());
+        response.once('close', () => { if (!response.writableEnded) abort.abort(); });
+        try {
+          reserveMetaCall();
+          const result = await requestMetaVisualGrounding(image.dataUrl, buildVisualGroundingPrompt({ width: Number(imageMeta.width), height: Number(imageMeta.height), ...(documentSummary ? { documentSummary } : {}) }), apiKey, VISUAL_GROUNDING_JSON_SCHEMA as unknown as Record<string, unknown>, options.fetchImpl, abort.signal);
+          if (abort.signal.aborted) return;
+          const modelOutput = JSON.parse(result.text) as { summary: string };
+          const grounding = parseVisualGroundingResponse(result.text, { sha256: String(imageMeta.sha256).toLowerCase(), width: Number(imageMeta.width), height: Number(imageMeta.height), mimeType: image.mimeType, coordinateSystem: 'normalized_0_1000_top_left' }, documentRef);
+          console.info(JSON.stringify({ event: 'meta.visual_grounding', status: 'success', requestId: result.log.requestId, latencyMs: result.log.latencyMs, usage: result.log.usage, estimatedCostUsd: result.log.estimatedCostUsd, elementCount: grounding.elements.length }));
+          writeJson(response, 200, { grounding, summary: modelOutput.summary, meta: result.log }, origin);
+        } catch (error) {
+          if (abort.signal.aborted) return;
+          const log = error && typeof error === 'object' && 'log' in error ? (error.log as MetaCallLog) : undefined;
+          const code = error instanceof MetaCallBudgetExceeded ? 'META_CALL_BUDGET_EXHAUSTED' : error instanceof Error && error.message.startsWith('VISUAL_GROUNDING_') ? error.message : error instanceof MetaApiError && error.kind === 'incomplete' ? 'VISUAL_GROUNDING_INCOMPLETE' : error instanceof MetaApiError && error.kind === 'network_error' ? 'VISUAL_GROUNDING_TRANSPORT_ERROR' : error instanceof MetaApiError && error.kind === 'http_error' ? 'VISUAL_GROUNDING_UPSTREAM_HTTP_ERROR' : 'VISUAL_GROUNDING_FAILED';
+          console.info(JSON.stringify({ event: 'meta.visual_grounding', status: 'error', code, requestId: log?.requestId, latencyMs: log?.latencyMs ?? Math.round(performance.now() - started), usage: log?.usage, estimatedCostUsd: log?.estimatedCostUsd }));
+          writeJson(response, log?.httpStatus && log.httpStatus >= 400 && log.httpStatus < 600 ? log.httpStatus : 502, { error: { code, message: 'O grounding visual não passou na validação. A cena não foi alterada.' }, meta: log }, origin);
+        }
+        return;
+      }
       if (request.url === '/api/spatial-agent') {
         let agentRequest;
         let prompt: string;
@@ -404,9 +479,9 @@ export function createMetaServer(options: ServerOptions = {}): Server {
         let result: Awaited<ReturnType<typeof requestMetaStructuredText>> | undefined;
         try {
           reserveMetaCall();
-          result = await requestMetaStructuredText(prompt, apiKey, SPATIAL_AGENT_JSON_SCHEMA as unknown as Record<string, unknown>, options.fetchImpl, 4_096, 'medium', 'spatial_agent_result_v1', abort.signal);
+          result = await requestMetaStructuredText(prompt, apiKey, SPATIAL_AGENT_JSON_SCHEMA as unknown as Record<string, unknown>, options.fetchImpl, 4_096, 'medium', 'spatial_agent_model_output_v1', abort.signal);
           if (abort.signal.aborted) return;
-          const parsed = parseSpatialAgentResult(result.text, agentRequest);
+          const parsed = parseSpatialAgentModelOutput(result.text, agentRequest);
           console.info(JSON.stringify({ event: 'spatial_agent.completed', httpStatus: result.log.httpStatus, latencyMs: result.log.latencyMs, requestId: result.log.requestId, usage: result.log.usage, estimatedCostUsd: result.log.estimatedCostUsd, kind: parsed.kind, mode: agentRequest.mode }));
           writeJson(response, 200, { result: parsed, sceneRevisionId: agentRequest.scene?.revisionId ?? null, meta: result.log }, origin);
         } catch (error) {
@@ -421,7 +496,7 @@ export function createMetaServer(options: ServerOptions = {}): Server {
               status: 502,
             }
             : conversationErrorCode(error);
-          const metaLog = error instanceof MetaApiError ? error.log : undefined;
+          const metaLog = error instanceof MetaApiError ? error.log : result?.log;
           const code = error instanceof MetaApiError
             ? error.kind === 'incomplete' ? 'SPATIAL_AGENT_INCOMPLETE' : error.kind === 'network_error' ? 'SPATIAL_AGENT_TRANSPORT_ERROR' : error.kind === 'http_error' ? 'SPATIAL_AGENT_UPSTREAM_HTTP_ERROR' : error.kind === 'model_error' ? 'SPATIAL_AGENT_MODEL_ERROR' : 'SPATIAL_AGENT_UPSTREAM_INVALID'
             : error instanceof Error && error.message.startsWith('SPATIAL_AGENT_') ? error.message

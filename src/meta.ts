@@ -222,6 +222,15 @@ export async function requestMetaStructuredImage(imageDataUrl: string, prompt: s
   return requestMetaInput([{ type: 'message', role: 'user', content: [{ type: 'input_text', text: prompt }, { type: 'input_image', image_url: imageDataUrl, detail: imageDetail }] }], apiKey, fetchImpl, maxOutputTokens, { name: schemaName, schema }, callerSignal, reasoningEffort);
 }
 
+export async function requestMetaVisualGrounding(imageDataUrl: string, prompt: string, apiKey: string | undefined, schema: Record<string, unknown>, fetchImpl: typeof fetch = fetch, callerSignal?: AbortSignal): Promise<{ text: string; log: MetaCallLog }> {
+  if (!imageDataUrl.startsWith('data:image/')) throw new Error('Imagem inválida: esperado data URL de imagem.');
+  if (!prompt.trim() || prompt.length > 8_000) throw new Error('Prompt de grounding inválido.');
+  return requestMetaInput(
+    [{ type: 'message', role: 'user', content: [{ type: 'input_text', text: prompt }, { type: 'input_image', image_url: imageDataUrl, detail: 'high' }] }],
+    apiKey, fetchImpl, 8_192, { name: 'visual_grounding_response_v1', schema }, callerSignal, 'low',
+  );
+}
+
 export async function requestMetaStructuredText(prompt: string, apiKey: string | undefined, schema: Record<string, unknown>, fetchImpl: typeof fetch = fetch, maxOutputTokens = 500, reasoningEffort: 'low' | 'medium' | 'high' = 'low', schemaName = 'unfold_conversation_v1', callerSignal?: AbortSignal): Promise<{ text: string; log: MetaCallLog }> {
   if (!prompt.trim() || prompt.length > 24_000) throw new Error('Prompt inválido: use entre 1 e 24000 caracteres.');
   return requestMetaInput(prompt, apiKey, fetchImpl, maxOutputTokens, { name: schemaName, schema }, callerSignal, reasoningEffort);

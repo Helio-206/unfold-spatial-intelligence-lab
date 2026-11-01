@@ -26,6 +26,8 @@ export type PlanSceneOptions = {
   confirmedRegionIds?: string[];
   /** Accepted semantic links (semantic_spatial_map.v1). Labels only; never geometry. */
   regionSemanticLinks?: Array<{ regionId: string; elementId: string; label: string }>;
+  /** User-confirmed visual label-to-region links; grounding supplies no geometry or metric scale. */
+  regionGroundingLinks?: Array<{ regionId: string; elementId: string; label: string; sourceImageSha256: string; confidence: number; reviewMethod: 'automatic' | 'manual' }>;
   regions?: PlanRegionCandidate[];
   candidates: PixelWallCandidate[];
   wall: { heightM: number; thicknessM: number };
@@ -197,14 +199,18 @@ export function createPlanScene(options: PlanSceneOptions): SceneTransaction {
     }
     const roomProvenance = provenance('derived', 'unreviewed', recordedAt, { evidence: `Polígono ${region.id} proposto a partir de ${region.boundaryCandidateIds.length} segmentos raster; confiança heurística ${region.confidence}. A inclusão pelo utilizador não certifica a geometria.` });
     const semantic = options.regionSemanticLinks?.find((link) => link.regionId === region.id);
+    const grounded = options.regionGroundingLinks?.find((link) => link.regionId === region.id);
+    if (grounded && (grounded.sourceImageSha256.toLowerCase() !== options.image.sha256.toLowerCase() || !Number.isFinite(grounded.confidence) || grounded.confidence < 0 || grounded.confidence > 1 || !['automatic', 'manual'].includes(grounded.reviewMethod) || grounded.reviewMethod === 'automatic' && grounded.confidence < 0.45)) throw new Error(`Associação visual ${grounded.elementId} não corresponde à imagem ou não passou o limiar da proposta automática.`);
     const semanticProvenance = semantic && options.technicalDocumentRef ? provenance('technical_document', 'unreviewed', recordedAt, { documentRef: { documentId: options.technicalDocumentRef.documentId, schema: 'technical_document.v1', elementId: semantic.elementId }, evidence: `Associação semântica aceite pelo utilizador (semantic_spatial_map.v1) para o elemento ${semantic.elementId}; apenas o rótulo foi associado, sem conversão de nome/área/cota em geometria.` }) : roomProvenance;
+    const groundingProvenance = grounded ? provenance('user', 'verified', recordedAt, { actor: options.calibration.actor, evidence: `O utilizador confirmou a associação ${grounded.reviewMethod === 'manual' ? 'manualmente após inspecção' : 'da proposta automática'} do elemento visual ${grounded.elementId} (score ${grounded.confidence.toFixed(2)}) à região ${region.id} da imagem SHA-256 ${grounded.sourceImageSha256}; isto confirma apenas a associação de rótulo, não escala nem geometria CAD.` }) : roomProvenance;
     const roomId = region.id;
     const room: Node = {
-      id: roomId, label: semantic?.label ?? `Divisão proposta ${selectedRegions.indexOf(region) + 1}`, nodeType: 'component', parentId: null,
+      id: roomId, label: grounded?.label ?? semantic?.label ?? `Divisão proposta ${selectedRegions.indexOf(region) + 1}`, nodeType: 'component', parentId: null,
       transform: { translationM: [0, 0, 0], rotation: [0, 0, 0, 1], scale: [1, 1, 1], provenance: { translationM: roomProvenance, rotation: roomProvenance, scale: roomProvenance } },
       geometry: { kind: 'polygon', verticesM: polygonVertices, provenance: roomProvenance },
       component: { kind: 'room', dependsOn: wallIds, properties: {
         ...(semantic ? { semanticElementId: { value: semantic.elementId, provenance: semanticProvenance }, semanticLabel: { value: semantic.label, provenance: semanticProvenance } } : {}),
+        ...(grounded ? { visualGroundingElementId: { value: grounded.elementId, provenance: groundingProvenance }, visualGroundingLabel: { value: grounded.label, provenance: groundingProvenance }, visualGroundingImageSha256: { value: grounded.sourceImageSha256, provenance: groundingProvenance } } : {}),
         sourceRegion: { value: region.id, provenance: roomProvenance },
         boundaryCandidateIds: { value: JSON.stringify(region.boundaryCandidateIds), provenance: roomProvenance },
         boundaryRefs: { value: JSON.stringify(boundaryRefs), provenance: roomProvenance },

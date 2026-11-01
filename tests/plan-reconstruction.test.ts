@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  buildPlanVectorModel, calibrateScale, candidateToWall, consolidateWallCandidates, countClosedCandidateContours, detectCandidateIntersections, detectOrthogonalRoomCandidates, detectWallCandidates,
+  buildPlanVectorModel, calibrateScale, candidateToWall, consolidateWallCandidates, countClosedCandidateContours, detectCandidateIntersections, detectOrthogonalRoomCandidates, detectWallCandidates, filterCandidatesForReview,
   mergeWallCandidates, splitWallCandidate, traceWallCandidate, type PixelRaster,
 } from '../src/plan-reconstruction';
 import { addOpeningToScene, createPlanScene, editOpeningInScene, editWallInScene, removeWallFromScene, saveAndRestoreScene, sceneMatchesPlanSource, sceneWallLength } from '../src/plan-scene';
@@ -76,6 +76,36 @@ describe('plan reconstruction geometry', () => {
     for (let x = 10; x < 120; x += 1) image.grayscale[25 * image.width + x] = 140;
     expect(detectWallCandidates(image, { threshold: 112, minimumLengthPx: 30 })).toHaveLength(0);
     expect(detectWallCandidates(image, { threshold: 150, minimumLengthPx: 30 })).toHaveLength(1);
+  });
+
+  it('reduces thin raster clutter for review without turning the remaining lines into confirmed walls', () => {
+    const detected = [
+      ...Array.from({ length: 8 }, (_, index) => ({ ...traceWallCandidate(`thick-${index}`, { x: 4, y: index * 8 }, { x: 84, y: index * 8 }, 4), origin: 'automatic_detection' as const })),
+      ...Array.from({ length: 8 }, (_, index) => ({ ...traceWallCandidate(`thin-${index}`, { x: 4, y: 70 + index }, { x: 84, y: 70 + index }, 1), origin: 'automatic_detection' as const })),
+    ];
+    const filtered = filterCandidatesForReview(detected, { width: 160, height: 120 });
+    expect(filtered.usedFallback).toBe(false);
+    expect(filtered.omitted).toBeGreaterThan(0);
+    expect(filtered.candidates.length).toBeLessThan(detected.length);
+    expect(filtered.candidates.every((candidate) => candidate.origin === 'automatic_detection')).toBe(true);
+    expect(filtered.candidates.every((candidate) => Math.hypot(candidate.end.x - candidate.start.x, candidate.end.y - candidate.start.y) >= filtered.minimumLengthPx && candidate.thicknessPx >= filtered.minimumThicknessPx)).toBe(true);
+  });
+
+  it('keeps all raw candidates when thickness/length filtering would leave insufficient evidence', () => {
+    const detected = detectWallCandidates(raster(100, 80, [[10, 20, 75, 20]]), { minimumLengthPx: 20 });
+    const filtered = filterCandidatesForReview(detected, { width: 100, height: 80 });
+    expect(filtered.usedFallback).toBe(true);
+    expect(filtered.omitted).toBe(0);
+    expect(filtered.candidates).toEqual(detected);
+  });
+
+  it('preserves manual provenance when a reviewed trace consolidates with automatic raster support', () => {
+    const automatic = { ...traceWallCandidate('auto-edge', { x: 10, y: 20 }, { x: 90, y: 20 }, 5), origin: 'automatic_detection' as const };
+    const manual = { ...traceWallCandidate('manual-edge', { x: 12, y: 21 }, { x: 88, y: 21 }, 6), origin: 'manual_trace' as const };
+    const [combined] = consolidateWallCandidates([automatic, manual], 3);
+    expect(combined?.origin).toBe('manual_trace');
+    expect(combined?.sourceCandidateIds).toContain('auto-edge');
+    expect(combined?.sourceCandidateIds).toContain('manual-edge');
   });
 
   it('finds intersections and supports a manual trace for unclear raster regions', () => {
@@ -383,5 +413,29 @@ describe('plan reconstruction geometry', () => {
     expect(constrainedTransaction.scene.nodes.find((node) => node.id === wall.id)?.geometry).toEqual(wall.geometry);
     expect(constrainedTransaction.scene.nodes.find((node) => node.id === room.id)?.geometry).toEqual(beforeFloor);
     expect(constrainedTransaction.scene.revision.number).toBe(0);
+  });
+
+  it('stores only a user-confirmed visual grounding label on a matching raster-derived room', () => {
+    const points = [[10, 10], [110, 10], [110, 90], [10, 90]] as const;
+    const candidates = points.map((point, index) => traceWallCandidate(
+      `ground-edge-${index}`,
+      { x: point[0], y: point[1] },
+      { x: points[(index + 1) % points.length]![0], y: points[(index + 1) % points.length]![1] },
+      6,
+    ));
+    const region = { id: 'room-grounded', boundaryCandidateIds: candidates.map((item) => item.id), vertices: points.map(([x, y]) => ({ x, y })), areaPx2: 8000, validation: 'unreviewed' as const, eligibility: 'construction_candidate' as const, confidence: 0.8, evidence: ['closed local region'], topologyMethod: 'closed_segment_graph' as const };
+    const options = {
+      sceneId: 'plan-grounded-room', title: 'Grounded room', image: { sha256: 'c'.repeat(64), width: 140, height: 100 },
+      calibration: { pixelDistance: 100, realDistanceMetres: 5, evidence: 'user reference', actor: 'reviewer' },
+      confirmedCandidateIds: [], confirmedRegionIds: [region.id], regions: [region], candidates, wall: { heightM: 2.7, thicknessM: 0.15 },
+    };
+    expect(() => createPlanScene({ ...options, regionGroundingLinks: [{ regionId: region.id, elementId: 'visual-kitchen', label: 'Cozinha', sourceImageSha256: 'd'.repeat(64), confidence: 0.8, reviewMethod: 'automatic' }] })).toThrow('não corresponde à imagem');
+    expect(() => createPlanScene({ ...options, regionGroundingLinks: [{ regionId: region.id, elementId: 'visual-kitchen', label: 'Cozinha', sourceImageSha256: 'c'.repeat(64), confidence: 0.4, reviewMethod: 'automatic' }] })).toThrow('limiar');
+    const scene = createPlanScene({ ...options, regionGroundingLinks: [{ regionId: region.id, elementId: 'visual-kitchen', label: 'Cozinha', sourceImageSha256: 'c'.repeat(64), confidence: 0.4, reviewMethod: 'manual' }] });
+    const room = scene.scene.nodes.find((node) => node.id === region.id)!;
+    expect(room.label).toBe('Cozinha');
+    expect(room.component?.properties.visualGroundingElementId).toMatchObject({ value: 'visual-kitchen', provenance: { source: 'user', validation: 'verified', actor: 'reviewer' } });
+    expect(room.component?.properties.visualGroundingImageSha256?.value).toBe('c'.repeat(64));
+    expect(validateSpatialScene(scene.scene)).toEqual(scene.scene);
   });
 });

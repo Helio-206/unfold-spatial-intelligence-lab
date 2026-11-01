@@ -39,7 +39,13 @@ function isJpeg(bytes: Buffer): boolean {
     const marker = bytes[offset++]!;
     if (marker === 0xd9) return hasFrame && hasScan && offset === bytes.length;
     if (marker === 0xd8 || marker === 0x00) return false;
-    if (marker === 0x01 || marker >= 0xd0 && marker <= 0xd7) continue;
+    if (marker === 0x01 || marker >= 0xd0 && marker <= 0xd7) {
+      // JPEG restart markers occur inside entropy-coded scan data. Resume the
+      // scan after consuming one; treating the following data byte as a marker
+      // rejects otherwise valid images that use restart intervals.
+      if (marker >= 0xd0 && marker <= 0xd7) inScan = true;
+      continue;
+    }
     if (offset + 2 > bytes.length) return false;
     const segmentLength = bytes.readUInt16BE(offset);
     if (segmentLength < 2 || offset + segmentLength > bytes.length) return false;
