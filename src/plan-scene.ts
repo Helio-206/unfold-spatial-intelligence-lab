@@ -3,12 +3,18 @@ import {
   executeSceneCommand,
   serializeSceneTransaction,
   deserializeSceneTransaction,
+  stageSceneCommand,
   type Node,
   type PropertyProvenance,
+  type SceneCommandContext,
+  type SceneCommitOptions,
   type SceneRelation,
   type SceneTransaction,
+  type SpatialCommand,
   type SpatialSceneV1,
 } from './spatial-scene';
+import { AuthorizationError, operationDigest, type CanonicalOperation, type CommandOrigin } from './core';
+import { sceneOperation, stampAuthorization, touchedConfirmed, type ConfirmedReference } from './scene-authorization';
 import { calibrateScale, type PixelWallCandidate, type PlanRegionCandidate, type Point2 } from './plan-reconstruction';
 
 export type PlanSceneOptions = {
@@ -267,23 +273,93 @@ export function addOpeningToScene(transaction: SceneTransaction, wallId: string,
   return executeSceneCommand(transaction, { type: 'AddComponent', node }, input.actor ?? 'user').transaction;
 }
 
-export function editOpeningInScene(transaction: SceneTransaction, openingId: string, edit: OpeningEdit): SceneTransaction {
+/** Opções das operações compostas: a autorização e (opcionalmente) a origem de quem pede. */
+export type CompositeOptions = SceneCommitOptions & { origin?: CommandOrigin };
+
+/**
+ * O preview de uma operação composta: o resultado se for autorizada, a operação canónica sobre o agregado de todos os
+ * passos (todas as alterações e todos os afectados, dependentes incluídos), e os valores confirmados que toca.
+ * `commit` aplica-a: se tocar confirmados, consome UMA autorização do ledger para este digest e esta revisão.
+ * Com `current` (a transacção actual) refaz o plano e recusa se a revisão ou o conteúdo mudaram desde o preview.
+ */
+export type CompositePlan = {
+  baseRevisionId: string;
+  /** O resultado, ainda sem o id de autorização nas proveniências corrigidas. É o que um preview deve mostrar. */
+  transaction: SceneTransaction;
+  operation: CanonicalOperation;
+  operationDigest: string;
+  touchesConfirmed: ConfirmedReference[];
+  requiresAuthorization: boolean;
+  commit(options?: SceneCommitOptions, current?: SceneTransaction): SceneTransaction;
+};
+
+type Stage = (transaction: SceneTransaction, command: SpatialCommand) => SceneTransaction;
+
+function compositeContext(actor: string, origin: CommandOrigin | undefined): SceneCommandContext {
+  const resolved = origin ?? 'ui_direct';
+  return { origin: resolved, actor: { kind: resolved === 'model_proposal' ? 'model' : resolved === 'system' ? 'system' : 'human', id: actor } };
+}
+
+function planComposite(base: SceneTransaction, name: string, actor: string, origin: CommandOrigin | undefined, evaluatedAt: string, steps: (transaction: SceneTransaction, stage: Stage, evaluatedAt: string) => SceneTransaction): CompositePlan {
+  const context = compositeContext(actor, origin);
+  const clock = () => new Date(evaluatedAt);
+  const staged = steps(base, (transaction, command) => stageSceneCommand(transaction, command, actor, clock, context), evaluatedAt);
+  const result: SceneTransaction = { scene: staged.scene, undoStack: [...base.undoStack, base.scene].slice(-100), redoStack: [] };
+  const operation = sceneOperation(base.scene, staged.scene, name);
+  const touchesConfirmed = touchedConfirmed(base.scene, staged.scene);
+  const plan: CompositePlan = {
+    baseRevisionId: base.scene.revision.id,
+    transaction: result,
+    operation,
+    operationDigest: operationDigest(operation),
+    touchesConfirmed,
+    requiresAuthorization: touchesConfirmed.length > 0,
+    commit(options = {}, current) {
+      if (current) {
+        if (current.scene.revision.id !== plan.baseRevisionId) throw new Error('STALE_PREVIEW');
+        const replay = planComposite(current, name, actor, origin, evaluatedAt, steps);
+        if (replay.operationDigest !== plan.operationDigest || JSON.stringify(replay.transaction.scene) !== JSON.stringify(plan.transaction.scene)) throw new Error('PREVIEW_TAMPERED');
+        return replay.commit(options);
+      }
+      if (!plan.requiresAuthorization) return plan.transaction;
+      if (!options.ledger) throw new AuthorizationError('AUTHORIZATION_REQUIRED');
+      const authorization = options.ledger.consume(options.authorizationId, plan.operation);
+      return { ...plan.transaction, scene: stampAuthorization(base.scene, plan.transaction.scene, plan.touchesConfirmed, authorization.id) };
+    },
+  };
+  return plan;
+}
+
+export function planOpeningEdit(transaction: SceneTransaction, openingId: string, edit: OpeningEdit, options: Pick<CompositeOptions, 'origin'> = {}): CompositePlan {
+  return planComposite(transaction, 'EditOpening', edit.actor ?? 'user', options.origin, new Date().toISOString(), (base, stage) => applyOpeningEdit(base, openingId, edit, stage));
+}
+export function editOpeningInScene(transaction: SceneTransaction, openingId: string, edit: OpeningEdit, options: CompositeOptions = {}): SceneTransaction {
+  return planOpeningEdit(transaction, openingId, edit, options).commit(options);
+}
+
+function applyOpeningEdit(transaction: SceneTransaction, openingId: string, edit: OpeningEdit, stage: Stage): SceneTransaction {
   const opening = transaction.scene.nodes.find((node) => node.id === openingId);
   if (!opening || opening.geometry?.kind !== 'box' || !['door', 'window'].includes(opening.component?.kind ?? '')) throw new Error('Abertura paramétrica não encontrada.');
   const wall = transaction.scene.nodes.find((node) => opening.component!.dependsOn.includes(node.id) && node.component?.kind === 'wall');
   if (!wall) throw new Error('Parede de suporte não encontrada.');
   validateOpeningPlacement(transaction, wall, edit, openingId);
   const pose = openingTransform(wall, edit.offsetM, edit.widthM, edit.sillM, edit.heightM);
-  const actor = edit.actor ?? 'user';
-  let next = executeSceneCommand(transaction, { type: 'ResizeComponent', nodeId: openingId, scale: [edit.widthM / opening.geometry.sizeM[0], edit.heightM / opening.geometry.sizeM[1], 1] }, actor).transaction;
-  next = executeSceneCommand(next, { type: 'MoveComponent', nodeId: openingId, translationM: pose.position }, actor).transaction;
+  let next = stage(transaction, { type: 'ResizeComponent', nodeId: openingId, scale: [edit.widthM / opening.geometry.sizeM[0], edit.heightM / opening.geometry.sizeM[1], 1] });
+  next = stage(next, { type: 'MoveComponent', nodeId: openingId, translationM: pose.position });
   for (const [key, value] of [['offset', edit.offsetM], ['width', edit.widthM], ['height', edit.heightM], ['sill', edit.sillM]] as const) {
-    next = executeSceneCommand(next, { type: 'UpdateParameter', nodeId: openingId, property: key, value, unit: 'm' }, actor).transaction;
+    next = stage(next, { type: 'UpdateParameter', nodeId: openingId, property: key, value, unit: 'm' });
   }
-  return { scene: next.scene, undoStack: [...transaction.undoStack, transaction.scene].slice(-100), redoStack: [] };
+  return next;
 }
 
-export function editWallInScene(transaction: SceneTransaction, wallId: string, edit: WallEdit): SceneTransaction {
+export function planWallEdit(transaction: SceneTransaction, wallId: string, edit: WallEdit, options: Pick<CompositeOptions, 'origin'> = {}): CompositePlan {
+  return planComposite(transaction, 'EditWall', edit.actor ?? 'user', options.origin, new Date().toISOString(), (base, stage, evaluatedAt) => applyWallEdit(base, wallId, edit, stage, evaluatedAt));
+}
+export function editWallInScene(transaction: SceneTransaction, wallId: string, edit: WallEdit, options: CompositeOptions = {}): SceneTransaction {
+  return planWallEdit(transaction, wallId, edit, options).commit(options);
+}
+
+function applyWallEdit(transaction: SceneTransaction, wallId: string, edit: WallEdit, stage: Stage, evaluatedAt: string): SceneTransaction {
   const previous = transaction.scene.nodes.find((node) => node.id === wallId);
   if (!previous || previous.geometry?.kind !== 'box' || previous.component?.kind !== 'wall') throw new Error(`Parede ${wallId} não encontrada.`);
   const previousGeometry = previous.geometry;
@@ -307,19 +383,18 @@ export function editWallInScene(transaction: SceneTransaction, wallId: string, e
     return { node: opening, pose: openingTransform(proxy, offset, width, sill, height), offset };
   });
   let next = transaction;
-  const actor = edit.actor ?? 'user';
   const oldAngle = 2 * Math.atan2(previous.transform.rotation[1], previous.transform.rotation[3]);
-  next = executeSceneCommand(next, { type: 'MoveComponent', nodeId: wallId, translationM: nextPose.position }, actor).transaction;
-  next = executeSceneCommand(next, { type: 'RotateComponent', nodeId: wallId, axis: [0, 1, 0], angleRad: nextPose.angle - oldAngle }, actor).transaction;
-  next = executeSceneCommand(next, { type: 'ResizeComponent', nodeId: wallId, scale: [nextPose.length / oldLength, nextHeight / oldHeight, nextThickness / oldThickness] }, actor).transaction;
+  next = stage(next, { type: 'MoveComponent', nodeId: wallId, translationM: nextPose.position });
+  next = stage(next, { type: 'RotateComponent', nodeId: wallId, axis: [0, 1, 0], angleRad: nextPose.angle - oldAngle });
+  next = stage(next, { type: 'ResizeComponent', nodeId: wallId, scale: [nextPose.length / oldLength, nextHeight / oldHeight, nextThickness / oldThickness] });
   for (const [key, value] of [['length', nextPose.length], ['height', nextHeight], ['thickness', nextThickness]] as const) {
-    next = executeSceneCommand(next, { type: 'UpdateParameter', nodeId: wallId, property: key, value, unit: 'm' }, actor).transaction;
+    next = stage(next, { type: 'UpdateParameter', nodeId: wallId, property: key, value, unit: 'm' });
   }
   for (const { node, pose, offset } of recalculated) {
     const angle = 2 * Math.atan2(node.transform.rotation[1], node.transform.rotation[3]);
-    next = executeSceneCommand(next, { type: 'MoveComponent', nodeId: node.id, translationM: pose.position }, actor).transaction;
-    next = executeSceneCommand(next, { type: 'RotateComponent', nodeId: node.id, axis: [0, 1, 0], angleRad: pose.angle - angle }, actor).transaction;
-    next = executeSceneCommand(next, { type: 'UpdateParameter', nodeId: node.id, property: 'offset', value: offset, unit: 'm' }, actor).transaction;
+    next = stage(next, { type: 'MoveComponent', nodeId: node.id, translationM: pose.position });
+    next = stage(next, { type: 'RotateComponent', nodeId: node.id, axis: [0, 1, 0], angleRad: pose.angle - angle });
+    next = stage(next, { type: 'UpdateParameter', nodeId: node.id, property: 'offset', value: offset, unit: 'm' });
   }
   const editedWall = next.scene.nodes.find((node) => node.id === wallId)!;
   const endpoints = wallWorldEndpoints(editedWall);
@@ -337,19 +412,23 @@ export function editWallInScene(transaction: SceneTransaction, wallId: string, e
       verticesM[ref.startIndex] = [...endpoints[ref.startEndpoint === 'a' ? 0 : 1]];
       verticesM[ref.endIndex] = [...endpoints[ref.endEndpoint === 'a' ? 0 : 1]];
     }
-    next = executeSceneCommand(next, { type: 'UpdateGeometry', nodeId: room.id, geometry: { ...room.geometry, verticesM, provenance: provenance('derived', 'unreviewed', new Date().toISOString(), { evidence: `Polígono recalculado após edição da parede ${wallId}; geometria derivada permanece por rever.` }) } }, actor).transaction;
+    next = stage(next, { type: 'UpdateGeometry', nodeId: room.id, geometry: { ...room.geometry, verticesM, provenance: provenance('derived', 'unreviewed', evaluatedAt, { evidence: `Polígono recalculado após edição da parede ${wallId}; geometria derivada permanece por rever.` }) } });
   }
-  return { scene: next.scene, undoStack: [...transaction.undoStack, transaction.scene].slice(-100), redoStack: [] };
+  return next;
 }
 
-export function removeWallFromScene(transaction: SceneTransaction, wallId: string, actor = 'user'): SceneTransaction {
-  const wall = transaction.scene.nodes.find((node) => node.id === wallId);
-  if (!wall) throw new Error(`Parede ${wallId} não encontrada.`);
-  const dependents = transaction.scene.nodes.filter((node) => node.component?.dependsOn.includes(wallId)).map((node) => node.id);
-  let next = transaction;
-  for (const id of dependents.reverse()) next = executeSceneCommand(next, { type: 'RemoveComponent', nodeId: id }, actor).transaction;
-  next = executeSceneCommand(next, { type: 'RemoveComponent', nodeId: wallId }, actor).transaction;
-  return { scene: next.scene, undoStack: [...transaction.undoStack, transaction.scene].slice(-100), redoStack: [] };
+export function planWallRemoval(transaction: SceneTransaction, wallId: string, actor = 'user', options: Pick<CompositeOptions, 'origin'> = {}): CompositePlan {
+  return planComposite(transaction, 'RemoveWall', actor, options.origin, new Date().toISOString(), (base, stage) => {
+    const wall = base.scene.nodes.find((node) => node.id === wallId);
+    if (!wall) throw new Error(`Parede ${wallId} não encontrada.`);
+    const dependents = base.scene.nodes.filter((node) => node.component?.dependsOn.includes(wallId)).map((node) => node.id);
+    let next = base;
+    for (const id of dependents.reverse()) next = stage(next, { type: 'RemoveComponent', nodeId: id });
+    return stage(next, { type: 'RemoveComponent', nodeId: wallId });
+  });
+}
+export function removeWallFromScene(transaction: SceneTransaction, wallId: string, actor = 'user', options: CompositeOptions = {}): SceneTransaction {
+  return planWallRemoval(transaction, wallId, actor, options).commit(options);
 }
 
 export function saveAndRestoreScene(transaction: SceneTransaction): SceneTransaction {

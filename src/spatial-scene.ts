@@ -321,7 +321,7 @@ export function conversationEditToSceneCommand(message: string, selected: BarNam
   return { status: 'ready', command: { type: 'UpdateParameter', nodeId: action.componentId, property: 'length', value: action.value, unit: action.unit } };
 }
 /** Comandos cuja alteração de valores confirmados já passa pela guarda. */
-const GUARDED_COMMANDS = new Set<SpatialCommand['type']>(['UpdateParameter', 'MoveComponent', 'RotateComponent', 'ResizeComponent', 'UpdateGeometry']);
+const GUARDED_COMMANDS = new Set<SpatialCommand['type']>(['UpdateParameter', 'MoveComponent', 'RotateComponent', 'ResizeComponent', 'UpdateGeometry', 'RemoveComponent', 'DisconnectComponents']);
 
 export function previewSceneCommand(transaction: SceneTransaction, command: SpatialCommand, actor = 'user', clock: () => Date = () => new Date(), context?: SceneCommandContext): ScenePreview {
   const resolved: SceneCommandContext = context ?? { origin: 'ui_direct', actor: { kind: 'human', id: actor } };
@@ -392,4 +392,15 @@ export function executeSceneCommand(transaction: SceneTransaction, command: Spat
   const preview = previewSceneCommand(transaction, command, actor, clock, options.context);
   if (preview.status === 'blocked') throw new Error(preview.issues[0]?.code ?? 'COMMAND_BLOCKED');
   return { transaction: commitScenePreview(transaction, preview, options), preview };
+}
+
+/**
+ * Passo interno de uma operação composta (editar uma parede, remover uma parede e os seus dependentes): valida e aplica o
+ * comando mas NÃO pede autorização. Quem a usa tem de calcular o agregado e autorizá-lo de uma vez (ver `plan-scene.ts`);
+ * os bloqueios por origem continuam a valer porque vêm do preview.
+ */
+export function stageSceneCommand(transaction: SceneTransaction, command: SpatialCommand, actor: string, clock: () => Date, context?: SceneCommandContext): SceneTransaction {
+  const preview = previewSceneCommand(transaction, command, actor, clock, context);
+  if (preview.status === 'blocked' || !preview.candidate) throw new Error(preview.issues[0]?.code ?? 'COMMAND_BLOCKED');
+  return { scene: validateSpatialScene(preview.candidate), undoStack: [...transaction.undoStack.slice(-99), transaction.scene], redoStack: [] };
 }
