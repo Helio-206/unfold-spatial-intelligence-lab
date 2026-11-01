@@ -1,0 +1,557 @@
+{
+  "httpStatus": 200,
+  "contract": "unfold.image_analysis.v1",
+  "status": "PASS",
+  "image": {
+    "mimeType": "image/png",
+    "byteLength": 1143852,
+    "maxBytes": 10000000
+  },
+  "recognition": {
+    "documentType": "Planta arquitetônica de levantamento - primeiro pavimento",
+    "legibility": "high",
+    "primaryDomain": "architecture",
+    "route": "extract",
+    "schema": "technical_recognition.v2",
+    "secondaryDomains": [
+      "civil_structural"
+    ],
+    "summary": "Planta do primeiro pavimento da Amoureaux House mostrando cômodos, hall central e varandas."
+  },
+  "document": {
+    "ambiguities": [
+      "Portas e janelas com grafismo de levantamento mas excluídas como recentes na nota geral.",
+      "Nota assume paredes retas e ângulos retos; divergência aparece nas cotas.",
+      "Indicação de possível extensão maior para oeste sem limite definido.",
+      "Leitura de frações em polegadas pequena e com risco de erro.",
+      "Dois espaços nomeados PORCH sem distinção norte/sul no original.",
+      "Marcas de corte A-A e B-B sem detalhe nesta folha.",
+      "Altura de forro do HALL de leitura difícil.",
+      "Escala impressa não verificável sem medição física."
+    ],
+    "classification": {
+      "confidence": 0.92,
+      "evidence": "FIRST FLOOR PLAN com ROOM A-D, HALL, PORCH, cotas em pés-polegadas, legenda de paredes e carimbo HABS.",
+      "rationale": "Conteúdo dominante é planta arquitetônica de levantamento do primeiro pavimento."
+    },
+    "documentType": "Planta arquitetônica de levantamento - primeiro pavimento",
+    "elements": [
+      {
+        "confidence": 0.95,
+        "evidence": "Texto 'ROOM A' com '8'-11\" CEILING' no quadrante nordeste.",
+        "id": "E01",
+        "kind": "room",
+        "label": "ROOM A",
+        "rawValue": "ROOM A",
+        "status": "observed",
+        "unit": null,
+        "value": null
+      },
+      {
+        "confidence": 0.95,
+        "evidence": "Texto 'ROOM B' com '8'-11\" CEILING' no quadrante sudeste.",
+        "id": "E02",
+        "kind": "room",
+        "label": "ROOM B",
+        "rawValue": "ROOM B",
+        "status": "observed",
+        "unit": null,
+        "value": null
+      },
+      {
+        "confidence": 0.95,
+        "evidence": "Texto 'ROOM C' com '8'-11\" CEILING' no quadrante noroeste.",
+        "id": "E03",
+        "kind": "room",
+        "label": "ROOM C",
+        "rawValue": "ROOM C",
+        "status": "observed",
+        "unit": null,
+        "value": null
+      },
+      {
+        "confidence": 0.95,
+        "evidence": "Texto 'ROOM D' com '6'-11\" CEILING' no quadrante sudoeste.",
+        "id": "E04",
+        "kind": "room",
+        "label": "ROOM D",
+        "rawValue": "ROOM D",
+        "status": "observed",
+        "unit": null,
+        "value": null
+      },
+      {
+        "confidence": 0.9,
+        "evidence": "Texto vertical 'HALL' central entre ROOM C/D e ROOM A/B.",
+        "id": "E05",
+        "kind": "room",
+        "label": "HALL",
+        "rawValue": "HALL",
+        "status": "observed",
+        "unit": null,
+        "value": null
+      },
+      {
+        "confidence": 0.9,
+        "evidence": "Texto 'PORCH' na faixa superior entre cotas perimetrais.",
+        "id": "E06",
+        "kind": "room",
+        "label": "PORCH norte",
+        "rawValue": "PORCH",
+        "status": "observed",
+        "unit": null,
+        "value": null
+      },
+      {
+        "confidence": 0.9,
+        "evidence": "Texto 'PORCH' na faixa inferior com '8'-0\"' abaixo.",
+        "id": "E07",
+        "kind": "room",
+        "label": "PORCH sul",
+        "rawValue": "PORCH",
+        "status": "observed",
+        "unit": null,
+        "value": null
+      },
+      {
+        "confidence": 0.9,
+        "evidence": "Cota superior horizontal no eixo do PORCH norte.",
+        "id": "E08",
+        "kind": "dimension",
+        "label": "cota total superior",
+        "rawValue": "50'-3 1/2\"",
+        "status": "observed",
+        "unit": "ft-in",
+        "value": null
+      },
+      {
+        "confidence": 0.9,
+        "evidence": "Cota inferior horizontal abaixo do PORCH sul.",
+        "id": "E09",
+        "kind": "dimension",
+        "label": "cota total inferior",
+        "rawValue": "51'-0\"",
+        "status": "observed",
+        "unit": "ft-in",
+        "value": null
+      },
+      {
+        "confidence": 0.8,
+        "evidence": "Texto 'UP 12 RISERS AT 9\" 11 TREADS AT 8 3/4\"' junto a degraus no PORCH sul.",
+        "id": "E10",
+        "kind": "stair",
+        "label": "escada UP oeste",
+        "rawValue": "12 RISERS AT 9\" / 11 TREADS AT 8 3/4\"",
+        "status": "observed",
+        "unit": "in",
+        "value": null
+      },
+      {
+        "confidence": 0.8,
+        "evidence": "Texto '5 RISERS AT 7 1/2\" 4 TREADS AT 9 1/2\"' em escada externa ao sul.",
+        "id": "E11",
+        "kind": "stair",
+        "label": "escada externa 5 espelhos",
+        "rawValue": "5 RISERS AT 7 1/2\" / 4 TREADS AT 9 1/2\"",
+        "status": "observed",
+        "unit": "in",
+        "value": null
+      },
+      {
+        "confidence": 0.85,
+        "evidence": "Texto '2 x 4\" STUDS, 2'-0\" o.c., LATH AND PLASTER.' em divisória entre ROOM C e D.",
+        "id": "E12",
+        "kind": "wall",
+        "label": "divisória studs ROOM C/D",
+        "rawValue": "2 x 4\" STUDS, 2'-0\" o.c.",
+        "status": "observed",
+        "unit": "ft-in",
+        "value": null
+      },
+      {
+        "confidence": 0.7,
+        "evidence": "Símbolo de arco de porta na parede norte de ROOM C junto à marca A.",
+        "id": "E13",
+        "kind": "door",
+        "label": "porta ROOM C norte",
+        "rawValue": null,
+        "status": "inferred",
+        "unit": null,
+        "value": null
+      },
+      {
+        "confidence": 0.65,
+        "evidence": "Retângulo duplo em parede norte de ROOM C entre cotas.",
+        "id": "E14",
+        "kind": "window",
+        "label": "janela ROOM C norte",
+        "rawValue": null,
+        "status": "inferred",
+        "unit": null,
+        "value": null
+      },
+      {
+        "confidence": 0.85,
+        "evidence": "Hachura Brick e texto 'PALISADOED CEDAR POSTS' na parede leste de ROOM A/B.",
+        "id": "E15",
+        "kind": "wall",
+        "label": "parede leste cedar posts",
+        "rawValue": "PALISADOED CEDAR POSTS",
+        "status": "observed",
+        "unit": null,
+        "value": null
+      }
+    ],
+    "missingInformation": [
+      "Áreas das divisões com unidade impressa não visíveis.",
+      "Dimensões vãos de portas e janelas não cotadas.",
+      "Espessuras numéricas das paredes de cedro/pedra.",
+      "Largura das escadas e detalhes de corrimão.",
+      "Detalhes dos cortes A-A e B-B noutras folhas.",
+      "Orientação norte e níveis altimétricos.",
+      "Altura da chaminé de tijolo.",
+      "Unidade e escala não confirmadas em campo."
+    ],
+    "observedText": [
+      "FIRST FLOOR PLAN SCALE 1/4\" = 1'-0\"",
+      "AMOUREAUX HOUSE, STE. GENEVIEVE, MISSOURI",
+      "1'-6\" x 2'-0\" BRICK CHIMNEY.",
+      "PALISADOED CEDAR POSTS (5x5\" AVERAGE) SPACED 2\"",
+      "BUILDING APPEARS TO HAVE EXTENDED FARTHER WEST",
+      "ALL WINDOW AND DOOR DETAILS APPEAR TO BE OF RECENT ORIGIN",
+      "3'-10\" DIA., 7 1/2\" THICK LIMESTONE WELL COVER.",
+      "LEGEND: LIMESTONE / BRICK / 2x4\" STUD WALL",
+      "27'-9\" cota vertical leste",
+      "HISTORIC AMERICAN BUILDINGS SURVEY SHEET 3 OF 10"
+    ],
+    "primaryDomain": "architecture",
+    "questions": [
+      {
+        "answer": "Não há cota de vão legível nesta folha; só símbolo gráfico e nota de exclusão.",
+        "basis": "missing",
+        "id": "Q01",
+        "question": "Qual a largura e altura das portas inferidas em E13?",
+        "sourceIds": [
+          "E13"
+        ]
+      },
+      {
+        "answer": "Não há cota de vão legível; só símbolo duplo na parede.",
+        "basis": "missing",
+        "id": "Q02",
+        "question": "Qual a dimensão da janela inferida em E14?",
+        "sourceIds": [
+          "E14"
+        ]
+      },
+      {
+        "answer": "Evidência só indica existência e legenda; espessura numérica não impressa.",
+        "basis": "missing",
+        "id": "Q03",
+        "question": "Qual a espessura da parede leste em E15?",
+        "sourceIds": [
+          "E15"
+        ]
+      },
+      {
+        "answer": "Folha só mostra marcas A-A e B-B; é preciso consultar outras folhas HABS.",
+        "basis": "missing",
+        "id": "Q04",
+        "question": "Onde ver cortes A-A e B-B indicados na planta?",
+        "sourceIds": [
+          "E03",
+          "E02"
+        ]
+      }
+    ],
+    "relations": [
+      {
+        "confidence": 0.85,
+        "evidence": "Divisória T&G BOARD PARTITION separa HALL de ROOM C.",
+        "fromId": "E03",
+        "id": "R01",
+        "kind": "adjacent_to",
+        "status": "inferred",
+        "toId": "E05"
+      },
+      {
+        "confidence": 0.85,
+        "evidence": "Divisória de studs entre ROOM D e HALL contínua no desenho.",
+        "fromId": "E04",
+        "id": "R02",
+        "kind": "adjacent_to",
+        "status": "inferred",
+        "toId": "E05"
+      },
+      {
+        "confidence": 0.8,
+        "evidence": "Maciço limestone entre HALL e ROOM A/B no centro.",
+        "fromId": "E01",
+        "id": "R03",
+        "kind": "adjacent_to",
+        "status": "inferred",
+        "toId": "E05"
+      },
+      {
+        "confidence": 0.8,
+        "evidence": "Parede com porta de arco liga ROOM B ao HALL sul.",
+        "fromId": "E02",
+        "id": "R04",
+        "kind": "adjacent_to",
+        "status": "inferred",
+        "toId": "E05"
+      },
+      {
+        "confidence": 0.85,
+        "evidence": "PORCH superior confronta fachada norte de ROOM C e HALL.",
+        "fromId": "E06",
+        "id": "R05",
+        "kind": "adjacent_to",
+        "status": "inferred",
+        "toId": "E03"
+      },
+      {
+        "confidence": 0.85,
+        "evidence": "PORCH inferior confronta fachada sul de ROOM D e HALL.",
+        "fromId": "E07",
+        "id": "R06",
+        "kind": "adjacent_to",
+        "status": "inferred",
+        "toId": "E04"
+      },
+      {
+        "confidence": 0.8,
+        "evidence": "Degraus UP desenhados sobre faixa do PORCH sul oeste.",
+        "fromId": "E10",
+        "id": "R07",
+        "kind": "part_of",
+        "status": "inferred",
+        "toId": "E07"
+      },
+      {
+        "confidence": 0.7,
+        "evidence": "Arco de porta liga interior ROOM C ao HALL.",
+        "fromId": "E13",
+        "id": "R08",
+        "kind": "connected_to",
+        "status": "inferred",
+        "toId": "E05"
+      }
+    ],
+    "schema": "technical_document.v1",
+    "secondaryDomains": [],
+    "summary": "Planta de levantamento do 1º pavimento com ROOM A-D, HALL e dois PORCH, paredes em cedar posts, pedra e studs, cotas em pés-polegadas e duas escadas a sul.",
+    "capabilities": [
+      {
+        "id": "canExplain",
+        "state": "available",
+        "reason": "Interpretação documental contextual; não é validação física.",
+        "dependencies": [],
+        "missing": [],
+        "engine": null
+      },
+      {
+        "id": "canInspect",
+        "state": "available",
+        "reason": "Elementos sem posições exactas; inspecção por lista e relações.",
+        "dependencies": [],
+        "missing": [],
+        "engine": null
+      },
+      {
+        "id": "canEditSemanticData",
+        "state": "available",
+        "reason": "Alterações do utilizador mantêm proveniência separada.",
+        "dependencies": [],
+        "missing": [],
+        "engine": null
+      },
+      {
+        "id": "canVisualize2D",
+        "state": "blocked",
+        "reason": "Não existem coordenadas 2D calibradas no contrato de extracção.",
+        "dependencies": [],
+        "missing": [
+          "geometria e escala confirmadas"
+        ],
+        "engine": null
+      },
+      {
+        "id": "canConstruct3D",
+        "state": "blocked",
+        "reason": "Não foi reconstruída geometria CAD.",
+        "dependencies": [],
+        "missing": [
+          "geometria 3D dimensionada e confirmada"
+        ],
+        "engine": null
+      },
+      {
+        "id": "canSimulate",
+        "state": "blocked",
+        "reason": "Arquitectura: compreensão semântica não valida um modelo físico executável.",
+        "dependencies": [],
+        "missing": [
+          "escala e geometria calibradas",
+          "confirmação humana"
+        ],
+        "engine": null
+      },
+      {
+        "id": "canRunWhatIf",
+        "state": "blocked",
+        "reason": "Experiências numéricas requerem um modelo executável adequado.",
+        "dependencies": [],
+        "missing": [
+          "motor de simulação validado"
+        ],
+        "engine": null
+      }
+    ],
+    "analysisState": "complete",
+    "provenance": {
+      "source": "submitted_image",
+      "kind": "model_extraction"
+    }
+  },
+  "assessment": {
+    "status": "consistent",
+    "issues": []
+  },
+  "observation": null,
+  "extraction": {
+    "status": "complete"
+  },
+  "meta": {
+    "model": "muse-spark-1.3",
+    "status": "pass",
+    "requestId": "7a2b9120-b040-486d-8546-c2372b592f46",
+    "responseStatus": "completed",
+    "stages": [
+      {
+        "stage": "recognition",
+        "model": "muse-spark-1.3",
+        "endpoint": "https://api.meta.ai/v1/responses",
+        "requestId": "2aaf677d-51fe-4e33-9958-749e22719b4d",
+        "httpStatus": 200,
+        "latencyMs": 5776,
+        "maxOutputTokens": 2048,
+        "responseStatus": "completed",
+        "usage": {
+          "inputTokens": 4187,
+          "outputTokens": 333,
+          "totalTokens": 4520,
+          "cachedInputTokens": 0,
+          "reasoningTokens": 249
+        },
+        "estimatedCostUsd": 0.006649,
+        "upstreamEnvelope": {
+          "fields": [
+            "background",
+            "completed_at",
+            "created_at",
+            "error",
+            "id",
+            "incomplete_details",
+            "instructions",
+            "max_output_tokens",
+            "model",
+            "object",
+            "output",
+            "parallel_tool_calls",
+            "reasoning",
+            "service_tier",
+            "status",
+            "store",
+            "temperature",
+            "text",
+            "tool_choice",
+            "tools",
+            "top_logprobs",
+            "top_p",
+            "truncation",
+            "usage"
+          ],
+          "outputItemTypes": [
+            "reasoning",
+            "message"
+          ],
+          "contentTypes": [
+            "output_text"
+          ],
+          "outputTextLength": 332
+        },
+        "status": "success"
+      },
+      {
+        "stage": "extraction",
+        "model": "muse-spark-1.3",
+        "endpoint": "https://api.meta.ai/v1/responses",
+        "requestId": "7a2b9120-b040-486d-8546-c2372b592f46",
+        "httpStatus": 200,
+        "latencyMs": 30799,
+        "maxOutputTokens": 12288,
+        "responseStatus": "completed",
+        "usage": {
+          "inputTokens": 4324,
+          "outputTokens": 5301,
+          "totalTokens": 9625,
+          "cachedInputTokens": 0,
+          "reasoningTokens": 2393
+        },
+        "estimatedCostUsd": 0.02793425,
+        "upstreamEnvelope": {
+          "fields": [
+            "background",
+            "completed_at",
+            "created_at",
+            "error",
+            "id",
+            "incomplete_details",
+            "instructions",
+            "max_output_tokens",
+            "model",
+            "object",
+            "output",
+            "parallel_tool_calls",
+            "reasoning",
+            "service_tier",
+            "status",
+            "store",
+            "temperature",
+            "text",
+            "tool_choice",
+            "tools",
+            "top_logprobs",
+            "top_p",
+            "truncation",
+            "usage"
+          ],
+          "outputItemTypes": [
+            "reasoning",
+            "message"
+          ],
+          "contentTypes": [
+            "output_text"
+          ],
+          "outputTextLength": 8214
+        },
+        "status": "success"
+      }
+    ],
+    "latencyMs": 36575,
+    "usage": {
+      "inputTokens": 8511,
+      "outputTokens": 5634,
+      "totalTokens": 14145,
+      "cachedInputTokens": 0,
+      "reasoningTokens": 2642
+    },
+    "estimatedCostUsd": 0.03458325,
+    "callBudget": {
+      "limit": 2,
+      "used": 2,
+      "remaining": 0
+    }
+  }
+}

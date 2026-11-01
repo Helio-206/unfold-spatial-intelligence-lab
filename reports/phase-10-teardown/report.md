@@ -6,7 +6,7 @@ Base: `62fe7eb118067d35140c02ed7410cf37f7e85c47`
 
 ## Result
 
-**PARTIAL; vertical slice acceptance remains blocked.** The existing UNFOLD architecture was preserved. A render-only exploded view was added to the existing spatial editor and exercised in Chromium. A wall resize was previewed, committed to `spatial_scene.v1`, and undone. Teardown examples built and one deterministic frame was rendered. No real Meta call or new plan-perception-to-3D reconstruction ran because the configured key is blank. This report does not claim mission completion.
+**PARTIAL; vertical slice acceptance remains blocked.** The existing UNFOLD architecture was preserved. A render-only exploded view was added to the existing spatial editor and exercised in Chromium. A wall resize was previewed, committed to `spatial_scene.v1`, and undone. Teardown examples built and one deterministic frame was rendered. After the initial checkpoint, the local key was configured and three real Muse Spark calls succeeded, including image recognition and structured extraction of Case B. The image result still contains no coordinates and has not produced a calibrated scene. This report does not claim mission completion.
 
 ## Repository recovery
 
@@ -53,11 +53,16 @@ git diff --check
 
 ## Live Meta and plan reconstruction
 
-- Confirmed from UNFOLD source: `src/meta.ts` targets `https://api.meta.ai/v1/responses` and `muse-spark-1.3`. The official Meta Model API documentation currently lists Muse Spark 1.3 on that endpoint and SAM 3.1 as `sam-3.1` on the same Responses API. [Responses API reference](https://dev.meta.ai/docs/api-reference/responses/create-response), [model availability](https://dev.meta.ai/docs/models), [SAM 3.1 overview](https://dev.meta.ai/docs/sam/overview).
-- Credential check inspected presence only. The only local `.env` found contains an empty `MODEL_API_KEY=`; this isolated worktree has no key, and no campaign ledger/call cap is configured here. The historical five-call report was not treated as current capacity. **Real calls: 0; requests, IDs, latency, usage and provider errors: none; spend: $0.** No mock was counted as live evidence. SAM 3.1 is documented as available, but the current UNFOLD branch has no SAM API client and it was not called.
-- A previously unused local Case B image was located in the sibling Phase 9 worktree: `reports/phase-8d/fixtures/amoureaux-house-plan.png` (3700×2996; SHA-256 `1d78e739dad568ea49eb193416dc5f91c8b62b904a0170c63af803dd87750026`). Its licensing/provenance is not established, so it was used only as a local test input and is not redistributed in this branch.
-- The image was opened in the actual editor. Automatic detection produced noisy candidates; the captured result showed three supported regions and many rejected faces. A manual perimeter trace produced four segments and two region candidates. The flow then failed to accept two scale anchors, so it did not calibrate or assemble a 3D scene. Captures: [source view](evidence/plan-b/B/01-original.png), [automatic candidates](evidence/plan-b/B/02-candidates.png), [manual trace](evidence/plan-b/B/03-manual-perimeter-tracing.png). No geometry accuracy or topology claim is made from these intermediate states.
-- Therefore, no floor plan passed through live Meta, scale calibration, geometry assembly and rendering in this run. Case A ground-truth reconstruction and Case B unseen-plan 3D reconstruction remain **BLOCKED / NOT COMPLETED**. The B input/detection/manual-trace exploration is evidence of partial UI behavior only.
+- The branch configures `https://api.meta.ai/v1/responses` with `muse-spark-1.3`; official docs list Muse Spark 1.3 and SAM 3.1 (`sam-3.1`) for the Responses API. [Responses API reference](https://dev.meta.ai/docs/api-reference/responses/create-response), [model availability](https://dev.meta.ai/docs/models), [SAM overview](https://dev.meta.ai/docs/sam/overview).
+- The `.env` was checked for presence/non-empty `MODEL_API_KEY` without printing it. The server started with a hard cap of two calls for the image request. The one-call text probe plus the two-stage image route made **3 real calls**, all HTTP 200, no retries:
+  - Text probe: request `163915db-4e62-4713-8134-72f6a24a44e4`, 4,614 ms, 19 input / 545 output tokens, estimated `$0.00234000`.
+  - Image recognition: request `2aaf677d-51fe-4e33-9958-749e22719b4d`, 5,776 ms, 4,187 input / 333 output tokens, estimated `$0.00664900`.
+  - Image extraction: request `7a2b9120-b040-486d-8546-c2372b592f46`, 30,799 ms, 4,324 input / 5,301 output tokens, estimated `$0.02793425`.
+  - Aggregate usage: 8,530 input / 6,179 output tokens; estimated total `$0.03692325`. Estimates use the project's token-rate calculation, not a billing statement. [Current Meta pricing](https://dev.meta.ai/docs/pricing-rate-limits).
+- The live image endpoint parsed the real result into `technical_recognition.v2` and `technical_document.v1`: architecture, first-floor survey plan, high legibility, 15 elements and 8 inferred relations. The application assessment returned `consistent`. This validates transport, response parsing and the existing semantic extraction route. It does **not** validate those claims against geometry: the model emitted no pixel coordinates, normalized polygons or calibrated wall segments, and its semantic assessment is not an independent geometry check. Full sanitized response: [live Case B extraction](evidence/live-plan-b.json).
+- Case B is a local 3700×2996 image from the sibling Phase 9 worktree (`amoureaux-house-plan.png`; SHA-256 `1d78e739dad568ea49eb193416dc5f91c8b62b904a0170c63af803dd87750026`). Licensing/provenance is not established, so the source itself is not redistributed in this branch.
+- In the editor, automatic detection produced noisy candidates. A manual perimeter trace produced four segments and two region candidates. Calibration then rejected two scale anchors, so no 3D scene was assembled. Captures: [source view](evidence/plan-b/B/01-original.png), [automatic candidates](evidence/plan-b/B/02-candidates.png), [manual trace](evidence/plan-b/B/03-manual-perimeter-tracing.png). No reconstruction error or topology score is available. Case A ground-truth reconstruction and Case B perception-to-3D remain **BLOCKED / NOT COMPLETED**.
+- SAM 3.1 remains documented but is not wired into this branch and was not called. No live provider failure test was run.
 
 ## Acceptance matrix
 
@@ -65,9 +70,10 @@ git diff --check
 |---|---|---|
 | Original UNFOLD tests/build | PASS | 241 tests and production build on this branch |
 | Canonical Scene Graph retained | PASS | Explode changes render positions only; serialized transaction unchanged |
-| Meta connectivity and grounding | BLOCKED | No configured key in available environment |
-| SAM 3.1 | BLOCKED | Officially documented; no key and not wired into this branch |
-| Real plan perception-to-3D | BLOCKED | Case B input/detection/manual trace ran; scale anchors were rejected, so no 3D assembly or live Meta call followed |
+| Meta text connectivity | PASS | Real Muse Spark probe, parsed output and metadata recorded above |
+| Meta image extraction | PASS | Real two-stage image route produced parsed `technical_document.v1`; geometry-level grounding remains unverified |
+| SAM 3.1 | NOT RUN | No SAM client in this branch; no SAM call made |
+| Real plan perception-to-3D | BLOCKED | Live semantic extraction passed; scale anchors were rejected, so no 3D assembly followed |
 | Geometry/topology against a plan | NOT RUN | No calibrated reconstruction was assembled; Case B has no established ground truth |
 | Component selection | PASS | Browser selected stable wall ID from loaded scene |
 | Cutaway | NOT RUN | No architectural cutaway implemented in this change |
@@ -75,13 +81,15 @@ git diff --check
 | Exploded render view | PASS | Toggle/recompose browser run; persisted scene byte-identical |
 | Visual capture | PASS | Real UNFOLD and Teardown screenshots captured and reviewed; not a pixel-identical GPU regression assertion |
 | Integrated-GPU performance | BLOCKED | Browser ran SwiftShader; observed 17–18 FPS is not hardware evidence |
-| Controlled live provider failure | NOT RUN | No request attempted without key; existing offline boundary tests remain mocked |
+| Controlled live provider failure | NOT RUN | No failure-path request was sent; offline boundary tests remain mocked |
 
 ## Audits and remaining work
 
 1. **Functional:** checked helper edge cases, UI toggle, scene rebuild reset, actual wall preview/commit/undo and screenshots. Render-only state does not change canonical JSON. Plan upload/perception, cutaway, isolation and mobile browser acceptance remain open.
-2. **Security/data integrity:** no credential was read or logged, no Meta request was emitted, and no upstream model content is rendered through the new control. Offsets are bounded and finite-checked; IDs must be unique. Canonical transaction persistence is untouched. The underlying project still has no user authentication on its local development API; this local-only development server is not a production authorization boundary.
+2. **Security/data integrity:** the credential was neither displayed nor logged; three real Meta calls completed. The new render control does not display or execute upstream model output. Offsets are bounded and finite-checked; IDs must be unique. Canonical transaction persistence is untouched. The underlying project still has no user authentication on its local development API; this local-only development server is not a production authorization boundary.
 3. **Regression/maintenance:** baseline files remained untouched except the editor integration/index/fav icon. The full suite and build passed. The Vite bundle warning and real GPU performance are outstanding. No source code from Teardown was copied.
+
+Reproduce the live text probe and server startup with `node --env-file=.env --import tsx server/probe.ts` and `node --env-file=.env --import tsx server/index.ts`. The image route was exercised with a one-request payload to `POST /api/meta/image`; the server was configured with `UNFOLD_ACCEPTANCE_MAX_META_CALLS=2`. Do not repeat it unless additional provider usage is intended.
 
 Reproduction of the new helper test and app build:
 
@@ -91,4 +99,4 @@ npm run build
 npm run dev -- --host 127.0.0.1 --port 5173
 ```
 
-The recorded Playwright E2E used Playwright 1.58.2 from the isolated Teardown checkout with `/usr/bin/google-chrome`; it loaded the historical transaction referenced above and wrote screenshots plus JSON under `reports/phase-10-teardown/evidence/`. It did not use Meta, did not ingest an image, and did not verify reconstruction accuracy.
+The recorded Playwright E2E used Playwright 1.58.2 from the isolated Teardown checkout with `/usr/bin/google-chrome`; it loaded the historical transaction referenced above and wrote screenshots plus JSON under `reports/phase-10-teardown/evidence/`. The live image route was a separate backend test; it did not generate the displayed 3D scene or verify geometric reconstruction accuracy.
