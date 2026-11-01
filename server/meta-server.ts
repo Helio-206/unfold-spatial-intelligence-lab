@@ -127,8 +127,17 @@ export type ServerOptions = {
 
 // Sem configuração o orçamento continua finito. É o teto de chamadas Meta que o backend aceita
 // (somado entre reinícios quando há ficheiro de orçamento); UNFOLD_ACCEPTANCE_MAX_META_CALLS altera-o.
-export const DEFAULT_MAX_META_CALLS = 200;
+export const DEFAULT_MAX_META_CALLS = 1000;
 export const DEFAULT_MAX_CONCURRENT_META_CALLS = 2;
+
+export type MetaCallBudget = { limit: number; used: number; remaining: number };
+export type MetaServer = Server & { metaCallBudget(): MetaCallBudget };
+
+export function formatBudgetStartupLine(budget: MetaCallBudget, budgetFile: string | undefined): string {
+  const where = budgetFile ? `file: ${budgetFile}` : 'not persisted';
+  const line = `Meta call budget: ${budget.remaining} of ${budget.limit} calls remaining (${where})`;
+  return budget.remaining === 0 ? `${line} - paid routes will answer 429 until the file is deleted` : line;
+}
 
 class MetaCallBudgetExceeded extends Error {
   constructor() { super('O limite de chamadas Meta desta execução foi atingido.'); }
@@ -259,7 +268,7 @@ function conversationErrorCode(error: unknown): { code: string; category: string
   return { code: 'CONVERSATION_INTERNAL_ERROR', category: 'internal', status: 502 };
 }
 
-export function createMetaServer(options: ServerOptions = {}): Server {
+export function createMetaServer(options: ServerOptions = {}): MetaServer {
   const upstreamEvidence = evidenceOptions(options);
   const localTokenFile = options.localTokenFile ?? process.env.UNFOLD_LOCAL_TOKEN_FILE;
   const localToken = createLocalToken(localTokenFile);
@@ -311,7 +320,7 @@ export function createMetaServer(options: ServerOptions = {}): Server {
   });
   const conversationRequests = new Map<string, number[]>();
   const imageRequests = new Map<string, number[]>();
-  const server = createServer(async (request, response) => {
+  const server: MetaServer = Object.assign(createServer(async (request, response) => {
     const origin = typeof request.headers.origin === 'string' ? request.headers.origin : undefined;
     if (request.method === 'OPTIONS') {
       if (origin && ALLOWED_ORIGINS.has(origin)) response.setHeader('Access-Control-Allow-Origin', origin);
@@ -710,7 +719,7 @@ export function createMetaServer(options: ServerOptions = {}): Server {
     } finally {
       if (holdsMetaSlot) metaCallsInFlight -= 1;
     }
-  });
+  }), { metaCallBudget: () => diagnostics().metaCallBudget });
   if (localTokenFile) server.once('close', () => removeLocalTokenFile(localTokenFile, localToken));
   return server;
 }
