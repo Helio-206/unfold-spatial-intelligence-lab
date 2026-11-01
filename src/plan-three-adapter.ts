@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import type { Node, SpatialSceneV1 } from './spatial-scene';
+import { gsap } from 'gsap';
+import { DURATION, EASE } from './motion/tokens';
+import { prefersReducedMotion } from './motion';
 
 const wallMaterial = new THREE.MeshStandardMaterial({ color: 0xc9c5b8, roughness: 0.88 });
 const doorMaterial = new THREE.MeshStandardMaterial({ color: 0x765237, roughness: 0.64 });
@@ -150,4 +153,68 @@ export function buildThreePlanGroup(scene: SpatialSceneV1, assets: Architectural
     if (node.component?.kind === 'window' && assets.window_double_1200) object.userData.assetModule = 'window_double_1200';
   }
   return group;
+}
+
+/**
+ * Visual treatment of a wall-removal preview. Draws only: the scene data, the commands and the engine's
+ * verdict are not touched. In `dissolve` mode (the engine accepted the removal and the candidate scene is on
+ * screen) the removed wall fades out and leaves a dashed edge behind. In `blocked` mode (the engine refused)
+ * the wall stays exactly as it is and only gets a dashed outline.
+ */
+export type RemovalGhost = {
+  group: THREE.Group;
+  settle(mode: 'dissolve' | 'blocked', onFrame: () => void): void;
+  dispose(): void;
+};
+
+export function buildRemovalGhost(scene: SpatialSceneV1, wallId: string, edgeColor: number, assets: ArchitecturalAssets = {}): RemovalGhost | undefined {
+  const node = scene.nodes.find((item) => item.id === wallId);
+  if (!node || node.component?.kind !== 'wall') return undefined;
+  const attached = scene.nodes.filter((item) => item.nodeType === 'component' && item.component?.dependsOn.includes(node.id) && (item.component.kind === 'door' || item.component.kind === 'window'));
+  const mesh = wallMesh(node, attached, assets);
+  if (!mesh) return undefined;
+
+  const chain: Node[] = [];
+  for (let current: Node | undefined = node; current; current = current.parentId ? scene.nodes.find((item) => item.id === current!.parentId) : undefined) chain.unshift(current);
+  const group = new THREE.Group();
+  group.name = `${wallId}:removal-ghost`;
+  let parent: THREE.Object3D = group;
+  for (const link of chain) { const holder = new THREE.Group(); applyTransform(holder, link); parent.add(holder); parent = holder; }
+  parent.add(mesh);
+
+  const fill = new THREE.MeshStandardMaterial({ color: 0xc9c5b8, roughness: 0.88, transparent: true, opacity: 0.92, depthWrite: false });
+  const edge = new THREE.LineDashedMaterial({ color: edgeColor, dashSize: 0.16, gapSize: 0.1, transparent: true, opacity: 0, depthTest: false });
+  const ownGeometry: THREE.BufferGeometry[] = [];
+  const meshes: THREE.Mesh[] = [];
+  mesh.traverse((object) => { if (object instanceof THREE.Mesh) meshes.push(object); });
+  for (const item of meshes) {
+    item.material = fill;
+    item.renderOrder = 2;
+    const lines = new THREE.LineSegments(new THREE.EdgesGeometry(item.geometry, 30), edge);
+    lines.computeLineDistances();
+    lines.renderOrder = 3;
+    item.add(lines);
+    ownGeometry.push(lines.geometry);
+  }
+
+  return {
+    group,
+    settle(mode, onFrame) {
+      const solid = mode === 'blocked' ? 0 : 0.12;
+      if (mode === 'blocked') fill.opacity = 0;
+      if (prefersReducedMotion()) {
+        fill.opacity = solid; edge.opacity = 1; onFrame();
+        return;
+      }
+      const timeline = gsap.timeline({ onUpdate: onFrame });
+      if (mode === 'dissolve') timeline.to(fill, { opacity: solid, duration: DURATION.slow, ease: EASE.inOut }, 0);
+      timeline.to(edge, { opacity: 1, duration: DURATION.base, ease: EASE.out }, 0);
+    },
+    dispose() {
+      gsap.killTweensOf([fill, edge]);
+      fill.dispose(); edge.dispose();
+      ownGeometry.forEach((geometry) => geometry.dispose());
+      for (const item of meshes) if (!item.parent?.userData.sharedAsset && !item.userData.sharedAsset) item.geometry.dispose();
+    },
+  };
 }

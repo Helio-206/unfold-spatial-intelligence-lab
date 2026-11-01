@@ -23,7 +23,7 @@
 .cl-ink { fill: var(--ink); font-variant-numeric: tabular-nums; }
 .cl-muted { fill: var(--ink-muted); font-variant-numeric: tabular-nums; }
 .cl-tag { fill: var(--fold-ink); }
-.cl-assume { margin: var(--space-4) 0 0; text-align: center; }
+.cl-assume { position: fixed; left: 0; right: 0; top: 68px; margin: 0; text-align: center; }
 .cl-trail { position: fixed; right: var(--space-6); top: 84px; text-align: right; display: grid; gap: 4px; color: var(--ink-muted); }
 
 .cl-card { position: absolute; z-index: 4; right: var(--space-6); bottom: 96px; width: 280px; padding: var(--space-4); background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-lg); }
@@ -52,7 +52,7 @@
 .cl-form input:focus-visible { outline: none; }
 .cl-pill:focus-within { border-color: var(--ink); }
 .cl-send { width: 44px; height: 44px; border: 0; border-radius: 10px; background: var(--fold); color: var(--on-fold); cursor: pointer; display: grid; place-items: center; }
-.cl-msg { position: absolute; left: 0; right: 0; bottom: calc(100% + 28px); margin: 0; text-align: center; color: var(--ink-muted); pointer-events: none; }
+.cl-msg { position: absolute; left: -120px; right: -120px; bottom: calc(100% + 24px); margin: 0; text-align: center; color: var(--ink-muted); pointer-events: none; }
 .cl-msg[data-kind="refused"] { color: var(--fold-ink); }
 .cl-msg:empty { display: none; }
 

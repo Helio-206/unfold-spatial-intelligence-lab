@@ -5,12 +5,12 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { gsap } from 'gsap';
 import { decodePlanImage } from './plan-image';
 import { buildPlanVectorModel, countClosedCandidateContours, detectCandidateIntersections, detectWallCandidates, mergeWallCandidates, splitWallCandidate, traceWallCandidate, type PixelWallCandidate, type Point2 } from './plan-reconstruction';
-import { addOpeningToScene, createPlanScene, planOpeningEdit, planWallEdit, type CompositePlan } from './plan-scene';
+import { addOpeningToScene, createPlanScene, planOpeningEdit, planWallEdit, planWallRemoval, type CompositePlan } from './plan-scene';
 import { createSceneAuthorizer } from './scene-authorizer';
 import { confirmedNotice, explainSceneError } from './scene-messages';
 import type { ConfirmedReference } from './scene-authorization';
 import type { CommandOrigin } from './core';
-import { ARCHITECTURAL_MODULE_DIMENSIONS, buildThreePlanGroup, type ArchitecturalAssets } from './plan-three-adapter';
+import { ARCHITECTURAL_MODULE_DIMENSIONS, buildThreePlanGroup, type ArchitecturalAssets, buildRemovalGhost, type RemovalGhost } from './plan-three-adapter';
 import { commitScenePreview, deserializeSceneTransaction, previewSceneCommand, serializeSceneTransaction, type Node, type SceneCommandContext, type ScenePreview, type SceneTransaction, type SpatialCommand, type SpatialSceneV1 } from './spatial-scene';
 import { clearSpatialSourceImage, readSpatialSourceImage } from './spatial-source-store';
 import { createSpatialCommandEnvelope, parseSpatialIntentV1, resolveSpatialTarget, type SpatialCommandOrigin, type SpatialCommandState, type SpatialCommandV1 } from './spatial-command-protocol';
@@ -22,6 +22,8 @@ import { cameraFrameAspect, createSpatialCameraView, createSpatialFocusView } fr
 import { countReconstructionStates, RECONSTRUCTION_STATES, RECONSTRUCTION_STATE_MEANING, reconstructionChip, reconstructionState } from './reconstruction-state';
 import lockupLight from '../design-system/logos/unfold-lockup-on-light.svg';
 import { mountStepsHeader } from './steps-header';
+import { describeWallRemoval, type RemovalDescription } from './removal-preview';
+import { dur as motionDur, EASE as MOTION_EASE, gsap as motionGsap, prefersReducedMotion as motionReduced } from './motion';
 import './spatial-editor.css';
 
 export type SpatialEditorOptions = { onExit?: () => void; source?: 'accepted-document'; onCommandState?: (state: SpatialCommandState, message: string) => void };
@@ -66,11 +68,13 @@ app.innerHTML = `<main class="spatial-lab" data-state="empty" data-theme="dark">
     <div id="wall-fields" hidden>
       <div class="dimensions-grid"><label class="field">Comprimento (m)<input id="wall-length" type="number" min="0.01" step="any"></label><label class="field">Altura (m)<input id="wall-height-edit" type="number" min="0.01" step="any"></label><label class="field">Espessura (m)<input id="wall-thickness-edit" type="number" min="0.01" step="any"></label><label class="field">Posição X (m)<input id="wall-x" type="number" step="any"></label><label class="field">Posição Z (m)<input id="wall-z" type="number" step="any"></label></div>
       <button id="preview-wall" type="button">Pré-visualizar alteração</button>
+      <button id="preview-remove-wall" type="button">Remover parede…</button>
       <div id="opening-fields" class="opening-fields"><span>abertura · parâmetros explícitos</span><label class="field">Tipo<select id="opening-kind"><option value="door">Porta</option><option value="window">Janela</option></select></label><div class="dimensions-grid"><label class="field">Offset na parede (m)<input id="opening-offset" type="number" min="0" step="any" placeholder="m"></label><label class="field">Largura (m)<input id="opening-width" type="number" min="0.01" step="any" placeholder="m"></label><label class="field">Altura (m)<input id="opening-height" type="number" min="0.01" step="any" placeholder="m"></label><label class="field">Peitoril (m)<input id="opening-sill" type="number" min="0" step="any" placeholder="m"></label></div><button id="add-opening" type="button">Adicionar abertura</button></div>
     </div>
     <div id="opening-detail" hidden><div class="dimensions-grid"><label class="field">Offset na parede (m)<input id="edit-opening-offset" type="number" min="0" step="any"></label><label class="field">Largura (m)<input id="edit-opening-width" type="number" min="0.01" step="any"></label><label class="field">Altura (m)<input id="edit-opening-height" type="number" min="0.01" step="any"></label><label class="field">Peitoril (m)<input id="edit-opening-sill" type="number" min="0" step="any"></label></div><button id="preview-opening" type="button">Pré-visualizar abertura</button><button id="remove-opening" type="button">Remover abertura seleccionada</button></div>
     <p id="preview-status" class="preview-status" aria-live="polite"></p><div class="preview-actions"><button id="commit-preview" type="button" disabled>Aplicar</button><button id="cancel-preview" type="button" disabled>Cancelar</button></div>
   </aside>
+  <section class="removal-card" id="removal-card" data-theme="light" hidden aria-label="Remoção de parede"></section>
   <section class="stage-empty" id="stage-empty"><span class="u-label">espaço livre</span><h1>Uma cena começa por evidência.</h1><p>Importe uma planta real, revise os segmentos e calibre a escala antes de construir a geometria.</p><a class="u-btn u-btn--primary" href="/demo">Abrir experiência UNFOLD</a></section>
   <nav class="spatial-toolbar" data-theme="light" aria-label="Ferramentas da cena"><button id="mode-translate" type="button" aria-label="Mover" title="Mover">↔</button><button id="mode-rotate" type="button" aria-label="Rodar" title="Rodar">↻</button><button id="mode-scale" type="button" aria-label="Escalar" title="Escalar">⤢</button><i></i><button id="fit-scene" type="button" aria-label="Enquadrar" title="Enquadrar">□</button><button id="home-scene" type="button" aria-label="Início" title="Início">⌂</button><button id="top-view" type="button" aria-label="Vista superior" title="Vista superior">T</button><button id="front-view" type="button" aria-label="Vista frontal" title="Vista frontal">F</button><button id="iso-view" type="button" aria-label="Vista isométrica" title="Vista isométrica">I</button><button id="toggle-reference" type="button" aria-pressed="true" aria-label="Mostrar ou ocultar imagem original" title="Referência">▧</button><button id="compare-scene" type="button" aria-pressed="false" disabled>Antes / Depois</button><button id="undo-scene" type="button" disabled>Desfazer</button><button id="redo-scene" type="button" disabled>Refazer</button></nav>
   <div class="spatial-status" data-theme="light" id="spatial-status" role="status" aria-live="polite">À espera de uma planta. Geometria não presumida.</div><div id="spatial-metrics" class="spatial-metrics"></div>
@@ -107,6 +111,7 @@ scene.add(gizmo.getHelper());
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const raycaster = new Raycaster(); const pointer = new Vector2();
 let transaction: SceneTransaction | undefined;
+let removalGhost: RemovalGhost | undefined;
 let preview: ScenePreview | undefined;
 let compoundPreview: SceneTransaction | undefined;
 // Autorizações de valores confirmados: emitidas só no clique de confirmação, para a operação que o preview mostrou.
@@ -186,6 +191,7 @@ function resize(): void {
 resizeObserver.observe($('#spatial-canvas'));
 
 function disposeSceneGroup(): void {
+  removalGhost?.dispose(); removalGhost = undefined;
   gizmo.detach();
   root.traverse((object) => {
     if (!(object instanceof Mesh) || hasSharedAssetParent(object)) return;
@@ -1041,6 +1047,57 @@ function previewText(text: string, touched: readonly ConfirmedReference[]): stri
   const notice = confirmedNotice(touched, (id) => transaction?.scene.nodes.find((item) => item.id === id)?.label ?? id);
   return notice ? `${text} ${notice}` : text;
 }
+const removalCard = $('#removal-card');
+const escapeCardText = (value: string): string => escapeHtml(value);
+function showRemovalCard(info: RemovalDescription, verdict: { ok: true } | { ok: false; code: string }, notice: string): void {
+  const roomNames = info.rooms.map((room) => `${escapeCardText(room.label)}${room.areaM2 === null ? '' : ` (${room.areaM2.toFixed(1)} m²)`}`);
+  const shown = roomNames.slice(0, 3);
+  const rooms = (shown.length > 1 ? `${shown.slice(0, -1).join(', ')} e ${shown[shown.length - 1]}` : shown[0] ?? '') + (roomNames.length > 3 ? ` e mais ${roomNames.length - 3}` : '');
+  const removes = `1 parede${info.openings.length ? ` e ${info.openings.length} abertura${info.openings.length > 1 ? 's' : ''}` : ''}`;
+  removalCard.innerHTML = verdict.ok
+    ? `<p class="u-label">pré-visualização</p><h2>Remover ${escapeCardText(info.wallLabel)}</h2>
+       <dl class="u-readout"><div><dt>remove</dt><dd>${removes}</dd></div><div><dt>divisões afectadas</dt><dd>nenhuma</dd></div><div class="is-unknown"><dt>estrutura</dt><dd>desconhecida · sem dados estruturais</dd></div></dl>${notice ? `<p class="removal-why">${escapeCardText(notice)}</p>` : ''}
+       <div class="removal-actions"><button type="button" class="u-btn u-btn--primary" id="removal-confirm">Confirmar</button><button type="button" class="u-btn u-btn--outline" id="removal-cancel">Cancelar</button></div>`
+    : `<p class="u-label is-blocked">remoção bloqueada</p><h2>${escapeCardText(info.wallLabel)}</h2>
+       <p class="removal-why">O motor da cena recusa: ${verdict.code === 'REMOVE_HAS_DEPENDENCIES' ? `${info.rooms.length ? `${rooms} ${info.rooms.length > 1 ? 'dependem' : 'depende'}` : 'há elementos que dependem'} desta parede` : escapeCardText(verdict.code)} <span class="u-label">${escapeCardText(verdict.code)}</span></p>
+       <dl class="u-readout"><div class="is-unknown"><dt>fusão das divisões</dt><dd>ainda não existe no motor</dd></div><div class="is-unknown"><dt>estrutura</dt><dd>desconhecida · sem dados estruturais</dd></div></dl>
+       <div class="removal-actions"><button type="button" class="u-btn u-btn--outline" id="removal-close">Fechar</button></div>`;
+  removalCard.hidden = false;
+  motionGsap.fromTo(removalCard, { opacity: 0, x: 16 }, { opacity: 1, x: 0, duration: motionDur('base'), ease: MOTION_EASE.out });
+  app!.querySelector<HTMLButtonElement>('#removal-confirm')?.addEventListener('click', () => $('#commit-preview').click());
+  app!.querySelector<HTMLButtonElement>('#removal-cancel')?.addEventListener('click', () => $('#cancel-preview').click());
+  app!.querySelector<HTMLButtonElement>('#removal-close')?.addEventListener('click', () => { removalGhost?.dispose(); if (removalGhost) root.remove(removalGhost.group); removalGhost = undefined; hideRemovalCard(); invalidate(); });
+  (app!.querySelector<HTMLButtonElement>('#removal-confirm') ?? app!.querySelector<HTMLButtonElement>('#removal-close'))?.focus({ preventScroll: true });
+}
+function hideRemovalCard(): void {
+  if (removalCard.hidden) return;
+  if (motionReduced()) { removalCard.hidden = true; return; }
+  motionGsap.to(removalCard, { opacity: 0, x: 16, duration: motionDur('base'), ease: MOTION_EASE.out, onComplete: () => { removalCard.hidden = true; } });
+}
+function attachRemovalGhost(base: SpatialSceneV1, wallId: string, mode: 'dissolve' | 'blocked'): void {
+  removalGhost?.dispose(); if (removalGhost) root.remove(removalGhost.group);
+  const edge = new Color(cssToken(mode === 'dissolve' ? '--fold' : '--ink-muted', mode === 'dissolve' ? '#FF5A1F' : '#9AA0A8')).getHex();
+  removalGhost = buildRemovalGhost(base, wallId, edge, assets);
+  if (!removalGhost) return;
+  root.add(removalGhost.group); removalGhost.settle(mode, invalidate); invalidate();
+}
+function previewWallRemoval(wallId: string): void {
+  if (!transaction) return;
+  if (preview || compoundPreview) { status('Existe uma pré-visualização pendente. Confirme ou cancele-a primeiro.'); return; }
+  const info = describeWallRemoval(transaction.scene, wallId);
+  if (!info) { status('Seleccione uma parede.'); return; }
+  const base = transaction.scene;
+  let plan: CompositePlan | undefined; let code = '';
+  try { plan = planWallRemoval(transaction, wallId, 'local-user-input'); } catch (error) { code = error instanceof Error ? error.message : 'ERRO'; }
+  focusNode(wallId);
+  if (plan) { previewCompound(plan, `remover ${info.wallLabel}`); attachRemovalGhost(base, wallId, 'dissolve'); showRemovalCard(info, { ok: true }, plan.touchesConfirmed.length ? confirmedNotice(plan.touchesConfirmed, (id) => base.nodes.find((item) => item.id === id)?.label ?? id) : ''); return; }
+  status(`Remoção bloqueada: ${explainSceneError(code)}`);
+  attachRemovalGhost(base, wallId, 'blocked'); showRemovalCard(info, { ok: false, code }, '');
+}
+$('#preview-remove-wall').addEventListener('click', () => { if (selectedId) previewWallRemoval(selectedId); });
+$('#commit-preview').addEventListener('click', hideRemovalCard);
+$('#cancel-preview').addEventListener('click', hideRemovalCard);
+
 function previewCompound(shown: SceneTransaction | CompositePlan, label: string): void {
   if (!transaction) throw new Error('SCENE_NOT_READY');
   const plan = 'commit' in shown ? shown : undefined;
