@@ -1,0 +1,559 @@
+{
+  "scenario": "HABS MO-1113 Amoureaux House, first-floor plan, sheet 3/10",
+  "attribution": "Library of Congress, Prints & Photographs Division, HABS MO-1113, sheet 3/10",
+  "sourceSha256": "1d78e739dad568ea49eb193416dc5f91c8b62b904a0170c63af803dd87750026",
+  "sourcePixels": {
+    "width": 3700,
+    "height": 2996
+  },
+  "setup": {
+    "grayscale": "Pillow Image.convert(\"L\")",
+    "unfoldDetector": {
+      "threshold": 150,
+      "minimumLengthPx": 134,
+      "gapTolerancePx": 3
+    },
+    "sharedTopologyInput": "The exact fused UNFOLD segment list was supplied to both graph algorithms; coordinates remain source-image pixels.",
+    "openPlan3DUnits": "Pixels were passed numerically as centimetres so its fixed 5-unit epsilon equals 5 source pixels. No metric calibration was implied.",
+    "openPlan3DCommit": "98f9cb467e4045c6abc5d9880ada1f03dff50c68"
+  },
+  "sharedInput": {
+    "rawSegments": 210,
+    "fusedSegments": 162
+  },
+  "unfold": {
+    "candidateRegions": [
+      {
+        "id": "room-784-742-1679-1357",
+        "areaPx2": 549638.3035714285,
+        "vertices": [
+          {
+            "x": 784.25,
+            "y": 742.0357142857143
+          },
+          {
+            "x": 1678.75,
+            "y": 742.0357142857143
+          },
+          {
+            "x": 1678.75,
+            "y": 1356.5
+          },
+          {
+            "x": 784.25,
+            "y": 1356.5
+          }
+        ],
+        "rasterEvidence": {
+          "regionId": "room-784-742-1679-1357",
+          "searchRadiusPx": 18,
+          "threshold": 130,
+          "edges": [
+            {
+              "side": "top",
+              "supportRatio": 1,
+              "supportedSamples": 895,
+              "totalSamples": 895
+            },
+            {
+              "side": "right",
+              "supportRatio": 0.8699186991869918,
+              "supportedSamples": 535,
+              "totalSamples": 615
+            },
+            {
+              "side": "bottom",
+              "supportRatio": 0.8603351955307262,
+              "supportedSamples": 770,
+              "totalSamples": 895
+            },
+            {
+              "side": "left",
+              "supportRatio": 1,
+              "supportedSamples": 615,
+              "totalSamples": 615
+            }
+          ],
+          "minimumSupportRatio": 0.8603351955307262,
+          "meanSupportRatio": 0.9325634736794295,
+          "status": "raster_supported_draft",
+          "limitation": "Presença de pixels escuros não prova que a aresta seja uma parede: cotas, texto, símbolos e paredes vizinhas podem contribuir. Requer revisão humana e validação topológica."
+        }
+      },
+      {
+        "id": "room-784-1391-1679-1881",
+        "areaPx2": 438305,
+        "vertices": [
+          {
+            "x": 784.25,
+            "y": 1390.75
+          },
+          {
+            "x": 1678.75,
+            "y": 1390.75
+          },
+          {
+            "x": 1678.75,
+            "y": 1880.75
+          },
+          {
+            "x": 784.25,
+            "y": 1880.75
+          }
+        ],
+        "rasterEvidence": {
+          "regionId": "room-784-1391-1679-1881",
+          "searchRadiusPx": 18,
+          "threshold": 130,
+          "edges": [
+            {
+              "side": "top",
+              "supportRatio": 0.8636871508379889,
+              "supportedSamples": 773,
+              "totalSamples": 895
+            },
+            {
+              "side": "right",
+              "supportRatio": 0.746938775510204,
+              "supportedSamples": 366,
+              "totalSamples": 490
+            },
+            {
+              "side": "bottom",
+              "supportRatio": 1,
+              "supportedSamples": 895,
+              "totalSamples": 895
+            },
+            {
+              "side": "left",
+              "supportRatio": 1,
+              "supportedSamples": 490,
+              "totalSamples": 490
+            }
+          ],
+          "minimumSupportRatio": 0.746938775510204,
+          "meanSupportRatio": 0.9026564815870483,
+          "status": "raster_supported_draft",
+          "limitation": "Presença de pixels escuros não prova que a aresta seja uma parede: cotas, texto, símbolos e paredes vizinhas podem contribuir. Requer revisão humana e validação topológica."
+        }
+      },
+      {
+        "id": "room-1679-1357-2925-1881",
+        "areaPx2": 653084.4375,
+        "vertices": [
+          {
+            "x": 1678.75,
+            "y": 1356.5
+          },
+          {
+            "x": 2924.5,
+            "y": 1356.5
+          },
+          {
+            "x": 2924.5,
+            "y": 1880.75
+          },
+          {
+            "x": 1678.75,
+            "y": 1880.75
+          }
+        ],
+        "rasterEvidence": {
+          "regionId": "room-1679-1357-2925-1881",
+          "searchRadiusPx": 18,
+          "threshold": 130,
+          "edges": [
+            {
+              "side": "top",
+              "supportRatio": 0.7174959871589085,
+              "supportedSamples": 894,
+              "totalSamples": 1246
+            },
+            {
+              "side": "right",
+              "supportRatio": 1,
+              "supportedSamples": 525,
+              "totalSamples": 525
+            },
+            {
+              "side": "bottom",
+              "supportRatio": 1,
+              "supportedSamples": 1246,
+              "totalSamples": 1246
+            },
+            {
+              "side": "left",
+              "supportRatio": 0.7638095238095238,
+              "supportedSamples": 401,
+              "totalSamples": 525
+            }
+          ],
+          "minimumSupportRatio": 0.7174959871589085,
+          "meanSupportRatio": 0.8703263777421081,
+          "status": "raster_supported_draft",
+          "limitation": "Presença de pixels escuros não prova que a aresta seja uma parede: cotas, texto, símbolos e paredes vizinhas podem contribuir. Requer revisão humana e validação topológica."
+        }
+      },
+      {
+        "id": "room-1912-742-2925-1357",
+        "areaPx2": 622042.6785714285,
+        "vertices": [
+          {
+            "x": 1912.1666666666667,
+            "y": 742.0357142857143
+          },
+          {
+            "x": 2924.5,
+            "y": 742.0357142857143
+          },
+          {
+            "x": 2924.5,
+            "y": 1356.5
+          },
+          {
+            "x": 1912.1666666666667,
+            "y": 1356.5
+          }
+        ],
+        "rasterEvidence": {
+          "regionId": "room-1912-742-2925-1357",
+          "searchRadiusPx": 18,
+          "threshold": 130,
+          "edges": [
+            {
+              "side": "top",
+              "supportRatio": 1,
+              "supportedSamples": 1013,
+              "totalSamples": 1013
+            },
+            {
+              "side": "right",
+              "supportRatio": 1,
+              "supportedSamples": 615,
+              "totalSamples": 615
+            },
+            {
+              "side": "bottom",
+              "supportRatio": 0.7956564659427443,
+              "supportedSamples": 806,
+              "totalSamples": 1013
+            },
+            {
+              "side": "left",
+              "supportRatio": 0.6699186991869919,
+              "supportedSamples": 412,
+              "totalSamples": 615
+            }
+          ],
+          "minimumSupportRatio": 0.6699186991869919,
+          "meanSupportRatio": 0.866393791282434,
+          "status": "raster_supported_draft",
+          "limitation": "Presença de pixels escuros não prova que a aresta seja uma parede: cotas, texto, símbolos e paredes vizinhas podem contribuir. Requer revisão humana e validação topológica."
+        }
+      }
+    ],
+    "candidateCount": 4,
+    "rejectedFaceCount": 96,
+    "intersections": 75,
+    "graphCycleRank": 5,
+    "acceptedClosedRoomFaces": 0,
+    "validatedHabsRooms": 0
+  },
+  "openPlan3D": {
+    "emittedFaceCount": 5,
+    "faces": [
+      {
+        "id": "openplan-face-1",
+        "areaPx2": 1100,
+        "wallCount": 4,
+        "vertices": [
+          {
+            "x": 774.5,
+            "y": 1378.5
+          },
+          {
+            "x": 774.5,
+            "y": 1335
+          },
+          {
+            "x": 798,
+            "y": 1335
+          },
+          {
+            "x": 801.5,
+            "y": 1378.5
+          }
+        ],
+        "rasterEvidence": {
+          "regionId": "openplan-face-1",
+          "searchRadiusPx": 18,
+          "threshold": 130,
+          "edges": [
+            {
+              "side": "top",
+              "supportRatio": 1,
+              "supportedSamples": 44,
+              "totalSamples": 44
+            },
+            {
+              "side": "right",
+              "supportRatio": 1,
+              "supportedSamples": 24,
+              "totalSamples": 24
+            },
+            {
+              "side": "bottom",
+              "supportRatio": 1,
+              "supportedSamples": 44,
+              "totalSamples": 44
+            },
+            {
+              "side": "left",
+              "supportRatio": 1,
+              "supportedSamples": 27,
+              "totalSamples": 27
+            }
+          ],
+          "minimumSupportRatio": 1,
+          "meanSupportRatio": 1,
+          "status": "raster_supported_draft",
+          "limitation": "Presença de pixels escuros não prova que a aresta seja uma parede: cotas, texto, símbolos e paredes vizinhas podem contribuir. Requer revisão humana e validação topológica."
+        }
+      },
+      {
+        "id": "openplan-face-2",
+        "areaPx2": 4500,
+        "wallCount": 4,
+        "vertices": [
+          {
+            "x": 1038,
+            "y": 2401.5
+          },
+          {
+            "x": 1039,
+            "y": 2373
+          },
+          {
+            "x": 1196,
+            "y": 2373
+          },
+          {
+            "x": 1196,
+            "y": 2401.5
+          }
+        ],
+        "rasterEvidence": {
+          "regionId": "openplan-face-2",
+          "searchRadiusPx": 18,
+          "threshold": 130,
+          "edges": [
+            {
+              "side": "top",
+              "supportRatio": 1,
+              "supportedSamples": 29,
+              "totalSamples": 29
+            },
+            {
+              "side": "right",
+              "supportRatio": 1,
+              "supportedSamples": 157,
+              "totalSamples": 157
+            },
+            {
+              "side": "bottom",
+              "supportRatio": 1,
+              "supportedSamples": 29,
+              "totalSamples": 29
+            },
+            {
+              "side": "left",
+              "supportRatio": 1,
+              "supportedSamples": 158,
+              "totalSamples": 158
+            }
+          ],
+          "minimumSupportRatio": 1,
+          "meanSupportRatio": 1,
+          "status": "raster_supported_draft",
+          "limitation": "Presença de pixels escuros não prova que a aresta seja uma parede: cotas, texto, símbolos e paredes vizinhas podem contribuir. Requer revisão humana e validação topológica."
+        }
+      },
+      {
+        "id": "openplan-face-3",
+        "areaPx2": 4900,
+        "wallCount": 4,
+        "vertices": [
+          {
+            "x": 1038,
+            "y": 2432.5
+          },
+          {
+            "x": 1038,
+            "y": 2401.5
+          },
+          {
+            "x": 1196,
+            "y": 2401.5
+          },
+          {
+            "x": 1196,
+            "y": 2432.5
+          }
+        ],
+        "rasterEvidence": {
+          "regionId": "openplan-face-3",
+          "searchRadiusPx": 18,
+          "threshold": 130,
+          "edges": [
+            {
+              "side": "top",
+              "supportRatio": 1,
+              "supportedSamples": 31,
+              "totalSamples": 31
+            },
+            {
+              "side": "right",
+              "supportRatio": 1,
+              "supportedSamples": 158,
+              "totalSamples": 158
+            },
+            {
+              "side": "bottom",
+              "supportRatio": 1,
+              "supportedSamples": 31,
+              "totalSamples": 31
+            },
+            {
+              "side": "left",
+              "supportRatio": 1,
+              "supportedSamples": 158,
+              "totalSamples": 158
+            }
+          ],
+          "minimumSupportRatio": 1,
+          "meanSupportRatio": 1,
+          "status": "raster_supported_draft",
+          "limitation": "Presença de pixels escuros não prova que a aresta seja uma parede: cotas, texto, símbolos e paredes vizinhas podem contribuir. Requer revisão humana e validação topológica."
+        }
+      },
+      {
+        "id": "openplan-face-4",
+        "areaPx2": 5000,
+        "wallCount": 4,
+        "vertices": [
+          {
+            "x": 1039.5,
+            "y": 2464
+          },
+          {
+            "x": 1038,
+            "y": 2432.5
+          },
+          {
+            "x": 1196,
+            "y": 2432.5
+          },
+          {
+            "x": 1200,
+            "y": 2464
+          }
+        ],
+        "rasterEvidence": {
+          "regionId": "openplan-face-4",
+          "searchRadiusPx": 18,
+          "threshold": 130,
+          "edges": [
+            {
+              "side": "top",
+              "supportRatio": 1,
+              "supportedSamples": 32,
+              "totalSamples": 32
+            },
+            {
+              "side": "right",
+              "supportRatio": 1,
+              "supportedSamples": 158,
+              "totalSamples": 158
+            },
+            {
+              "side": "bottom",
+              "supportRatio": 1,
+              "supportedSamples": 32,
+              "totalSamples": 32
+            },
+            {
+              "side": "left",
+              "supportRatio": 1,
+              "supportedSamples": 161,
+              "totalSamples": 161
+            }
+          ],
+          "minimumSupportRatio": 1,
+          "meanSupportRatio": 1,
+          "status": "raster_supported_draft",
+          "limitation": "Presença de pixels escuros não prova que a aresta seja uma parede: cotas, texto, símbolos e paredes vizinhas podem contribuir. Requer revisão humana e validação topológica."
+        }
+      },
+      {
+        "id": "openplan-face-5",
+        "areaPx2": 21300,
+        "wallCount": 4,
+        "vertices": [
+          {
+            "x": 2819.5,
+            "y": 2892
+          },
+          {
+            "x": 2819.5,
+            "y": 2759
+          },
+          {
+            "x": 2982,
+            "y": 2759
+          },
+          {
+            "x": 2982,
+            "y": 2888
+          }
+        ],
+        "rasterEvidence": {
+          "regionId": "openplan-face-5",
+          "searchRadiusPx": 18,
+          "threshold": 130,
+          "edges": [
+            {
+              "side": "top",
+              "supportRatio": 1,
+              "supportedSamples": 133,
+              "totalSamples": 133
+            },
+            {
+              "side": "right",
+              "supportRatio": 1,
+              "supportedSamples": 163,
+              "totalSamples": 163
+            },
+            {
+              "side": "bottom",
+              "supportRatio": 0.9922480620155039,
+              "supportedSamples": 128,
+              "totalSamples": 129
+            },
+            {
+              "side": "left",
+              "supportRatio": 1,
+              "supportedSamples": 163,
+              "totalSamples": 163
+            }
+          ],
+          "minimumSupportRatio": 0.9922480620155039,
+          "meanSupportRatio": 0.998062015503876,
+          "status": "raster_supported_draft",
+          "limitation": "Presença de pixels escuros não prova que a aresta seja uma parede: cotas, texto, símbolos e paredes vizinhas podem contribuir. Requer revisão humana e validação topológica."
+        }
+      }
+    ],
+    "hABsRoomScaleFacesOver100000Px2": 0
+  },
+  "interpretation": "The 100000 px2 scale threshold is a diagnostic size band, not labelled ground truth. Raster edge support is not proof of wall identity. Neither pipeline has accepted HABS room polygons from this run."
+}

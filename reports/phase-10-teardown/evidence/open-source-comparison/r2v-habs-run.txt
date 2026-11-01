@@ -1,0 +1,11 @@
+Repository: https://github.com/3dlg-hcvc/r2v-to-plan2scene
+Commit: 5f6d68d2e57c68953205567fd00d3ccd42d80f99
+License: MIT
+Input image: Amoureaux House HABS MO-1113, sheet 3/10
+Input raster SHA-256: 1d78e739dad568ea49eb193416dc5f91c8b62b904a0170c63af803dd87750026
+Input vectors: same 162 fused UNFOLD line candidates as the OpenPlan3D run, integer-rounded only for the upstream TSV parser; all supplied as category=wall because no openings had been accepted.
+Command: timeout 30s env PYTHONPATH=code/src /tmp/r2v-compare-env/bin/python convert.py --r2v-annot --no-previews --skip-objects --skip-rdr /tmp/r2v-habs-out-2 /tmp/habs-unfold-candidates.tsv
+Isolated dependency: Shapely 2.2.0; existing system NumPy 2.5.1, SciPy 1.11.4, Pillow 10.2.0.
+Exit status: 124 (external 30-second timeout).
+Observed: splitter logged "Split walls iterations truncated" after its configured 50-pass limit. No scene JSON, room graph, or other output artifact was produced.
+Classification: NOT TESTED to completion. This is a bounded runtime/compatibility result on raw noisy candidates, not an algorithm quality score on clean vectorized walls.

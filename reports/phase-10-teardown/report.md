@@ -261,3 +261,44 @@ npm run build
 npm run dev -- --host 127.0.0.1 --port 5192 --strictPort
 UNFOLD_E2E_URL=http://127.0.0.1:5192 UNFOLD_CDP_PORT=9227 UNFOLD_EVIDENCE_DIR=reports/phase-10-teardown/evidence/case-b-provisional node tests/e2e/phase-10-case-b-detection.cdp.mjs
 ```
+
+## Same-raster open-source comparison (2026-11-01)
+
+This comparison uses the exact HABS MO-1113 sheet 3/10 image recorded above (3700×2996; SHA-256 `1d78e739dad568ea49eb193416dc5f91c8b62b904a0170c63af803dd87750026`). The UNFOLD extraction settings match the Workbench controls: grayscale, threshold 150, minimum segment length `max(24, floor(min(width,height)×0.045))`, and 3 px gap tolerance. It produces 210 raw and 162 fused segments. Both topology implementations receive that same 162-segment list in source-image pixel coordinates; OpenPlan3D's fixed 5-unit tolerance is therefore 5 pixels. No metric scale or room labels are injected.
+
+The comparative result is: UNFOLD produced four room-scale rectangle candidates (areas 438,305–653,084 px²), of which the lower-right candidate crosses into the visible hall; **zero are validated or canonical**. Its vector graph has cycle rank 5 but zero accepted closed-segment room faces. OpenPlan3D's upstream `resolveRoomGeometry` produced five faces of only 1,100–21,300 px² and no room-scale face above 100,000 px². Direct visual review of the overlaid output confirms that those faces trace annotation/symbol fragments rather than rooms. They have 99–100% edge raster support, which demonstrates that this support score cannot distinguish walls from text and symbols. Neither output is a correct, accepted HABS reconstruction. UNFOLD is better only at proposing large room-like regions on this raster; this is not a claim of superior final topology or geometric accuracy.
+
+| Capability | Strongest candidate | Status | Same-HABS result / decision |
+|---|---|---|---|
+| Raster wall-line extraction | UNFOLD; Raster2Seq and FloorplanTransformation are potential alternatives | NOT TESTED | UNFOLD's 210→162 result is reproduced. No external raster predictor was run on this image; the direct OpenPlan3D/R2V comparison starts after vectorization. |
+| Room-sized region proposal from the HABS raster | UNFOLD vs OpenPlan3D face detection on the same 162 vectors | EXISTING BETTER | UNFOLD: four large candidates, three visually room-aligned and one B/Hall boundary error. OpenPlan3D: five annotation-scale faces, zero room-scale faces. UNFOLD still has zero accepted regions. |
+| Exact room polygon/topology reconstruction | OpenPlan3D `resolveRoomGeometry`; R2V `convert.py` | REJECTED for direct use on raw HABS candidates | OpenPlan3D returned only the five small false faces. R2V reached its 50-pass wall-splitting cap and did not finish within 30 seconds; no scene or room graph was emitted. This rejects direct ingestion of the noisy vector set, not use after reviewed vector correction. |
+| Hall boundary from room anchors | UNFOLD provisional partition | REJECTED as accepted geometry | The preview is non-overlapping but its B/Hall boundary is only 37% covered by unique candidate line intervals; it remains provisional and must not enter `spatial_scene.v1`. |
+| Room-door incidence derivation in the canonical graph | R2V concept adapted in UNFOLD | ADAPTED | UNFOLD derives and removes relations with its wall edits; unit tests cover Case A. No HABS door is accepted, so Case B connectivity remains untested. |
+| HABS opening classification and connectivity | R2V-to-Plan2Scene / UNFOLD relation builder | NOT TESTED | No openings are confirmed, and the R2V full graph run did not complete. |
+| Parametric wall opening/profile helpers | OpenPlan3D `wallProfiles.ts` | REUSABLE | MIT TypeScript geometry helpers are modular and use normalized positions; a boundary adapter can supply UNFOLD units. They were not exercised on HABS openings and no code was copied. |
+| Global raster vector optimization | FloorplanTransformation | NOT TESTED | Its solver requires predicted heatmaps and legacy Torch/Gurobi paths. No comparable HABS candidate set or result was produced. |
+| Labelled room polygon prediction | Raster2Seq | REJECTED for current distribution | Source is MIT, but published checkpoints are CC BY-NC 4.0; they are excluded from commercial integration. Inference was not run, so model quality remains untested. |
+| Scene editing, 2D/3D sync, inspection and rendering | floorplan-3d, Plan2Scene, That Open, react-planner | NOT TESTED | No same-HABS experiment was run. Existing UNFOLD interaction tests are not comparative evidence. |
+| GPL geometry conversion / CC BY-NC datasets | FloorplanToBlender3d / CubiCasa5K | REJECTED for direct code or data integration | GPL-3.0 and CC BY-NC 4.0 restrictions are incompatible with direct inclusion under the current distribution assumptions; no HABS execution was made. |
+
+`EXISTING BETTER` applies narrowly to room-scale candidate generation on this specific raster, not to accepted reconstruction. The manually visible room boundaries provide qualitative correspondence only; this run has no independently traced HABS polygon ground truth and reports no IoU, endpoint error, door accuracy, or dimensional accuracy. Both pipelines continue to have **zero validated HABS rooms**. The comparator's edge-support values are included as a negative result because they over-score annotation fragments.
+
+### Artifacts and reproduction
+
+- [Same-raster geometry and metrics](evidence/open-source-comparison/habs-topology-comparison.json)
+- [Overlay of UNFOLD candidates (cyan) and OpenPlan3D faces (magenta)](evidence/open-source-comparison/habs-topology-comparison.png)
+- [Capped R2V execution log](evidence/open-source-comparison/r2v-habs-run.txt)
+- Harness: `scripts/phase10-open-source-habs-comparison.mts`
+- OpenPlan3D checkout: MIT, commit `98f9cb467e4045c6abc5d9880ada1f03dff50c68`; source routine executed directly. A `$lib` symlink in the isolated research checkout resolves its SvelteKit alias. Python Pillow 10.2.0 decoded the HABS raster; Node/tsx ran UNFOLD and upstream TypeScript without adding runtime dependencies to UNFOLD.
+- R2V attempt: MIT, commit `5f6d68d2e57c68953205567fd00d3ccd42d80f99`; 162 candidate lines converted to its annotation TSV and passed to `convert.py --r2v-annot --no-previews --skip-objects --skip-rdr`. With isolated Shapely 2.2.0, the run hit the configured 50 wall-split iteration cap and then the external 30-second timeout (exit 124); no room graph or `scene.json` was produced. This is **NOT TESTED to completion**, not a quality score.
+
+Reproduce OpenPlan3D comparison after cloning its pinned revision and making the alias symlink:
+
+```sh
+mkdir -p /tmp/unfold-phase10-research/openPlan3D/node_modules
+ln -sfn ../src/lib /tmp/unfold-phase10-research/openPlan3D/node_modules/'$lib'
+OPENPLAN3D_ROOT=/tmp/unfold-phase10-research/openPlan3D node --import ./node_modules/tsx/dist/loader.mjs scripts/phase10-open-source-habs-comparison.mts > reports/phase-10-teardown/evidence/open-source-comparison/habs-topology-comparison.json
+```
+
+No external runtime code was copied into UNFOLD. One small reproducibility harness and the comparison evidence were added. No Meta calls were needed. The R2V topology failure indicates a preprocessing/performance boundary; it does not justify rebuilding its algorithm until a cleaned, human-reviewed HABS vector input has been compared. The open-source comparison does not change the Case B acceptance state: provisional, zero accepted canonical room polygons.
