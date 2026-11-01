@@ -7,7 +7,8 @@ import { decodePlanImage } from './plan-image';
 import { buildPlanVectorModel, countClosedCandidateContours, detectCandidateIntersections, detectWallCandidates, mergeWallCandidates, splitWallCandidate, traceWallCandidate, type PixelWallCandidate, type Point2 } from './plan-reconstruction';
 import { addOpeningToScene, createPlanScene, planOpeningEdit, planWallEdit, type CompositePlan } from './plan-scene';
 import { createSceneAuthorizer } from './scene-authorizer';
-import { explainSceneError } from './scene-messages';
+import { confirmedNotice, explainSceneError } from './scene-messages';
+import type { ConfirmedReference } from './scene-authorization';
 import type { CommandOrigin } from './core';
 import { ARCHITECTURAL_MODULE_DIMENSIONS, buildThreePlanGroup, type ArchitecturalAssets } from './plan-three-adapter';
 import { commitScenePreview, deserializeSceneTransaction, previewSceneCommand, serializeSceneTransaction, type Node, type SceneCommandContext, type ScenePreview, type SceneTransaction, type SpatialCommand, type SpatialSceneV1 } from './spatial-scene';
@@ -955,7 +956,7 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
         const candidate = previewSceneCommand(transaction!, { type: 'RotateComponent', nodeId: node.id, axis: [0, 1, 0], angleRad: angle }, actor, undefined, sceneContext);
         if (candidate.status === 'blocked') throw new Error(candidate.issues.map((issue) => issue.message).join(' '));
         preview = candidate; compoundPreview = undefined; compoundPreviewBaseRevision = undefined; pendingCommand = command;
-        $('#preview-status').textContent = `Pré-visualização: rodar ${node.label} ${angle.toFixed(3)} rad; dependências recalculadas.`;
+        $('#preview-status').textContent = previewText(`Pré-visualização: rodar ${node.label} ${angle.toFixed(3)} rad; dependências recalculadas.`, candidate.touchesConfirmed);
         $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false; renderModel(candidate.candidate!); focusNode(node.id); selectNode(node.id);
         setSpatialCommandState('AwaitingConfirmation', `Pré-visualização angular pronta para ${node.label}. Confirme para gravar.`);
         return Promise.resolve({ status: 'preview', message: `${answerPrefix}${node.label}: rotação pré-visualizada. Confirme para aplicar.` });
@@ -977,7 +978,7 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
         if (!node || !['door', 'window'].includes(node.component?.kind ?? '')) throw new Error('Seleccione uma porta ou janela para remover.');
         const candidate = previewSceneCommand(transaction, { type: 'RemoveComponent', nodeId: node.id }, actor, undefined, sceneContext);
         if (candidate.status === 'blocked') throw new Error(candidate.issues.map((issue) => issue.message).join(' '));
-        preview = candidate; pendingCommand = command; $('#preview-status').textContent = `Pré-visualização: remover ${node.label}.`;
+        preview = candidate; pendingCommand = command; $('#preview-status').textContent = previewText(`Pré-visualização: remover ${node.label}.`, candidate.touchesConfirmed);
         $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false; renderModel(candidate.candidate!); selectNode(node.id);
         setSpatialCommandState('AwaitingConfirmation', `Remoção de ${node.label} proposta. Confirme para gravar.`);
         return Promise.resolve({ status: 'preview', message: `${answerPrefix}Remoção de ${node.label} proposta. Confirme para aplicar.` });
@@ -1012,13 +1013,18 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
   }
 }
 
+/** O texto do preview, com o aviso de valores confirmados quando a alteração os toca (o clique em «Aplicar» é a autorização). */
+function previewText(text: string, touched: readonly ConfirmedReference[]): string {
+  const notice = confirmedNotice(touched, (id) => transaction?.scene.nodes.find((item) => item.id === id)?.label ?? id);
+  return notice ? `${text} ${notice}` : text;
+}
 function previewCompound(shown: SceneTransaction | CompositePlan, label: string): void {
   if (!transaction) throw new Error('SCENE_NOT_READY');
   const plan = 'commit' in shown ? shown : undefined;
   const next = plan ? plan.transaction : shown as SceneTransaction;
   if (plan) compositePlans.set(next, plan);
   compoundPreviewBaseRevision = transaction.scene.revision.id;
-  compoundPreview = next; preview = undefined; $('#preview-status').textContent = `Pré-visualização: ${label}. A revisão canónica ainda não foi alterada.`;
+  compoundPreview = next; preview = undefined; $('#preview-status').textContent = previewText(`Pré-visualização: ${label}. A revisão canónica ainda não foi alterada.`, plan?.touchesConfirmed ?? []);
   $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false; renderModel(next.scene); updateToolbar();
 }
 $('#preview-wall').addEventListener('click', () => {
@@ -1053,7 +1059,7 @@ $('#remove-opening').addEventListener('click', () => {
   if (!transaction || !selectedId) return;
   const candidate = previewSceneCommand(transaction, { type: 'RemoveComponent', nodeId: selectedId }, 'local-user-input');
   if (candidate.status === 'blocked') { status(candidate.issues.map((issue) => explainSceneError(issue.message)).join(' ')); return; }
-  preview = candidate; compoundPreview = undefined; $('#preview-status').textContent = 'Pré-visualização: remover abertura.'; $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false; renderModel(candidate.candidate!);
+  preview = candidate; compoundPreview = undefined; $('#preview-status').textContent = previewText('Pré-visualização: remover abertura.', candidate.touchesConfirmed); $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false; renderModel(candidate.candidate!);
 });
 $('#commit-preview').addEventListener('click', () => {
   if (!transaction) return;
@@ -1117,7 +1123,7 @@ gizmo.addEventListener('dragging-changed', (event) => {
           : { type: 'RotateComponent', nodeId: selectedId, axis: axis.toArray() as [number, number, number], angleRad: halfAngle * 2 };
       const next = previewSceneCommand(transaction, command, 'local-user-input');
       if (next.status === 'blocked') throw new Error(next.issues.map((issue) => issue.message).join(' '));
-      preview = next; renderModel(next.candidate!); $('#preview-status').textContent = 'Pré-visualização do gizmo; commit pendente.'; $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false;
+      preview = next; renderModel(next.candidate!); $('#preview-status').textContent = previewText('Pré-visualização do gizmo; commit pendente.', next.touchesConfirmed); $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false;
     }
   } catch (error) { object.position.copy(original.position); object.quaternion.copy(original.quaternion); object.scale.copy(original.scale); renderModel(); status(error instanceof Error ? explainSceneError(error.message) : 'Transformação recusada.'); }
 });

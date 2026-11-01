@@ -1,3 +1,5 @@
+import type { ConfirmedReference } from './scene-authorization';
+
 /**
  * O que o utilizador lê quando a guarda de valores confirmados recusa alguma coisa. Os códigos (`AUTHORIZATION_REQUIRED`,
  * `MACHINE_CANNOT_TOUCH_CONFIRMED`, ...) são para o código e para os testes; no ecrã não dizem nada a ninguém.
@@ -27,4 +29,40 @@ const MESSAGES: Record<string, string> = {
 
 export function explainSceneError(message: string): string {
   return Object.hasOwn(MESSAGES, message) ? MESSAGES[message]! : message;
+}
+
+const FIELD_NAMES: Record<string, string> = {
+  geometry: 'geometria',
+  'transform.translationM': 'posição',
+  'transform.rotation': 'rotação',
+  'transform.scale': 'escala',
+  node: 'o próprio componente',
+  relation: 'relação',
+  constraint: 'restrição',
+};
+const PROPERTY_NAMES: Record<string, string> = { length: 'comprimento', height: 'altura', thickness: 'espessura', width: 'largura', sill: 'peitoril' };
+const MAX_LISTED = 6;
+
+function fieldName(field: string): string {
+  if (Object.hasOwn(FIELD_NAMES, field)) return FIELD_NAMES[field]!;
+  const property = /^(?:component\.)?properties\.(.+)$/.exec(field)?.[1] ?? field;
+  return Object.hasOwn(PROPERTY_NAMES, property) ? PROPERTY_NAMES[property]! : property;
+}
+
+/**
+ * Frase para o preview quando a alteração toca valores confirmados por uma pessoa: o clique em «Aplicar» é a autorização,
+ * por isso quem clica tem de ver o que vai ser alterado. Vazia se não toca em nada.
+ */
+export function confirmedNotice(touched: readonly ConfirmedReference[], labelOf: (entityId: string) => string): string {
+  if (!touched.length) return '';
+  const byEntity = new Map<string, string[]>();
+  for (const { entityId, field } of touched) {
+    const names = byEntity.get(entityId) ?? [];
+    const name = fieldName(field);
+    if (!names.includes(name)) names.push(name);
+    byEntity.set(entityId, names);
+  }
+  const entries = [...byEntity].map(([entityId, names]) => `${labelOf(entityId)}: ${names.join(', ')}`);
+  const listed = entries.slice(0, MAX_LISTED).join('; ') + (entries.length > MAX_LISTED ? ` e mais ${entries.length - MAX_LISTED}` : '');
+  return `Atenção: esta alteração toca em valores confirmados (${listed}). «Aplicar» autoriza-a.`;
 }

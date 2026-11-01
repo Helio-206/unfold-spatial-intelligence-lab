@@ -1,6 +1,6 @@
 import { AuthorizationLedger, type Actor, type CanonicalOperation } from '../../src/core';
 import { createSceneTransaction, serializeSceneTransaction, validateSpatialScene, type SceneTransaction, type SpatialSceneV1, type VerificationState } from '../../src/spatial-scene';
-import { CONFIRMED_LOCATIONS, at, makeScene } from './scenes';
+import { CONFIRMED_LOCATIONS, at, makeScene, provenanceFor } from './scenes';
 
 export const human: Actor & { kind: 'human' } = { kind: 'human', id: 'reviewer' };
 export const model: Actor = { kind: 'model', id: 'muse-spark-1.3' };
@@ -29,3 +29,12 @@ export function failure(fn: () => unknown): string {
   return 'NO_ERROR';
 }
 export type { CanonicalOperation };
+
+/** Parede com a geometria confirmada e uma porta com a largura e a posição confirmadas. */
+export function confirmDoorForNotice(): SceneTransaction {
+  const scene = structuredClone(confirmedScene(['geometry']));
+  const door = scene.nodes.find((node) => node.id === 'door-1')!;
+  door.component!.properties.width!.provenance = provenanceFor('verified');
+  door.transform.provenance.translationM = provenanceFor('verified');
+  return transactionOf(validateSpatialScene(scene));
+}

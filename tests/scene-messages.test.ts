@@ -53,3 +53,49 @@ describe('mensagens para o utilizador', () => {
     for (const code of thrown) expect(explainSceneError(code), code).not.toBe(code);
   });
 });
+
+import { confirmedNotice } from '../src/scene-messages';
+import { planWallEdit, planWallRemoval } from '../src/plan-scene';
+import { confirmDoorForNotice } from './helpers/scene-auth';
+
+describe('aviso de que o preview toca valores confirmados', () => {
+  const labelOf = (id: string) => ({ 'wall-1': 'Parede 1', 'door-1': 'Porta' } as Record<string, string>)[id] ?? id;
+
+  it('não diz nada quando não toca em nada', () => {
+    expect(confirmedNotice([], labelOf)).toBe('');
+  });
+
+  it('diz o que toca, por componente, e que «Aplicar» o autoriza', () => {
+    const notice = confirmedNotice([
+      { entityId: 'door-1', field: 'transform.translationM', validation: 'verified' },
+      { entityId: 'wall-1', field: 'component.properties.length', validation: 'verified' },
+      { entityId: 'wall-1', field: 'geometry', validation: 'corrected' },
+    ], labelOf);
+    expect(notice).toContain('Parede 1: comprimento, geometria');
+    expect(notice).toContain('Porta: posição');
+    expect(notice).toMatch(/confirmados/);
+    expect(notice).toMatch(/«Aplicar» autoriza/);
+  });
+
+  it('traduz os campos conhecidos e deixa o nome dos desconhecidos', () => {
+    const fields = ['geometry', 'transform.translationM', 'transform.rotation', 'transform.scale', 'component.properties.thickness', 'component.properties.height', 'component.properties.width', 'component.properties.offset', 'component.properties.sill', 'properties.note', 'node', 'relation'];
+    const notice = confirmedNotice(fields.map((field) => ({ entityId: 'wall-1', field, validation: 'verified' as const })), labelOf);
+    for (const word of ['geometria', 'posição', 'rotação', 'escala', 'espessura', 'altura', 'largura', 'offset', 'peitoril', 'note', 'o próprio componente', 'relação']) expect(notice, word).toContain(word);
+    expect(notice).not.toMatch(/component\.properties|transform\.|translationM/);
+  });
+
+  it('não repete o mesmo campo e limita a lista', () => {
+    const many = Array.from({ length: 12 }, (_, index) => ({ entityId: `node-${index}`, field: 'geometry', validation: 'verified' as const }));
+    const notice = confirmedNotice([...many, ...many], labelOf);
+    expect(notice).toMatch(/e mais 6/);
+    expect(notice.length).toBeLessThan(400);
+    expect(confirmedNotice([{ entityId: 'wall-1', field: 'geometry', validation: 'verified' }, { entityId: 'wall-1', field: 'geometry', validation: 'verified' }], labelOf).match(/geometria/g)).toHaveLength(1);
+  });
+
+  it('serve ao plano real de uma operação composta', () => {
+    const transaction = confirmDoorForNotice();
+    const wallPlan = planWallEdit(transaction, 'wall-1', { start: { x: -2.5, y: 0 }, end: { x: 3.5, y: 0 }, actor: 'reviewer' });
+    expect(confirmedNotice(wallPlan.touchesConfirmed, labelOf)).toMatch(/Parede 1: .*geometria/);
+    expect(confirmedNotice(planWallRemoval(transaction, 'wall-1', 'reviewer').touchesConfirmed, labelOf)).toContain('Porta: largura');
+  });
+});
