@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createMetaServer } from '../server/meta-server';
 import { authorizeSpatialAgentProposal, buildSpatialAgentPrompt, parseSpatialAgentResult, spatialDomainConflict, SPATIAL_AGENT_REQUEST_SCHEMA, validateSpatialAgentRequest } from '../src/spatial-agent';
+import { ALLOWED_ORIGIN } from './helpers/paid-routes';
 
 const validRequest = {
   schema: SPATIAL_AGENT_REQUEST_SCHEMA,
@@ -91,7 +92,7 @@ describe('spatial agent HTTP boundary', () => {
   it('uses Responses API structured output, returns a proposal, and never mutates scene state', async () => {
     const transport = vi.fn<typeof fetch>().mockResolvedValue(upstream('completed', JSON.stringify(resizeResult)));
     await withServer(transport, async (port) => {
-      const response = await fetch(`http://127.0.0.1:${port}/api/spatial-agent`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(validRequest) });
+      const response = await fetch(`http://127.0.0.1:${port}/api/spatial-agent`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify(validRequest) });
       const body = await response.json() as { result?: { kind?: string; action?: { value?: number } }; sceneRevisionId?: string; meta?: { requestId?: string } };
       expect(response.status).toBe(200);
       expect(body).toMatchObject({ result: { kind: 'PROPOSE_ACTION', action: { value: 0.3, valueMode: 'increase_by' } }, sceneRevisionId: 'revision-2', meta: { requestId: 'spatial-test-id' } });
@@ -107,15 +108,15 @@ describe('spatial agent HTTP boundary', () => {
     const transport = vi.fn<typeof fetch>().mockResolvedValueOnce(upstream('incomplete', '{'));
     await withServer(transport, async (port) => {
       const url = `http://127.0.0.1:${port}/api/spatial-agent`;
-      const invalid = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...validRequest, scene: { ...validRequest.scene, revisionId: '../stale' } }) });
+      const invalid = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify({ ...validRequest, scene: { ...validRequest.scene, revisionId: '../stale' } }) });
       expect(invalid.status).toBe(400);
       expect(transport).not.toHaveBeenCalled();
-      const incomplete = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(validRequest) });
+      const incomplete = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify(validRequest) });
       expect(incomplete.status).toBe(502);
       expect((await incomplete.json()).error.code).toBe('SPATIAL_AGENT_INCOMPLETE');
       expect(transport).toHaveBeenCalledOnce();
       transport.mockResolvedValueOnce(upstream('completed', JSON.stringify({ ...resizeResult, evidenceIds: ['forged'] })));
-      const invalidResponse = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(validRequest) });
+      const invalidResponse = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify(validRequest) });
       expect(invalidResponse.status).toBe(502);
       expect((await invalidResponse.json()).error).toMatchObject({ code: 'SPATIAL_AGENT_INVALID_RESULT', category: 'schema' });
       expect(transport).toHaveBeenCalledTimes(2);
@@ -128,10 +129,10 @@ describe('spatial agent HTTP boundary', () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'failed-id', status: 'failed', error: { message: 'private upstream detail' } }), { status: 200 }));
     await withServer(transport, async (port) => {
       const url = `http://127.0.0.1:${port}/api/spatial-agent`;
-      const malformed = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(validRequest) });
+      const malformed = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify(validRequest) });
       expect(malformed.status).toBe(502);
       expect((await malformed.json()).error).toMatchObject({ code: 'SPATIAL_AGENT_UPSTREAM_INVALID', category: 'parsing' });
-      const failed = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(validRequest) });
+      const failed = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify(validRequest) });
       expect(failed.status).toBe(502);
       const error = await failed.json();
       expect(error.error).toMatchObject({ code: 'SPATIAL_AGENT_MODEL_ERROR', category: 'model' });
@@ -147,7 +148,7 @@ describe('spatial agent HTTP boundary', () => {
     }));
     await withServer(transport, async (port) => {
       const controller = new AbortController();
-      const request = fetch(`http://127.0.0.1:${port}/api/spatial-agent`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(validRequest), signal: controller.signal });
+      const request = fetch(`http://127.0.0.1:${port}/api/spatial-agent`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify(validRequest), signal: controller.signal });
       await vi.waitFor(() => expect(transport).toHaveBeenCalledOnce());
       controller.abort();
       await expect(request).rejects.toMatchObject({ name: 'AbortError' });

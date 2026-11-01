@@ -1,4 +1,7 @@
 import { request as httpRequest, type IncomingHttpHeaders } from 'node:http';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { vi } from 'vitest';
 import { createMetaServer, type ServerOptions } from '../../server/meta-server';
 import { createPhase3DReferenceFixture } from '../../src/phase3d-fixture';
@@ -82,4 +85,16 @@ export async function withGuardedServer(options: ServerOptions, run: (port: numb
   if (!address || typeof address === 'string') throw new Error('Porta de teste indisponível.');
   try { await run(address.port); }
   finally { await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve())); }
+}
+
+export const TOKEN_HEADER = 'x-unfold-local-token';
+
+// Servidor com ficheiro de token num directório temporário; entrega o token lido do ficheiro,
+// tal como um script local o leria.
+export async function withTokenServer(options: ServerOptions, run: (port: number, token: string, tokenFile: string) => Promise<void>): Promise<void> {
+  const directory = mkdtempSync(join(tmpdir(), 'unfold-token-'));
+  const localTokenFile = join(directory, 'local-token');
+  try {
+    await withGuardedServer({ ...options, localTokenFile }, (port) => run(port, readFileSync(localTokenFile, 'utf8').trim(), localTokenFile));
+  } finally { rmSync(directory, { recursive: true, force: true }); }
 }

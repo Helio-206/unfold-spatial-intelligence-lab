@@ -1,8 +1,9 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
-import { createHash, randomUUID } from 'node:crypto';
-import { dirname, resolve } from 'node:path';
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
+import { homedir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import {
   executeKinematicOperation,
   buildKinematicOperationPrompt,
@@ -53,7 +54,38 @@ const PAID_ROUTE_SET: ReadonlySet<string> = new Set(PAID_ROUTES);
 
 type GuardRejection = { status: number; code: string; message: string; allow?: string };
 
-function checkPaidRoute(request: IncomingMessage): GuardRejection | undefined {
+export const LOCAL_TOKEN_HEADER = 'x-unfold-local-token';
+
+// Ficheiros de estado do backend a sério (token, orçamento). Só o server/index.ts os usa por omissão;
+// createMetaServer() não escreve aqui sozinho, para os testes não mexerem no estado de quem desenvolve.
+export function defaultStateFile(name: string): string {
+  return join(process.env.UNFOLD_STATE_DIR ?? join(homedir(), '.unfold'), name);
+}
+
+function digest(value: string): Buffer {
+  return createHash('sha256').update(value).digest();
+}
+
+function createLocalToken(file: string | undefined): string {
+  const token = randomBytes(32).toString('hex');
+  if (file) {
+    mkdirSync(dirname(file), { recursive: true, mode: 0o700 });
+    // Ficheiro novo com 0600 desde a criação e rename por cima, para nunca ficar legível por outros
+    // nem herdar o modo de um ficheiro antigo.
+    const temporaryFile = `${file}.${randomUUID()}.tmp`;
+    writeFileSync(temporaryFile, `${token}\n`, { flag: 'wx', mode: 0o600 });
+    renameSync(temporaryFile, file);
+  }
+  return token;
+}
+
+function removeLocalTokenFile(file: string, token: string): void {
+  try {
+    if (readFileSync(file, 'utf8').trim() === token) rmSync(file, { force: true });
+  } catch { /* já não existe ou foi substituído por outro arranque */ }
+}
+
+function checkPaidRoute(request: IncomingMessage, localToken: Buffer): GuardRejection | undefined {
   if (request.method !== 'POST') return { status: 405, code: 'METHOD_NOT_ALLOWED', message: 'Esta rota só aceita POST.', allow: 'POST' };
   const mediaType = (request.headers['content-type'] ?? '').split(';')[0]!.trim().toLowerCase();
   if (mediaType !== 'application/json') return { status: 415, code: 'UNSUPPORTED_MEDIA_TYPE', message: 'Content-Type tem de ser application/json.' };
@@ -61,6 +93,17 @@ function checkPaidRoute(request: IncomingMessage): GuardRejection | undefined {
   const localPort = request.socket.localPort;
   if (!ALLOWED_ORIGIN_HOSTS.has(host) && host !== `127.0.0.1:${localPort}` && host !== `localhost:${localPort}`) {
     return { status: 421, code: 'INVALID_HOST', message: 'Host não permitido.' };
+  }
+  // Com Origin, tem de ser uma das permitidas (um browser não consegue ler o token, por isso um
+  // Origin estranho nunca é salvo por um token). Sem Origin, só entra quem tiver o token.
+  const origin = request.headers.origin;
+  if (origin !== undefined) {
+    if (!ALLOWED_ORIGINS.has(origin)) return { status: 403, code: 'INVALID_ORIGIN', message: 'Origem não permitida.' };
+    return undefined;
+  }
+  const presented = request.headers[LOCAL_TOKEN_HEADER];
+  if (typeof presented !== 'string' || !timingSafeEqual(digest(presented), localToken)) {
+    return { status: 403, code: 'LOCAL_TOKEN_REQUIRED', message: 'Pedido sem Origin permitida nem token local válido.' };
   }
   return undefined;
 }
@@ -75,6 +118,9 @@ export type ServerOptions = {
   resolvePreviewMechanism?: (mechanismId: string) => PreviewMechanismResolution;
   maxMetaCalls?: number;
   metaCallBudgetFile?: string;
+  // Onde gravar o token para clientes sem Origin (scripts locais). Sem isto o token existe só em
+  // memória e ninguém o consegue usar, ou seja, só entram pedidos de browser com Origin permitida.
+  localTokenFile?: string;
   upstreamEvidence?: { enabled: boolean; directory: string; maxFiles?: number };
 };
 
@@ -197,6 +243,9 @@ function conversationErrorCode(error: unknown): { code: string; category: string
 
 export function createMetaServer(options: ServerOptions = {}): Server {
   const upstreamEvidence = evidenceOptions(options);
+  const localTokenFile = options.localTokenFile ?? process.env.UNFOLD_LOCAL_TOKEN_FILE;
+  const localToken = createLocalToken(localTokenFile);
+  const localTokenDigest = digest(localToken);
   const apiKey = options.apiKey ?? process.env.MODEL_API_KEY;
   const metaCallLimit = readCallLimit(options.maxMetaCalls);
   const metaCallBudgetFile = options.metaCallBudgetFile ?? process.env.UNFOLD_ACCEPTANCE_BUDGET_FILE;
@@ -242,7 +291,7 @@ export function createMetaServer(options: ServerOptions = {}): Server {
   });
   const conversationRequests = new Map<string, number[]>();
   const imageRequests = new Map<string, number[]>();
-  return createServer(async (request, response) => {
+  const server = createServer(async (request, response) => {
     const origin = typeof request.headers.origin === 'string' ? request.headers.origin : undefined;
     if (request.method === 'OPTIONS') {
       if (origin && ALLOWED_ORIGINS.has(origin)) response.setHeader('Access-Control-Allow-Origin', origin);
@@ -264,7 +313,7 @@ export function createMetaServer(options: ServerOptions = {}): Server {
       writeJson(response, 404, { error: { code: 'NOT_FOUND', message: 'Rota não encontrada.' } }, origin);
       return;
     }
-    const rejection = checkPaidRoute(request);
+    const rejection = checkPaidRoute(request, localTokenDigest);
     if (rejection) {
       console.info(JSON.stringify({ event: 'paid_route.rejected', route: request.url, status: rejection.status, code: rejection.code }));
       if (rejection.allow) response.setHeader('Allow', rejection.allow);
@@ -278,10 +327,6 @@ export function createMetaServer(options: ServerOptions = {}): Server {
     }
 
     if (request.url === '/api/conversation' || request.url === '/api/spatial-agent') {
-      if (origin && !ALLOWED_ORIGINS.has(origin)) {
-        writeJson(response, 403, { error: { code: 'INVALID_ORIGIN', message: 'Origem não permitida.' } }, origin);
-        return;
-      }
       const now = Date.now();
       const peer = request.socket.remoteAddress ?? 'unknown';
       for (const [key, timestamps] of conversationRequests) if (!timestamps.some((time) => now - time < 60_000)) conversationRequests.delete(key);
@@ -628,4 +673,6 @@ export function createMetaServer(options: ServerOptions = {}): Server {
       writeJson(response, status, { error: { code: 'META_REQUEST_FAILED', message: error instanceof Error ? error.message : 'Falha na chamada Meta.' }, meta: log }, origin);
     }
   });
+  if (localTokenFile) server.once('close', () => removeLocalTokenFile(localTokenFile, localToken));
+  return server;
 }
