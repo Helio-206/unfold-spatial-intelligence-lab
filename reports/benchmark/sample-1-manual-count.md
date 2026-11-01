@@ -15,3 +15,10 @@ janela interrompe o troço). Não conto o mobiliário, os contornos do piso nem 
 
 Armadilhas que espero: ripas do piso (linhas horizontais e verticais paralelas por toda a planta), mobiliário com contorno escuro
 (cama, cómoda, banca da cozinha), quadriculado do balcão e dos azulejos, etiquetas de texto.
+
+## Posições aproximadas das aberturas (px da imagem, centro do vão), também escritas antes de ver as aberturas do pipeline
+
+Portas: (214, 300) quarto 2 · (146, 293) T&B esq. · (215, 375) quarto 3 · (288, 375) wc ao lado da cozinha · (275, 582) wc por baixo ·
+(452, 531) maid's qtr · (428, 560) wc/arrumos por baixo da cozinha · (723, 336) master · (852, 517) T&B master · (664, 632) entrada.
+
+Janelas / correr: (134, 94) quarto 2 · (385, 95), (490, 95), (595, 95) balcão · (840, 93) master · (8, 330) T&B esq. · (8, 578) quarto 3.
