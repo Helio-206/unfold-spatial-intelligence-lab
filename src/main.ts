@@ -1,9 +1,13 @@
+import './brand.css';
 import './style.css';
 
 const app = document.querySelector<HTMLElement>('#app');
 if (!app) throw new Error('Elemento #app não encontrado.');
 
 switch (window.location.pathname) {
+  case '/landing':
+    window.location.replace('/landing/');
+    break;
   case '/spatial-editor':
     void import('./spatial-editor').then(({ mountSpatialEditor }) => mountSpatialEditor(app));
     break;
