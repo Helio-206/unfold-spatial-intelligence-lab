@@ -83,6 +83,21 @@ export function touchedConfirmed(base: SpatialSceneV1, candidate: SpatialSceneV1
     before && isConfirmedValidation(before.validation) ? [{ entityId: before.entityId, field: before.field, validation: before.validation }] : []);
 }
 
+/**
+ * Os valores que o candidato tem como confirmados e a base não tinha assim: criados de novo, ou com a proveniência
+ * confirmada reescrita. É o que nenhuma origem de máquina pode produzir (nem por Undo/Redo, que repõe estados antigos).
+ */
+export function introducedConfirmed(base: SpatialSceneV1, candidate: SpatialSceneV1): ConfirmedReference[] {
+  const before = fieldStates(base);
+  const introduced: ConfirmedReference[] = [];
+  for (const [key, after] of fieldStates(candidate)) {
+    if (!isConfirmedValidation(after.validation)) continue;
+    const previous = before.get(key);
+    if (!previous || canonicalize(previous.provenance) !== canonicalize(after.provenance)) introduced.push({ entityId: after.entityId, field: after.field, validation: after.validation });
+  }
+  return introduced.sort(byEntityThenField);
+}
+
 /** O que muda, campo a campo, com o valor e o estado de validação antes e depois. Sem datas nem actores. */
 export function sceneChanges(base: SpatialSceneV1, candidate: SpatialSceneV1): CanonicalChange[] {
   const describe = (state: FieldState | undefined) => (state ? { value: state.value, validation: state.validation } : null);

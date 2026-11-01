@@ -40,7 +40,7 @@ describe('spatial_scene.v1 contract', () => {
 
 describe('spatial scene transactions', () => {
   it('converts only a matching explicit conversational edit into a previewable scene command', () => {
-    expect(conversationEditToSceneCommand('Aumenta a manivela para 50 mm.', 'crank', { kind: 'update_length', componentId: 'crank', value: 50, unit: 'mm' })).toEqual({ status: 'ready', command: { type: 'UpdateParameter', nodeId: 'crank', property: 'length', value: 50, unit: 'mm' } });
+    expect(conversationEditToSceneCommand('Aumenta a manivela para 50 mm.', 'crank', { kind: 'update_length', componentId: 'crank', value: 50, unit: 'mm' })).toEqual({ status: 'ready', origin: 'model_proposal', command: { type: 'UpdateParameter', nodeId: 'crank', property: 'length', value: 50, unit: 'mm' } });
     expect(conversationEditToSceneCommand('Para que serve a peça?', 'crank', { kind: 'update_length', componentId: 'crank', value: 50, unit: 'mm' }).status).toBe('blocked');
     expect(conversationEditToSceneCommand('Aumenta a manivela para 50 mm.', 'crank', { kind: 'update_length', componentId: 'crank', value: 80, unit: 'mm' }).status).toBe('blocked');
   });

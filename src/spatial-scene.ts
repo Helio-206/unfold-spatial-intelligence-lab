@@ -2,7 +2,7 @@ import type { TechnicalDocumentV1 } from './technical-document';
 import { parseSpatialCommand, type SpatialAction } from './spatial-command';
 import type { BarName } from './kinematics';
 import { AuthorizationError, operationDigest, type Actor, type AuthorizationLedger, type CanonicalOperation, type CommandOrigin } from './core';
-import { PENDING_AUTHORIZATION_EVIDENCE, isConfirmedValidation, sceneOperation, stampAuthorization, touchedConfirmed, withoutProvenance, type ConfirmedReference } from './scene-authorization';
+import { PENDING_AUTHORIZATION_EVIDENCE, introducedConfirmed, isConfirmedValidation, sceneOperation, stampAuthorization, touchedConfirmed, withoutProvenance, type ConfirmedReference } from './scene-authorization';
 
 export const SPATIAL_SCENE_SCHEMA = 'spatial_scene.v1' as const;
 export type VerificationState = 'unreviewed' | 'ambiguous' | 'verified' | 'rejected' | 'corrected';
@@ -73,6 +73,7 @@ export type SpatialCommand =
   | { type: 'MoveComponent'; nodeId: string; translationM: [number, number, number] }
   | { type: 'RotateComponent'; nodeId: string; axis: [number, number, number]; angleRad: number }
   | { type: 'ResizeComponent'; nodeId: string; scale: [number, number, number] }
+  /** `acknowledgeVerifiedChange` continua aceite por compatibilidade mas é ignorado: só uma autorização do ledger autoriza. */
   | { type: 'UpdateParameter'; nodeId: string; property: string; value: string | number | boolean | null; unit?: string; acknowledgeVerifiedChange?: boolean }
   | { type: 'ConfirmParameter'; nodeId: string; property: string; note: string }
   | { type: 'ConnectComponents'; relation: SceneRelation }
@@ -93,7 +94,8 @@ export type ScenePreview = {
   touchesConfirmed: ConfirmedReference[];
   requiresAuthorization: boolean;
 };
-export type ConversationSceneCommand = { status: 'ready'; command: Extract<SpatialCommand, { type: 'UpdateParameter' }> } | { status: 'blocked'; reason: string };
+/** A proposta vem de um modelo: quem a executar tem de a passar como `model_proposal`. */
+export type ConversationSceneCommand = { status: 'ready'; command: Extract<SpatialCommand, { type: 'UpdateParameter' }>; origin: 'model_proposal' } | { status: 'blocked'; reason: string };
 
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
@@ -318,10 +320,9 @@ export function deserializeSceneTransaction(serialized: string): SceneTransactio
 export function conversationEditToSceneCommand(message: string, selected: BarName | undefined, action: SpatialAction): ConversationSceneCommand {
   const parsed = parseSpatialCommand(message.replace(/^\s*(?:por favor|podes|pode)\s*[, ]+\s*/i, ''), selected);
   if (parsed.status !== 'recognized' || parsed.action.kind !== 'update_length' || action.kind !== 'update_length' || parsed.action.componentId !== action.componentId || parsed.action.value !== action.value || parsed.action.unit !== action.unit) return { status: 'blocked', reason: 'A proposta não corresponde a uma instrução explícita de alteração de comprimento.' };
-  return { status: 'ready', command: { type: 'UpdateParameter', nodeId: action.componentId, property: 'length', value: action.value, unit: action.unit } };
+  return { status: 'ready', origin: 'model_proposal', command: { type: 'UpdateParameter', nodeId: action.componentId, property: 'length', value: action.value, unit: action.unit } };
 }
-/** Comandos cuja alteração de valores confirmados já passa pela guarda. */
-const GUARDED_COMMANDS = new Set<SpatialCommand['type']>(['UpdateParameter', 'MoveComponent', 'RotateComponent', 'ResizeComponent', 'UpdateGeometry', 'RemoveComponent', 'DisconnectComponents']);
+const isMachineOrigin = (origin: CommandOrigin) => origin === 'model_proposal' || origin === 'system';
 
 export function previewSceneCommand(transaction: SceneTransaction, command: SpatialCommand, actor = 'user', clock: () => Date = () => new Date(), context?: SceneCommandContext): ScenePreview {
   const resolved: SceneCommandContext = context ?? { origin: 'ui_direct', actor: { kind: 'human', id: actor } };
@@ -330,10 +331,14 @@ export function previewSceneCommand(transaction: SceneTransaction, command: Spat
   const evaluatedAt = clock().toISOString();
   const fixedClock = () => new Date(evaluatedAt);
   try {
+    // Uma origem da interface tem de ter um humano por trás; o texto livre do actor não decide isso.
+    if (!isMachineOrigin(resolved.origin) && resolved.actor.kind !== 'human') throw new Error('CONTEXT_INCONSISTENT');
+    if (command.type === 'ConfirmParameter' && (resolved.actor.kind !== 'human' || isMachineOrigin(resolved.origin))) throw new Error('CONFIRMATION_REQUIRES_HUMAN_ACTOR');
     if (command.type === 'Undo' || command.type === 'Redo') {
       const available = command.type === 'Undo' ? transaction.undoStack.length : transaction.redoStack.length;
       if (!available) throw new Error(command.type === 'Undo' ? 'UNDO_EMPTY' : 'REDO_EMPTY');
       const restored = validateSpatialScene(transaction[command.type === 'Undo' ? 'undoStack' : 'redoStack'][available - 1]);
+      if (isMachineOrigin(resolved.origin) && (touchedConfirmed(transaction.scene, restored).length || introducedConfirmed(transaction.scene, restored).length)) throw new Error('MACHINE_CANNOT_TOUCH_CONFIRMED');
       const historyOperation = sceneOperation(transaction.scene, restored, command.type);
       return { status: 'ready', baseRevisionId: transaction.scene.revision.id, evaluatedAt, actor, command, candidate: restored, issues, context: resolved, operation: historyOperation, operationDigest: operationDigest(historyOperation), touchesConfirmed: [], requiresAuthorization: false };
     }
@@ -352,7 +357,9 @@ export function previewSceneCommand(transaction: SceneTransaction, command: Spat
     if (command.type === 'DisconnectComponents' && !transaction.scene.relations.some((relation) => relation.id === command.relationId)) throw new Error('RELATION_NOT_FOUND');
     if (command.type === 'ConnectComponents' && (command.relation.provenance.validation === 'verified' || Object.values(command.relation.properties).some((property) => property.provenance.validation === 'verified' || property.provenance.validation === 'corrected'))) throw new Error('NEW_RELATION_CANNOT_CLAIM_HUMAN_VERIFICATION');
     const candidate = validateSpatialScene(applyCommand(transaction.scene, command, resolved.actor.id, fixedClock));
-    const touchesConfirmed = GUARDED_COMMANDS.has(command.type) ? touchedConfirmed(transaction.scene, candidate) : [];
+    const touchesConfirmed = touchedConfirmed(transaction.scene, candidate);
+    // Modelos e sistema propõem conteúdo por rever; não tocam em confirmados, não os criam e não autorizam nada.
+    if (isMachineOrigin(resolved.origin) && (touchesConfirmed.length || introducedConfirmed(transaction.scene, candidate).length)) throw new Error('MACHINE_CANNOT_TOUCH_CONFIRMED');
     const operation = sceneOperation(transaction.scene, candidate, command.type);
     return { status: 'ready', baseRevisionId: transaction.scene.revision.id, evaluatedAt, actor, command: structuredClone(command), candidate, issues, context: resolved, operation, operationDigest: operationDigest(operation), touchesConfirmed, requiresAuthorization: touchesConfirmed.length > 0 };
   } catch (error) {

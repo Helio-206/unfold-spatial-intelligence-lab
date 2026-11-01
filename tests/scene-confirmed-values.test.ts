@@ -328,7 +328,7 @@ describe('F2 — editWallInScene com geometria confirmada', () => {
 // ---------------------------------------------------------------------------------------------------------------------
 // F3 — remoções directas e em cascata; operações compostas com uma única autorização sobre o agregado
 // ---------------------------------------------------------------------------------------------------------------------
-import { editOpeningInScene, planOpeningEdit, planWallEdit, planWallRemoval, removeWallFromScene } from '../src/plan-scene';
+import { addOpeningToScene, editOpeningInScene, planOpeningEdit, planWallEdit, planWallRemoval, removeWallFromScene } from '../src/plan-scene';
 import { doorNode } from './helpers/scenes';
 import type { SpatialSceneV1 } from '../src/spatial-scene';
 
@@ -571,5 +571,201 @@ describe('F3 — DisconnectComponents sobre uma relação confirmada', () => {
   it('sem confirmação desliga-se como hoje', () => {
     const { transaction } = executeSceneCommand(withRelation('unreviewed'), { type: 'DisconnectComponents', relationId: 'rel-1' }, 'reviewer', clock);
     expect(transaction.scene.relations).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// F4 — origem e actor
+// ---------------------------------------------------------------------------------------------------------------------
+import { conversationEditToSceneCommand, type SceneCommandContext } from '../src/spatial-scene';
+import { createSceneAuthorizer } from '../src/scene-authorizer';
+import { model } from './helpers/scene-auth';
+
+const asModel: SceneCommandContext = { origin: 'model_proposal', actor: model };
+const asSystem: SceneCommandContext = { origin: 'system', actor: { kind: 'system', id: 'pipeline' } };
+const asHuman: SceneCommandContext = { origin: 'ui_direct', actor: human };
+const MACHINES: Array<[string, SceneCommandContext]> = [['model_proposal', asModel], ['system', asSystem]];
+
+describe.each(MACHINES)('F4 — origem %s', (_name, context) => {
+  const ALL_GUARDED: Array<[string, string, SpatialCommand]> = [
+    ['component.properties', 'UpdateParameter', { type: 'UpdateParameter', nodeId: 'wall-1', property: 'thickness', value: 0.3, unit: 'm' }],
+    ['node.properties', 'UpdateParameter (node)', { type: 'UpdateParameter', nodeId: 'wall-1', property: 'note', value: 'x' }],
+    ['geometry', 'ResizeComponent', { type: 'ResizeComponent', nodeId: 'wall-1', scale: [2, 1, 1] }],
+    ['geometry', 'UpdateGeometry', BOX],
+    ['transform.translationM', 'MoveComponent', { type: 'MoveComponent', nodeId: 'wall-1', translationM: [1, 0, 0] }],
+    ['transform.rotation', 'RotateComponent', { type: 'RotateComponent', nodeId: 'wall-1', axis: [0, 1, 0], angleRad: 1 }],
+  ];
+
+  it.each(ALL_GUARDED)('não toca em %s confirmado (%s): o preview fica bloqueado', (location, _label, command) => {
+    for (const validation of ['verified', 'corrected'] as const) {
+      const transaction = transactionOf(confirmedScene([{ name: location, validation }]));
+      const before = snapshot(transaction);
+      const preview = previewSceneCommand(transaction, command, 'muse', clock, context);
+      expect(preview).toMatchObject({ status: 'blocked', candidate: null, requiresAuthorization: false, issues: [{ code: 'MACHINE_CANNOT_TOUCH_CONFIRMED' }] });
+      expect(failure(() => executeSceneCommand(transaction, command, 'muse', clock, { context }))).toBe('MACHINE_CANNOT_TOUCH_CONFIRMED');
+      expect(snapshot(transaction)).toBe(before);
+    }
+  });
+
+  it('não remove nem desliga nada que tenha valores confirmados', () => {
+    const transaction = transactionOf(confirmDoor(confirmedScene()));
+    expect(previewSceneCommand(transaction, { type: 'RemoveComponent', nodeId: 'door-1' }, 'muse', clock, context)).toMatchObject({ status: 'blocked', issues: [{ code: 'MACHINE_CANNOT_TOUCH_CONFIRMED' }] });
+  });
+
+  it('não confirma: ConfirmParameter é recusado', () => {
+    const transaction = transactionOf(confirmedScene());
+    const command: SpatialCommand = { type: 'ConfirmParameter', nodeId: 'wall-1', property: 'thickness', note: 'Confirmado.' };
+    expect(previewSceneCommand(transaction, command, 'muse', clock, context)).toMatchObject({ status: 'blocked', issues: [{ code: 'CONFIRMATION_REQUIRES_HUMAN_ACTOR' }] });
+  });
+
+  it('não cria verified nem corrected por nenhum caminho (AddComponent e UpdateGeometry a reivindicá-los)', () => {
+    const transaction = transactionOf(confirmedScene());
+    const claim = { ...doorNode('door-9'), properties: { note: { value: 'x', provenance: provenanceFor('verified') } } };
+    expect(previewSceneCommand(transaction, { type: 'AddComponent', node: claim }, 'muse', clock, context).status).toBe('blocked');
+    expect(previewSceneCommand(transaction, { type: 'UpdateGeometry', nodeId: 'wall-1', geometry: { kind: 'box', sizeM: [6, 2.7, 0.2], provenance: provenanceFor('verified') } }, 'muse', clock, context).status).toBe('blocked');
+  });
+
+  it('não repõe valores confirmados por Undo/Redo', () => {
+    // Um humano confirma e depois alguém tenta desfazer: desfazer apagaria a confirmação.
+    const start = transactionOf(confirmedScene());
+    const confirmedTx = executeSceneCommand(start, { type: 'ConfirmParameter', nodeId: 'wall-1', property: 'thickness', note: 'Confirmado em obra.' }, 'reviewer', clock).transaction;
+    expect(previewSceneCommand(confirmedTx, { type: 'Undo' }, 'muse', clock, context)).toMatchObject({ status: 'blocked', issues: [{ code: 'MACHINE_CANNOT_TOUCH_CONFIRMED' }] });
+    expect(previewSceneCommand(confirmedTx, { type: 'Undo' }, 'reviewer', clock, asHuman)).toMatchObject({ status: 'ready', requiresAuthorization: false });
+    const undone = executeSceneCommand(confirmedTx, { type: 'Undo' }, 'reviewer', clock).transaction;
+    expect(previewSceneCommand(undone, { type: 'Redo' }, 'muse', clock, context)).toMatchObject({ status: 'blocked' });
+  });
+
+  it('continua a poder criar conteúdo unreviewed: alterar, mover, adicionar', () => {
+    const transaction = transactionOf(confirmedScene());
+    const { transaction: edited } = executeSceneCommand(transaction, { type: 'UpdateParameter', nodeId: 'wall-1', property: 'thickness', value: 0.3, unit: 'm' }, 'muse', clock, { context });
+    expect(thickness(edited.scene).provenance).toMatchObject({ validation: 'unreviewed', source: 'user' });
+    const { transaction: moved } = executeSceneCommand(edited, { type: 'MoveComponent', nodeId: 'wall-1', translationM: [1, 0, 0] }, 'muse', clock, { context });
+    expect(wall(moved.scene).transform.provenance.translationM.validation).toBe('unreviewed');
+    const { transaction: added } = executeSceneCommand(moved, { type: 'AddComponent', node: doorNode('door-9') }, 'muse', clock, { context });
+    expect(added.scene.nodes.map((node) => node.id)).toContain('door-9');
+    for (const scene of [edited.scene, moved.scene, added.scene]) {
+      const states = JSON.stringify(scene);
+      expect(states).not.toMatch(/"validation":"(verified|corrected)"/);
+    }
+  });
+
+  it('nunca consome uma autorização do ledger, nem sequer uma válida', () => {
+    const transaction = transactionOf(confirmedScene());
+    const ledger = newLedger();
+    const humanPreview = previewSceneCommand(transactionOf(confirmedScene(['component.properties'])), update(), 'reviewer', clock, asHuman);
+    const authorization = ledger.issue(humanPreview.operation!, human, 'ui_direct');
+    let consumed = 0;
+    const spy = { consume: (...args: Parameters<typeof ledger.consume>) => { consumed += 1; return ledger.consume(...args); } } as unknown as typeof ledger;
+    const machinePreview = previewSceneCommand(transaction, update(), 'muse', clock, context);
+    expect(machinePreview.requiresAuthorization).toBe(false);
+    commitScenePreview(transaction, machinePreview, { ledger: spy, authorizationId: authorization.id });
+    expect(consumed).toBe(0);
+    // A autorização continua inteira para o pedido humano a que pertence.
+    const humanTx = transactionOf(confirmedScene(['component.properties']));
+    expect(thickness(commitScenePreview(humanTx, humanPreview, { ledger, authorizationId: authorization.id }).scene).provenance.validation).toBe('corrected');
+  });
+
+  it('um preview de máquina forjado como "ready" não faz commit mesmo com autorização válida', () => {
+    const transaction = transactionOf(confirmedScene(['component.properties']));
+    const ledger = newLedger();
+    const humanPreview = previewSceneCommand(transaction, update(), 'reviewer', clock, asHuman);
+    const authorization = ledger.issue(humanPreview.operation!, human, 'ui_direct');
+    const machinePreview = previewSceneCommand(transaction, update(), 'muse', clock, context);
+    expect(failure(() => commitScenePreview(transaction, machinePreview, { ledger, authorizationId: authorization.id }))).toBe('PREVIEW_BLOCKED');
+    const forged = { ...machinePreview, status: 'ready' as const, candidate: humanPreview.candidate, operation: humanPreview.operation, operationDigest: humanPreview.operationDigest, requiresAuthorization: true };
+    expect(failure(() => commitScenePreview(transaction, forged, { ledger, authorizationId: authorization.id }))).toBe('PREVIEW_TAMPERED');
+    expect(thickness(transaction.scene).provenance.validation).toBe('verified');
+  });
+
+  it('as operações compostas também: editar ou remover paredes com confirmados é recusado, e sem eles funciona', () => {
+    const origin = context.origin;
+    const confirmedTx = transactionOf(confirmedScene(['geometry']));
+    expect(failure(() => planWallEdit(confirmedTx, 'wall-1', WALL_EDIT, { origin }))).toBe('MACHINE_CANNOT_TOUCH_CONFIRMED');
+    expect(failure(() => planWallRemoval(transactionOf(confirmDoor(confirmedScene())), 'wall-1', 'muse', { origin }))).toBe('MACHINE_CANNOT_TOUCH_CONFIRMED');
+    expect(failure(() => editOpeningInScene(transactionOf(confirmDoor(confirmedScene(), 'verified', ['width'])), 'door-1', { offsetM: 0.6, widthM: 1, heightM: 2.1, sillM: 0 }, { origin }))).toBe('MACHINE_CANNOT_TOUCH_CONFIRMED');
+    const plan = planWallEdit(transactionOf(confirmedScene()), 'wall-1', WALL_EDIT, { origin });
+    expect(plan.requiresAuthorization).toBe(false);
+    expect(JSON.stringify(plan.transaction.scene)).not.toMatch(/"validation":"(verified|corrected)"/);
+  });
+});
+
+describe('F4 — ConfirmParameter só com um actor humano, e grava esse actor', () => {
+  const confirm: SpatialCommand = { type: 'ConfirmParameter', nodeId: 'wall-1', property: 'thickness', note: 'Medido em obra.' };
+
+  it('com um actor humano grava source "user" e o id desse actor', () => {
+    const transaction = transactionOf(confirmedScene());
+    const { transaction: next } = executeSceneCommand(transaction, confirm, 'ignorado', clock, { context: { origin: 'ui_direct', actor: { kind: 'human', id: 'maria' } } });
+    expect(thickness(next.scene).provenance).toMatchObject({ source: 'user', validation: 'verified', actor: 'maria', evidence: 'Medido em obra.' });
+  });
+
+  it('o actor vem do contexto, não do texto livre: sem contexto, o texto é o id do humano de hoje', () => {
+    const transaction = transactionOf(confirmedScene());
+    const { transaction: next } = executeSceneCommand(transaction, confirm, 'reviewer', clock);
+    expect(thickness(next.scene).provenance).toMatchObject({ source: 'user', actor: 'reviewer' });
+  });
+
+  it.each<[string, SceneCommandContext]>([
+    ['actor de modelo com origem da interface', { origin: 'ui_direct', actor: model }],
+    ['actor de sistema com origem da interface', { origin: 'ui_direct', actor: { kind: 'system', id: 'job' } }],
+    ['actor humano com origem de modelo', { origin: 'model_proposal', actor: human }],
+    ['actor humano com origem de sistema', { origin: 'system', actor: human }],
+  ])('recusa %s', (_label, context) => {
+    const transaction = transactionOf(confirmedScene());
+    expect(previewSceneCommand(transaction, confirm, 'x', clock, context)).toMatchObject({ status: 'blocked', issues: [{ code: expect.stringMatching(/CONFIRMATION_REQUIRES_HUMAN_ACTOR|CONTEXT_INCONSISTENT/) }] });
+  });
+
+  it('aceita uma proposta de modelo confirmada na interface (ui_confirmed_proposal) com actor humano', () => {
+    const transaction = transactionOf(confirmedScene());
+    const { transaction: next } = executeSceneCommand(transaction, confirm, 'x', clock, { context: { origin: 'ui_confirmed_proposal', actor: human } });
+    expect(thickness(next.scene).provenance.validation).toBe('verified');
+  });
+
+  it('voltar a confirmar um valor já confirmado reescreve a proveniência e por isso exige autorização', () => {
+    const transaction = transactionOf(confirmedScene(['component.properties']));
+    const preview = previewSceneCommand(transaction, confirm, 'reviewer', clock);
+    expect(preview).toMatchObject({ requiresAuthorization: true, touchesConfirmed: [{ entityId: 'wall-1', field: 'component.properties.thickness', validation: 'verified' }] });
+    expect(failure(() => commitScenePreview(transaction, preview))).toBe('AUTHORIZATION_REQUIRED');
+    const authorizer = createSceneAuthorizer('s');
+    const next = commitScenePreview(transaction, preview, authorizer.authorize(preview));
+    expect(thickness(next.scene).provenance).toMatchObject({ validation: 'verified', authorizationId: expect.any(String) });
+  });
+});
+
+describe('F4 — contexto coerente e propostas de modelo', () => {
+  it('origem da interface com actor que não é humano é recusada para qualquer comando', () => {
+    const transaction = transactionOf(confirmedScene());
+    const preview = previewSceneCommand(transaction, update(), 'x', clock, { origin: 'ui_direct', actor: model });
+    expect(preview).toMatchObject({ status: 'blocked', issues: [{ code: 'CONTEXT_INCONSISTENT' }] });
+  });
+
+  it('conversationEditToSceneCommand marca a proposta como vinda de um modelo', () => {
+    const result = conversationEditToSceneCommand('Aumenta a manivela para 50 mm', 'crank', { kind: 'update_length', componentId: 'crank', value: 50, unit: 'mm' });
+    expect(result).toMatchObject({ status: 'ready', origin: 'model_proposal' });
+  });
+
+  it('o contexto do preview acompanha-o: o commit refaz-o com a mesma origem', () => {
+    const transaction = transactionOf(confirmedScene());
+    const preview = previewSceneCommand(transaction, update(), 'muse', clock, asModel);
+    expect(preview.context).toEqual(asModel);
+    expect(commitScenePreview(transaction, preview).scene.revision.number).toBe(1);
+  });
+});
+
+describe('F4 — addOpeningToScene com origem', () => {
+  const opening = { id: 'door-new', kind: 'door' as const, offsetM: 2, widthM: 0.9, heightM: 2.1, sillM: 0, actor: 'user-confirmed:muse-spark' };
+
+  it.each(['model_proposal', 'system'] as const)('origem %s acrescenta uma abertura por rever, sem tocar nem criar confirmados', (origin) => {
+    const transaction = transactionOf(confirmedScene(['geometry', 'transform.translationM']));
+    const next = addOpeningToScene(transaction, 'wall-1', opening, later, origin);
+    const added = next.scene.nodes.find((node) => node.id === 'door-new')!;
+    expect(added.component!.properties.offset!.provenance).toMatchObject({ validation: 'unreviewed' });
+    expect(added.geometry!.provenance).toMatchObject({ validation: 'unreviewed', actor: 'user-confirmed:muse-spark' });
+    expect(wall(next.scene).geometry!.provenance.validation).toBe('verified');
+    expect(JSON.stringify(added)).not.toMatch(/"validation":"(verified|corrected)"/);
+  });
+
+  it('sem origem comporta-se como hoje', () => {
+    const next = addOpeningToScene(transactionOf(confirmedScene()), 'wall-1', { ...opening, actor: 'reviewer' }, later);
+    expect(next.scene.nodes.find((node) => node.id === 'door-new')!.component!.properties.width!.provenance).toMatchObject({ validation: 'unreviewed' });
   });
 });

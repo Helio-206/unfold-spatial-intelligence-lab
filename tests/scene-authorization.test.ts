@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { operationDigest } from '../src/core';
-import { sceneChanges, sceneOperation, touchedConfirmed } from '../src/scene-authorization';
+import { introducedConfirmed, sceneChanges, sceneOperation, touchedConfirmed } from '../src/scene-authorization';
 import { validateSpatialScene, type SpatialSceneV1 } from '../src/spatial-scene';
 import { CONFIRMED_LOCATIONS, at, doorNode, makeScene, provenanceFor } from './helpers/scenes';
 
@@ -197,5 +197,40 @@ describe('ponte cena → operação canónica — sceneOperation', () => {
     const a = changed(changed(base, CONFIRMED_LOCATIONS[0]!), locationGeometry);
     const b = changed(changed(base, locationGeometry), CONFIRMED_LOCATIONS[0]!);
     expect(operationDigest(sceneOperation(base, a, 'x'))).toBe(operationDigest(sceneOperation(base, b, 'x')));
+  });
+});
+
+describe('guarda — introducedConfirmed (o que um candidato passa a ter como confirmado)', () => {
+  it('detecta valores que ficam verified/corrected sem o terem sido na base, também em entidades novas', () => {
+    const base = makeScene();
+    const candidate = structuredClone(base);
+    candidate.nodes[0]!.component!.properties.thickness!.provenance = provenanceFor('verified');
+    candidate.nodes[0]!.geometry!.provenance = provenanceFor('corrected');
+    candidate.nodes.push({ ...doorNode('door-2'), properties: { note: { value: 'x', provenance: provenanceFor('verified') } } });
+    expect(introducedConfirmed(base, candidate).map((item) => `${item.entityId}:${item.field}:${item.validation}`)).toEqual([
+      'door-2:properties.note:verified',
+      'wall-1:component.properties.thickness:verified',
+      'wall-1:geometry:corrected',
+    ]);
+  });
+
+  it('o que já estava confirmado e não mudou não conta, nem o que deixa de estar confirmado', () => {
+    const base = makeScene();
+    base.nodes[0]!.component!.properties.thickness!.provenance = provenanceFor('verified');
+    const valid = validateSpatialScene(base);
+    const unchanged = structuredClone(valid);
+    expect(introducedConfirmed(valid, unchanged)).toEqual([]);
+    const demoted = structuredClone(valid);
+    demoted.nodes[0]!.component!.properties.thickness!.provenance = provenanceFor('unreviewed');
+    expect(introducedConfirmed(valid, demoted)).toEqual([]);
+  });
+
+  it('um confirmado reescrito (nova proveniência confirmada) conta como introduzido', () => {
+    const base = makeScene();
+    base.nodes[0]!.component!.properties.thickness!.provenance = provenanceFor('verified');
+    const valid = validateSpatialScene(base);
+    const rewritten = structuredClone(valid);
+    rewritten.nodes[0]!.component!.properties.thickness!.provenance = provenanceFor('corrected');
+    expect(introducedConfirmed(valid, rewritten)).toEqual([{ entityId: 'wall-1', field: 'component.properties.thickness', validation: 'corrected' }]);
   });
 });

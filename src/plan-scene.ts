@@ -249,7 +249,7 @@ function validateOpeningPlacement(transaction: SceneTransaction, wall: Node, inp
   }
 }
 
-export function addOpeningToScene(transaction: SceneTransaction, wallId: string, input: OpeningInput, recordedAt = new Date().toISOString()): SceneTransaction {
+export function addOpeningToScene(transaction: SceneTransaction, wallId: string, input: OpeningInput, recordedAt = new Date().toISOString(), origin?: CommandOrigin): SceneTransaction {
   const wall = transaction.scene.nodes.find((node) => node.id === wallId);
   if (!wall || wall.geometry?.kind !== 'box') throw new Error(`Parede ${wallId} não encontrada ou sem caixa paramétrica.`);
   validateOpeningPlacement(transaction, wall, input);
@@ -270,7 +270,7 @@ export function addOpeningToScene(transaction: SceneTransaction, wallId: string,
     } },
     properties: {},
   };
-  return executeSceneCommand(transaction, { type: 'AddComponent', node }, input.actor ?? 'user').transaction;
+  return executeSceneCommand(transaction, { type: 'AddComponent', node }, input.actor ?? 'user', undefined, origin ? { context: compositeContext(input.actor ?? 'user', origin) } : {}).transaction;
 }
 
 /** Opções das operações compostas: a autorização e (opcionalmente) a origem de quem pede. */
