@@ -26,6 +26,16 @@ export function parseSpiceValue(raw: string): number | null {
 
 const safeId = (name: string) => name.replace(/[^A-Za-z0-9_.:-]/g, '_').slice(0, 64);
 
+/**
+ * SPICE não distingue maiúsculas: "In" e "in" são o mesmo nó, "R1" e "r1" o mesmo nome. O id é a forma
+ * normalizada (minúsculas, caracteres seguros); o nome original fica no label e a linha original na evidência.
+ * `key` é a identidade do nome (sem cortes nem substituições): dois nomes com chaves diferentes e o mesmo id
+ * são nomes diferentes que não se podem fundir.
+ */
+const idOf = (name: string) => safeId(name).toLowerCase();
+const isGroundName = (name: string) => name === '0' || name.toLowerCase() === 'gnd';
+const keyOf = (name: string) => (isGroundName(name) ? 'gnd' : name.toLowerCase());
+
 export function parseSpiceNetlist(text: string, options: { circuitId: string; sourceId: string; clock?: () => Date }): SpiceImport {
   const recordedAt = (options.clock ?? (() => new Date()))().toISOString();
   const lines = text.split(/\r?\n/);
@@ -35,10 +45,28 @@ export function parseSpiceNetlist(text: string, options: { circuitId: string; so
   const unsupported: SpiceImport['unsupported'] = [];
   const observed = (line: number, excerpt: string): Provenance => ({ origin: 'observed', validation: 'unreviewed', recordedAt, evidence: [{ sourceId: options.sourceId, locator: `line ${line}`, excerpt }] });
 
+  const netId = (name: string) => (isGroundName(name) ? 'gnd' : idOf(name));
+  const netOwner = new Map<string, { key: string; name: string }>(); // id → quem o ocupa
+  const componentOwner = new Map<string, { key: string; name: string }>();
+
+  /** Primeiro nome já registado (ou pendente nesta linha) com este id mas outra identidade, se existir. */
+  const clash = (owners: Map<string, { key: string; name: string }>, pending: Array<{ id: string; key: string; name: string }>) => {
+    const seen = new Map(owners);
+    for (const item of pending) {
+      const owner = seen.get(item.id);
+      if (owner && owner.key !== item.key) return { a: owner.name, b: item.name };
+      seen.set(item.id, { key: item.key, name: item.name });
+    }
+    return undefined;
+  };
+
   const netFor = (name: string, line: number, excerpt: string): string => {
-    const ground = name === '0' || name.toLowerCase() === 'gnd';
-    const id = ground ? 'gnd' : safeId(name);
-    if (!nets.has(id)) nets.set(id, { id, label: ground ? 'GND' : name, isGround: ground, provenance: observed(line, excerpt) });
+    const ground = isGroundName(name);
+    const id = netId(name);
+    if (!nets.has(id)) {
+      nets.set(id, { id, label: ground ? 'GND' : name, isGround: ground, provenance: observed(line, excerpt) });
+      netOwner.set(id, { key: keyOf(name), name });
+    }
     return id;
   };
 
@@ -76,11 +104,19 @@ export function parseSpiceNetlist(text: string, options: { circuitId: string; so
       unsupported.push({ line: lineNumber, text: line, reason: 'Não foi possível ler o valor.' });
       continue;
     }
+    // Nada é criado antes de a linha estar toda validada: uma linha recusada não deixa nós para trás.
+    const conflict = clash(netOwner, [tokens[1]!, tokens[2]!].map((n) => ({ id: netId(n), key: keyOf(n), name: n })))
+      ?? clash(componentOwner, [{ id: idOf(name), key: name.toLowerCase(), name }]);
+    if (conflict) {
+      unsupported.push({ line: lineNumber, text: line, reason: `Os nomes ${conflict.a} e ${conflict.b} são diferentes mas dão o mesmo identificador; não foram fundidos.` });
+      continue;
+    }
     const a = netFor(tokens[1]!, lineNumber, line);
     const b = netFor(tokens[2]!, lineNumber, line);
+    if (!componentOwner.has(idOf(name))) componentOwner.set(idOf(name), { key: name.toLowerCase(), name });
     // SPICE: em `I N+ N-`, a corrente atravessa a fonte de N+ para N-, ou seja, entra no circuito por N-.
     const terminals = kind === 'current_source' ? { p: b, n: a } : { p: a, n: b };
-    components.push({ id: safeId(name), kind, label: name, terminals, value: { value, unit: VALUE_UNIT[kind], provenance: observed(lineNumber, line) }, provenance: observed(lineNumber, line) });
+    components.push({ id: idOf(name), kind, label: name, terminals, value: { value, unit: VALUE_UNIT[kind], provenance: observed(lineNumber, line) }, provenance: observed(lineNumber, line) });
   }
 
   return {

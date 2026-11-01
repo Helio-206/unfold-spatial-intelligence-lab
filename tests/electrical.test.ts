@@ -291,9 +291,9 @@ describe('SPICE — importação', () => {
     expect(unsupported).toEqual([]);
     expect(c.title).toBe('Divisor de tensão');
     expect(c.components.map((x) => [x.id, x.kind, x.terminals.p, x.terminals.n, x.value.value, x.value.unit])).toEqual([
-      ['V1', 'voltage_source', 'in', 'gnd', 10, 'V'],
-      ['R1', 'resistor', 'in', 'mid', 1000, 'ohm'],
-      ['R2', 'resistor', 'mid', 'gnd', 2000, 'ohm'],
+      ['v1', 'voltage_source', 'in', 'gnd', 10, 'V'],
+      ['r1', 'resistor', 'in', 'mid', 1000, 'ohm'],
+      ['r2', 'resistor', 'mid', 'gnd', 2000, 'ohm'],
     ]);
     expect(c.nets.filter((net) => net.isGround).map((net) => net.id)).toEqual(['gnd']);
     const r = solved(solveDc(c, { clock }));
@@ -311,11 +311,11 @@ describe('SPICE — importação', () => {
   it('orientação da fonte de corrente: `I1 N+ N-` empurra a corrente de N+ para N- através da fonte', () => {
     // `I1 0 A 2m`: a corrente sai de gnd, atravessa a fonte e entra em A  →  V(A) = 2 mA · 1 kΩ = +2 V.
     const into = importOf(['t', 'I1 0 A 2m', 'R1 A 0 1k'].join('\n'));
-    expect(into.circuit.components[0]!.terminals).toEqual({ p: 'A', n: 'gnd' });
-    expectClose(volts(solved(solveDc(into.circuit, { clock })), 'A'), 2, 'V(A) a entrar');
+    expect(into.circuit.components[0]!.terminals).toEqual({ p: 'a', n: 'gnd' });
+    expectClose(volts(solved(solveDc(into.circuit, { clock })), 'a'), 2, 'V(A) a entrar');
     // `I1 A 0 2m`: a corrente sai de A e vai para a massa  →  V(A) = −2 V.
     const out = importOf(['t', 'I1 A 0 2m', 'R1 A 0 1k'].join('\n'));
-    expectClose(volts(solved(solveDc(out.circuit, { clock })), 'A'), -2, 'V(A) a sair');
+    expectClose(volts(solved(solveDc(out.circuit, { clock })), 'a'), -2, 'V(A) a sair');
   });
 
   it('importa com sufixos', () => {
@@ -325,7 +325,7 @@ describe('SPICE — importação', () => {
 
   it('tudo o que importa é "observed", não revisto, com a linha como evidência', () => {
     const { circuit: c } = importOf(divider);
-    const r1 = c.components.find((x) => x.id === 'R1')!;
+    const r1 = c.components.find((x) => x.id === 'r1')!;
     for (const provenance of [r1.provenance, r1.value.provenance]) {
       expect(provenance.origin).toBe('observed');
       expect(provenance.validation).toBe('unreviewed');
@@ -343,7 +343,7 @@ describe('SPICE — importação', () => {
   it('o que não é suportado aparece em `unsupported`, com a linha e o texto, e não entra no circuito', () => {
     const text = ['Misto', 'V1 a 0 5', 'C1 a b 1u', 'R1 a b 1k', 'L1 b 0 1m', 'D1 b 0 dmod', '.model dmod D', '.tran 1m 10m', 'X1 a b sub', 'R2 b 0', 'V2 c 0 AC 5', 'R3 c 0 1mil', 'R4 b 0 1k tc1=0.01', '+ continuação', '.end'].join('\n');
     const { circuit: c, unsupported } = importOf(text);
-    expect(c.components.map((x) => x.id)).toEqual(['V1', 'R1']);
+    expect(c.components.map((x) => x.id)).toEqual(['v1', 'r1']);
     expect(unsupported.map((u) => [u.line, u.text])).toEqual([
       [3, 'C1 a b 1u'], [5, 'L1 b 0 1m'], [6, 'D1 b 0 dmod'], [7, '.model dmod D'], [8, '.tran 1m 10m'], [9, 'X1 a b sub'],
       [10, 'R2 b 0'], [11, 'V2 c 0 AC 5'], [12, 'R3 c 0 1mil'], [13, 'R4 b 0 1k tc1=0.01'], [14, '+ continuação'],
@@ -359,7 +359,7 @@ describe('SPICE — importação', () => {
 
   it('nada depois de .end é lido', () => {
     const { circuit: c, unsupported } = importOf(['t', 'V1 a 0 5', 'R1 a 0 1k', '.end', 'R2 a 0 1', 'C9 a 0 1u'].join('\n'));
-    expect(c.components.map((x) => x.id)).toEqual(['V1', 'R1']);
+    expect(c.components.map((x) => x.id)).toEqual(['v1', 'r1']);
     expect(unsupported).toEqual([]);
   });
 
@@ -376,3 +376,99 @@ describe('SPICE — importação', () => {
     expect(result.status === 'invalid' && result.issues.map((issue) => issue.code)).toEqual(['GROUND_COUNT']);
   });
 });
+
+describe('SPICE — nomes sem distinção de maiúsculas', () => {
+  const importOf = (text: string) => parseSpiceNetlist(text, { circuitId: 'spice1', sourceId: 'netlist.cir', clock });
+
+  it('"In", "in" e "IN" são o mesmo nó, e o circuito resolve-se', () => {
+    // 5 V em "In"; R1 = 1k de "in" para "Mid"; R2 = 2k de "MID" para a massa  →  V(mid) = 5 · 2k/3k = 10/3 V.
+    const { circuit: c, unsupported } = importOf(['t', 'V1 In 0 5', 'R1 in Mid 1k', 'R2 MID 0 2k'].join('\n'));
+    expect(unsupported).toEqual([]);
+    expect(c.nets.map((net) => net.id).sort()).toEqual(['gnd', 'in', 'mid']);
+    const r = solved(solveDc(c, { clock }));
+    expectClose(volts(r, 'mid'), 10 / 3, 'V(mid)');
+    expectClose(volts(r, 'in'), 5, 'V(in)');
+  });
+
+  it('o nome original fica no label (o da primeira vez que aparece) e na evidência', () => {
+    const { circuit: c } = importOf(['t', 'V1 In 0 5', 'R1 in Mid 1k', 'R2 MID 0 2k'].join('\n'));
+    expect(c.nets.find((net) => net.id === 'in')).toMatchObject({ label: 'In', provenance: { evidence: [{ locator: 'line 2', excerpt: 'V1 In 0 5' }] } });
+    expect(c.nets.find((net) => net.id === 'mid')).toMatchObject({ label: 'Mid', provenance: { evidence: [{ locator: 'line 3', excerpt: 'R1 in Mid 1k' }] } });
+    expect(c.components.map((x) => [x.id, x.label])).toEqual([['v1', 'V1'], ['r1', 'R1'], ['r2', 'R2']]);
+    expect(c.components[2]!.value.provenance.evidence).toEqual([{ sourceId: 'netlist.cir', locator: 'line 4', excerpt: 'R2 MID 0 2k' }]);
+  });
+
+  it('o prefixo do tipo também não depende das maiúsculas', () => {
+    const { circuit: c, unsupported } = importOf(['t', 'v1 a 0 5', 'r1 a 0 1k', 'i1 0 a 1m'].join('\n'));
+    expect(unsupported).toEqual([]);
+    expect(c.components.map((x) => [x.id, x.kind, x.label])).toEqual([['v1', 'voltage_source', 'v1'], ['r1', 'resistor', 'r1'], ['i1', 'current_source', 'i1']]);
+  });
+
+  it('"R1" e "r1" são o mesmo nome: o circuito recusa-se a resolver em vez de ter dois componentes', () => {
+    const { circuit: c } = importOf(['t', 'V1 a 0 5', 'R1 a 0 1k', 'r1 a 0 2k'].join('\n'));
+    expect(c.components.map((x) => x.label)).toEqual(['V1', 'R1', 'r1']);
+    const result = solveDc(c, { clock });
+    expect(result.status === 'invalid' && result.issues.map((issue) => issue.code)).toContain('DUPLICATE_ID');
+  });
+});
+
+describe('SPICE — nomes diferentes que dão o mesmo id', () => {
+  const importOf = (text: string) => parseSpiceNetlist(text, { circuitId: 'spice1', sourceId: 'netlist.cir', clock });
+  const long = (suffix: string) => `${'n'.repeat(64)}${suffix}`;
+
+  it('dois nós distintos que dão o mesmo id não se fundem: a segunda linha vai para unsupported', () => {
+    // "a/b" e "a_b" dão ambos "a_b". Fundi-los ligaria R2 ao nó de R1 sem ninguém o ter dito.
+    const { circuit: c, unsupported } = importOf(['t', 'V1 a/b 0 5', 'R1 a/b 0 1k', 'R2 a_b 0 2k'].join('\n'));
+    expect(c.components.map((x) => x.id)).toEqual(['v1', 'r1']);
+    expect(c.nets.map((net) => [net.id, net.label])).toEqual([['a_b', 'a/b'], ['gnd', 'GND']]);
+    expect(unsupported.map((u) => [u.line, u.text])).toEqual([[4, 'R2 a_b 0 2k']]);
+    expect(unsupported[0]!.reason).toMatch(/mesmo identificador/);
+  });
+
+  it('a linha recusada não cria nenhum dos seus outros nós', () => {
+    const { circuit: c, unsupported } = importOf(['t', 'V1 a/b 0 5', 'R1 a_b brand_new 1k', 'R2 brand_new 0 1k'].join('\n'));
+    expect(unsupported.map((u) => u.line)).toEqual([3]);
+    expect(c.nets.map((net) => net.id)).toEqual(['a_b', 'gnd', 'brand_new']);
+    expect(c.components.map((x) => x.id)).toEqual(['v1', 'r2']);
+  });
+
+  it('dois nós novos em colisão na mesma linha também são recusados', () => {
+    // "a/b" e "a_b" aparecem pela primeira vez na mesma linha: ficaria uma resistência com os dois terminais no mesmo nó.
+    const { circuit: c, unsupported } = importOf(['t', 'V1 x 0 5', 'R1 a/b a_b 1k', 'R2 x 0 1k'].join('\n'));
+    expect(unsupported.map((u) => u.line)).toEqual([3]);
+    expect(c.nets.map((net) => net.id).sort()).toEqual(['gnd', 'x']);
+    expect(c.components.map((x) => x.id)).toEqual(['v1', 'r2']);
+  });
+
+  it('o mesmo nome escrito de formas diferentes (maiúsculas) não é uma colisão', () => {
+    const { unsupported } = importOf(['t', 'V1 A/b 0 5', 'R1 a/B 0 1k'].join('\n'));
+    expect(unsupported).toEqual([]);
+  });
+
+  it('dois componentes distintos com o mesmo id: a segunda linha vai para unsupported', () => {
+    const { circuit: c, unsupported } = importOf(['t', 'V1 a 0 5', 'R/1 a 0 1k', 'R_1 a 0 2k'].join('\n'));
+    expect(c.components.map((x) => [x.id, x.label, x.value.value])).toEqual([['v1', 'V1', 5], ['r_1', 'R/1', 1000]]);
+    expect(unsupported.map((u) => [u.line, u.text])).toEqual([[4, 'R_1 a 0 2k']]);
+    expect(solveDc(c, { clock }).status).toBe('solved');
+  });
+
+  it('o corte aos 64 caracteres também conta', () => {
+    const { circuit: c, unsupported } = importOf(['t', `V1 ${long('x')} 0 5`, `R1 ${long('y')} 0 1k`].join('\n'));
+    expect(c.nets.filter((net) => !net.isGround)).toHaveLength(1);
+    expect(unsupported.map((u) => u.line)).toEqual([3]);
+  });
+
+  it('"0", "gnd" e "GND" continuam a ser uma única massa, sem colisão', () => {
+    const { circuit: c, unsupported } = importOf(['t', 'V1 a 0 5', 'R1 a gnd 1k', 'R2 a GND 1k'].join('\n'));
+    expect(unsupported).toEqual([]);
+    expect(c.nets.filter((net) => net.isGround)).toHaveLength(1);
+  });
+
+  it('um nó chamado como a massa só se funde com ela se for a massa', () => {
+    // "g.nd" não é "gnd": tem de ser um nó próprio.
+    const { circuit: c, unsupported } = importOf(['t', 'V1 g.nd 0 5', 'R1 g.nd 0 1k'].join('\n'));
+    expect(unsupported).toEqual([]);
+    expect(c.nets.map((net) => net.id).sort()).toEqual(['g.nd', 'gnd']);
+  });
+});
+
