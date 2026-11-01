@@ -65,6 +65,7 @@ app.innerHTML = `<main class="spatial-lab" data-state="empty" data-theme="dark">
   <aside id="inspector" class="inspector" data-theme="light" hidden aria-label="Inspector do componente">
     <div class="panel-heading"><span>02 · componente</span><button id="clear-focus" type="button" aria-label="Fechar inspector">×</button></div>
     <h1 id="node-label">—</h1><p id="node-meta" class="micro-copy"></p><p id="node-provenance" class="provenance-note"></p>
+    <div id="room-fields" hidden><label class="field">Nome da divisão<input id="room-name" type="text" maxlength="80" placeholder="Ex.: Cozinha"></label><button id="preview-room-name" type="button">Pré-visualizar nome</button></div>
     <div id="wall-fields" hidden>
       <div class="dimensions-grid"><label class="field">Comprimento (m)<input id="wall-length" type="number" min="0.01" step="any"></label><label class="field">Altura (m)<input id="wall-height-edit" type="number" min="0.01" step="any"></label><label class="field">Espessura (m)<input id="wall-thickness-edit" type="number" min="0.01" step="any"></label><label class="field">Posição X (m)<input id="wall-x" type="number" step="any"></label><label class="field">Posição Z (m)<input id="wall-z" type="number" step="any"></label></div>
       <button id="preview-wall" type="button">Pré-visualizar alteração</button>
@@ -228,6 +229,9 @@ function selectNode(id: string | undefined): void {
     : 'Geometria não especificada.';
   const wall = node.component?.kind === 'wall' && geometry?.kind === 'box';
   $('#wall-fields').hidden = !wall;
+  const room = node.component?.kind === 'room';
+  $('#room-fields').hidden = !room;
+  if (room) { const named = (node.component?.properties.name ?? node.properties.name)?.value; $('#room-name').value = typeof named === 'string' ? named : ''; }
   const opening = node.component?.kind === 'door' || node.component?.kind === 'window';
   $('#opening-detail').hidden = !opening;
   if (opening) for (const key of ['offset', 'width', 'height', 'sill'] as const) {
@@ -764,7 +768,7 @@ function createSpatialAgentRequest(query: string): SpatialAgentRequestV1 {
     schema: SPATIAL_AGENT_REQUEST_SCHEMA,
     query,
     mode: 'architecture',
-    capabilities: ['Select', 'Inspect', 'Focus', 'Move', 'Rotate', 'Resize', 'AddOpening', 'RemoveOpening', 'Undo', 'Redo', 'Save', 'Restore'],
+    capabilities: ['Select', 'Inspect', 'Focus', 'Move', 'Rotate', 'Resize', 'AddOpening', 'RemoveOpening', 'RemoveWall', 'Undo', 'Redo', 'Save', 'Restore'],
     scene: transaction ? {
       id: transaction.scene.id,
       revisionId: transaction.scene.revision.id,
@@ -795,6 +799,13 @@ function createSpatialAgentRequest(query: string): SpatialAgentRequestV1 {
 function resolveAgentTarget(action: SpatialAgentAction, query: string): { nodeId: string | null; question?: string } {
   if (!transaction) return { nodeId: null, question: 'Não existe uma cena construída. Posso explicar o documento, mas é necessário criar uma cena antes de editar geometria.' };
   const walls = transaction.scene.nodes.filter((node) => node.component?.kind === 'wall');
+  if (action.kind === 'RemoveWall') {
+    // O Muse propõe a remoção; a parede sai sempre do texto do utilizador e da cena, nunca do que o modelo diga.
+    const local = parseSpatialIntentV1(query);
+    if (local.status !== 'recognized' || local.value.intent.kind !== 'RemoveWall') return { nodeId: null, question: 'Não percebi que parede remover. Diga «entre a cozinha e a sala», o id da parede, ou seleccione-a e diga «remove esta parede».' };
+    const resolved = resolveSpatialTarget(transaction.scene, local.value.intent, selectedId);
+    return resolved.status === 'resolved' ? { nodeId: resolved.nodeId } : { nodeId: null, question: resolved.question };
+  }
   if (action.target.reference === 'none') return { nodeId: null };
   if (action.target.reference === 'selected') {
     if (!selectedId) return { nodeId: null, question: 'Seleccione primeiro o componente a que se refere.' };
@@ -833,6 +844,7 @@ function agentIntent(action: SpatialAgentAction, nodeId: string | null): import(
     case 'Move': return { intent: { kind: 'Move', target, parameters: { axis: action.axis!, distance: action.value! * factor }, unit: 'm' } };
     case 'Rotate': return { intent: { kind: 'Rotate', target, parameters: { axis: action.axis!, angle: action.unit === 'deg' ? action.value! * Math.PI / 180 : action.value! }, unit: 'rad' } };
     case 'AddOpening': return { intent: { kind: 'AddOpening', target, parameters: { kind: action.opening!.kind, widthM: action.opening!.widthM, heightM: action.opening!.heightM, offsetM: action.opening!.offsetM, sillM: action.opening!.sillM }, unit: 'm' } };
+    case 'RemoveWall': return { intent: { kind: 'RemoveWall', target, parameters: {}, unit: null } };
     case 'Select': case 'Inspect': case 'Focus': case 'RemoveOpening': case 'Undo': case 'Redo': case 'Save': case 'Restore': return { intent: { kind: action.kind, target, parameters: {}, unit: null } };
   }
 }
@@ -1003,6 +1015,15 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
         selectNode(node.id); setSpatialCommandState('AwaitingConfirmation', 'Abertura e dependência preparadas. Confirme no inspector para gravar.');
         return Promise.resolve({ status: 'preview', message: `${answerPrefix}Pré-visualização da abertura criada. Confirme para aplicar.` });
       }
+      case 'RemoveWall': {
+        if (!node || node.component?.kind !== 'wall') throw new Error('Não foi possível identificar a parede a remover.');
+        pendingCommand = command;
+        const verdict = previewWallRemoval(node.id, { origin: sceneOrigin, actor });
+        if (!verdict.ok) throw new Error(verdict.code);
+        selectNode(node.id);
+        setSpatialCommandState('AwaitingConfirmation', `Remoção de ${node.label} proposta. Confirme para aplicar.`);
+        return Promise.resolve({ status: 'preview', message: `${answerPrefix}Remoção de ${node.label} proposta. Confirme para aplicar.` });
+      }
       case 'RemoveOpening': {
         if (!node || !['door', 'window'].includes(node.component?.kind ?? '')) throw new Error('Seleccione uma porta ou janela para remover.');
         const candidate = previewSceneCommand(transaction, { type: 'RemoveComponent', nodeId: node.id }, actor, undefined, sceneContext);
@@ -1081,20 +1102,36 @@ function attachRemovalGhost(base: SpatialSceneV1, wallId: string, mode: 'dissolv
   if (!removalGhost) return;
   root.add(removalGhost.group); removalGhost.settle(mode, invalidate); invalidate();
 }
-function previewWallRemoval(wallId: string): void {
-  if (!transaction) return;
-  if (preview || compoundPreview) { status('Existe uma pré-visualização pendente. Confirme ou cancele-a primeiro.'); return; }
+/** Prepara a remoção de uma parede. `{ ok: false }` quando o motor a recusa (e o cartão mostra a razão) ou não há o que remover. */
+function previewWallRemoval(wallId: string, options: { origin?: CommandOrigin; actor?: string } = {}): { ok: true } | { ok: false; code: string } {
+  if (!transaction) return { ok: false, code: 'SCENE_NOT_READY' };
+  if (preview || compoundPreview) { status('Existe uma pré-visualização pendente. Confirme ou cancele-a primeiro.'); return { ok: false, code: 'PREVIEW_PENDING' }; }
   const info = describeWallRemoval(transaction.scene, wallId);
-  if (!info) { status('Seleccione uma parede.'); return; }
+  if (!info) { status('Seleccione uma parede.'); return { ok: false, code: 'NODE_NOT_FOUND' }; }
   const base = transaction.scene;
   let plan: CompositePlan | undefined; let code = '';
-  try { plan = planWallRemoval(transaction, wallId, 'local-user-input'); } catch (error) { code = error instanceof Error ? error.message : 'ERRO'; }
+  try { plan = planWallRemoval(transaction, wallId, options.actor ?? 'local-user-input', { origin: options.origin }); } catch (error) { code = error instanceof Error ? error.message : 'ERRO'; }
   focusNode(wallId);
-  if (plan) { previewCompound(plan, `remover ${info.wallLabel}`); attachRemovalGhost(base, wallId, 'dissolve'); showRemovalCard(info, { ok: true }, plan.touchesConfirmed.length ? confirmedNotice(plan.touchesConfirmed, (id) => base.nodes.find((item) => item.id === id)?.label ?? id) : ''); return; }
+  if (plan) { previewCompound(plan, `remover ${info.wallLabel}`); attachRemovalGhost(base, wallId, 'dissolve'); showRemovalCard(info, { ok: true }, plan.touchesConfirmed.length ? confirmedNotice(plan.touchesConfirmed, (id) => base.nodes.find((item) => item.id === id)?.label ?? id) : ''); return { ok: true }; }
   status(`Remoção bloqueada: ${explainSceneError(code)}`);
   attachRemovalGhost(base, wallId, 'blocked'); showRemovalCard(info, { ok: false, code }, '');
+  return { ok: false, code };
 }
 $('#preview-remove-wall').addEventListener('click', () => { if (selectedId) previewWallRemoval(selectedId); });
+// O nome de uma divisão é uma propriedade escrita por uma pessoa (UpdateParameter, source "user"), com o preview e o clique de sempre.
+$('#preview-room-name').addEventListener('click', () => {
+  try {
+    if (!transaction || !selectedId) throw new Error('Seleccione uma divisão.');
+    if (preview || compoundPreview) throw new Error('Existe uma pré-visualização pendente. Confirme ou cancele-a primeiro.');
+    const name = $('#room-name').value.trim();
+    if (!name || name.length > 80) throw new Error('O nome tem de ter entre 1 e 80 caracteres.');
+    const candidate = previewSceneCommand(transaction, { type: 'UpdateParameter', nodeId: selectedId, property: 'name', value: name }, 'local-user-input');
+    if (candidate.status === 'blocked') throw new Error(candidate.issues.map((issue) => issue.message).join(' '));
+    preview = candidate; compoundPreview = undefined; pendingCommand = undefined;
+    $('#preview-status').textContent = previewText(`Pré-visualização: chamar «${name}» a esta divisão.`, candidate.touchesConfirmed);
+    $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false; renderModel(candidate.candidate!);
+  } catch (error) { status(error instanceof Error ? explainSceneError(error.message) : 'Nome inválido.'); }
+});
 $('#commit-preview').addEventListener('click', hideRemovalCard);
 $('#cancel-preview').addEventListener('click', hideRemovalCard);
 

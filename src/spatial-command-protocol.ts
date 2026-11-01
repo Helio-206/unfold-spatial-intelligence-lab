@@ -1,8 +1,9 @@
 import type { SpatialSceneV1 } from './spatial-scene';
+import { resolveWallBetweenRooms, resolveWallById } from './wall-removal-command';
 
 export const SPATIAL_COMMAND_SCHEMA = 'spatial_command.v1' as const;
 
-export type SpatialIntentKind = 'Select' | 'Inspect' | 'Focus' | 'Move' | 'Rotate' | 'Resize' | 'UpdateParameter' | 'AddComponent' | 'RemoveComponent' | 'AddOpening' | 'RemoveOpening' | 'Undo' | 'Redo' | 'Save' | 'Restore' | 'RequestClarification';
+export type SpatialIntentKind = 'Select' | 'Inspect' | 'Focus' | 'Move' | 'Rotate' | 'Resize' | 'UpdateParameter' | 'AddComponent' | 'RemoveComponent' | 'AddOpening' | 'RemoveOpening' | 'RemoveWall' | 'Undo' | 'Redo' | 'Save' | 'Restore' | 'RequestClarification';
 export type SpatialCommandState = 'Idle' | 'Listening' | 'Understanding' | 'ProposedAction' | 'Preview' | 'AwaitingConfirmation' | 'Executing' | 'Completed' | 'Rejected' | 'Failed';
 export type SpatialCommandOrigin = 'local_deterministic' | 'speech_transcript' | 'muse_spark';
 export type SpatialCommandV1 = {
@@ -27,11 +28,11 @@ export type SpatialWallTarget = { id: string; label: string; x: number; z: numbe
 export type SpatialTargetResolution = { status: 'resolved'; nodeId: string | null } | { status: 'clarification'; question: string };
 
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
-const INTENTS = new Set<SpatialIntentKind>(['Select', 'Inspect', 'Focus', 'Move', 'Rotate', 'Resize', 'UpdateParameter', 'AddComponent', 'RemoveComponent', 'AddOpening', 'RemoveOpening', 'Undo', 'Redo', 'Save', 'Restore', 'RequestClarification']);
+const INTENTS = new Set<SpatialIntentKind>(['Select', 'Inspect', 'Focus', 'Move', 'Rotate', 'Resize', 'UpdateParameter', 'AddComponent', 'RemoveComponent', 'AddOpening', 'RemoveOpening', 'RemoveWall', 'Undo', 'Redo', 'Save', 'Restore', 'RequestClarification']);
 const STATES = new Set<SpatialCommandState>(['Idle', 'Listening', 'Understanding', 'ProposedAction', 'Preview', 'AwaitingConfirmation', 'Executing', 'Completed', 'Rejected', 'Failed']);
 const ORIGINS = new Set<SpatialCommandOrigin>(['local_deterministic', 'speech_transcript', 'muse_spark']);
 const UNITS = new Set(['m', 'rad']);
-const MUTATING_INTENTS = new Set<SpatialIntentKind>(['Move', 'Rotate', 'Resize', 'UpdateParameter', 'AddComponent', 'RemoveComponent', 'AddOpening', 'RemoveOpening']);
+const MUTATING_INTENTS = new Set<SpatialIntentKind>(['Move', 'Rotate', 'Resize', 'UpdateParameter', 'AddComponent', 'RemoveComponent', 'AddOpening', 'RemoveOpening', 'RemoveWall']);
 const NUMBER = '(\\d+(?:[.,]\\d+)?|zero|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|catorze|quatorze|quinze|dezasseis|dezesseis|dezassete|dezessete|dezoito|dezanove|dezenove|vinte|meio|meia)';
 const LENGTH = `${NUMBER}\\s*(mm|milimetros?|cm|centimetros?|m|metros?|ft|feet|in|polegadas?)?`;
 
@@ -103,6 +104,15 @@ export function parseSpatialIntentV1(input: string): SpatialIntentParse {
   if (/^(?:adiciona|cria) (?:uma )?(?:porta|janela)(?:\b|$)/.test(text)) return { status: 'clarification', question: 'Indique tipo, largura, altura, offset ao longo da parede e peitoril em unidades explícitas. Nada foi alterado.' };
   if (/^(?:remove|elimina) (?:esta )?abertura$/.test(text)) return result('RemoveOpening', 'selection');
 
+  // Remover uma parede: pelas divisões que separa («entre a cozinha e a sala»), pelo id («W5»), pelo número ou a seleccionada.
+  const remove = '(?:remove|remover|elimina|eliminar|apaga|apagar|retira|retirar|delete)';
+  const between = text.match(new RegExp(`^${remove} (?:a |the )?(?:parede|wall) (?:entre|between) (.+)$`));
+  if (between) return result('RemoveWall', `wall_between:${between[1]}`);
+  if (new RegExp(`^${remove} (?:esta |essa |this |that )(?:parede|wall)$`).test(text)) return result('RemoveWall', 'selection');
+  const wallToken = text.match(new RegExp(`^${remove} (?:a |the )?(?:parede|wall) ([a-z0-9][a-z0-9._:-]*)$`));
+  if (wallToken) return result('RemoveWall', /^\d+$/.test(wallToken[1]!) ? `wall_ordinal:${wallToken[1]}` : `wall_id:${wallToken[1]}`);
+  if (new RegExp(`^${remove} (?:a |the )?(?:parede|wall)$`).test(text)) return { status: 'clarification', question: 'Qual parede? Diga «entre a cozinha e a sala», o id da parede, ou seleccione-a e diga «remove esta parede».' };
+
   if (/^(?:seleciona|seleccionar|selecionar) (?:a )?parede(?:\b|$)/.test(text)) return { status: 'clarification', question: 'Qual parede pretende seleccionar? Indique o número ou esquerda/direita no enquadramento actual.' };
   if (/\b(?:esta|essa) parede\b/.test(text)) return { status: 'clarification', question: 'Não há uma parede seleccionada. Seleccione uma parede ou indique o seu número.' };
   return { status: 'unsupported', reason: 'Comando não suportado pelo executor local. Nenhuma alteração foi feita; use uma intenção arquitectónica explícita.' };
@@ -117,6 +127,10 @@ export function resolveSpatialTarget(scene: SpatialSceneV1, intent: ParsedSpatia
     if (!selected || selected.component?.kind !== 'wall' && intent.kind !== 'RemoveOpening') return { status: 'clarification', question: 'O componente seleccionado não é uma parede. Seleccione uma parede para esta operação.' };
     if (intent.kind === 'RemoveOpening' && selected.component?.kind !== 'door' && selected.component?.kind !== 'window') return { status: 'clarification', question: 'Seleccione uma porta ou janela para remover.' };
     return { status: 'resolved', nodeId: selectedNodeId };
+  }
+  if (reference.startsWith('wall_between:') || reference.startsWith('wall_id:')) {
+    const resolved = reference.startsWith('wall_between:') ? resolveWallBetweenRooms(scene, reference.slice('wall_between:'.length)) : resolveWallById(scene, reference.slice('wall_id:'.length));
+    return resolved.status === 'resolved' ? { status: 'resolved', nodeId: resolved.wallId } : { status: 'clarification', question: resolved.question };
   }
   if (reference.startsWith('wall_ordinal:')) {
     const ordinal = Number(reference.split(':')[1]);
