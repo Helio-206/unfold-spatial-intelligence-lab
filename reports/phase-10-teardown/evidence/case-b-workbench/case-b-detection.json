@@ -10,6 +10,36 @@
   "candidates": {
     "candidateCount": 162,
     "rawCandidateCount": 210,
+    "verticalCandidatesNearHall": [
+      {
+        "id": "line-69",
+        "x1": 2022,
+        "y1": 1172.4000244140625,
+        "x2": 2022,
+        "y2": 1407.800048828125
+      },
+      {
+        "id": "line-70",
+        "x1": 1865.5,
+        "y1": 1173,
+        "x2": 1865.5,
+        "y2": 1446
+      },
+      {
+        "id": "line-102",
+        "x1": 1922.5,
+        "y1": 1673.5,
+        "x2": 1922.5,
+        "y2": 1869.5
+      },
+      {
+        "id": "line-103",
+        "x1": 1902.5,
+        "y1": 1674.75,
+        "x2": 1902.5,
+        "y2": 1869.75
+      }
+    ],
     "selectedCandidateCount": 0,
     "proposedRegions": [
       {

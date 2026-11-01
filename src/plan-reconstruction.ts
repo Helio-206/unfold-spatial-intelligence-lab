@@ -54,6 +54,27 @@ export type MultiScaleCalibration = { pixelsPerMetre: number; residuals: ScaleMe
 export type AxisScaleMeasurement = ScaleMeasurement & { axis: 'horizontal' | 'vertical' };
 export type AxisCalibration = { axis: 'horizontal' | 'vertical'; result: MultiScaleCalibration | null; reason?: string };
 
+/** Median of per-dimension px/m ratios resists a single mismatched dimension without concealing its residual. */
+export function calibrateScaleRobustly(measurements: ScaleMeasurement[], maximumRelativeError = 0.01): MultiScaleCalibration {
+  if (measurements.length < 2 || !Number.isFinite(maximumRelativeError) || maximumRelativeError < 0 || maximumRelativeError > 0.25) throw new Error('A calibração robusta exige pelo menos duas medidas e tolerância válida.');
+  const ids = new Set<string>();
+  const ratios = measurements.map((measurement) => {
+    if (!measurement.id.trim() || ids.has(measurement.id) || !Number.isFinite(measurement.pixelDistance) || measurement.pixelDistance <= 0 || !Number.isFinite(measurement.realDistanceMetres) || measurement.realDistanceMetres <= 0 || !measurement.evidence.trim()) throw new Error('Medida de calibração inválida ou sem proveniência.');
+    ids.add(measurement.id);
+    return measurement.pixelDistance / measurement.realDistanceMetres;
+  }).sort((a, b) => a - b);
+  const middle = Math.floor(ratios.length / 2);
+  const pixelsPerMetre = ratios.length % 2 ? ratios[middle]! : (ratios[middle - 1]! + ratios[middle]!) / 2;
+  const residuals = measurements.map((item) => {
+    const estimatedDistanceMetres = item.pixelDistance / pixelsPerMetre;
+    return { ...item, estimatedDistanceMetres, relativeError: (estimatedDistanceMetres - item.realDistanceMetres) / item.realDistanceMetres };
+  });
+  const maxRelativeError = Math.max(...residuals.map((item) => Math.abs(item.relativeError)));
+  const rmsRelativeError = Math.sqrt(residuals.reduce((sum, item) => sum + item.relativeError ** 2, 0) / residuals.length);
+  const scaleSpreadRelative = (ratios.at(-1)! - ratios[0]!) / pixelsPerMetre;
+  return { pixelsPerMetre, residuals, maxRelativeError, rmsRelativeError, scaleSpreadRelative, accepted: maxRelativeError <= maximumRelativeError && scaleSpreadRelative <= maximumRelativeError, tolerance: maximumRelativeError };
+}
+
 /** Fit independent image-axis scales so anisotropic scans are visible instead of hidden by one scale. */
 export function calibrateScaleByAxis(measurements: AxisScaleMeasurement[], maximumRelativeError = 0.01): AxisCalibration[] {
   const ids = new Set<string>();
@@ -65,7 +86,7 @@ export function calibrateScaleByAxis(measurements: AxisScaleMeasurement[], maxim
   return (['horizontal', 'vertical'] as const).map((axis) => {
     const samples = measurements.filter((measurement) => measurement.axis === axis);
     if (samples.length < 2) return { axis, result: null, reason: 'São necessárias duas cotas independentes no mesmo eixo.' };
-    return { axis, result: calibrateScaleFromMeasurements(samples, maximumRelativeError) };
+    return { axis, result: calibrateScaleRobustly(samples, maximumRelativeError) };
   });
 }
 

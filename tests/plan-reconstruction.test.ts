@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  assessOpeningCandidates, buildPlanVectorModel, calibrateScale, calibrateScaleByAxis, calibrateScaleFromMeasurements, candidateToWall, consolidateWallCandidates, countClosedCandidateContours, detectCandidateIntersections, detectOrthogonalRoomCandidates, detectWallCandidates, detectWallCandidatesDetailed, measureRegionRasterSupport,
+  assessOpeningCandidates, buildPlanVectorModel, calibrateScale, calibrateScaleByAxis, calibrateScaleFromMeasurements, calibrateScaleRobustly, candidateToWall, consolidateWallCandidates, countClosedCandidateContours, detectCandidateIntersections, detectOrthogonalRoomCandidates, detectWallCandidates, detectWallCandidatesDetailed, measureRegionRasterSupport,
   mergeWallCandidates, preparePlanRaster, splitWallCandidate, traceWallCandidate, type PixelRaster,
 } from '../src/plan-reconstruction';
 import { addOpeningToScene, createPlanScene, editOpeningInScene, editWallInScene, removeWallFromScene, saveAndRestoreScene, sceneWallLength } from '../src/plan-scene';
@@ -234,6 +234,17 @@ describe('plan reconstruction geometry', () => {
     expect(result[0]?.result?.residuals.map((item) => item.id)).toEqual(['north-overall', 'south-overall']);
     expect(result[1]?.result).toBeTruthy();
     expect(calibrateScaleByAxis([{ id: 'only-x', axis: 'horizontal', pixelDistance: 100, realDistanceMetres: 1, evidence: 'single cota' }])[1]).toMatchObject({ axis: 'vertical', result: null });
+  });
+
+  it('uses a median scale fit so one mismatched cota cannot drag the calibration', () => {
+    const fit = calibrateScaleRobustly([
+      { id: 'horizontal-a', pixelDistance: 1000, realDistanceMetres: 10, evidence: 'selected horizontal witnesses A' },
+      { id: 'horizontal-b', pixelDistance: 2000, realDistanceMetres: 20, evidence: 'selected horizontal witnesses B' },
+      { id: 'horizontal-outlier', pixelDistance: 3000, realDistanceMetres: 20, evidence: 'possible mismatched endpoints' },
+    ]);
+    expect(fit.pixelsPerMetre).toBe(100);
+    expect(fit.accepted).toBe(false);
+    expect(fit.residuals.find((item) => item.id === 'horizontal-outlier')!.relativeError).toBeCloseTo(0.5);
   });
 
   it('measures per-edge raster support without upgrading geometry to validated status', () => {

@@ -84,6 +84,7 @@ try {
   result.candidates = await evaluate(`(()=>({
     candidateCount:document.querySelectorAll('#candidate-list [data-candidate]').length,
     rawCandidateCount:document.querySelectorAll('#plan-overlay [data-raw-id]').length,
+    verticalCandidatesNearHall:[...document.querySelectorAll('#plan-overlay line[data-id]')].map((line)=>({id:line.dataset.id,x1:line.x1.baseVal.value,y1:line.y1.baseVal.value,x2:line.x2.baseVal.value,y2:line.y2.baseVal.value})).filter((line)=>Math.abs(line.x1-line.x2)<8&&line.x1>1800&&line.x1<2100&&Math.max(line.y1,line.y2)>1350&&Math.min(line.y1,line.y2)<1885),
     selectedCandidateCount:document.querySelectorAll('#candidate-list [data-candidate][aria-pressed="true"]').length,
     proposedRegions:[...document.querySelectorAll('#region-list [data-region]')].map((item)=>({id:item.dataset.region,label:item.textContent.trim(),minimumRasterSupport:Number(item.dataset.rasterSupport),vertices:document.querySelector('#plan-overlay polygon[data-region="'+item.dataset.region+'"]')?.getAttribute('points')??null})),
     lowQualityFaceCount:Number((document.querySelector('#contour-summary')?.textContent.match(/(\\d+) face/)??[])[1]??0),
@@ -108,6 +109,44 @@ try {
   assert.ok(result.faceDiagnostics.rejectedFaces.every((item) => item.reason.length > 0), 'Cada face rejeitada precisa de uma razão.');
   assert.equal(result.faceDiagnostics.expanded, 'true');
   assert.ok(result.faceDiagnostics.sourcePanelWidth > 700, 'O modo debugger deve ampliar a planta para inspecção visual.');
+  await evaluate(`document.querySelector('#preview-provisional').click()`);
+  await waitFor(`document.querySelectorAll('#plan-overlay [data-provisional-zone]').length===5`);
+  await new Promise((resolveWait) => setTimeout(resolveWait, 700));
+  result.provisional = await evaluate(`(()=>({
+    appState:document.querySelector('.spatial-lab').dataset.state,
+    zoneCount:document.querySelectorAll('#plan-overlay [data-provisional-zone]').length,
+    meshCount:Number(document.querySelector('#spatial-canvas').dataset.provisionalMeshCount),
+    unresolved:[...document.querySelectorAll('#provisional-report [data-unresolved]')].map(item=>({id:item.dataset.unresolved,reason:item.innerText.trim()})),
+    roomB:document.querySelector('#plan-overlay [data-provisional-zone="room-b"]')?.getAttribute('points'),
+    hall:document.querySelector('#plan-overlay [data-provisional-zone="hall"]')?.getAttribute('points'),
+    graphState:document.querySelector('#scene-state').textContent,
+    saveDisabled:document.querySelector('#save-scene').disabled,
+    canonicalNodes:document.querySelectorAll('#component-list [data-scene-node]').length,
+    status:document.querySelector('#provisional-report [data-provisional-status]')?.textContent
+  }))()`);
+  assert.equal(result.provisional.appState, 'provisional');
+  assert.equal(result.provisional.zoneCount, 5, 'A–D e hall devem aparecer como regiões provisórias.');
+  assert.equal(result.provisional.meshCount, 5, 'A vista 3D deve conter uma malha por região provisória.');
+  assert.equal(result.provisional.graphState, 'SEM CENA', 'A pré-visualização não pode alterar a Scene Graph canónica.');
+  assert.equal(result.provisional.saveDisabled, true, 'A hipótese não pode ser guardada como cena canónica.');
+  assert.equal(result.provisional.canonicalNodes, 0);
+  assert.ok(result.provisional.unresolved.some(item => item.id === 'metric-scale'));
+  assert.ok(result.provisional.unresolved.some(item => item.id === 'openings'));
+  assert.ok(result.provisional.unresolved.some(item => item.id === 'hall-boundary'));
+  assert.match(result.provisional.unresolved.find(item => item.id === 'hall-boundary').reason, /37% de cobertura vertical única/);
+  assert.match(result.provisional.status, /não gravada no spatial_scene\.v1/);
+  await screenshot('05-provisional-2d.png');
+  await evaluate(`document.querySelector('#evidence-expand').click();document.querySelector('#source-toggle').click()`);
+  await new Promise((resolveWait) => setTimeout(resolveWait, 400));
+  await evaluate(`document.querySelector('#fit-scene').click()`);
+  await new Promise((resolveWait) => setTimeout(resolveWait, 800));
+  result.provisional.render = await evaluate(`(()=>{const c=document.querySelector('#spatial-canvas');return {canvas:[c.clientWidth,c.clientHeight],metrics:document.querySelector('#spatial-metrics').textContent.trim(),canvasPixels:c.querySelector('canvas')?.width+'x'+c.querySelector('canvas')?.height,drawCalls:c.dataset.drawCalls,triangles:c.dataset.triangles,cameraPosition:c.dataset.cameraPosition,cameraTarget:c.dataset.cameraTarget}})()`);
+  await screenshot('06-provisional-3d.png');
+  await evaluate(`document.querySelector('#source-toggle').click();document.querySelector('#evidence-expand').click()`);
+  await evaluate(`document.querySelector('#clear-provisional').click()`);
+  await waitFor(`document.querySelectorAll('#plan-overlay [data-provisional-zone]').length===0`);
+  result.provisional.restore = await evaluate(`({appState:document.querySelector('.spatial-lab').dataset.state,graphState:document.querySelector('#scene-state').textContent,saveDisabled:document.querySelector('#save-scene').disabled})`);
+  assert.deepEqual(result.provisional.restore, { appState: 'empty', graphState: 'SEM CENA', saveDisabled: true }, 'Fechar a vista não pode alterar o estado canónico.');
   await evaluate(`(()=>{for(const [selector,value] of [['#crop-x','600'],['#crop-y','600'],['#crop-width','2900'],['#crop-height','2100'],['#deskew-angle','0.5']]){const input=document.querySelector(selector);input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));}document.querySelector('#apply-preprocessing').click()})()`);
   await waitFor(`document.querySelector('#preprocess-summary')?.textContent.includes('Cópia de análise')`);
   await evaluate(`document.querySelector('#detect-lines').click()`);
@@ -125,12 +164,12 @@ try {
     setPair(250,120,350,120);document.querySelector('#scale-distance').value='10.5';document.querySelector('#scale-evidence').value='browser E2E synthetic calibration sample 2';document.querySelector('#add-calibration').click();
   })()`);
   result.calibration = await evaluate(`document.querySelector('#calibration-list').textContent.trim()`);
-  assert.match(result.calibration, /bloqueada: medidas incompatíveis/);
+  assert.match(result.calibration, /horizontal: ajuste robusto fora da tolerância/);
   assert.equal(result.candidates.selectedCandidateCount, 0, 'Segmentos e regiões automáticos não podem entrar pré-seleccionados na cena.');
   assert.ok(result.candidates.rawCandidateCount >= result.candidates.candidateCount, 'O overlay precisa expor segmentos raster antes da fusão e segmentos finais.');
   assert.equal(result.candidates.proposedRegions.length, 4, 'As quatro regiões rectangulares suportadas devem permanecer propostas, sem aceitação automática.');
-  result.status = 'PASS_CANDIDATES_ONLY';
-  result.note = 'Regiões automáticas permanecem não seleccionadas; o debugger mostra razões por face. O teste também comprova recorte/deskew reversível e bloqueio de cotas inconsistentes. Não houve commit geométrico.';
+  result.status = 'PASS_PROVISIONAL_ONLY';
+  result.note = 'A–D e o hall foram apresentados em 2D/3D provisório, com sobreposição vazia, escala/aberturas/fronteira pendentes e sem persistência na Scene Graph. Isto não valida as regiões nem completa a planta.';
   assert.equal(errors.length, 0, errors.join('; '));
 } catch (error) {
   result.status = 'FAIL';

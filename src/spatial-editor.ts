@@ -1,10 +1,11 @@
-import { AmbientLight, Box3, Box3Helper, BufferGeometry, Color, DirectionalLight, DoubleSide, Float32BufferAttribute, GridHelper, Group, Mesh, MeshBasicMaterial, Object3D, PerspectiveCamera, Plane, Quaternion, Raycaster, Scene, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer } from 'three';
+import { AmbientLight, Box3, Box3Helper, BoxGeometry, BufferGeometry, Color, DirectionalLight, DoubleSide, Float32BufferAttribute, GridHelper, Group, Mesh, MeshBasicMaterial, Object3D, PerspectiveCamera, Plane, Quaternion, Raycaster, Scene, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { gsap } from 'gsap';
 import { decodePlanImage, type DecodedPlanImage } from './plan-image';
-import { assessOpeningCandidates, buildPlanVectorModel, calibrateScale, calibrateScaleFromMeasurements, countClosedCandidateContours, detectCandidateIntersections, detectWallCandidatesDetailed, measureRegionRasterSupport, mergeWallCandidates, preparePlanRaster, splitWallCandidate, traceWallCandidate, type PixelWallCandidate, type Point2, type RasterPreparation, type RegionRasterSupport, type ScaleMeasurement } from './plan-reconstruction';
+import { assessOpeningCandidates, buildPlanVectorModel, calibrateScale, calibrateScaleByAxis, calibrateScaleFromMeasurements, countClosedCandidateContours, detectCandidateIntersections, detectWallCandidatesDetailed, measureRegionRasterSupport, mergeWallCandidates, preparePlanRaster, splitWallCandidate, traceWallCandidate, type AxisScaleMeasurement, type PixelWallCandidate, type Point2, type RasterPreparation, type RegionRasterSupport } from './plan-reconstruction';
+import { buildProvisionalPlan, type ProvisionalPlanModel } from './plan-provisional';
 import { addOpeningToScene, createPlanScene, editOpeningInScene, editWallInScene } from './plan-scene';
 import { ARCHITECTURAL_MODULE_DIMENSIONS, buildThreePlanGroup, type ArchitecturalAssets } from './plan-three-adapter';
 import { commitScenePreview, deserializeSceneTransaction, executeSceneCommand, previewSceneCommand, serializeSceneTransaction, type Node, type ScenePreview, type SceneTransaction, type SpatialCommand, type SpatialSceneV1 } from './spatial-scene';
@@ -40,7 +41,7 @@ app.innerHTML = `<main class="spatial-lab" data-state="empty">
       <label class="field">Sensibilidade das linhas <output id="detection-threshold-value">150</output><input id="detection-threshold" type="range" min="80" max="220" step="5" value="150"></label>
       <div class="candidate-heading"><span>PRÉ-PROCESSAMENTO REVERSÍVEL</span></div><div class="dimensions-grid"><label class="field">Recorte X (px)<input id="crop-x" type="number" min="0" step="1" value="0"></label><label class="field">Recorte Y (px)<input id="crop-y" type="number" min="0" step="1" value="0"></label><label class="field">Largura (px)<input id="crop-width" type="number" min="2" step="1"></label><label class="field">Altura (px)<input id="crop-height" type="number" min="2" step="1"></label></div><label class="field">Correcção de inclinação (graus)<input id="deskew-angle" type="number" min="-15" max="15" step="0.1" value="0"></label><div class="dimensions-grid"><label class="field">Máscara anotação X<input id="mask-x" type="number" min="0" step="1"></label><label class="field">Y<input id="mask-y" type="number" min="0" step="1"></label><label class="field">Largura<input id="mask-width" type="number" min="1" step="1"></label><label class="field">Altura<input id="mask-height" type="number" min="1" step="1"></label></div><div class="trace-tools"><button id="add-mask" type="button">Mascarar área</button><button id="apply-preprocessing" type="button">Aplicar à análise</button></div><p id="preprocess-summary" class="micro-copy">Detecção usa a imagem original. Transformações aplicam-se apenas a uma cópia de análise.</p>
       <p class="micro-copy">O detector só propõe linhas axiais. Confirme visualmente cada segmento; não usa cotas, áreas ou nomes de divisões para inventar escala.</p>
-      <div class="candidate-heading"><span>SEGMENTOS A INCLUIR</span><button id="clear-selection" type="button">Limpar</button></div><p id="contour-summary" class="micro-copy">Contornos não avaliados; área métrica não confirmada.</p><div id="candidate-list" class="candidate-list"></div><div class="candidate-heading"><span>REGIÕES FECHADAS CANDIDATAS</span></div><div id="region-list" class="candidate-list"></div><div class="candidate-heading"><span>DESCONTINUIDADES / ABERTURAS AMBÍGUAS</span></div><div id="opening-candidate-list" class="candidate-list"></div><div class="candidate-heading"><span>ASSOCIAÇÃO SEMÂNTICA → REGIÃO (semantic_spatial_map.v1)</span></div><div id="semantic-map-panel"><label class="field">Divisão reconhecida (documento aceite)<select id="semantic-element"><option value="">Sem documento aceite</option></select></label><button id="semantic-propose" type="button">Propor associação à região seleccionada</button><p id="semantic-proposal" class="micro-copy" aria-live="polite">A proposta é mostrada antes de aceitar. Nenhum nome/área/cota vira geometria.</p><div class="trace-tools"><button id="semantic-accept" type="button" disabled>Aceitar proposta</button><button id="semantic-reject" type="button" disabled>Rejeitar proposta</button></div><div id="semantic-link-list" class="candidate-list"></div></div>
+      <div class="candidate-heading"><span>SEGMENTOS A INCLUIR</span><button id="clear-selection" type="button">Limpar</button></div><p id="contour-summary" class="micro-copy">Contornos não avaliados; área métrica não confirmada.</p><div id="candidate-list" class="candidate-list"></div><div class="candidate-heading"><span>REGIÕES FECHADAS CANDIDATAS</span></div><div id="region-list" class="candidate-list"></div><button id="preview-provisional" class="primary-action" type="button" disabled>Pré-visualizar hipótese · px · não gravada</button><button id="clear-provisional" type="button" hidden>Fechar pré-visualização</button><div id="provisional-report" class="candidate-list" aria-live="polite"></div><div class="candidate-heading"><span>DESCONTINUIDADES / ABERTURAS AMBÍGUAS</span></div><div id="opening-candidate-list" class="candidate-list"></div><div class="candidate-heading"><span>ASSOCIAÇÃO SEMÂNTICA → REGIÃO (semantic_spatial_map.v1)</span></div><div id="semantic-map-panel"><label class="field">Divisão reconhecida (documento aceite)<select id="semantic-element"><option value="">Sem documento aceite</option></select></label><button id="semantic-propose" type="button">Propor associação à região seleccionada</button><p id="semantic-proposal" class="micro-copy" aria-live="polite">A proposta é mostrada antes de aceitar. Nenhum nome/área/cota vira geometria.</p><div class="trace-tools"><button id="semantic-accept" type="button" disabled>Aceitar proposta</button><button id="semantic-reject" type="button" disabled>Rejeitar proposta</button></div><div id="semantic-link-list" class="candidate-list"></div></div>
       </details>
       <details class="workflow-section">
       <summary>03 / CALIBRAR E CONSTRUIR</summary>
@@ -142,6 +143,8 @@ let traceStart: { point: Point2; pointerId: number } | undefined;
 let traceEnd: Point2 | undefined;
 let endpointDrag: { pointerId: number; candidateId: string; endpoint: 'start' | 'end' } | undefined;
 let cameraHome: { target: Vector3; position: Vector3 } | undefined;
+let provisionalModel: ProvisionalPlanModel | undefined;
+let provisionalGroup: Group | undefined;
 let referenceGroup: Group | undefined;
 let referenceTexture: Texture | undefined;
 let referenceTextureUrl: string | undefined;
@@ -172,13 +175,17 @@ function draw(now = performance.now()): void {
   raf = 0;
   const moving = orbit.update();
   renderer.render(scene, camera);
+  $('#spatial-canvas').dataset.drawCalls = String(renderer.info.render.calls);
+  $('#spatial-canvas').dataset.triangles = String(renderer.info.render.triangles);
+  $('#spatial-canvas').dataset.cameraPosition = camera.position.toArray().map((value) => value.toFixed(1)).join(',');
+  $('#spatial-canvas').dataset.cameraTarget = orbit.target.toArray().map((value) => value.toFixed(1)).join(',');
   frameCount += 1;
   if (now - fpsAt >= 1000) { fps = Math.round(frameCount * 1000 / (now - fpsAt)); frameCount = 0; fpsAt = now; updateMetrics(); }
   if (moving) invalidate();
 }
 function updateMetrics(): void {
   const info = renderer.info;
-  $('#spatial-metrics').textContent = transaction ? `${fps} FPS · ${info.render.calls} draw calls · ${info.render.triangles.toLocaleString()} triângulos · ${info.memory.geometries} geometrias · cena ${buildMs.toFixed(1)} ms` : '';
+  $('#spatial-metrics').textContent = provisionalModel ? `${fps} FPS · hipótese em píxeis · ${provisionalModel.zones.length} regiões provisórias · não canónica` : transaction ? `${fps} FPS · ${info.render.calls} draw calls · ${info.render.triangles.toLocaleString()} triângulos · ${info.memory.geometries} geometrias · cena ${buildMs.toFixed(1)} ms` : '';
 }
 function resize(): void {
   const host = $('#spatial-canvas'); const width = host.clientWidth; const height = host.clientHeight;
@@ -186,6 +193,55 @@ function resize(): void {
   camera.aspect = width / height; camera.updateProjectionMatrix(); renderer.setSize(width, height, false); invalidate();
 }
 resizeObserver.observe($('#spatial-canvas'));
+
+function clearProvisionalPreview(): void {
+  if (provisionalGroup) {
+    scene.remove(provisionalGroup);
+    provisionalGroup.traverse((object) => {
+      if (object instanceof Mesh) { object.geometry.dispose(); (object.material as import('three').Material).dispose(); }
+    });
+    provisionalGroup = undefined;
+  }
+  provisionalModel = undefined;
+  delete $('#spatial-canvas').dataset.provisionalMeshCount;
+  $('#plan-overlay').querySelectorAll('[data-provisional-zone]').forEach((node) => node.remove());
+  $('#provisional-report').innerHTML = '';
+  $('#clear-provisional').hidden = true;
+  if (!transaction) { grid.visible = true; app!.dataset.state = 'empty'; $('.spatial-lab').dataset.state = 'empty'; $('#stage-empty').hidden = false; }
+  invalidate();
+}
+
+function showProvisionalPreview(): void {
+  if (!imageInfo || transaction) return;
+  const vectorModel = buildPlanVectorModel(candidates, { tolerancePx: Math.max(6, Math.min(imageInfo.width, imageInfo.height) * 0.008), imageSize: { width: imageInfo.width, height: imageInfo.height } });
+  const model = buildProvisionalPlan(vectorModel.regions, candidates, { width: imageInfo.width, height: imageInfo.height });
+  if (model.overlaps.length) throw new Error(`Hipótese recusada: ${model.overlaps.length} sobreposição(ões) entre regiões provisórias.`);
+  clearProvisionalPreview();
+  provisionalModel = model;
+  const colors: Record<ProvisionalPlanModel['zones'][number]['id'], number> = { 'room-a': 0xa5d8a8, 'room-b': 0xf0ad63, 'room-c': 0x7ac7d6, 'room-d': 0xd39aca, hall: 0xf1d366 };
+  provisionalGroup = new Group();
+  provisionalGroup.name = 'unfold-provisional-pixel-preview';
+  provisionalGroup.userData = { status: model.status, coordinateSpace: model.coordinateSpace, persistence: model.persistence };
+  for (const zone of model.zones) {
+    const xs = zone.vertices.map((point) => point.x); const ys = zone.vertices.map((point) => point.y);
+    const width = Math.max(...xs) - Math.min(...xs); const depth = Math.max(...ys) - Math.min(...ys);
+    const mesh = new Mesh(new BoxGeometry(width, 72, depth), new MeshBasicMaterial({ color: colors[zone.id], side: DoubleSide }));
+    mesh.name = `provisional-${zone.id}`; mesh.userData.zoneId = zone.id;
+    mesh.position.set((Math.min(...xs) + Math.max(...xs)) / 2 - imageInfo.width / 2, 36, (Math.min(...ys) + Math.max(...ys)) / 2 - imageInfo.height / 2);
+    provisionalGroup.add(mesh);
+  }
+  scene.add(provisionalGroup); grid.visible = false; app!.dataset.state = 'provisional'; $('.spatial-lab').dataset.state = 'provisional'; $('#stage-empty').hidden = true;
+  $('#spatial-canvas').dataset.provisionalMeshCount = String(provisionalGroup.children.length);
+  const bounds = new Box3().setFromObject(provisionalGroup);
+  const pose = createSpatialCameraView(bounds, cameraFitAspect(), 'isometric'); cameraHome = { target: pose.target.clone(), position: pose.position.clone() }; moveCamera(pose.target, pose.position, 0.5, pose.up);
+  const svg = $('#plan-overlay');
+  const polygons = model.zones.map((zone) => `<polygon data-provisional-zone="${zone.id}" points="${zone.vertices.map((point) => `${point.x},${point.y}`).join(' ')}" fill="${zone.id === 'hall' ? '#dfbd69' : '#4d9da5'}" fill-opacity=".20" stroke="${zone.id === 'hall' ? '#f0ca69' : '#47c0ca'}" stroke-width="5" stroke-dasharray="${zone.id === 'room-b' || zone.id === 'hall' ? '14 9' : 'none'}"><title>${escapeHtml(zone.label)} · provisório · píxeis</title></polygon>`).join('');
+  svg.insertAdjacentHTML('beforeend', polygons);
+  $('#provisional-report').innerHTML = `<p class="micro-copy" data-provisional-status="provisional">VISTA 3D PROVISÓRIA · coordenadas da imagem (px) · altura visual arbitrária · não gravada no spatial_scene.v1. Todas as cinco regiões são hipóteses, não regiões aceites.</p>${model.zones.map((zone) => `<div class="candidate-row" data-provisional-item="${zone.id}"><span>${escapeHtml(zone.label)}</span><small>${zone.status} · fonte: ${escapeHtml(zone.sourceCandidateRegionIds.join(', '))}</small></div>`).join('')}<p class="micro-copy">Pendências</p>${model.unresolved.map((item) => `<div class="candidate-row" data-unresolved="${escapeHtml(item.id)}"><span>${escapeHtml(item.id)}</span><small>${escapeHtml(item.reason)}</small></div>`).join('')}`;
+  $('#clear-provisional').hidden = false;
+  $('#spatial-status').textContent = 'Hipótese provisória em píxeis. Escala, semântica, aberturas e continuidade das paredes permanecem por verificar.';
+  invalidate();
+}
 
 function disposeSceneGroup(): void {
   gizmo.detach();
@@ -286,6 +342,7 @@ function animateRevision(previous: SpatialSceneV1, current: SpatialSceneV1, targ
 
 function renderModel(model = transaction?.scene, animate = false): void {
   buildTimeline?.kill();
+  if (provisionalGroup) clearProvisionalPreview();
   resetRenderInspection();
   explodedView = false;
   if (!model) { canonicalRenderPositions.clear(); explodedView = false; grid.visible = true; updateReferenceView(); updateExplodedButton(); invalidate(); return; }
@@ -429,6 +486,7 @@ function updateToolbar(): void {
   $('#add-module').disabled = !assetReady || !transaction || !!preview || !!compoundPreview;
   $('#scene-state').textContent = transaction ? `R${transaction.scene.revision.number} · ${transaction.scene.nodes.length} ELEMENTOS` : 'SEM CENA';
   app!.setAttribute('data-state', transaction ? 'ready' : 'empty');
+  $('.spatial-lab').setAttribute('data-state', transaction ? 'ready' : provisionalModel ? 'provisional' : 'empty');
   $('#stage-empty').hidden = Boolean(transaction);
   $('#scene-components').hidden = !transaction;
   $('#component-count').textContent = transaction ? String(transaction.scene.nodes.length) : '';
@@ -454,6 +512,7 @@ function updateSourceState(): void {
 function updateCandidates(): void {
   const svg = $('#plan-overlay') as unknown as SVGSVGElement;
   if (!imageInfo) return;
+  if (provisionalGroup) clearProvisionalPreview();
   svg.setAttribute('viewBox', `0 0 ${imageInfo.width} ${imageInfo.height}`);
   const mapping = transaction?.scene.imageWorldMapping;
   let vectorScale: { pixelsPerMetre: number; source: 'known_measurement' } | undefined;
@@ -464,6 +523,9 @@ function updateCandidates(): void {
   }
   const topologyTolerance = Math.max(6, Math.min(imageInfo.width, imageInfo.height) * 0.008);
   const vectorModel = buildPlanVectorModel(candidates, { tolerancePx: topologyTolerance, imageSize: { width: imageInfo.width, height: imageInfo.height }, ...(vectorScale ? { scale: vectorScale } : {}) });
+  let provisionalAvailable = false;
+  try { provisionalAvailable = !transaction && buildProvisionalPlan(vectorModel.regions, candidates, { width: imageInfo.width, height: imageInfo.height }).overlaps.length === 0; } catch { provisionalAvailable = false; }
+  $('#preview-provisional').disabled = !provisionalAvailable;
   const rasterSupport: Map<string, RegionRasterSupport> = decodedPlanRaster?.sha256 === imageInfo.sha256
     ? new Map(vectorModel.regions.map((region) => [region.id, measureRegionRasterSupport(decodedPlanRaster!, region)]))
     : new Map();
@@ -646,16 +708,17 @@ $('#plan-overlay').addEventListener('click', (event) => {
 
 // A click on the image either records the two explicit scale anchors or starts a manual segment.
 const calibrationPoints: Point2[] = [];
-const scaleMeasurements: ScaleMeasurement[] = [];
+const scaleMeasurements: Array<AxisScaleMeasurement & { endpointsPx: [Point2, Point2]; anchorNote: string }> = [];
 function renderCalibrationList(): void {
   const list = $('#calibration-list');
   if (!scaleMeasurements.length) { list.innerHTML = '<p class="micro-copy">Sem cotas registadas. Uma medida única não permite detectar distorção ou conflito.</p>'; return; }
-  let fit: ReturnType<typeof calibrateScaleFromMeasurements> | undefined;
-  if (scaleMeasurements.length >= 2) fit = calibrateScaleFromMeasurements(scaleMeasurements);
+  const fits = calibrateScaleByAxis(scaleMeasurements);
   list.innerHTML = scaleMeasurements.map((item) => {
+    const fit = fits.find((entry) => entry.axis === item.axis)?.result;
     const residual = fit?.residuals.find((entry) => entry.id === item.id);
-    return `<div class="candidate-row"><span>${escapeHtml(item.id)} · ${item.realDistanceMetres.toFixed(4)} m</span><small>${item.pixelDistance.toFixed(1)} px · ${escapeHtml(item.evidence)}${residual ? ` · erro residual ${(residual.relativeError * 100).toFixed(2)}%` : ''}</small></div>`;
-  }).join('') + (fit ? `<p class="micro-copy">${fit.accepted ? 'Escala consistente' : 'Calibração bloqueada: medidas incompatíveis'} · erro RMS ${(fit.rmsRelativeError * 100).toFixed(2)}% · máximo ${(fit.maxRelativeError * 100).toFixed(2)}% · dispersão entre escalas ${(fit.scaleSpreadRelative * 100).toFixed(2)}% (limite 1%).</p>` : '<p class="micro-copy">Adicione uma segunda cota independente para verificar consistência.</p>');
+    const [[x1, y1], [x2, y2]] = item.endpointsPx.map((point) => [point.x, point.y]);
+    return `<div class="candidate-row" data-dimension="${escapeHtml(item.id)}" data-axis="${item.axis}"><span>${escapeHtml(item.id)} · ${item.realDistanceMetres.toFixed(4)} m (${item.axis})</span><small>${item.pixelDistance.toFixed(1)} px · extremos (${x1!.toFixed(1)}, ${y1!.toFixed(1)}) → (${x2!.toFixed(1)}, ${y2!.toFixed(1)}) px · ${escapeHtml(item.anchorNote)} · ${escapeHtml(item.evidence)}${residual ? ` · erro residual ${(residual.relativeError * 100).toFixed(2)}%` : ''}</small></div>`;
+  }).join('') + fits.map((fit) => fit.result ? `<p class="micro-copy" data-axis-fit="${fit.axis}">${fit.axis}: ${fit.result.accepted ? 'escala consistente neste eixo' : 'ajuste robusto fora da tolerância'} · mediana de px/m · RMS ${(fit.result.rmsRelativeError * 100).toFixed(2)}% · máximo ${(fit.result.maxRelativeError * 100).toFixed(2)}% · dispersão ${(fit.result.scaleSpreadRelative * 100).toFixed(2)}% (limite 1%). Cotas de extensões arquitectónicas diferentes não provam erro de raster sem confirmar os extremos correspondentes.</p>` : `<p class="micro-copy" data-axis-fit="${fit.axis}">${escapeHtml(fit.reason ?? 'ajuste indisponível')}</p>`).join('');
 }
 $('#plan-overlay').addEventListener('pointerdown', (event) => {
   const target = event.target as SVGElement;
@@ -732,12 +795,19 @@ $('#add-calibration').addEventListener('click', () => {
     const realDistanceMetres = scaleValue * ({ m: 1, cm: 0.01, mm: 0.001, ft: 0.3048, in: 0.0254 } as const)[unit];
     const evidence = (document.querySelector<HTMLInputElement>('#scale-evidence')?.value ?? '').trim();
     if (!evidence) throw new Error('Registe a cota e a respetiva localização no documento.');
-    scaleMeasurements.push({ id: `dimension-${scaleMeasurements.length + 1}`, pixelDistance, realDistanceMetres, evidence });
+    const start = { ...calibrationPoints[0]! }; const end = { ...calibrationPoints[1]! };
+    const axis = Math.abs(end.x - start.x) >= Math.abs(end.y - start.y) ? 'horizontal' as const : 'vertical' as const;
+    scaleMeasurements.push({ id: `dimension-${scaleMeasurements.length + 1}`, pixelDistance, realDistanceMetres, evidence, axis, endpointsPx: [start, end], anchorNote: 'extremos seleccionados pelo utilizador no original' });
     calibrationPoints.length = 0; renderCalibrationList(); updateCandidates();
     status(`Cota registada (${pixelDistance.toFixed(1)} px ↔ ${realDistanceMetres.toFixed(4)} m). A imagem original permanece inalterada.`);
   } catch (error) { status(error instanceof Error ? error.message : 'Não foi possível registar a cota.'); }
 });
 $('#clear-selection').addEventListener('click', () => { selectedCandidates.clear(); selectedRegions.clear(); updateCandidates(); status('Selecção de segmentos e divisões limpa.'); });
+$('#preview-provisional').addEventListener('click', () => {
+  try { showProvisionalPreview(); }
+  catch (error) { status(error instanceof Error ? `Pré-visualização recusada: ${error.message}` : 'Pré-visualização recusada.'); }
+});
+$('#clear-provisional').addEventListener('click', () => { clearProvisionalPreview(); status('Pré-visualização provisória fechada; a Scene Graph canónica não foi alterada.'); });
 $('#candidate-list').addEventListener('click', (event) => {
   const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-candidate]'); if (!button) return;
   const id = button.dataset.candidate!; if (selectedCandidates.has(id)) selectedCandidates.delete(id); else selectedCandidates.add(id); updateCandidates();
@@ -891,7 +961,14 @@ function moveCamera(target: Vector3, position: Vector3, duration = 0.7, up = new
   cameraTween.to(camera.position, { x: position.x, y: position.y, z: position.z, duration: seconds, ease: 'power2.inOut' }, 0);
   cameraTween.to(orbit.target, { x: target.x, y: target.y, z: target.z, duration: seconds, ease: 'power2.inOut' }, 0);
 }
-$('#fit-scene').addEventListener('click', () => fitScene());
+$('#fit-scene').addEventListener('click', () => {
+  if (provisionalGroup) {
+    const bounds = new Box3().setFromObject(provisionalGroup);
+    if (!bounds.isEmpty()) { const pose = createSpatialCameraView(bounds, cameraFitAspect(), 'isometric'); moveCamera(pose.target, pose.position, 0.7, pose.up); }
+    return;
+  }
+  fitScene();
+});
 $('#home-scene').addEventListener('click', () => { if (cameraHome) moveCamera(cameraHome.target, cameraHome.position); else moveCamera(new Vector3(), new Vector3(8, 7, 9)); });
 $('#top-view').addEventListener('click', () => fitScene('top'));
 $('#front-view').addEventListener('click', () => fitScene('front'));

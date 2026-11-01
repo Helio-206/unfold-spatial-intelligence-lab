@@ -228,3 +228,34 @@ UNFOLD_E2E_URL=http://127.0.0.1:5192 UNFOLD_CDP_PORT=9227 UNFOLD_EVIDENCE_DIR=re
 ```
 
 This increment changes only the raster diagnostics and tests. It does not modify the canonical Scene Graph, use new Meta calls, or claim Phase 10 completion.
+
+## Partial pixel-space reconstruction increment (2026-11-01)
+
+The Workbench now separates candidate regions from a derived provisional hypothesis. It uses the four currently detected HABS rectangles as positional anchors. It trims the lower-right Room B candidate at the left boundary of the upper-right candidate and creates the intervening strip as a residual Hall hypothesis. This is a source-image-coordinate operation; it neither creates nor persists canonical room/wall nodes.
+
+The five proposed polygons (A–D plus Hall) were checked for positive-area pairwise overlap: **0 overlaps; 0 accepted polygons**. B starts at x=1911.25 px; the Hall occupies x=1679.17–1911.25 px and y=742–1880.75 px. These coordinates describe a provisional non-overlapping partition only. The source evidence does **not** validate the Hall contour or a continuous B/Hall wall. Candidate line coverage on that inferred boundary is **37% unique vertical coverage** after merging overlapping candidate intervals. The unsupported ranges are y=1357.2–1673.5 px and y=1869.8–1880.8 px. The room C/D row gap y=1357.2–1390.8 px is kept open and unresolved. No polygon is promoted to accepted geometry.
+
+The preview is a temporary Three.js group in image-pixel coordinates. Its 72 px extrusion height is explicitly visual-only. `spatial_scene.v1` stays empty, Save stays disabled and closing the preview restores the previous render state. The interface marks the room labels as positional and semantically pending. Scale, all openings, the inferred Hall boundaries, and the C/D gap remain listed as unresolved. The nine opening candidates remain unconfirmed; no opening was fabricated to force connectivity.
+
+Scale entries now retain the user's two clicked image endpoints and their horizontal/vertical axis in the Workbench. Fits are reported per axis, not pooled across axes. Each axis fit uses the median of its px/m samples, so one mismatched cota cannot drag the fitted scale; its individual residual still remains visible and can block acceptance. The display says that different architectural extents are not evidence of raster-scale error until their witnesses are identified. The existing 1% policy is unchanged. This increment does not choose or approve a HABS metric calibration and does not turn prior approximate cota readings into confirmed anchors.
+
+### Evidence and verification
+
+- Browser E2E: **PASS_PROVISIONAL_ONLY**, Chromium at 1440×1000, DPR 1, 0 browser errors. It produced separate reviewed captures for the 2D overlay and the 3D provisional slabs: [2D hypothesis](evidence/case-b-provisional/05-provisional-2d.png), [3D hypothesis](evidence/case-b-provisional/06-provisional-3d.png), and [sanitized E2E results](evidence/case-b-provisional/case-b-detection.json). The test asserts five regions, five render meshes, zero overlaps, the B/Hall split, unresolved scale/openings/boundary intervals, no canonical nodes, and restoration after closing the preview.
+- Visual review: **DONE** for both screenshots. The 2D overlay aligns the four draft rectangles and residual Hall to the source image. The 3D view is visibly a coloured volumetric preview, not a dimensionally calibrated architectural reconstruction.
+- Unit suite: **PASS**, 44 test files / 255 tests, including duplicate-segment coverage union, row-gap preservation, translated/rescaled layout generalization, and median-scale outlier handling.
+- Build: **PASS** with the existing 586.26 kB OrbitControls chunk warning.
+- Performance: the final short headless Chromium capture reported 9 FPS, 5 draw calls and 60 triangles at 1440×1000. This is a noisy browser observation, not a physical integrated-GPU benchmark, and it does not meet the Phase 10 hardware-performance criterion.
+- Meta: **NOT RUN**. Existing Muse Spark evidence was reused; no new inference was required or made.
+- Unknown-plan generalization: **PARTIAL**. A unit test runs the positional layout logic against translated and rescaled independent rectangles. No second unfamiliar real plan has completed an end-to-end reconstruction.
+
+The acceptance state remains **provisional, not accepted**. Human per-region correction, human confirmation of dimension endpoints, opening classification, complete wall topology, canonical Scene Graph construction, and an edit/undo against this Case B geometry remain outstanding. No change to the 1% dimensional tolerance was made.
+
+Reproduction:
+
+```sh
+npm test -- --reporter=dot
+npm run build
+npm run dev -- --host 127.0.0.1 --port 5192 --strictPort
+UNFOLD_E2E_URL=http://127.0.0.1:5192 UNFOLD_CDP_PORT=9227 UNFOLD_EVIDENCE_DIR=reports/phase-10-teardown/evidence/case-b-provisional node tests/e2e/phase-10-case-b-detection.cdp.mjs
+```
