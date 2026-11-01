@@ -106,8 +106,8 @@ OpenPlan3D and R2V both confirm that topology operates on already-vectorized geo
 | Case B Meta grounding | PASS | Actual plan extracted into semantic document with uncertainties; no coordinates |
 | Case A plan-to-3D, dimensions and topology | PASS | Browser scene and independent geometry assertions; opening browser coverage remains partial |
 | Case B Meta-to-scene handoff and accepted semantic link | BLOCKED | First handoff screenshot preceded async load; no accepted region mapping recorded |
-| Case B raster candidates | PARTIAL | 162 line candidates; three poor orthogonal regions; 11 faces excluded; 0 exact cycles; 9 ambiguous opening candidates; regions rejected after visual review |
-| Case B complete plan reconstruction | BLOCKED | Canonical scene remains four perimeter walls; no valid room polygons/relations; two width errors exceed 1% |
+| Case B raster candidates | PARTIAL | 210 raw → 162 fused line candidates; four room-shaped proposals visually align with Rooms A–D but remain unreviewed; 110 rejected faces/rectangles diagnosed; 0 exact cycles; 9 ambiguous opening candidates |
+| Case B complete plan reconstruction | BLOCKED | Canonical scene remains the earlier four-wall tracing; no Case-B room polygons or openings committed; central hall unresolved; two prior width errors exceed 1% |
 | Component inspection, isolate and cutaway | PASS | Correct identity/provenance and render-only state restoration |
 | RemoveWall transactional geometry / undo | PASS | Unit tests cover valid merge, invalid polygon blocking and canonical rollback/restore |
 | RemoveWall live agent proposal/commit/undo | BLOCKED | Real model requested clarification; no proposal was committed |
