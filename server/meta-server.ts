@@ -32,7 +32,38 @@ const MAX_IMAGE_BODY_BYTES = 14 * 1024 * 1024;
 const MAX_PREVIEW_BODY_BYTES = 16 * 1024;
 const MAX_SPATIAL_AGENT_BODY_BYTES = 48 * 1024;
 const ALLOWED_ORIGINS = new Set(['http://127.0.0.1:5173', 'http://localhost:5173']);
+// O proxy do Vite (changeOrigin: false) deixa passar o Host do browser, por isso o frontend
+// chega aqui com 127.0.0.1:5173 e não com a porta do backend. Os dois valores são aceites.
+const ALLOWED_ORIGIN_HOSTS = new Set([...ALLOWED_ORIGINS].map((origin) => new URL(origin).host));
 export const BACKEND_CONTRACT = 'unfold.phase4c' as const;
+
+// Única lista de rotas que gastam chamadas Meta. O despacho abaixo só encaminha caminhos que estão
+// aqui, e tudo o que está aqui passa pela mesma guarda antes de qualquer outra coisa. Uma rota nova
+// sem entrada nesta lista devolve 404; com entrada, herda a guarda.
+export const PAID_ROUTES = [
+  '/api/meta/text',
+  '/api/meta/image',
+  '/api/meta/image/verify-region',
+  '/api/kinematics/experiment',
+  '/api/experiments/preview',
+  '/api/conversation',
+  '/api/spatial-agent',
+] as const;
+const PAID_ROUTE_SET: ReadonlySet<string> = new Set(PAID_ROUTES);
+
+type GuardRejection = { status: number; code: string; message: string; allow?: string };
+
+function checkPaidRoute(request: IncomingMessage): GuardRejection | undefined {
+  if (request.method !== 'POST') return { status: 405, code: 'METHOD_NOT_ALLOWED', message: 'Esta rota só aceita POST.', allow: 'POST' };
+  const mediaType = (request.headers['content-type'] ?? '').split(';')[0]!.trim().toLowerCase();
+  if (mediaType !== 'application/json') return { status: 415, code: 'UNSUPPORTED_MEDIA_TYPE', message: 'Content-Type tem de ser application/json.' };
+  const host = (request.headers.host ?? '').toLowerCase();
+  const localPort = request.socket.localPort;
+  if (!ALLOWED_ORIGIN_HOSTS.has(host) && host !== `127.0.0.1:${localPort}` && host !== `localhost:${localPort}`) {
+    return { status: 421, code: 'INVALID_HOST', message: 'Host não permitido.' };
+  }
+  return undefined;
+}
 
 export type PreviewMechanismResolution =
   | { status: 'ready'; graph: MechanicalGraphV1; assembly: KinematicAssemblyV1; fixtureOnly: boolean; limitations: string[] }
@@ -229,8 +260,15 @@ export function createMetaServer(options: ServerOptions = {}): Server {
       writeJson(response, 200, diagnostics(), origin);
       return;
     }
-    if (request.method !== 'POST' || !['/api/meta/text', '/api/meta/image', '/api/meta/image/verify-region', '/api/kinematics/experiment', '/api/experiments/preview', '/api/conversation', '/api/spatial-agent'].includes(request.url ?? '')) {
+    if (!PAID_ROUTE_SET.has(request.url ?? '')) {
       writeJson(response, 404, { error: { code: 'NOT_FOUND', message: 'Rota não encontrada.' } }, origin);
+      return;
+    }
+    const rejection = checkPaidRoute(request);
+    if (rejection) {
+      console.info(JSON.stringify({ event: 'paid_route.rejected', route: request.url, status: rejection.status, code: rejection.code }));
+      if (rejection.allow) response.setHeader('Allow', rejection.allow);
+      writeJson(response, rejection.status, { error: { code: rejection.code, message: rejection.message } }, origin);
       return;
     }
     if (!apiKey) {
@@ -240,8 +278,8 @@ export function createMetaServer(options: ServerOptions = {}): Server {
     }
 
     if (request.url === '/api/conversation' || request.url === '/api/spatial-agent') {
-      if ((origin && !ALLOWED_ORIGINS.has(origin)) || !request.headers['content-type']?.toLowerCase().startsWith('application/json')) {
-        writeJson(response, 403, { error: { code: 'INVALID_ORIGIN', message: 'Origem ou tipo de pedido não permitido.' } }, origin);
+      if (origin && !ALLOWED_ORIGINS.has(origin)) {
+        writeJson(response, 403, { error: { code: 'INVALID_ORIGIN', message: 'Origem não permitida.' } }, origin);
         return;
       }
       const now = Date.now();
