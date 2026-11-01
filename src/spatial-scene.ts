@@ -223,6 +223,10 @@ function rewrittenProvenance(current: PropertyProvenance, previousValue: unknown
     ? { source: 'user', validation: 'corrected', sourceValue: previousValue, evidence: PENDING_AUTHORIZATION_EVIDENCE, actor, recordedAt }
     : { source: 'user', validation: 'unreviewed', actor, recordedAt };
 }
+/** Tolerância abaixo da qual dois números contam como o mesmo valor (ruído de vírgula flutuante, não alterações reais). */
+const SAME_VALUE_TOLERANCE = 1e-9;
+const sameNumber = (a: number, b: number) => Math.abs(a - b) <= SAME_VALUE_TOLERANCE * Math.max(1, Math.abs(a), Math.abs(b));
+
 function applyCommand(scene: SpatialSceneV1, command: SpatialCommand, actor: string, clock: () => Date): SpatialSceneV1 {
   const nodes = scene.nodes.map((node) => structuredClone(node));
   let relations = structuredClone(scene.relations);
@@ -245,8 +249,12 @@ function applyCommand(scene: SpatialSceneV1, command: SpatialCommand, actor: str
       if (dependent || referenced) throw new Error('REMOVE_HAS_DEPENDENCIES');
       return sceneWithRevision({ ...scene, nodes: nodes.filter((item) => item.id !== target.id) }, command.type, actor, clock);
     }
-    case 'MoveComponent': node!.transform.provenance.translationM = rewrittenProvenance(node!.transform.provenance.translationM, [...node!.transform.translationM], actor, clock); node!.transform.translationM = [...command.translationM]; break;
+    case 'MoveComponent':
+      // Mover para onde já está não é uma alteração: um valor confirmado fica como está (sem autorização nem `corrected`).
+      if (isConfirmedValidation(node!.transform.provenance.translationM.validation) && command.translationM.every((value, index) => sameNumber(value, node!.transform.translationM[index]!))) break;
+      node!.transform.provenance.translationM = rewrittenProvenance(node!.transform.provenance.translationM, [...node!.transform.translationM], actor, clock); node!.transform.translationM = [...command.translationM]; break;
     case 'RotateComponent': {
+      if (isConfirmedValidation(node!.transform.provenance.rotation.validation) && sameNumber(command.angleRad, 0)) break;
       const previousRotation = [...node!.transform.rotation];
       const norm = Math.hypot(...command.axis);
       const half = command.angleRad / 2;
@@ -259,6 +267,7 @@ function applyCommand(scene: SpatialSceneV1, command: SpatialCommand, actor: str
     }
     case 'ResizeComponent': {
       if (!node!.geometry) throw new Error('RESIZE_GEOMETRY_REQUIRED');
+      if (isConfirmedValidation(node!.geometry.provenance.validation) && command.scale.every((value) => sameNumber(value, 1)) && ['box', 'segment', 'mesh_reference'].includes(node!.geometry.kind)) break;
       const previousGeometry = structuredClone(withoutProvenance(node!.geometry));
       if (node!.geometry.kind === 'box') node!.geometry.sizeM = node!.geometry.sizeM.map((item, index) => item * command.scale[index]!) as [number, number, number];
       else if (node!.geometry.kind === 'segment') {
@@ -276,6 +285,8 @@ function applyCommand(scene: SpatialSceneV1, command: SpatialCommand, actor: str
       // Um valor confirmado (verified ou corrected) nunca passa a unreviewed: fica corrected, com o valor anterior.
       // A autorização em si é verificada no commit, que é quem acrescenta o id e a evidência definitiva.
       const confirmed = !!current && isConfirmedValidation(current.provenance.validation);
+      // Repetir o valor e a unidade que o parâmetro já tem não é uma alteração: o confirmado fica como está.
+      if (confirmed && (typeof command.value === 'number' && typeof current.value === 'number' ? sameNumber(command.value, current.value) : command.value === current.value) && (command.unit ?? null) === (current.unit ?? null)) break;
       const next: SpatialProperty = { value: command.value, ...(command.unit ? { unit: command.unit } : {}), provenance: { source: 'user', validation: confirmed ? 'corrected' : 'unreviewed', ...(confirmed ? { sourceValue: current.value, sourceUnit: current.unit, evidence: PENDING_AUTHORIZATION_EVIDENCE } : {}), actor, recordedAt: clock().toISOString() } };
       if (node!.component && Object.hasOwn(node!.component.properties, command.property)) node!.component.properties[command.property] = next;
       else node!.properties[command.property] = next;
