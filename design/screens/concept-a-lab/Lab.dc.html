@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<title>UNFOLD Lab — figura central</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font-family:inherit}
+a:focus-visible,button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid #FF5A1F;outline-offset:3px}
+</style>
+</helmet>
+<div style="{{themeVars}};width:1440px;height:900px;position:relative;overflow:hidden;background:var(--bg);color:var(--ink);font-family:'Geist',system-ui,sans-serif">
+
+<svg width="1440" height="900" viewBox="0 0 1440 900" aria-hidden="true" style="position:absolute;inset:0">
+<g fill="none" style="stroke:var(--line)" stroke-width="1">
+<ellipse cx="720" cy="470" rx="250" ry="130"/><ellipse cx="720" cy="470" rx="400" ry="210"/><ellipse cx="720" cy="470" rx="590" ry="310"/>
+</g>
+<path d="M720 150V190M720 750V790M120 470H160M1280 470H1320" style="stroke:var(--muted)" stroke-width="1" fill="none"/>
+</svg>
+
+<header style="position:absolute;left:40px;right:40px;top:28px;display:flex;align-items:center;justify-content:space-between">
+<a href="#" aria-label="UNFOLD — página inicial" style="display:flex;align-items:center;min-height:44px"><sc-if value="{{isDark}}" hint-placeholder-val="{{false}}"><img src="/_blob/9e2f67213f0721f0a6544a04d058d784" alt="Unfold — Spatial Intelligence Lab" style="height:38px;width:auto;display:block"></sc-if><sc-if value="{{isLight}}" hint-placeholder-val="{{true}}"><img src="/_blob/9da9dc0256971ff6c911bbd413c714ec" alt="Unfold — Spatial Intelligence Lab" style="height:38px;width:auto;display:block"></sc-if></a>
+<nav aria-label="Navegação" style="display:flex;gap:4px;align-items:center">
+<a href="#" style="min-height:44px;padding:0 16px;display:inline-flex;align-items:center;font-size:14px;font-weight:500;color:var(--bg);background:var(--ink);border-radius:4px;text-decoration:none">Lab</a>
+<a href="#" style="min-height:44px;padding:0 16px;display:inline-flex;align-items:center;font-size:14px;color:var(--muted);text-decoration:none">Planos</a>
+<a href="#" style="min-height:44px;padding:0 16px;display:inline-flex;align-items:center;font-size:14px;color:var(--muted);text-decoration:none">Construir cena</a>
+</nav>
+</header>
+
+<div style="position:absolute;left:40px;top:120px;font-family:'Geist Mono',monospace;font-size:12px;line-height:16px;color:var(--muted)">
+<div>01 · four-bar</div>
+<div style="color:var(--ink);margin-top:4px">exemplo hipotético</div>
+</div>
+<div style="position:absolute;right:40px;top:120px;text-align:right;font-family:'Geist Mono',monospace;font-size:12px;line-height:16px;color:var(--muted)">
+<div>{{stateLabel}}</div>
+<div style="margin-top:8px"><span style="display:inline-flex;padding:3px 8px;border:1px dashed var(--foldink);border-radius:4px;color:var(--foldink)">provisório · não validado</span></div>
+</div>
+
+<div tabindex="0" role="application" aria-label="Vista 3D do mecanismo. Arrasta para rodar; setas para rodar e explodir." onPointerDown="{{down}}" onPointerMove="{{move}}" onPointerUp="{{up}}" onKeyDown="{{key}}" style="position:absolute;left:270px;top:130px;width:900px;height:640px;touch-action:none;cursor:grab;user-select:none">
+<dc-import name="Figure" e="{{e}}" yaw="{{yaw}}" dark="{{isDark}}" hint-size="900px,640px"></dc-import>
+</div>
+
+<div style="position:absolute;left:0;right:0;top:716px;display:flex;justify-content:center;align-items:center;gap:0">
+<sc-for list="{{steps}}" as="st" hint-placeholder-count="5">
+<button type="button" onClick="{{st.pick}}" aria-label="{{st.label}}" aria-pressed="{{st.on}}" style="width:44px;height:44px;border:0;background:transparent;cursor:pointer;display:grid;place-items:center"><span style="{{st.dot}}"></span></button>
+</sc-for>
+</div>
+
+<div style="position:absolute;left:410px;top:762px;width:620px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+<button type="button" onClick="{{explode}}" style="min-height:44px;padding:0 14px;border:0;background:transparent;font-size:13px;color:var(--muted);cursor:pointer">Desmonta o mecanismo</button>
+<button type="button" onClick="{{assemble}}" style="min-height:44px;padding:0 14px;border:0;background:transparent;font-size:13px;color:var(--muted);cursor:pointer">Monta de novo</button>
+</div>
+
+<section aria-label="Barra de comandos" style="position:absolute;left:410px;top:808px;width:620px;height:68px;box-sizing:border-box;padding:8px;display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:8px;background:var(--raised);border:1px solid var(--line);border-radius:14px">
+<div aria-hidden="true" style="position:absolute;left:50%;top:-8px;width:40px;height:14px;transform:translateX(-50%);background:var(--raised);border:1px solid var(--line);border-bottom:0;border-radius:8px 8px 0 0;display:flex;justify-content:center;gap:3px;padding-top:5px;box-sizing:border-box"><i style="width:3px;height:3px;border-radius:50%;background:var(--muted)"></i><i style="width:3px;height:3px;border-radius:50%;background:var(--muted)"></i><i style="width:3px;height:3px;border-radius:50%;background:var(--muted)"></i></div>
+<button type="button" aria-label="Adicionar" style="width:44px;height:44px;border:0;border-radius:10px;background:var(--bg);color:var(--ink);cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+<label style="display:block"><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Comando</span><input type="text" placeholder="Pergunta, constrói ou transforma…" style="width:100%;height:44px;border:0;background:transparent;font:400 15px 'Geist',sans-serif;color:var(--ink);outline:none"></label>
+<div style="display:flex;gap:4px;align-items:center">
+<button type="button" aria-label="Imagem" style="width:44px;height:44px;border:0;background:transparent;color:var(--muted);cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg></button>
+<button type="button" aria-label="Voz" style="width:44px;height:44px;border:0;background:transparent;color:var(--muted);cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg></button>
+<button type="button" aria-label="Enviar" style="width:44px;height:44px;border:0;border-radius:10px;background:#FF5A1F;color:#0B0D10;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+</div>
+</section>
+
+<div style="position:absolute;left:40px;bottom:36px;font-family:'Geist Mono',monospace;font-size:12px;line-height:16px;color:var(--muted)">arrasta para rodar · ← → rodar · ↑ ↓ explodir</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"light","options":["light","dark"]},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { e: 0, yaw: -28 };
+this.t = { e: 0, yaw: -28 };
+this.raf = 0;
+this.drag = null;
+this.tick = () => {
+const s = this.state, t = this.t;
+let e = s.e + (t.e - s.e) * 0.1, yaw = s.yaw + (t.yaw - s.yaw) * 0.14;
+if (Math.abs(t.e - e) < 0.002) e = t.e;
+if (Math.abs(t.yaw - yaw) < 0.05) yaw = t.yaw;
+this.setState({ e, yaw });
+this.raf = (e !== t.e || yaw !== t.yaw) ? requestAnimationFrame(this.tick) : 0;
+};
+this.kick = () => {
+const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (reduce) { this.setState({ e: this.t.e, yaw: this.t.yaw }); return; }
+if (!this.raf) this.raf = requestAnimationFrame(this.tick);
+};
+}
+componentWillUnmount() { if (this.raf) cancelAnimationFrame(this.raf); }
+renderVals() {
+const dark = this.props.theme === 'dark';
+const P = dark
+? '--bg:#0B0D10;--raised:#171A1F;--ink:#F3F0E8;--muted:#9AA0A8;--line:#2A2F36;--foldink:#FF7A45'
+: '--bg:#F6F5F1;--raised:#FFFFFF;--ink:#0B0D10;--muted:#585D64;--line:#DDD8CC;--foldink:#C93A08';
+const e = this.state.e, yaw = this.state.yaw;
+const clamp = (v) => Math.min(1, Math.max(0, v));
+const setE = (v) => { this.t.e = clamp(v); this.kick(); };
+const steps = [0, 1, 2, 3, 4].map((i) => {
+const on = Math.abs(this.t.e - i / 4) < 0.01;
+const filled = e >= i / 4 - 0.01;
+return { label: i === 0 ? 'Montado' : i === 4 ? 'Totalmente explodido' : 'Explodido ' + (i * 25) + '%', on: on, pick: () => setE(i / 4),
+dot: 'display:block;width:' + (on ? 12 : 8) + 'px;height:' + (on ? 12 : 8) + 'px;border-radius:2px;background:' + (on ? '#FF5A1F' : filled ? 'var(--ink)' : 'var(--line)') + ';transition:all .3s ease' };
+});
+return {
+themeVars: P, isDark: dark, isLight: !dark, e: e, yaw: yaw, steps: steps,
+stateLabel: e < 0.02 ? 'montado' : 'explodido ' + Math.round(e * 100) + '%',
+explode: () => setE(1), assemble: () => setE(0),
+down: (ev) => { this.drag = { x: ev.clientX }; if (ev.currentTarget.setPointerCapture) ev.currentTarget.setPointerCapture(ev.pointerId); },
+move: (ev) => { if (!this.drag) return; const dx = ev.clientX - this.drag.x; this.drag.x = ev.clientX; this.t.yaw += dx * 0.4; this.kick(); },
+up: () => { this.drag = null; },
+key: (ev) => {
+if (ev.key === 'ArrowLeft') { this.t.yaw -= 12; this.kick(); ev.preventDefault(); }
+else if (ev.key === 'ArrowRight') { this.t.yaw += 12; this.kick(); ev.preventDefault(); }
+else if (ev.key === 'ArrowUp') { setE(this.t.e + 0.25); ev.preventDefault(); }
+else if (ev.key === 'ArrowDown') { setE(this.t.e - 0.25); ev.preventDefault(); }
+}
+};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<title>UNFOLD Lab — telemóvel</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font-family:inherit}
+a:focus-visible,button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid #FF5A1F;outline-offset:3px}
+</style>
+</helmet>
+<div style="{{themeVars}};width:390px;height:844px;position:relative;overflow:hidden;background:var(--bg);color:var(--ink);font-family:'Geist',system-ui,sans-serif">
+
+<svg width="390" height="844" viewBox="0 0 390 844" aria-hidden="true" style="position:absolute;inset:0">
+<g fill="none" style="stroke:var(--line)" stroke-width="1"><ellipse cx="195" cy="360" rx="150" ry="80"/><ellipse cx="195" cy="360" rx="260" ry="140"/></g>
+</svg>
+
+<header style="position:absolute;left:16px;right:16px;top:16px;display:flex;align-items:center;justify-content:space-between">
+<a href="#" aria-label="UNFOLD" style="display:flex;align-items:center;min-height:44px"><sc-if value="{{isDark}}" hint-placeholder-val="{{false}}"><img src="/_blob/9e2f67213f0721f0a6544a04d058d784" alt="Unfold — Spatial Intelligence Lab" style="height:30px;width:auto;display:block"></sc-if><sc-if value="{{isLight}}" hint-placeholder-val="{{true}}"><img src="/_blob/9da9dc0256971ff6c911bbd413c714ec" alt="Unfold — Spatial Intelligence Lab" style="height:30px;width:auto;display:block"></sc-if></a>
+<nav aria-label="Navegação" style="display:flex;gap:2px"><a href="#" style="min-height:44px;padding:0 12px;display:inline-flex;align-items:center;font-size:13px;color:var(--muted);text-decoration:none">Planos</a><a href="#" style="min-height:44px;padding:0 12px;display:inline-flex;align-items:center;font-size:13px;font-weight:500;color:var(--bg);background:var(--ink);border-radius:4px;text-decoration:none">Lab</a></nav>
+</header>
+
+<div style="position:absolute;left:16px;top:84px;font-family:'Geist Mono',monospace;font-size:12px;line-height:16px;color:var(--muted)">01 · four-bar · <span style="color:var(--ink)">{{stateLabel}}</span></div>
+<div style="position:absolute;right:16px;top:84px"><span style="display:inline-flex;padding:2px 6px;border:1px dashed var(--foldink);border-radius:4px;font-family:'Geist Mono',monospace;font-size:12px;line-height:16px;color:var(--foldink)">provisório</span></div>
+
+<div tabindex="0" role="application" aria-label="Vista 3D do mecanismo. Arrasta para rodar." onPointerDown="{{down}}" onPointerMove="{{move}}" onPointerUp="{{up}}" style="position:absolute;left:0;top:150px;width:390px;height:420px;overflow:hidden;touch-action:none;cursor:grab;user-select:none">
+<div style="position:absolute;left:-84px;top:-6px;width:558px;height:397px">
+<div style="width:900px;height:640px;transform:scale(.62);transform-origin:0 0">
+<dc-import name="Figure" e="{{e}}" yaw="{{yaw}}" dark="{{isDark}}" show-labels="{{false}}" hint-size="900px,640px"></dc-import>
+</div>
+</div>
+</div>
+
+<div style="position:absolute;left:0;right:0;top:600px;display:flex;justify-content:center">
+<sc-for list="{{steps}}" as="st" hint-placeholder-count="5">
+<button type="button" onClick="{{st.pick}}" aria-label="{{st.label}}" aria-pressed="{{st.on}}" style="width:44px;height:44px;border:0;background:transparent;cursor:pointer;display:grid;place-items:center"><span style="{{st.dot}}"></span></button>
+</sc-for>
+</div>
+
+<div style="position:absolute;left:12px;right:12px;top:650px;display:flex;gap:4px;justify-content:center">
+<button type="button" onClick="{{explode}}" style="min-height:44px;padding:0 12px;border:0;background:transparent;font-size:13px;color:var(--muted);cursor:pointer">Desmonta</button>
+<button type="button" onClick="{{assemble}}" style="min-height:44px;padding:0 12px;border:0;background:transparent;font-size:13px;color:var(--muted);cursor:pointer">Monta</button>
+</div>
+
+<section aria-label="Barra de comandos" style="position:absolute;left:12px;right:12px;bottom:20px;height:64px;box-sizing:border-box;padding:6px;display:grid;grid-template-columns:44px 1fr 44px 44px;align-items:center;gap:4px;background:var(--raised);border:1px solid var(--line);border-radius:14px">
+<button type="button" aria-label="Adicionar" style="width:44px;height:44px;border:0;border-radius:10px;background:var(--bg);color:var(--ink);cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+<label style="display:block;min-width:0"><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Comando</span><input type="text" placeholder="Pergunta ou transforma…" style="width:100%;height:44px;border:0;background:transparent;font:400 16px 'Geist',sans-serif;color:var(--ink);outline:none"></label>
+<button type="button" aria-label="Voz" style="width:44px;height:44px;border:0;background:transparent;color:var(--muted);cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg></button>
+<button type="button" aria-label="Enviar" style="width:44px;height:44px;border:0;border-radius:10px;background:#FF5A1F;color:#0B0D10;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"light","options":["light","dark"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { e: 0, yaw: -28 };
+this.t = { e: 0, yaw: -28 };
+this.raf = 0;
+this.drag = null;
+this.tick = () => {
+const s = this.state, t = this.t;
+let e = s.e + (t.e - s.e) * 0.1, yaw = s.yaw + (t.yaw - s.yaw) * 0.14;
+if (Math.abs(t.e - e) < 0.002) e = t.e;
+if (Math.abs(t.yaw - yaw) < 0.05) yaw = t.yaw;
+this.setState({ e, yaw });
+this.raf = (e !== t.e || yaw !== t.yaw) ? requestAnimationFrame(this.tick) : 0;
+};
+this.kick = () => {
+const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (reduce) { this.setState({ e: this.t.e, yaw: this.t.yaw }); return; }
+if (!this.raf) this.raf = requestAnimationFrame(this.tick);
+};
+}
+componentWillUnmount() { if (this.raf) cancelAnimationFrame(this.raf); }
+renderVals() {
+const dark = this.props.theme === 'dark';
+const P = dark
+? '--bg:#0B0D10;--raised:#171A1F;--ink:#F3F0E8;--muted:#9AA0A8;--line:#2A2F36;--foldink:#FF7A45'
+: '--bg:#F6F5F1;--raised:#FFFFFF;--ink:#0B0D10;--muted:#585D64;--line:#DDD8CC;--foldink:#C93A08';
+const e = this.state.e, yaw = this.state.yaw;
+const clamp = (v) => Math.min(1, Math.max(0, v));
+const setE = (v) => { this.t.e = clamp(v); this.kick(); };
+const steps = [0, 1, 2, 3, 4].map((i) => {
+const on = Math.abs(this.t.e - i / 4) < 0.01;
+const filled = e >= i / 4 - 0.01;
+return { label: i === 0 ? 'Montado' : i === 4 ? 'Totalmente explodido' : 'Explodido ' + (i * 25) + '%', on: on, pick: () => setE(i / 4),
+dot: 'display:block;width:' + (on ? 12 : 8) + 'px;height:' + (on ? 12 : 8) + 'px;border-radius:2px;background:' + (on ? '#FF5A1F' : filled ? 'var(--ink)' : 'var(--line)') + ';transition:all .3s ease' };
+});
+return {
+themeVars: P, isDark: dark, isLight: !dark, e: e, yaw: yaw, steps: steps,
+stateLabel: e < 0.02 ? 'montado' : 'explodido ' + Math.round(e * 100) + '%',
+explode: () => setE(1), assemble: () => setE(0),
+down: (ev) => { this.drag = { x: ev.clientX }; if (ev.currentTarget.setPointerCapture) ev.currentTarget.setPointerCapture(ev.pointerId); },
+move: (ev) => { if (!this.drag) return; const dx = ev.clientX - this.drag.x; this.drag.x = ev.clientX; this.t.yaw += dx * 0.5; this.kick(); },
+up: () => { this.drag = null; }
+};
+}
+}
+</script>
+</body>
+</html>

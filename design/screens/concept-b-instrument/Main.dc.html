@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<title>UNFOLD — Desdobrar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font-family:inherit}
+a:focus-visible,button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid #FF5A1F;outline-offset:3px}
+.rng{-webkit-appearance:none;appearance:none;width:100%;height:44px;background:transparent;cursor:pointer;margin:0}
+.rng::-webkit-slider-runnable-track{height:2px;background:currentColor;opacity:.35}
+.rng::-moz-range-track{height:2px;background:currentColor;opacity:.35}
+.rng::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:6px;background:#FF5A1F;margin-top:-10px;border:3px solid var(--bg)}
+.rng::-moz-range-thumb{width:16px;height:16px;border-radius:6px;background:#FF5A1F;border:3px solid var(--bg)}
+</style>
+</helmet>
+<div style="{{themeVars}};width:1440px;height:900px;position:relative;overflow:hidden;background:var(--bg);color:var(--ink);font-family:'Geist',system-ui,sans-serif">
+
+<div onPointerDown="{{down}}" onPointerMove="{{move}}" onPointerUp="{{up}}" style="position:absolute;left:120px;top:44px;width:1200px;height:740px;touch-action:none;user-select:none;cursor:grab">
+<svg width="1200" height="740" viewBox="0 0 1200 740" role="group" aria-label="Maqueta da casa sobre a planta original" style="display:block;overflow:visible;color:var(--muted)">
+<defs><pattern id="ruled" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0V6" stroke="currentColor" stroke-width="1"/></pattern></defs>
+<sc-for list="{{shapes}}" as="s" hint-placeholder-count="40">
+<path d="{{s.d}}" fill="{{s.fill}}" stroke="{{s.stroke}}" stroke-width="{{s.sw}}" stroke-dasharray="{{s.dash}}" stroke-linejoin="round" stroke-linecap="round" style="{{s.style}}" onClick="{{s.pick}}" onKeyDown="{{s.key}}" tabindex="{{s.tab}}" role="{{s.role}}" aria-label="{{s.aria}}"/>
+</sc-for>
+<sc-for list="{{texts}}" as="t" hint-placeholder-count="6">
+<text x="{{t.x}}" y="{{t.y}}" text-anchor="{{t.anchor}}" font-family="'Geist Mono', monospace" font-size="12" fill="{{t.fill}}">{{t.text}}</text>
+</sc-for>
+</svg>
+</div>
+
+<header style="position:absolute;left:24px;right:24px;top:12px;height:44px;display:flex;align-items:center;justify-content:space-between">
+<a href="#" aria-label="UNFOLD — página inicial" style="display:flex;align-items:center;min-height:44px"><sc-if value="{{isDark}}" hint-placeholder-val="{{false}}"><img src="/_blob/61a605dfc03f8f1e1ee0c7ff1499d98d" alt="Unfold — Spatial Intelligence Lab" style="height:32px;width:auto;display:block"></sc-if><sc-if value="{{isLight}}" hint-placeholder-val="{{true}}"><img src="/_blob/b730a57642ffda6b014cfe69bafc040e" alt="Unfold — Spatial Intelligence Lab" style="height:32px;width:auto;display:block"></sc-if></a>
+<nav aria-label="As seis faces do projecto" style="position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;font:400 12px/16px 'Geist Mono',monospace">
+<a href="#" aria-label="Observar" title="Observar" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);text-decoration:none">01</a>
+<a href="#" aria-label="Compreender" title="Compreender" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);text-decoration:none">02</a>
+<a href="#" aria-label="Materializar" title="Materializar" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);text-decoration:none">03</a>
+<a href="#" aria-current="page" style="position:relative;min-height:44px;padding:0 14px;display:inline-flex;align-items:center;justify-content:center;color:var(--ink);font-weight:500;text-decoration:none;white-space:nowrap"><svg width="30" height="9" viewBox="0 0 44 14" aria-hidden="true" style="position:absolute;left:50%;top:2px;transform:translateX(-50%)"><path d="M0 14H44L40 3Q39.5 0 36 0H8Q4.5 0 4 3Z" fill="#FF5A1F"/></svg>04 · Desdobrar</a>
+<a href="#" aria-label="Experimentar" title="Experimentar" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);text-decoration:none">05</a>
+<a href="#" aria-label="Verificar" title="Verificar" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);text-decoration:none">06</a>
+</nav>
+<div style="font:400 12px/16px 'Geist Mono',monospace;color:var(--foldink);text-align:right">{{revLabel}}</div>
+</header>
+
+<sc-if value="{{legend}}" hint-placeholder-val="{{false}}">
+<dl style="position:absolute;left:24px;top:690px;margin:0;padding:10px 14px;background:var(--raised);border:1px solid var(--line);border-radius:12px;font:400 12px/16px 'Geist Mono',monospace;color:var(--ink)">
+<div style="display:flex;align-items:center;gap:10px;min-height:24px"><svg width="14" height="14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" rx="2" style="fill:var(--ink)"/></svg>observado</div>
+<div style="display:flex;align-items:center;gap:10px;min-height:24px"><svg width="14" height="14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" rx="2" fill="none" style="stroke:var(--ink)" stroke-width="1.4" stroke-dasharray="3 2"/></svg>inferido</div>
+<div style="display:flex;align-items:center;gap:10px;min-height:24px"><svg width="14" height="14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" rx="2" fill="none" style="stroke:var(--ink)" stroke-width="1.4"/><path d="M3 11L11 3M3 7L7 3M7 11L11 7" style="stroke:var(--ink)" stroke-width="1"/></svg>calculado</div>
+<div style="display:flex;align-items:center;gap:10px;min-height:24px"><svg width="14" height="14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" rx="2" fill="#FF5A1F"/></svg>confirmado</div>
+<div style="display:flex;align-items:center;gap:10px;min-height:24px"><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="6" fill="none" style="stroke:var(--muted)" stroke-width="1.4" stroke-dasharray="1.5 2.5"/></svg>desconhecido</div>
+<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line);color:var(--muted);max-width:170px">{{summary}}<br>reconstrução provisória · não validada</div>
+</dl>
+</sc-if>
+
+<sc-if value="{{previewing}}" hint-placeholder-val="{{true}}">
+<section aria-label="Pré-visualização de alteração" style="position:absolute;left:1070px;top:120px;width:320px;box-sizing:border-box;padding:16px;background:var(--raised);border:1px solid var(--line);border-radius:12px">
+<div style="font:400 12px/16px 'Geist Mono',monospace;color:var(--foldink)">pré-visualização · R6</div>
+<div style="font-size:18px;font-weight:600;letter-spacing:-.01em;margin-top:6px">Remover W5</div>
+<div style="font-size:13px;color:var(--muted)">parede entre a sala e a cozinha</div>
+<dl style="margin:12px 0 0;font:400 12px/16px 'Geist Mono',monospace">
+<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line)"><dt style="color:var(--muted)">sala + cozinha</dt><dd style="margin:0;text-align:right">56.7 m² ±0.6 <span style="color:var(--muted)">· calculado</span></dd></div>
+<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line)"><dt style="color:var(--muted)">conectividade</dt><dd style="margin:0;text-align:right">sala ↔ cozinha</dd></div>
+<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)"><dt style="color:var(--muted)">estrutura</dt><dd style="margin:0;text-align:right;color:var(--foldink)">desconhecida · sem dados estruturais</dd></div>
+</dl>
+<div style="display:flex;gap:8px;margin-top:14px">
+<button type="button" onClick="{{confirm}}" style="flex:1;min-height:44px;border:0;border-radius:4px;background:#FF5A1F;color:#0B0D10;font-size:15px;font-weight:500;cursor:pointer">Confirmar</button>
+<button type="button" onClick="{{cancel}}" style="flex:1;min-height:44px;border:1px solid var(--muted);border-radius:4px;background:transparent;color:var(--ink);font-size:15px;cursor:pointer">Cancelar</button>
+</div>
+</section>
+</sc-if>
+<sc-if value="{{removed}}" hint-placeholder-val="{{false}}">
+<section aria-label="Alteração aplicada" style="position:absolute;left:1070px;top:120px;width:320px;box-sizing:border-box;padding:16px;background:var(--raised);border:1px solid var(--line);border-radius:12px">
+<div style="font:400 12px/16px 'Geist Mono',monospace;color:var(--muted)">R6 · aplicada</div>
+<div style="font-size:16px;font-weight:600;margin-top:6px">W5 removida</div>
+<div style="font-size:13px;color:var(--muted);margin-top:4px">A segurança estrutural continua por determinar.</div>
+<button type="button" onClick="{{undo}}" style="margin-top:12px;min-height:44px;padding:0 18px;border:1px solid var(--muted);border-radius:4px;background:transparent;color:var(--ink);font-size:15px;cursor:pointer">Desfazer</button>
+</section>
+</sc-if>
+
+<sc-if value="{{toolsOpen}}" hint-placeholder-val="{{false}}">
+<div role="toolbar" aria-label="Ferramentas da vista" style="position:absolute;left:0;right:0;top:756px;display:flex;justify-content:center;align-items:center;gap:4px">
+<sc-for list="{{lenses}}" as="l" hint-placeholder-count="3">
+<button type="button" onClick="{{l.pick}}" aria-pressed="{{l.on}}" aria-label="{{l.label}}" title="{{l.label}}" style="{{l.style}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="{{l.icon}}"/></svg></button>
+</sc-for>
+<span aria-hidden="true" style="width:1px;height:24px;background:var(--line);margin:0 10px"></span>
+<span style="font:400 12px/16px 'Geist Mono',monospace;color:var(--muted)">plano</span>
+<input class="rng" type="range" min="0" max="100" value="{{tPct}}" onInput="{{onT}}" aria-label="Do plano ao espaço" style="width:200px;color:var(--ink)">
+<span style="font:400 12px/16px 'Geist Mono',monospace;color:var(--muted)">espaço</span>
+<span aria-hidden="true" style="width:1px;height:24px;background:var(--line);margin:0 10px"></span>
+<button type="button" onClick="{{play}}" aria-label="Reproduzir o desdobramento" title="Desdobrar" style="width:44px;height:44px;border:1px solid var(--line);border-radius:8px;background:var(--raised);color:var(--ink);cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg></button>
+<button type="button" onClick="{{toggleLegend}}" aria-pressed="{{legend}}" aria-label="Legenda dos estados" title="Estados" style="width:44px;height:44px;border:1px solid var(--line);border-radius:8px;background:var(--raised);color:var(--ink);cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></button>
+<button type="button" onClick="{{reset}}" aria-label="Repor a vista" title="Repor vista" style="width:44px;height:44px;border:1px solid var(--line);border-radius:8px;background:var(--raised);color:var(--ink);cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 12a9 9 0 109-9M3 4v5h5"/></svg></button>
+</div>
+</sc-if>
+
+<section aria-label="Barra de comandos" style="position:absolute;left:410px;top:816px;width:620px;height:56px;box-sizing:border-box;padding:6px;display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:6px;background:var(--raised);border:1px solid var(--line);border-radius:14px">
+<div aria-hidden="true" style="position:absolute;left:50%;top:-8px;width:40px;height:14px;transform:translateX(-50%);background:var(--raised);border:1px solid var(--line);border-bottom:0;border-radius:8px 8px 0 0;display:flex;justify-content:center;gap:3px;padding-top:5px;box-sizing:border-box"><i style="width:3px;height:3px;border-radius:50%;background:var(--muted)"></i><i style="width:3px;height:3px;border-radius:50%;background:var(--muted)"></i><i style="width:3px;height:3px;border-radius:50%;background:var(--muted)"></i></div>
+<button type="button" aria-label="Adicionar referência" title="Adicionar" style="width:44px;height:44px;border:0;border-radius:10px;background:transparent;color:var(--ink);cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+<label style="display:block;min-width:0"><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Comando</span><input type="text" value="Remove a parede entre a cozinha e a sala" style="width:100%;height:44px;border:0;background:transparent;font:400 15px 'Geist',sans-serif;color:var(--ink);outline:none"></label>
+<div style="display:flex;gap:2px;align-items:center">
+<button type="button" onClick="{{toggleTools}}" aria-expanded="{{toolsOpen}}" aria-label="Ferramentas" title="Ferramentas" style="width:44px;height:44px;border:0;border-radius:10px;background:transparent;color:var(--ink);cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button>
+<button type="button" aria-label="Voz" title="Voz" style="width:44px;height:44px;border:0;background:transparent;color:var(--muted);cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg></button>
+<button type="button" onClick="{{send}}" aria-label="Enviar" title="Enviar" style="width:44px;height:44px;border:0;border-radius:10px;background:#FF5A1F;color:#0B0D10;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+</div>
+</section>
+
+<svg width="1392" height="16" viewBox="0 0 1392 16" role="img" aria-label="Histórico de revisões" style="position:absolute;left:24px;top:880px;overflow:visible">
+<path d="M0 8H1392" style="stroke:var(--line)" stroke-width="1"/>
+<sc-for list="{{ticks}}" as="k" hint-placeholder-count="8">
+<g><rect x="{{k.x}}" y="3" width="10" height="10" rx="2" fill="{{k.fill}}" stroke="{{k.stroke}}" stroke-width="1.4" stroke-dasharray="{{k.dash}}"/>
+<text x="{{k.tx}}" y="13" font-family="'Geist Mono', monospace" font-size="12" fill="{{k.tfill}}">{{k.label}}</text></g>
+</sc-for>
+</svg>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"light","options":["light","dark"]},"toolsOpen":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { t: 1, yaw: -32, lens: 0, previewing: true, removed: false, sel: 'W6', toolsOpen: !!props.toolsOpen, legend: false };
+this.raf = 0;
+this.drag = null;
+}
+componentWillUnmount() { if (this.raf) cancelAnimationFrame(this.raf); }
+play() {
+const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (reduce) { this.setState({ t: 1 }); return; }
+if (this.raf) cancelAnimationFrame(this.raf);
+const start = performance.now(), dur = 1400;
+const step = (now) => {
+const k = Math.min(1, (now - start) / dur);
+const eased = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+this.setState({ t: eased });
+this.raf = k < 1 ? requestAnimationFrame(step) : 0;
+};
+this.setState({ t: 0 });
+this.raf = requestAnimationFrame(step);
+}
+renderVals() {
+const dark = this.props.theme === 'dark';
+const P = dark
+? '--bg:#0B0D10;--raised:#171A1F;--ink:#F3F0E8;--muted:#9AA0A8;--line:#2A2F36;--foldink:#FF7A45'
+: '--bg:#F6F5F1;--raised:#FFFFFF;--ink:#0B0D10;--muted:#585D64;--line:#DDD8CC;--foldink:#C93A08';
+const C = dark
+? { top: '#262B33', side: '#12151A', line: '#F3F0E8', plate: '#171A1F', plateSide: '#0E1014', ink: '#F3F0E8', muted: '#9AA0A8', grid: '#2A2F36', shadow: '#000000', sop: 0.55, foldink: '#FF7A45' }
+: { top: '#FFFFFF', side: '#D9D4C9', line: '#0B0D10', plate: '#FBFAF6', plateSide: '#D2CCBF', ink: '#0B0D10', muted: '#585D64', grid: '#DDD8CC', shadow: '#0B0D10', sop: 0.10, foldink: '#C93A08' };
+const FOLD = '#FF5A1F', FOLDSIDE = '#C93A08';
+const st = this.state, t = st.t, yaw = st.yaw * Math.PI / 180;
+const S = 3.4, ox = 600, oy = 385, cx0 = 75, cy0 = 50;
+const cs = Math.cos(yaw), sn = Math.sin(yaw);
+const rot = (p) => { const x = p[0] - cx0, y = p[1] - cy0; return [x * cs - y * sn, x * sn + y * cs]; };
+const iso = (p, z) => { const r = rot(p); return [ox + (r[0] - r[1]) * 0.866 * S, oy + (r[0] + r[1]) * 0.5 * S - z]; };
+const f = (n) => n.toFixed(1);
+const poly = (pts) => 'M' + pts.map((q) => f(q[0]) + ' ' + f(q[1])).join('L') + 'Z';
+const U = 0.07;
+const noop = () => {};
+const shapes = [], texts = [];
+const push = (o) => shapes.push(Object.assign({ fill: 'none', stroke: 'none', sw: 1, dash: 'none', style: '', pick: noop, key: noop, tab: '-1', role: 'presentation', aria: '' }, o));
+const corners = (p, q, w) => {
+const L = Math.hypot(q[0] - p[0], q[1] - p[1]); const ux = (q[0] - p[0]) / L, uy = (q[1] - p[1]) / L; const nx = -uy, ny = ux, hw = w / 2;
+return [[p[0] - ux * hw + nx * hw, p[1] - uy * hw + ny * hw], [q[0] + ux * hw + nx * hw, q[1] + uy * hw + ny * hw], [q[0] + ux * hw - nx * hw, q[1] + uy * hw - ny * hw], [p[0] - ux * hw - nx * hw, p[1] - uy * hw - ny * hw]];
+};
+// ground shadow + source sheet
+const sh = iso([cx0, cy0], -16);
+push({ d: 'M' + f(sh[0] - 420) + ' ' + f(sh[1]) + 'A420 125 0 1 0 ' + f(sh[0] + 420) + ' ' + f(sh[1]) + 'A420 125 0 1 0 ' + f(sh[0] - 420) + ' ' + f(sh[1]) + 'Z', fill: C.shadow, style: 'opacity:' + C.sop });
+const sheetZ = -6;
+const sheet = [[-14, -14], [164, -14], [164, 114], [-14, 114]];
+const sb = sheet.map((c) => iso(c, sheetZ - 3)), stp = sheet.map((c) => iso(c, sheetZ));
+for (let i = 0; i < 4; i++) { const j = (i + 1) % 4; push({ d: poly([sb[i], sb[j], stp[j], stp[i]]), fill: C.plateSide, stroke: C.line, sw: 1 }); }
+push({ d: poly(stp), fill: C.plate, stroke: C.line, sw: 1.2 });
+let g = '';
+for (let x = 0; x <= 150; x += 10) { const a = iso([x, 0], sheetZ), b = iso([x, 100], sheetZ); g += 'M' + f(a[0]) + ' ' + f(a[1]) + 'L' + f(b[0]) + ' ' + f(b[1]); }
+for (let y = 0; y <= 100; y += 10) { const a = iso([0, y], sheetZ), b = iso([150, y], sheetZ); g += 'M' + f(a[0]) + ' ' + f(a[1]) + 'L' + f(b[0]) + ' ' + f(b[1]); }
+push({ d: g, stroke: C.grid, sw: 1 });
+const W = [
+{ id: 'W1', p: [0, 0], q: [150, 0], s: 'conf', ev: 'raster · linha 03 · confirmada por si' },
+{ id: 'W2', p: [150, 0], q: [150, 100], s: 'obs', ev: 'raster · linha 07 · confiança heurística 0.91' },
+{ id: 'W3', p: [150, 100], q: [0, 100], s: 'obs', ev: 'raster · linha 11 · confiança heurística 0.88' },
+{ id: 'W4', p: [0, 100], q: [0, 0], s: 'obs', ev: 'raster · linha 02 · confiança heurística 0.93' },
+{ id: 'W5', p: [60, 0], q: [60, 40], s: 'inf', ev: 'inferida a partir de duas linhas colineares' },
+{ id: 'W6', p: [60, 58], q: [60, 100], s: 'calc', ev: 'comprimento calculado com a escala calibrada' },
+{ id: 'W7', p: [60, 62], q: [150, 62], s: 'conf', ev: 'raster · linha 14 · confirmada por si' },
+{ id: 'W8', p: [100, 62], q: [100, 100], s: 'unk', ev: 'sem evidência no documento original' }
+];
+const SN = { obs: 'observado', inf: 'inferido', calc: 'calculado', conf: 'confirmado', unk: 'desconhecido' };
+const lens = st.lens;
+const fade = (s) => (s === 'unk' || s === 'conf') ? 1 : (lens === 0 ? 1 : lens === 1 ? ((s === 'obs' || s === 'inf') ? 0.2 : 1) : 0.2);
+const live = W.filter((w) => !(w.id === 'W5' && st.removed));
+// evidence footprints on the sheet
+live.forEach((w) => {
+if (w.s === 'unk') return;
+const fc = corners(w.p, w.q, 3.2).map((c) => iso(c, sheetZ));
+const on = st.sel === w.id;
+push({ d: poly(fc), fill: on ? FOLD : 'none', stroke: on ? FOLD : C.muted, sw: 1, style: on ? 'opacity:.45' : '' });
+});
+// room labels on the floor
+const merged = st.removed;
+const rooms = [
+{ n: merged ? 'Sala + cozinha' : 'Sala', v: merged ? '56.7 m²' : '29.4 m²', at: merged ? [45, 40] : [30, 50] },
+{ n: 'Cozinha', v: '27.3 m²', at: [105, 31], hide: merged },
+{ n: 'Quarto?', v: '16.8 m² · divisão por confirmar', at: [105, 83] }
+];
+rooms.forEach((r) => {
+if (r.hide) return;
+const p = iso(r.at, sheetZ);
+texts.push({ x: f(p[0]), y: f(p[1] - 2), anchor: 'middle', fill: C.ink, text: r.n });
+texts.push({ x: f(p[0]), y: f(p[1] + 13), anchor: 'middle', fill: C.muted, text: r.v });
+});
+// walls, far to near
+const Hpx = 92 * Math.max(t, 0.012);
+const order = live.map((w) => { const m = rot([(w.p[0] + w.q[0]) / 2, (w.p[1] + w.q[1]) / 2]); return { w, d: m[0] + m[1] }; }).sort((a, b) => a.d - b.d);
+const selTop = {};
+order.forEach(({ w }) => {
+const h = w.s === 'unk' ? Hpx * 0.5 : Hpx;
+const c = corners(w.p, w.q, 3.2);
+const bots = c.map((q) => iso(q, 0)), tops = c.map((q) => iso(q, h));
+const preview = st.previewing && w.id === 'W5';
+const on = st.sel === w.id;
+const op = preview ? 1 : fade(w.s);
+const style = 'opacity:' + op + ';transition:opacity .45s ease';
+const pick = () => this.setState({ sel: w.id });
+const key = (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { this.setState({ sel: w.id }); ev.preventDefault(); } };
+let topFill = C.top, sideFill = C.side, stroke = C.line, dash = 'none', sw = 1;
+if (w.s === 'conf') { topFill = FOLD; sideFill = FOLDSIDE; }
+if (w.s === 'inf') { dash = '5 4'; }
+if (w.s === 'unk') { topFill = 'none'; sideFill = 'none'; stroke = C.muted; dash = '2 4'; }
+if (preview) { topFill = 'none'; sideFill = 'none'; stroke = FOLD; dash = '6 4'; sw = 1.6; }
+const quads = [];
+for (let i = 0; i < 4; i++) { const j = (i + 1) % 4; quads.push({ pts: [bots[i], bots[j], tops[j], tops[i]], depth: (bots[i][1] + bots[j][1]) / 2 }); }
+quads.sort((a, b) => a.depth - b.depth);
+quads.forEach((q) => push({ d: poly(q.pts), fill: sideFill, stroke: stroke, sw: sw, dash: dash, style: style, pick: pick }));
+push({ d: poly(tops), fill: topFill, stroke: on && !preview ? C.ink : stroke, sw: on && !preview ? 2.4 : sw, dash: dash, style: style, pick: pick, key: key, tab: '0', role: 'button', aria: w.id + ' · ' + SN[w.s] + (preview ? ' · a remover' : '') });
+if (w.s === 'calc') push({ d: poly(tops), fill: 'url(#ruled)', style: style, pick: pick });
+const mt = iso([(w.p[0] + w.q[0]) / 2, (w.p[1] + w.q[1]) / 2], h);
+selTop[w.id] = { top: mt, h: h, w: w };
+});
+// evidence thread for the selected wall
+const sel = selTop[st.sel];
+if (sel) {
+const mid = [(sel.w.p[0] + sel.w.q[0]) / 2, (sel.w.p[1] + sel.w.q[1]) / 2];
+const a = iso(mid, sheetZ), b = iso(mid, sel.h + 62);
+push({ d: 'M' + f(a[0]) + ' ' + f(a[1]) + 'L' + f(b[0]) + ' ' + f(b[1]), stroke: FOLD, sw: 1.4, dash: '3 3' });
+push({ d: 'M' + f(a[0] - 5) + ' ' + f(a[1]) + 'A5 3 0 1 0 ' + f(a[0] + 5) + ' ' + f(a[1]) + 'A5 3 0 1 0 ' + f(a[0] - 5) + ' ' + f(a[1]) + 'Z', fill: FOLD });
+const len = (Math.hypot(sel.w.q[0] - sel.w.p[0], sel.w.q[1] - sel.w.p[1]) * U).toFixed(2);
+texts.push({ x: f(b[0]), y: f(b[1] - 20), anchor: 'middle', fill: C.ink, text: sel.w.id + ' · ' + SN[sel.w.s] + ' · ' + len + ' m' });
+texts.push({ x: f(b[0]), y: f(b[1] - 5), anchor: 'middle', fill: C.muted, text: sel.w.ev });
+}
+// preview leader to the card
+if (st.previewing && selTop.W5) {
+const p = selTop.W5.top;
+push({ d: 'M' + f(p[0]) + ' ' + f(p[1]) + 'L' + f(p[0] + 40) + ' ' + f(p[1] - 20) + 'L950 ' + f(p[1] - 20) + 'L950 76', stroke: FOLD, sw: 1, style: 'opacity:.8' });
+}
+const LI = ['M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 9a3 3 0 100 6 3 3 0 000-6z', 'M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2zM4 14L14 4M4 20L20 4M10 20L20 10', 'M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2zM8 12l3 3 5-6'];
+const LN = ['Lente: tudo', 'Lente: calculado e acima', 'Lente: só confirmado'];
+const lenses = LN.map((label, i) => ({ label: label, icon: LI[i], on: lens === i, pick: () => this.setState({ lens: i }),
+style: 'width:44px;height:44px;border-radius:8px;cursor:pointer;border:1px solid ' + (lens === i ? 'var(--ink)' : 'var(--line)') + ';' + (lens === i ? 'background:var(--ink);color:var(--bg)' : 'background:var(--raised);color:var(--ink)') }));
+const nConf = live.filter((w) => w.s === 'conf').length, nUnk = live.filter((w) => w.s === 'unk').length;
+const ticks = [];
+for (let i = 0; i <= 5; i++) ticks.push({ x: i * 190, tx: i * 190 + 16, label: (i === 5 && !st.removed ? 'R5 · actual' : ''), fill: i === 5 && !st.removed ? 'var(--ink)' : 'var(--bg)', stroke: 'var(--ink)', dash: 'none', tfill: i === 5 && !st.removed ? 'var(--ink)' : 'var(--muted)' });
+if (st.previewing) ticks.push({ x: 950, tx: 966, label: 'R6 · pré-visualização', fill: 'var(--bg)', stroke: '#FF5A1F', dash: '3 2', tfill: dark ? '#FF7A45' : '#C93A08' });
+if (st.removed) ticks.push({ x: 950, tx: 966, label: 'R6 · actual', fill: 'var(--ink)', stroke: 'var(--ink)', dash: 'none', tfill: 'var(--ink)' });
+return {
+themeVars: P, isDark: dark, isLight: !dark, shapes: shapes, texts: texts, lenses: lenses, ticks: ticks,
+previewing: st.previewing, removed: st.removed, toolsOpen: st.toolsOpen, legend: st.legend,
+toggleTools: () => this.setState({ toolsOpen: !st.toolsOpen }), toggleLegend: () => this.setState({ legend: !st.legend }), reset: () => this.setState({ yaw: -32 }),
+revLabel: (st.removed ? 'R6' : 'R5') + ' · provisório',
+summary: live.length + ' componentes · ' + nConf + ' confirmados · ' + nUnk + ' desconhecido',
+tPct: Math.round(t * 100),
+onT: (ev) => { if (this.raf) { cancelAnimationFrame(this.raf); this.raf = 0; } this.setState({ t: Number(ev.target.value) / 100 }); },
+play: () => this.play(),
+confirm: () => this.setState({ previewing: false, removed: true, sel: 'W6' }),
+cancel: () => this.setState({ previewing: false }),
+undo: () => this.setState({ removed: false, previewing: false }),
+send: () => this.setState({ previewing: true, removed: false, sel: 'W5' }),
+down: (ev) => { this.drag = { x: ev.clientX }; },
+move: (ev) => { if (!this.drag || ev.buttons !== 1) return; const dx = ev.clientX - this.drag.x; this.drag.x = ev.clientX; this.setState({ yaw: this.state.yaw + dx * 0.4 }); },
+up: () => { this.drag = null; }
+};
+}
+}
+</script>
+</body>
+</html>

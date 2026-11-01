@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<title>UNFOLD — Eléctrica, sem 3D</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid #C93A08;outline-offset:3px}
+</style>
+</helmet>
+<div style="--bg:#F6F5F1;--raised:#FFFFFF;--ink:#0B0D10;--muted:#585D64;--line:#DDD8CC;--foldink:#C93A08;width:1440px;height:900px;position:relative;overflow:hidden;background:var(--bg);color:var(--ink);font-family:'Geist',system-ui,sans-serif">
+
+<header style="position:absolute;left:40px;right:40px;top:24px;height:80px">
+<a href="Home.dc.html" aria-label="UNFOLD — início" style="position:absolute;left:0;top:0;display:flex;align-items:center;min-height:44px"><img src="/_blob/b730a57642ffda6b014cfe69bafc040e" alt="Unfold — Spatial Intelligence Lab" style="height:38px;width:auto;display:block"></a>
+<nav aria-label="As seis faces do projecto" style="position:absolute;left:300px;top:0;width:760px">
+<div style="display:flex">
+<a href="#" style="flex:1;min-height:44px;display:block;text-decoration:none;color:var(--muted);padding-top:4px"><span style="font:400 12px/16px 'Geist Mono',monospace;display:block">01</span><span style="font-size:14px">Observar</span></a>
+<a href="#" style="flex:1;min-height:44px;display:block;text-decoration:none;color:var(--muted);padding-top:4px"><span style="font:400 12px/16px 'Geist Mono',monospace;display:block">02</span><span style="font-size:14px">Compreender</span></a>
+<a href="#" style="flex:1;min-height:44px;display:block;text-decoration:none;color:var(--muted);padding-top:4px"><span style="font:400 12px/16px 'Geist Mono',monospace;display:block">03</span><span style="font-size:14px">Materializar</span></a>
+<a href="Main.dc.html" style="flex:1;min-height:44px;display:block;text-decoration:none;color:var(--muted);padding-top:4px"><span style="font:400 12px/16px 'Geist Mono',monospace;display:block">04</span><span style="font-size:14px">Desdobrar</span></a>
+<a href="#" aria-current="page" style="flex:1;min-height:44px;display:block;text-decoration:none;color:var(--ink);padding-top:4px;position:relative"><svg width="44" height="14" viewBox="0 0 44 14" aria-hidden="true" style="position:absolute;left:0;top:-12px"><path d="M0 14H44L40 3Q39.5 0 36 0H8Q4.5 0 4 3Z" fill="#FF5A1F"/></svg><span style="font:500 12px/16px 'Geist Mono',monospace;display:block">05</span><span style="font-size:14px;font-weight:500">Experimentar</span></a>
+<a href="#" style="flex:1;min-height:44px;display:block;text-decoration:none;color:var(--muted);padding-top:4px"><span style="font:400 12px/16px 'Geist Mono',monospace;display:block">06</span><span style="font-size:14px">Verificar</span></a>
+</div>
+<svg width="760" height="14" viewBox="0 0 760 14" aria-hidden="true" style="display:block;margin-top:6px"><path d="M0 13.5H760" style="stroke:var(--muted)" stroke-width="1"/><path d="M0 13V0M126.7 13V0M253.3 13V0M380 13V0M506.7 13V0M633.3 13V0M760 13V0" style="stroke:var(--muted)" stroke-width="1"/><path d="M506.7 13H633.3" stroke="#FF5A1F" stroke-width="3"/></svg>
+</nav>
+<div style="position:absolute;right:0;top:0;text-align:right;font:400 12px/16px 'Geist Mono',monospace;color:var(--muted)"><div style="color:var(--ink);font-size:13px">Divisor resistivo · eléctrica</div><div>R3 · solver DC</div></div>
+</header>
+
+<div style="position:absolute;left:40px;top:150px;font:400 12px/18px 'Geist Mono',monospace;color:var(--muted);max-width:200px">nem tudo precisa<br>de ser tridimensional.<br><span style="color:var(--ink)">o plano é o modelo.</span></div>
+
+<div style="position:absolute;right:40px;top:150px;text-align:right;font:400 12px/16px 'Geist Mono',monospace;color:var(--muted)">
+<div style="color:var(--ink)">antes → depois</div>
+<div style="margin-top:6px">I total &nbsp;<span style="text-decoration:line-through">21.2 mA</span> → <span style="color:var(--ink)">25.0 mA</span></div>
+<div>V(R2) &nbsp;&nbsp;<span style="text-decoration:line-through">5.53 V</span> → <span style="color:var(--ink)">3.75 V</span></div>
+<div style="margin-top:8px"><span style="display:inline-flex;padding:3px 8px;border:1px dashed var(--foldink);border-radius:4px;color:var(--foldink)">tolerâncias desconhecidas</span></div>
+</div>
+
+<svg width="900" height="460" viewBox="0 0 900 460" role="img" aria-label="Esquema do divisor resistivo com V1, R1 em série e R2 e R3 em paralelo" style="position:absolute;left:270px;top:150px;overflow:visible">
+<g fill="none" style="stroke:var(--line)" stroke-width="1"><path d="M0 40H900M0 80H900M0 120H900M0 160H900M0 200H900M0 240H900M0 280H900M0 320H900M0 360H900M0 400H900M0 440H900"/><path d="M40 0V460M120 0V460M200 0V460M280 0V460M360 0V460M440 0V460M520 0V460M600 0V460M680 0V460M760 0V460M840 0V460"/></g>
+<g fill="none" style="stroke:var(--ink)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round">
+<path d="M150 100V204M150 256V360H700M150 100H250M400 100H700"/>
+<path d="M250 100L262 100L270 86L286 114L302 86L318 114L334 86L350 114L366 86L378 100L400 100" fill="none"/>
+<path d="M700 100V170L686 178L714 194L686 210L714 226L686 242L714 258L700 266V360"/>
+<circle cx="150" cy="230" r="26" style="fill:var(--raised)"/>
+<path d="M150 218V230M144 224H156M144 240H156"/>
+</g>
+<path d="M520 100V170L506 178L534 194L506 210L534 226L506 242L534 258L520 266V360" fill="none" stroke="#FF5A1F" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<g style="fill:var(--ink)"><circle cx="520" cy="100" r="4"/><circle cx="520" cy="360" r="4"/><circle cx="700" cy="100" r="4"/><circle cx="700" cy="360" r="4"/></g>
+<g fill="none" style="stroke:var(--muted)" stroke-width="1"><path d="M325 86V58"/><path d="M506 218H430"/><path d="M714 218H790"/><path d="M124 230H90"/></g>
+<g font-family="'Geist Mono', monospace" font-size="12">
+<text x="325" y="22" text-anchor="middle" style="fill:var(--muted)">R1 · série</text>
+<text x="325" y="40" text-anchor="middle" font-size="13" style="fill:var(--ink)">330 Ω</text>
+<text x="325" y="56" text-anchor="middle" style="fill:var(--muted)">25.0 mA · 8.25 V · calculado</text>
+<text x="424" y="200" text-anchor="end" style="fill:var(--foldink)">R2 · alterado</text>
+<text x="424" y="218" text-anchor="end" font-size="13" style="fill:var(--ink)"><tspan style="fill:var(--muted);text-decoration:line-through">470</tspan> → 220 Ω</text>
+<text x="424" y="236" text-anchor="end" style="fill:var(--muted)">17.0 mA · 3.75 V</text>
+<text x="424" y="252" text-anchor="end" style="fill:var(--muted)">calculado</text>
+<text x="796" y="200" style="fill:var(--muted)">R3</text>
+<text x="796" y="218" font-size="13" style="fill:var(--ink)">470 Ω</text>
+<text x="796" y="236" style="fill:var(--muted)">8.0 mA · 3.75 V</text>
+<text x="796" y="252" style="fill:var(--muted)">calculado</text>
+<text x="84" y="226" text-anchor="end" style="fill:var(--muted)">V1</text>
+<text x="84" y="244" text-anchor="end" font-size="13" style="fill:var(--ink)">12 V</text>
+<text x="84" y="260" text-anchor="end" style="fill:var(--muted)">fornecido</text>
+</g>
+</svg>
+
+<div style="position:absolute;left:410px;top:660px;width:620px;text-align:center;font:400 12px/18px 'Geist Mono',monospace;color:var(--muted)">solver: análise nodal DC · 17.0 + 8.0 = 25.0 mA ✓ · os valores calculados vêm do solver, não do modelo de linguagem</div>
+
+<section aria-label="Barra de comandos" style="position:absolute;left:410px;top:780px;width:620px;height:64px;box-sizing:border-box;padding:8px;display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:8px;background:var(--raised);border:1px solid var(--line);border-radius:14px">
+<div aria-hidden="true" style="position:absolute;left:50%;top:-8px;width:40px;height:14px;transform:translateX(-50%);background:var(--raised);border:1px solid var(--line);border-bottom:0;border-radius:8px 8px 0 0;display:flex;justify-content:center;gap:3px;padding-top:5px;box-sizing:border-box"><i style="width:3px;height:3px;border-radius:50%;background:var(--muted)"></i><i style="width:3px;height:3px;border-radius:50%;background:var(--muted)"></i><i style="width:3px;height:3px;border-radius:50%;background:var(--muted)"></i></div>
+<button type="button" aria-label="Adicionar referência" style="width:44px;height:44px;border:0;border-radius:10px;background:var(--bg);color:var(--ink);cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+<label style="display:block;min-width:0"><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Comando</span><input type="text" value="Altera R2 para 220 Ω e calcula novamente as correntes" style="width:100%;height:44px;border:0;background:transparent;font:400 15px 'Geist',sans-serif;color:var(--ink);outline:none"></label>
+<div style="display:flex;gap:4px;align-items:center">
+<button type="button" aria-label="Voz" style="width:44px;height:44px;border:0;background:transparent;color:var(--muted);cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg></button>
+<button type="button" aria-label="Enviar" style="width:44px;height:44px;border:0;border-radius:10px;background:#FF5A1F;color:#0B0D10;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+</div>
+</section>
+
+<svg width="1360" height="44" viewBox="0 0 1360 44" role="img" aria-label="Histórico de revisões" style="position:absolute;left:40px;top:852px;overflow:visible">
+<path d="M0 12H1360" style="stroke:var(--muted)" stroke-width="1"/>
+<g font-family="'Geist Mono', monospace" font-size="12">
+<rect x="0" y="6" width="12" height="12" rx="2" style="fill:var(--bg);stroke:var(--ink)" stroke-width="1.4"/><text x="18" y="36" style="fill:var(--muted)">R0</text>
+<rect x="190" y="6" width="12" height="12" rx="2" style="fill:var(--bg);stroke:var(--ink)" stroke-width="1.4"/><text x="208" y="36" style="fill:var(--muted)">R1</text>
+<rect x="380" y="6" width="12" height="12" rx="2" style="fill:var(--bg);stroke:var(--ink)" stroke-width="1.4"/><text x="398" y="36" style="fill:var(--muted)">R2</text>
+<rect x="570" y="6" width="12" height="12" rx="2" style="fill:var(--ink);stroke:var(--ink)" stroke-width="1.4"/><text x="588" y="36" style="fill:var(--ink)">R3 · actual · R2 = 220 Ω</text>
+</g>
+</svg>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

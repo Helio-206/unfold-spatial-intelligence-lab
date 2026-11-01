@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<title>UNFOLD — O cubo do projecto</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a:focus-visible,button:focus-visible{outline:2px solid #C93A08;outline-offset:3px}
+@keyframes hinge{from{transform:perspective(900px) rotateX(-90deg);opacity:0}to{transform:perspective(900px) rotateX(0);opacity:1}}
+.face{transform-origin:50% 0;animation:hinge .6s cubic-bezier(.4,0,.2,1) both;transition:transform .3s ease}
+.face:hover{transform:translateY(-4px)}
+.f1{animation-delay:.05s}.f2{animation-delay:.15s}.f3{animation-delay:.25s}.f4{animation-delay:.35s}.f5{animation-delay:.5s}.f6{animation-delay:.6s}
+@media (prefers-reduced-motion:reduce){.face{animation:none;transition:none}}
+</style>
+</helmet>
+<div style="{{themeVars}};width:1440px;height:900px;position:relative;overflow:hidden;background:var(--bg);color:var(--ink);font-family:'Geist',system-ui,sans-serif">
+
+<header style="position:absolute;left:40px;right:40px;top:24px;display:flex;align-items:center;justify-content:space-between">
+<a href="#" aria-label="UNFOLD" style="display:flex;align-items:center;min-height:44px"><img src="/_blob/b730a57642ffda6b014cfe69bafc040e" alt="Unfold — Spatial Intelligence Lab" style="height:38px;width:auto;display:block"></a>
+<div style="font:400 12px/16px 'Geist Mono',monospace;color:var(--muted);text-align:right"><div style="color:var(--ink);font-size:13px">Casa T3 · arquitectura</div><div>R5 · provisório</div></div>
+</header>
+
+<div style="position:absolute;left:0;right:0;top:78px;text-align:center">
+<h1 style="margin:0;font-size:52px;line-height:54px;font-weight:600;letter-spacing:-.04em">From flat to space.</h1>
+<p style="margin:10px 0 0;font-size:16px;line-height:24px;color:var(--muted)">Do plano ao espaço. Da informação à compreensão.</p>
+</div>
+
+<div style="position:absolute;left:340px;top:200px;width:760px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(3,184px);gap:8px">
+
+<a class="face f1" href="#" style="grid-column:1;grid-row:2;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box;padding:16px;background:var(--raised);border-radius:12px;color:var(--ink);text-decoration:none">
+<div><div style="font:400 12px/16px 'Geist Mono',monospace;color:var(--muted)">01 · observe</div><div style="font-size:20px;font-weight:600;letter-spacing:-.01em;margin-top:4px">Observar</div></div>
+<svg width="152" height="56" viewBox="0 0 152 56" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="148" height="52"/><path d="M52 2V54M52 30H150"/></svg>
+<div style="font:400 12px/16px 'Geist Mono',monospace;color:var(--muted)">planta_t3.png<br>original preservado</div>
+</a>
+
+<a class="face f2" href="#" style="grid-column:2;grid-row:2;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box;padding:16px;background:var(--raised);border-radius:12px;color:var(--ink);text-decoration:none">
+<div><div style="font:400 12px/16px 'Geist Mono',monospace;color:var(--muted)">02 · understand</div><div style="font-size:20px;font-weight:600;letter-spacing:-.01em;margin-top:4px">Compreender</div></div>
+<svg width="152" height="56" viewBox="0 0 152 56" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="148" height="52" stroke-dasharray="5 4"/><path d="M52 2V54M52 30H150" stroke-dasharray="5 4"/><rect x="62" y="38" width="30" height="12" stroke="#C93A08"/></svg>
+<div style="font:400 12px/16px 'Geist Mono',monospace;color:var(--muted)">8 segmentos<br>1 ambíguo</div>
+</a>
+
+<a class="face f3" href="#" style="grid-column:3;grid-row:2;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box;padding:16px;background:var(--raised);border-radius:12px;color:var(--ink);text-decoration:none">
+<div><div style="font:400 12px/16px 'Geist Mono',monospace;color:var(--muted)">03 · materialize</div><div style="font-size:20px;font-weight:600;letter-spacing:-.01em;margin-top:4px">Materializar</div></div>
+<svg width="152" height="56" viewBox="0 0 152 56" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M10 40L56 54L142 28L96 14Z"/><path d="M10 40V28L56 42V54M56 42L142 16V28M96 14V2L142 16M10 28L96 2"/></svg>
+<div style="font:400 12px/16px 'Geist Mono',monospace;color:var(--muted)">8 componentes<br>provisório</div>
+</a>
+
+<a class="face f4" href="Main.dc.html" style="grid-column:4;grid-row:2;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box;padding:16px;background:#FF5A1F;border-radius:12px;color:#0B0D10;text-decoration:none">
+<div><div style="font:400 12px/16px 'Geist Mono',monospace">04 · unfold</div><div style="font-size:20px;font-weight:600;letter-spacing:-.01em;margin-top:4px">Desdobrar</div></div>
+<svg width="152" height="56" viewBox="0 0 152 56" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M76 4L128 16L76 28L24 16Z"/><path d="M76 20L128 32L76 44L24 32Z" stroke-dasharray="4 3"/><path d="M76 36L128 48L76 60L24 48Z" transform="translate(0 -4)"/></svg>
+<div style="font:400 12px/16px 'Geist Mono',monospace">2 confirmados<br>1 desconhecido</div>
+</a>
+
+<a class="face f5" href="Electrical.dc.html" style="grid-column:4;grid-row:1;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box;padding:16px;background:var(--raised);border-radius:12px;color:var(--ink);text-decoration:none">
+<div><div style="font:400 12px/16px 'Geist Mono',monospace;color:var(--muted)">05 · experiment</div><div style="font-size:20px;font-weight:600;letter-spacing:-.01em;margin-top:4px">Experimentar</div></div>
+<svg width="152" height="56" viewBox="0 0 152 56" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 32H150"/><path d="M2 32V24M20 32V28M38 32V28M56 32V28M74 32V24M92 32V28M110 32V28M128 32V28M150 32V24"/><rect x="86" y="18" width="12" height="28" rx="3" fill="#FF5A1F" stroke="#0B0D10"/></svg>
+<div style="font:400 12px/16px 'Geist Mono',monospace;color:var(--muted)">1 alteração<br>em pré-visualização</div>
+</a>
+
+<a class="face f6" href="#" style="grid-column:4;grid-row:3;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box;padding:16px;background:var(--raised);border-radius:12px;color:var(--ink);text-decoration:none">
+<div><div style="font:400 12px/16px 'Geist Mono',monospace;color:var(--muted)">06 · verify</div><div style="font-size:20px;font-weight:600;letter-spacing:-.01em;margin-top:4px">Verificar</div></div>
+<svg width="152" height="56" viewBox="0 0 152 56" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="12" width="30" height="30" rx="4" fill="#FF5A1F" stroke="#0B0D10"/><path d="M12 28L18 34L27 21" stroke="#0B0D10" stroke-width="2"/><rect x="46" y="12" width="30" height="30" rx="4"/><path d="M52 36L70 18M52 28L62 18M60 40L74 26" stroke-width="1"/><circle cx="106" cy="27" r="15" stroke-dasharray="2 4"/></svg>
+<div style="font:400 12px/16px 'Geist Mono',monospace;color:var(--foldink)">estrutura: desconhecida<br>sem dados estruturais</div>
+</a>
+
+<div aria-hidden="true" style="grid-column:1/4;grid-row:1;display:flex;align-items:flex-end;padding:0 0 12px 4px;font:400 12px/18px 'Geist Mono',monospace;color:var(--muted)">
+<div>seis faces · um projecto<br>cada face mostra o que se sabe,<br>e o que ainda não se sabe.</div>
+</div>
+<div aria-hidden="true" style="grid-column:1/4;grid-row:3;padding:12px 0 0 4px;font:400 12px/18px 'Geist Mono',monospace;color:var(--muted)">
+<span style="display:block">um resultado desconhecido<br>é preferível a uma certeza fabricada.</span>
+</div>
+</div>
+
+<div style="position:absolute;left:340px;top:800px;width:760px;display:flex;align-items:center;justify-content:space-between;gap:24px">
+<div>
+<div style="font:400 12px/16px 'Geist Mono',monospace;color:var(--muted);margin-bottom:8px">domínios · contorno tracejado: ainda não existe</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px;font:400 12px/16px 'Geist Mono',monospace;max-width:560px">
+<span style="padding:4px 8px;border-radius:4px;background:var(--ink);color:var(--bg)">arquitectura · parcial</span>
+<span style="padding:4px 8px;border-radius:4px;background:var(--ink);color:var(--bg)">mecânica · quatro barras</span>
+<span style="padding:4px 8px;border-radius:4px;border:1px solid var(--ink)">eléctrica · experimental</span>
+<span style="padding:4px 8px;border-radius:4px;border:1px dashed var(--muted);color:var(--muted)">medicina</span>
+<span style="padding:4px 8px;border-radius:4px;border:1px dashed var(--muted);color:var(--muted)">molecular</span>
+<span style="padding:4px 8px;border-radius:4px;border:1px dashed var(--muted);color:var(--muted)">geociências</span>
+</div>
+</div>
+<a href="#" style="min-height:44px;padding:0 24px;display:inline-flex;align-items:center;border-radius:4px;background:#FF5A1F;color:#0B0D10;font-size:15px;font-weight:500;text-decoration:none;white-space:nowrap">Novo projecto</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"light","options":["light","dark"]},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+const dark = this.props.theme === 'dark';
+return { themeVars: dark
+? '--bg:#0B0D10;--raised:#171A1F;--ink:#F3F0E8;--muted:#9AA0A8;--line:#2A2F36;--foldink:#FF7A45'
+: '--bg:#F6F5F1;--raised:#FFFFFF;--ink:#0B0D10;--muted:#585D64;--line:#DDD8CC;--foldink:#C93A08' };
+}
+}
+</script>
+</body>
+</html>
