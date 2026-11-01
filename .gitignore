@@ -12,3 +12,6 @@ reports/**/live-acceptance/
 reports/**/raw/
 input/
 *.blend1
+
+# Private test fixtures (origin/licence not confirmed)
+.local-fixtures/
