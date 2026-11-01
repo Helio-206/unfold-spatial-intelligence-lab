@@ -1,0 +1,29 @@
+{
+ "detected": 17,
+ "toleranceInPx": 30,
+ "doorsExpected": 10,
+ "doorsMatched": 0,
+ "windowsExpected": 7,
+ "windowsMatched": 0,
+ "candidatesNearAnyExpected": 0,
+ "candidateWidthsPx": [
+  11,
+  12,
+  14,
+  14,
+  14,
+  14,
+  14,
+  14,
+  14,
+  14,
+  15,
+  15,
+  15,
+  15,
+  16,
+  22,
+  23
+ ],
+ "note": "door/window gaps in this drawing are roughly 40-60 px wide"
+}

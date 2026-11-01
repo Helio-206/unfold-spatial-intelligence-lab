@@ -1,0 +1,121 @@
+{
+ "requests": [
+  "blob:(imagem local)",
+  "blob:(imagem local)"
+ ],
+ "detectClickToListMs": 352,
+ "before": {
+  "contourSummary": "4 divisão(ões) proposta(s) com suporte de parede · 6 face(s) de baixa qualidade excluída(s) · 0 ciclo(s) fechados exactos. Sem escala validada, áreas apenas em px².",
+  "sourceState": "Imagem de referência carregada; não existe análise técnica aceite associada.",
+  "planMeta": "sample-1.png · 983 × 634 · SHA-256 b8876fb66b45c26f… · original preservado",
+  "regionRows": [
+   "Divisão proposta -75 segmentos de suporte · 6,209 px² · confiança heurística 0.49 · por confirmar",
+   "Divisão proposta 51-5-721-956 segmentos de suporte · 42,448 px² · confiança heurística 0.89 · por confirmar",
+   "Divisão proposta 4-398-251-5605 segmentos de suporte · 38,419 px² · confiança heurística 0.73 · por confirmar",
+   "Divisão proposta 4-95-251-2926 segmentos de suporte · 46,446 px² · confiança heurística 0.64 · por confirmar"
+  ]
+ },
+ "statusAfterAnchors": "Âncoras da escala marcadas: 470.0 px. Introduza a cota impressa e uma nota.",
+ "buildButton": "Construir 4 divisão(ões) proposta(s)",
+ "buildMs": 863,
+ "after": {
+  "contourSummary": "4 divisão(ões) proposta(s) com suporte de parede · 6 face(s) de baixa qualidade excluída(s) · 0 ciclo(s) fechados exactos. Sem escala validada, áreas apenas em px².",
+  "sourceState": "Imagem de referência carregada; não existe análise técnica aceite associada.",
+  "status": "Cena guardada · revisão 0. A imagem fonte não foi incorporada no JSON.",
+  "imageWorldMapping": {
+   "scale": [
+    0.012765956947289965,
+    0,
+    0,
+    0,
+    -0.012765956947289965,
+    0
+   ],
+   "provenance": {
+    "source": "user",
+    "validation": "unreviewed",
+    "recordedAt": "2026-11-01T23:01:16.360Z",
+    "actor": "local-user-input",
+    "evidence": "Largura do Balcony = 6.0 m, introduzida por uma pessoa neste teste (não está impressa na planta)."
+   }
+  },
+  "rooms": [
+   {
+    "id": "region-7",
+    "label": "Divisão proposta 1",
+    "properties": {
+     "areaRasterPx2": {
+      "value": 6208.75,
+      "unit": "",
+      "provenance": {
+       "source": "derived",
+       "validation": "unreviewed",
+       "evidence": "Área em píxeis quadrados, não convertida em área física."
+      }
+     }
+    },
+    "geometryProvenance": {
+     "source": "derived",
+     "validation": "unreviewed"
+    }
+   },
+   {
+    "id": "room-251-5-721-95",
+    "label": "Divisão proposta 2",
+    "properties": {
+     "areaRasterPx2": {
+      "value": 42447.583333333336,
+      "unit": "",
+      "provenance": {
+       "source": "derived",
+       "validation": "unreviewed",
+       "evidence": "Área em píxeis quadrados, não convertida em área física."
+      }
+     }
+    },
+    "geometryProvenance": {
+     "source": "derived",
+     "validation": "unreviewed"
+    }
+   },
+   {
+    "id": "room-14-398-251-560",
+    "label": "Divisão proposta 3",
+    "properties": {
+     "areaRasterPx2": {
+      "value": 38418.88888888888,
+      "unit": "",
+      "provenance": {
+       "source": "derived",
+       "validation": "unreviewed",
+       "evidence": "Área em píxeis quadrados, não convertida em área física."
+      }
+     }
+    },
+    "geometryProvenance": {
+     "source": "derived",
+     "validation": "unreviewed"
+    }
+   },
+   {
+    "id": "room-14-95-251-292",
+    "label": "Divisão proposta 4",
+    "properties": {
+     "areaRasterPx2": {
+      "value": 46445.83333333333,
+      "unit": "",
+      "provenance": {
+       "source": "derived",
+       "validation": "unreviewed",
+       "evidence": "Área em píxeis quadrados, não convertida em área física."
+      }
+     }
+    },
+    "geometryProvenance": {
+     "source": "derived",
+     "validation": "unreviewed"
+    }
+   }
+  ]
+ }
+}
