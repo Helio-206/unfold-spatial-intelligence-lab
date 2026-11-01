@@ -85,10 +85,10 @@ try {
     candidateCount:document.querySelectorAll('#candidate-list [data-candidate]').length,
     rawCandidateCount:document.querySelectorAll('#plan-overlay [data-raw-id]').length,
     selectedCandidateCount:document.querySelectorAll('#candidate-list [data-candidate][aria-pressed="true"]').length,
-    proposedRegions:[...document.querySelectorAll('#region-list [data-region]')].map((item)=>({id:item.dataset.region,label:item.textContent.trim(),vertices:document.querySelector('#plan-overlay polygon[data-region="'+item.dataset.region+'"]')?.getAttribute('points')??null})),
+    proposedRegions:[...document.querySelectorAll('#region-list [data-region]')].map((item)=>({id:item.dataset.region,label:item.textContent.trim(),minimumRasterSupport:Number(item.dataset.rasterSupport),vertices:document.querySelector('#plan-overlay polygon[data-region="'+item.dataset.region+'"]')?.getAttribute('points')??null})),
     lowQualityFaceCount:Number((document.querySelector('#contour-summary')?.textContent.match(/(\\d+) face/)??[])[1]??0),
     contourSummary:document.querySelector('#contour-summary')?.textContent,
-    openingCandidates:[...document.querySelectorAll('#opening-candidate-list [data-opening-candidate]')].map((item)=>({id:item.dataset.openingCandidate,label:item.textContent.trim()})),
+    openingCandidates:[...document.querySelectorAll('#opening-candidate-list [data-opening-candidate]')].map((item)=>({id:item.dataset.openingCandidate,label:item.textContent.trim(),classification:item.dataset.classification,overlay:document.querySelector('#plan-overlay [data-opening-candidate="'+item.dataset.openingCandidate+'"]')?.outerHTML??null})),
     openingCandidateCount:document.querySelectorAll('#opening-candidate-list [data-opening-candidate]').length,
     viewport:[innerWidth,innerHeight],dpr:devicePixelRatio
   }))()`);

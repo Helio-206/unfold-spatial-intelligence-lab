@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  buildPlanVectorModel, calibrateScale, calibrateScaleFromMeasurements, candidateToWall, consolidateWallCandidates, countClosedCandidateContours, detectCandidateIntersections, detectOrthogonalRoomCandidates, detectWallCandidates, detectWallCandidatesDetailed,
+  assessOpeningCandidates, buildPlanVectorModel, calibrateScale, calibrateScaleByAxis, calibrateScaleFromMeasurements, candidateToWall, consolidateWallCandidates, countClosedCandidateContours, detectCandidateIntersections, detectOrthogonalRoomCandidates, detectWallCandidates, detectWallCandidatesDetailed, measureRegionRasterSupport,
   mergeWallCandidates, preparePlanRaster, splitWallCandidate, traceWallCandidate, type PixelRaster,
 } from '../src/plan-reconstruction';
 import { addOpeningToScene, createPlanScene, editOpeningInScene, editWallInScene, removeWallFromScene, saveAndRestoreScene, sceneWallLength } from '../src/plan-scene';
@@ -221,6 +221,39 @@ describe('plan reconstruction geometry', () => {
     expect(conflicting.scaleSpreadRelative).toBeGreaterThan(0.01);
     expect(conflicting.residuals).toHaveLength(2);
     expect(() => calibrateScaleFromMeasurements([{ id: 'one', pixelDistance: 20, realDistanceMetres: 2, evidence: 'only one' }])).toThrow();
+  });
+
+  it('reports independent axis calibration and refuses to hide conflicting horizontal dimensions', () => {
+    const result = calibrateScaleByAxis([
+      { id: 'north-overall', axis: 'horizontal', pixelDistance: 2140, realDistanceMetres: 15.3289, evidence: 'test: top overall label 50 ft 3.5 in' },
+      { id: 'south-overall', axis: 'horizontal', pixelDistance: 2140, realDistanceMetres: 15.5448, evidence: 'test: bottom overall label 51 ft 0 in' },
+      { id: 'west-overall', axis: 'vertical', pixelDistance: 1160, realDistanceMetres: 8.3439, evidence: 'test: side dimension 27 ft 4.5 in' },
+      { id: 'west-inner', axis: 'vertical', pixelDistance: 650, realDistanceMetres: 4.663, evidence: 'test: independent inner-side dimension' },
+    ]);
+    expect(result[0]?.result?.accepted).toBe(false);
+    expect(result[0]?.result?.residuals.map((item) => item.id)).toEqual(['north-overall', 'south-overall']);
+    expect(result[1]?.result).toBeTruthy();
+    expect(calibrateScaleByAxis([{ id: 'only-x', axis: 'horizontal', pixelDistance: 100, realDistanceMetres: 1, evidence: 'single cota' }])[1]).toMatchObject({ axis: 'vertical', result: null });
+  });
+
+  it('measures per-edge raster support without upgrading geometry to validated status', () => {
+    const image = raster(60, 60, [[10, 10, 50, 12], [48, 10, 50, 50], [10, 48, 50, 50], [10, 10, 12, 50]]);
+    const support = measureRegionRasterSupport(image, { id: 'room-draft', vertices: [{ x: 11, y: 11 }, { x: 49, y: 11 }, { x: 49, y: 49 }, { x: 11, y: 49 }] }, { searchRadiusPx: 2 });
+    expect(support.edges.map((edge) => edge.supportRatio)).toEqual([1, 1, 1, 1]);
+    expect(support.status).toBe('raster_supported_draft');
+    expect(support.limitation).toContain('não prova que a aresta seja uma parede');
+    expect(() => measureRegionRasterSupport(image, { id: 'bad', vertices: [{ x: 1, y: 1 }, { x: 1, y: 1 }] })).toThrow();
+  });
+
+  it('keeps openings near candidate rooms pending and marks remote drawing gaps as likely annotations', () => {
+    const regions = [{ vertices: [{ x: 100, y: 100 }, { x: 300, y: 100 }, { x: 300, y: 300 }, { x: 100, y: 300 }] }];
+    const assessed = assessOpeningCandidates([
+      { id: 'near-wall', start: { x: 101, y: 180 }, end: { x: 101, y: 200 } },
+      { id: 'dimension-gap', start: { x: 20, y: 180 }, end: { x: 25, y: 180 } },
+    ], regions);
+    expect(assessed[0]).toMatchObject({ classification: 'pending', candidateId: 'near-wall' });
+    expect(assessed[1]).toMatchObject({ classification: 'likely_annotation_or_false_positive', candidateId: 'dimension-gap' });
+    expect(assessOpeningCandidates([{ id: 'unknown', start: { x: 0, y: 0 }, end: { x: 1, y: 1 } }], [])[0]?.classification).toBe('pending');
   });
 
   it('diagnoses rejected closed faces and marks composite faces crossing a supported partition', () => {

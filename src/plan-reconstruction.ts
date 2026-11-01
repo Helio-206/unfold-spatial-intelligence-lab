@@ -51,6 +51,83 @@ export type PlanVectorModel = {
 export type ScaleMeasurement = { id: string; pixelDistance: number; realDistanceMetres: number; evidence: string };
 export type ScaleMeasurementResidual = ScaleMeasurement & { estimatedDistanceMetres: number; relativeError: number };
 export type MultiScaleCalibration = { pixelsPerMetre: number; residuals: ScaleMeasurementResidual[]; maxRelativeError: number; rmsRelativeError: number; scaleSpreadRelative: number; accepted: boolean; tolerance: number };
+export type AxisScaleMeasurement = ScaleMeasurement & { axis: 'horizontal' | 'vertical' };
+export type AxisCalibration = { axis: 'horizontal' | 'vertical'; result: MultiScaleCalibration | null; reason?: string };
+
+/** Fit independent image-axis scales so anisotropic scans are visible instead of hidden by one scale. */
+export function calibrateScaleByAxis(measurements: AxisScaleMeasurement[], maximumRelativeError = 0.01): AxisCalibration[] {
+  const ids = new Set<string>();
+  for (const measurement of measurements) {
+    if (ids.has(measurement.id)) throw new Error('IDs de calibração duplicados.');
+    ids.add(measurement.id);
+    if (measurement.axis !== 'horizontal' && measurement.axis !== 'vertical') throw new Error('Eixo de calibração inválido.');
+  }
+  return (['horizontal', 'vertical'] as const).map((axis) => {
+    const samples = measurements.filter((measurement) => measurement.axis === axis);
+    if (samples.length < 2) return { axis, result: null, reason: 'São necessárias duas cotas independentes no mesmo eixo.' };
+    return { axis, result: calibrateScaleFromMeasurements(samples, maximumRelativeError) };
+  });
+}
+
+export type RegionRasterSupport = {
+  regionId: string;
+  searchRadiusPx: number;
+  threshold: number;
+  edges: Array<{ side: string; supportRatio: number; supportedSamples: number; totalSamples: number }>;
+  minimumSupportRatio: number;
+  meanSupportRatio: number;
+  status: 'raster_supported_draft' | 'weak_or_partial_raster_support';
+  limitation: string;
+};
+
+export type OpeningEvidenceAssessment = { candidateId: string; classification: 'pending' | 'likely_annotation_or_false_positive'; reason: string };
+
+/** Deprioritize raster gaps remote from the current room proposals; never labels a gap as a door/window. */
+export function assessOpeningCandidates(openings: Array<{ id: string; start: Point2; end: Point2 }>, regions: Array<Pick<PlanRegionCandidate, 'vertices'>>, marginPx = 64): OpeningEvidenceAssessment[] {
+  if (!Number.isFinite(marginPx) || marginPx < 0 || marginPx > 512) throw new Error('Margem de classificação de aberturas inválida.');
+  const points = regions.flatMap((region) => region.vertices);
+  if (!points.length) return openings.map((opening) => ({ candidateId: opening.id, classification: 'pending', reason: 'Sem regiões interiores de referência; a posição isolada não classifica o símbolo.' }));
+  const bounds = { minX: Math.min(...points.map((point) => point.x)), minY: Math.min(...points.map((point) => point.y)), maxX: Math.max(...points.map((point) => point.x)), maxY: Math.max(...points.map((point) => point.y)) };
+  return openings.map((opening) => {
+    const x = (opening.start.x + opening.end.x) / 2; const y = (opening.start.y + opening.end.y) / 2;
+    const outsideX = x < bounds.minX - marginPx || x > bounds.maxX + marginPx;
+    const outsideY = y < bounds.minY - marginPx || y > bounds.maxY + marginPx;
+    return outsideX || outsideY
+      ? { candidateId: opening.id, classification: 'likely_annotation_or_false_positive', reason: `Centro (${x.toFixed(1)}, ${y.toFixed(1)}) px fora do envelope das regiões propostas (${bounds.minX.toFixed(1)}–${bounds.maxX.toFixed(1)}, ${bounds.minY.toFixed(1)}–${bounds.maxY.toFixed(1)} px) por mais de ${marginPx} px; provável cota/anotação, não associar como abertura sem revisão.` }
+      : { candidateId: opening.id, classification: 'pending', reason: 'Dentro ou junto ao envelope interior; a raster gap não distingue porta, janela, símbolo ou falha de detecção. Exige inspecção do símbolo e da parede associada.' };
+  });
+}
+
+/** Quantify dark-pixel evidence around each proposed polygon edge; this is a diagnostic, never semantic/topological acceptance. */
+export function measureRegionRasterSupport(raster: PixelRaster, region: Pick<PlanRegionCandidate, 'id' | 'vertices'>, options: { searchRadiusPx?: number; threshold?: number } = {}): RegionRasterSupport {
+  assertRaster(raster);
+  const radius = options.searchRadiusPx ?? 18;
+  const threshold = options.threshold ?? 130;
+  if (!Number.isInteger(radius) || radius < 0 || radius > 128 || !Number.isInteger(threshold) || threshold < 0 || threshold > 255 || region.vertices.length < 3 || region.vertices.some((point) => !Number.isFinite(point.x) || !Number.isFinite(point.y))) throw new Error('Parâmetros de suporte raster inválidos.');
+  const edges: RegionRasterSupport['edges'] = [];
+  for (let index = 0; index < region.vertices.length; index += 1) {
+    const start = region.vertices[index]!; const end = region.vertices[(index + 1) % region.vertices.length]!;
+    const dx = end.x - start.x; const dy = end.y - start.y; const length = Math.hypot(dx, dy);
+    if (length <= 0) throw new Error('A região contém uma aresta degenerada.');
+    const samples = Math.max(2, Math.ceil(length));
+    let supportedSamples = 0;
+    for (let sample = 0; sample < samples; sample += 1) {
+      const t = sample / (samples - 1); const x = Math.round(start.x + dx * t); const y = Math.round(start.y + dy * t);
+      let dark = false;
+      for (let offset = -radius; offset <= radius && !dark; offset += 1) {
+        const px = Math.round(x + (dy / length) * offset); const py = Math.round(y - (dx / length) * offset);
+        if (px >= 0 && px < raster.width && py >= 0 && py < raster.height && raster.grayscale[py * raster.width + px]! <= threshold) dark = true;
+      }
+      if (dark) supportedSamples += 1;
+    }
+    const supportRatio = supportedSamples / samples;
+    const side = region.vertices.length === 4 ? (index === 0 ? 'top' : index === 1 ? 'right' : index === 2 ? 'bottom' : 'left') : `edge-${index}`;
+    edges.push({ side, supportRatio, supportedSamples, totalSamples: samples });
+  }
+  const minimumSupportRatio = Math.min(...edges.map((edge) => edge.supportRatio));
+  const meanSupportRatio = edges.reduce((sum, edge) => sum + edge.supportRatio, 0) / edges.length;
+  return { regionId: region.id, searchRadiusPx: radius, threshold, edges, minimumSupportRatio, meanSupportRatio, status: minimumSupportRatio >= 0.55 ? 'raster_supported_draft' : 'weak_or_partial_raster_support', limitation: 'Presença de pixels escuros não prova que a aresta seja uma parede: cotas, texto, símbolos e paredes vizinhas podem contribuir. Requer revisão humana e validação topológica.' };
+}
 
 /** Fit one isotropic image scale by least squares. Conflicting dimensions remain visible and block calibration. */
 export function calibrateScaleFromMeasurements(measurements: ScaleMeasurement[], maximumRelativeError = 0.01): MultiScaleCalibration {

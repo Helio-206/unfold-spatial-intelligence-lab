@@ -3,8 +3,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { gsap } from 'gsap';
-import { decodePlanImage } from './plan-image';
-import { buildPlanVectorModel, calibrateScale, calibrateScaleFromMeasurements, countClosedCandidateContours, detectCandidateIntersections, detectWallCandidatesDetailed, mergeWallCandidates, preparePlanRaster, splitWallCandidate, traceWallCandidate, type PixelWallCandidate, type Point2, type RasterPreparation, type ScaleMeasurement } from './plan-reconstruction';
+import { decodePlanImage, type DecodedPlanImage } from './plan-image';
+import { assessOpeningCandidates, buildPlanVectorModel, calibrateScale, calibrateScaleFromMeasurements, countClosedCandidateContours, detectCandidateIntersections, detectWallCandidatesDetailed, measureRegionRasterSupport, mergeWallCandidates, preparePlanRaster, splitWallCandidate, traceWallCandidate, type PixelWallCandidate, type Point2, type RasterPreparation, type RegionRasterSupport, type ScaleMeasurement } from './plan-reconstruction';
 import { addOpeningToScene, createPlanScene, editOpeningInScene, editWallInScene } from './plan-scene';
 import { ARCHITECTURAL_MODULE_DIMENSIONS, buildThreePlanGroup, type ArchitecturalAssets } from './plan-three-adapter';
 import { commitScenePreview, deserializeSceneTransaction, executeSceneCommand, previewSceneCommand, serializeSceneTransaction, type Node, type ScenePreview, type SceneTransaction, type SpatialCommand, type SpatialSceneV1 } from './spatial-scene';
@@ -124,6 +124,7 @@ let assetReady = false;
 let currentImageFile: File | undefined;
 let currentImageUrl: string | undefined;
 let imageInfo: { sha256: string; width: number; height: number; mimeType: string } | undefined;
+let decodedPlanRaster: DecodedPlanImage | undefined;
 let rasterPreparation: RasterPreparation | undefined;
 let annotationMasks: Array<{ x: number; y: number; width: number; height: number }> = [];
 let sourceDocumentRef: { documentId: string; sha256: string } | undefined;
@@ -463,6 +464,10 @@ function updateCandidates(): void {
   }
   const topologyTolerance = Math.max(6, Math.min(imageInfo.width, imageInfo.height) * 0.008);
   const vectorModel = buildPlanVectorModel(candidates, { tolerancePx: topologyTolerance, imageSize: { width: imageInfo.width, height: imageInfo.height }, ...(vectorScale ? { scale: vectorScale } : {}) });
+  const rasterSupport: Map<string, RegionRasterSupport> = decodedPlanRaster?.sha256 === imageInfo.sha256
+    ? new Map(vectorModel.regions.map((region) => [region.id, measureRegionRasterSupport(decodedPlanRaster!, region)]))
+    : new Map();
+  const openingAssessments = assessOpeningCandidates(vectorModel.openingCandidates, vectorModel.regions.filter((region) => region.eligibility === 'construction_candidate'));
   const regionShapes = vectorModel.regions.map((region) => `<polygon data-region="${escapeHtml(region.id)}" data-selected="${selectedRegions.has(region.id)}" points="${region.vertices.map((point) => `${point.x},${point.y}`).join(' ')}" fill="${region.eligibility === 'construction_candidate' ? '#c8a873' : '#c74f46'}" fill-opacity="${selectedRegions.has(region.id) ? '0.22' : region.eligibility === 'construction_candidate' ? '0.09' : '0.012'}" stroke="${region.eligibility === 'construction_candidate' ? selectedRegions.has(region.id) ? '#efbf68' : '#b99968' : '#e35d52'}" stroke-opacity="${region.eligibility === 'construction_candidate' ? '.9' : '.3'}" stroke-width="${region.eligibility === 'construction_candidate' ? '3' : '1'}"><title>${escapeHtml(region.rejectionReasons?.join(', ') || region.evidence.at(-1) || 'Região não revista')}</title></polygon>`).join('');
   const gapMarks = vectorModel.openingCandidates.map((item) => `<line data-opening-candidate="${escapeHtml(item.id)}" x1="${item.start.x}" y1="${item.start.y}" x2="${item.end.x}" y2="${item.end.y}" stroke="#a65e36" stroke-width="6" stroke-dasharray="4 3" opacity=".9"><title>${escapeHtml(item.reason)}</title></line>`).join('');
   const intersectionMarks = vectorModel.intersections.map((item) => `<circle data-intersection="${item.firstId}:${item.secondId}" cx="${item.point.x}" cy="${item.point.y}" r="3.5" fill="${item.kind === 'endpoint_snap' ? '#73b7a0' : '#e4b05d'}" stroke="#392b1d" stroke-width="1"><title>${escapeHtml(`${item.kind ?? 'intersecção'}: ${item.firstId} / ${item.secondId}; tolerância ${item.tolerancePx.toFixed(1)} px`)}</title></circle>`).join('');
@@ -478,9 +483,9 @@ function updateCandidates(): void {
   list.innerHTML = `<p class="micro-copy">${rawCandidates.length} segmentos raster antes da fusão → ${candidates.length} candidatos fundidos. Azul: detecção bruta; cobre: segmento consolidado.</p>` + (candidates.map((candidate) => `<button type="button" class="candidate-row ${selectedCandidates.has(candidate.id) ? 'is-selected' : ''}" data-candidate="${escapeHtml(candidate.id)}" aria-pressed="${selectedCandidates.has(candidate.id)}"><span>${escapeHtml(candidate.id)}</span><small>${candidate.origin === 'manual_trace' ? 'traçado manual' : candidate.origin === 'manual_correction' ? 'correcção manual' : 'detecção automática'} · ${candidate.orientation} · ${Math.round(Math.hypot(candidate.end.x-candidate.start.x,candidate.end.y-candidate.start.y))} px · confiança heurística ${candidate.confidence.toFixed(2)} · origem ${(candidate.sourceCandidateIds ?? []).length} segmento(s)</small></button>`).join('') || '<p class="micro-copy">Sem candidatos. Use tracing manual.</p>');
   const regionCandidates = vectorModel.regions.filter((region) => region.eligibility === 'construction_candidate');
   $('#region-list').innerHTML = vectorModel.regions.map((region) => region.eligibility === 'construction_candidate'
-    ? `<button type="button" class="candidate-row ${selectedRegions.has(region.id) ? 'is-selected' : ''}" data-region="${escapeHtml(region.id)}" aria-label="${selectedRegions.has(region.id) ? 'Remover' : 'Rever'} divisão proposta ${escapeHtml(region.id)}" aria-pressed="${selectedRegions.has(region.id)}"><span>Face ${escapeHtml(region.id)} · proposta</span><small>${region.boundaryCandidateIds.length} segmentos · ${Math.round(region.areaPx2).toLocaleString()} px² · confiança heurística ${region.confidence.toFixed(2)} · sem revisão humana</small></button>`
+    ? `<button type="button" class="candidate-row ${selectedRegions.has(region.id) ? 'is-selected' : ''}" data-region="${escapeHtml(region.id)}" data-raster-support="${rasterSupport.get(region.id)?.minimumSupportRatio ?? ''}" aria-label="${selectedRegions.has(region.id) ? 'Remover' : 'Rever'} divisão proposta ${escapeHtml(region.id)}" aria-pressed="${selectedRegions.has(region.id)}"><span>Face ${escapeHtml(region.id)} · proposta</span><small>${region.boundaryCandidateIds.length} segmentos · ${Math.round(region.areaPx2).toLocaleString()} px² · suporte raster: ${rasterSupport.get(region.id)?.edges.map((edge) => `${edge.side} ${(edge.supportRatio * 100).toFixed(0)}%`).join(' / ') ?? 'indisponível'} · apenas diagnóstico, sem validação humana</small></button>`
     : `<div class="candidate-row is-rejected" data-region-diagnostic="${escapeHtml(region.id)}"><span>Face ${escapeHtml(region.id)} · rejeitada</span><small>${escapeHtml((region.rejectionReasons ?? region.evidence).join('; '))}</small></div>`).join('') || '<p class="micro-copy">Sem contornos com suporte suficiente. Isto não exclui divisões abertas ou linhas não detectadas.</p>';
-  $('#opening-candidate-list').innerHTML = vectorModel.openingCandidates.map((opening) => `<button type="button" class="candidate-row" data-opening-candidate="${escapeHtml(opening.id)}"><span>${escapeHtml(opening.id)}</span><small>${Math.hypot(opening.end.x - opening.start.x, opening.end.y - opening.start.y).toFixed(1)} px · ambígua · confirmar manualmente</small></button>`).join('') || '<p class="micro-copy">Nenhuma descontinuidade candidata no intervalo heurístico configurado; isto não confirma ausência de portas/janelas.</p>';
+  $('#opening-candidate-list').innerHTML = vectorModel.openingCandidates.map((opening) => { const assessment = openingAssessments.find((item) => item.candidateId === opening.id)!; return `<button type="button" class="candidate-row" data-opening-candidate="${escapeHtml(opening.id)}" data-classification="${assessment.classification}"><span>${escapeHtml(opening.id)} · ${assessment.classification === 'pending' ? 'pendente' : 'provável anotação / falso positivo'}</span><small>${Math.hypot(opening.end.x - opening.start.x, opening.end.y - opening.start.y).toFixed(1)} px · ${escapeHtml(assessment.reason)}</small></button>`; }).join('') || '<p class="micro-copy">Nenhuma descontinuidade candidata no intervalo heurístico configurado; isto não confirma ausência de portas/janelas.</p>';
   $('#split-segment').disabled = selectedCandidates.size !== 1 || !!transaction;
   $('#join-segments').disabled = selectedCandidates.size < 2 || !!transaction;
   $('#build-scene').disabled = !imageInfo || selectedCandidates.size === 0 && selectedRegions.size === 0;
@@ -569,7 +574,7 @@ async function loadPlanFile(file: File, technicalDocumentRef?: { documentId: str
   try {
     status('A verificar o ficheiro local e a preparar a referência raster…');
     const decoded = await decodePlanImage(file);
-    currentImageFile = file; imageInfo = { sha256: decoded.sha256, width: decoded.width, height: decoded.height, mimeType: decoded.mimeType }; sourceDocumentRef = technicalDocumentRef;
+    currentImageFile = file; decodedPlanRaster = decoded; imageInfo = { sha256: decoded.sha256, width: decoded.width, height: decoded.height, mimeType: decoded.mimeType }; sourceDocumentRef = technicalDocumentRef;
     rasterPreparation = undefined; annotationMasks = [];
     calibrationPoints.length = 0; scaleMeasurements.length = 0; renderCalibrationList();
     (document.querySelector<HTMLInputElement>('#crop-width')!).value = String(decoded.width);
@@ -746,7 +751,7 @@ $('#region-list').addEventListener('click', (event) => {
 $('#opening-candidate-list').addEventListener('click', (event) => {
   const id = (event.target as HTMLElement).closest<HTMLElement>('[data-opening-candidate]')?.dataset.openingCandidate;
   const item = id ? buildPlanVectorModel(candidates).openingCandidates.find((candidate) => candidate.id === id) : undefined;
-  if (item) status(`${item.reason} Nenhuma abertura será criada automaticamente.`);
+  if (item && imageInfo) { const model = buildPlanVectorModel(candidates, { tolerancePx: Math.max(6, Math.min(imageInfo.width, imageInfo.height) * 0.008), imageSize: { width: imageInfo.width, height: imageInfo.height } }); const assessment = assessOpeningCandidates([item], model.regions.filter((region) => region.eligibility === 'construction_candidate'))[0]!; status(`${assessment.classification}: ${assessment.reason} Nenhuma abertura será criada automaticamente.`); }
 });
 
 $('#split-segment').addEventListener('click', () => {

@@ -1,0 +1,564 @@
+{
+  "scenario": "B · Amoureaux House HABS MO-1113 sheet 3/10",
+  "attribution": "Library of Congress, Prints & Photographs Division, HABS MO-1113, sheet 3/10",
+  "source": "/home/helio/HEr/META/unfold-phase-10-teardown-meta-drawing-acceleration/reports/phase-10-teardown/fixtures/amoureaux-house-plan.png",
+  "sourceSha256": "1d78e739dad568ea49eb193416dc5f91c8b62b904a0170c63af803dd87750026",
+  "baseUrl": "http://127.0.0.1:5192",
+  "browser": "Chromium DevTools Protocol",
+  "extraction": "UNFOLD raster wall detector and planar candidate graph; no Meta calls",
+  "errors": [],
+  "candidates": {
+    "candidateCount": 162,
+    "rawCandidateCount": 210,
+    "selectedCandidateCount": 0,
+    "proposedRegions": [
+      {
+        "id": "room-782-742-1679-1357",
+        "label": "Face room-782-742-1679-1357 · proposta11 segmentos · 551,943 px² · suporte raster: top 100% / right 87% / bottom 86% / left 100% · apenas diagnóstico, sem validação humana",
+        "minimumRasterSupport": 0.8596881959910914,
+        "vertices": "781.9583333333334,742 1679.1666666666667,742 1679.1666666666667,1357.1785714285713 781.9583333333334,1357.1785714285713"
+      },
+      {
+        "id": "room-782-1391-1679-1881",
+        "label": "Face room-782-1391-1679-1881 · proposta13 segmentos · 439,632 px² · suporte raster: top 86% / right 75% / bottom 100% / left 100% · apenas diagnóstico, sem validação humana",
+        "minimumRasterSupport": 0.746938775510204,
+        "vertices": "781.9583333333334,1390.75 1679.1666666666667,1390.75 1679.1666666666667,1880.75 781.9583333333334,1880.75"
+      },
+      {
+        "id": "room-1679-1357-2925-1881",
+        "label": "Face room-1679-1357-2925-1881 · proposta16 segmentos · 652,021 px² · suporte raster: top 72% / right 100% / bottom 100% / left 77% · apenas diagnóstico, sem validação humana",
+        "minimumRasterSupport": 0.7174959871589085,
+        "vertices": "1679.1666666666667,1357.1785714285713 2924.5,1357.1785714285713 2924.5,1880.75 1679.1666666666667,1880.75"
+      },
+      {
+        "id": "room-1911-742-2925-1357",
+        "label": "Face room-1911-742-2925-1357 · proposta16 segmentos · 623,330 px² · suporte raster: top 100% / right 100% / bottom 80% / left 67% · apenas diagnóstico, sem validação humana",
+        "minimumRasterSupport": 0.6655844155844156,
+        "vertices": "1911.25,742 2924.5,742 2924.5,1357.1785714285713 1911.25,1357.1785714285713"
+      }
+    ],
+    "lowQualityFaceCount": 110,
+    "contourSummary": "4 divisão(ões) proposta(s) com suporte de parede · 110 face(s) de baixa qualidade excluída(s) · 0 ciclo(s) fechados exactos. Sem escala validada, áreas apenas em px².",
+    "openingCandidates": [
+      {
+        "id": "gap-line-18-line-19",
+        "label": "gap-line-18-line-19 · provável anotação / falso positivo17.0 px · Centro (775.5, 388.5) px fora do envelope das regiões propostas (782.0–2924.5, 742.0–1880.8 px) por mais de 64 px; provável cota/anotação, não associar como abertura sem revisão.",
+        "classification": "likely_annotation_or_false_positive",
+        "overlay": "<line data-opening-candidate=\"gap-line-18-line-19\" x1=\"767\" y1=\"388.5\" x2=\"784\" y2=\"388.5\" stroke=\"#a65e36\" stroke-width=\"6\" stroke-dasharray=\"4 3\" opacity=\".9\"><title>Descontinuidade colinear de 17.0 px; pode ser símbolo, falha de detecção ou abertura e exige confirmação.</title></line>"
+      },
+      {
+        "id": "gap-line-43-line-60",
+        "label": "gap-line-43-line-60 · provável anotação / falso positivo17.5 px · Centro (3338.5, 974.3) px fora do envelope das regiões propostas (782.0–2924.5, 742.0–1880.8 px) por mais de 64 px; provável cota/anotação, não associar como abertura sem revisão.",
+        "classification": "likely_annotation_or_false_positive",
+        "overlay": "<line data-opening-candidate=\"gap-line-43-line-60\" x1=\"3338.5\" y1=\"965.5\" x2=\"3338.5\" y2=\"983\" stroke=\"#a65e36\" stroke-width=\"6\" stroke-dasharray=\"4 3\" opacity=\".9\"><title>Descontinuidade colinear de 17.5 px; pode ser símbolo, falha de detecção ou abertura e exige confirmação.</title></line>"
+      },
+      {
+        "id": "gap-line-63-line-64",
+        "label": "gap-line-63-line-64 · provável anotação / falso positivo18.0 px · Centro (669.5, 1041.5) px fora do envelope das regiões propostas (782.0–2924.5, 742.0–1880.8 px) por mais de 64 px; provável cota/anotação, não associar como abertura sem revisão.",
+        "classification": "likely_annotation_or_false_positive",
+        "overlay": "<line data-opening-candidate=\"gap-line-63-line-64\" x1=\"660.5\" y1=\"1041.5\" x2=\"678.5\" y2=\"1041.5\" stroke=\"#a65e36\" stroke-width=\"6\" stroke-dasharray=\"4 3\" opacity=\".9\"><title>Descontinuidade colinear de 18.0 px; pode ser símbolo, falha de detecção ou abertura e exige confirmação.</title></line>"
+      },
+      {
+        "id": "gap-line-77-line-82",
+        "label": "gap-line-77-line-82 · provável anotação / falso positivo24.5 px · Centro (3048.8, 1331.5) px fora do envelope das regiões propostas (782.0–2924.5, 742.0–1880.8 px) por mais de 64 px; provável cota/anotação, não associar como abertura sem revisão.",
+        "classification": "likely_annotation_or_false_positive",
+        "overlay": "<line data-opening-candidate=\"gap-line-77-line-82\" x1=\"3036.5\" y1=\"1331.5\" x2=\"3061\" y2=\"1331.5\" stroke=\"#a65e36\" stroke-width=\"6\" stroke-dasharray=\"4 3\" opacity=\".9\"><title>Descontinuidade colinear de 24.5 px; pode ser símbolo, falha de detecção ou abertura e exige confirmação.</title></line>"
+      },
+      {
+        "id": "gap-line-79-line-82",
+        "label": "gap-line-79-line-82 · provável anotação / falso positivo19.5 px · Centro (3051.3, 1349.8) px fora do envelope das regiões propostas (782.0–2924.5, 742.0–1880.8 px) por mais de 64 px; provável cota/anotação, não associar como abertura sem revisão.",
+        "classification": "likely_annotation_or_false_positive",
+        "overlay": "<line data-opening-candidate=\"gap-line-79-line-82\" x1=\"3041.5\" y1=\"1349.75\" x2=\"3061\" y2=\"1349.75\" stroke=\"#a65e36\" stroke-width=\"6\" stroke-dasharray=\"4 3\" opacity=\".9\"><title>Descontinuidade colinear de 19.5 px; pode ser símbolo, falha de detecção ou abertura e exige confirmação.</title></line>"
+      },
+      {
+        "id": "gap-line-88-line-89",
+        "label": "gap-line-88-line-89 · provável anotação / falso positivo16.0 px · Centro (637.0, 1378.5) px fora do envelope das regiões propostas (782.0–2924.5, 742.0–1880.8 px) por mais de 64 px; provável cota/anotação, não associar como abertura sem revisão.",
+        "classification": "likely_annotation_or_false_positive",
+        "overlay": "<line data-opening-candidate=\"gap-line-88-line-89\" x1=\"629\" y1=\"1378.5\" x2=\"645\" y2=\"1378.5\" stroke=\"#a65e36\" stroke-width=\"6\" stroke-dasharray=\"4 3\" opacity=\".9\"><title>Descontinuidade colinear de 16.0 px; pode ser símbolo, falha de detecção ou abertura e exige confirmação.</title></line>"
+      },
+      {
+        "id": "gap-line-99-line-100",
+        "label": "gap-line-99-line-100 · provável anotação / falso positivo19.0 px · Centro (662.5, 1606.5) px fora do envelope das regiões propostas (782.0–2924.5, 742.0–1880.8 px) por mais de 64 px; provável cota/anotação, não associar como abertura sem revisão.",
+        "classification": "likely_annotation_or_false_positive",
+        "overlay": "<line data-opening-candidate=\"gap-line-99-line-100\" x1=\"653\" y1=\"1606.5\" x2=\"672\" y2=\"1606.5\" stroke=\"#a65e36\" stroke-width=\"6\" stroke-dasharray=\"4 3\" opacity=\".9\"><title>Descontinuidade colinear de 19.0 px; pode ser símbolo, falha de detecção ou abertura e exige confirmação.</title></line>"
+      },
+      {
+        "id": "gap-line-107-line-112",
+        "label": "gap-line-107-line-112 · pendente34.8 px · Dentro ou junto ao envelope interior; a raster gap não distingue porta, janela, símbolo ou falha de detecção. Exige inspecção do símbolo e da parede associada.",
+        "classification": "pending",
+        "overlay": "<line data-opening-candidate=\"gap-line-107-line-112\" x1=\"1130.5\" y1=\"1868.5\" x2=\"1165.25\" y2=\"1868.5\" stroke=\"#a65e36\" stroke-width=\"6\" stroke-dasharray=\"4 3\" opacity=\".9\"><title>Descontinuidade colinear de 34.8 px; pode ser símbolo, falha de detecção ou abertura e exige confirmação.</title></line>"
+      },
+      {
+        "id": "gap-line-110-line-112",
+        "label": "gap-line-110-line-112 · pendente33.8 px · Dentro ou junto ao envelope interior; a raster gap não distingue porta, janela, símbolo ou falha de detecção. Exige inspecção do símbolo e da parede associada.",
+        "classification": "pending",
+        "overlay": "<line data-opening-candidate=\"gap-line-110-line-112\" x1=\"1130.5\" y1=\"1890\" x2=\"1164.3333333333333\" y2=\"1890\" stroke=\"#a65e36\" stroke-width=\"6\" stroke-dasharray=\"4 3\" opacity=\".9\"><title>Descontinuidade colinear de 33.8 px; pode ser símbolo, falha de detecção ou abertura e exige confirmação.</title></line>"
+      }
+    ],
+    "openingCandidateCount": 9,
+    "viewport": [
+      1440,
+      1000
+    ],
+    "dpr": 1
+  },
+  "faceDiagnostics": {
+    "rejectedFaces": [
+      {
+        "id": "region-1",
+        "reason": "Face region-1 · rejeitadaarea_below_minimum; too_few_boundary_edges"
+      },
+      {
+        "id": "region-2",
+        "reason": "Face region-2 · rejeitadaarea_below_minimum; too_few_boundary_edges"
+      },
+      {
+        "id": "region-3",
+        "reason": "Face region-3 · rejeitadaarea_below_minimum; too_few_boundary_edges"
+      },
+      {
+        "id": "region-4",
+        "reason": "Face region-4 · rejeitadaarea_below_minimum; too_few_boundary_edges"
+      },
+      {
+        "id": "region-5",
+        "reason": "Face region-5 · rejeitadaarea_below_minimum"
+      },
+      {
+        "id": "region-6",
+        "reason": "Face region-6 · rejeitadaarea_below_minimum"
+      },
+      {
+        "id": "region-7",
+        "reason": "Face region-7 · rejeitadaarea_below_minimum"
+      },
+      {
+        "id": "region-8",
+        "reason": "Face region-8 · rejeitadaarea_below_minimum; too_few_boundary_edges"
+      },
+      {
+        "id": "region-9",
+        "reason": "Face region-9 · rejeitadaarea_below_minimum"
+      },
+      {
+        "id": "region-10",
+        "reason": "Face region-10 · rejeitadaarea_below_minimum"
+      },
+      {
+        "id": "region-11",
+        "reason": "Face region-11 · rejeitadaself_intersection_or_degenerate_edge"
+      },
+      {
+        "id": "rejected-crossing-344-225-1679-1391",
+        "reason": "Face rejected-crossing-344-225-1679-1391 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-344-225-1679-1881",
+        "reason": "Face rejected-crossing-344-225-1679-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-344-742-1679-1357",
+        "reason": "Face rejected-crossing-344-742-1679-1357 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-344-742-1911-1357",
+        "reason": "Face rejected-crossing-344-742-1911-1357 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-344-742-2925-1357",
+        "reason": "Face rejected-crossing-344-742-2925-1357 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-344-742-1679-1391",
+        "reason": "Face rejected-crossing-344-742-1679-1391 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-344-742-1911-1391",
+        "reason": "Face rejected-crossing-344-742-1911-1391 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-344-742-1679-1881",
+        "reason": "Face rejected-crossing-344-742-1679-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-344-742-1911-1881",
+        "reason": "Face rejected-crossing-344-742-1911-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-344-742-2925-1881",
+        "reason": "Face rejected-crossing-344-742-2925-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-344-742-2925-2501",
+        "reason": "Face rejected-crossing-344-742-2925-2501 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-344-742-1679-2762",
+        "reason": "Face rejected-crossing-344-742-1679-2762 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-344-742-2925-2762",
+        "reason": "Face rejected-crossing-344-742-2925-2762 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-344-742-2925-2890",
+        "reason": "Face rejected-crossing-344-742-2925-2890 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-344-1357-1679-1881",
+        "reason": "Face rejected-crossing-344-1357-1679-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-344-1357-2925-1881",
+        "reason": "Face rejected-crossing-344-1357-2925-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-344-1357-2925-2501",
+        "reason": "Face rejected-crossing-344-1357-2925-2501 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-344-1357-2925-2762",
+        "reason": "Face rejected-crossing-344-1357-2925-2762 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-344-1357-2925-2890",
+        "reason": "Face rejected-crossing-344-1357-2925-2890 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-344-1391-1679-1881",
+        "reason": "Face rejected-crossing-344-1391-1679-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-344-1881-2925-2501",
+        "reason": "Face rejected-crossing-344-1881-2925-2501 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-432-742-1679-1357",
+        "reason": "Face rejected-crossing-432-742-1679-1357 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-432-742-1911-1357",
+        "reason": "Face rejected-crossing-432-742-1911-1357 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-432-742-2925-1357",
+        "reason": "Face rejected-crossing-432-742-2925-1357 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-432-742-1679-1391",
+        "reason": "Face rejected-crossing-432-742-1679-1391 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-432-742-1911-1391",
+        "reason": "Face rejected-crossing-432-742-1911-1391 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-432-742-1679-1881",
+        "reason": "Face rejected-crossing-432-742-1679-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-432-742-1911-1881",
+        "reason": "Face rejected-crossing-432-742-1911-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-432-742-2925-1881",
+        "reason": "Face rejected-crossing-432-742-2925-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-432-1357-1679-1881",
+        "reason": "Face rejected-crossing-432-1357-1679-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-432-1357-2925-1881",
+        "reason": "Face rejected-crossing-432-1357-2925-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-432-1391-1679-1881",
+        "reason": "Face rejected-crossing-432-1391-1679-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-225-2925-1357",
+        "reason": "Face rejected-crossing-782-225-2925-1357 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-225-1679-1391",
+        "reason": "Face rejected-crossing-782-225-1679-1391 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-225-1679-1881",
+        "reason": "Face rejected-crossing-782-225-1679-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-225-2925-1881",
+        "reason": "Face rejected-crossing-782-225-2925-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-225-2925-2501",
+        "reason": "Face rejected-crossing-782-225-2925-2501 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-641-2925-1357",
+        "reason": "Face rejected-crossing-782-641-2925-1357 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-641-2925-1881",
+        "reason": "Face rejected-crossing-782-641-2925-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-641-2925-2501",
+        "reason": "Face rejected-crossing-782-641-2925-2501 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-641-2925-2762",
+        "reason": "Face rejected-crossing-782-641-2925-2762 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-641-2925-2890",
+        "reason": "Face rejected-crossing-782-641-2925-2890 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-742-1911-1357",
+        "reason": "Face rejected-crossing-782-742-1911-1357 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-742-2925-1357",
+        "reason": "Face rejected-crossing-782-742-2925-1357 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-742-3572-1357",
+        "reason": "Face rejected-crossing-782-742-3572-1357 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-742-1679-1391",
+        "reason": "Face rejected-crossing-782-742-1679-1391 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-742-1911-1391",
+        "reason": "Face rejected-crossing-782-742-1911-1391 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-742-1679-1881",
+        "reason": "Face rejected-crossing-782-742-1679-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-742-1911-1881",
+        "reason": "Face rejected-crossing-782-742-1911-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-742-2925-1881",
+        "reason": "Face rejected-crossing-782-742-2925-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-742-3572-1881",
+        "reason": "Face rejected-crossing-782-742-3572-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-742-1679-2501",
+        "reason": "Face rejected-crossing-782-742-1679-2501 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-742-2925-2501",
+        "reason": "Face rejected-crossing-782-742-2925-2501 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-742-3572-2501",
+        "reason": "Face rejected-crossing-782-742-3572-2501 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-742-2925-2762",
+        "reason": "Face rejected-crossing-782-742-2925-2762 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-742-3572-2762",
+        "reason": "Face rejected-crossing-782-742-3572-2762 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-742-2925-2890",
+        "reason": "Face rejected-crossing-782-742-2925-2890 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-742-3572-2890",
+        "reason": "Face rejected-crossing-782-742-3572-2890 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-1357-1679-1881",
+        "reason": "Face rejected-crossing-782-1357-1679-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-1357-2925-1881",
+        "reason": "Face rejected-crossing-782-1357-2925-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-1357-3572-1881",
+        "reason": "Face rejected-crossing-782-1357-3572-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-1357-2925-2501",
+        "reason": "Face rejected-crossing-782-1357-2925-2501 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-1357-3572-2501",
+        "reason": "Face rejected-crossing-782-1357-3572-2501 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-1357-2925-2762",
+        "reason": "Face rejected-crossing-782-1357-2925-2762 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-1357-3572-2762",
+        "reason": "Face rejected-crossing-782-1357-3572-2762 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-1357-2925-2890",
+        "reason": "Face rejected-crossing-782-1357-2925-2890 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-1357-3572-2890",
+        "reason": "Face rejected-crossing-782-1357-3572-2890 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-782-1881-3572-2501",
+        "reason": "Face rejected-crossing-782-1881-3572-2501 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1679-572-2925-1357",
+        "reason": "Face rejected-crossing-1679-572-2925-1357 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1679-572-2925-1881",
+        "reason": "Face rejected-crossing-1679-572-2925-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1679-572-2925-2068",
+        "reason": "Face rejected-crossing-1679-572-2925-2068 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1679-572-2925-2501",
+        "reason": "Face rejected-crossing-1679-572-2925-2501 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1679-641-2925-1357",
+        "reason": "Face rejected-crossing-1679-641-2925-1357 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1679-641-3572-1357",
+        "reason": "Face rejected-crossing-1679-641-3572-1357 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1679-641-2925-1881",
+        "reason": "Face rejected-crossing-1679-641-2925-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1679-641-3572-1881",
+        "reason": "Face rejected-crossing-1679-641-3572-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1679-641-2925-2068",
+        "reason": "Face rejected-crossing-1679-641-2925-2068 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1679-641-2925-2501",
+        "reason": "Face rejected-crossing-1679-641-2925-2501 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1679-641-3572-2501",
+        "reason": "Face rejected-crossing-1679-641-3572-2501 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1679-742-2925-1357",
+        "reason": "Face rejected-crossing-1679-742-2925-1357 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1679-742-3572-1357",
+        "reason": "Face rejected-crossing-1679-742-3572-1357 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1679-742-2925-1881",
+        "reason": "Face rejected-crossing-1679-742-2925-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1679-742-3572-1881",
+        "reason": "Face rejected-crossing-1679-742-3572-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1679-742-2925-2068",
+        "reason": "Face rejected-crossing-1679-742-2925-2068 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1679-742-2925-2501",
+        "reason": "Face rejected-crossing-1679-742-2925-2501 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1679-742-3572-2501",
+        "reason": "Face rejected-crossing-1679-742-3572-2501 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1679-742-2925-2762",
+        "reason": "Face rejected-crossing-1679-742-2925-2762 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1679-742-3572-2762",
+        "reason": "Face rejected-crossing-1679-742-3572-2762 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1679-1357-3572-1881",
+        "reason": "Face rejected-crossing-1679-1357-3572-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1679-1357-2925-2068",
+        "reason": "Face rejected-crossing-1679-1357-2925-2068 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1911-572-2925-1357",
+        "reason": "Face rejected-crossing-1911-572-2925-1357 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1911-572-2925-1881",
+        "reason": "Face rejected-crossing-1911-572-2925-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1911-572-2925-2068",
+        "reason": "Face rejected-crossing-1911-572-2925-2068 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1911-641-2925-1357",
+        "reason": "Face rejected-crossing-1911-641-2925-1357 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1911-641-2925-1881",
+        "reason": "Face rejected-crossing-1911-641-2925-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1911-641-2925-2068",
+        "reason": "Face rejected-crossing-1911-641-2925-2068 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1911-742-3572-1357",
+        "reason": "Face rejected-crossing-1911-742-3572-1357 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1911-742-2925-1881",
+        "reason": "Face rejected-crossing-1911-742-2925-1881 · rejeitadacrosses_supported_partition"
+      },
+      {
+        "id": "rejected-crossing-1911-742-3572-1881",
+        "reason": "Face rejected-crossing-1911-742-3572-1881 · rejeitadacrosses_supported_partition"
+      }
+    ],
+    "rejectedOverlayCount": 110,
+    "intersectionCount": 151,
+    "openingReasonCount": 9,
+    "expanded": "true",
+    "sourcePanelWidth": 1080
+  },
+  "preprocessing": {
+    "summary": "Cópia de análise 2919 × 2126; recorte 600,600,2900,2100; deskew 0.5°; 0 máscara(s). Coordenadas convertidas de volta para a imagem original.",
+    "candidateCount": 209,
+    "sourceWidth": 3700,
+    "sourceHeight": 2996,
+    "coordinateBounds": true
+  },
+  "calibration": "dimension-1 · 10.0000 m100.0 px · browser E2E synthetic calibration sample 1 · erro residual 2.56%dimension-2 · 10.5000 m100.0 px · browser E2E synthetic calibration sample 2 · erro residual -2.32%Calibração bloqueada: medidas incompatíveis · erro RMS 2.44% · máximo 2.56% · dispersão entre escalas 4.76% (limite 1%).",
+  "status": "PASS_CANDIDATES_ONLY",
+  "note": "Regiões automáticas permanecem não seleccionadas; o debugger mostra razões por face. O teste também comprova recorte/deskew reversível e bloqueio de cotas inconsistentes. Não houve commit geométrico."
+}

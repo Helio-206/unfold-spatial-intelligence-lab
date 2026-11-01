@@ -184,3 +184,47 @@ UNFOLD_E2E_URL=http://127.0.0.1:5192 UNFOLD_CDP_PORT=9227 UNFOLD_EVIDENCE_DIR=re
 ```
 
 Git checkpoint for the implementation and captured E2E evidence: branch `phase-10-open-source-geometry-acceleration`, commit `0d43e0c` (`Improve floor plan evidence debugging and calibration`). Changed files: `src/plan-reconstruction.ts`, `src/plan-scene.ts`, `src/spatial-editor.ts`, `src/spatial-editor.css`, `tests/plan-reconstruction.test.ts`, `tests/e2e/phase-10-case-b-detection.cdp.mjs`, this report, and five HABS browser evidence artifacts under `evidence/case-b-debugger/`. No Meta credentials or new API calls are part of this commit.
+
+## Spatial Reconstruction Workbench increment (2026-11-01)
+
+The prior four A–D rectangles are now evaluated against the original HABS raster, rather than being treated as topology. The debugger samples each polygon edge within ±18 px at grayscale ≤130 and reports the percentage of samples with dark-pixel support. These figures are evidence proximity only: wall strokes, openings, dimensions and symbols can all contribute. No region is automatically validated or selected.
+
+| Proposal (visually labelled from source) | Top | Right | Bottom | Left | Result |
+|---|---:|---:|---:|---:|---|
+| C | 100% | 87% | 86% | 100% | Raster-supported draft |
+| D | 86% | 75% | 100% | 100% | Raster-supported draft |
+| B | 72% | 100% | 100% | 77% | Raster-supported draft; polygon crosses into hall in visual review |
+| A | 100% | 100% | 80% | 67% | Raster-supported draft |
+
+Support values and the candidate polygons are in [Case B workbench output](evidence/case-b-workbench/case-b-detection.json). The browser capture [03-expanded-evidence-debugger.png](evidence/case-b-workbench/03-expanded-evidence-debugger.png) shows why support percentages cannot alone validate a room: the B rectangle spans the visually labelled central hall and should be corrected against the source before it is eligible for canonical construction. C, D and A also remain drafts pending boundary/topology review; their support ratio is not a dimensional or polygon-error metric.
+
+The four polygons do not yet close the circulation region. The central hall has segmented boundaries, door swings and a masonry/hearth feature; subtracting room rectangles would invent a simple polygon across visible structures. It remains **unresolved**, with no hall node committed. The two porch areas remain separate exterior regions, not rooms in the accepted scene.
+
+The nine opening candidates now have location-aware evidence status. Seven gap midpoints fall more than 64 px outside the aggregate A–D proposal envelope and are marked `likely_annotation_or_false_positive` with the measured source coordinates and reason. This is a review aid, not a final deletion. Two candidates lie beside the south perimeter and remain `pending`; the raster gaps do not distinguish a door, window, symbol or detection failure. None has been added to `spatial_scene.v1`.
+
+### HABS dimensional evidence
+
+The original sheet prints north overall `50′-3½″` (15.3289 m), south overall `51′-0″` (15.5448 m), and west overall `27′-4½″` (8.3439 m). The north and south dimension witness endpoints were read at approximately x=774–2932 px (2,158 px); the west overall endpoints at approximately y=730–1890 px (1,160 px). West subdimensions read approximately 648 px for `15′-3½″` (4.6609 m) and 512 px for `12′-1″` (3.6830 m). These are raster anchor measurements with manual endpoint placement, not model output; they need operator confirmation in the Workbench before authorizing construction.
+
+Fitting the two horizontal overall cotas yields approximately 139.79 px/m, with residuals +0.71% (north) and −0.69% (south), but their implied scales differ by 1.40%. The horizontal axis therefore remains **blocked** at the 1% consistency policy despite each fitted residual individually falling under 1%. The vertical three-measurement fit is approximately 139.02 px/m with residuals under 0.01%; this is preliminary raster measurement evidence, not human-approved calibration. The displayed mismatch between the north and south printed cotas is preserved. The app still requires an explicit human choice of which horizontal cota to use and has not built a Case B Scene Graph with this fit.
+
+### Verification
+
+- `tests/plan-reconstruction.test.ts`: **PASS**, 18 tests. Added per-edge raster sampling, axis-separated fitting, contradictory horizontal cota refusal and opening proximity classification.
+- Full unit suite: **PASS**, 43 files / 251 tests.
+- `npm run build`: **PASS**. Existing OrbitControls chunk warning remains (586.26 kB minified).
+- Browser E2E (`tests/e2e/phase-10-case-b-detection.cdp.mjs`): **PASS_CANDIDATES_ONLY**, Chromium at 1440×1000/DPR 1; 210 raw lines, 162 fused candidates, four unselected proposals, 110 face diagnostics, 151 intersections, nine classified opening candidates, zero browser errors. It does not validate or commit the Case B geometry.
+- Visual review: **DONE** for the source sheet and expanded debugger screenshot. Proposal B visibly includes the central hall; the hall boundary and openings remain unresolved.
+- Meta: **NOT RUN**; no new inference was needed and no new call budget was inspected or consumed.
+- Canonical Case B rooms, hall, door associations, accepted scale, reconstructed 3D and a Case B edit/undo: **BLOCKED** pending operator correction/acceptance of boundaries and choice of the conflicting horizontal cota. Existing Scene Graph and prior edit/undo tests are unchanged.
+
+Reproduction:
+
+```sh
+npm test -- --reporter=dot tests/plan-reconstruction.test.ts
+npm run build
+npm run dev -- --host 127.0.0.1 --port 5192 --strictPort
+UNFOLD_E2E_URL=http://127.0.0.1:5192 UNFOLD_CDP_PORT=9227 UNFOLD_EVIDENCE_DIR=reports/phase-10-teardown/evidence/case-b-workbench node tests/e2e/phase-10-case-b-detection.cdp.mjs
+```
+
+This increment changes only the raster diagnostics and tests. It does not modify the canonical Scene Graph, use new Meta calls, or claim Phase 10 completion.
