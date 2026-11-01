@@ -1,6 +1,8 @@
 import type { TechnicalDocumentV1 } from './technical-document';
 import { parseSpatialCommand, type SpatialAction } from './spatial-command';
 import type { BarName } from './kinematics';
+import { AuthorizationError, operationDigest, type Actor, type AuthorizationLedger, type CanonicalOperation, type CommandOrigin } from './core';
+import { PENDING_AUTHORIZATION_EVIDENCE, isConfirmedValidation, sceneOperation, stampAuthorization, touchedConfirmed, type ConfirmedReference } from './scene-authorization';
 
 export const SPATIAL_SCENE_SCHEMA = 'spatial_scene.v1' as const;
 export type VerificationState = 'unreviewed' | 'ambiguous' | 'verified' | 'rejected' | 'corrected';
@@ -12,6 +14,8 @@ export type PropertyProvenance = {
   sourceUnit?: string;
   evidence?: string;
   actor?: string;
+  /** Presente quando um valor confirmado foi alterado com uma autorização humana do ledger. */
+  authorizationId?: string;
   recordedAt: string;
 };
 export type SpatialProperty = { value: string | number | boolean | null; unit?: string; provenance: PropertyProvenance };
@@ -77,7 +81,18 @@ export type SpatialCommand =
   | { type: 'Redo' };
 export type SceneIssue = { code: string; path: string; message: string };
 export type SceneTransaction = { scene: SpatialSceneV1; undoStack: SpatialSceneV1[]; redoStack: SpatialSceneV1[] };
-export type ScenePreview = { status: 'ready' | 'blocked'; baseRevisionId: string; evaluatedAt: string; actor: string; command: SpatialCommand; candidate: SpatialSceneV1 | null; issues: SceneIssue[] };
+/** Quem pede o comando e com que origem. Sem isto, os chamadores antigos contam como um humano a usar a interface. */
+export type SceneCommandContext = { origin: CommandOrigin; actor: Actor };
+export type SceneCommitOptions = { ledger?: AuthorizationLedger; authorizationId?: string };
+export type ScenePreview = {
+  status: 'ready' | 'blocked'; baseRevisionId: string; evaluatedAt: string; actor: string; command: SpatialCommand; candidate: SpatialSceneV1 | null; issues: SceneIssue[];
+  context: SceneCommandContext;
+  /** A operação canónica que o humano vê e autoriza; `null` se o preview está bloqueado. */
+  operation: CanonicalOperation | null;
+  operationDigest: string | null;
+  touchesConfirmed: ConfirmedReference[];
+  requiresAuthorization: boolean;
+};
 export type ConversationSceneCommand = { status: 'ready'; command: Extract<SpatialCommand, { type: 'UpdateParameter' }> } | { status: 'blocked'; reason: string };
 
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
@@ -92,6 +107,7 @@ function validateProvenance(value: unknown): value is PropertyProvenance {
   if (value.source === 'technical_document' && value.documentRef === undefined) return false;
   if (['verified', 'corrected'].includes(String(value.validation)) && (value.source !== 'user' || typeof value.actor !== 'string' || !value.actor.trim() || typeof value.evidence !== 'string' || !value.evidence.trim())) return false;
   if (value.validation === 'corrected' && !Object.hasOwn(value, 'sourceValue')) return false;
+  if (value.authorizationId !== undefined && (typeof value.authorizationId !== 'string' || !idPattern.test(value.authorizationId))) return false;
   return value.evidence === undefined || typeof value.evidence === 'string' && value.evidence.length <= 1000;
 }
 function validateProperty(value: unknown): value is SpatialProperty {
@@ -239,9 +255,11 @@ function applyCommand(scene: SpatialSceneV1, command: SpatialCommand, actor: str
     }
     case 'UpdateParameter': {
       const current = node!.component?.properties[command.property] ?? node!.properties[command.property];
-      if (current?.provenance.validation === 'verified' && command.acknowledgeVerifiedChange !== true) throw new Error('VERIFIED_PARAMETER_REQUIRES_ACKNOWLEDGEMENT');
       if (typeof command.value === 'number' && !finite(command.value) || command.unit !== undefined && !unitSet.has(command.unit)) throw new Error('PARAMETER_VALUE_INVALID');
-      const next: SpatialProperty = { value: command.value, ...(command.unit ? { unit: command.unit } : {}), provenance: { source: 'user', validation: current?.provenance.validation === 'verified' ? 'corrected' : 'unreviewed', ...(current?.provenance.validation === 'verified' ? { sourceValue: current.value, sourceUnit: current.unit, evidence: 'O utilizador autorizou explicitamente a alteração de um parâmetro previamente confirmado.' } : {}), actor, recordedAt: clock().toISOString() } };
+      // Um valor confirmado (verified ou corrected) nunca passa a unreviewed: fica corrected, com o valor anterior.
+      // A autorização em si é verificada no commit, que é quem acrescenta o id e a evidência definitiva.
+      const confirmed = !!current && isConfirmedValidation(current.provenance.validation);
+      const next: SpatialProperty = { value: command.value, ...(command.unit ? { unit: command.unit } : {}), provenance: { source: 'user', validation: confirmed ? 'corrected' : 'unreviewed', ...(confirmed ? { sourceValue: current.value, sourceUnit: current.unit, evidence: PENDING_AUTHORIZATION_EVIDENCE } : {}), actor, recordedAt: clock().toISOString() } };
       if (node!.component && Object.hasOwn(node!.component.properties, command.property)) node!.component.properties[command.property] = next;
       else node!.properties[command.property] = next;
       break;
@@ -287,7 +305,12 @@ export function conversationEditToSceneCommand(message: string, selected: BarNam
   if (parsed.status !== 'recognized' || parsed.action.kind !== 'update_length' || action.kind !== 'update_length' || parsed.action.componentId !== action.componentId || parsed.action.value !== action.value || parsed.action.unit !== action.unit) return { status: 'blocked', reason: 'A proposta não corresponde a uma instrução explícita de alteração de comprimento.' };
   return { status: 'ready', command: { type: 'UpdateParameter', nodeId: action.componentId, property: 'length', value: action.value, unit: action.unit } };
 }
-export function previewSceneCommand(transaction: SceneTransaction, command: SpatialCommand, actor = 'user', clock: () => Date = () => new Date()): ScenePreview {
+/** Comandos cuja alteração de valores confirmados já passa pela guarda. */
+const GUARDED_COMMANDS = new Set<SpatialCommand['type']>(['UpdateParameter']);
+
+export function previewSceneCommand(transaction: SceneTransaction, command: SpatialCommand, actor = 'user', clock: () => Date = () => new Date(), context?: SceneCommandContext): ScenePreview {
+  const resolved: SceneCommandContext = context ?? { origin: 'ui_direct', actor: { kind: 'human', id: actor } };
+  const blocked: Pick<ScenePreview, 'operation' | 'operationDigest' | 'touchesConfirmed' | 'requiresAuthorization'> = { operation: null, operationDigest: null, touchesConfirmed: [], requiresAuthorization: false };
   const issues: SceneIssue[] = [];
   const evaluatedAt = clock().toISOString();
   const fixedClock = () => new Date(evaluatedAt);
@@ -295,7 +318,9 @@ export function previewSceneCommand(transaction: SceneTransaction, command: Spat
     if (command.type === 'Undo' || command.type === 'Redo') {
       const available = command.type === 'Undo' ? transaction.undoStack.length : transaction.redoStack.length;
       if (!available) throw new Error(command.type === 'Undo' ? 'UNDO_EMPTY' : 'REDO_EMPTY');
-      return { status: 'ready', baseRevisionId: transaction.scene.revision.id, evaluatedAt, actor, command, candidate: validateSpatialScene(transaction[command.type === 'Undo' ? 'undoStack' : 'redoStack'][available - 1]), issues };
+      const restored = validateSpatialScene(transaction[command.type === 'Undo' ? 'undoStack' : 'redoStack'][available - 1]);
+      const historyOperation = sceneOperation(transaction.scene, restored, command.type);
+      return { status: 'ready', baseRevisionId: transaction.scene.revision.id, evaluatedAt, actor, command, candidate: restored, issues, context: resolved, operation: historyOperation, operationDigest: operationDigest(historyOperation), touchesConfirmed: [], requiresAuthorization: false };
     }
     if ('nodeId' in command && !transaction.scene.nodes.some((node) => node.id === command.nodeId)) throw new Error('NODE_NOT_FOUND');
     if (command.type === 'AddComponent' && transaction.scene.nodes.some((node) => node.id === command.node.id)) throw new Error('DUPLICATE_NODE_ID');
@@ -310,18 +335,22 @@ export function previewSceneCommand(transaction: SceneTransaction, command: Spat
     if (command.type === 'ConnectComponents' && (!transaction.scene.nodes.some((node) => node.id === command.relation.fromNodeId) || !transaction.scene.nodes.some((node) => node.id === command.relation.toNodeId))) throw new Error('RELATION_ENDPOINT_NOT_FOUND');
     if (command.type === 'DisconnectComponents' && !transaction.scene.relations.some((relation) => relation.id === command.relationId)) throw new Error('RELATION_NOT_FOUND');
     if (command.type === 'ConnectComponents' && (command.relation.provenance.validation === 'verified' || Object.values(command.relation.properties).some((property) => property.provenance.validation === 'verified' || property.provenance.validation === 'corrected'))) throw new Error('NEW_RELATION_CANNOT_CLAIM_HUMAN_VERIFICATION');
-    const candidate = validateSpatialScene(applyCommand(transaction.scene, command, actor, fixedClock));
-    return { status: 'ready', baseRevisionId: transaction.scene.revision.id, evaluatedAt, actor, command: structuredClone(command), candidate, issues };
+    const candidate = validateSpatialScene(applyCommand(transaction.scene, command, resolved.actor.id, fixedClock));
+    const touchesConfirmed = GUARDED_COMMANDS.has(command.type) ? touchedConfirmed(transaction.scene, candidate) : [];
+    const operation = sceneOperation(transaction.scene, candidate, command.type);
+    return { status: 'ready', baseRevisionId: transaction.scene.revision.id, evaluatedAt, actor, command: structuredClone(command), candidate, issues, context: resolved, operation, operationDigest: operationDigest(operation), touchesConfirmed, requiresAuthorization: touchesConfirmed.length > 0 };
   } catch (error) {
     issues.push({ code: error instanceof Error ? error.message : 'COMMAND_INVALID', path: 'command', message: error instanceof Error ? error.message : 'Comando inválido.' });
-    return { status: 'blocked', baseRevisionId: transaction.scene.revision.id, evaluatedAt, actor, command: structuredClone(command), candidate: null, issues };
+    return { status: 'blocked', baseRevisionId: transaction.scene.revision.id, evaluatedAt, actor, command: structuredClone(command), candidate: null, issues, context: resolved, ...blocked };
   }
 }
-export function commitScenePreview(transaction: SceneTransaction, preview: ScenePreview): SceneTransaction {
+export function commitScenePreview(transaction: SceneTransaction, preview: ScenePreview, options: SceneCommitOptions = {}): SceneTransaction {
   if (preview.status !== 'ready' || !preview.candidate) throw new Error('PREVIEW_BLOCKED');
   if (preview.baseRevisionId !== transaction.scene.revision.id) throw new Error('STALE_PREVIEW');
-  const replay = previewSceneCommand(transaction, preview.command, preview.actor, () => new Date(preview.evaluatedAt));
+  const replay = previewSceneCommand(transaction, preview.command, preview.actor, () => new Date(preview.evaluatedAt), preview.context);
   if (replay.status !== 'ready' || !replay.candidate || JSON.stringify(validateSpatialScene(replay.candidate)) !== JSON.stringify(validateSpatialScene(preview.candidate))) throw new Error('PREVIEW_TAMPERED');
+  // O que foi mostrado (operação e digest) tem de ser o que se obtém ao refazer o preview agora.
+  if (!replay.operation || replay.operationDigest !== preview.operationDigest || JSON.stringify(replay.operation) !== JSON.stringify(preview.operation)) throw new Error('PREVIEW_TAMPERED');
   if (preview.command.type === 'Undo') {
     const prior = transaction.undoStack.at(-1);
     if (!prior) throw new Error('UNDO_EMPTY');
@@ -334,10 +363,17 @@ export function commitScenePreview(transaction: SceneTransaction, preview: Scene
     const restored = restoreRevision(next, transaction.scene, 'Redo', () => new Date(preview.evaluatedAt));
     return { scene: restored, undoStack: [...transaction.undoStack.slice(-99), transaction.scene], redoStack: transaction.redoStack.slice(0, -1) };
   }
-  return { scene: validateSpatialScene(preview.candidate), undoStack: [...transaction.undoStack.slice(-99), transaction.scene], redoStack: [] };
+  let scene = validateSpatialScene(preview.candidate);
+  // O que exige autorização é o que o replay diz, nunca o que o preview traz.
+  if (replay.requiresAuthorization) {
+    if (!options.ledger) throw new AuthorizationError('AUTHORIZATION_REQUIRED');
+    const authorization = options.ledger.consume(options.authorizationId, replay.operation);
+    scene = validateSpatialScene(stampAuthorization(transaction.scene, scene, replay.touchesConfirmed, authorization.id));
+  }
+  return { scene, undoStack: [...transaction.undoStack.slice(-99), transaction.scene], redoStack: [] };
 }
-export function executeSceneCommand(transaction: SceneTransaction, command: SpatialCommand, actor = 'user', clock?: () => Date): { transaction: SceneTransaction; preview: ScenePreview } {
-  const preview = previewSceneCommand(transaction, command, actor, clock);
+export function executeSceneCommand(transaction: SceneTransaction, command: SpatialCommand, actor = 'user', clock?: () => Date, options: SceneCommitOptions & { context?: SceneCommandContext } = {}): { transaction: SceneTransaction; preview: ScenePreview } {
+  const preview = previewSceneCommand(transaction, command, actor, clock, options.context);
   if (preview.status === 'blocked') throw new Error(preview.issues[0]?.code ?? 'COMMAND_BLOCKED');
-  return { transaction: commitScenePreview(transaction, preview), preview };
+  return { transaction: commitScenePreview(transaction, preview, options), preview };
 }

@@ -121,3 +121,57 @@ export function sceneOperation(base: SpatialSceneV1, candidate: SpatialSceneV1, 
     affected: withDependents(new Set(changes.map((change) => change.entityId)), base, candidate).sort(),
   };
 }
+
+type ProvenanceHolder = { get(): PropertyProvenance; set(next: PropertyProvenance): void };
+
+function holderAt(scene: SpatialSceneV1, entityId: string, field: string): ProvenanceHolder | undefined {
+  const node = scene.nodes.find((item) => item.id === entityId);
+  if (node) {
+    if (field === 'geometry' && node.geometry) { const geometry = node.geometry; return { get: () => geometry.provenance, set: (next) => { geometry.provenance = next; } }; }
+    const transform = /^transform\.(translationM|rotation|scale)$/.exec(field);
+    if (transform) { const key = transform[1] as 'translationM' | 'rotation' | 'scale'; return { get: () => node.transform.provenance[key], set: (next) => { node.transform.provenance[key] = next; } }; }
+    const property = /^(component\.properties|properties)\.(.+)$/.exec(field);
+    const bag = property ? (property[1] === 'properties' ? node.properties : node.component?.properties) : undefined;
+    const item = bag && property ? bag[property[2]!] : undefined;
+    return item ? { get: () => item.provenance, set: (next) => { item.provenance = next; } } : undefined;
+  }
+  const relation = scene.relations.find((item) => item.id === entityId);
+  if (relation) {
+    if (field === 'relation') return { get: () => relation.provenance, set: (next) => { relation.provenance = next; } };
+    const item = /^properties\.(.+)$/.exec(field) ? relation.properties[field.slice('properties.'.length)] : undefined;
+    return item ? { get: () => item.provenance, set: (next) => { item.provenance = next; } } : undefined;
+  }
+  const constraint = scene.constraints.find((item) => item.id === entityId);
+  return constraint && field === 'constraint' ? { get: () => constraint.provenance, set: (next) => { constraint.provenance = next; } } : undefined;
+}
+
+/**
+ * Marca no candidato que os valores confirmados tocados foram alterados com autorização humana: id da autorização e,
+ * nos que ficaram `corrected`, o valor original em `sourceValue` e a evidência. O que desapareceu não tem nada a marcar.
+ * Se um valor tocado ficou noutro estado que não `corrected`/`verified`, algo promoveu ou despromoveu sem passar pela
+ * regra e a operação é recusada.
+ */
+export function stampAuthorization(base: SpatialSceneV1, candidate: SpatialSceneV1, touched: ConfirmedReference[], authorizationId: string): SpatialSceneV1 {
+  const stamped = structuredClone(candidate);
+  const originals = fieldStates(base);
+  for (const ref of touched) {
+    const holder = holderAt(stamped, ref.entityId, ref.field);
+    if (!holder) continue;
+    const provenance = holder.get();
+    if (provenance.validation === 'verified') { holder.set({ ...provenance, authorizationId }); continue; }
+    if (provenance.validation !== 'corrected') throw new Error('AUTHORIZED_VALUE_NOT_CORRECTED');
+    const original = originals.get(`${ref.entityId}\u0000${ref.field}`)!;
+    const isProperty = /^(component\.)?properties\./.test(ref.field);
+    const quantityValue = isProperty ? (original.value as { value: unknown; unit: string | null }) : undefined;
+    holder.set({
+      ...provenance,
+      sourceValue: quantityValue ? quantityValue.value : original.value,
+      ...(quantityValue?.unit ? { sourceUnit: quantityValue.unit } : {}),
+      evidence: `Alteração de um valor confirmado autorizada por um humano (autorização ${authorizationId}); o valor anterior ficou em sourceValue.`,
+      authorizationId,
+    });
+  }
+  return stamped;
+}
+
+export const PENDING_AUTHORIZATION_EVIDENCE = 'Alteração de um valor confirmado, a aguardar autorização humana.';
