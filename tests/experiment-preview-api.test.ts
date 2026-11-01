@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createMetaServer, type PreviewMechanismResolution, type ServerOptions } from '../server/meta-server';
 import { createPhase3DReferenceFixture } from '../src/phase3d-fixture';
+import { ALLOWED_ORIGIN } from './helpers/paid-routes';
 
 const operationResponse = JSON.stringify({
   schema: 'kinematic_operation.v1',
@@ -36,7 +37,7 @@ describe('POST /api/experiments/preview', () => {
       await withServer(fetchMock, async (port) => {
         const response = await fetch(`http://127.0.0.1:${port}/api/experiments/preview`, {
           method: 'POST',
-          headers: { 'content-type': 'application/json' },
+          headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN },
           body: JSON.stringify({ mechanismId: 'technical-four-bar-fixture', instruction: 'Aumenta a manivela de 40 para 80 milímetros.', mode: 'TEST_FIXTURE_ONLY' }),
         });
         const body = await response.json() as {
@@ -74,7 +75,7 @@ describe('POST /api/experiments/preview', () => {
     await withServer(fetchMock, async (port) => {
       const response = await fetch(`http://127.0.0.1:${port}/api/experiments/preview`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN },
         body: JSON.stringify({ mechanismId: 'technical-four-bar-fixture' }),
       });
       expect(response.status).toBe(400);
@@ -88,7 +89,7 @@ describe('POST /api/experiments/preview', () => {
     await withServer(fetchMock, async (port) => {
       const response = await fetch(`http://127.0.0.1:${port}/api/experiments/preview`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN },
         body: JSON.stringify({ mechanismId: 'paderborn', instruction: 'Aumenta a manivela.' }),
       });
       const body = await response.json() as { error?: { code?: string; issues?: unknown[] } };
@@ -107,7 +108,7 @@ describe('POST /api/experiments/preview', () => {
       await withServer(fetchMock, async (port) => {
         const response = await fetch(`http://127.0.0.1:${port}/api/experiments/preview`, {
           method: 'POST',
-          headers: { 'content-type': 'application/json' },
+          headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN },
           body: JSON.stringify({ mechanismId: 'technical-four-bar-fixture', instruction: 'Aumenta a manivela.', mode: 'TEST_FIXTURE_ONLY' }),
         });
         const body = await response.json() as { error?: { code?: string }; meta?: { requestId?: string } };
@@ -131,7 +132,7 @@ describe('POST /api/experiments/preview', () => {
       await withServer(fetchMock, async (port) => {
         const response = await fetch(`http://127.0.0.1:${port}/api/experiments/preview`, {
           method: 'POST',
-          headers: { 'content-type': 'application/json' },
+          headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN },
           body: JSON.stringify({ mechanismId: 'technical-four-bar-fixture', instruction: 'Aumenta a manivela.', mode: 'TEST_FIXTURE_ONLY' }),
         });
         expect(response.status).toBe(403);

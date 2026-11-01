@@ -1,8 +1,9 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
-import { createHash, randomUUID } from 'node:crypto';
-import { dirname, resolve } from 'node:path';
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
+import { homedir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import {
   executeKinematicOperation,
   buildKinematicOperationPrompt,
@@ -32,7 +33,80 @@ const MAX_IMAGE_BODY_BYTES = 14 * 1024 * 1024;
 const MAX_PREVIEW_BODY_BYTES = 16 * 1024;
 const MAX_SPATIAL_AGENT_BODY_BYTES = 48 * 1024;
 const ALLOWED_ORIGINS = new Set(['http://127.0.0.1:5173', 'http://localhost:5173']);
+// O proxy do Vite (changeOrigin: false) deixa passar o Host do browser, por isso o frontend
+// chega aqui com 127.0.0.1:5173 e não com a porta do backend. Os dois valores são aceites.
+const ALLOWED_ORIGIN_HOSTS = new Set([...ALLOWED_ORIGINS].map((origin) => new URL(origin).host));
 export const BACKEND_CONTRACT = 'unfold.phase4c' as const;
+
+// Única lista de rotas que gastam chamadas Meta. O despacho abaixo só encaminha caminhos que estão
+// aqui, e tudo o que está aqui passa pela mesma guarda antes de qualquer outra coisa. Uma rota nova
+// sem entrada nesta lista devolve 404; com entrada, herda a guarda.
+export const PAID_ROUTES = [
+  '/api/meta/text',
+  '/api/meta/image',
+  '/api/meta/image/verify-region',
+  '/api/kinematics/experiment',
+  '/api/experiments/preview',
+  '/api/conversation',
+  '/api/spatial-agent',
+] as const;
+const PAID_ROUTE_SET: ReadonlySet<string> = new Set(PAID_ROUTES);
+
+type GuardRejection = { status: number; code: string; message: string; allow?: string };
+
+export const LOCAL_TOKEN_HEADER = 'x-unfold-local-token';
+
+// Ficheiros de estado do backend a sério (token, orçamento). Só o server/index.ts os usa por omissão;
+// createMetaServer() não escreve aqui sozinho, para os testes não mexerem no estado de quem desenvolve.
+export function defaultStateFile(name: string): string {
+  return join(process.env.UNFOLD_STATE_DIR ?? join(homedir(), '.unfold'), name);
+}
+
+function digest(value: string): Buffer {
+  return createHash('sha256').update(value).digest();
+}
+
+function createLocalToken(file: string | undefined): string {
+  const token = randomBytes(32).toString('hex');
+  if (file) {
+    mkdirSync(dirname(file), { recursive: true, mode: 0o700 });
+    // Ficheiro novo com 0600 desde a criação e rename por cima, para nunca ficar legível por outros
+    // nem herdar o modo de um ficheiro antigo.
+    const temporaryFile = `${file}.${randomUUID()}.tmp`;
+    writeFileSync(temporaryFile, `${token}\n`, { flag: 'wx', mode: 0o600 });
+    renameSync(temporaryFile, file);
+  }
+  return token;
+}
+
+function removeLocalTokenFile(file: string, token: string): void {
+  try {
+    if (readFileSync(file, 'utf8').trim() === token) rmSync(file, { force: true });
+  } catch { /* já não existe ou foi substituído por outro arranque */ }
+}
+
+function checkPaidRoute(request: IncomingMessage, localToken: Buffer): GuardRejection | undefined {
+  if (request.method !== 'POST') return { status: 405, code: 'METHOD_NOT_ALLOWED', message: 'Esta rota só aceita POST.', allow: 'POST' };
+  const mediaType = (request.headers['content-type'] ?? '').split(';')[0]!.trim().toLowerCase();
+  if (mediaType !== 'application/json') return { status: 415, code: 'UNSUPPORTED_MEDIA_TYPE', message: 'Content-Type tem de ser application/json.' };
+  const host = (request.headers.host ?? '').toLowerCase();
+  const localPort = request.socket.localPort;
+  if (!ALLOWED_ORIGIN_HOSTS.has(host) && host !== `127.0.0.1:${localPort}` && host !== `localhost:${localPort}`) {
+    return { status: 421, code: 'INVALID_HOST', message: 'Host não permitido.' };
+  }
+  // Com Origin, tem de ser uma das permitidas (um browser não consegue ler o token, por isso um
+  // Origin estranho nunca é salvo por um token). Sem Origin, só entra quem tiver o token.
+  const origin = request.headers.origin;
+  if (origin !== undefined) {
+    if (!ALLOWED_ORIGINS.has(origin)) return { status: 403, code: 'INVALID_ORIGIN', message: 'Origem não permitida.' };
+    return undefined;
+  }
+  const presented = request.headers[LOCAL_TOKEN_HEADER];
+  if (typeof presented !== 'string' || !timingSafeEqual(digest(presented), localToken)) {
+    return { status: 403, code: 'LOCAL_TOKEN_REQUIRED', message: 'Pedido sem Origin permitida nem token local válido.' };
+  }
+  return undefined;
+}
 
 export type PreviewMechanismResolution =
   | { status: 'ready'; graph: MechanicalGraphV1; assembly: KinematicAssemblyV1; fixtureOnly: boolean; limitations: string[] }
@@ -43,19 +117,49 @@ export type ServerOptions = {
   fetchImpl?: typeof fetch;
   resolvePreviewMechanism?: (mechanismId: string) => PreviewMechanismResolution;
   maxMetaCalls?: number;
+  maxConcurrentMetaCalls?: number;
   metaCallBudgetFile?: string;
+  // Onde gravar o token para clientes sem Origin (scripts locais). Sem isto o token existe só em
+  // memória e ninguém o consegue usar, ou seja, só entram pedidos de browser com Origin permitida.
+  localTokenFile?: string;
   upstreamEvidence?: { enabled: boolean; directory: string; maxFiles?: number };
 };
+
+// Sem configuração o orçamento continua finito. É o teto de chamadas Meta que o backend aceita
+// (somado entre reinícios quando há ficheiro de orçamento); UNFOLD_ACCEPTANCE_MAX_META_CALLS altera-o.
+export const DEFAULT_MAX_META_CALLS = 1000;
+export const DEFAULT_MAX_CONCURRENT_META_CALLS = 2;
+
+export type MetaCallBudget = { limit: number; used: number; remaining: number };
+export type MetaServer = Server & { metaCallBudget(): MetaCallBudget };
+
+export function formatBudgetStartupLine(budget: MetaCallBudget, budgetFile: string | undefined): string {
+  const where = budgetFile ? `file: ${budgetFile}` : 'not persisted';
+  const line = `Meta call budget: ${budget.remaining} of ${budget.limit} calls remaining (${where})`;
+  return budget.remaining === 0 ? `${line} - paid routes will answer 429 until the file is deleted` : line;
+}
 
 class MetaCallBudgetExceeded extends Error {
   constructor() { super('O limite de chamadas Meta desta execução foi atingido.'); }
 }
 
-function readCallLimit(option: number | undefined): number | undefined {
+class MetaConcurrencyExceeded extends Error {
+  constructor() { super('Há demasiadas chamadas Meta em curso. Tente novamente daqui a pouco.'); }
+}
+
+function readCallLimit(option: number | undefined): number {
   const raw = option === undefined ? process.env.UNFOLD_ACCEPTANCE_MAX_META_CALLS : String(option);
-  if (raw === undefined || raw === '') return undefined;
+  if (raw === undefined || raw === '') return DEFAULT_MAX_META_CALLS;
   const limit = Number(raw);
   if (!Number.isSafeInteger(limit) || limit < 0) throw new Error('UNFOLD_ACCEPTANCE_MAX_META_CALLS deve ser um inteiro não negativo.');
+  return limit;
+}
+
+function readConcurrencyLimit(option: number | undefined): number {
+  const raw = option === undefined ? process.env.UNFOLD_MAX_CONCURRENT_META_CALLS : String(option);
+  if (raw === undefined || raw === '') return DEFAULT_MAX_CONCURRENT_META_CALLS;
+  const limit = Number(raw);
+  if (!Number.isSafeInteger(limit) || limit < 1) throw new Error('UNFOLD_MAX_CONCURRENT_META_CALLS deve ser um inteiro positivo.');
   return limit;
 }
 
@@ -164,15 +268,19 @@ function conversationErrorCode(error: unknown): { code: string; category: string
   return { code: 'CONVERSATION_INTERNAL_ERROR', category: 'internal', status: 502 };
 }
 
-export function createMetaServer(options: ServerOptions = {}): Server {
+export function createMetaServer(options: ServerOptions = {}): MetaServer {
   const upstreamEvidence = evidenceOptions(options);
+  const localTokenFile = options.localTokenFile ?? process.env.UNFOLD_LOCAL_TOKEN_FILE;
+  const localToken = createLocalToken(localTokenFile);
+  const localTokenDigest = digest(localToken);
   const apiKey = options.apiKey ?? process.env.MODEL_API_KEY;
   const metaCallLimit = readCallLimit(options.maxMetaCalls);
+  const maxConcurrentMetaCalls = readConcurrencyLimit(options.maxConcurrentMetaCalls);
   const metaCallBudgetFile = options.metaCallBudgetFile ?? process.env.UNFOLD_ACCEPTANCE_BUDGET_FILE;
   const savedBudget = metaCallBudgetFile ? (() => {
     try {
       const saved = JSON.parse(readFileSync(metaCallBudgetFile, 'utf8')) as { limit?: unknown; used?: unknown };
-      if (saved.limit !== (metaCallLimit ?? null) || !Number.isSafeInteger(saved.used) || Number(saved.used) < 0) throw new Error('O ficheiro de orçamento não corresponde ao limite activo.');
+      if (saved.limit !== metaCallLimit || !Number.isSafeInteger(saved.used) || Number(saved.used) < 0) throw new Error(`O ficheiro de orçamento ${metaCallBudgetFile} não corresponde ao limite activo (${metaCallLimit}). Apague-o para recomeçar o orçamento.`);
       return Number(saved.used);
     } catch (error) {
       if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') return 0;
@@ -182,13 +290,14 @@ export function createMetaServer(options: ServerOptions = {}): Server {
   let metaCallsUsed = savedBudget;
   const startedAt = new Date().toISOString();
   const buildId = process.env.UNFOLD_BUILD_ID ?? createSourceBuildId();
-  const reserveMetaCall = () => {
-    if (metaCallLimit !== undefined && metaCallsUsed >= metaCallLimit) throw new MetaCallBudgetExceeded();
+  let metaCallsInFlight = 0;
+  const reserveBudget = () => {
+    if (metaCallsUsed >= metaCallLimit) throw new MetaCallBudgetExceeded();
     const nextCount = metaCallsUsed + 1;
     if (metaCallBudgetFile) {
       mkdirSync(dirname(metaCallBudgetFile), { recursive: true });
       const temporaryFile = `${metaCallBudgetFile}.${process.pid}.tmp`;
-      writeFileSync(temporaryFile, JSON.stringify({ limit: metaCallLimit ?? null, used: nextCount }) + '\n', { mode: 0o600 });
+      writeFileSync(temporaryFile, JSON.stringify({ limit: metaCallLimit, used: nextCount }) + '\n', { mode: 0o600 });
       renameSync(temporaryFile, metaCallBudgetFile);
     }
     metaCallsUsed = nextCount;
@@ -207,11 +316,11 @@ export function createMetaServer(options: ServerOptions = {}): Server {
       spatialAgent: { available: true, apiKeyConfigured: Boolean(apiKey), contract: 'spatial_agent_result.v1', maxOutputTokens: 1_600, reasoningEffort: 'medium' },
       imageRegionVerification: { available: true, apiKeyConfigured: Boolean(apiKey) },
     },
-    metaCallBudget: { limit: metaCallLimit ?? null, used: metaCallsUsed, remaining: metaCallLimit === undefined ? null : Math.max(0, metaCallLimit - metaCallsUsed) },
+    metaCallBudget: { limit: metaCallLimit, used: metaCallsUsed, remaining: Math.max(0, metaCallLimit - metaCallsUsed) },
   });
   const conversationRequests = new Map<string, number[]>();
   const imageRequests = new Map<string, number[]>();
-  return createServer(async (request, response) => {
+  const server: MetaServer = Object.assign(createServer(async (request, response) => {
     const origin = typeof request.headers.origin === 'string' ? request.headers.origin : undefined;
     if (request.method === 'OPTIONS') {
       if (origin && ALLOWED_ORIGINS.has(origin)) response.setHeader('Access-Control-Allow-Origin', origin);
@@ -229,8 +338,15 @@ export function createMetaServer(options: ServerOptions = {}): Server {
       writeJson(response, 200, diagnostics(), origin);
       return;
     }
-    if (request.method !== 'POST' || !['/api/meta/text', '/api/meta/image', '/api/meta/image/verify-region', '/api/kinematics/experiment', '/api/experiments/preview', '/api/conversation', '/api/spatial-agent'].includes(request.url ?? '')) {
+    if (!PAID_ROUTE_SET.has(request.url ?? '')) {
       writeJson(response, 404, { error: { code: 'NOT_FOUND', message: 'Rota não encontrada.' } }, origin);
+      return;
+    }
+    const rejection = checkPaidRoute(request, localTokenDigest);
+    if (rejection) {
+      console.info(JSON.stringify({ event: 'paid_route.rejected', route: request.url, status: rejection.status, code: rejection.code }));
+      if (rejection.allow) response.setHeader('Allow', rejection.allow);
+      writeJson(response, rejection.status, { error: { code: rejection.code, message: rejection.message } }, origin);
       return;
     }
     if (!apiKey) {
@@ -240,10 +356,6 @@ export function createMetaServer(options: ServerOptions = {}): Server {
     }
 
     if (request.url === '/api/conversation' || request.url === '/api/spatial-agent') {
-      if ((origin && !ALLOWED_ORIGINS.has(origin)) || !request.headers['content-type']?.toLowerCase().startsWith('application/json')) {
-        writeJson(response, 403, { error: { code: 'INVALID_ORIGIN', message: 'Origem ou tipo de pedido não permitido.' } }, origin);
-        return;
-      }
       const now = Date.now();
       const peer = request.socket.remoteAddress ?? 'unknown';
       for (const [key, timestamps] of conversationRequests) if (!timestamps.some((time) => now - time < 60_000)) conversationRequests.delete(key);
@@ -254,6 +366,18 @@ export function createMetaServer(options: ServerOptions = {}): Server {
       }
       conversationRequests.set(peer, [...recent, now]);
     }
+
+    // Um lugar por pedido, tomado na primeira chamada Meta e devolvido quando o pedido termina
+    // (resposta, erro ou cancelamento). A pipeline de imagem faz duas chamadas e conta como uma.
+    let holdsMetaSlot = false;
+    const reserveMetaCall = () => {
+      if (!holdsMetaSlot) {
+        if (metaCallsInFlight >= maxConcurrentMetaCalls) throw new MetaConcurrencyExceeded();
+        metaCallsInFlight += 1;
+        holdsMetaSlot = true;
+      }
+      reserveBudget();
+    };
 
     const started = performance.now();
     try {
@@ -281,8 +405,8 @@ export function createMetaServer(options: ServerOptions = {}): Server {
         request.socket.once('close', () => abort.abort());
         response.once('close', () => { if (!response.writableEnded) abort.abort(); });
         let result: Awaited<ReturnType<typeof requestMetaStructuredText>> | undefined;
+        reserveMetaCall();
         try {
-          reserveMetaCall();
           result = await requestMetaStructuredText(prompt, apiKey, SPATIAL_AGENT_JSON_SCHEMA as unknown as Record<string, unknown>, options.fetchImpl, 1_600, 'medium', 'spatial_agent_result_v1', abort.signal);
           if (abort.signal.aborted) return;
           const parsed = parseSpatialAgentResult(result.text, agentRequest);
@@ -368,8 +492,8 @@ export function createMetaServer(options: ServerOptions = {}): Server {
         request.socket.once('close', () => abort.abort());
         response.once('close', () => { if (!response.writableEnded) abort.abort(); });
         const requestData = { targetLabel, question, originalRegion: { x, y, width, height }, originalSize: { width: Number(originalSize!.width), height: Number(originalSize!.height) } };
+        reserveMetaCall();
         try {
-          reserveMetaCall();
           const result = await requestMetaStructuredImage(crop.dataUrl, buildRegionVerificationPrompt(requestData), apiKey, REGION_VERIFICATION_JSON_SCHEMA as unknown as Record<string, unknown>, options.fetchImpl, MULTIMODAL_STAGE_CONFIG.regionVerification.maxOutputTokens, abort.signal, MULTIMODAL_STAGE_CONFIG.regionVerification.reasoningEffort, MULTIMODAL_STAGE_CONFIG.regionVerification.schemaName);
           const verification = parseRegionVerification(result.text);
           console.info(JSON.stringify({ event: 'meta.image.verify_region', status: 'success', httpStatus: result.log.httpStatus, latencyMs: result.log.latencyMs, usage: result.log.usage, estimatedCostUsd: result.log.estimatedCostUsd, requestId: result.log.requestId }));
@@ -416,15 +540,15 @@ export function createMetaServer(options: ServerOptions = {}): Server {
             const values = logs.map((log) => log.usage?.[key]).filter((value): value is number => typeof value === 'number');
             return values.length ? values.reduce((total, value) => total + value, 0) : undefined;
           };
-          return { model: 'muse-spark-1.3', status: documentStatus, requestId: logs.at(-1)?.requestId, responseStatus: logs.at(-1)?.responseStatus, incompleteReason: logs.at(-1)?.incompleteReason, stages: logs.map((log, index) => ({ stage: stageLogs[index]?.stage ?? failedStage, ...log })), latencyMs: logs.reduce((total, log) => total + log.latencyMs, 0), usage: { inputTokens: sum('inputTokens'), outputTokens: sum('outputTokens'), totalTokens: sum('totalTokens'), cachedInputTokens: sum('cachedInputTokens'), reasoningTokens: sum('reasoningTokens') }, estimatedCostUsd: logs.reduce((total, log) => total + (log.estimatedCostUsd ?? 0), 0), callBudget: { limit: metaCallLimit ?? null, used: metaCallsUsed, remaining: metaCallLimit === undefined ? null : Math.max(0, metaCallLimit - metaCallsUsed) } };
+          return { model: 'muse-spark-1.3', status: documentStatus, requestId: logs.at(-1)?.requestId, responseStatus: logs.at(-1)?.responseStatus, incompleteReason: logs.at(-1)?.incompleteReason, stages: logs.map((log, index) => ({ stage: stageLogs[index]?.stage ?? failedStage, ...log })), latencyMs: logs.reduce((total, log) => total + log.latencyMs, 0), usage: { inputTokens: sum('inputTokens'), outputTokens: sum('outputTokens'), totalTokens: sum('totalTokens'), cachedInputTokens: sum('cachedInputTokens'), reasoningTokens: sum('reasoningTokens') }, estimatedCostUsd: logs.reduce((total, log) => total + (log.estimatedCostUsd ?? 0), 0), callBudget: { limit: metaCallLimit, used: metaCallsUsed, remaining: Math.max(0, metaCallLimit - metaCallsUsed) } };
         };
         const emptyDocument = (primaryDomain: import('../src/technical-document').TechnicalDomain, documentType: string, summary: string, classification: { confidence: number; evidence: string; rationale: string }, ambiguities: string[]) => {
           const base = { schema: 'technical_document.v1' as const, provenance: { source: 'submitted_image' as const, kind: 'model_extraction' as const }, analysisState: 'partial' as const, documentType, primaryDomain, secondaryDomains: [] as import('../src/technical-document').TechnicalDomain[], classification, summary, elements: [], relations: [], observedText: [], ambiguities, missingInformation: ['A extracção especializada não foi concluída; não assumir elementos nem valores.'], capabilities: [] as ReturnType<typeof technicalAdapters>, questions: [] };
           base.capabilities = technicalAdapters(primaryDomain, base as never);
           return base;
         };
+        reserveMetaCall();
         try {
-          reserveMetaCall();
           const stageA = await requestMetaStructuredImage(image.dataUrl, buildTechnicalRecognitionPrompt(), apiKey, TECHNICAL_RECOGNITION_JSON_SCHEMA as unknown as Record<string, unknown>, options.fetchImpl, MULTIMODAL_STAGE_CONFIG.recognition.maxOutputTokens, analysisAbort.signal, MULTIMODAL_STAGE_CONFIG.recognition.reasoningEffort, MULTIMODAL_STAGE_CONFIG.recognition.schemaName);
           stageLogs.push({ stage: 'recognition', log: stageA.log });
           recognition = parseTechnicalRecognition(stageA.text);
@@ -584,10 +708,18 @@ export function createMetaServer(options: ServerOptions = {}): Server {
         writeJson(response, 429, { error: { code: 'META_CALL_BUDGET_EXHAUSTED', message: error.message }, metaCallBudget: diagnostics().metaCallBudget }, origin);
         return;
       }
+      if (error instanceof MetaConcurrencyExceeded) {
+        writeJson(response, 429, { error: { code: 'META_CONCURRENCY_LIMIT', message: error.message } }, origin);
+        return;
+      }
       const log = error && typeof error === 'object' && 'log' in error ? (error.log as { httpStatus?: number; latencyMs?: number; requestId?: string; usage?: unknown }) : undefined;
       console.info(JSON.stringify({ event: 'meta.text', status: 'error', httpStatus: log?.httpStatus ?? 500, latencyMs: log?.latencyMs ?? Math.round(performance.now() - started), usage: log?.usage, requestId: log?.requestId }));
       const status = log?.httpStatus && log.httpStatus >= 400 && log.httpStatus < 600 ? log.httpStatus : 502;
       writeJson(response, status, { error: { code: 'META_REQUEST_FAILED', message: error instanceof Error ? error.message : 'Falha na chamada Meta.' }, meta: log }, origin);
+    } finally {
+      if (holdsMetaSlot) metaCallsInFlight -= 1;
     }
-  });
+  }), { metaCallBudget: () => diagnostics().metaCallBudget });
+  if (localTokenFile) server.once('close', () => removeLocalTokenFile(localTokenFile, localToken));
+  return server;
 }

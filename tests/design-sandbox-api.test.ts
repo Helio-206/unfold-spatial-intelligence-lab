@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createMetaServer } from '../server/meta-server';
+import { ALLOWED_ORIGIN } from './helpers/paid-routes';
 
 const operationResponse = JSON.stringify({
   schema: 'kinematic_operation.v1',
@@ -63,7 +64,7 @@ describe('DESIGN_SANDBOX HTTP', () => {
       await withServer(fetchMock, async (port) => {
         const response = await fetch(`http://127.0.0.1:${port}/api/experiments/preview`, {
           method: 'POST',
-          headers: { 'content-type': 'application/json' },
+          headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN },
           body: JSON.stringify(sandboxBody({ review: { status: 'verified' } })),
         });
         const body = await response.json() as {
@@ -103,7 +104,7 @@ describe('DESIGN_SANDBOX HTTP', () => {
       const body = sandboxBody({ design: { fixedBar: 'crank' } });
       const response = await fetch(`http://127.0.0.1:${port}/api/experiments/preview`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN },
         body: JSON.stringify(body),
       });
       const result = await response.json() as { error?: { code?: string; issues?: unknown[] } };
@@ -122,7 +123,7 @@ describe('DESIGN_SANDBOX HTTP', () => {
     await withServer(fetchMock, async (port) => {
       const response = await fetch(`http://127.0.0.1:${port}/api/experiments/preview`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN },
         body: JSON.stringify(sandboxBody()),
       });
       const body = await response.json() as { error?: { code?: string }; meta?: { requestId?: string } };

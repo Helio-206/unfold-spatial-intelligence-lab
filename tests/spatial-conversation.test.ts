@@ -4,6 +4,7 @@ import { answerProjectQuestion, authorizeProposedAction, buildConversationPrompt
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { ALLOWED_ORIGIN } from './helpers/paid-routes';
 
 const request = {
   message: 'Para que serve esta peça?',
@@ -57,7 +58,7 @@ describe('conversation HTTP endpoint with mocked Meta', () => {
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('No test port');
     try {
-      const response = await fetch(`http://127.0.0.1:${address.port}/api/conversation`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request) });
+      const response = await fetch(`http://127.0.0.1:${address.port}/api/conversation`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify(request) });
       expect(response.status).toBe(502);
       expect((await response.json()).error).toMatchObject({ code: 'META_TRANSPORT_ERROR', category: 'transport' });
     } finally { await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve())); }
@@ -100,7 +101,7 @@ describe('conversation HTTP endpoint with mocked Meta', () => {
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('No test port');
     try {
-      const send = () => fetch(`http://127.0.0.1:${address.port}/api/conversation`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request) });
+      const send = () => fetch(`http://127.0.0.1:${address.port}/api/conversation`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify(request) });
       expect((await (await send()).json()).error).toMatchObject({ code: 'META_RESPONSE_INCOMPLETE', category: 'model' });
       expect((await (await send()).json()).error).toMatchObject({ code: 'META_ENVELOPE_PARSE_ERROR', category: 'parsing' });
       expect((await (await send()).json()).error).toMatchObject({ code: 'META_MODEL_ERROR', category: 'model' });
@@ -116,7 +117,7 @@ describe('conversation HTTP endpoint with mocked Meta', () => {
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('No test port');
-    const send = (message: string) => fetch(`http://127.0.0.1:${address.port}/api/conversation`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...request, message }) });
+    const send = (message: string) => fetch(`http://127.0.0.1:${address.port}/api/conversation`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify({ ...request, message }) });
     try {
       const accepted = await (await send('Aumenta a manivela para 50 mm.')).json();
       expect(accepted.response.action).toEqual(candidate.action);
@@ -137,7 +138,7 @@ describe('conversation HTTP endpoint with mocked Meta', () => {
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('No test port');
     try {
-      await fetch(`http://127.0.0.1:${address.port}/api/conversation`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request) });
+      await fetch(`http://127.0.0.1:${address.port}/api/conversation`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify(request) });
       const files = readdirSync(directory);
       expect(files).toHaveLength(1);
       const evidence = readFileSync(join(directory, files[0]!), 'utf8');
@@ -157,7 +158,7 @@ describe('conversation HTTP endpoint with mocked Meta', () => {
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('No test port');
     try {
-      await fetch(`http://127.0.0.1:${address.port}/api/conversation`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request) });
+      await fetch(`http://127.0.0.1:${address.port}/api/conversation`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify(request) });
       expect(readdirSync(directory)).toEqual([]);
     } finally {
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));

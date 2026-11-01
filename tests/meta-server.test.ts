@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createMetaServer } from '../server/meta-server';
 import { createPhase3DReferenceFixture } from '../src/phase3d-fixture';
+import { ALLOWED_ORIGIN } from './helpers/paid-routes';
 
 const validJpegDataUrl = 'data:image/jpeg;base64,/9j/4AA=';
 
@@ -69,7 +70,7 @@ describe('phase 3D backend route', () => {
     const directory = mkdtempSync(join(tmpdir(), 'unfold-budget-'));
     const budgetFile = join(directory, 'budget.json');
     const serverFor = (fetchImpl: typeof fetch) => createMetaServer({ apiKey: 'fixture-only', fetchImpl, maxMetaCalls: 1, metaCallBudgetFile: budgetFile });
-    const send = (port: number) => fetch(`http://127.0.0.1:${port}/api/meta/text`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prompt: 'test' }) });
+    const send = (port: number) => fetch(`http://127.0.0.1:${port}/api/meta/text`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify({ prompt: 'test' }) });
     const start = async (server: ReturnType<typeof createMetaServer>) => {
       await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
       const address = server.address();
@@ -115,7 +116,7 @@ describe('phase 3D backend route', () => {
     try {
       const response = await fetch(`http://127.0.0.1:${address.port}/api/kinematics/experiment`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN },
         body: JSON.stringify({ instruction: 'Aumenta a manivela.', graph: fixture.graph, assembly: fixture.assembly, mode: 'TEST_FIXTURE_ONLY' }),
       });
       const body = await response.json() as { status?: string; operation?: { newValue?: number }; meta?: { requestId?: string } };
@@ -141,7 +142,7 @@ describe('phase 3D backend route', () => {
     try {
       const response = await fetch(`http://127.0.0.1:${address.port}/api/kinematics/experiment`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN },
         body: JSON.stringify({ instruction: 'Aumenta a manivela.', graph: fixture.graph, assembly: fixture.assembly, mode: 'TEST_FIXTURE_ONLY' }),
       });
       expect(response.status).toBe(403);
@@ -173,7 +174,7 @@ describe('image understanding backend route', () => {
     await withServer(fetchMock, async (port) => {
       const response = await fetch(`http://127.0.0.1:${port}/api/meta/image`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN },
         body: JSON.stringify({ imageDataUrl: validJpegDataUrl }),
       });
       const body = await response.json() as { contract?: string; status?: string; document?: { primaryDomain?: string; capabilities?: unknown[] }; observation?: { elements?: unknown[] }; meta?: { requestId?: string; stages?: unknown[] } };
@@ -193,7 +194,7 @@ describe('image understanding backend route', () => {
   it('blocks stage B at the hard budget boundary after exactly one provider call', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(metaOutput(JSON.stringify(recognition('architecture')), 'budget-recognition'));
     await withServer(fetchMock, async (port) => {
-      const response = await fetch(`http://127.0.0.1:${port}/api/meta/image`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ imageDataUrl: validJpegDataUrl }) });
+      const response = await fetch(`http://127.0.0.1:${port}/api/meta/image`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify({ imageDataUrl: validJpegDataUrl }) });
       const body = await response.json() as { status?: string; extraction?: { status?: string; errorCode?: string }; meta?: { callBudget?: { used?: number; remaining?: number } } };
       expect(response.status).toBe(200);
       expect(body.status).toBe('PARTIAL');
@@ -210,7 +211,7 @@ describe('image understanding backend route', () => {
   ])('rejects %s through the HTTP route without treating it as a current result', async (_label, result, expectedCode) => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(result as Response);
     await withServer(fetchMock, async (port) => {
-      const response = await fetch(`http://127.0.0.1:${port}/api/meta/image`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ imageDataUrl: validJpegDataUrl }) });
+      const response = await fetch(`http://127.0.0.1:${port}/api/meta/image`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify({ imageDataUrl: validJpegDataUrl }) });
       const body = await response.json() as { error?: { code?: string }; meta?: { upstreamEnvelope?: { fields?: string[] } } };
       expect(response.status).toBe(502);
       expect(body.error?.code).toBe(expectedCode);
@@ -224,7 +225,7 @@ describe('image understanding backend route', () => {
       .mockResolvedValueOnce(metaOutput(JSON.stringify(recognition('architecture')), 'recognition-document-id'))
       .mockResolvedValueOnce(metaOutput(JSON.stringify(technicalDocument('architecture', 'Cozinha', '23.39', 'm²')), 'document-request-id'));
     await withServer(fetchMock, async (port) => {
-      const response = await fetch(`http://127.0.0.1:${port}/api/meta/image`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ imageDataUrl: validJpegDataUrl }) });
+      const response = await fetch(`http://127.0.0.1:${port}/api/meta/image`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify({ imageDataUrl: validJpegDataUrl }) });
       const body = await response.json() as { document?: { primaryDomain?: string; elements?: unknown[]; questions?: unknown[] }; observation?: unknown };
       expect(response.status).toBe(200);
       expect(body.document?.primaryDomain).toBe('architecture');
@@ -245,7 +246,7 @@ describe('image understanding backend route', () => {
       .mockResolvedValueOnce(metaOutput(JSON.stringify(recognition('electrical_installation')), 'electrical-recognition-id'))
       .mockResolvedValueOnce(metaOutput(JSON.stringify(technicalDocument('electrical_installation', 'Carga identificada', '100 VA', 'VA')), 'electrical-extraction-id'));
     await withServer(fetchMock, async (port) => {
-      const response = await fetch(`http://127.0.0.1:${port}/api/meta/image`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ imageDataUrl: validJpegDataUrl }) });
+      const response = await fetch(`http://127.0.0.1:${port}/api/meta/image`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify({ imageDataUrl: validJpegDataUrl }) });
       const body = await response.json() as { contract?: string; document?: { primaryDomain?: string; elements?: Array<{ rawValue?: string; unit?: string }> } };
       expect(response.status).toBe(200);
       expect(body.contract).toBe('unfold.image_analysis.v1');
@@ -258,7 +259,7 @@ describe('image understanding backend route', () => {
   it('classifies network failure at the actual image HTTP boundary without retrying', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockRejectedValue(new Error('fixture network outage'));
     await withServer(fetchMock, async (port) => {
-      const response = await fetch(`http://127.0.0.1:${port}/api/meta/image`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ imageDataUrl: validJpegDataUrl }) });
+      const response = await fetch(`http://127.0.0.1:${port}/api/meta/image`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify({ imageDataUrl: validJpegDataUrl }) });
       const body = await response.json() as { contract?: string; error?: { code?: string }; meta?: { latencyMs?: number } };
       expect(response.status).toBe(502);
       expect(body.contract).toBe('unfold.image_analysis.v1');
@@ -273,7 +274,7 @@ describe('image understanding backend route', () => {
     await withServer(fetchMock, async (port) => {
       const response = await fetch(`http://127.0.0.1:${port}/api/meta/image`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN },
         body: JSON.stringify({ imageDataUrl: 'data:image/jpeg;base64,ZmFrZQ==' }),
       });
       expect(response.status).toBe(400);
@@ -286,7 +287,7 @@ describe('image understanding backend route', () => {
     await withServer(fetchMock, async (port) => {
       const response = await fetch(`http://127.0.0.1:${port}/api/meta/image`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN },
         body: JSON.stringify({ imageDataUrl: validJpegDataUrl }),
       });
       const body = await response.json() as { error?: { code?: string }; meta?: { requestId?: string } };
@@ -299,7 +300,7 @@ describe('image understanding backend route', () => {
   it('distinguishes an incomplete HTTP 200 response from invalid JSON and schema errors', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ id: 'incomplete-id', status: 'incomplete', incomplete_details: { reason: 'max_output_tokens' }, output: [], usage: { input_tokens: 517, output_tokens: 700, total_tokens: 1_217, output_tokens_details: { reasoning_tokens: 668 } } }), { status: 200 }));
     await withServer(fetchMock, async (port) => {
-      const response = await fetch(`http://127.0.0.1:${port}/api/meta/image`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ imageDataUrl: validJpegDataUrl }) });
+      const response = await fetch(`http://127.0.0.1:${port}/api/meta/image`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify({ imageDataUrl: validJpegDataUrl }) });
       const body = await response.json() as { error?: { code?: string; message?: string }; meta?: { requestId?: string; stages?: Array<{ incompleteReason?: string; maxOutputTokens?: number; usage?: { reasoningTokens?: number; outputTokens?: number } }> }; failedStage?: string; document?: unknown };
       expect(response.status).toBe(502);
       expect(body.error?.code).toBe('OUTPUT_BUDGET_EXHAUSTED');
@@ -321,7 +322,7 @@ describe('image understanding backend route', () => {
       .mockResolvedValueOnce(metaOutput(JSON.stringify(recognition('architecture')), 'recognition-ok'))
       .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'extraction-incomplete', status: 'incomplete', incomplete_details: { reason: 'max_output_tokens' }, output: [] }), { status: 200 }));
     await withServer(fetchMock, async (port) => {
-      const response = await fetch(`http://127.0.0.1:${port}/api/meta/image`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ imageDataUrl: validJpegDataUrl }) });
+      const response = await fetch(`http://127.0.0.1:${port}/api/meta/image`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify({ imageDataUrl: validJpegDataUrl }) });
       const body = await response.json() as { status?: string; document?: unknown; extraction?: { status?: string }; error?: { code?: string }; failedStage?: string; meta?: { stages?: Array<{ stage?: string; incompleteReason?: string; maxOutputTokens?: number }> } };
       expect(response.status).toBe(502);
       expect(body.status).toBeUndefined();
@@ -340,7 +341,7 @@ describe('image understanding backend route', () => {
   it('keeps regional verification separate and explicitly non-independent', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(metaOutput(JSON.stringify({ status: 'uncertain', reading: null, unit: null, visibleText: '9.?5 m', alternatives: ['9.85', '9.65'], explanation: 'Um dígito permanece ilegível.', regionReference: 'selected_crop' }), 'region-request-id'));
     await withServer(fetchMock, async (port) => {
-      const response = await fetch(`http://127.0.0.1:${port}/api/meta/image/verify-region`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ cropImageDataUrl: validJpegDataUrl, targetId: 'dimension-1', targetLabel: 'Cota superior', candidateValue: '9.25 m', question: 'Leia o valor literal.', region: { x: 0.2, y: 0.1, width: 0.15, height: 0.08 }, originalSize: { width: 1000, height: 800 } }) });
+      const response = await fetch(`http://127.0.0.1:${port}/api/meta/image/verify-region`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify({ cropImageDataUrl: validJpegDataUrl, targetId: 'dimension-1', targetLabel: 'Cota superior', candidateValue: '9.25 m', question: 'Leia o valor literal.', region: { x: 0.2, y: 0.1, width: 0.15, height: 0.08 }, originalSize: { width: 1000, height: 800 } }) });
       const body = await response.json() as { verification?: { status?: string; reading?: string | null }; limitation?: string; targetId?: string };
       expect(response.status).toBe(200);
       expect(body.targetId).toBe('dimension-1');
@@ -356,7 +357,7 @@ describe('image understanding backend route', () => {
   it('reports an incomplete regional check as budget exhaustion with no accepted reading', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ id: 'region-incomplete-id', status: 'incomplete', incomplete_details: { reason: 'max_output_tokens' }, output: [], usage: { input_tokens: 20, output_tokens: 400, total_tokens: 420, output_tokens_details: { reasoning_tokens: 360 } } }), { status: 200 }));
     await withServer(fetchMock, async (port) => {
-      const response = await fetch(`http://127.0.0.1:${port}/api/meta/image/verify-region`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ cropImageDataUrl: validJpegDataUrl, targetId: 'dimension-1', targetLabel: 'Cota superior', candidateValue: '9.85 m', question: 'Leia o valor literal.', region: { x: 0.2, y: 0.1, width: 0.15, height: 0.08 }, originalSize: { width: 1000, height: 800 } }) });
+      const response = await fetch(`http://127.0.0.1:${port}/api/meta/image/verify-region`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify({ cropImageDataUrl: validJpegDataUrl, targetId: 'dimension-1', targetLabel: 'Cota superior', candidateValue: '9.85 m', question: 'Leia o valor literal.', region: { x: 0.2, y: 0.1, width: 0.15, height: 0.08 }, originalSize: { width: 1000, height: 800 } }) });
       const body = await response.json() as { error?: { code?: string; message?: string }; failedStage?: string; verification?: unknown; meta?: { maxOutputTokens?: number; usage?: { reasoningTokens?: number; outputTokens?: number } } };
       expect(response.status).toBe(502);
       expect(body.error?.code).toBe('OUTPUT_BUDGET_EXHAUSTED');
@@ -371,7 +372,7 @@ describe('image understanding backend route', () => {
   it('returns a useful partial result for low-confidence or unknown domain instead of a blanket block', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(metaOutput(JSON.stringify(recognition('unknown')), 'unknown-domain-id'));
     await withServer(fetchMock, async (port) => {
-      const response = await fetch(`http://127.0.0.1:${port}/api/meta/image`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ imageDataUrl: validJpegDataUrl }) });
+      const response = await fetch(`http://127.0.0.1:${port}/api/meta/image`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify({ imageDataUrl: validJpegDataUrl }) });
       const body = await response.json() as { status?: string; document?: { capabilities?: Array<{ id: string; state: string }> } };
       expect(response.status).toBe(200);
       expect(body.status).toBe('PARTIAL');
@@ -388,7 +389,7 @@ describe('image understanding backend route', () => {
     }));
     await withServer(fetchMock, async (port) => {
       const controller = new AbortController();
-      const pending = fetch(`http://127.0.0.1:${port}/api/meta/image`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ imageDataUrl: validJpegDataUrl }), signal: controller.signal }).catch(() => undefined);
+      const pending = fetch(`http://127.0.0.1:${port}/api/meta/image`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify({ imageDataUrl: validJpegDataUrl }), signal: controller.signal }).catch(() => undefined);
       for (let index = 0; index < 50 && !upstreamSignal; index += 1) await new Promise((resolve) => setTimeout(resolve, 10));
       expect(upstreamSignal).toBeDefined();
       controller.abort();
@@ -406,7 +407,7 @@ describe('image understanding backend route', () => {
         : metaOutput(JSON.stringify(technicalDocument('architecture', 'Cozinha')), `extraction-${fetchMock.mock.calls.length}`);
     });
     await withServer(fetchMock, async (port) => {
-      const send = () => fetch(`http://127.0.0.1:${port}/api/meta/image`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ imageDataUrl: validJpegDataUrl }) });
+      const send = () => fetch(`http://127.0.0.1:${port}/api/meta/image`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify({ imageDataUrl: validJpegDataUrl }) });
       const responses = [];
       for (let index = 0; index < 5; index += 1) responses.push(await send());
       expect(responses.map((response) => response.status)).toEqual([200, 200, 200, 200, 429]);
@@ -419,7 +420,7 @@ describe('image understanding backend route', () => {
     await withServer(fetchMock, async (port) => {
       const response = await fetch(`http://127.0.0.1:${port}/api/meta/image`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN },
         body: JSON.stringify({ imageDataUrl: validJpegDataUrl }),
       });
       const body = await response.json() as { error?: { code?: string }; meta?: { requestId?: string } };
