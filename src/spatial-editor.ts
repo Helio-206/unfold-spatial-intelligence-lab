@@ -4,7 +4,7 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { gsap } from 'gsap';
 import { decodePlanImage } from './plan-image';
-import { buildPlanVectorModel, countClosedCandidateContours, detectCandidateIntersections, detectWallCandidates, mergeWallCandidates, splitWallCandidate, traceWallCandidate, type PixelWallCandidate, type Point2 } from './plan-reconstruction';
+import { buildPlanVectorModel, calibrateScale, calibrateScaleFromMeasurements, countClosedCandidateContours, detectCandidateIntersections, detectWallCandidatesDetailed, mergeWallCandidates, preparePlanRaster, splitWallCandidate, traceWallCandidate, type PixelWallCandidate, type Point2, type RasterPreparation, type ScaleMeasurement } from './plan-reconstruction';
 import { addOpeningToScene, createPlanScene, editOpeningInScene, editWallInScene } from './plan-scene';
 import { ARCHITECTURAL_MODULE_DIMENSIONS, buildThreePlanGroup, type ArchitecturalAssets } from './plan-three-adapter';
 import { commitScenePreview, deserializeSceneTransaction, executeSceneCommand, previewSceneCommand, serializeSceneTransaction, type Node, type ScenePreview, type SceneTransaction, type SpatialCommand, type SpatialSceneV1 } from './spatial-scene';
@@ -12,7 +12,7 @@ import { clearSpatialSourceImage, readSpatialSourceImage } from './spatial-sourc
 import { createSpatialCommandEnvelope, parseSpatialIntentV1, resolveSpatialTarget, type SpatialCommandOrigin, type SpatialCommandState, type SpatialCommandV1 } from './spatial-command-protocol';
 import { registerSpatialCommandHandler, type SpatialCommandOutcome } from './spatial-command-runtime';
 import { prepareSpatialHandoff } from './spatial-handoff';
-import { acceptSemanticLink, answerGroundedQuery, createSemanticSpatialMap, describeSemanticProposal, proposeSemanticLink, rejectSemanticLink, resolveSemanticSceneLinks, selectWellDefinedRegionIds, type SemanticSpatialMapV1 } from './semantic-spatial-map';
+import { acceptSemanticLink, answerGroundedQuery, createSemanticSpatialMap, describeSemanticProposal, proposeSemanticLink, rejectSemanticLink, resolveSemanticSceneLinks, type SemanticSpatialMapV1 } from './semantic-spatial-map';
 import { parseSpatialAgentResult, SPATIAL_AGENT_REQUEST_SCHEMA, spatialDomainConflict, type SpatialAgentRequestV1, type SpatialAgentAction } from './spatial-agent';
 import type { TechnicalDocumentV1 } from './technical-document';
 import { cameraFrameAspect, createSpatialCameraView, createSpatialFocusView } from './spatial-camera';
@@ -32,12 +32,13 @@ app.innerHTML = `<main class="spatial-lab" data-state="empty">
     <label class="file-pick" for="plan-file"><span>Importar planta</span><small>PNG · JPEG · WebP · até 20 MiB</small><input id="plan-file" type="file" accept="image/png,image/jpeg,image/webp"></label>
     <div id="plan-workflow" hidden>
       <div class="source-image-frame"><img id="source-image" alt="Planta original, sem alteração"><svg id="plan-overlay" aria-label="Linhas candidatas e traçados manuais"></svg></div>
-      <p id="plan-meta" class="micro-copy">Imagem original preservada.</p><section id="accepted-document-context" class="document-handoff" hidden aria-label="Preparação espacial do documento aceite"></section>
+      <p id="plan-meta" class="micro-copy">Imagem original preservada.</p><button id="evidence-expand" type="button" aria-expanded="false">Ampliar debugger de evidência</button><section id="accepted-document-context" class="document-handoff" hidden aria-label="Preparação espacial do documento aceite"></section>
       <div class="reference-modes" role="group" aria-label="Vista da reconstrução"><button type="button" data-view-mode="original" aria-pressed="true">Original</button><button type="button" data-view-mode="trace" aria-pressed="false">Tracing</button><button type="button" data-view-mode="model" aria-pressed="false">3D</button><button type="button" data-view-mode="compare" aria-pressed="false">Sobrepor</button></div>
       <details class="workflow-section" open>
       <summary>02 / TRAÇAR E REVISAR</summary>
       <div class="trace-tools"><button id="detect-lines" type="button">Detectar linhas</button><button id="trace-mode" type="button" aria-pressed="false">Traçar parede</button><button id="scale-mode" type="button" aria-pressed="false">Marcar escala</button><button id="split-segment" type="button" disabled>Dividir</button><button id="join-segments" type="button" disabled>Unir colineares</button></div>
       <label class="field">Sensibilidade das linhas <output id="detection-threshold-value">150</output><input id="detection-threshold" type="range" min="80" max="220" step="5" value="150"></label>
+      <div class="candidate-heading"><span>PRÉ-PROCESSAMENTO REVERSÍVEL</span></div><div class="dimensions-grid"><label class="field">Recorte X (px)<input id="crop-x" type="number" min="0" step="1" value="0"></label><label class="field">Recorte Y (px)<input id="crop-y" type="number" min="0" step="1" value="0"></label><label class="field">Largura (px)<input id="crop-width" type="number" min="2" step="1"></label><label class="field">Altura (px)<input id="crop-height" type="number" min="2" step="1"></label></div><label class="field">Correcção de inclinação (graus)<input id="deskew-angle" type="number" min="-15" max="15" step="0.1" value="0"></label><div class="dimensions-grid"><label class="field">Máscara anotação X<input id="mask-x" type="number" min="0" step="1"></label><label class="field">Y<input id="mask-y" type="number" min="0" step="1"></label><label class="field">Largura<input id="mask-width" type="number" min="1" step="1"></label><label class="field">Altura<input id="mask-height" type="number" min="1" step="1"></label></div><div class="trace-tools"><button id="add-mask" type="button">Mascarar área</button><button id="apply-preprocessing" type="button">Aplicar à análise</button></div><p id="preprocess-summary" class="micro-copy">Detecção usa a imagem original. Transformações aplicam-se apenas a uma cópia de análise.</p>
       <p class="micro-copy">O detector só propõe linhas axiais. Confirme visualmente cada segmento; não usa cotas, áreas ou nomes de divisões para inventar escala.</p>
       <div class="candidate-heading"><span>SEGMENTOS A INCLUIR</span><button id="clear-selection" type="button">Limpar</button></div><p id="contour-summary" class="micro-copy">Contornos não avaliados; área métrica não confirmada.</p><div id="candidate-list" class="candidate-list"></div><div class="candidate-heading"><span>REGIÕES FECHADAS CANDIDATAS</span></div><div id="region-list" class="candidate-list"></div><div class="candidate-heading"><span>DESCONTINUIDADES / ABERTURAS AMBÍGUAS</span></div><div id="opening-candidate-list" class="candidate-list"></div><div class="candidate-heading"><span>ASSOCIAÇÃO SEMÂNTICA → REGIÃO (semantic_spatial_map.v1)</span></div><div id="semantic-map-panel"><label class="field">Divisão reconhecida (documento aceite)<select id="semantic-element"><option value="">Sem documento aceite</option></select></label><button id="semantic-propose" type="button">Propor associação à região seleccionada</button><p id="semantic-proposal" class="micro-copy" aria-live="polite">A proposta é mostrada antes de aceitar. Nenhum nome/área/cota vira geometria.</p><div class="trace-tools"><button id="semantic-accept" type="button" disabled>Aceitar proposta</button><button id="semantic-reject" type="button" disabled>Rejeitar proposta</button></div><div id="semantic-link-list" class="candidate-list"></div></div>
       </details>
@@ -47,6 +48,7 @@ app.innerHTML = `<main class="spatial-lab" data-state="empty">
       <label class="field">Unidade<select id="scale-unit"><option value="m">Metros (m)</option><option value="cm">Centímetros (cm)</option><option value="mm">Milímetros (mm)</option><option value="ft">Pés (ft)</option><option value="in">Polegadas (in)</option></select></label>
       <div class="dimensions-grid"><label class="field">Altura de modelação (m)<input id="wall-height" type="number" min="0.01" step="any" placeholder="Obrigatório · hipótese explícita"></label><label class="field">Espessura (m)<input id="wall-thickness" type="number" min="0.01" step="any" placeholder="Obrigatório · hipótese explícita"></label></div>
       <label class="field">Nota da escala / origem<input id="scale-evidence" maxlength="300" placeholder="Ex.: cota impressa seleccionada no original"></label>
+      <button id="add-calibration" type="button">Registar cota marcada</button><div id="calibration-list" class="candidate-list" aria-live="polite"></div>
       <button id="build-scene" class="primary-action" type="button" disabled>Construir geometria proposta</button>
       </details>
       <details class="module-palette"><summary>MÓDULOS BLENDER · CONCEPTUAIS, NÃO DERIVADOS DA PLANTA</summary><label class="field">Biblioteca<select id="module-choice"><option value="wall_ext_3000">Parede exterior</option><option value="partition_int_3000">Divisória</option><option value="door_single_900">Porta</option><option value="window_double_1200">Janela</option><option value="connector_corner_90">Conector de canto</option><option value="connector_isolated_foot">Apoio isolado</option><option value="mechanical_frame_1000">Estrutura mecânica</option></select></label><button id="add-module" type="button" disabled>Adicionar módulo conceptual</button></details>
@@ -122,6 +124,8 @@ let assetReady = false;
 let currentImageFile: File | undefined;
 let currentImageUrl: string | undefined;
 let imageInfo: { sha256: string; width: number; height: number; mimeType: string } | undefined;
+let rasterPreparation: RasterPreparation | undefined;
+let annotationMasks: Array<{ x: number; y: number; width: number; height: number }> = [];
 let sourceDocumentRef: { documentId: string; sha256: string } | undefined;
 let activeTechnicalDocument: TechnicalDocumentV1 | undefined;
 let semanticMap: SemanticSpatialMapV1 | undefined;
@@ -129,6 +133,7 @@ let spatialAgentHistory: Array<{ role: 'user' | 'assistant'; text: string }> = [
 let spatialAgentAbort: AbortController | undefined;
 let selectionOutline: Box3Helper | undefined;
 let candidates: PixelWallCandidate[] = [];
+let rawCandidates: PixelWallCandidate[] = [];
 const selectedCandidates = new Set<string>();
 const selectedRegions = new Set<string>();
 let traceMode: 'none' | 'wall' | 'scale' = 'none';
@@ -458,21 +463,23 @@ function updateCandidates(): void {
   }
   const topologyTolerance = Math.max(6, Math.min(imageInfo.width, imageInfo.height) * 0.008);
   const vectorModel = buildPlanVectorModel(candidates, { tolerancePx: topologyTolerance, imageSize: { width: imageInfo.width, height: imageInfo.height }, ...(vectorScale ? { scale: vectorScale } : {}) });
-  const regionShapes = vectorModel.regions.filter((region) => region.eligibility === 'construction_candidate').map((region) => `<polygon data-region="${escapeHtml(region.id)}" data-selected="${selectedRegions.has(region.id)}" points="${region.vertices.map((point) => `${point.x},${point.y}`).join(' ')}" fill="#c8a873" fill-opacity="${selectedRegions.has(region.id) ? '0.22' : '0.09'}" stroke="${selectedRegions.has(region.id) ? '#efbf68' : '#b99968'}" stroke-opacity=".8" stroke-width="3"/>`).join('');
-  const gapMarks = vectorModel.openingCandidates.map((item) => `<line data-opening-candidate="${escapeHtml(item.id)}" x1="${item.start.x}" y1="${item.start.y}" x2="${item.end.x}" y2="${item.end.y}" stroke="#a65e36" stroke-width="6" stroke-dasharray="4 3" opacity=".9"/>`).join('');
-  const intersectionMarks = vectorModel.intersections.map((item) => `<circle data-intersection="${item.firstId}:${item.secondId}" cx="${item.point.x}" cy="${item.point.y}" r="3.5" fill="#e4b05d" stroke="#392b1d" stroke-width="1"/>`).join('');
-  svg.innerHTML = regionShapes + gapMarks + candidates.map((candidate) => {
+  const regionShapes = vectorModel.regions.map((region) => `<polygon data-region="${escapeHtml(region.id)}" data-selected="${selectedRegions.has(region.id)}" points="${region.vertices.map((point) => `${point.x},${point.y}`).join(' ')}" fill="${region.eligibility === 'construction_candidate' ? '#c8a873' : '#c74f46'}" fill-opacity="${selectedRegions.has(region.id) ? '0.22' : region.eligibility === 'construction_candidate' ? '0.09' : '0.012'}" stroke="${region.eligibility === 'construction_candidate' ? selectedRegions.has(region.id) ? '#efbf68' : '#b99968' : '#e35d52'}" stroke-opacity="${region.eligibility === 'construction_candidate' ? '.9' : '.3'}" stroke-width="${region.eligibility === 'construction_candidate' ? '3' : '1'}"><title>${escapeHtml(region.rejectionReasons?.join(', ') || region.evidence.at(-1) || 'Região não revista')}</title></polygon>`).join('');
+  const gapMarks = vectorModel.openingCandidates.map((item) => `<line data-opening-candidate="${escapeHtml(item.id)}" x1="${item.start.x}" y1="${item.start.y}" x2="${item.end.x}" y2="${item.end.y}" stroke="#a65e36" stroke-width="6" stroke-dasharray="4 3" opacity=".9"><title>${escapeHtml(item.reason)}</title></line>`).join('');
+  const intersectionMarks = vectorModel.intersections.map((item) => `<circle data-intersection="${item.firstId}:${item.secondId}" cx="${item.point.x}" cy="${item.point.y}" r="3.5" fill="${item.kind === 'endpoint_snap' ? '#73b7a0' : '#e4b05d'}" stroke="#392b1d" stroke-width="1"><title>${escapeHtml(`${item.kind ?? 'intersecção'}: ${item.firstId} / ${item.secondId}; tolerância ${item.tolerancePx.toFixed(1)} px`)}</title></circle>`).join('');
+  const rawLines = rawCandidates.map((candidate) => `<line data-raw-id="${escapeHtml(candidate.id)}" x1="${candidate.start.x}" y1="${candidate.start.y}" x2="${candidate.end.x}" y2="${candidate.end.y}" stroke="#69a9bd" stroke-width="1.2" opacity=".3"><title>Detecção raster antes da fusão · ${escapeHtml(candidate.orientation)} · ${Math.round(Math.hypot(candidate.end.x - candidate.start.x, candidate.end.y - candidate.start.y))} px</title></line>`).join('');
+  svg.innerHTML = regionShapes + gapMarks + rawLines + candidates.map((candidate) => {
     const active = selectedCandidates.has(candidate.id);
     const linked = transaction?.scene.nodes.find((node) => node.id === selectedId)?.component?.properties.sourceCandidate?.value === candidate.id;
     const width = Math.max(3.2, candidate.thicknessPx);
     const handles = active && !transaction ? `<circle data-endpoint="start" data-candidate-id="${escapeHtml(candidate.id)}" cx="${candidate.start.x}" cy="${candidate.start.y}" r="7"/><circle data-endpoint="end" data-candidate-id="${escapeHtml(candidate.id)}" cx="${candidate.end.x}" cy="${candidate.end.y}" r="7"/>` : '';
-    return `<line data-id="${escapeHtml(candidate.id)}" data-thickness="${candidate.thicknessPx}" data-confidence="${candidate.confidence}" x1="${candidate.start.x}" y1="${candidate.start.y}" x2="${candidate.end.x}" y2="${candidate.end.y}" stroke="${linked ? '#fff1ca' : active ? '#e0a943' : '#9a6535'}" stroke-width="${linked ? width + 2 : width}" stroke-linecap="round" opacity="${active || linked ? 1 : 0.78}"/>${handles}`;
+    return `<line data-id="${escapeHtml(candidate.id)}" data-thickness="${candidate.thicknessPx}" data-confidence="${candidate.confidence}" x1="${candidate.start.x}" y1="${candidate.start.y}" x2="${candidate.end.x}" y2="${candidate.end.y}" stroke="${linked ? '#fff1ca' : active ? '#e0a943' : '#9a6535'}" stroke-width="${linked ? width + 2 : width}" stroke-linecap="round" opacity="${active || linked ? 1 : 0.78}"><title>${escapeHtml(`${candidate.origin ?? 'automatic_detection'}; origem raster: ${(candidate.sourceCandidateIds ?? [candidate.id]).join(', ')}`)}</title></line>${handles}`;
   }).join('') + intersectionMarks + (traceStart && traceEnd ? `<line id="manual-preview" x1="${traceStart.point.x}" y1="${traceStart.point.y}" x2="${traceEnd.x}" y2="${traceEnd.y}" stroke="#d5a55e" stroke-width="3"/>` : '');
   const list = $('#candidate-list');
-  list.innerHTML = candidates.map((candidate) => `<button type="button" class="candidate-row ${selectedCandidates.has(candidate.id) ? 'is-selected' : ''}" data-candidate="${candidate.id}" aria-pressed="${selectedCandidates.has(candidate.id)}"><span>${escapeHtml(candidate.id)}</span><small>${candidate.origin === 'manual_trace' ? 'traçado manual' : candidate.origin === 'manual_correction' ? 'correcção manual' : 'detecção automática'} · ${candidate.orientation} · ${Math.round(Math.hypot(candidate.end.x-candidate.start.x,candidate.end.y-candidate.start.y))} px · confiança heurística ${candidate.confidence.toFixed(2)}</small></button>`).join('') || '<p class="micro-copy">Sem candidatos. Use tracing manual.</p>';
+  list.innerHTML = `<p class="micro-copy">${rawCandidates.length} segmentos raster antes da fusão → ${candidates.length} candidatos fundidos. Azul: detecção bruta; cobre: segmento consolidado.</p>` + (candidates.map((candidate) => `<button type="button" class="candidate-row ${selectedCandidates.has(candidate.id) ? 'is-selected' : ''}" data-candidate="${escapeHtml(candidate.id)}" aria-pressed="${selectedCandidates.has(candidate.id)}"><span>${escapeHtml(candidate.id)}</span><small>${candidate.origin === 'manual_trace' ? 'traçado manual' : candidate.origin === 'manual_correction' ? 'correcção manual' : 'detecção automática'} · ${candidate.orientation} · ${Math.round(Math.hypot(candidate.end.x-candidate.start.x,candidate.end.y-candidate.start.y))} px · confiança heurística ${candidate.confidence.toFixed(2)} · origem ${(candidate.sourceCandidateIds ?? []).length} segmento(s)</small></button>`).join('') || '<p class="micro-copy">Sem candidatos. Use tracing manual.</p>');
   const regionCandidates = vectorModel.regions.filter((region) => region.eligibility === 'construction_candidate');
-  const rejectedRegionCount = vectorModel.regions.length - regionCandidates.length;
-  $('#region-list').innerHTML = regionCandidates.map((region) => `<button type="button" class="candidate-row ${selectedRegions.has(region.id) ? 'is-selected' : ''}" data-region="${escapeHtml(region.id)}" aria-label="${selectedRegions.has(region.id) ? 'Remover' : 'Rever'} divisão proposta ${escapeHtml(region.id)}" aria-pressed="${selectedRegions.has(region.id)}"><span>Divisão proposta ${region.id.slice(6)}</span><small>${region.boundaryCandidateIds.length} segmentos de suporte · ${Math.round(region.areaPx2).toLocaleString()} px² · confiança heurística ${region.confidence.toFixed(2)} · por confirmar</small></button>`).join('') + (rejectedRegionCount ? `<p class="micro-copy">${rejectedRegionCount} faces adicionais excluídas por qualidade geométrica insuficiente.</p>` : '') || '<p class="micro-copy">Sem contornos com suporte suficiente. Isto não exclui divisões abertas ou linhas não detectadas.</p>';
+  $('#region-list').innerHTML = vectorModel.regions.map((region) => region.eligibility === 'construction_candidate'
+    ? `<button type="button" class="candidate-row ${selectedRegions.has(region.id) ? 'is-selected' : ''}" data-region="${escapeHtml(region.id)}" aria-label="${selectedRegions.has(region.id) ? 'Remover' : 'Rever'} divisão proposta ${escapeHtml(region.id)}" aria-pressed="${selectedRegions.has(region.id)}"><span>Face ${escapeHtml(region.id)} · proposta</span><small>${region.boundaryCandidateIds.length} segmentos · ${Math.round(region.areaPx2).toLocaleString()} px² · confiança heurística ${region.confidence.toFixed(2)} · sem revisão humana</small></button>`
+    : `<div class="candidate-row is-rejected" data-region-diagnostic="${escapeHtml(region.id)}"><span>Face ${escapeHtml(region.id)} · rejeitada</span><small>${escapeHtml((region.rejectionReasons ?? region.evidence).join('; '))}</small></div>`).join('') || '<p class="micro-copy">Sem contornos com suporte suficiente. Isto não exclui divisões abertas ou linhas não detectadas.</p>';
   $('#opening-candidate-list').innerHTML = vectorModel.openingCandidates.map((opening) => `<button type="button" class="candidate-row" data-opening-candidate="${escapeHtml(opening.id)}"><span>${escapeHtml(opening.id)}</span><small>${Math.hypot(opening.end.x - opening.start.x, opening.end.y - opening.start.y).toFixed(1)} px · ambígua · confirmar manualmente</small></button>`).join('') || '<p class="micro-copy">Nenhuma descontinuidade candidata no intervalo heurístico configurado; isto não confirma ausência de portas/janelas.</p>';
   $('#split-segment').disabled = selectedCandidates.size !== 1 || !!transaction;
   $('#join-segments').disabled = selectedCandidates.size < 2 || !!transaction;
@@ -563,13 +570,17 @@ async function loadPlanFile(file: File, technicalDocumentRef?: { documentId: str
     status('A verificar o ficheiro local e a preparar a referência raster…');
     const decoded = await decodePlanImage(file);
     currentImageFile = file; imageInfo = { sha256: decoded.sha256, width: decoded.width, height: decoded.height, mimeType: decoded.mimeType }; sourceDocumentRef = technicalDocumentRef;
+    rasterPreparation = undefined; annotationMasks = [];
+    calibrationPoints.length = 0; scaleMeasurements.length = 0; renderCalibrationList();
+    (document.querySelector<HTMLInputElement>('#crop-width')!).value = String(decoded.width);
+    (document.querySelector<HTMLInputElement>('#crop-height')!).value = String(decoded.height);
     if (currentImageUrl) URL.revokeObjectURL(currentImageUrl);
     currentImageUrl = URL.createObjectURL(file); ($('#source-image') as HTMLImageElement).src = currentImageUrl;
     ($('#source-image').parentElement as HTMLElement).style.aspectRatio = `${decoded.width} / ${decoded.height}`;
     $('#plan-workflow').hidden = false; $('#empty-source').hidden = true;
     updateSourceState();
     $('#plan-meta').textContent = `${file.name} · ${decoded.width} × ${decoded.height} · SHA-256 ${decoded.sha256.slice(0, 16)}… · original preservado`;
-    candidates = []; selectedCandidates.clear(); selectedRegions.clear(); updateCandidates(); setTraceMode('none');
+    candidates = []; rawCandidates = []; selectedCandidates.clear(); selectedRegions.clear(); updateCandidates(); setTraceMode('none');
     status('Imagem carregada. Detecção é sugestiva; revise e trace os segmentos necessários.');
   } catch (error) { status(`Imagem recusada: ${error instanceof Error ? error.message : 'erro de validação'}`); }
 }
@@ -581,17 +592,39 @@ $('#detect-lines').addEventListener('click', async () => {
   if (!currentImageFile) return;
   try {
     const raster = await decodePlanImage(currentImageFile);
-    candidates = detectWallCandidates(raster, { threshold: Number($('#detection-threshold').value), minimumLengthPx: Math.max(24, Math.floor(Math.min(raster.width, raster.height) * 0.045)), gapTolerancePx: 3 });
+    rasterPreparation ??= preparePlanRaster(raster, { annotationMasks });
+    const detected = detectWallCandidatesDetailed(rasterPreparation.raster, { threshold: Number($('#detection-threshold').value), minimumLengthPx: Math.max(24, Math.floor(Math.min(rasterPreparation.raster.width, rasterPreparation.raster.height) * 0.045)), gapTolerancePx: 3 });
+    rawCandidates = detected.raw.map((candidate) => ({ ...candidate, start: rasterPreparation!.toSource(candidate.start), end: rasterPreparation!.toSource(candidate.end) }));
+    candidates = detected.fused.map((candidate) => ({ ...candidate, start: rasterPreparation!.toSource(candidate.start), end: rasterPreparation!.toSource(candidate.end) }));
     selectedCandidates.clear();
-    const autoModel = buildPlanVectorModel(candidates, { tolerancePx: Math.max(6, Math.min(raster.width, raster.height) * 0.008), imageSize: { width: raster.width, height: raster.height } });
-    const wellDefined = selectWellDefinedRegionIds(autoModel.regions);
-    wellDefined.forEach((regionId) => { selectedRegions.add(regionId); autoModel.regions.find((region) => region.id === regionId)?.boundaryCandidateIds.forEach((id) => selectedCandidates.add(id)); });
     updateCandidates();
-    if (wellDefined.length) status(`${candidates.length} segmentos candidatos. ${wellDefined.length} região(ões) com contorno bem definido pré-seleccionada(s) para revisão — a construção continua a exigir escala, altura/espessura e confirmação explícita.`);
-    status(`${candidates.length} segmentos axiais candidatos. Seleccione apenas os que confirmar no desenho; linhas de texto podem ser falsos positivos.`);
+    status(`${candidates.length} segmentos axiais candidatos. Nenhuma face foi aceite ou pré-seleccionada; seleccione apenas polígonos que tenha revisto contra o raster. Linhas de texto podem ser falsos positivos.`);
   } catch (error) { status(`Detecção indisponível: ${error instanceof Error ? error.message : 'erro'}`); }
 });
 $('#detection-threshold').addEventListener('input', () => { $('#detection-threshold-value').textContent = $('#detection-threshold').value; });
+$('#add-mask').addEventListener('click', () => {
+  try {
+    const integer = (selector: string) => { const value = Number((document.querySelector<HTMLInputElement>(selector)!).value); if (!Number.isInteger(value)) throw new Error('As coordenadas da máscara devem ser píxeis inteiros.'); return value; };
+    const mask = { x: integer('#mask-x'), y: integer('#mask-y'), width: integer('#mask-width'), height: integer('#mask-height') };
+    if (mask.x < 0 || mask.y < 0 || mask.width < 1 || mask.height < 1 || !imageInfo || mask.x + mask.width > imageInfo.width || mask.y + mask.height > imageInfo.height) throw new Error('A máscara deve estar dentro da imagem original.');
+    annotationMasks.push(mask); rasterPreparation = undefined;
+    $('#preprocess-summary').textContent = `${annotationMasks.length} área(s) de anotação serão removidas da cópia de análise; imagem original preservada.`;
+  } catch (error) { status(error instanceof Error ? error.message : 'Máscara inválida.'); }
+});
+$('#apply-preprocessing').addEventListener('click', async () => {
+  if (!currentImageFile || !imageInfo) return;
+  try {
+    const integer = (selector: string) => { const value = Number((document.querySelector<HTMLInputElement>(selector)!).value); if (!Number.isInteger(value)) throw new Error('Recorte inválido: use coordenadas de píxel inteiras.'); return value; };
+    const raster = await decodePlanImage(currentImageFile);
+    const crop = { x: integer('#crop-x'), y: integer('#crop-y'), width: integer('#crop-width'), height: integer('#crop-height') };
+    const masks = annotationMasks.map((mask) => ({ ...mask, x: mask.x - crop.x, y: mask.y - crop.y }));
+    const angle = Number((document.querySelector<HTMLInputElement>('#deskew-angle')!).value);
+    rasterPreparation = preparePlanRaster(raster, { crop, deskewDegrees: angle, annotationMasks: masks });
+    candidates = []; rawCandidates = []; selectedCandidates.clear(); selectedRegions.clear(); updateCandidates();
+    $('#preprocess-summary').textContent = `Cópia de análise ${rasterPreparation.raster.width} × ${rasterPreparation.raster.height}; recorte ${crop.x},${crop.y},${crop.width},${crop.height}; deskew ${angle.toFixed(1)}°; ${annotationMasks.length} máscara(s). Coordenadas convertidas de volta para a imagem original.`;
+    status('Pré-processamento aplicado apenas à análise. A fonte e a Scene Graph continuam nas coordenadas da imagem original.');
+  } catch (error) { rasterPreparation = undefined; status(`Pré-processamento recusado: ${error instanceof Error ? error.message : 'erro'}`); }
+});
 
 $('#plan-overlay').addEventListener('click', (event) => {
   const target = event.target as SVGElement;
@@ -608,6 +641,17 @@ $('#plan-overlay').addEventListener('click', (event) => {
 
 // A click on the image either records the two explicit scale anchors or starts a manual segment.
 const calibrationPoints: Point2[] = [];
+const scaleMeasurements: ScaleMeasurement[] = [];
+function renderCalibrationList(): void {
+  const list = $('#calibration-list');
+  if (!scaleMeasurements.length) { list.innerHTML = '<p class="micro-copy">Sem cotas registadas. Uma medida única não permite detectar distorção ou conflito.</p>'; return; }
+  let fit: ReturnType<typeof calibrateScaleFromMeasurements> | undefined;
+  if (scaleMeasurements.length >= 2) fit = calibrateScaleFromMeasurements(scaleMeasurements);
+  list.innerHTML = scaleMeasurements.map((item) => {
+    const residual = fit?.residuals.find((entry) => entry.id === item.id);
+    return `<div class="candidate-row"><span>${escapeHtml(item.id)} · ${item.realDistanceMetres.toFixed(4)} m</span><small>${item.pixelDistance.toFixed(1)} px · ${escapeHtml(item.evidence)}${residual ? ` · erro residual ${(residual.relativeError * 100).toFixed(2)}%` : ''}</small></div>`;
+  }).join('') + (fit ? `<p class="micro-copy">${fit.accepted ? 'Escala consistente' : 'Calibração bloqueada: medidas incompatíveis'} · erro RMS ${(fit.rmsRelativeError * 100).toFixed(2)}% · máximo ${(fit.maxRelativeError * 100).toFixed(2)}% · dispersão entre escalas ${(fit.scaleSpreadRelative * 100).toFixed(2)}% (limite 1%).</p>` : '<p class="micro-copy">Adicione uma segunda cota independente para verificar consistência.</p>');
+}
 $('#plan-overlay').addEventListener('pointerdown', (event) => {
   const target = event.target as SVGElement;
   const endpoint = target.getAttribute('data-endpoint');
@@ -673,6 +717,21 @@ $('#plan-overlay').addEventListener('pointermove', (event) => {
 
 $('#trace-mode').addEventListener('click', () => setTraceMode(traceMode === 'wall' ? 'none' : 'wall'));
 $('#scale-mode').addEventListener('click', () => { calibrationPoints.length = 0; setTraceMode(traceMode === 'scale' ? 'none' : 'scale'); status('Seleccione os dois extremos de uma cota visível no original.'); });
+$('#add-calibration').addEventListener('click', () => {
+  try {
+    const hasPendingAnchors = calibrationPoints.length === 2;
+    if (!scaleMeasurements.length && !hasPendingAnchors) throw new Error('Marque pelo menos uma cota e registe a sua medida.');
+    const pixelDistance = hasPendingAnchors ? currentScalePixels() : 0;
+    const scaleValue = hasPendingAnchors ? parsePositive('#scale-distance', 'Cota') : 0;
+    const unit = (document.querySelector<HTMLSelectElement>('#scale-unit')?.value ?? 'm') as 'm' | 'cm' | 'mm' | 'ft' | 'in';
+    const realDistanceMetres = scaleValue * ({ m: 1, cm: 0.01, mm: 0.001, ft: 0.3048, in: 0.0254 } as const)[unit];
+    const evidence = (document.querySelector<HTMLInputElement>('#scale-evidence')?.value ?? '').trim();
+    if (!evidence) throw new Error('Registe a cota e a respetiva localização no documento.');
+    scaleMeasurements.push({ id: `dimension-${scaleMeasurements.length + 1}`, pixelDistance, realDistanceMetres, evidence });
+    calibrationPoints.length = 0; renderCalibrationList(); updateCandidates();
+    status(`Cota registada (${pixelDistance.toFixed(1)} px ↔ ${realDistanceMetres.toFixed(4)} m). A imagem original permanece inalterada.`);
+  } catch (error) { status(error instanceof Error ? error.message : 'Não foi possível registar a cota.'); }
+});
 $('#clear-selection').addEventListener('click', () => { selectedCandidates.clear(); selectedRegions.clear(); updateCandidates(); status('Selecção de segmentos e divisões limpa.'); });
 $('#candidate-list').addEventListener('click', (event) => {
   const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-candidate]'); if (!button) return;
@@ -725,23 +784,36 @@ function currentScalePixels(): number {
   if (!distancePx) throw new Error('Marque dois pontos de referência na imagem para calibrar a escala.');
   return distancePx;
 }
+renderCalibrationList();
 $('#build-scene').addEventListener('click', () => {
   if (!imageInfo) return;
   try {
-    const pixelDistance = currentScalePixels();
-    const scaleValue = parsePositive('#scale-distance', 'Cota');
+    const hasPendingAnchors = calibrationPoints.length === 2;
+    if (!scaleMeasurements.length && !hasPendingAnchors) throw new Error('Marque pelo menos uma cota e registe a sua medida.');
+    const pixelDistance = hasPendingAnchors ? currentScalePixels() : 0;
+    const scaleValue = hasPendingAnchors ? parsePositive('#scale-distance', 'Cota') : 0;
     const unit = (document.querySelector<HTMLSelectElement>('#scale-unit')?.value ?? 'm') as 'm' | 'cm' | 'mm' | 'ft' | 'in';
     const realDistanceMetres = scaleValue * ({ m: 1, cm: 0.01, mm: 0.001, ft: 0.3048, in: 0.0254 } as const)[unit];
     const heightM = parsePositive('#wall-height', 'Altura de modelação');
     const thicknessM = parsePositive('#wall-thickness', 'Espessura');
-    const evidence = (document.querySelector<HTMLInputElement>('#scale-evidence')?.value ?? '').trim(); if (!evidence) throw new Error('Registe de onde vem a cota usada na escala.');
+    const evidence = (document.querySelector<HTMLInputElement>('#scale-evidence')?.value ?? '').trim();
+    if (hasPendingAnchors && !evidence) throw new Error('Registe de onde vem a cota usada na escala.');
+    const measurements = [...scaleMeasurements, ...(hasPendingAnchors ? [{ id: `pending-${scaleMeasurements.length + 1}`, pixelDistance, realDistanceMetres, evidence }] : [])];
+    let scale: ReturnType<typeof calibrateScale>;
+    let calibrationEvidence = measurements.map((item) => `${item.id}: ${item.pixelDistance.toFixed(1)} px / ${item.realDistanceMetres.toFixed(4)} m; ${item.evidence}`).join(' | ');
+    if (measurements.length >= 2) {
+      const fitted = calibrateScaleFromMeasurements(measurements);
+      calibrationEvidence = `${measurements.map((item, index) => `${item.id}: ${item.pixelDistance.toFixed(1)} px / ${item.realDistanceMetres.toFixed(4)} m; erro ${(fitted.residuals[index]!.relativeError * 100).toFixed(2)}%; ${item.evidence}`).join(' | ')}. RMS ${(fitted.rmsRelativeError * 100).toFixed(2)}%; máximo ${(fitted.maxRelativeError * 100).toFixed(2)}%; dispersão entre escalas ${(fitted.scaleSpreadRelative * 100).toFixed(2)}%; limite 1%.`;
+      if (!fitted.accepted) throw new Error(`Construção bloqueada: cotas incompatíveis (erro máximo ${(fitted.maxRelativeError * 100).toFixed(2)}%; limite 1%). Reveja a calibração; não foi aplicada escala única.`);
+      scale = calibrateScale(fitted.pixelsPerMetre, 1, 'known_measurement');
+    } else scale = calibrateScale(measurements[0]!.pixelDistance, measurements[0]!.realDistanceMetres, 'known_measurement');
     const detected = detectCandidateIntersections(candidates);
     const vectorModel = buildPlanVectorModel(candidates, { tolerancePx: Math.max(6, Math.min(imageInfo.width, imageInfo.height) * 0.008), imageSize: { width: imageInfo.width, height: imageInfo.height } });
     const selectedRegionCandidates = vectorModel.regions.filter((region) => selectedRegions.has(region.id));
     const selectedRegionBoundaryIds = new Set(selectedRegionCandidates.flatMap((region) => region.boundaryCandidateIds));
     const candidateIds = [...selectedCandidates].filter((id) => !selectedRegionBoundaryIds.has(id));
     const semanticLinks = (semanticMap?.links ?? []).filter((link) => link.review.state === 'accepted' && selectedRegions.has(link.regionId)).map((link) => ({ regionId: link.regionId, elementId: link.documentElementId, label: link.elementLabel }));
-    const next = createPlanScene({ sceneId: `plan-${imageInfo.sha256.slice(0, 12)}`, title: 'Reconstrução geométrica proposta', ...(semanticLinks.length ? { regionSemanticLinks: semanticLinks } : {}), image: imageInfo, ...(sourceDocumentRef ? { technicalDocumentRef: sourceDocumentRef } : {}), calibration: { pixelDistance, realDistanceMetres, evidence, actor: 'local-user-input' }, confirmedCandidateIds: candidateIds, confirmedRegionIds: [...selectedRegions], regions: vectorModel.regions, candidates, wall: { heightM, thicknessM } });
+    const next = createPlanScene({ sceneId: `plan-${imageInfo.sha256.slice(0, 12)}`, title: 'Reconstrução geométrica proposta', ...(semanticLinks.length ? { regionSemanticLinks: semanticLinks } : {}), image: imageInfo, ...(sourceDocumentRef ? { technicalDocumentRef: sourceDocumentRef } : {}), calibration: { pixelsPerMetre: scale.pixelsPerMetre, evidence: calibrationEvidence, actor: 'local-user-input' }, confirmedCandidateIds: candidateIds, confirmedRegionIds: [...selectedRegions], regions: vectorModel.regions, candidates, wall: { heightM, thicknessM } });
     transaction = next; if (semanticMap) { semanticMap = resolveSemanticSceneLinks(semanticMap, next.scene); refreshSemanticPanel(); } preview = undefined; compoundPreview = undefined; compoundPreviewBaseRevision = undefined; compare = false; selectedId = undefined; currentViewMode = 'compare'; persistScene();
     // animateBuild owns the camera for the construction sequence and computes
     // its framing from the committed geometry. A subsequent fit would cancel it.
@@ -821,6 +893,11 @@ $('#front-view').addEventListener('click', () => fitScene('front'));
 $('#iso-view').addEventListener('click', () => fitScene('isometric'));
 $('#toggle-reference').addEventListener('click', () => { visibleReference = !visibleReference; $('#toggle-reference').setAttribute('aria-pressed', String(visibleReference)); updateReferenceView(); });
 $('#source-toggle').addEventListener('click', () => { const panel = $('#source-panel'); const collapsed = panel.classList.toggle('source-collapsed'); $('#source-toggle').textContent = collapsed ? '+' : '−'; $('#source-toggle').setAttribute('aria-expanded', String(!collapsed)); $('#source-toggle').setAttribute('aria-label', collapsed ? 'Expandir referência' : 'Recolher referência'); });
+$('#evidence-expand').addEventListener('click', () => {
+  const expanded = $('#source-panel').classList.toggle('evidence-expanded');
+  $('#evidence-expand').setAttribute('aria-expanded', String(expanded));
+  $('#evidence-expand').textContent = expanded ? 'Recolher debugger' : 'Ampliar debugger de evidência';
+});
 $('#clear-focus').addEventListener('click', () => selectNode(undefined));
 
 function candidateWallEdit(node: Node, length: number, height: number, thickness: number, x: number, z: number, actor = 'local-user-input'): SceneTransaction {

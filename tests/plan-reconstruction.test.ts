@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  buildPlanVectorModel, calibrateScale, candidateToWall, consolidateWallCandidates, countClosedCandidateContours, detectCandidateIntersections, detectOrthogonalRoomCandidates, detectWallCandidates,
-  mergeWallCandidates, splitWallCandidate, traceWallCandidate, type PixelRaster,
+  buildPlanVectorModel, calibrateScale, calibrateScaleFromMeasurements, candidateToWall, consolidateWallCandidates, countClosedCandidateContours, detectCandidateIntersections, detectOrthogonalRoomCandidates, detectWallCandidates, detectWallCandidatesDetailed,
+  mergeWallCandidates, preparePlanRaster, splitWallCandidate, traceWallCandidate, type PixelRaster,
 } from '../src/plan-reconstruction';
 import { addOpeningToScene, createPlanScene, editOpeningInScene, editWallInScene, removeWallFromScene, saveAndRestoreScene, sceneWallLength } from '../src/plan-scene';
 import { buildThreePlanGroup } from '../src/plan-three-adapter';
@@ -81,6 +81,20 @@ describe('plan reconstruction geometry', () => {
     expect(candidates.some(({ orientation }) => orientation === 'horizontal')).toBe(true);
     expect(candidates.some(({ orientation }) => orientation === 'vertical')).toBe(true);
     expect(candidates.every(({ confidence, thicknessPx }) => confidence > 0 && thicknessPx > 0)).toBe(true);
+    const detailed = detectWallCandidatesDetailed(raster(140, 100, [[10, 20, 115, 24], [35, 24, 39, 82]]), { minimumLengthPx: 30 });
+    expect(detailed.raw.length).toBeGreaterThanOrEqual(detailed.fused.length);
+    expect(detailed.fused.every((candidate) => (candidate.sourceCandidateIds?.length ?? 0) > 0)).toBe(true);
+  });
+
+  it('prepares a cropped, deskewed, annotation-masked analysis raster and maps detections to the untouched source', () => {
+    const source = raster(12, 10, [[3, 3, 8, 3], [5, 5, 5, 8]]);
+    const prepared = preparePlanRaster(source, { crop: { x: 2, y: 2, width: 8, height: 7 }, deskewDegrees: 5, annotationMasks: [{ x: 1, y: 1, width: 2, height: 2 }] });
+    expect(prepared.raster.width).toBeGreaterThan(8);
+    expect(prepared.raster.height).toBeGreaterThan(7);
+    expect(prepared.toSource({ x: (prepared.raster.width - 1) / 2, y: (prepared.raster.height - 1) / 2 })).toMatchObject({ x: 5.5, y: 5 });
+    expect(prepared.raster.grayscale.some((value) => value === 255)).toBe(true);
+    expect(source.grayscale[3 * source.width + 3]).toBe(0);
+    expect(() => preparePlanRaster(source, { crop: { x: 8, y: 8, width: 8, height: 8 } })).toThrow('fora dos limites');
   });
 
   it('allows faint lines to be proposed at a higher threshold without confirming them as walls', () => {
@@ -190,6 +204,49 @@ describe('plan reconstruction geometry', () => {
     expect(wall.thickness).toBeCloseTo(0.16);
   });
 
+  it('fits multiple dimensions and blocks conflicting printed scales with per-measurement residuals', () => {
+    const consistent = calibrateScaleFromMeasurements([
+      { id: 'north', pixelDistance: 1000, realDistanceMetres: 10, evidence: 'dimension line north' },
+      { id: 'west', pixelDistance: 500, realDistanceMetres: 5, evidence: 'dimension line west' },
+      { id: 'inner', pixelDistance: 250, realDistanceMetres: 2.5, evidence: 'dimension line interior' },
+    ]);
+    expect(consistent.accepted).toBe(true);
+    expect(consistent.pixelsPerMetre).toBeCloseTo(100);
+    expect(consistent.maxRelativeError).toBeCloseTo(0);
+    const conflicting = calibrateScaleFromMeasurements([
+      { id: 'north-print', pixelDistance: 1532.9, realDistanceMetres: 15.3289, evidence: '50 ft 3.5 in printed dimension' },
+      { id: 'south-print', pixelDistance: 1532.9, realDistanceMetres: 15.5448, evidence: '51 ft printed dimension' },
+    ]);
+    expect(conflicting.accepted).toBe(false);
+    expect(conflicting.scaleSpreadRelative).toBeGreaterThan(0.01);
+    expect(conflicting.residuals).toHaveLength(2);
+    expect(() => calibrateScaleFromMeasurements([{ id: 'one', pixelDistance: 20, realDistanceMetres: 2, evidence: 'only one' }])).toThrow();
+  });
+
+  it('diagnoses rejected closed faces and marks composite faces crossing a supported partition', () => {
+    const lowQuality = buildPlanVectorModel([
+      traceWallCandidate('tiny-a', { x: 10, y: 10 }, { x: 15, y: 10 }, 3),
+      traceWallCandidate('tiny-b', { x: 15, y: 10 }, { x: 15, y: 15 }, 3),
+      traceWallCandidate('tiny-c', { x: 15, y: 15 }, { x: 10, y: 15 }, 3),
+      traceWallCandidate('tiny-d', { x: 10, y: 15 }, { x: 10, y: 10 }, 3),
+      traceWallCandidate('large-top', { x: 0, y: 0 }, { x: 200, y: 0 }, 3),
+      traceWallCandidate('large-right', { x: 200, y: 0 }, { x: 200, y: 200 }, 3),
+      traceWallCandidate('large-bottom', { x: 200, y: 200 }, { x: 0, y: 200 }, 3),
+      traceWallCandidate('large-left', { x: 0, y: 200 }, { x: 0, y: 0 }, 3),
+    ], { tolerancePx: 1 });
+    expect(lowQuality.regions.some((region) => region.eligibility === 'low_quality_candidate' && region.rejectionReasons?.includes('area_below_minimum'))).toBe(true);
+    const walls = [
+      traceWallCandidate('top', { x: 10, y: 10 }, { x: 190, y: 10 }, 6),
+      traceWallCandidate('bottom', { x: 10, y: 110 }, { x: 190, y: 110 }, 6),
+      traceWallCandidate('left', { x: 10, y: 10 }, { x: 10, y: 110 }, 6),
+      traceWallCandidate('right', { x: 190, y: 10 }, { x: 190, y: 110 }, 6),
+      traceWallCandidate('partition', { x: 10, y: 10 }, { x: 150, y: 10 }, 6),
+      traceWallCandidate('partition-lower', { x: 10, y: 60 }, { x: 150, y: 60 }, 6),
+    ];
+    const faces = detectOrthogonalRoomCandidates(walls, { width: 240, height: 140 }, { snapTolerancePx: 3 });
+    expect(faces.some((region) => region.eligibility === 'low_quality_candidate' && region.rejectionReasons?.includes('crosses_supported_partition'))).toBe(true);
+  });
+
   it('creates, edits, recalculates dependent openings, and persists a calibrated spatial_scene.v1 transaction', () => {
     const candidates = detectWallCandidates(raster(140, 100, [[10, 20, 115, 24]]), { minimumLengthPx: 30 });
     const selected = candidates[0]!;
@@ -199,6 +256,12 @@ describe('plan reconstruction geometry', () => {
       confirmedCandidateIds: [selected.id], candidates, wall: { heightM: 2.8, thicknessM: 0.2 }, recordedAt: '2026-10-31T00:00:00.000Z',
     });
     const wallId = `wall-${selected.id}`;
+    const fromMultiScale = createPlanScene({
+      sceneId: 'plan-home-multiscale', title: 'Calibração multi-cota', image: { sha256: 'b'.repeat(64), width: 140, height: 100 },
+      calibration: { pixelsPerMetre: 20, evidence: 'least-squares fit from multiple reviewed dimensions', actor: 'reviewer' },
+      confirmedCandidateIds: [selected.id], candidates, wall: { heightM: 2.8, thicknessM: 0.2 }, recordedAt: '2026-10-31T00:00:00.000Z',
+    });
+    expect(fromMultiScale.scene.imageWorldMapping?.pixelToWorldXZ[0]).toBeCloseTo(0.05);
     expect(initial.scene.schema).toBe('spatial_scene.v1');
     expect(initial.scene.nodes[0]?.component?.properties.sourceOrigin?.value).toBe('automatic_detection');
     expect(initial.scene.nodes[0]?.component?.properties.sourcePixelSegment?.provenance.validation).toBe('unreviewed');

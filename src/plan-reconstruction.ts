@@ -1,5 +1,6 @@
 export type Point2 = { x: number; y: number };
 export type PixelRaster = { width: number; height: number; grayscale: Uint8Array };
+export type RasterPreparation = { raster: PixelRaster; crop: { x: number; y: number; width: number; height: number }; deskewDegrees: number; toSource(point: Point2): Point2 };
 export type PixelWallCandidate = {
   id: string;
   orientation: 'horizontal' | 'vertical' | 'diagonal';
@@ -30,6 +31,7 @@ export type PlanRegionCandidate = {
   eligibility: 'construction_candidate' | 'low_quality_candidate';
   confidence: number;
   evidence: string[];
+  rejectionReasons?: string[];
   topologyMethod?: 'closed_segment_graph' | 'orthogonal_wall_support';
   label?: never;
 };
@@ -46,12 +48,71 @@ export type PlanVectorModel = {
   limitations: string[];
 };
 
+export type ScaleMeasurement = { id: string; pixelDistance: number; realDistanceMetres: number; evidence: string };
+export type ScaleMeasurementResidual = ScaleMeasurement & { estimatedDistanceMetres: number; relativeError: number };
+export type MultiScaleCalibration = { pixelsPerMetre: number; residuals: ScaleMeasurementResidual[]; maxRelativeError: number; rmsRelativeError: number; scaleSpreadRelative: number; accepted: boolean; tolerance: number };
+
+/** Fit one isotropic image scale by least squares. Conflicting dimensions remain visible and block calibration. */
+export function calibrateScaleFromMeasurements(measurements: ScaleMeasurement[], maximumRelativeError = 0.01): MultiScaleCalibration {
+  if (measurements.length < 2 || !Number.isFinite(maximumRelativeError) || maximumRelativeError < 0 || maximumRelativeError > 0.25) throw new Error('A calibração multi-cota exige pelo menos duas medidas e tolerância válida.');
+  const ids = new Set<string>();
+  for (const measurement of measurements) {
+    if (!measurement.id.trim() || ids.has(measurement.id) || !Number.isFinite(measurement.pixelDistance) || measurement.pixelDistance <= 0 || !Number.isFinite(measurement.realDistanceMetres) || measurement.realDistanceMetres <= 0 || !measurement.evidence.trim()) throw new Error('Medida de calibração inválida ou sem proveniência.');
+    ids.add(measurement.id);
+  }
+  const numerator = measurements.reduce((sum, item) => sum + item.pixelDistance * item.realDistanceMetres, 0);
+  const denominator = measurements.reduce((sum, item) => sum + item.realDistanceMetres ** 2, 0);
+  const pixelsPerMetre = numerator / denominator;
+  const residuals = measurements.map((item) => {
+    const estimatedDistanceMetres = item.pixelDistance / pixelsPerMetre;
+    return { ...item, estimatedDistanceMetres, relativeError: (estimatedDistanceMetres - item.realDistanceMetres) / item.realDistanceMetres };
+  });
+  const maxRelativeError = Math.max(...residuals.map((item) => Math.abs(item.relativeError)));
+  const rmsRelativeError = Math.sqrt(residuals.reduce((sum, item) => sum + item.relativeError ** 2, 0) / residuals.length);
+  const impliedScales = measurements.map((item) => item.pixelDistance / item.realDistanceMetres).sort((a, b) => a - b);
+  const medianScale = impliedScales[Math.floor(impliedScales.length / 2)]!;
+  const scaleSpreadRelative = (impliedScales.at(-1)! - impliedScales[0]!) / medianScale;
+  return { pixelsPerMetre, residuals, maxRelativeError, rmsRelativeError, scaleSpreadRelative, accepted: maxRelativeError <= maximumRelativeError && scaleSpreadRelative <= maximumRelativeError, tolerance: maximumRelativeError };
+}
+
 const DEFAULT_THRESHOLD = 112;
 
 function assertRaster(raster: PixelRaster): void {
   if (!Number.isInteger(raster.width) || !Number.isInteger(raster.height) || raster.width < 1 || raster.height < 1 || raster.grayscale.length !== raster.width * raster.height) {
     throw new Error('Raster de planta inválido.');
   }
+}
+
+/** Crop and deskew a working raster while retaining an exact derived-to-source coordinate map. */
+export function preparePlanRaster(raster: PixelRaster, options: { crop?: { x: number; y: number; width: number; height: number }; deskewDegrees?: number; annotationMasks?: Array<{ x: number; y: number; width: number; height: number }> } = {}): RasterPreparation {
+  assertRaster(raster);
+  const crop = options.crop ?? { x: 0, y: 0, width: raster.width, height: raster.height };
+  if (![crop.x, crop.y, crop.width, crop.height].every(Number.isInteger) || crop.x < 0 || crop.y < 0 || crop.width < 2 || crop.height < 2 || crop.x + crop.width > raster.width || crop.y + crop.height > raster.height) throw new Error('Recorte fora dos limites da imagem original.');
+  const deskewDegrees = options.deskewDegrees ?? 0;
+  if (!Number.isFinite(deskewDegrees) || Math.abs(deskewDegrees) > 15) throw new Error('A correcção de inclinação deve estar entre -15° e 15°.');
+  const work = new Uint8Array(crop.width * crop.height);
+  for (let y = 0; y < crop.height; y += 1) work.set(raster.grayscale.subarray((crop.y + y) * raster.width + crop.x, (crop.y + y) * raster.width + crop.x + crop.width), y * crop.width);
+  for (const mask of options.annotationMasks ?? []) {
+    if (![mask.x, mask.y, mask.width, mask.height].every(Number.isInteger) || mask.x < 0 || mask.y < 0 || mask.width < 1 || mask.height < 1 || mask.x + mask.width > crop.width || mask.y + mask.height > crop.height) throw new Error('Máscara de anotação fora dos limites do recorte.');
+    for (let y = mask.y; y < mask.y + mask.height; y += 1) work.fill(255, y * crop.width + mask.x, y * crop.width + mask.x + mask.width);
+  }
+  const theta = -deskewDegrees * Math.PI / 180;
+  const cos = Math.cos(theta); const sin = Math.sin(theta);
+  const width = deskewDegrees === 0 ? crop.width : Math.ceil(Math.abs(crop.width * cos) + Math.abs(crop.height * sin));
+  const height = deskewDegrees === 0 ? crop.height : Math.ceil(Math.abs(crop.height * cos) + Math.abs(crop.width * sin));
+  const inputCenter = { x: (crop.width - 1) / 2, y: (crop.height - 1) / 2 };
+  const outputCenter = { x: (width - 1) / 2, y: (height - 1) / 2 };
+  const output = new Uint8Array(width * height).fill(255);
+  const toSource = (point: Point2): Point2 => {
+    const dx = point.x - outputCenter.x; const dy = point.y - outputCenter.y;
+    return { x: inputCenter.x + cos * dx + sin * dy + crop.x, y: inputCenter.y - sin * dx + cos * dy + crop.y };
+  };
+  for (let y = 0; y < height; y += 1) for (let x = 0; x < width; x += 1) {
+    const source = toSource({ x, y });
+    const localX = Math.round(source.x - crop.x); const localY = Math.round(source.y - crop.y);
+    if (localX >= 0 && localX < crop.width && localY >= 0 && localY < crop.height) output[y * width + x] = work[localY * crop.width + localX]!;
+  }
+  return { raster: { width, height, grayscale: output }, crop: { ...crop }, deskewDegrees, toSource };
 }
 
 type LineCluster = { firstLine: number; lastLine: number; starts: number[]; ends: number[] };
@@ -118,18 +179,23 @@ function candidatesOnAxis(raster: PixelRaster, orientation: AxisOrientation, thr
   });
 }
 
-export function detectWallCandidates(raster: PixelRaster, options: { threshold?: number; minimumLengthPx?: number; gapTolerancePx?: number } = {}): PixelWallCandidate[] {
+export function detectWallCandidatesDetailed(raster: PixelRaster, options: { threshold?: number; minimumLengthPx?: number; gapTolerancePx?: number } = {}): { raw: PixelWallCandidate[]; fused: PixelWallCandidate[] } {
   assertRaster(raster);
   const threshold = options.threshold ?? DEFAULT_THRESHOLD;
   const minimumLength = options.minimumLengthPx ?? Math.max(18, Math.floor(Math.min(raster.width, raster.height) * 0.07));
   const gapTolerance = options.gapTolerancePx ?? 2;
   if (!Number.isFinite(threshold) || threshold < 0 || threshold > 255 || minimumLength < 1 || gapTolerance < 0) throw new Error('Parâmetros de detecção inválidos.');
 
-  const candidates = [
+  const raw = [
     ...candidatesOnAxis(raster, 'horizontal', threshold, minimumLength, gapTolerance),
     ...candidatesOnAxis(raster, 'vertical', threshold, minimumLength, gapTolerance),
   ];
-  return consolidateWallCandidates(candidates).sort((a, b) => a.start.y - b.start.y || a.start.x - b.start.x || a.orientation.localeCompare(b.orientation)).map((candidate, index) => ({ ...candidate, id: `line-${index}`, origin: 'automatic_detection' }));
+  const fused = consolidateWallCandidates(raw).sort((a, b) => a.start.y - b.start.y || a.start.x - b.start.x || a.orientation.localeCompare(b.orientation)).map((candidate, index) => ({ ...candidate, id: `line-${index}`, origin: 'automatic_detection' as const }));
+  return { raw: raw.map((candidate) => ({ ...candidate, origin: 'automatic_detection' })), fused };
+}
+
+export function detectWallCandidates(raster: PixelRaster, options: { threshold?: number; minimumLengthPx?: number; gapTolerancePx?: number } = {}): PixelWallCandidate[] {
+  return detectWallCandidatesDetailed(raster, options).fused;
 }
 
 /** Merge overlapping/nearby collinear detections and suppress near-identical duplicates.
@@ -298,7 +364,7 @@ export function detectOrthogonalRoomCandidates(candidates: PixelWallCandidate[],
   const horizontal = axisSupports(candidates, 'horizontal', tolerance);
   const vertical = axisSupports(candidates, 'vertical', tolerance);
   const minimumSide = minDimension * 0.09;
-  const rectangles: Array<{ x0: number; y0: number; x1: number; y1: number; edges: Array<{ ratio: number; candidateIds: string[]; meanThickness: number }>; score: number }> = [];
+  const rectangles: Array<{ x0: number; y0: number; x1: number; y1: number; edges: Array<{ ratio: number; candidateIds: string[]; meanThickness: number }>; score: number; rejected?: { candidateIds: string[]; vertices: Point2[]; reason: string } }> = [];
   for (let topIndex = 0; topIndex < horizontal.length; topIndex += 1) for (let bottomIndex = topIndex + 1; bottomIndex < horizontal.length; bottomIndex += 1) {
     const top = horizontal[topIndex]!; const bottom = horizontal[bottomIndex]!; const height = bottom.coordinate - top.coordinate;
     if (height < minimumSide || height > imageSize.height * 0.78) continue;
@@ -310,10 +376,23 @@ export function detectOrthogonalRoomCandidates(candidates: PixelWallCandidate[],
         supportCoverage(left, top.coordinate, bottom.coordinate), supportCoverage(right, top.coordinate, bottom.coordinate),
       ];
       if (edges.some((edge) => edge.ratio < minimumCoverage || edge.candidateIds.length === 0)) continue;
-      const partitionCoverage = minimumCoverage * 0.83;
+      const partitionCoverage = Math.max(0.45, minimumCoverage);
       const compositeHorizontal = horizontal.some((axis, index) => index !== topIndex && index !== bottomIndex && axis.coordinate > top.coordinate + tolerance && axis.coordinate < bottom.coordinate - tolerance && supportCoverage(axis, left.coordinate, right.coordinate).ratio >= partitionCoverage);
       const compositeVertical = vertical.some((axis, index) => index !== leftIndex && index !== rightIndex && axis.coordinate > left.coordinate + tolerance && axis.coordinate < right.coordinate - tolerance && supportCoverage(axis, top.coordinate, bottom.coordinate).ratio >= partitionCoverage);
-      if (compositeHorizontal || compositeVertical) continue;
+      if (compositeHorizontal || compositeVertical) {
+        const candidateIds = [...new Set([
+          ...supportCoverage(top, left.coordinate, right.coordinate).candidateIds,
+          ...supportCoverage(bottom, left.coordinate, right.coordinate).candidateIds,
+          ...supportCoverage(left, top.coordinate, bottom.coordinate).candidateIds,
+          ...supportCoverage(right, top.coordinate, bottom.coordinate).candidateIds,
+        ])].sort();
+        const vertices = [{ x: left.coordinate, y: top.coordinate }, { x: right.coordinate, y: top.coordinate }, { x: right.coordinate, y: bottom.coordinate }, { x: left.coordinate, y: bottom.coordinate }];
+        rectangles.push({ x0: left.coordinate, y0: top.coordinate, x1: right.coordinate, y1: bottom.coordinate, edges: [
+          supportCoverage(top, left.coordinate, right.coordinate), supportCoverage(bottom, left.coordinate, right.coordinate),
+          supportCoverage(left, top.coordinate, bottom.coordinate), supportCoverage(right, top.coordinate, bottom.coordinate),
+        ], score: 0, rejected: { candidateIds, vertices, reason: 'A face atravessa uma divisória interior com suporte visual contínuo.' } });
+        continue;
+      }
       const cornerSupport = ([
         [top, left.coordinate], [top, right.coordinate], [bottom, left.coordinate], [bottom, right.coordinate],
       ] as Array<[AxisSupport, number]>).filter(([axis, point]) => {
@@ -327,6 +406,7 @@ export function detectOrthogonalRoomCandidates(candidates: PixelWallCandidate[],
   rectangles.sort((a, b) => b.score - a.score || a.x0 - b.x0 || a.y0 - b.y0);
   const selected: typeof rectangles = [];
   for (const item of rectangles) {
+    if (item.rejected) continue;
     const overlap = selected.some((prior) => {
       const intersectionWidth = Math.max(0, Math.min(item.x1, prior.x1) - Math.max(item.x0, prior.x0));
       const intersectionHeight = Math.max(0, Math.min(item.y1, prior.y1) - Math.max(item.y0, prior.y0));
@@ -336,7 +416,7 @@ export function detectOrthogonalRoomCandidates(candidates: PixelWallCandidate[],
     });
     if (!overlap) selected.push(item);
   }
-  return selected.map((item) => {
+  const accepted = selected.map((item) => {
     const candidateIds = [...new Set(item.edges.flatMap((edge) => edge.candidateIds))].sort();
     const sourceKinds = candidates.filter((candidate) => candidateIds.includes(candidate.id)).map((candidate) => candidate.origin ?? 'automatic_detection');
     const manualCount = sourceKinds.filter((origin) => origin !== 'automatic_detection').length;
@@ -352,6 +432,13 @@ export function detectOrthogonalRoomCandidates(candidates: PixelWallCandidate[],
       evidence: [`Quatro bordos apoiados por segmentos detectados; suporte médio ${Math.round(item.score * 100)}%.`, `Tolerância de alinhamento ${tolerance.toFixed(1)} px, dependente da resolução.`, manualCount ? `${manualCount} candidato(s) manual(is) participam da proposta.` : 'Proposta derivada apenas de candidatos automáticos.', 'Rectângulo simples; paredes e função da divisão continuam por confirmar.'],
     };
   });
+  const rejected = rectangles.flatMap((item) => item.rejected ? [{
+    id: `rejected-crossing-${Math.round(item.x0)}-${Math.round(item.y0)}-${Math.round(item.x1)}-${Math.round(item.y1)}`,
+    boundaryCandidateIds: item.rejected.candidateIds, vertices: item.rejected.vertices,
+    areaPx2: (item.x1 - item.x0) * (item.y1 - item.y0), validation: 'unreviewed' as const,
+    eligibility: 'low_quality_candidate' as const, confidence: 0, evidence: [item.rejected.reason], rejectionReasons: ['crosses_supported_partition'],
+  }] : []);
+  return [...accepted, ...rejected];
 }
 
 export function buildPlanVectorModel(candidates: PixelWallCandidate[], options: { tolerancePx?: number; scale?: ScaleCalibration; imageSize?: { width: number; height: number } } = {}): PlanVectorModel {
@@ -450,10 +537,17 @@ export function buildPlanVectorModel(candidates: PixelWallCandidate[], options: 
     const boxArea = Math.max(1, (Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys)));
     const compactness = Math.min(1, face.signedArea / boxArea);
     const relativeArea = face.signedArea / drawingArea;
-    const eligible = relativeArea >= 0.008 && compactness >= 0.12 && face.edgeIds.length >= 4 && simplePolygon(vertices, tolerance);
+    const validShape = simplePolygon(vertices, tolerance);
+    const rejectionReasons = [
+      ...(relativeArea < 0.008 ? ['area_below_minimum'] : []),
+      ...(compactness < 0.12 ? ['low_compactness'] : []),
+      ...(face.edgeIds.length < 4 ? ['too_few_boundary_edges'] : []),
+      ...(!validShape ? ['self_intersection_or_degenerate_edge'] : []),
+    ];
+    const eligible = rejectionReasons.length === 0;
     const sources = face.edgeIds.map((id) => walls.find((wall) => wall.id === id)).filter((wall): wall is NonNullable<typeof wall> => !!wall);
     const manual = sources.filter((wall) => wall.origin !== 'automatic_detection').length;
-    const evidence = [`Fecho planar derivado de ${face.edgeIds.length} segmentos da imagem original.`, `${projectedJunctions.filter((item) => face.edgeIds.includes(item.firstId) || face.edgeIds.includes(item.secondId)).length} junções T aproximadas dentro de ${tolerance.toFixed(1)} px.`, manual ? `${manual} segmento(s) têm origem manual.` : 'Todos os segmentos de contorno têm origem na detecção automática.', eligible ? 'Área relativa e forma compatíveis com uma região interior candidata.' : 'Forma/área fora dos critérios heurísticos de proposta espacial.'];
+    const evidence = [`Fecho planar derivado de ${face.edgeIds.length} segmentos da imagem original.`, `${projectedJunctions.filter((item) => face.edgeIds.includes(item.firstId) || face.edgeIds.includes(item.secondId)).length} junções T aproximadas dentro de ${tolerance.toFixed(1)} px.`, manual ? `${manual} segmento(s) têm origem manual.` : 'Todos os segmentos de contorno têm origem na detecção automática.', eligible ? 'Área relativa e forma compatíveis com uma região interior candidata.' : `Rejeitada: ${rejectionReasons.join(', ')}.`];
     return {
     id: `region-${index + 1}`,
     boundaryCandidateIds: face.edgeIds,
@@ -464,6 +558,7 @@ export function buildPlanVectorModel(candidates: PixelWallCandidate[], options: 
     eligibility: eligible ? 'construction_candidate' as const : 'low_quality_candidate' as const,
     confidence: Math.round(Math.min(0.95, Math.max(0.15, compactness * 0.45 + Math.min(relativeArea * 4, 0.5))) * 100) / 100,
     evidence,
+    ...(rejectionReasons.length ? { rejectionReasons } : {}),
   };
   });
   const regions = options.imageSize

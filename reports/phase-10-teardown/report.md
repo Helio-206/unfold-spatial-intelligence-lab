@@ -150,4 +150,35 @@ UNFOLD_CDP_PORT=9227 UNFOLD_PLAN_FIXTURE=reports/phase-10-teardown/fixtures/amou
 python3 reports/phase-10-teardown/create-contact-sheet.py
 ```
 
-The two live E2E commands use 3 provider calls total (1 spatial-agent call, then 2 image stages). Their saved evidence must not be reported as successful geometry unless all downstream assertions pass. Current implementation changes are uncommitted unless the repository checkpoint below says otherwise.
+The two live E2E commands above used 3 provider calls total (1 spatial-agent call, then 2 image stages). Their saved evidence must not be reported as successful geometry unless all downstream assertions pass. The later Spatial Evidence Debugger increment and its checkpoint are recorded below.
+
+## Spatial Evidence Debugger increment (2026-11-01)
+
+This increment attacks raster evidence extraction and its diagnostics. It does not close Case B.
+
+- Added crop, deskew (±15°) and user-selected rectangular annotation masks on an analysis-only raster. The original image stays byte-identical. A derived-to-source coordinate map returns every detected endpoint to the original pixel frame before topology or Scene Graph construction.
+- Added a raw-vs-fused line overlay. Browser evidence for the unprocessed HABS image: **210 raster segments → 162 fused candidates**. Fused candidate IDs retain contributing source segment IDs.
+- Added individual face rejection codes (`area_below_minimum`, `low_compactness`, `too_few_boundary_edges`, `self_intersection_or_degenerate_edge`, `crosses_supported_partition`) and displays the rejected polygon, IDs, intersections/junction type, ambiguous opening reason, and source line provenance in the overlay/debug list. Automatic regions and walls are no longer preselected for construction.
+- Multi-dimension calibration fits pixels/metre by least squares and reports each residual, RMS, maximum residual, and inter-scale spread. Construction is blocked when either residual or scale spread exceeds 1%. The browser E2E used two explicitly synthetic contradictory inputs (100 px for 10.0 m, then 100 px for 10.5 m): maximum residual 2.56%, inter-scale spread 4.76%, and the UI blocked the build. These values are a test fixture, not HABS measurements.
+- HABS diagnostic run, viewport 1440×1000, DPR 1: 210 raw raster segments fused to 162 candidates, 110 individually listed rejected faces/rectangles, 151 intersection/snap markers, 9 ambiguous opening candidates, 4 unreviewed orthogonal proposals, and zero exact cycles. None was preselected or committed. The four proposal outlines align visually with labelled Rooms A–D in the source; the central hall/corridor remains unresolved, and semantic associations, dimensions, doors and adjacency are not yet accepted.
+- Applying crop `(600,600,2900,2100)` and deskew `0.5°` retained the original 3700×2996 raster and mapped coordinates back to the original frame. It raised the candidate count from 162 to **209**. No precision gain was established; preprocessing is an operator-controlled option and these settings should not be treated as a recommended HABS crop.
+- No Meta request was made. Existing Muse Spark output was reused; it supplies room semantics/dimension ambiguity, not wall coordinates. The actual HABS cotas were not calibrated in this browser run, so the two prior >1% dimension errors remain unresolved. Door-to-wall placement and complete room adjacency are not verified.
+- Screenshots and machine-readable result are under `evidence/case-b-debugger/`: `01-uploaded-source.png`, `02-detected-regions.png`, `03-expanded-evidence-debugger.png`, `04-preprocessed-evidence-overlay.png`, `case-b-detection.json`. The HABS source credit and source SHA remain recorded above.
+
+Verification for this increment:
+
+- Focused geometry tests: **PASS**, 15 tests in `tests/plan-reconstruction.test.ts`.
+- Full unit suite: **PASS**, 43 files / 248 tests.
+- Production build: **PASS**, existing 586.26 kB OrbitControls chunk warning remains.
+- Browser E2E: **PASS_CANDIDATES_ONLY**, Chromium DevTools, 1440×1000, DPR 1, no browser errors; checks raw/fused lines, 110 rejection diagnostics, expanded debugger width of 1080 CSS px, crop/deskew coordinate mapping, unchanged source dimensions, and inconsistent scale refusal. It does **not** pass Case B reconstruction.
+- Real Meta inference: **NOT RUN** in this increment; no newly verified quota/call budget was available.
+- Case B accepted room polygons, openings, dimensional calibration, wall edit/undo against a completed Case B model: **BLOCKED** by unresolved raster segmentation and the absent human-reviewed geometry associations.
+
+Reproduction for this increment:
+
+```sh
+npm test -- --reporter=dot
+npm run build
+npm run dev -- --host 127.0.0.1 --port 5192 --strictPort
+UNFOLD_E2E_URL=http://127.0.0.1:5192 UNFOLD_CDP_PORT=9227 UNFOLD_EVIDENCE_DIR=reports/phase-10-teardown/evidence/case-b-debugger node tests/e2e/phase-10-case-b-detection.cdp.mjs
+```

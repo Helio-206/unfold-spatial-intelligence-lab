@@ -16,7 +16,10 @@ export type PlanSceneOptions = {
   title: string;
   image: { sha256: string; width: number; height: number };
   technicalDocumentRef?: { documentId: string; sha256: string };
-  calibration: { pixelDistance: number; realDistanceMetres: number; evidence: string; actor: string };
+  calibration: { evidence: string; actor: string } & (
+    | { pixelDistance: number; realDistanceMetres: number; pixelsPerMetre?: never }
+    | { pixelsPerMetre: number; pixelDistance?: never; realDistanceMetres?: never }
+  );
   confirmedCandidateIds: string[];
   confirmedRegionIds?: string[];
   /** Accepted semantic links (semantic_spatial_map.v1). Labels only; never geometry. */
@@ -98,7 +101,9 @@ function wallNode(candidate: PixelWallCandidate, options: PlanSceneOptions, reco
 export function createPlanScene(options: PlanSceneOptions): SceneTransaction {
   const recordedAt = options.recordedAt ?? new Date().toISOString();
   if (!options.sceneId || !options.title || !options.calibration.actor.trim() || !options.calibration.evidence.trim()) throw new Error('Identificação e confirmação explícita da escala são obrigatórias.');
-  const scale = calibrateScale(options.calibration.pixelDistance, options.calibration.realDistanceMetres, 'known_measurement');
+  const scale = options.calibration.pixelsPerMetre !== undefined
+    ? { pixelsPerMetre: options.calibration.pixelsPerMetre, source: 'known_measurement' as const }
+    : calibrateScale(options.calibration.pixelDistance, options.calibration.realDistanceMetres, 'known_measurement');
   assertPositive(options.wall.heightM, 'Altura');
   assertPositive(options.wall.thicknessM, 'Espessura');
   if (!/^[a-f0-9]{64}$/i.test(options.image.sha256) || !Number.isInteger(options.image.width) || options.image.width <= 0 || !Number.isInteger(options.image.height) || options.image.height <= 0) throw new Error('Identidade ou dimensões da imagem inválidas.');
