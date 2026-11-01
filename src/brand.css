@@ -1,0 +1,8 @@
+/* UNFOLD brand layer: the only place the official design system is imported.
+   tokens.css is the single source of brand tokens (Paper by default, Void via [data-theme="dark"]).
+   Product stylesheets consume these tokens directly; they must not redefine --ink, --line or palette values. */
+@import '../design-system/fonts.css';
+@import '../design-system/tokens.css';
+@import '../design-system/components.css';
+
+html, body { font-family: var(--font-sans); background: var(--surface); color: var(--ink); -webkit-font-smoothing: antialiased; }
