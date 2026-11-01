@@ -1,6 +1,8 @@
 import './brand.css';
+import { applyMotionTokens } from './motion/tokens';
 import './style.css';
 
+applyMotionTokens();
 const app = document.querySelector<HTMLElement>('#app');
 if (!app) throw new Error('Elemento #app não encontrado.');
 

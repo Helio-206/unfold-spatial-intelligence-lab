@@ -21,6 +21,7 @@ import type { TechnicalDocumentV1 } from './technical-document';
 import { cameraFrameAspect, createSpatialCameraView, createSpatialFocusView } from './spatial-camera';
 import { countReconstructionStates, RECONSTRUCTION_STATES, RECONSTRUCTION_STATE_MEANING, reconstructionChip, reconstructionState } from './reconstruction-state';
 import lockupLight from '../design-system/logos/unfold-lockup-on-light.svg';
+import { mountStepsHeader } from './steps-header';
 import './spatial-editor.css';
 
 export type SpatialEditorOptions = { onExit?: () => void; source?: 'accepted-document'; onCommandState?: (state: SpatialCommandState, message: string) => void };
@@ -30,7 +31,7 @@ const acceptedDocumentSource = options.source === 'accepted-document' || new URL
 
 app.innerHTML = `<main class="spatial-lab" data-state="empty" data-theme="dark">
   <div id="spatial-canvas" aria-label="Cena tridimensional editável"></div>
-  <header class="spatial-header" data-theme="light"><a href="/landing/" class="brand" aria-label="UNFOLD — página inicial"><img src="${lockupLight}" alt="UNFOLD — Spatial Intelligence Lab" width="150" height="40"></a><div class="header-tools"><span id="scene-state" class="u-label">SEM CENA</span><button id="open-scene" type="button">Abrir cena</button><input id="scene-file" type="file" accept=".json,application/json" hidden><button id="save-scene" type="button" disabled>Guardar</button><button id="restore-scene" type="button" disabled>Restaurar</button><button id="exit-spatial-editor" class="return-link" type="button">Voltar ao laboratório</button></div></header>
+  <header class="spatial-header" data-theme="light"><a href="/landing/" class="brand" aria-label="UNFOLD — página inicial"><img src="${lockupLight}" alt="UNFOLD — Spatial Intelligence Lab" width="150" height="40"></a><div id="steps-slot" class="steps-slot"></div><div class="header-tools"><span id="scene-state" class="u-label">SEM CENA</span><button id="open-scene" type="button">Abrir cena</button><input id="scene-file" type="file" accept=".json,application/json" hidden><button id="save-scene" type="button" disabled>Guardar</button><button id="restore-scene" type="button" disabled>Restaurar</button><button id="exit-spatial-editor" class="return-link" type="button">Voltar ao laboratório</button></div></header>
   <aside id="source-panel" class="source-panel" data-theme="light" aria-label="Fonte e tracing da planta">
     <div class="panel-heading"><span>01 · documento-fonte</span><button id="source-toggle" type="button" aria-expanded="true" aria-label="Recolher referência">−</button></div>
     <label class="file-pick" for="plan-file"><span>Importar planta</span><small>PNG · JPEG · WebP · até 20 MiB</small><input id="plan-file" type="file" accept="image/png,image/jpeg,image/webp"></label>
@@ -79,6 +80,7 @@ type UiElement = HTMLElement & Pick<HTMLInputElement, 'value'> & Pick<HTMLButton
 const $ = <T extends HTMLElement = UiElement>(selector: string) => app!.querySelector<T>(selector)!;
 /** Escape untrusted labels/ids (document, model or user data) before any innerHTML interpolation. */
 const escapeHtml = (value: string): string => value.replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]!));
+const stepsHeader = mountStepsHeader($('#steps-slot'), 'unfold');
 const status = (text: string) => { $('#spatial-status').textContent = text; };
 const scene = new Scene();
 const cssToken = (name: string, fallback: string): string => getComputedStyle(app!).getPropertyValue(name).trim() || fallback;
@@ -1208,7 +1210,7 @@ function cleanup(notifyExit = false): void {
   if (raf) cancelAnimationFrame(raf);
   spatialAgentAbort?.abort(); spatialAgentAbort = undefined;
   cameraTween?.kill(); buildTimeline?.kill();
-  resizeObserver.disconnect();
+  resizeObserver.disconnect(); stepsHeader.destroy();
   window.removeEventListener('beforeunload', onUnload);
   window.removeEventListener('keydown', onEditorKeydown);
   unregisterSpatialCommands?.(); unregisterSpatialCommands = undefined;
