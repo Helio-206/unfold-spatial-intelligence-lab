@@ -10,6 +10,9 @@ switch (window.location.pathname) {
   case '/landing':
     window.location.replace('/landing/');
     break;
+  case '/circuit':
+    void import('./circuit-lab').then(({ mountCircuitLab }) => mountCircuitLab(app));
+    break;
   case '/spatial-editor':
     void import('./spatial-editor').then(({ mountSpatialEditor }) => mountSpatialEditor(app));
     break;

@@ -1,0 +1,65 @@
+/* Circuit lab. Paper surface; the schematic is the centre of the screen and everything else stays small.
+   Colours, type and radii come from the design-system tokens; times and curves from the motion tokens. */
+.circuit-lab { position: fixed; inset: 0; overflow: hidden; background: var(--surface); color: var(--ink); font-family: var(--font-sans); }
+.circuit-lab *, .circuit-lab *::before, .circuit-lab *::after { box-sizing: border-box; }
+.circuit-lab :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.circuit-lab [hidden] { display: none; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.cl-header { position: absolute; z-index: 3; top: var(--space-3); left: var(--space-6); right: var(--space-6); display: flex; align-items: center; justify-content: space-between; min-height: 44px; }
+.cl-brand { display: flex; align-items: center; min-height: 44px; }
+.cl-brand img { display: block; height: 32px; width: auto; }
+#cl-steps { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+.cl-title { color: var(--ink-muted); text-align: right; }
+
+.cl-stage { position: absolute; left: 50%; top: 50%; width: min(1120px, 94vw); transform: translate(-50%, -54%); }
+.cl-stage svg { display: block; width: 100%; height: auto; overflow: visible; }
+.cl-wire { fill: none; stroke: var(--ink); stroke-width: 2; stroke-dasharray: 6 9; stroke-linecap: butt; }
+.is-unknown .cl-wire { stroke: var(--ink-muted); stroke-dasharray: 2 7; opacity: .7; }
+.cl-part { fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; }
+.cl-part.is-unknown { stroke: var(--ink-muted); stroke-dasharray: 5 5; }
+.cl-part-fill { fill: var(--surface-raised); stroke: var(--ink); stroke-width: 2.2; }
+.cl-nodes circle { fill: var(--ink); }
+.cl-ink { fill: var(--ink); font-variant-numeric: tabular-nums; }
+.cl-muted { fill: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.cl-tag { fill: var(--fold-ink); }
+.cl-assume { margin: var(--space-4) 0 0; text-align: center; }
+.cl-trail { position: fixed; right: var(--space-6); top: 84px; text-align: right; display: grid; gap: 4px; color: var(--ink-muted); }
+
+.cl-card { position: absolute; z-index: 4; right: var(--space-6); bottom: 96px; width: 280px; padding: var(--space-4); background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-lg); }
+.cl-card-text { font-size: var(--type-small-size); line-height: var(--type-small-line); margin-bottom: var(--space-3); }
+.cl-card-actions { display: flex; gap: var(--space-2); }
+.cl-card-actions .u-btn { flex: 1; padding: 0 var(--space-3); }
+
+.cl-rev { position: absolute; left: var(--space-6); right: var(--space-6); bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-6); margin: 0; padding: 0; list-style: none; font: 400 var(--type-label-size)/var(--type-label-line) var(--font-mono); color: var(--ink-muted); }
+.cl-rev::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: var(--line); }
+.cl-rev-item { position: relative; display: inline-flex; align-items: center; gap: var(--space-2); padding-right: var(--space-2); background: var(--surface); }
+.cl-rev-item i { width: 10px; height: 10px; border-radius: 2px; border: 1.4px solid var(--ink); background: var(--surface); }
+.cl-rev-item.is-current i { background: var(--ink); }
+.cl-rev-item.is-preview i { border: 1.4px dashed var(--fold); }
+.cl-rev-item.is-preview span { color: var(--fold-ink); }
+
+.cl-pill-wrap { position: absolute; left: 0; right: 0; bottom: 44px; display: flex; justify-content: center; pointer-events: none; }
+.cl-pill { position: relative; width: 320px; padding: 4px 4px 4px var(--space-4); background: var(--surface-raised); border: 1px solid var(--line); border-radius: 14px; pointer-events: auto; }
+.cl-pill.is-open { width: min(560px, 92vw); }
+.cl-more { position: absolute; left: 50%; top: -22px; transform: translateX(-50%); width: 56px; min-height: 44px; border: 0; background: transparent; color: var(--ink-muted); cursor: pointer; font-size: 18px; letter-spacing: 2px; }
+.cl-more:hover { color: var(--ink); }
+.cl-menu { position: absolute; left: 50%; bottom: calc(100% + 20px); transform: translateX(-50%); display: grid; min-width: 240px; padding: var(--space-1); background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-lg); }
+.cl-menu button { min-height: 44px; padding: 0 var(--space-3); border: 0; background: transparent; color: var(--ink); text-align: left; font: inherit; font-size: var(--type-small-size); border-radius: var(--radius-sm); cursor: pointer; }
+.cl-menu button:hover { background: var(--surface-sunken); }
+.cl-form { display: flex; align-items: center; gap: var(--space-2); }
+.cl-form input { flex: 1; min-width: 0; height: 44px; border: 0; background: transparent; color: var(--ink); font: 400 15px/24px var(--font-sans); }
+.cl-form input:focus-visible { outline: none; }
+.cl-pill:focus-within { border-color: var(--ink); }
+.cl-send { width: 44px; height: 44px; border: 0; border-radius: 10px; background: var(--fold); color: var(--on-fold); cursor: pointer; display: grid; place-items: center; }
+.cl-msg { position: absolute; left: 0; right: 0; bottom: calc(100% + 28px); margin: 0; text-align: center; color: var(--ink-muted); pointer-events: none; }
+.cl-msg[data-kind="refused"] { color: var(--fold-ink); }
+.cl-msg:empty { display: none; }
+
+@media (max-width: 700px) {
+  .cl-card { right: var(--space-2); left: var(--space-2); bottom: 120px; width: auto; }
+  .cl-trail { display: none; }
+  .cl-header .cl-title { display: none; }
+  #cl-steps { top: calc(100% + 4px); }
+  .cl-stage { transform: translate(-50%, -60%); }
+}
