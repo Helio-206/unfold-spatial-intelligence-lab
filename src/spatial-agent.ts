@@ -37,7 +37,7 @@ export type SpatialAgentRequestV1 = {
 };
 
 export type SpatialAgentAction = {
-  kind: 'Select' | 'Inspect' | 'Focus' | 'Move' | 'Rotate' | 'Resize' | 'AddOpening' | 'RemoveOpening' | 'Undo' | 'Redo' | 'Save' | 'Restore';
+  kind: 'Select' | 'Inspect' | 'Focus' | 'Move' | 'Rotate' | 'Resize' | 'AddOpening' | 'RemoveOpening' | 'RemoveWall' | 'Undo' | 'Redo' | 'Save' | 'Restore';
   target: { reference: 'selected' | 'label' | 'ordinal' | 'visual_left' | 'visual_right' | 'none'; label: string | null; ordinal: number | null };
   value: number | null;
   valueMode: 'set' | 'increase_by' | 'decrease_by' | null;
@@ -51,10 +51,10 @@ export type SpatialAgentResultV1 =
   | { schema: typeof SPATIAL_AGENT_RESULT_SCHEMA; kind: 'REQUEST_CLARIFICATION'; text: string; basis: 'scene' | 'document' | 'history' | 'general' | 'unknown'; evidenceIds: string[]; question: string; action: null };
 
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
-const ACTIONS = new Set<SpatialAgentAction['kind']>(['Select', 'Inspect', 'Focus', 'Move', 'Rotate', 'Resize', 'AddOpening', 'RemoveOpening', 'Undo', 'Redo', 'Save', 'Restore']);
+const ACTIONS = new Set<SpatialAgentAction['kind']>(['Select', 'Inspect', 'Focus', 'Move', 'Rotate', 'Resize', 'AddOpening', 'RemoveOpening', 'RemoveWall', 'Undo', 'Redo', 'Save', 'Restore']);
 const REFERENCES = new Set<SpatialAgentAction['target']['reference']>(['selected', 'label', 'ordinal', 'visual_left', 'visual_right', 'none']);
 const MODE_CAPABILITIES: Record<SpatialAgentRequestV1['mode'], SpatialAgentAction['kind'][]> = {
-  architecture: ['Select', 'Inspect', 'Focus', 'Move', 'Rotate', 'Resize', 'AddOpening', 'RemoveOpening', 'Undo', 'Redo', 'Save', 'Restore'],
+  architecture: ['Select', 'Inspect', 'Focus', 'Move', 'Rotate', 'Resize', 'AddOpening', 'RemoveOpening', 'RemoveWall', 'Undo', 'Redo', 'Save', 'Restore'],
   mechanical: ['Select', 'Inspect', 'Focus'], electrical: [], general: [],
 };
 const BASE_SCHEMA = {
@@ -148,6 +148,7 @@ export function authorizeSpatialAgentProposal(query: string, action: SpatialAgen
   if (action.target.reference === 'ordinal' && !new RegExp(`\\b(?:parede|porta|janela)\\s+(?:n[ºo.]?\\s*)?${action.target.ordinal}\\b`).test(normalized)) return false;
   if (['visual_left', 'visual_right'].includes(action.target.reference) && (!/\b(esquerda|direita)\b/.test(normalized) || !/\b(?:na|nesta) (?:vista|c[aâ]mara|camera|ecr[aã])\b/.test(normalized))) return false;
   if (action.target.reference === 'none' && !['Undo', 'Redo', 'Save', 'Restore'].includes(action.kind) && !(action.kind === 'Inspect' && /\b(compara|comparar|antes.*depois)\b/.test(normalized))) return false;
+  if (action.kind === 'RemoveWall' && (!/\b(parede interna|parede interior|parede divisoria)\b/.test(normalized) || !/\b(une|unir|junta|amplia|expand[ae])\b/.test(normalized))) return false;
   const verb = ({
     Select: /\b(seleciona|seleccionar|selecionar)\b/,
     Inspect: /\b(inspeciona|mostra|consulta|compara)\b/,
@@ -157,6 +158,7 @@ export function authorizeSpatialAgentProposal(query: string, action: SpatialAgen
     Resize: /\b(aumenta|aumentar|reduz|reduzir|define|altera|muda|dimensiona)\b/,
     AddOpening: /\b(adiciona|cria|coloca|insere)\b/,
     RemoveOpening: /\b(remove|elimina|apaga)\b/,
+    RemoveWall: /\b(remove|elimina|apaga)\b/,
     Undo: /\b(desfaz|desfazer|undo)\b/,
     Redo: /\b(refaz|refazer|redo)\b/,
     Save: /\b(guarda|guardar|salva|salvar)\b/,

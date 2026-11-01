@@ -1,0 +1,38 @@
+{
+  "scenario": "B · Amoureaux House HABS MO-1113, sheet 3/10",
+  "attribution": "Library of Congress, Prints & Photographs Division, HABS MO-1113, sheet 3/10",
+  "source": "/home/helio/HEr/META/unfold-phase-10-teardown-meta-drawing-acceleration/reports/phase-10-teardown/fixtures/amoureaux-house-plan.png",
+  "sourceSha256": "1d78e739dad568ea49eb193416dc5f91c8b62b904a0170c63af803dd87750026",
+  "baseUrl": "http://127.0.0.1:5191",
+  "browser": "Chromium DevTools Protocol",
+  "providerCalls": [
+    {
+      "path": "/api/meta/image",
+      "status": 200
+    }
+  ],
+  "screenshots": [
+    "01-demo-empty.png",
+    "02-plan-uploaded.png",
+    "03-meta-analysis.png",
+    "04-spatial-editor-handoff.png"
+  ],
+  "checks": [
+    "upload raster pela interface do UNFOLD; imagem ligada à sessão e pré-visualizada",
+    "análise multimodal real concluída; saída documental renderizada e separada de geometria",
+    "documento arquitectónico aceite transferido para o editor canónico de tracing"
+  ],
+  "errors": [],
+  "analysis": {
+    "status": "success",
+    "summary": "Planta do primeiro pavimento da Amoureaux House com ROOM A-D, HALL central e dois PORCH. Cotas gerais em ft-in e escadas externas. Paredes em cedar posts, stud e brick, sem áreas impressas.",
+    "domain": "room: ROOM A · ROOM A\nobserved · unreviewed · Texto 'ROOM A' legível no compartimento centro-direita.\nroom: ROOM B · ROOM B\nobserved · unreviewed · Texto 'ROOM B' legível no compartimento sudeste.\nroom: ROOM C · ROOM C\nobserved · unreviewed · Texto 'ROOM C' legível no compartimento centro-esquerda.\nroom: ROOM D · ROOM D\nobserved · unreviewed · Texto 'ROOM D' legível no compartimento sudoeste.\nroom: HALL central · HALL\nobserved · unreviewed · Texto 'HALL' vertical no corredor central.\nroom: PORCH norte e sul · PORCH\nobserved · unreviewed · Texto 'PORCH' em faixa superior e inferior ao longo do edifício.\ndimension: Largura total norte · 50'-3 1/2\" ft-in\nobserved · unreviewed · Cota no topo do desenho sobre o porch.\ndimension: Largura total sul · 51'-0\" ft-in\nobserved · unreviewed · Cota abaixo do porch sul, sobre poço.\ndimension: Profundidade total oeste · 27'-4 1/2\" ft-in\nobserved · unreviewed · Cota vertical à esquerda do desenho.\nstair: Escada externa sul · 5 RISERS AT 7 1/2\" in\nobserved · unreviewed · Desenho de degraus ao sul com nota de espelhos e pisos.\nstair: Escada oeste UP · 12 RISERS AT 9\" in\nobserved · unreviewed · Desenho de degraus a oeste com nota UP junto à porta.\ndoor: Porta com batente\ninferred · unreviewed · Arcos de batente desenhados no HALL e fachadas; sem cota.\nwindow: Janela em parede externa\ninferred · unreviewed · Símbolos retangulares duplos em paredes externas; detalhes excluídos por nota.\nROOM A → ROOM B · adjacent_to\ninferred · Divisória leve indicada entre compartimentos leste.\nROOM C → ROOM D · adjacent_to\ninferred · Divisória leve indicada entre compartimentos oeste.\nHALL central → ROOM C · connected_to\ninferred · Abertura na divisória T&G entre corredor e compartimento oeste.\nHALL central → ROOM A · connected_to\ninferred · Abertura norte do corredor para compartimento leste.\nPORCH norte e sul → HALL central · connected_to\ninferred · Portas com arco ligam HALL às faixas PORCH norte e sul.\nEscada externa sul → PORCH norte e sul · connected_to\ninferred · Degraus desenhados encostados à faixa sul do PORCH.\nFIRST FLOOR PLAN SCALE 1/4\" = 1'-0\"\ntexto transcrito · unreviewed\nAMOUREAUX HOUSE, STE. GENEVIEVE, MISSOURI\ntexto transcrito · sem valor para revisão\nPALISADOED CEDAR POSTS SPACED 2\" WITH MUD AND STRAW FILL\ntexto transcrito · unreviewed\n1'-6\" x 2'-0\" BRICK CHIMNEY\ntexto transcrito · unreviewed\n2x4\" STUDS, 2'-0\" o.c., LATH AND PLASTER\ntexto transcrito · unreviewed\n3'-10\" DIA., 7 1/2\" THICK LIMESTONE WELL COVER\ntexto transcrito · unreviewed\nALL WINDOW AND DOOR DETAILS APPEAR TO BE OF RECENT ORIGIN\ntexto transcrito · sem valor para revisão\nLEGEND: PALISADOED CEDAR POSTS LIMESTONE BRICK STUD WALL\ntexto transcrito · sem valor para revisão",
+    "uncertainty": "Frações como 1/2\" têm leitura incerta por resolução e sobreposição de linhas.\nambiguidade da interpretação; requer confirmação\nOrientação norte/sul dos dois PORCH não está indicada em planta.\nambiguidade da interpretação; requer confirmação\nPortas e janelas só têm símbolo gráfico; nota diz detalhes excluídos.\nambiguidade da interpretação; requer confirmação\nNota geral assume paredes retas e ângulos retos; divergência aparece nas cotas.\nambiguidade da interpretação; requer confirmação\nGrafia PALISADOED e traços de divisórias leves são de difícil distinção.\nambiguidade da interpretação; requer confirmação\nEscada com indicação UP não mostra destino ou nível superior.\nambiguidade da interpretação; requer confirmação\nPorta com batente · inferred\nArcos de batente desenhados no HALL e fachadas; sem cota.\nJanela em parede externa · inferred\nSímbolos retangulares duplos em paredes externas; detalhes excluídos por nota.",
+    "missing": "Sem áreas de compartimentos com unidade impressa.\nnão confirmado no documento\nSem cotas de largura/altura de portas e janelas.\nnão confirmado no documento\nSem espessuras de paredes cotadas.\nnão confirmado no documento\nSem confirmação de escala ou unidade no desenho além da indicação.\nnão confirmado no documento\nSem destino da escada indicada como UP.\nnão confirmado no documento\ncanExplain: available\nInterpretação documental contextual; não é validação física.\ncanInspect: available\nElementos sem posições exactas; inspecção por lista e relações.\ncanEditSemanticData: available\nAlterações do utilizador mantêm proveniência separada.\ncanVisualize2D: blocked\nNão existem coordenadas 2D calibradas no contrato de extracção. Falta: geometria e escala confirmadas\ncanConstruct3D: blocked\nNão foi reconstruída geometria CAD. Falta: geometria 3D dimensionada e confirmada\ncanSimulate: blocked\nArquitectura: compreensão semântica não valida um modelo físico executável. Falta: escala e geometria calibradas; confirmação humana\ncanRunWhatIf: blocked\nExperiências numéricas requerem um modelo executável adequado. Falta: motor de simulação validado",
+    "buildButton": {
+      "exists": true,
+      "disabled": false,
+      "hidden": false
+    }
+  }
+}

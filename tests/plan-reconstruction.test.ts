@@ -7,6 +7,8 @@ import { addOpeningToScene, createPlanScene, editOpeningInScene, editWallInScene
 import { buildThreePlanGroup } from '../src/plan-three-adapter';
 import { executeSceneCommand } from '../src/spatial-scene';
 import { Raycaster, Vector3 } from 'three';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 
 function raster(width: number, height: number, rectangles: Array<[number, number, number, number]>): PixelRaster {
   const grayscale = new Uint8Array(width * height).fill(255);
@@ -17,6 +19,58 @@ function raster(width: number, height: number, rectangles: Array<[number, number
 }
 
 describe('plan reconstruction geometry', () => {
+  it('reconstructs independent Case A fixture geometry within 1 percent and merges its rooms transactionally', () => {
+    const truth = JSON.parse(readFileSync(new URL('../reports/phase-10-teardown/fixtures/case-a-ground-truth.json', import.meta.url), 'utf8')) as {
+      imageSizePx: { width: number; height: number }; scale: { pixels: number; metres: number };
+      rooms: Array<{ id: string; label: string; verticesPx: Array<[number, number]>; dimensionsM: [number, number]; areaM2: number }>;
+      sharedWall: { lengthM: number; doorOpeningM: { width: number; height: number; offset: number; sill: number } };
+      tolerance: { dimensionRelativeErrorMax: number };
+    };
+    const vertices = truth.rooms.map((room) => room.verticesPx.map(([x, y]) => ({ x, y })));
+    const edgeIds = new Map<string, string>();
+    const candidates = [] as ReturnType<typeof traceWallCandidate>[];
+    const edgeKey = (a: {x:number;y:number}, b: {x:number;y:number}) => [a, b].map((p) => `${p.x},${p.y}`).sort().join(':');
+    for (const polygon of vertices) for (let i = 0; i < polygon.length; i += 1) {
+      const a = polygon[i]!; const b = polygon[(i + 1) % polygon.length]!; const key = edgeKey(a, b);
+      if (edgeIds.has(key)) continue;
+      const id = `fixture-edge-${edgeIds.size + 1}`; edgeIds.set(key, id);
+      candidates.push(traceWallCandidate(id, a, b, 12));
+    }
+    const regions = truth.rooms.map((room, index) => ({
+      id: room.id, boundaryCandidateIds: vertices[index]!.map((a, i) => edgeIds.get(edgeKey(a, vertices[index]![(i + 1) % vertices[index]!.length]!))!),
+      vertices: vertices[index]!, areaPx2: Math.abs(vertices[index]!.reduce((sum, point, i, all) => sum + point.x * all[(i + 1) % all.length]!.y - all[(i + 1) % all.length]!.x * point.y, 0) / 2),
+      validation: 'unreviewed' as const, eligibility: 'construction_candidate' as const, confidence: 1, evidence: ['independent ground truth; user-reviewed fixture'], topologyMethod: 'closed_segment_graph' as const,
+    }));
+    const imageBytes = readFileSync(new URL('../reports/phase-10-teardown/fixtures/case-a-floor-plan.png', import.meta.url));
+    const built = createPlanScene({
+      sceneId: 'fixture-case-a', title: 'Case A · planta sintética dimensionada', image: { sha256: createHash('sha256').update(imageBytes).digest('hex'), ...truth.imageSizePx },
+      calibration: { pixelDistance: truth.scale.pixels, realDistanceMetres: truth.scale.metres, evidence: 'Cota conhecida da fixture: 10,00 m em 1000 px; ground truth separado do reconstrutor.', actor: 'case-a-reviewer' },
+      confirmedCandidateIds: [], confirmedRegionIds: truth.rooms.map((room) => room.id), regions, candidates, wall: { heightM: 2.7, thicknessM: 0.12 }, recordedAt: '2026-11-01T00:00:00.000Z',
+    });
+    const rooms = built.scene.nodes.filter((node) => node.component?.kind === 'room');
+    expect(rooms).toHaveLength(2);
+    for (let i = 0; i < truth.rooms.length; i += 1) {
+      const room = rooms.find((node) => node.id === truth.rooms[i]!.id)!;
+      expect(room.geometry?.kind).toBe('polygon');
+      if (room.geometry?.kind !== 'polygon') throw new Error('Room polygon expected');
+      const width = Math.max(...room.geometry.verticesM.map((point) => point[0])) - Math.min(...room.geometry.verticesM.map((point) => point[0]));
+      const depth = Math.max(...room.geometry.verticesM.map((point) => point[2])) - Math.min(...room.geometry.verticesM.map((point) => point[2]));
+      const expected = truth.rooms[i]!.dimensionsM;
+      expect(Math.max(Math.abs(width - expected[0]) / expected[0], Math.abs(depth - expected[1]) / expected[1])).toBeLessThanOrEqual(truth.tolerance.dimensionRelativeErrorMax);
+      const area = Math.abs(room.geometry.verticesM.reduce((sum, point, index, all) => sum + point[0] * all[(index + 1) % all.length]![2] - all[(index + 1) % all.length]![0] * point[2], 0) / 2);
+      expect(Math.abs(area - truth.rooms[i]!.areaM2) / truth.rooms[i]!.areaM2).toBeLessThanOrEqual(truth.tolerance.dimensionRelativeErrorMax);
+    }
+    const [roomA, roomB] = rooms;
+    const sharedWallId = roomA!.component!.dependsOn.find((id) => roomB!.component!.dependsOn.includes(id))!;
+    const door = addOpeningToScene(built, sharedWallId, { id: 'fixture-door', kind: 'door', offsetM: truth.sharedWall.doorOpeningM.offset, widthM: truth.sharedWall.doorOpeningM.width, heightM: truth.sharedWall.doorOpeningM.height, sillM: truth.sharedWall.doorOpeningM.sill, actor: 'case-a-reviewer' });
+    expect(door.scene.relations.filter((relation) => relation.kind === 'bounded_by' && relation.toNodeId === sharedWallId)).toHaveLength(2);
+    expect(door.scene.nodes.find((node) => node.id === sharedWallId)?.geometry?.kind === 'box' && (door.scene.nodes.find((node) => node.id === sharedWallId)!.geometry as Extract<NonNullable<typeof door.scene.nodes[number]['geometry']>, {kind:'box'}>).sizeM[0]).toBeCloseTo(truth.sharedWall.lengthM);
+    const merged = executeSceneCommand(door, { type: 'RemoveWall', wallId: sharedWallId, targetRoomId: roomA!.id, otherRoomId: roomB!.id }, 'case-a-reviewer').transaction;
+    expect(merged.scene.nodes.filter((node) => node.component?.kind === 'room')).toHaveLength(1);
+    expect(merged.scene.nodes.some((node) => node.id === 'fixture-door' || node.id === sharedWallId)).toBe(false);
+    expect(merged.scene.relations.every((relation) => merged.scene.nodes.some((node) => node.id === relation.fromNodeId) && merged.scene.nodes.some((node) => node.id === relation.toNodeId))).toBe(true);
+    expect(executeSceneCommand(merged, { type: 'Undo' }).transaction.scene.nodes).toEqual(door.scene.nodes);
+  });
   it('detects horizontal and vertical wall candidates from a new raster without image-specific coordinates', () => {
     const candidates = detectWallCandidates(raster(140, 100, [[10, 20, 115, 24], [35, 24, 39, 82]]), { minimumLengthPx: 30 });
     expect(candidates.some(({ orientation }) => orientation === 'horizontal')).toBe(true);

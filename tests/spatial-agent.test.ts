@@ -79,6 +79,16 @@ describe('spatial_agent.v1 contracts', () => {
     expect(authorizeSpatialAgentProposal('Aumenta a parede para 5 metros.', explicitOrdinal)).toBe(false);
   });
 
+  it('allows RemoveWall only for an explicit internal-wall merge request', () => {
+    const action = { kind: 'RemoveWall', target: { reference: 'selected', label: null, ordinal: null }, value: null, valueMode: null, unit: null, axis: null, opening: null } as const;
+    expect(authorizeSpatialAgentProposal('Remove esta parede interna e amplia a sala.', action)).toBe(true);
+    expect(authorizeSpatialAgentProposal('Posso remover esta parede interna?', action)).toBe(false);
+    expect(authorizeSpatialAgentProposal('Remove esta parede interna.', action)).toBe(false);
+    const request = validateSpatialAgentRequest({ ...validRequest, query: 'Remove esta parede interna e amplia a Sala A.', capabilities: [...validRequest.capabilities, 'RemoveWall'] });
+    const proposal = { ...resizeResult, text: 'Proponho remover a parede e unir a Sala A.', action };
+    expect(parseSpatialAgentResult(JSON.stringify(proposal), request).action?.kind).toBe('RemoveWall');
+  });
+
   it('keeps mechanical and electrical commands out of the architecture executor', () => {
     expect(spatialDomainConflict('Aumenta a manivela para 50 mm.', 'architecture')).toBe('mechanical');
     expect(spatialDomainConflict('Explica a corrente deste circuito.', 'architecture')).toBe('electrical');

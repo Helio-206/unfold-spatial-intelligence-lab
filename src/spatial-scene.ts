@@ -66,6 +66,8 @@ export type SpatialCommand =
   | { type: 'AddComponent'; node: Node }
   | { type: 'UpdateGeometry'; nodeId: string; geometry: Geometry }
   | { type: 'RemoveComponent'; nodeId: string }
+  /** Atomic conceptual removal of a shared wall and merge of the two adjacent room polygons. */
+  | { type: 'RemoveWall'; wallId: string; targetRoomId: string; otherRoomId: string; toleranceM?: number }
   | { type: 'MoveComponent'; nodeId: string; translationM: [number, number, number] }
   | { type: 'RotateComponent'; nodeId: string; axis: [number, number, number]; angleRad: number }
   | { type: 'ResizeComponent'; nodeId: string; scale: [number, number, number] }
@@ -195,6 +197,60 @@ function multiplyQuaternion(left: number[], right: number[]): [number, number, n
   const [x2, y2, z2, w2] = right as [number, number, number, number];
   return [w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2, w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2, w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2, w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2];
 }
+
+type PointXZ = [number, number, number];
+const distanceXZ = (a: PointXZ, b: PointXZ) => Math.hypot(a[0] - b[0], a[2] - b[2]);
+function polygonAreaXZ(vertices: PointXZ[]): number {
+  return vertices.reduce((area, point, index) => {
+    const next = vertices[(index + 1) % vertices.length]!;
+    return area + point[0] * next[2] - next[0] * point[2];
+  }, 0) / 2;
+}
+function validSimplePolygon(vertices: PointXZ[], tolerance: number): boolean {
+  if (vertices.length < 3 || vertices.some((point) => point.some((value) => !Number.isFinite(value)))) return false;
+  if (Math.abs(polygonAreaXZ(vertices)) <= tolerance * tolerance) return false;
+  for (let i = 0; i < vertices.length; i += 1) for (let j = i + 1; j < vertices.length; j += 1) {
+    if (j === i || j === i + 1 || i === 0 && j === vertices.length - 1) continue;
+    const a = vertices[i]!; const b = vertices[(i + 1) % vertices.length]!; const c = vertices[j]!; const d = vertices[(j + 1) % vertices.length]!;
+    const orient = (p: PointXZ, q: PointXZ, r: PointXZ) => (q[0] - p[0]) * (r[2] - p[2]) - (q[2] - p[2]) * (r[0] - p[0]);
+    const o1 = orient(a, b, c); const o2 = orient(a, b, d); const o3 = orient(c, d, a); const o4 = orient(c, d, b);
+    if (o1 * o2 < -(tolerance ** 2) && o3 * o4 < -(tolerance ** 2)) return false;
+  }
+  return true;
+}
+function polygonVertices(room: Node): PointXZ[] {
+  if (room.component?.kind !== 'room' || room.geometry?.kind !== 'polygon') throw new Error('REMOVE_WALL_REQUIRES_ROOM_POLYGONS');
+  return room.geometry.verticesM.map((point) => [...point] as PointXZ);
+}
+function mergeRoomPolygons(first: PointXZ[], second: PointXZ[], tolerance: number): PointXZ[] {
+  if (!validSimplePolygon(first, tolerance) || !validSimplePolygon(second, tolerance)) throw new Error('ROOM_INPUT_POLYGON_INVALID');
+  const shared: Array<{ firstIndex: number; secondIndex: number; sameDirection: boolean }> = [];
+  for (let i = 0; i < first.length; i += 1) for (let j = 0; j < second.length; j += 1) {
+    const a = first[i]!; const b = first[(i + 1) % first.length]!;
+    const c = second[j]!; const d = second[(j + 1) % second.length]!;
+    const same = distanceXZ(a, c) <= tolerance && distanceXZ(b, d) <= tolerance;
+    const reverse = distanceXZ(a, d) <= tolerance && distanceXZ(b, c) <= tolerance;
+    if (same || reverse) shared.push({ firstIndex: i, secondIndex: j, sameDirection: same });
+  }
+  if (shared.length !== 1) throw new Error(shared.length ? 'ROOM_SHARED_BOUNDARY_AMBIGUOUS' : 'ROOMS_DO_NOT_SHARE_ONE_EDGE');
+  const { firstIndex, secondIndex, sameDirection } = shared[0]!;
+  const walk = (vertices: PointXZ[], from: number, to: number, step: 1 | -1): PointXZ[] => {
+    const result = [vertices[from]!]; let index = from;
+    for (let count = 0; index !== to && count <= vertices.length; count += 1) { index = (index + step + vertices.length) % vertices.length; result.push(vertices[index]!); }
+    if (index !== to) throw new Error('ROOM_POLYGON_TRAVERSAL_FAILED');
+    return result;
+  };
+  const firstStart = firstIndex; const firstEnd = (firstIndex + 1) % first.length;
+  const firstChain = walk(first, firstStart, firstEnd, -1);
+  // Walk the other room from the first chain's end back to its start, avoiding its shared edge.
+  const secondStart = sameDirection ? (secondIndex + 1) % second.length : secondIndex;
+  const secondEnd = sameDirection ? secondIndex : (secondIndex + 1) % second.length;
+  const secondChain = sameDirection ? walk(second, secondStart, secondEnd, 1) : walk(second, secondStart, secondEnd, -1);
+  const merged = [...firstChain, ...secondChain.slice(1, -1)];
+  if (!validSimplePolygon(merged, tolerance)) throw new Error('ROOM_MERGE_POLYGON_INVALID');
+  return merged;
+}
+
 function applyCommand(scene: SpatialSceneV1, command: SpatialCommand, actor: string, clock: () => Date): SpatialSceneV1 {
   const nodes = scene.nodes.map((node) => structuredClone(node));
   let relations = structuredClone(scene.relations);
@@ -213,6 +269,65 @@ function applyCommand(scene: SpatialSceneV1, command: SpatialCommand, actor: str
       const referenced = relations.some((item) => item.fromNodeId === target.id || item.toNodeId === target.id) || constraints.some((item) => item.nodeIds.includes(target.id));
       if (dependent || referenced) throw new Error('REMOVE_HAS_DEPENDENCIES');
       return sceneWithRevision({ ...scene, nodes: nodes.filter((item) => item.id !== target.id) }, command.type, actor, clock);
+    }
+    case 'RemoveWall': {
+      const tolerance = command.toleranceM ?? 0.02;
+      if (!Number.isFinite(tolerance) || tolerance <= 0 || tolerance > 0.1) throw new Error('ROOM_MERGE_TOLERANCE_INVALID');
+      const wall = nodes.find((item) => item.id === command.wallId);
+      const target = nodes.find((item) => item.id === command.targetRoomId);
+      const other = nodes.find((item) => item.id === command.otherRoomId);
+      if (!wall || !target || !other) throw new Error('REMOVE_WALL_TARGET_NOT_FOUND');
+      if (wall.component?.kind !== 'wall' || wall.geometry?.kind !== 'box') throw new Error('REMOVE_WALL_REQUIRES_PARAMETRIC_WALL');
+      if (target.id === other.id) throw new Error('REMOVE_WALL_ROOMS_MUST_DIFFER');
+      const relatedRooms = new Set([
+        ...relations.filter((item) => item.kind === 'bounded_by' && item.toNodeId === wall.id).map((item) => item.fromNodeId),
+        ...nodes.filter((item) => item.component?.kind === 'room' && item.component.dependsOn.includes(wall.id)).map((item) => item.id),
+      ]);
+      if (relatedRooms.size !== 2 || !relatedRooms.has(target.id) || !relatedRooms.has(other.id)) throw new Error('REMOVE_WALL_MUST_SEPARATE_EXACTLY_TWO_ROOMS');
+      const merged = mergeRoomPolygons(polygonVertices(target), polygonVertices(other), tolerance);
+      const sharedWallEndpoints = (() => {
+        const angle = 2 * Math.atan2(wall.transform.rotation[1], wall.transform.rotation[3]);
+        const half = wall.geometry!.kind === 'box' ? wall.geometry.sizeM[0] / 2 : 0;
+        const dx = Math.cos(angle) * half; const dz = -Math.sin(angle) * half;
+        return [[wall.transform.translationM[0] - dx, wall.transform.translationM[1], wall.transform.translationM[2] - dz], [wall.transform.translationM[0] + dx, wall.transform.translationM[1], wall.transform.translationM[2] + dz]] as PointXZ[];
+      })();
+      if (!sharedWallEndpoints.every((endpoint) => [...polygonVertices(target), ...polygonVertices(other)].some((point) => distanceXZ(point, endpoint) <= tolerance))) throw new Error('REMOVE_WALL_GEOMETRY_DOES_NOT_MATCH_ROOM_BOUNDARY');
+      const userProvenance: PropertyProvenance = { source: 'user', validation: 'unreviewed', actor, recordedAt: clock().toISOString(), evidence: 'União conceptual de divisões após remoção de parede; implicações estruturais desconhecidas.' };
+      target.geometry = { kind: 'polygon', verticesM: merged, provenance: userProvenance };
+      target.component!.dependsOn = [...new Set([...target.component!.dependsOn, ...other.component!.dependsOn].filter((id) => id !== wall.id && id !== other.id))];
+      const areaM2 = Math.abs(polygonAreaXZ(merged));
+      const derivedProvenance: PropertyProvenance = { source: 'derived', validation: 'unreviewed', actor, recordedAt: clock().toISOString(), evidence: 'Área recalculada a partir do polígono unido; não é uma medição documental.' };
+      target.component!.properties = { ...target.component!.properties, area: { value: areaM2, unit: 'm2', provenance: derivedProvenance }, structuralImplication: { value: 'unknown', provenance: userProvenance }, transformation: { value: 'conceptual-room-merge', provenance: userProvenance } };
+      const removed = new Set([wall.id, other.id]);
+      let expanded = true;
+      while (expanded) {
+        expanded = false;
+        for (const candidate of nodes) if (!removed.has(candidate.id) && (candidate.parentId && removed.has(candidate.parentId) || candidate.component?.dependsOn.some((id) => removed.has(id)))) { removed.add(candidate.id); expanded = true; }
+      }
+      const retainedNodes = nodes.filter((item) => !removed.has(item.id));
+      for (const retained of retainedNodes) {
+        if (retained.parentId === other.id) retained.parentId = target.id;
+        if (retained.component?.dependsOn.includes(other.id)) retained.component.dependsOn = [...new Set(retained.component.dependsOn.map((id) => id === other.id ? target.id : id))];
+      }
+      const retainedRelations = relations.flatMap((relation) => {
+        if (relation.fromNodeId === other.id && !removed.has(relation.toNodeId)) {
+          const updated = { ...relation, fromNodeId: target.id };
+          return updated.fromNodeId === updated.toNodeId ? [] : [updated];
+        }
+        if (relation.toNodeId === other.id && !removed.has(relation.fromNodeId)) {
+          const updated = { ...relation, toNodeId: target.id };
+          return updated.fromNodeId === updated.toNodeId ? [] : [updated];
+        }
+        if (removed.has(relation.fromNodeId) || removed.has(relation.toNodeId)) return [];
+        return [relation];
+      });
+      const retainedConstraints = constraints.flatMap((constraint) => {
+        if (constraint.nodeIds.includes(wall.id)) throw new Error('REMOVE_WALL_CONSTRAINT_DEPENDENCY');
+        if (!constraint.nodeIds.includes(other.id)) return [constraint];
+        const nodeIds = [...new Set(constraint.nodeIds.map((id) => id === other.id ? target.id : id))];
+        return nodeIds.length ? [{ ...constraint, nodeIds }] : [];
+      });
+      return sceneWithRevision({ ...scene, nodes: retainedNodes, relations: retainedRelations, constraints: retainedConstraints }, command.type, actor, clock);
     }
     case 'MoveComponent': node!.transform.translationM = [...command.translationM]; node!.transform.provenance.translationM = { source: 'user', validation: 'unreviewed', actor, recordedAt: clock().toISOString() }; break;
     case 'RotateComponent': {
@@ -298,6 +413,8 @@ export function previewSceneCommand(transaction: SceneTransaction, command: Spat
       return { status: 'ready', baseRevisionId: transaction.scene.revision.id, evaluatedAt, actor, command, candidate: validateSpatialScene(transaction[command.type === 'Undo' ? 'undoStack' : 'redoStack'][available - 1]), issues };
     }
     if ('nodeId' in command && !transaction.scene.nodes.some((node) => node.id === command.nodeId)) throw new Error('NODE_NOT_FOUND');
+    if (command.type === 'RemoveWall' && (!transaction.scene.nodes.some((node) => node.id === command.wallId) || !transaction.scene.nodes.some((node) => node.id === command.targetRoomId) || !transaction.scene.nodes.some((node) => node.id === command.otherRoomId))) throw new Error('REMOVE_WALL_TARGET_NOT_FOUND');
+    if (command.type === 'RemoveWall' && (command.targetRoomId === command.otherRoomId || command.toleranceM !== undefined && (!finite(command.toleranceM) || command.toleranceM <= 0 || command.toleranceM > 0.1))) throw new Error('REMOVE_WALL_PARAMETERS_INVALID');
     if (command.type === 'AddComponent' && transaction.scene.nodes.some((node) => node.id === command.node.id)) throw new Error('DUPLICATE_NODE_ID');
     if (command.type === 'AddComponent' && !validateNode(command.node)) throw new Error('COMPONENT_INVALID');
     if (command.type === 'AddComponent' && nodeContainsConfirmedProperty(command.node)) throw new Error('NEW_COMPONENT_CANNOT_CLAIM_HUMAN_VERIFICATION');

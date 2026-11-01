@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#fff"/>
+  <g fill="none" stroke="#111" stroke-width="12" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M100 100 H1100 V600 H100 Z"/>
+    <path d="M700 100 V294 M700 406 V600"/>
+  </g>
+  <path d="M700 294 A56 56 0 0 1 756 350" fill="none" stroke="#555" stroke-width="4"/>
+  <g fill="#222" font-family="sans-serif" font-size="30" text-anchor="middle">
+    <text x="400" y="360">Sala A</text><text x="900" y="360">Sala B</text>
+  </g>
+  <g fill="none" stroke="#555" stroke-width="2">
+    <path d="M100 680 H1100 M100 665 V695 M1100 665 V695"/>
+    <path d="M100 665 l18 15 -18 15 M1100 665 l-18 15 18 15"/>
+  </g>
+  <text x="600" y="725" fill="#333" font-family="sans-serif" font-size="24" text-anchor="middle">10.00 m</text>
+</svg>

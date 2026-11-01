@@ -5,10 +5,13 @@ import { resolve } from 'node:path';
 import WebSocket from 'ws';
 
 const baseUrl = process.env.UNFOLD_E2E_URL ?? 'http://127.0.0.1:5191';
-const imagePath = resolve('reports/phase-8d/fixtures/amoureaux-house-plan.png');
-const outputDir = resolve('reports/phase-8d/evidence');
+const imagePath = resolve(process.env.UNFOLD_PLAN_FIXTURE ?? 'reports/phase-8d/fixtures/amoureaux-house-plan.png');
+const outputDir = resolve(process.env.UNFOLD_EVIDENCE_DIR ?? 'reports/phase-8d/evidence');
+const cdpPort = Number(process.env.UNFOLD_CDP_PORT ?? 9225);
+const expectedImageWidth = Number(process.env.UNFOLD_PLAN_WIDTH ?? 3700);
+const expectedImageHeight = Number(process.env.UNFOLD_PLAN_HEIGHT ?? 2996);
 await mkdir(outputDir, { recursive: true });
-const created = await fetch('http://127.0.0.1:9225/json/new?about:blank', { method: 'PUT' });
+const created = await fetch(`http://127.0.0.1:${cdpPort}/json/new?about:blank`, { method: 'PUT' });
 assert.equal(created.status, 200, 'Chromium headed com CDP não está disponível.');
 const target = await created.json();
 const socket = new WebSocket(target.webSocketDebuggerUrl);
@@ -74,12 +77,13 @@ try {
   await cdp('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: outputDir });
   await cdp('Page.navigate', { url: `${baseUrl}/demo` });
   await waitFor(`document.querySelector('#demo-open-spatial')`);
+  await evaluate(`localStorage.removeItem('unfold-spatial-scene.v1')`);
   await screenshot('01-demo-empty.png'); result.screenshots.push('01-demo-empty.png');
   await click('#demo-open-spatial'); await waitFor(`document.querySelector('.spatial-lab')`);
   result.checks.push('o editor abre dentro de /demo; a rota não muda');
   await upload('#plan-file', imagePath);
-  await waitFor(`document.querySelector('#source-image').naturalWidth===3700`);
-  assert.deepEqual(await evaluate(`(()=>{const i=document.querySelector('#source-image');return [i.naturalWidth,i.naturalHeight]})()`), [3700, 2996]);
+  await waitFor(`document.querySelector('#source-image').naturalWidth===${expectedImageWidth}`);
+  assert.deepEqual(await evaluate(`(()=>{const i=document.querySelector('#source-image');return [i.naturalWidth,i.naturalHeight]})()`), [expectedImageWidth, expectedImageHeight]);
   await screenshot('02-second-plan-original.png'); result.screenshots.push('02-second-plan-original.png');
 
   // Coordinates follow the visible main footprint and the printed 50'-3 1/2" dimension.
@@ -213,5 +217,5 @@ try {
   await writeFile(resolve(outputDir, 'second-plan-e2e.json'), JSON.stringify(result, null, 2));
   console.error(JSON.stringify(result, null, 2)); process.exitCode = 1;
 } finally {
-  socket.close(); await fetch(`http://127.0.0.1:9225/json/close/${target.id}`).catch(() => undefined);
+  socket.close(); await fetch(`http://127.0.0.1:${cdpPort}/json/close/${target.id}`).catch(() => undefined);
 }

@@ -1,0 +1,104 @@
+{
+  "scenario": "A · generated floor plan with independent dimensions",
+  "browser": "Google Chrome headed, DevTools Protocol",
+  "baseUrl": "http://127.0.0.1:5191",
+  "source": "/home/helio/HEr/META/unfold-phase-10-teardown-meta-drawing-acceleration/reports/phase-10-teardown/fixtures/case-a-floor-plan.png",
+  "sourceSha256": "b6d97143e2660a4c39bc71fc9f1798d79947971d93585f37764b188f09279f16",
+  "api": [
+    {
+      "requestId": "2209831.66",
+      "path": "/api/spatial-agent",
+      "status": 200
+    }
+  ],
+  "screenshots": [
+    "01-original.png",
+    "02-manual-trace-and-regions.png",
+    "03-case-a-scene.png",
+    "04-isolated-component.png",
+    "05-cutaway.png"
+  ],
+  "checks": [
+    "trace manual produce 2 regiões, 7 paredes únicas e dimensões/áreas dentro de 1%",
+    "componente identificado; isolamento e clipping temporários não alteraram a Scene Graph"
+  ],
+  "errors": [],
+  "traceDebug": {
+    "candidateCount": 7,
+    "selectedCount": 7,
+    "status": "Traçado manual-bcf6e913 adicionado como candidato manual; continua por confirmar e não é uma medição física.",
+    "traceMode": "true",
+    "viewBox": "0 0 1200 800"
+  },
+  "tracing": {
+    "candidateCount": 7,
+    "regionCount": 4,
+    "regions": [
+      {
+        "id": "region-1",
+        "text": "Divisão proposta -1\n4 segmentos de suporte · 200,000 px² · confiança heurística 0.95 · por confirmar"
+      },
+      {
+        "id": "region-2",
+        "text": "Divisão proposta -2\n4 segmentos de suporte · 300,000 px² · confiança heurística 0.95 · por confirmar"
+      },
+      {
+        "id": "room-100-100-700-600",
+        "text": "Divisão proposta 00-100-700-600\n4 segmentos de suporte · 300,000 px² · confiança heurística 1.00 · por confirmar"
+      },
+      {
+        "id": "room-700-100-1100-600",
+        "text": "Divisão proposta 00-100-1100-600\n4 segmentos de suporte · 200,000 px² · confiança heurística 1.00 · por confirmar"
+      }
+    ],
+    "viewBox": "0 0 1200 800"
+  },
+  "geometry": {
+    "schema": "spatial_scene.v1",
+    "roomCount": 2,
+    "wallCount": 7,
+    "measurements": [
+      {
+        "id": "room-100-100-700-600",
+        "width": 6,
+        "depth": 5.000000250966938
+      },
+      {
+        "id": "room-700-100-1100-600",
+        "width": 4,
+        "depth": 5.000000250966938
+      }
+    ],
+    "mapping": {
+      "sourceImageSha256": "b6d97143e2660a4c39bc71fc9f1798d79947971d93585f37764b188f09279f16",
+      "imageSizePx": {
+        "width": 1200,
+        "height": 800
+      },
+      "pixelToWorldXZ": [
+        0.010000000501933877,
+        0,
+        0,
+        0,
+        -0.010000000501933877,
+        0
+      ],
+      "worldY": 0,
+      "provenance": {
+        "source": "user",
+        "validation": "unreviewed",
+        "recordedAt": "2026-11-01T12:13:17.791Z",
+        "actor": "local-user-input",
+        "evidence": "Cota fixture conhecida: 10,00 m em 1000 px. Ground truth independente no ficheiro case-a-ground-truth.json."
+      }
+    },
+    "dimensionsPass": true,
+    "topologyPass": true
+  },
+  "inspection": {
+    "label": "Parede 2",
+    "meta": "5.00 m × 2.70 m × 0.12 m · wall",
+    "provenance": "derived · unreviewed · Segmento raster edge-700-100-700-600, origem manual_correction, explicitamente incluído. Confiança heurística 1; espessura raster 5 px."
+  },
+  "failure": "Error: Timeout waiting for document.querySelector('#commit-preview')?.disabled===false\n    at waitFor (file:///home/helio/HEr/META/unfold-phase-10-teardown-meta-drawing-acceleration/tests/e2e/phase-10-case-a.cdp.mjs:32:214)\n    at async file:///home/helio/HEr/META/unfold-phase-10-teardown-meta-drawing-acceleration/tests/e2e/phase-10-case-a.cdp.mjs:95:3"
+}

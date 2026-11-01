@@ -15,6 +15,19 @@ const makeScene = (): SpatialSceneV1 => validateSpatialScene({
   ], relations: [], constraints: [], revision: { id: 'scene-main:r0', number: 0, parentId: null, operationId: null, createdAt: '2026-01-01T00:00:00.000Z', createdBy: 'fixture' },
 });
 
+function makeAdjacentRooms(): SpatialSceneV1 {
+  const scene = makeScene();
+  const base = scene.nodes[0]!;
+  const wall = { ...structuredClone(base), id: 'shared-wall', label: 'Parede interior', geometry: { kind: 'box' as const, sizeM: [4, 3, 0.15] as [number, number, number], provenance }, transform: { ...base.transform, translationM: [2, 1.5, 2] as [number, number, number], rotation: [0, Math.sin(Math.PI / 4), 0, Math.cos(Math.PI / 4)] as [number, number, number, number] }, component: { kind: 'wall', properties: {}, dependsOn: [] } };
+  const room = (id: string, label: string, verticesM: Array<[number, number, number]>) => ({ ...structuredClone(base), id, label, geometry: { kind: 'polygon' as const, verticesM, provenance }, component: { kind: 'room', properties: {}, dependsOn: ['shared-wall'] } });
+  scene.nodes = [wall, room('room-living', 'Sala', [[0, 0, 0], [2, 0, 0], [2, 0, 4], [0, 0, 4]]), room('room-office', 'Escritório', [[2, 0, 0], [5, 0, 0], [5, 0, 4], [2, 0, 4]])];
+  scene.relations = [
+    { id: 'bounded-living', fromNodeId: 'room-living', toNodeId: 'shared-wall', kind: 'bounded_by', properties: {}, provenance },
+    { id: 'bounded-office', fromNodeId: 'room-office', toNodeId: 'shared-wall', kind: 'bounded_by', properties: {}, provenance },
+  ];
+  return validateSpatialScene(scene);
+}
+
 describe('spatial_scene.v1 contract', () => {
   it('round-trips validated scenes and retains explicit SI frame and immutable source reference', () => {
     const scene = makeScene();
@@ -38,6 +51,36 @@ describe('spatial_scene.v1 contract', () => {
 });
 
 describe('spatial scene transactions', () => {
+  it('merges two reviewed adjacent room polygons atomically and undo restores the exact canonical state', () => {
+    const initial = createSceneTransaction(makeAdjacentRooms());
+    const before = structuredClone(initial.scene);
+    const preview = previewSceneCommand(initial, { type: 'RemoveWall', wallId: 'shared-wall', targetRoomId: 'room-living', otherRoomId: 'room-office' }, 'reviewer');
+    expect(preview.issues).toEqual([]);
+    expect(preview.status).toBe('ready');
+    expect(preview.candidate?.schema).toBe('spatial_scene.v1');
+    expect(preview.candidate?.nodes.map((node) => node.id)).toEqual(['room-living']);
+    const merged = commitScenePreview(initial, preview);
+    const room = merged.scene.nodes.find((node) => node.id === 'room-living')!;
+    expect(room.geometry).toMatchObject({ kind: 'polygon', provenance: { source: 'user', validation: 'unreviewed' } });
+    expect(room.component?.properties.structuralImplication?.value).toBe('unknown');
+    expect(room.component?.dependsOn).toEqual([]);
+    expect(Math.abs(room.geometry?.kind === 'polygon' ? room.geometry.verticesM.reduce((sum, point, index, all) => sum + point[0] * all[(index + 1) % all.length]![2] - all[(index + 1) % all.length]![0] * point[2], 0) / 2 : 0)).toBeCloseTo(20);
+    const undone = executeSceneCommand(merged, { type: 'Undo' }).transaction;
+    expect({ ...undone.scene, revision: before.revision }).toEqual(before);
+    expect(executeSceneCommand(undone, { type: 'Redo' }).transaction.scene.nodes).toEqual(merged.scene.nodes);
+  });
+
+  it('blocks wall removal unless the wall separates exactly two valid rooms and leaves input untouched', () => {
+    const scene = makeAdjacentRooms();
+    scene.nodes.find((node) => node.id === 'room-office')!.geometry = { kind: 'polygon', verticesM: [[2, 0, 0], [5, 0, 4], [5, 0, 0], [2, 0, 4]], provenance };
+    const transaction = createSceneTransaction(scene);
+    const snapshot = structuredClone(transaction.scene);
+    const blocked = previewSceneCommand(transaction, { type: 'RemoveWall', wallId: 'shared-wall', targetRoomId: 'room-living', otherRoomId: 'room-office' });
+    expect(blocked.status).toBe('blocked');
+    expect(blocked.issues[0]?.code).toBe('ROOM_INPUT_POLYGON_INVALID');
+    expect(transaction.scene).toEqual(snapshot);
+  });
+
   it('converts only a matching explicit conversational edit into a previewable scene command', () => {
     expect(conversationEditToSceneCommand('Aumenta a manivela para 50 mm.', 'crank', { kind: 'update_length', componentId: 'crank', value: 50, unit: 'mm' })).toEqual({ status: 'ready', command: { type: 'UpdateParameter', nodeId: 'crank', property: 'length', value: 50, unit: 'mm' } });
     expect(conversationEditToSceneCommand('Para que serve a peça?', 'crank', { kind: 'update_length', componentId: 'crank', value: 50, unit: 'mm' }).status).toBe('blocked');

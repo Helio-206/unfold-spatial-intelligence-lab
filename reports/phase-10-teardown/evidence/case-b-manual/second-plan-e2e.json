@@ -1,0 +1,129 @@
+{
+  "browser": "Google Chrome headed, DevTools Protocol",
+  "baseUrl": "http://127.0.0.1:5191",
+  "source": "/home/helio/HEr/META/unfold-phase-10-teardown-meta-drawing-acceleration/reports/phase-10-teardown/fixtures/amoureaux-house-plan.png",
+  "sourceSha256": "1d78e739dad568ea49eb193416dc5f91c8b62b904a0170c63af803dd87750026",
+  "checks": [
+    "o editor abre dentro de /demo; a rota não muda",
+    "quatro segmentos do perímetro principal traçados manualmente e selecionados; interiores/aberturas não são declarados completos",
+    "quatro paredes paramétricas propostas em spatial_scene.v1 com escala derivada da cota impressa, mas não verificada",
+    "vista superior e sobreposição raster/3D usam o mapeamento affine guardado no spatial_scene.v1",
+    "comprimento alterado por preview → commit e persistido no grafo canónico",
+    "Undo e Redo actualizam spatial_scene.v1; sem alteração directa apenas no mesh",
+    "atalhos Ctrl+Z / Ctrl+Shift+Z aplicam undo/redo também ao estado canónico",
+    "saída/reentrada no editor e restauro revalidam a cena persistida",
+    "os sete módulos Blender podem ser instanciados como referências GLB independentes e desfeitos; não são confundidos com geometria da planta",
+    "touch orbit em viewport móvel emulado altera a apresentação; não substitui validação em dispositivo físico",
+    "Four-Bar Lab continua acessível no /demo, com solver e proveniência hipotética",
+    "o browser carregou o GLB Blender da biblioteca por HTTP 200; módulos são assets conceptuais independentes e não fazem parte do tracing por defeito"
+  ],
+  "screenshots": [
+    "01-demo-empty.png",
+    "02-second-plan-original.png",
+    "03-second-plan-tracing.png",
+    "04-construction-start.png",
+    "05-construction-motion.png",
+    "06-second-plan-model.png",
+    "07-second-plan-model-settled.png",
+    "12-top-view-tracing.png",
+    "13-top-view-overlay.png",
+    "08-selected-wall.png",
+    "09-wall-edit-preview.png",
+    "10-wall-edited.png",
+    "18-before-after-revisions.png",
+    "11-restored-scene.png",
+    "15-desktop-1920x1080.png",
+    "16-desktop-1280x720.png",
+    "17-mobile-390x844.png",
+    "19-mobile-touch-orbit.png",
+    "14-four-bar-regression.png"
+  ],
+  "metrics": {
+    "revision": 0,
+    "nodes": 4,
+    "nodeIds": [
+      "wall-manual-9f9cf543",
+      "wall-manual-8bc1e10a",
+      "wall-manual-ef05d791",
+      "wall-manual-a38433e9"
+    ],
+    "validation": "unreviewed",
+    "mapping": [
+      0.007121574297431358,
+      0,
+      0,
+      0,
+      -0.007121574297431358,
+      0
+    ],
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "dpr": 1,
+    "viewport": [
+      780,
+      493
+    ],
+    "buildReadout": "25 FPS · 6 draw calls · 436 triângulos · 3 geometrias · cena 0.8 ms",
+    "frameTiming": {
+      "samples": 91,
+      "meanMs": 16.44,
+      "p50Ms": 16.7,
+      "p95Ms": 16.7,
+      "fps": 60.8
+    }
+  },
+  "metaRequests": 0,
+  "browserErrors": [],
+  "tracingDebug": {
+    "count": 4,
+    "selected": 4,
+    "status": "Traçado manual-a38433e9 adicionado como candidato manual; continua por confirmar e não é uma medição física.",
+    "mode": "true",
+    "viewBox": "0 0 3700 2996"
+  },
+  "viewports": {
+    "desktop1920x1080": {
+      "width": 1920,
+      "height": 1080,
+      "scrollWidth": 1920,
+      "canvas": true
+    },
+    "desktop1280x720": {
+      "width": 1280,
+      "height": 720,
+      "scrollWidth": 1280,
+      "canvas": true
+    },
+    "mobileEmulated": {
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "toolbarWidth": 370,
+      "toolbarScrollWidth": 370,
+      "canvas": true
+    }
+  },
+  "fourBarRegression": {
+    "canvas": true,
+    "empty": true,
+    "crank": "40 mm",
+    "status": "SOLVED",
+    "provenance": "PROJECTO HIPOTÉTICO · INDEPENDENTE DE QUALQUER IMAGEM"
+  },
+  "blenderAsset": {
+    "requests": 2,
+    "lastHttpStatus": 200,
+    "fileBytes": 188460,
+    "timings": [
+      {
+        "durationMs": 2.800000011920929,
+        "transferSize": 300,
+        "decodedBodySize": 188460
+      },
+      {
+        "durationMs": 4.5,
+        "transferSize": 300,
+        "decodedBodySize": 188460
+      }
+    ]
+  }
+}

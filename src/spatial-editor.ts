@@ -1,4 +1,4 @@
-import { AmbientLight, Box3, Box3Helper, BufferGeometry, Color, DirectionalLight, DoubleSide, Float32BufferAttribute, GridHelper, Group, Mesh, MeshBasicMaterial, Object3D, PerspectiveCamera, Quaternion, Raycaster, Scene, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer } from 'three';
+import { AmbientLight, Box3, Box3Helper, BufferGeometry, Color, DirectionalLight, DoubleSide, Float32BufferAttribute, GridHelper, Group, Mesh, MeshBasicMaterial, Object3D, PerspectiveCamera, Plane, Quaternion, Raycaster, Scene, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -7,7 +7,7 @@ import { decodePlanImage } from './plan-image';
 import { buildPlanVectorModel, countClosedCandidateContours, detectCandidateIntersections, detectWallCandidates, mergeWallCandidates, splitWallCandidate, traceWallCandidate, type PixelWallCandidate, type Point2 } from './plan-reconstruction';
 import { addOpeningToScene, createPlanScene, editOpeningInScene, editWallInScene } from './plan-scene';
 import { ARCHITECTURAL_MODULE_DIMENSIONS, buildThreePlanGroup, type ArchitecturalAssets } from './plan-three-adapter';
-import { commitScenePreview, deserializeSceneTransaction, previewSceneCommand, serializeSceneTransaction, type Node, type ScenePreview, type SceneTransaction, type SpatialCommand, type SpatialSceneV1 } from './spatial-scene';
+import { commitScenePreview, deserializeSceneTransaction, executeSceneCommand, previewSceneCommand, serializeSceneTransaction, type Node, type ScenePreview, type SceneTransaction, type SpatialCommand, type SpatialSceneV1 } from './spatial-scene';
 import { clearSpatialSourceImage, readSpatialSourceImage } from './spatial-source-store';
 import { createSpatialCommandEnvelope, parseSpatialIntentV1, resolveSpatialTarget, type SpatialCommandOrigin, type SpatialCommandState, type SpatialCommandV1 } from './spatial-command-protocol';
 import { registerSpatialCommandHandler, type SpatialCommandOutcome } from './spatial-command-runtime';
@@ -67,7 +67,7 @@ app.innerHTML = `<main class="spatial-lab" data-state="empty">
     <p id="preview-status" class="preview-status" aria-live="polite"></p><div class="preview-actions"><button id="commit-preview" type="button" disabled>Aplicar</button><button id="cancel-preview" type="button" disabled>Cancelar</button></div>
   </aside>
   <section class="stage-empty" id="stage-empty"><span>ESPAÇO LIVRE</span><h1>Uma cena começa por evidência.</h1><p>Importe uma planta real, revise os segmentos e calibre a escala antes de construir a geometria.</p><a href="/demo">Abrir experiência UNFOLD</a></section>
-  <nav class="spatial-toolbar" aria-label="Ferramentas da cena"><button id="mode-translate" type="button" aria-label="Mover" title="Mover">↔</button><button id="mode-rotate" type="button" aria-label="Rodar" title="Rodar">↻</button><button id="mode-scale" type="button" aria-label="Escalar" title="Escalar">⤢</button><i></i><button id="fit-scene" type="button" aria-label="Enquadrar" title="Enquadrar">□</button><button id="home-scene" type="button" aria-label="Início" title="Início">⌂</button><button id="top-view" type="button" aria-label="Vista superior" title="Vista superior">T</button><button id="front-view" type="button" aria-label="Vista frontal" title="Vista frontal">F</button><button id="iso-view" type="button" aria-label="Vista isométrica" title="Vista isométrica">I</button><button id="toggle-reference" type="button" aria-pressed="true" aria-label="Mostrar ou ocultar imagem original" title="Referência">▧</button><button id="explode-scene" type="button" aria-pressed="false" disabled>Explodir</button><button id="compare-scene" type="button" aria-pressed="false" disabled>Antes / Depois</button><button id="undo-scene" type="button" disabled>Desfazer</button><button id="redo-scene" type="button" disabled>Refazer</button></nav>
+<nav class="spatial-toolbar" aria-label="Ferramentas da cena"><button id="mode-translate" type="button" aria-label="Mover" title="Mover">↔</button><button id="mode-rotate" type="button" aria-label="Rodar" title="Rodar">↻</button><button id="mode-scale" type="button" aria-label="Escalar" title="Escalar">⤢</button><i></i><button id="fit-scene" type="button" aria-label="Enquadrar" title="Enquadrar">□</button><button id="home-scene" type="button" aria-label="Início" title="Início">⌂</button><button id="top-view" type="button" aria-label="Vista superior" title="Vista superior">T</button><button id="front-view" type="button" aria-label="Vista frontal" title="Vista frontal">F</button><button id="iso-view" type="button" aria-label="Vista isométrica" title="Vista isométrica">I</button><button id="toggle-reference" type="button" aria-pressed="true" aria-label="Mostrar ou ocultar imagem original" title="Referência">▧</button><button id="isolate-selected" type="button" aria-pressed="false" disabled>Isolar</button><button id="toggle-cutaway" type="button" aria-pressed="false" disabled>Cutaway</button><button id="explode-scene" type="button" aria-pressed="false" disabled>Explodir</button><button id="compare-scene" type="button" aria-pressed="false" disabled>Antes / Depois</button><button id="undo-scene" type="button" disabled>Desfazer</button><button id="redo-scene" type="button" disabled>Refazer</button></nav>
   <div class="spatial-status" id="spatial-status" role="status" aria-live="polite">À espera de uma planta. Geometria não presumida.</div><div id="spatial-metrics" class="spatial-metrics"></div>
 </main>`;
 
@@ -81,6 +81,7 @@ scene.background = new Color('#111412');
 const camera = new PerspectiveCamera(42, 1, 0.02, 10_000);
 camera.position.set(8, 7, 9);
 const renderer = new WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.localClippingEnabled = true;
 renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.7));
 renderer.setSize(1, 1, false);
 renderer.outputColorSpace = 'srgb';
@@ -107,6 +108,9 @@ let pendingCommand: SpatialCommandV1 | undefined;
 let unregisterSpatialCommands: (() => void) | undefined;
 let selectedId: string | undefined;
 let explodedView = false;
+let isolatedNodeId: string | undefined;
+let cutawayPlane: Plane | undefined;
+let renderVisibility = new Map<string, boolean>();
 let canonicalRenderPositions = new Map<string, Vector3>();
 let visibleReference = true;
 let compare = false;
@@ -203,6 +207,7 @@ function selectNode(id: string | undefined): void {
   if (selectionOutline) { scene.remove(selectionOutline); selectionOutline.geometry.dispose(); (selectionOutline.material as import('three').Material).dispose(); selectionOutline = undefined; }
   const node = transaction?.scene.nodes.find((candidate) => candidate.id === id);
   $('#inspector').hidden = !node;
+  $('#isolate-selected').disabled = !node;
   if (!node) { gizmo.detach(); return; }
   $('#node-label').textContent = node.label;
   const geometry = node.geometry;
@@ -275,6 +280,7 @@ function animateRevision(previous: SpatialSceneV1, current: SpatialSceneV1, targ
 
 function renderModel(model = transaction?.scene, animate = false): void {
   buildTimeline?.kill();
+  resetRenderInspection();
   explodedView = false;
   if (!model) { canonicalRenderPositions.clear(); explodedView = false; grid.visible = true; updateReferenceView(); updateExplodedButton(); invalidate(); return; }
   grid.visible = false;
@@ -297,6 +303,45 @@ function renderModel(model = transaction?.scene, animate = false): void {
   updateToolbar();
 }
 
+function resetRenderInspection(): void {
+  for (const [id, visible] of renderVisibility) { const object = root.getObjectByName(id); if (object) object.visible = visible; }
+  renderVisibility.clear(); isolatedNodeId = undefined; cutawayPlane = undefined; renderer.clippingPlanes = [];
+  const isolateButton = $('#isolate-selected'); isolateButton.setAttribute('aria-pressed', 'false'); isolateButton.textContent = 'Isolar';
+  const cutawayButton = $('#toggle-cutaway'); cutawayButton.setAttribute('aria-pressed', 'false'); cutawayButton.textContent = 'Cutaway';
+}
+
+function toggleSelectedIsolation(): void {
+  if (!transaction || !selectedId) return;
+  if (isolatedNodeId) {
+    for (const [id, visible] of renderVisibility) { const object = root.getObjectByName(id); if (object) object.visible = visible; }
+    renderVisibility.clear(); isolatedNodeId = undefined;
+  } else {
+    isolatedNodeId = selectedId;
+    for (const node of transaction.scene.nodes) {
+      const object = root.getObjectByName(node.id);
+      if (!object) continue;
+      renderVisibility.set(node.id, object.visible);
+      object.visible = node.id === selectedId;
+    }
+  }
+  const button = $('#isolate-selected'); button.setAttribute('aria-pressed', String(Boolean(isolatedNodeId))); button.textContent = isolatedNodeId ? 'Mostrar todos' : 'Isolar';
+  status(isolatedNodeId ? `Isolamento temporário de ${transaction.scene.nodes.find((node) => node.id === selectedId)?.label}; o grafo canónico não foi alterado.` : 'Visibilidade original restaurada.');
+  invalidate();
+}
+
+function toggleCutaway(): void {
+  if (!transaction) return;
+  cutawayPlane = cutawayPlane ? undefined : (() => {
+    const bounds = new Box3().setFromObject(root);
+    const center = bounds.isEmpty() ? new Vector3() : bounds.getCenter(new Vector3());
+    return new Plane(new Vector3(1, 0, 0), -center.x);
+  })();
+  renderer.clippingPlanes = cutawayPlane ? [cutawayPlane] : [];
+  const button = $('#toggle-cutaway'); button.setAttribute('aria-pressed', String(Boolean(cutawayPlane))); button.textContent = cutawayPlane ? 'Repor corte' : 'Cutaway';
+  status(cutawayPlane ? 'Cutaway temporário ao longo do eixo X; sem tampa de secção. A Scene Graph permanece inalterada.' : 'Clipping temporário removido; configuração original restaurada.');
+  invalidate();
+}
+
 function updateExplodedButton(): void {
   const button = $('#explode-scene');
   button.disabled = !transaction;
@@ -315,6 +360,8 @@ function applyExplodedView(): void {
     object.position.set(base.x + (explodedView ? offset[0] : 0), base.y + (explodedView ? offset[1] : 0), base.z + (explodedView ? offset[2] : 0));
   }
   updateExplodedButton();
+  $('#isolate-selected').disabled = !transaction || !selectedId;
+  $('#toggle-cutaway').disabled = !transaction;
   invalidate();
 }
 
@@ -810,7 +857,7 @@ function createSpatialAgentRequest(query: string): SpatialAgentRequestV1 {
     schema: SPATIAL_AGENT_REQUEST_SCHEMA,
     query,
     mode: 'architecture',
-    capabilities: ['Select', 'Inspect', 'Focus', 'Move', 'Rotate', 'Resize', 'AddOpening', 'RemoveOpening', 'Undo', 'Redo', 'Save', 'Restore'],
+    capabilities: ['Select', 'Inspect', 'Focus', 'Move', 'Rotate', 'Resize', 'AddOpening', 'RemoveOpening', 'RemoveWall', 'Undo', 'Redo', 'Save', 'Restore'],
     scene: transaction ? {
       id: transaction.scene.id,
       revisionId: transaction.scene.revision.id,
@@ -879,7 +926,7 @@ function agentIntent(action: SpatialAgentAction, nodeId: string | null): import(
     case 'Move': return { intent: { kind: 'Move', target, parameters: { axis: action.axis!, distance: action.value! * factor }, unit: 'm' } };
     case 'Rotate': return { intent: { kind: 'Rotate', target, parameters: { axis: action.axis!, angle: action.unit === 'deg' ? action.value! * Math.PI / 180 : action.value! }, unit: 'rad' } };
     case 'AddOpening': return { intent: { kind: 'AddOpening', target, parameters: { kind: action.opening!.kind, widthM: action.opening!.widthM, heightM: action.opening!.heightM, offsetM: action.opening!.offsetM, sillM: action.opening!.sillM }, unit: 'm' } };
-    case 'Select': case 'Inspect': case 'Focus': case 'RemoveOpening': case 'Undo': case 'Redo': case 'Save': case 'Restore': return { intent: { kind: action.kind, target, parameters: {}, unit: null } };
+    case 'Select': case 'Inspect': case 'Focus': case 'RemoveOpening': case 'RemoveWall': case 'Undo': case 'Redo': case 'Save': case 'Restore': return { intent: { kind: action.kind, target, parameters: {}, unit: null } };
   }
 }
 
@@ -1058,6 +1105,27 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
         $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false; renderModel(candidate.candidate!); selectNode(node.id);
         setSpatialCommandState('AwaitingConfirmation', `Remoção de ${node.label} proposta. Confirme para gravar.`);
         return Promise.resolve({ status: 'preview', message: `${answerPrefix}Remoção de ${node.label} proposta. Confirme para aplicar.` });
+      }
+      case 'RemoveWall': {
+        if (!transaction) throw new Error('SCENE_NOT_READY');
+        const scene = transaction.scene;
+        if (!node || node.component?.kind !== 'wall') throw new Error('Seleccione a parede interior a remover.');
+        const adjacent = new Set([
+          ...scene.relations.filter((relation) => relation.kind === 'bounded_by' && relation.toNodeId === node.id).map((relation) => relation.fromNodeId),
+          ...scene.nodes.filter((item) => item.component?.kind === 'room' && item.component.dependsOn.includes(node.id)).map((item) => item.id),
+        ]);
+        if (adjacent.size !== 2) throw new Error('A parede não separa exactamente duas divisões no grafo actual.');
+        const rooms = [...adjacent].map((id) => scene.nodes.find((item) => item.id === id)!).filter((item) => item.component?.kind === 'room');
+        if (rooms.length !== 2) throw new Error('As duas divisões adjacentes não têm polígonos canónicos válidos.');
+        const normalizedInput = input.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt');
+        const named = rooms.filter((room) => normalizedInput.includes(room.label.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt')));
+        const targetRoom = named.length === 1 ? named[0] : rooms.find((room) => /\b(living|estar|sala)\b/.test(room.label.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt')));
+        if (!targetRoom) throw new Error('Indique explicitamente qual das duas divisões deve ser expandida.');
+        const otherRoom = rooms.find((room) => room.id !== targetRoom.id)!;
+        const result = executeSceneCommand(transaction, { type: 'RemoveWall', wallId: node.id, targetRoomId: targetRoom.id, otherRoomId: otherRoom.id }, actor);
+        pendingCommand = command; previewCompound(result.transaction, `transformação conceptual; implicações estruturais desconhecidas. ${targetRoom.label} une-se a ${otherRoom.label}`);
+        setSpatialCommandState('AwaitingConfirmation', 'Transformação conceptual validada geometricamente; implicações estruturais desconhecidas. Confirme para aplicar.');
+        return Promise.resolve({ status: 'preview', message: `${answerPrefix}Transformação conceptual pré-visualizada para ${targetRoom.label}. Implicações estruturais desconhecidas. Confirme para aplicar.` });
       }
       case 'Undo': case 'Redo': {
         const applied = executeHistory(intent.kind);
@@ -1283,6 +1351,8 @@ $('#explode-scene').addEventListener('click', () => {
   applyExplodedView();
   status(explodedView ? 'Vista explodida temporária; a Scene Graph canónica não foi alterada.' : 'Vista original restaurada a partir das posições-base da renderização.');
 });
+$('#isolate-selected').addEventListener('click', toggleSelectedIsolation);
+$('#toggle-cutaway').addEventListener('click', toggleCutaway);
 app.querySelectorAll<HTMLButtonElement>('[data-view-mode]').forEach((button) => button.addEventListener('click', () => {
   currentViewMode = button.dataset.viewMode as typeof currentViewMode;
   updateReferenceView();

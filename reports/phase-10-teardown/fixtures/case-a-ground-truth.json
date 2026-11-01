@@ -1,0 +1,13 @@
+{
+  "case": "A",
+  "fixture": "case-a-floor-plan.svg",
+  "fixtureSource": "UNFOLD generated evaluation fixture; independent layout reference",
+  "imageSizePx": { "width": 1200, "height": 800 },
+  "scale": { "pixels": 1000, "metres": 10, "pixelsPerMetre": 100 },
+  "rooms": [
+    { "id": "room-a", "label": "Sala A", "verticesPx": [[100,100],[700,100],[700,600],[100,600]], "dimensionsM": [6,5], "areaM2": 30 },
+    { "id": "room-b", "label": "Sala B", "verticesPx": [[700,100],[1100,100],[1100,600],[700,600]], "dimensionsM": [4,5], "areaM2": 20 }
+  ],
+  "sharedWall": { "xPx": 700, "lengthM": 5, "doorOpeningM": { "width": 1.12, "height": 2, "offset": 1.94, "sill": 0 } },
+  "tolerance": { "dimensionRelativeErrorMax": 0.01, "topology": "two simple polygons, one shared edge, one door opening, one shared wall relation" }
+}
