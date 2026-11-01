@@ -1,7 +1,7 @@
 # UNFOLD Phase 10 — Teardown, live Meta, and drawing-to-world
 
 Date: 2026-11-01
-Branch: `phase-10-teardown-meta-drawing-acceleration`
+Branch at Phase 10 recovery: `phase-10-teardown-meta-drawing-acceleration`
 Base: `62fe7eb118067d35140c02ed7410cf37f7e85c47`
 
 ## Result
@@ -69,6 +69,35 @@ Image: Library of Congress, Prints & Photographs Division, Historic American Bui
 
 The two printed overall widths (`50′-3½″` north and `51′-0″` south) are kept separate. Calibration used the north dimension; no model-inferred dimensions were used as coordinates. Only the four explicitly traced perimeter walls were assembled. Untraced rooms, stairs, windows and doors are not represented in the Case B scene.
 
+## Open-source geometry acceleration checkpoint
+
+Research ran in isolated checkouts under `/tmp/unfold-phase10-research`; no external frontend, pretrained weights or runtime dependency was copied into UNFOLD.
+
+| Project / source revision | License and dependencies | Verified behavior and decision |
+|---|---|---|
+| [OpenPlan3D](https://github.com/laanlabs/openPlan3D), `98f9cb467e4045c6abc5d9880ada1f03dff50c68` | MIT; SvelteKit 2, Svelte 5, TypeScript, Three.js 0.182.0 | `src/lib/utils/roomDetection.ts:22-128,164-317` splits intersections, forms an angular half-edge graph, traces faces and rejects exterior cycles; upstream tests `tests/overlapping-rooms.test.ts` and `tests/rooms.test.ts` cover overlap, dividers, closure and nesting. Inputs are already vectorized; fixed 5 cm tolerance and `Date.now()` IDs (`roomDetection.ts:299-307`) are unsuitable for direct use. `roomplanImport.ts` handles structured Apple RoomPlan data, not raster drawings. Reused as an algorithmic comparison; no duplicate face-tracing port because UNFOLD already has intersection splitting, T-junction snapping and bounded-face tracing. |
+| [R2V-to-Plan2Scene](https://github.com/3dlg-hcvc/r2v-to-plan2scene), `5f6d68d2e57c68953205567fd00d3ccd42d80f99` | MIT; legacy SciPy/Shapely/Pillow/NumPy stack | `convert.py:18-56` accepts vector candidates, then splits walls, detects rooms, assigns openings and derives room-door-room relations; cycle tracing is in `code/src/r2vstk/util.py:34-95`, room-door incidence in `house.py:243-260`. These informed the new canonical relations below. It does not supply raster coordinates; exterior heuristics and Manhattan-only split tolerances were not transplanted. Converter was not run because Shapely is absent and the available SciPy/NumPy versions conflict. |
+| [FloorplanTransformation](https://github.com/art-programmer/FloorplanTransformation), `929e7a309e300fbf1d8c77fb2277e5744cdca43e` | MIT; Torch7/Python 2/CUDA 8/Gurobi original; legacy PyTorch fork pins Torch 1.0 and old dependencies | `pytorch/IP.py:1171-1294,1340-1365,1458-1488,1626-1678` formulates binary junction/edge/opening/semantic-label selection with conflict exclusion and door-to-selected-wall incidence. Useful as a global constraint reference, but it depends on trained heatmaps and axis-aligned candidate classes; not integrated as runtime. |
+| [Raster2Seq](https://github.com/Cornell-VAILab/Raster2Seq), `d938188027cd4f2bed9f95c883e5cc6d80b507f5` | Source MIT; published weights separately CC BY-NC 4.0 | `engine.py:854-951` emits room polygon sequences, not walls, shared topology, metric scale or room-door connectivity. Runtime requires PyTorch, compiled extensions and CUDA-oriented code; this environment lacks PyTorch/CUDA. Weights were not downloaded or used because their noncommercial license is incompatible with commercial distribution. Deferred. |
+
+OpenPlan3D and R2V both confirm that topology operates on already-vectorized geometry; neither recovers the absent Case-B wall coordinates from the existing Meta document. OpenPlan3D's wall profiles and RoomPlan-specific import/validation are not imported: UNFOLD already has parametric walls/openings in metres and an existing canonical transaction model. Floorplan3D, Plan2Scene, That Open, RoomFormer, react-planner, FloorplanToBlender3d and CubiCasa5K were not cloned in this increment: they do not address the observed missing raster coordinates more directly. In particular, GPL-3.0 code and CC BY-NC datasets/weights were not integrated.
+
+### UNFOLD adaptation and measured Case-B candidate result
+
+- Added canonical `adjacent_to` relations when two generated room polygons share a wall. Adding an explicit door to that wall adds bidirectional `connected_to` edges between each room and the door, yielding a room → door → room path. Relations are marked derived/unreviewed. Existing `RemoveWall` transaction removes the shared wall, door and now-invalid relations; undo restores the original node and relation arrays.
+- Case A assertions cover the shared-wall adjacency, room-door connectivity and relation cleanup on wall merge. This adapts R2V's room-door incidence concept to `spatial_scene.v1`; it does not import its scene format.
+- New browser E2E: `tests/e2e/phase-10-case-b-detection.cdp.mjs`. On the real HABS raster, UNFOLD detected 162 wall-line candidates, selected 36, proposed 3 orthogonal rectangles (IDs `room-782-742-1679-1357`, `room-782-1391-1679-1881`, `room-1911-742-2925-1357`), excluded 11 low-quality faces, traced 0 exact graph cycles and proposed 9 ambiguous opening candidates. The first/third rectangles cross visible internal divisions and the fourth labelled room is absent. The candidates were rejected as room reconstructions; no Case-B polygons were committed. Browser evidence: [candidate report](evidence/case-b-detection/case-b-detection.json), [detected overlay](evidence/case-b-detection/02-detected-regions.png).
+- Compared with the prior 4-wall perimeter-only canonical scene, the current raster detector can now surface three unreviewed room-shaped candidates, but it does not improve validated room count (still 0), confirmed opening count (0), or dimension error. This is a measured candidate-generation result, not a complete Case-B reconstruction.
+- No real Meta calls were made in this increment. The previous 3-call result is reused as evidence; configured provider quota/capacity was not re-authorized or inspected for a new call. Historical request IDs and usage remain as recorded above.
+
+### Reuse assessment
+
+- Adapted into working UNFOLD code: one R2V-inspired room/door relation builder over the existing wall/room nodes; tests cover derive, remove and undo behavior.
+- Already present in UNFOLD, so not duplicated: line consolidation, intersection detection, endpoint/T-junction snapping, half-edge face walks, exterior/sliver filters, room polygons, parametric openings and transactional geometry edits.
+- Deferred: external OpenPlan3D face-tracer port, R2V converter, FloorplanTransformation solver, Raster2Seq inference, BIM fragment engine and texture/CAD pipelines. External algorithms either require vectors unavailable from Meta, duplicate the current graph, carry incompatible assumptions, or impose dependency/license costs.
+- Estimated engineering time avoided: approximately 1–3 engineer-hours for room-door relationship derivation and its basic graph cases, assuming direct MIT code reuse would still require unit conversion, stable IDs, provenance and transaction integration. This is a bounded estimate, not a project-wide reduction claim. The adaptation itself took less than one focused implementation pass; maintenance risk is low because no external runtime dependency or copied source is present.
+- External code copied: zero lines. License attribution is documented here; UNFOLD owns the adapter and canonical serialization.
+
 ## Acceptance matrix
 
 | Test | Status | Evidence / limit |
@@ -77,7 +106,8 @@ The two printed overall widths (`50′-3½″` north and `51′-0″` south) are
 | Case B Meta grounding | PASS | Actual plan extracted into semantic document with uncertainties; no coordinates |
 | Case A plan-to-3D, dimensions and topology | PASS | Browser scene and independent geometry assertions; opening browser coverage remains partial |
 | Case B Meta-to-scene handoff and accepted semantic link | BLOCKED | First handoff screenshot preceded async load; no accepted region mapping recorded |
-| Case B complete plan reconstruction | BLOCKED | Four perimeter walls only; no room polygons/relations and two width errors exceed 1% |
+| Case B raster candidates | PARTIAL | 162 line candidates; three poor orthogonal regions; 11 faces excluded; 0 exact cycles; 9 ambiguous opening candidates; regions rejected after visual review |
+| Case B complete plan reconstruction | BLOCKED | Canonical scene remains four perimeter walls; no valid room polygons/relations; two width errors exceed 1% |
 | Component inspection, isolate and cutaway | PASS | Correct identity/provenance and render-only state restoration |
 | RemoveWall transactional geometry / undo | PASS | Unit tests cover valid merge, invalid polygon blocking and canonical rollback/restore |
 | RemoveWall live agent proposal/commit/undo | BLOCKED | Real model requested clarification; no proposal was committed |
@@ -86,6 +116,17 @@ The two printed overall widths (`50′-3½″` north and `51′-0″` south) are
 | Integrated GPU frame target | BLOCKED | Only SwiftShader p95 sample available |
 | SAM 3.1 | NOT RUN | No supported client in this checkout |
 | Live provider failure path | NOT RUN | No call budget was spent on a deliberate failure |
+
+## Increment verification and Git checkpoint
+
+- Focused geometry test: **PASS**, 12 tests in `tests/plan-reconstruction.test.ts`.
+- Full unit suite: **PASS**, 43 files / 245 tests.
+- Production build: **PASS**, with the existing 586.26 kB `OrbitControls` chunk warning.
+- Browser Case B detection E2E: **PASS_CANDIDATES_ONLY**, Chromium 1440×1000, DPR 1, 0 browser errors, 0 Meta requests. It intentionally fails the room-reconstruction acceptance because proposed rectangles contradict visible partitions.
+- Existing Case-B browser flow rerun: **PASS** for four-wall manual-trace, edit/commit/undo/redo, persistence, GLB loading and Four-Bar regression; no Meta calls; 0 browser errors. Performance was p95 16.7 ms only under SwiftShader and is not GPU evidence.
+- Browser screenshot review: candidate detector misses the fourth room and produces rectangles crossing partitions. No new semantic link, wall trace, scale confirmation or canonical Case-B commit was made.
+- Working branch: `phase-10-open-source-geometry-acceleration`, created from verified `46c72ce0b18b48dbbb136062fc64396b804b09e8`; commit SHA is recorded after this report update.
+- Reproduction: `UNFOLD_E2E_URL=http://127.0.0.1:5192 UNFOLD_CDP_PORT=9227 UNFOLD_EVIDENCE_DIR=reports/phase-10-teardown/evidence/case-b-detection node tests/e2e/phase-10-case-b-detection.cdp.mjs`; the pre-existing Case-B interaction test is `node tests/e2e/phase-8d-second-plan.cdp.mjs` with `UNFOLD_PLAN_FIXTURE`, `UNFOLD_PLAN_WIDTH`, `UNFOLD_PLAN_HEIGHT` set as above.
 
 ## Remaining work
 

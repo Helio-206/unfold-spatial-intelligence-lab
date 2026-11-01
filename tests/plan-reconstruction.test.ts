@@ -62,14 +62,19 @@ describe('plan reconstruction geometry', () => {
     }
     const [roomA, roomB] = rooms;
     const sharedWallId = roomA!.component!.dependsOn.find((id) => roomB!.component!.dependsOn.includes(id))!;
+    expect(built.scene.relations.some((relation) => relation.kind === 'adjacent_to' && JSON.parse(String(relation.properties.sharedWallIds?.value)).includes(sharedWallId))).toBe(true);
     const door = addOpeningToScene(built, sharedWallId, { id: 'fixture-door', kind: 'door', offsetM: truth.sharedWall.doorOpeningM.offset, widthM: truth.sharedWall.doorOpeningM.width, heightM: truth.sharedWall.doorOpeningM.height, sillM: truth.sharedWall.doorOpeningM.sill, actor: 'case-a-reviewer' });
     expect(door.scene.relations.filter((relation) => relation.kind === 'bounded_by' && relation.toNodeId === sharedWallId)).toHaveLength(2);
+    expect(door.scene.relations.filter((relation) => relation.kind === 'connected_to' && relation.properties.viaWallId?.value === sharedWallId)).toHaveLength(4);
     expect(door.scene.nodes.find((node) => node.id === sharedWallId)?.geometry?.kind === 'box' && (door.scene.nodes.find((node) => node.id === sharedWallId)!.geometry as Extract<NonNullable<typeof door.scene.nodes[number]['geometry']>, {kind:'box'}>).sizeM[0]).toBeCloseTo(truth.sharedWall.lengthM);
     const merged = executeSceneCommand(door, { type: 'RemoveWall', wallId: sharedWallId, targetRoomId: roomA!.id, otherRoomId: roomB!.id }, 'case-a-reviewer').transaction;
     expect(merged.scene.nodes.filter((node) => node.component?.kind === 'room')).toHaveLength(1);
     expect(merged.scene.nodes.some((node) => node.id === 'fixture-door' || node.id === sharedWallId)).toBe(false);
+    expect(merged.scene.relations.some((relation) => relation.kind === 'adjacent_to' || relation.kind === 'connected_to')).toBe(false);
     expect(merged.scene.relations.every((relation) => merged.scene.nodes.some((node) => node.id === relation.fromNodeId) && merged.scene.nodes.some((node) => node.id === relation.toNodeId))).toBe(true);
-    expect(executeSceneCommand(merged, { type: 'Undo' }).transaction.scene.nodes).toEqual(door.scene.nodes);
+    const restored = executeSceneCommand(merged, { type: 'Undo' }).transaction.scene;
+    expect(restored.nodes).toEqual(door.scene.nodes);
+    expect(restored.relations).toEqual(door.scene.relations);
   });
   it('detects horizontal and vertical wall candidates from a new raster without image-specific coordinates', () => {
     const candidates = detectWallCandidates(raster(140, 100, [[10, 20, 115, 24], [35, 24, 39, 82]]), { minimumLengthPx: 30 });
@@ -301,6 +306,8 @@ describe('plan reconstruction geometry', () => {
     expect(scene.scene.nodes.filter((node) => node.component?.kind === 'room')).toHaveLength(2);
     expect(scene.scene.nodes.filter((node) => node.component?.kind === 'wall')).toHaveLength(7);
     expect(scene.scene.relations.filter((relation) => relation.kind === 'bounded_by')).toHaveLength(8);
+    expect(scene.scene.relations.filter((relation) => relation.kind === 'adjacent_to')).toHaveLength(1);
+    expect(scene.scene.relations.find((relation) => relation.kind === 'adjacent_to')?.provenance.validation).toBe('unreviewed');
     expect(scene.scene.nodes.filter((node) => node.component?.kind === 'room').every((node) => node.geometry?.kind === 'polygon' && node.geometry.provenance.validation === 'unreviewed')).toBe(true);
     const mesh = buildThreePlanGroup(scene.scene);
     expect(mesh.children.filter((node) => node.name.startsWith('room-'))).toHaveLength(2);

@@ -1,0 +1,79 @@
+{
+  "scenario": "B · Amoureaux House HABS MO-1113 sheet 3/10",
+  "attribution": "Library of Congress, Prints & Photographs Division, HABS MO-1113, sheet 3/10",
+  "source": "/home/helio/HEr/META/unfold-phase-10-teardown-meta-drawing-acceleration/reports/phase-10-teardown/fixtures/amoureaux-house-plan.png",
+  "sourceSha256": "1d78e739dad568ea49eb193416dc5f91c8b62b904a0170c63af803dd87750026",
+  "baseUrl": "http://127.0.0.1:5192",
+  "browser": "Chromium DevTools Protocol",
+  "extraction": "UNFOLD raster wall detector and planar candidate graph; no Meta calls",
+  "errors": [],
+  "candidates": {
+    "candidateCount": 162,
+    "selectedCandidateCount": 36,
+    "proposedRegions": [
+      {
+        "id": "room-782-742-1679-1357",
+        "label": "Divisão proposta 82-742-1679-135711 segmentos de suporte · 551,943 px² · confiança heurística 0.89 · por confirmar",
+        "vertices": "781.9583333333334,742 1679.1666666666667,742 1679.1666666666667,1357.1785714285713 781.9583333333334,1357.1785714285713"
+      },
+      {
+        "id": "room-782-1391-1679-1881",
+        "label": "Divisão proposta 82-1391-1679-188113 segmentos de suporte · 439,632 px² · confiança heurística 0.87 · por confirmar",
+        "vertices": "781.9583333333334,1390.75 1679.1666666666667,1390.75 1679.1666666666667,1880.75 781.9583333333334,1880.75"
+      },
+      {
+        "id": "room-1911-742-2925-1357",
+        "label": "Divisão proposta 911-742-2925-135716 segmentos de suporte · 623,330 px² · confiança heurística 0.78 · por confirmar",
+        "vertices": "1911.25,742 2924.5,742 2924.5,1357.1785714285713 1911.25,1357.1785714285713"
+      }
+    ],
+    "lowQualityFaceCount": 11,
+    "contourSummary": "3 divisão(ões) proposta(s) com suporte de parede · 11 face(s) de baixa qualidade excluída(s) · 0 ciclo(s) fechados exactos. Sem escala validada, áreas apenas em px².",
+    "openingCandidates": [
+      {
+        "id": "gap-line-18-line-19",
+        "label": "gap-line-18-line-1917.0 px · ambígua · confirmar manualmente"
+      },
+      {
+        "id": "gap-line-43-line-60",
+        "label": "gap-line-43-line-6017.5 px · ambígua · confirmar manualmente"
+      },
+      {
+        "id": "gap-line-63-line-64",
+        "label": "gap-line-63-line-6418.0 px · ambígua · confirmar manualmente"
+      },
+      {
+        "id": "gap-line-77-line-82",
+        "label": "gap-line-77-line-8224.5 px · ambígua · confirmar manualmente"
+      },
+      {
+        "id": "gap-line-79-line-82",
+        "label": "gap-line-79-line-8219.5 px · ambígua · confirmar manualmente"
+      },
+      {
+        "id": "gap-line-88-line-89",
+        "label": "gap-line-88-line-8916.0 px · ambígua · confirmar manualmente"
+      },
+      {
+        "id": "gap-line-99-line-100",
+        "label": "gap-line-99-line-10019.0 px · ambígua · confirmar manualmente"
+      },
+      {
+        "id": "gap-line-107-line-112",
+        "label": "gap-line-107-line-11234.8 px · ambígua · confirmar manualmente"
+      },
+      {
+        "id": "gap-line-110-line-112",
+        "label": "gap-line-110-line-11233.8 px · ambígua · confirmar manualmente"
+      }
+    ],
+    "openingCandidateCount": 9,
+    "viewport": [
+      1440,
+      1000
+    ],
+    "dpr": 1
+  },
+  "status": "PASS_CANDIDATES_ONLY",
+  "note": "Regiões automáticas são candidatas geométricas não revistas; não foram construídas nem associadas a nomes Meta."
+}

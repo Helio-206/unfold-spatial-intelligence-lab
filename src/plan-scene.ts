@@ -121,6 +121,7 @@ export function createPlanScene(options: PlanSceneOptions): SceneTransaction {
   const nodes = selected.map((candidate, index) => wallNode(candidate, options, recordedAt, scale.pixelsPerMetre, index + 1));
   const wallByEdge = new Map<string, Node>();
   const relations: SceneRelation[] = [];
+  const roomWalls = new Map<string, string[]>();
   const allRegionVertices = selectedRegions.flatMap((region) => region.vertices);
   for (const region of selectedRegions) {
     const wallIds: string[] = [];
@@ -193,7 +194,31 @@ export function createPlanScene(options: PlanSceneOptions): SceneTransaction {
       } }, properties: {},
     };
     nodes.push(room);
+    roomWalls.set(roomId, wallIds);
     for (const wallId of wallIds) relations.push({ id: `bounded-${roomId}-${wallId}`, fromNodeId: roomId, toNodeId: wallId, kind: 'bounded_by', properties: {}, provenance: roomProvenance });
+  }
+  const roomsByWall = new Map<string, string[]>();
+  for (const [roomId, wallIds] of roomWalls) for (const wallId of wallIds) roomsByWall.set(wallId, [...(roomsByWall.get(wallId) ?? []), roomId]);
+  const sharedWallsByRoomPair = new Map<string, { roomIds: [string, string]; wallIds: string[] }>();
+  for (const [wallId, roomIds] of roomsByWall) {
+    if (roomIds.length !== 2) continue;
+    const [firstRoomId, secondRoomId] = [...roomIds].sort() as [string, string];
+    const pairKey = `${firstRoomId}:${secondRoomId}`;
+    const pair = sharedWallsByRoomPair.get(pairKey) ?? { roomIds: [firstRoomId, secondRoomId], wallIds: [] };
+    pair.wallIds.push(wallId);
+    sharedWallsByRoomPair.set(pairKey, pair);
+  }
+  for (const { roomIds: [firstRoomId, secondRoomId], wallIds } of sharedWallsByRoomPair.values()) {
+    const evidence = `As regiões propostas partilham ${wallIds.length} segmento(s) de parede; adjacência derivada da geometria, ainda não revista.`;
+    const relationProvenance = provenance('derived', 'unreviewed', recordedAt, { evidence });
+    relations.push({
+      id: `adjacent-${firstRoomId}-${secondRoomId}`,
+      fromNodeId: firstRoomId,
+      toNodeId: secondRoomId,
+      kind: 'adjacent_to',
+      properties: { sharedWallIds: { value: JSON.stringify(wallIds.sort()), provenance: relationProvenance } },
+      provenance: relationProvenance,
+    });
   }
   const scaleEvidence = provenance('user', 'unreviewed', recordedAt, { actor: options.calibration.actor, evidence: options.calibration.evidence });
   const scene: SpatialSceneV1 = {
@@ -269,7 +294,22 @@ export function addOpeningToScene(transaction: SceneTransaction, wallId: string,
     } },
     properties: {},
   };
-  return executeSceneCommand(transaction, { type: 'AddComponent', node }, input.actor ?? 'user').transaction;
+  const added = executeSceneCommand(transaction, { type: 'AddComponent', node }, input.actor ?? 'user').transaction;
+  if (input.kind !== 'door') return added;
+  const rooms = [...new Set(added.scene.relations.filter((relation) => relation.kind === 'bounded_by' && relation.toNodeId === wallId).map((relation) => relation.fromNodeId))].sort();
+  if (rooms.length !== 2) return added;
+  const evidence = `A porta ${input.id} foi colocada na parede comum ${wallId}; conectividade derivada da geometria e do elemento explícito, ainda não revista.`;
+  const relationProvenance = provenance('derived', 'unreviewed', recordedAt, { evidence });
+  const edge = (fromNodeId: string, toNodeId: string) => ({
+    id: `connected-${fromNodeId}-${toNodeId}`,
+    fromNodeId,
+    toNodeId,
+    kind: 'connected_to',
+    properties: { viaWallId: { value: wallId, provenance: relationProvenance } },
+    provenance: relationProvenance,
+  });
+  const scene = { ...added.scene, relations: [...added.scene.relations, edge(rooms[0]!, input.id), edge(input.id, rooms[1]!), edge(rooms[1]!, input.id), edge(input.id, rooms[0]!)] };
+  return { ...added, scene };
 }
 
 export function editOpeningInScene(transaction: SceneTransaction, openingId: string, edit: OpeningEdit): SceneTransaction {
