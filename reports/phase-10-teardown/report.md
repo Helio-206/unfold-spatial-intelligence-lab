@@ -251,6 +251,8 @@ Scale entries now retain the user's two clicked image endpoints and their horizo
 
 The acceptance state remains **provisional, not accepted**. Human per-region correction, human confirmation of dimension endpoints, opening classification, complete wall topology, canonical Scene Graph construction, and an edit/undo against this Case B geometry remain outstanding. No change to the 1% dimensional tolerance was made.
 
+Implementation checkpoint: branch `phase-10-open-source-geometry-acceleration`, commit `a423e559f475548f70fa155314b3c6bb86c53903`. This commit changes the provisional geometry adapter, spatial editor and axis calibration, adds focused geometry tests and the Case B browser assertions, and records the two reviewed screenshots plus sanitized E2E result. No Meta request or credential was added.
+
 Reproduction:
 
 ```sh
