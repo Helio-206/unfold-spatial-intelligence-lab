@@ -5,9 +5,13 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { gsap } from 'gsap';
 import { decodePlanImage } from './plan-image';
 import { buildPlanVectorModel, countClosedCandidateContours, detectCandidateIntersections, detectWallCandidates, mergeWallCandidates, splitWallCandidate, traceWallCandidate, type PixelWallCandidate, type Point2 } from './plan-reconstruction';
-import { addOpeningToScene, createPlanScene, editOpeningInScene, editWallInScene } from './plan-scene';
+import { addOpeningToScene, createPlanScene, planOpeningEdit, planWallEdit, type CompositePlan } from './plan-scene';
+import { createSceneAuthorizer } from './scene-authorizer';
+import { confirmedNotice, explainSceneError } from './scene-messages';
+import type { ConfirmedReference } from './scene-authorization';
+import type { CommandOrigin } from './core';
 import { ARCHITECTURAL_MODULE_DIMENSIONS, buildThreePlanGroup, type ArchitecturalAssets } from './plan-three-adapter';
-import { commitScenePreview, deserializeSceneTransaction, previewSceneCommand, serializeSceneTransaction, type Node, type ScenePreview, type SceneTransaction, type SpatialCommand, type SpatialSceneV1 } from './spatial-scene';
+import { commitScenePreview, deserializeSceneTransaction, previewSceneCommand, serializeSceneTransaction, type Node, type SceneCommandContext, type ScenePreview, type SceneTransaction, type SpatialCommand, type SpatialSceneV1 } from './spatial-scene';
 import { clearSpatialSourceImage, readSpatialSourceImage } from './spatial-source-store';
 import { createSpatialCommandEnvelope, parseSpatialIntentV1, resolveSpatialTarget, type SpatialCommandOrigin, type SpatialCommandState, type SpatialCommandV1 } from './spatial-command-protocol';
 import { registerSpatialCommandHandler, type SpatialCommandOutcome } from './spatial-command-runtime';
@@ -98,6 +102,10 @@ const raycaster = new Raycaster(); const pointer = new Vector2();
 let transaction: SceneTransaction | undefined;
 let preview: ScenePreview | undefined;
 let compoundPreview: SceneTransaction | undefined;
+// Autorizações de valores confirmados: emitidas só no clique de confirmação, para a operação que o preview mostrou.
+// O ledger é de sessão (memória) e serve de salvaguarda de fluxo, não de fronteira de segurança.
+const sceneAuthorizer = createSceneAuthorizer();
+const compositePlans = new WeakMap<SceneTransaction, CompositePlan>();
 let compoundPreviewBaseRevision: string | undefined;
 let pendingCommand: SpatialCommandV1 | undefined;
 let unregisterSpatialCommands: (() => void) | undefined;
@@ -657,7 +665,7 @@ $('#add-module').addEventListener('click', () => {
     component: { kind: 'architectural_module', dependsOn: [], properties: { assetId: { value: assetId, provenance: source } } }, properties: {},
   };
   const candidate = previewSceneCommand(transaction, { type: 'AddComponent', node }, 'local-user-input');
-  if (candidate.status === 'blocked') { status(candidate.issues.map((issue) => issue.message).join(' ')); return; }
+  if (candidate.status === 'blocked') { status(candidate.issues.map((issue) => explainSceneError(issue.message)).join(' ')); return; }
   preview = candidate; compoundPreview = undefined; $('#preview-status').textContent = `Pré-visualização: adicionar ${assetId} como módulo independente.`; $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false; renderModel(candidate.candidate!); selectNode(node.id);
 });
 
@@ -693,11 +701,11 @@ $('#toggle-reference').addEventListener('click', () => { visibleReference = !vis
 $('#source-toggle').addEventListener('click', () => { const panel = $('#source-panel'); const collapsed = panel.classList.toggle('source-collapsed'); $('#source-toggle').textContent = collapsed ? '+' : '−'; $('#source-toggle').setAttribute('aria-expanded', String(!collapsed)); $('#source-toggle').setAttribute('aria-label', collapsed ? 'Expandir referência' : 'Recolher referência'); });
 $('#clear-focus').addEventListener('click', () => selectNode(undefined));
 
-function candidateWallEdit(node: Node, length: number, height: number, thickness: number, x: number, z: number, actor = 'local-user-input'): SceneTransaction {
+function candidateWallEdit(node: Node, length: number, height: number, thickness: number, x: number, z: number, actor = 'local-user-input', origin?: CommandOrigin): CompositePlan {
   if (!transaction || node.geometry?.kind !== 'box') throw new Error('A parede seleccionada não tem geometria paramétrica.');
   const q = node.transform.rotation; const angle = 2 * Math.atan2(q[1], q[3]);
   const dx = Math.cos(angle) * length / 2; const dz = -Math.sin(angle) * length / 2;
-  return editWallInScene(transaction, node.id, { start: { x: x - dx, y: z - dz }, end: { x: x + dx, y: z + dz }, heightM: height, thicknessM: thickness, actor });
+  return planWallEdit(transaction, node.id, { start: { x: x - dx, y: z - dz }, end: { x: x + dx, y: z + dz }, heightM: height, thicknessM: thickness, actor }, { origin });
 }
 
 function focusNode(nodeId: string): void {
@@ -888,6 +896,9 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
     origin: answerPrefix.startsWith('Muse Spark') ? 'muse_spark' : origin,
   });
   const actor = answerPrefix.startsWith('Muse Spark') ? 'user-confirmed:muse-spark' : 'local-user-input';
+  // Tudo o que vem de um modelo é uma proposta: não toca valores confirmados, nem os cria, nem autoriza nada.
+  const sceneOrigin: CommandOrigin = answerPrefix.startsWith('Muse Spark') || origin === 'muse_spark' ? 'model_proposal' : 'ui_direct';
+  const sceneContext: SceneCommandContext = { origin: sceneOrigin, actor: { kind: sceneOrigin === 'model_proposal' ? 'model' : 'human', id: actor } };
 
   try {
     const node = resolvedNodeId ? transaction.scene.nodes.find((item) => item.id === resolvedNodeId) : undefined;
@@ -918,7 +929,7 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
       case 'Resize': {
         if (!node || node.geometry?.kind !== 'box' || node.component?.kind !== 'wall') throw new Error('Seleccione uma parede paramétrica.');
         const length = typeof intent.parameters.delta === 'number' ? node.geometry.sizeM[0] + intent.parameters.delta : Number(intent.parameters.value);
-        const next = candidateWallEdit(node, length, node.geometry.sizeM[1], node.geometry.sizeM[2], node.transform.translationM[0], node.transform.translationM[2], actor);
+        const next = candidateWallEdit(node, length, node.geometry.sizeM[1], node.geometry.sizeM[2], node.transform.translationM[0], node.transform.translationM[2], actor, sceneOrigin);
         pendingCommand = command; previewCompound(next, `${node.label}: ${node.geometry.sizeM[0].toFixed(2)} → ${length.toFixed(2)} m`);
         focusNode(node.id);
         selectNode(node.id); setSpatialCommandState('AwaitingConfirmation', `Pré-visualização pronta para ${node.label}. Confirme no inspector para gravar a revisão.`);
@@ -931,7 +942,7 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
         const delta = Number(intent.parameters.distance);
         const x = node.transform.translationM[0] + (axis === 'X' ? delta : 0);
         const z = node.transform.translationM[2] + (axis === 'Z' ? delta : 0);
-        const next = candidateWallEdit(node, node.geometry.sizeM[0], node.geometry.sizeM[1], node.geometry.sizeM[2], x, z, actor);
+        const next = candidateWallEdit(node, node.geometry.sizeM[0], node.geometry.sizeM[1], node.geometry.sizeM[2], x, z, actor, sceneOrigin);
         pendingCommand = command; previewCompound(next, `${node.label}: deslocar ${delta.toFixed(2)} m no eixo ${axis}`);
         focusNode(node.id);
         selectNode(node.id); setSpatialCommandState('AwaitingConfirmation', `Pré-visualização pronta. Dependências geométricas foram recalculadas; confirme no inspector.`);
@@ -942,10 +953,10 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
         const angle = Number(intent.parameters.angle);
         const axis = String(intent.parameters.axis);
         if (!Number.isFinite(angle) || Math.abs(angle) > Math.PI * 2 || axis !== 'Y') throw new Error('A rotação de paredes só é permitida em torno do eixo vertical Y, até 360° por comando.');
-        const candidate = previewSceneCommand(transaction!, { type: 'RotateComponent', nodeId: node.id, axis: [0, 1, 0], angleRad: angle }, actor);
+        const candidate = previewSceneCommand(transaction!, { type: 'RotateComponent', nodeId: node.id, axis: [0, 1, 0], angleRad: angle }, actor, undefined, sceneContext);
         if (candidate.status === 'blocked') throw new Error(candidate.issues.map((issue) => issue.message).join(' '));
         preview = candidate; compoundPreview = undefined; compoundPreviewBaseRevision = undefined; pendingCommand = command;
-        $('#preview-status').textContent = `Pré-visualização: rodar ${node.label} ${angle.toFixed(3)} rad; dependências recalculadas.`;
+        $('#preview-status').textContent = previewText(`Pré-visualização: rodar ${node.label} ${angle.toFixed(3)} rad; dependências recalculadas.`, candidate.touchesConfirmed);
         $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false; renderModel(candidate.candidate!); focusNode(node.id); selectNode(node.id);
         setSpatialCommandState('AwaitingConfirmation', `Pré-visualização angular pronta para ${node.label}. Confirme para gravar.`);
         return Promise.resolve({ status: 'preview', message: `${answerPrefix}${node.label}: rotação pré-visualizada. Confirme para aplicar.` });
@@ -957,7 +968,7 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
           kind: String(intent.parameters.kind) as 'door' | 'window',
           widthM: Number(intent.parameters.widthM), heightM: Number(intent.parameters.heightM),
           offsetM: Number(intent.parameters.offsetM), sillM: Number(intent.parameters.sillM), actor,
-        });
+        }, undefined, sceneOrigin);
         pendingCommand = command; previewCompound(next, `${String(intent.parameters.kind) === 'door' ? 'porta' : 'janela'} ${Number(intent.parameters.widthM).toFixed(2)} m ligada a ${node.label}`);
         focusNode(node.id);
         selectNode(node.id); setSpatialCommandState('AwaitingConfirmation', 'Abertura e dependência preparadas. Confirme no inspector para gravar.');
@@ -965,9 +976,9 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
       }
       case 'RemoveOpening': {
         if (!node || !['door', 'window'].includes(node.component?.kind ?? '')) throw new Error('Seleccione uma porta ou janela para remover.');
-        const candidate = previewSceneCommand(transaction, { type: 'RemoveComponent', nodeId: node.id }, actor);
+        const candidate = previewSceneCommand(transaction, { type: 'RemoveComponent', nodeId: node.id }, actor, undefined, sceneContext);
         if (candidate.status === 'blocked') throw new Error(candidate.issues.map((issue) => issue.message).join(' '));
-        preview = candidate; pendingCommand = command; $('#preview-status').textContent = `Pré-visualização: remover ${node.label}.`;
+        preview = candidate; pendingCommand = command; $('#preview-status').textContent = previewText(`Pré-visualização: remover ${node.label}.`, candidate.touchesConfirmed);
         $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false; renderModel(candidate.candidate!); selectNode(node.id);
         setSpatialCommandState('AwaitingConfirmation', `Remoção de ${node.label} proposta. Confirme para gravar.`);
         return Promise.resolve({ status: 'preview', message: `${answerPrefix}Remoção de ${node.label} proposta. Confirme para aplicar.` });
@@ -996,16 +1007,24 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
         return Promise.resolve({ status: 'rejected', message: 'Esta intenção ainda não é suportada pelo executor determinístico.' });
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Comando recusado.';
+    const message = error instanceof Error ? explainSceneError(error.message) : 'Comando recusado.';
     pendingCommand = undefined; setSpatialCommandState('Rejected', `${message} Nenhuma revisão foi aplicada.`);
     return Promise.resolve({ status: 'rejected', message: `${message} Nenhuma revisão foi aplicada.` });
   }
 }
 
-function previewCompound(next: SceneTransaction, label: string): void {
+/** O texto do preview, com o aviso de valores confirmados quando a alteração os toca (o clique em «Aplicar» é a autorização). */
+function previewText(text: string, touched: readonly ConfirmedReference[]): string {
+  const notice = confirmedNotice(touched, (id) => transaction?.scene.nodes.find((item) => item.id === id)?.label ?? id);
+  return notice ? `${text} ${notice}` : text;
+}
+function previewCompound(shown: SceneTransaction | CompositePlan, label: string): void {
   if (!transaction) throw new Error('SCENE_NOT_READY');
+  const plan = 'commit' in shown ? shown : undefined;
+  const next = plan ? plan.transaction : shown as SceneTransaction;
+  if (plan) compositePlans.set(next, plan);
   compoundPreviewBaseRevision = transaction.scene.revision.id;
-  compoundPreview = next; preview = undefined; $('#preview-status').textContent = `Pré-visualização: ${label}. A revisão canónica ainda não foi alterada.`;
+  compoundPreview = next; preview = undefined; $('#preview-status').textContent = previewText(`Pré-visualização: ${label}. A revisão canónica ainda não foi alterada.`, plan?.touchesConfirmed ?? []);
   $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false; renderModel(next.scene); updateToolbar();
 }
 $('#preview-wall').addEventListener('click', () => {
@@ -1015,7 +1034,7 @@ $('#preview-wall').addEventListener('click', () => {
     if (!Number.isFinite(x) || !Number.isFinite(z)) throw new Error('Posições X/Z devem ser finitas.');
     const next = candidateWallEdit(node, parsePositive('#wall-length', 'Comprimento'), parsePositive('#wall-height-edit', 'Altura'), parsePositive('#wall-thickness-edit', 'Espessura'), x, z);
     previewCompound(next, `${node.label} · ${$('#wall-length').value} m`);
-  } catch (error) { status(error instanceof Error ? error.message : 'Alteração inválida.'); }
+  } catch (error) { status(error instanceof Error ? explainSceneError(error.message) : 'Alteração inválida.'); }
 });
 $('#add-opening').addEventListener('click', () => {
   try {
@@ -1025,22 +1044,22 @@ $('#add-opening').addEventListener('click', () => {
     if (!offsetText || !sillText || !Number.isFinite(offset) || offset < 0 || !Number.isFinite(sill) || sill < 0) throw new Error('Offset e peitoril têm de ser introduzidos explicitamente.');
     const next = addOpeningToScene(transaction!, wall.id, { id: `opening-${crypto.randomUUID().slice(0, 8)}`, kind: (document.querySelector<HTMLSelectElement>('#opening-kind')?.value ?? 'door') as 'door' | 'window', offsetM: offset, widthM: parsePositive('#opening-width', 'Largura'), heightM: parsePositive('#opening-height', 'Altura'), sillM: sill, actor: 'local-user-input' });
     previewCompound(next, 'nova abertura com dimensões explicitamente fornecidas');
-  } catch (error) { status(error instanceof Error ? error.message : 'A abertura não é válida.'); }
+  } catch (error) { status(error instanceof Error ? explainSceneError(error.message) : 'A abertura não é válida.'); }
 });
 $('#preview-opening').addEventListener('click', () => {
   try {
     if (!transaction || !selectedId) throw new Error('Seleccione uma abertura.');
     const offsetText = $('#edit-opening-offset').value; const sillText = $('#edit-opening-sill').value;
     if (!offsetText || !sillText) throw new Error('Offset e peitoril têm de ser introduzidos explicitamente.');
-    const next = editOpeningInScene(transaction, selectedId, { offsetM: Number(offsetText), widthM: parsePositive('#edit-opening-width', 'Largura'), heightM: parsePositive('#edit-opening-height', 'Altura'), sillM: Number(sillText), actor: 'local-user-input' });
+    const next = planOpeningEdit(transaction, selectedId, { offsetM: Number(offsetText), widthM: parsePositive('#edit-opening-width', 'Largura'), heightM: parsePositive('#edit-opening-height', 'Altura'), sillM: Number(sillText), actor: 'local-user-input' });
     previewCompound(next, 'alteração da abertura e do vão na parede');
-  } catch (error) { status(error instanceof Error ? error.message : 'Abertura inválida.'); }
+  } catch (error) { status(error instanceof Error ? explainSceneError(error.message) : 'Abertura inválida.'); }
 });
 $('#remove-opening').addEventListener('click', () => {
   if (!transaction || !selectedId) return;
   const candidate = previewSceneCommand(transaction, { type: 'RemoveComponent', nodeId: selectedId }, 'local-user-input');
-  if (candidate.status === 'blocked') { status(candidate.issues.map((issue) => issue.message).join(' ')); return; }
-  preview = candidate; compoundPreview = undefined; $('#preview-status').textContent = 'Pré-visualização: remover abertura.'; $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false; renderModel(candidate.candidate!);
+  if (candidate.status === 'blocked') { status(candidate.issues.map((issue) => explainSceneError(issue.message)).join(' ')); return; }
+  preview = candidate; compoundPreview = undefined; $('#preview-status').textContent = previewText('Pré-visualização: remover abertura.', candidate.touchesConfirmed); $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false; renderModel(candidate.candidate!);
 });
 $('#commit-preview').addEventListener('click', () => {
   if (!transaction) return;
@@ -1049,7 +1068,9 @@ $('#commit-preview').addEventListener('click', () => {
     setSpatialCommandState('Executing', 'A validar e aplicar a transacção espacial.');
     const priorScene = transaction.scene;
     const committedCommand = pendingCommand;
-    transaction = compoundPreview ? compoundPreview : preview ? commitScenePreview(transaction, preview) : transaction;
+    // Se o preview toca valores confirmados, este clique (a confirmação explícita) emite a autorização para a operação mostrada.
+    const compoundPlan = compoundPreview ? compositePlans.get(compoundPreview) : undefined;
+    transaction = compoundPreview ? (compoundPlan ? compoundPlan.commit(sceneAuthorizer.authorize(compoundPlan), transaction) : compoundPreview) : preview ? commitScenePreview(transaction, preview, sceneAuthorizer.authorize(preview)) : transaction;
     preview = undefined; compoundPreview = undefined; compoundPreviewBaseRevision = undefined; $('#preview-status').textContent = 'Alteração aplicada à cena canónica.'; $('#commit-preview').disabled = true; $('#cancel-preview').disabled = true; persistScene(); renderModel(transaction.scene); animateRevision(priorScene, transaction.scene, committedCommand?.intent.target.nodeId ?? selectedId); selectNode(selectedId); updateToolbar();
     if (committedCommand) {
       const before = committedCommand.intent.target.nodeId ? priorScene.nodes.find((node) => node.id === committedCommand.intent.target.nodeId) : undefined;
@@ -1059,7 +1080,7 @@ $('#commit-preview').addEventListener('click', () => {
       setSpatialCommandState('Completed', `Comando confirmado na revisão ${transaction.scene.revision.number}. Undo/Redo disponíveis.`);
     }
     pendingCommand = undefined;
-  } catch (error) { status(`Commit recusado: ${error instanceof Error ? error.message : 'erro'}`); cancelPreview(); }
+  } catch (error) { status(`Commit recusado: ${error instanceof Error ? explainSceneError(error.message) : 'erro'}`); cancelPreview(); }
 });
 function cancelPreview(): void {
   const commandWasPending = Boolean(pendingCommand);
@@ -1087,7 +1108,7 @@ gizmo.addEventListener('dragging-changed', (event) => {
       const length = node.geometry.sizeM[0] * object.scale.x;
       const start = new Vector3(object.position.x, 0, object.position.z).addScaledVector(direction, -length / 2);
       const end = new Vector3(object.position.x, 0, object.position.z).addScaledVector(direction, length / 2);
-      const next = editWallInScene(transaction, node.id, { start: { x: start.x, y: start.z }, end: { x: end.x, y: end.z }, heightM: node.geometry.sizeM[1] * object.scale.y, thicknessM: node.geometry.sizeM[2] * object.scale.z, actor: 'local-user-input' });
+      const next = planWallEdit(transaction, node.id, { start: { x: start.x, y: start.z }, end: { x: end.x, y: end.z }, heightM: node.geometry.sizeM[1] * object.scale.y, thicknessM: node.geometry.sizeM[2] * object.scale.z, actor: 'local-user-input' });
       previewCompound(next, 'transformação do gizmo e dependências recalculadas');
     } else {
       const deltaRotation = object.quaternion.clone().multiply(original.quaternion.clone().invert()).normalize();
@@ -1102,9 +1123,9 @@ gizmo.addEventListener('dragging-changed', (event) => {
           : { type: 'RotateComponent', nodeId: selectedId, axis: axis.toArray() as [number, number, number], angleRad: halfAngle * 2 };
       const next = previewSceneCommand(transaction, command, 'local-user-input');
       if (next.status === 'blocked') throw new Error(next.issues.map((issue) => issue.message).join(' '));
-      preview = next; renderModel(next.candidate!); $('#preview-status').textContent = 'Pré-visualização do gizmo; commit pendente.'; $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false;
+      preview = next; renderModel(next.candidate!); $('#preview-status').textContent = previewText('Pré-visualização do gizmo; commit pendente.', next.touchesConfirmed); $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false;
     }
-  } catch (error) { object.position.copy(original.position); object.quaternion.copy(original.quaternion); object.scale.copy(original.scale); renderModel(); status(error instanceof Error ? error.message : 'Transformação recusada.'); }
+  } catch (error) { object.position.copy(original.position); object.quaternion.copy(original.quaternion); object.scale.copy(original.scale); renderModel(); status(error instanceof Error ? explainSceneError(error.message) : 'Transformação recusada.'); }
 });
 renderer.domElement.addEventListener('pointerdown', (event) => {
   if (gizmo.dragging || preview || compoundPreview) return;
@@ -1149,7 +1170,7 @@ $('#redo-scene').addEventListener('click', () => executeHistory('Redo'));
 function executeHistory(type: 'Undo' | 'Redo'): boolean {
   if (!transaction || preview || compoundPreview) return false;
   try { const result = previewSceneCommand(transaction, { type }, 'local-user-input'); if (result.status === 'blocked') throw new Error(result.issues.map((issue) => issue.message).join(' ')); transaction = commitScenePreview(transaction, result); persistScene(); renderModel(); selectNode(selectedId); updateToolbar(); status(`${type === 'Undo' ? 'Desfeito' : 'Refeito'} · revisão ${transaction.scene.revision.number}.`); spatialAgentHistory = [...spatialAgentHistory, { role: 'assistant' as const, text: `${type === 'Undo' ? 'Undo' : 'Redo'} confirmado na revisão ${transaction.scene.revision.number}.` }].slice(-6); return true; }
-  catch (error) { status(error instanceof Error ? error.message : 'Histórico indisponível.'); return false; }
+  catch (error) { status(error instanceof Error ? explainSceneError(error.message) : 'Histórico indisponível.'); return false; }
 }
 $('#compare-scene').addEventListener('click', () => {
   if (!transaction?.undoStack.length || preview || compoundPreview) return;

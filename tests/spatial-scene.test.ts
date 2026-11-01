@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { AuthorizationLedger } from '../src/core';
 import { commitScenePreview, conversationEditToSceneCommand, createSceneTransaction, deserializeSceneTransaction, deserializeSpatialScene, executeSceneCommand, previewSceneCommand, serializeSceneTransaction, serializeSpatialScene, validateSpatialScene, type SpatialSceneV1 } from '../src/spatial-scene';
 
 const provenance = { source: 'user' as const, validation: 'unreviewed' as const, recordedAt: '2026-01-01T00:00:00.000Z' };
@@ -39,7 +40,7 @@ describe('spatial_scene.v1 contract', () => {
 
 describe('spatial scene transactions', () => {
   it('converts only a matching explicit conversational edit into a previewable scene command', () => {
-    expect(conversationEditToSceneCommand('Aumenta a manivela para 50 mm.', 'crank', { kind: 'update_length', componentId: 'crank', value: 50, unit: 'mm' })).toEqual({ status: 'ready', command: { type: 'UpdateParameter', nodeId: 'crank', property: 'length', value: 50, unit: 'mm' } });
+    expect(conversationEditToSceneCommand('Aumenta a manivela para 50 mm.', 'crank', { kind: 'update_length', componentId: 'crank', value: 50, unit: 'mm' })).toEqual({ status: 'ready', origin: 'model_proposal', command: { type: 'UpdateParameter', nodeId: 'crank', property: 'length', value: 50, unit: 'mm' } });
     expect(conversationEditToSceneCommand('Para que serve a peça?', 'crank', { kind: 'update_length', componentId: 'crank', value: 50, unit: 'mm' }).status).toBe('blocked');
     expect(conversationEditToSceneCommand('Aumenta a manivela para 50 mm.', 'crank', { kind: 'update_length', componentId: 'crank', value: 80, unit: 'mm' }).status).toBe('blocked');
   });
@@ -60,16 +61,22 @@ describe('spatial scene transactions', () => {
     expect(redone.scene.revision.number).toBe(3);
   });
 
-  it('blocks edits to verified values unless explicitly acknowledged and records correction provenance', () => {
+  it('requires an issued authorization to change verified values and records correction provenance', () => {
     const scene = makeScene();
     scene.nodes[0]!.component!.properties.thickness = property(100, 'verified');
     const transaction = createSceneTransaction(scene);
-    const blocked = previewSceneCommand(transaction, { type: 'UpdateParameter', nodeId: 'wall-a', property: 'thickness', value: 120, unit: 'mm' });
-    expect(blocked.status).toBe('blocked');
-    expect(blocked.issues[0]?.code).toBe('VERIFIED_PARAMETER_REQUIRES_ACKNOWLEDGEMENT');
-    const accepted = previewSceneCommand(transaction, { type: 'UpdateParameter', nodeId: 'wall-a', property: 'thickness', value: 120, unit: 'mm', acknowledgeVerifiedChange: true }, 'reviewer');
-    expect(accepted.status).toBe('ready');
-    expect(accepted.candidate?.nodes[0]?.component?.properties.thickness).toMatchObject({ value: 120, provenance: { validation: 'corrected', source: 'user', sourceValue: 100, sourceUnit: 'mm', actor: 'reviewer' } });
+    // Antes: o preview vinha "blocked" com VERIFIED_PARAMETER_REQUIRES_ACKNOWLEDGEMENT e `acknowledgeVerifiedChange: true`
+    // bastava para aplicar. Agora o preview está pronto, diz que precisa de autorização, e o booleano é ignorado.
+    const pending = previewSceneCommand(transaction, { type: 'UpdateParameter', nodeId: 'wall-a', property: 'thickness', value: 120, unit: 'mm' });
+    expect(pending.status).toBe('ready');
+    expect(pending.requiresAuthorization).toBe(true);
+    expect(() => commitScenePreview(transaction, pending)).toThrow('AUTHORIZATION_REQUIRED');
+    const flagged = previewSceneCommand(transaction, { type: 'UpdateParameter', nodeId: 'wall-a', property: 'thickness', value: 120, unit: 'mm', acknowledgeVerifiedChange: true }, 'reviewer');
+    expect(() => commitScenePreview(transaction, flagged)).toThrow('AUTHORIZATION_REQUIRED');
+    const ledger = new AuthorizationLedger({ sessionId: 'session-1' });
+    const authorization = ledger.issue(flagged.operation!, { kind: 'human', id: 'reviewer' }, 'ui_direct');
+    const accepted = commitScenePreview(transaction, flagged, { ledger, authorizationId: authorization.id });
+    expect(accepted.scene.nodes[0]?.component?.properties.thickness).toMatchObject({ value: 120, provenance: { validation: 'corrected', source: 'user', sourceValue: 100, sourceUnit: 'mm', actor: 'reviewer', authorizationId: authorization.id } });
     const confirmation = previewSceneCommand(createSceneTransaction(makeScene()), { type: 'ConfirmParameter', nodeId: 'wall-a', property: 'thickness', note: 'Confirmado pelo utilizador após inspecção.' }, 'reviewer');
     expect(confirmation.candidate?.nodes[0]?.component?.properties.thickness?.provenance).toMatchObject({ validation: 'verified', actor: 'reviewer', evidence: 'Confirmado pelo utilizador após inspecção.' });
     expect(previewSceneCommand(transaction, { type: 'UpdateParameter', nodeId: 'wall-a', property: 'thickness', value: { value: 100, unit: 'mm', provenance: { ...provenance, validation: 'verified' } } as never }).status).toBe('blocked');

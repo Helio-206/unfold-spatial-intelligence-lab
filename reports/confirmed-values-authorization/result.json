@@ -1,0 +1,584 @@
+{
+  "checks": [
+    {
+      "scenario": "A confirmada",
+      "name": "o inspector mostra a proveniência verified",
+      "ok": true,
+      "observed": "user · verified · Medido em obra: parede A."
+    },
+    {
+      "scenario": "A confirmada",
+      "name": "o preview não mexe na revisão canónica nem na persistência",
+      "ok": true,
+      "observed": {
+        "before": "R1 · 3 ELEMENTOS",
+        "after": "R1 · 3 ELEMENTOS"
+      }
+    },
+    {
+      "scenario": "A confirmada",
+      "name": "o botão de confirmação está activo e a cena diz que ainda não foi alterada",
+      "ok": true,
+      "observed": "Pré-visualização: Parede 1 · 11 m. A revisão canónica ainda não foi alterada. Atenção: esta alteração toca em valores confirmados (Parede 1: comprimento, geometria). «Aplicar» autoriza-a."
+    },
+    {
+      "scenario": "A confirmada",
+      "name": "o preview avisa que toca em valores confirmados e que «Aplicar» autoriza",
+      "ok": true,
+      "observed": "Pré-visualização: Parede 1 · 11 m. A revisão canónica ainda não foi alterada. Atenção: esta alteração toca em valores confirmados (Parede 1: comprimento, geometria). «Aplicar» autoriza-a."
+    },
+    {
+      "scenario": "A confirmada",
+      "name": "sem clique, passado algum tempo nada foi aplicado",
+      "ok": true,
+      "observed": "R1 · 3 ELEMENTOS"
+    },
+    {
+      "scenario": "A confirmada",
+      "name": "cancelar deixa tudo como estava",
+      "ok": true,
+      "observed": {
+        "scene": "R1 · 3 ELEMENTOS",
+        "previewStatus": "Pré-visualização cancelada; estado canónico preservado.",
+        "commitDisabled": true,
+        "cmdState": "IDLE",
+        "cmdMsg": "Editor arquitectónico activo. Comandos locais passam por preview e confirmação; a IA não escreve directamente na cena.",
+        "prov": "user · verified · Medido em obra: parede A.",
+        "spatial": "Biblioteca Blender carregada; activos parede, porta e janela.",
+        "nodes": [
+          "wall-a",
+          "wall-b",
+          "door-a"
+        ]
+      }
+    },
+    {
+      "scenario": "A confirmada",
+      "name": "com o clique de confirmação a alteração é aplicada",
+      "ok": true,
+      "observed": "Alteração aplicada à cena canónica. | Biblioteca Blender carregada; activos parede, porta e janela."
+    },
+    {
+      "scenario": "A confirmada",
+      "name": "a geometria passou a 11 m",
+      "ok": true,
+      "observed": [
+        11,
+        2.8,
+        0.2
+      ]
+    },
+    {
+      "scenario": "A confirmada",
+      "name": "geometria confirmada ficou corrected, com o valor anterior, a evidência e o id da autorização",
+      "ok": true,
+      "observed": {
+        "source": "user",
+        "validation": "corrected",
+        "sourceValue": {
+          "kind": "box",
+          "sizeM": [
+            10,
+            2.8,
+            0.2
+          ]
+        },
+        "evidence": "Alteração de um valor confirmado autorizada por um humano (autorização e1eebb74-0760-4fdc-b741-3433885953e4); o valor anterior ficou em sourceValue.",
+        "actor": "local-user-input",
+        "recordedAt": "2026-11-01T22:20:47.791Z",
+        "authorizationId": "e1eebb74-0760-4fdc-b741-3433885953e4"
+      }
+    },
+    {
+      "scenario": "A confirmada",
+      "name": "o parâmetro length confirmado ficou corrected com sourceValue 10 e o mesmo authorizationId",
+      "ok": true,
+      "observed": {
+        "source": "user",
+        "validation": "corrected",
+        "sourceValue": 10,
+        "sourceUnit": "m",
+        "evidence": "Alteração de um valor confirmado autorizada por um humano (autorização e1eebb74-0760-4fdc-b741-3433885953e4); o valor anterior ficou em sourceValue.",
+        "actor": "local-user-input",
+        "recordedAt": "2026-11-01T22:20:47.791Z",
+        "authorizationId": "e1eebb74-0760-4fdc-b741-3433885953e4"
+      }
+    },
+    {
+      "scenario": "A confirmada",
+      "name": "nada ficou unreviewed nem voltou a verified na parede",
+      "ok": true,
+      "observed": "verified/unreviewed encontrados"
+    },
+    {
+      "scenario": "A confirmada",
+      "name": "a largura confirmada da porta não foi tocada (continua verified, sem authorizationId)",
+      "ok": true,
+      "observed": {
+        "source": "user",
+        "validation": "verified",
+        "actor": "reviewer",
+        "evidence": "Largura da porta medida.",
+        "recordedAt": "2026-11-01T10:00:00.000Z"
+      }
+    },
+    {
+      "scenario": "A confirmada",
+      "name": "a revisão avançou",
+      "ok": true,
+      "observed": {
+        "before": "R1 · 3 ELEMENTOS",
+        "after": "R10 · 3 ELEMENTOS"
+      }
+    },
+    {
+      "scenario": "A confirmada",
+      "name": "o botão de confirmação ficou desactivado depois de aplicar (sem segunda aplicação)",
+      "ok": true,
+      "observed": true
+    },
+    {
+      "scenario": "A confirmada",
+      "name": "sem erros de consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "B sem confirmados",
+      "name": "o preview NÃO traz aviso de valores confirmados",
+      "ok": true,
+      "observed": "Pré-visualização: Parede 2 · 9 m. A revisão canónica ainda não foi alterada."
+    },
+    {
+      "scenario": "B sem confirmados",
+      "name": "a alteração é aplicada com o clique de sempre",
+      "ok": true,
+      "observed": "Alteração aplicada à cena canónica. | Biblioteca Blender carregada; activos parede, porta e janela."
+    },
+    {
+      "scenario": "B sem confirmados",
+      "name": "geometria e comprimento novos",
+      "ok": true,
+      "observed": [
+        9,
+        2.8,
+        0.2
+      ]
+    },
+    {
+      "scenario": "B sem confirmados",
+      "name": "tudo continua unreviewed e sem authorizationId (como antes da mudança)",
+      "ok": true,
+      "observed": [
+        {
+          "source": "user",
+          "validation": "unreviewed",
+          "actor": "local-user-input",
+          "recordedAt": "2026-11-01T22:20:52.396Z"
+        },
+        {
+          "source": "user",
+          "validation": "unreviewed",
+          "actor": "local-user-input",
+          "recordedAt": "2026-11-01T22:20:52.396Z"
+        },
+        {
+          "source": "user",
+          "validation": "unreviewed",
+          "actor": "local-user-input",
+          "recordedAt": "2026-11-01T22:20:52.396Z"
+        },
+        {
+          "source": "user",
+          "validation": "unreviewed",
+          "actor": "local-user-input",
+          "recordedAt": "2026-11-01T22:20:52.396Z"
+        }
+      ]
+    },
+    {
+      "scenario": "B sem confirmados",
+      "name": "a revisão avançou",
+      "ok": true,
+      "observed": {
+        "before": "R1 · 3 ELEMENTOS",
+        "after": "R7 · 3 ELEMENTOS"
+      }
+    },
+    {
+      "scenario": "B sem confirmados",
+      "name": "sem erros de consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "C remover porta confirmada",
+      "name": "o preview de remoção não altera a cena nem a persistência",
+      "ok": true,
+      "observed": "R1 · 3 ELEMENTOS"
+    },
+    {
+      "scenario": "C remover porta confirmada",
+      "name": "o preview de remoção avisa o que toca (Porta: largura)",
+      "ok": true,
+      "observed": "Pré-visualização: remover abertura. Atenção: esta alteração toca em valores confirmados (Porta: largura). «Aplicar» autoriza-a."
+    },
+    {
+      "scenario": "C remover porta confirmada",
+      "name": "sem clique a porta continua na cena",
+      "ok": true,
+      "observed": [
+        "wall-a",
+        "wall-b",
+        "door-a"
+      ]
+    },
+    {
+      "scenario": "C remover porta confirmada",
+      "name": "com o clique a porta é removida",
+      "ok": true,
+      "observed": [
+        "wall-a",
+        "wall-b"
+      ]
+    },
+    {
+      "scenario": "C remover porta confirmada",
+      "name": "sem erros de consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "D Muse numa parede sem confirmados",
+      "name": "o Muse (simulado) foi consultado uma vez",
+      "ok": true,
+      "observed": [
+        {
+          "query": "Aumenta esta parede em 30 centímetros.",
+          "selectedId": "wall-b"
+        }
+      ]
+    },
+    {
+      "scenario": "D Muse numa parede sem confirmados",
+      "name": "a proposta do Muse gera um preview a aguardar confirmação",
+      "ok": true,
+      "observed": {
+        "scene": "R1 · 3 ELEMENTOS",
+        "previewStatus": "Pré-visualização: Parede 2: 10.00 → 10.30 m. A revisão canónica ainda não foi alterada.",
+        "commitDisabled": false,
+        "cmdState": "AWAITING_CONFIRMATION",
+        "cmdMsg": "Muse Spark propôs; executor local validou. Parede 2: pré-visualização criada. Confirme para aplicar.",
+        "prov": "derived · unreviewed · Segmento raster b, origem manual_correction, explicitamente incluído. Confiança heurística 0.9; espessura raster 4 px.",
+        "spatial": "Biblioteca Blender carregada; activos parede, porta e janela.",
+        "nodes": [
+          "wall-a",
+          "wall-b",
+          "door-a"
+        ]
+      }
+    },
+    {
+      "scenario": "D Muse numa parede sem confirmados",
+      "name": "o preview não altera a cena",
+      "ok": true,
+      "observed": "R1 · 3 ELEMENTOS"
+    },
+    {
+      "scenario": "D Muse numa parede sem confirmados",
+      "name": "só com o clique a proposta é aplicada",
+      "ok": true,
+      "observed": "Alteração aplicada à cena canónica."
+    },
+    {
+      "scenario": "D Muse numa parede sem confirmados",
+      "name": "a parede ficou com 10,3 m",
+      "ok": true,
+      "observed": [
+        10.3,
+        2.8,
+        0.2
+      ]
+    },
+    {
+      "scenario": "D Muse numa parede sem confirmados",
+      "name": "o conteúdo criado pelo Muse fica unreviewed, sem authorizationId",
+      "ok": true,
+      "observed": {
+        "source": "user",
+        "validation": "unreviewed",
+        "actor": "user-confirmed:muse-spark",
+        "recordedAt": "2026-11-01T22:21:03.454Z"
+      }
+    },
+    {
+      "scenario": "D Muse numa parede sem confirmados",
+      "name": "sem erros de consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "D Muse numa parede confirmada",
+      "name": "o Muse (simulado) foi consultado",
+      "ok": true,
+      "observed": [
+        {
+          "query": "Aumenta esta parede em 30 centímetros.",
+          "selectedId": "wall-a"
+        }
+      ]
+    },
+    {
+      "scenario": "D Muse numa parede confirmada",
+      "name": "a proposta que toca um valor confirmado é bloqueada (REJECTED)",
+      "ok": true,
+      "observed": "REJECTED | Uma proposta do Muse (ou do sistema) não pode alterar, apagar nem repor valores que uma pessoa confirmou. Faça essa alteração directamente no inspector. Nenhuma revisão foi aplicada."
+    },
+    {
+      "scenario": "D Muse numa parede confirmada",
+      "name": "a mensagem explica porquê (em português, sem o código cru) e diz que nenhuma revisão foi aplicada",
+      "ok": true,
+      "observed": "Uma proposta do Muse (ou do sistema) não pode alterar, apagar nem repor valores que uma pessoa confirmou. Faça essa alteração directamente no inspector. Nenhuma revisão foi aplicada."
+    },
+    {
+      "scenario": "D Muse numa parede confirmada",
+      "name": "o botão de confirmação continua desactivado e não há preview",
+      "ok": true,
+      "observed": true
+    },
+    {
+      "scenario": "D Muse numa parede confirmada",
+      "name": "a revisão e a persistência não mudaram",
+      "ok": true,
+      "observed": "R1 · 3 ELEMENTOS"
+    },
+    {
+      "scenario": "D Muse numa parede confirmada",
+      "name": "sem erros de consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "D Muse a remover uma abertura confirmada",
+      "name": "a remoção proposta pelo Muse é bloqueada, com explicação",
+      "ok": true,
+      "observed": "REJECTED | Uma proposta do Muse (ou do sistema) não pode alterar, apagar nem repor valores que uma pessoa confirmou. Faça essa alteração directamente no inspector. Nenhuma revisão foi aplicada."
+    },
+    {
+      "scenario": "D Muse a remover uma abertura confirmada",
+      "name": "a porta continua na cena, sem preview, e a persistência não mudou",
+      "ok": true,
+      "observed": {
+        "scene": "R1 · 3 ELEMENTOS",
+        "previewStatus": "",
+        "commitDisabled": true,
+        "cmdState": "REJECTED",
+        "cmdMsg": "Uma proposta do Muse (ou do sistema) não pode alterar, apagar nem repor valores que uma pessoa confirmou. Faça essa alteração directamente no inspector. Nenhuma revisão foi aplicada.",
+        "prov": "user · unreviewed",
+        "spatial": "Biblioteca Blender carregada; activos parede, porta e janela.",
+        "nodes": [
+          "wall-a",
+          "wall-b",
+          "door-a"
+        ]
+      }
+    },
+    {
+      "scenario": "D Muse a remover uma abertura confirmada",
+      "name": "sem erros de consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "E Muse indisponível (parser local)",
+      "name": "o comando local gera um preview (não é tratado como modelo)",
+      "ok": true,
+      "observed": "AWAITING_CONFIRMATION | Muse indisponível; parser local determinístico reconheceu o comando. Parede 1: pré-visualização criada. Confirme para aplicar."
+    },
+    {
+      "scenario": "E Muse indisponível (parser local)",
+      "name": "o preview não altera a cena",
+      "ok": true,
+      "observed": "R1 · 3 ELEMENTOS"
+    },
+    {
+      "scenario": "E Muse indisponível (parser local)",
+      "name": "com o clique é aplicado",
+      "ok": true,
+      "observed": "Alteração aplicada à cena canónica. | Biblioteca Blender carregada; activos parede, porta e janela. | Comando confirmado na revisão 10. Undo/Redo disponíveis."
+    },
+    {
+      "scenario": "E Muse indisponível (parser local)",
+      "name": "a parede confirmada ficou corrected, com authorizationId, a 12 m",
+      "ok": true,
+      "observed": {
+        "source": "user",
+        "validation": "corrected",
+        "sourceValue": {
+          "kind": "box",
+          "sizeM": [
+            10,
+            2.8,
+            0.2
+          ]
+        },
+        "evidence": "Alteração de um valor confirmado autorizada por um humano (autorização 727a0807-5627-45e0-b531-f50e33eec682); o valor anterior ficou em sourceValue.",
+        "actor": "local-user-input",
+        "recordedAt": "2026-11-01T22:21:19.332Z",
+        "authorizationId": "727a0807-5627-45e0-b531-f50e33eec682"
+      }
+    },
+    {
+      "scenario": "E Muse indisponível (parser local)",
+      "name": "sem erros de consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "A2 mover sem alterar",
+      "name": "o preview não avisa de valores confirmados (só a posição muda, e não está confirmada)",
+      "ok": true,
+      "observed": "Pré-visualização: Parede 1 · 10.00 m. A revisão canónica ainda não foi alterada."
+    },
+    {
+      "scenario": "A2 mover sem alterar",
+      "name": "a parede moveu-se para x = 7",
+      "ok": true,
+      "observed": [
+        7,
+        0,
+        -1.5
+      ]
+    },
+    {
+      "scenario": "A2 mover sem alterar",
+      "name": "a geometria e o comprimento confirmados continuam verified, sem authorizationId (não foram tocados)",
+      "ok": true,
+      "observed": [
+        {
+          "source": "user",
+          "validation": "verified",
+          "actor": "reviewer",
+          "evidence": "Medido em obra: parede A.",
+          "recordedAt": "2026-11-01T10:00:00.000Z"
+        },
+        {
+          "source": "user",
+          "validation": "verified",
+          "actor": "reviewer",
+          "evidence": "Comprimento medido em obra.",
+          "recordedAt": "2026-11-01T10:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "scenario": "A2 mover sem alterar",
+      "name": "sem erros de consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "F gizmo na porta confirmada",
+      "name": "arrastar o gizmo cria um preview e não altera a cena",
+      "ok": true,
+      "observed": {
+        "scene": "R1 · 3 ELEMENTOS",
+        "previewStatus": "Pré-visualização do gizmo; commit pendente. Atenção: esta alteração toca em valores confirmados (Porta: posição). «Aplicar» autoriza-a.",
+        "commitDisabled": false,
+        "cmdState": "IDLE",
+        "cmdMsg": "Editor arquitectónico activo. Comandos locais passam por preview e confirmação; a IA não escreve directamente na cena.",
+        "prov": "user · unreviewed",
+        "spatial": "Biblioteca Blender carregada; activos parede, porta e janela.",
+        "nodes": [
+          "wall-a",
+          "wall-b",
+          "door-a"
+        ]
+      }
+    },
+    {
+      "scenario": "F gizmo na porta confirmada",
+      "name": "o preview avisa que toca na posição confirmada da porta",
+      "ok": true,
+      "observed": "Pré-visualização do gizmo; commit pendente. Atenção: esta alteração toca em valores confirmados (Porta: posição). «Aplicar» autoriza-a."
+    },
+    {
+      "scenario": "F gizmo na porta confirmada",
+      "name": "a posição confirmada ficou corrected, com valor anterior, autorização e evidência",
+      "ok": true,
+      "observed": {
+        "source": "user",
+        "validation": "corrected",
+        "sourceValue": [
+          3.45,
+          1.05,
+          -1.5
+        ],
+        "evidence": "Alteração de um valor confirmado autorizada por um humano (autorização ffabf650-476d-44c1-ac6e-08531e72ff52); o valor anterior ficou em sourceValue.",
+        "actor": "local-user-input",
+        "recordedAt": "2026-11-01T22:21:31.193Z",
+        "authorizationId": "ffabf650-476d-44c1-ac6e-08531e72ff52"
+      }
+    },
+    {
+      "scenario": "F gizmo na porta confirmada",
+      "name": "a largura confirmada da porta não foi tocada",
+      "ok": true,
+      "observed": {
+        "source": "user",
+        "validation": "verified",
+        "actor": "reviewer",
+        "evidence": "Largura da porta medida.",
+        "recordedAt": "2026-11-01T10:00:00.000Z"
+      }
+    },
+    {
+      "scenario": "F gizmo na porta confirmada",
+      "name": "sem erros de consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "G gizmo na parede confirmada",
+      "name": "arrastar o gizmo cria um preview e não altera a cena",
+      "ok": true,
+      "observed": {
+        "scene": "R1 · 3 ELEMENTOS",
+        "previewStatus": "Pré-visualização: transformação do gizmo e dependências recalculadas. A revisão canónica ainda não foi alterada.",
+        "commitDisabled": false,
+        "cmdState": "IDLE",
+        "cmdMsg": "Editor arquitectónico activo. Comandos locais passam por preview e confirmação; a IA não escreve directamente na cena.",
+        "prov": "user · verified · Medido em obra: parede A.",
+        "spatial": "Biblioteca Blender carregada; activos parede, porta e janela.",
+        "nodes": [
+          "wall-a",
+          "wall-b",
+          "door-a"
+        ]
+      }
+    },
+    {
+      "scenario": "G gizmo na parede confirmada",
+      "name": "a parede moveu-se e a geometria confirmada continua verified (só a posição mudou)",
+      "ok": true,
+      "observed": {
+        "x": 7.055691109383115,
+        "geometry": "verified"
+      }
+    },
+    {
+      "scenario": "G gizmo na parede confirmada",
+      "name": "sem erros de consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "rede",
+      "name": "nenhum pedido saiu para fora de localhost (nenhuma chamada à Meta)",
+      "ok": true,
+      "observed": []
+    }
+  ],
+  "findings": [],
+  "external": []
+}
