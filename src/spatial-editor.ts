@@ -16,6 +16,7 @@ import { acceptSemanticLink, answerGroundedQuery, createSemanticSpatialMap, desc
 import { parseSpatialAgentResult, SPATIAL_AGENT_REQUEST_SCHEMA, spatialDomainConflict, type SpatialAgentRequestV1, type SpatialAgentAction } from './spatial-agent';
 import type { TechnicalDocumentV1 } from './technical-document';
 import { cameraFrameAspect, createSpatialCameraView, createSpatialFocusView } from './spatial-camera';
+import { computeExplodedViewOffsets } from './spatial-exploded-view';
 import './spatial-editor.css';
 
 export type SpatialEditorOptions = { onExit?: () => void; source?: 'accepted-document'; onCommandState?: (state: SpatialCommandState, message: string) => void };
@@ -66,7 +67,7 @@ app.innerHTML = `<main class="spatial-lab" data-state="empty">
     <p id="preview-status" class="preview-status" aria-live="polite"></p><div class="preview-actions"><button id="commit-preview" type="button" disabled>Aplicar</button><button id="cancel-preview" type="button" disabled>Cancelar</button></div>
   </aside>
   <section class="stage-empty" id="stage-empty"><span>ESPAÇO LIVRE</span><h1>Uma cena começa por evidência.</h1><p>Importe uma planta real, revise os segmentos e calibre a escala antes de construir a geometria.</p><a href="/demo">Abrir experiência UNFOLD</a></section>
-  <nav class="spatial-toolbar" aria-label="Ferramentas da cena"><button id="mode-translate" type="button" aria-label="Mover" title="Mover">↔</button><button id="mode-rotate" type="button" aria-label="Rodar" title="Rodar">↻</button><button id="mode-scale" type="button" aria-label="Escalar" title="Escalar">⤢</button><i></i><button id="fit-scene" type="button" aria-label="Enquadrar" title="Enquadrar">□</button><button id="home-scene" type="button" aria-label="Início" title="Início">⌂</button><button id="top-view" type="button" aria-label="Vista superior" title="Vista superior">T</button><button id="front-view" type="button" aria-label="Vista frontal" title="Vista frontal">F</button><button id="iso-view" type="button" aria-label="Vista isométrica" title="Vista isométrica">I</button><button id="toggle-reference" type="button" aria-pressed="true" aria-label="Mostrar ou ocultar imagem original" title="Referência">▧</button><button id="compare-scene" type="button" aria-pressed="false" disabled>Antes / Depois</button><button id="undo-scene" type="button" disabled>Desfazer</button><button id="redo-scene" type="button" disabled>Refazer</button></nav>
+  <nav class="spatial-toolbar" aria-label="Ferramentas da cena"><button id="mode-translate" type="button" aria-label="Mover" title="Mover">↔</button><button id="mode-rotate" type="button" aria-label="Rodar" title="Rodar">↻</button><button id="mode-scale" type="button" aria-label="Escalar" title="Escalar">⤢</button><i></i><button id="fit-scene" type="button" aria-label="Enquadrar" title="Enquadrar">□</button><button id="home-scene" type="button" aria-label="Início" title="Início">⌂</button><button id="top-view" type="button" aria-label="Vista superior" title="Vista superior">T</button><button id="front-view" type="button" aria-label="Vista frontal" title="Vista frontal">F</button><button id="iso-view" type="button" aria-label="Vista isométrica" title="Vista isométrica">I</button><button id="toggle-reference" type="button" aria-pressed="true" aria-label="Mostrar ou ocultar imagem original" title="Referência">▧</button><button id="explode-scene" type="button" aria-pressed="false" disabled>Explodir</button><button id="compare-scene" type="button" aria-pressed="false" disabled>Antes / Depois</button><button id="undo-scene" type="button" disabled>Desfazer</button><button id="redo-scene" type="button" disabled>Refazer</button></nav>
   <div class="spatial-status" id="spatial-status" role="status" aria-live="polite">À espera de uma planta. Geometria não presumida.</div><div id="spatial-metrics" class="spatial-metrics"></div>
 </main>`;
 
@@ -105,6 +106,8 @@ let compoundPreviewBaseRevision: string | undefined;
 let pendingCommand: SpatialCommandV1 | undefined;
 let unregisterSpatialCommands: (() => void) | undefined;
 let selectedId: string | undefined;
+let explodedView = false;
+let canonicalRenderPositions = new Map<string, Vector3>();
 let visibleReference = true;
 let compare = false;
 let cameraTween: gsap.core.Timeline | undefined;
@@ -272,11 +275,13 @@ function animateRevision(previous: SpatialSceneV1, current: SpatialSceneV1, targ
 
 function renderModel(model = transaction?.scene, animate = false): void {
   buildTimeline?.kill();
-  if (!model) { grid.visible = true; updateReferenceView(); invalidate(); return; }
+  explodedView = false;
+  if (!model) { canonicalRenderPositions.clear(); explodedView = false; grid.visible = true; updateReferenceView(); updateExplodedButton(); invalidate(); return; }
   grid.visible = false;
   const started = performance.now(); disposeSceneGroup();
   const renderGroup = buildThreePlanGroup(model, assets);
   root.add(renderGroup);
+  canonicalRenderPositions = new Map(model.nodes.map((node) => [node.id, root.getObjectByName(node.id)?.position.clone()]).filter((entry): entry is [string, Vector3] => !!entry[1]));
   root.traverse((object) => { if (object instanceof Mesh && object.parent && object.userData.id === undefined) { const node = object.parent; if (node.name && model.nodes.some((item) => item.id === node.name)) object.userData.id = node.name; } });
   buildMs = performance.now() - started;
   const bounds = new Box3().setFromObject(root);
@@ -285,10 +290,32 @@ function renderModel(model = transaction?.scene, animate = false): void {
     cameraHome = { target: home.target.clone(), position: home.position.clone() };
   }
   updateReferencePlane(model);
+  applyExplodedView();
   updateReferenceView();
   if (animate) animateBuild(model); else invalidate();
   selectNode(selectedId);
   updateToolbar();
+}
+
+function updateExplodedButton(): void {
+  const button = $('#explode-scene');
+  button.disabled = !transaction;
+  button.setAttribute('aria-pressed', String(explodedView));
+  button.textContent = explodedView ? 'Recompor' : 'Explodir';
+}
+
+function applyExplodedView(): void {
+  const nodes = (transaction?.scene.nodes ?? []).filter((node) => node.nodeType === 'component');
+  const offsets = computeExplodedViewOffsets(nodes.map((node) => ({ id: node.id, position: node.transform.translationM })));
+  for (const node of nodes) {
+    const object = root.getObjectByName(node.id);
+    const base = canonicalRenderPositions.get(node.id);
+    if (!object || !base) continue;
+    const offset = offsets.get(node.id) ?? [0, 0, 0];
+    object.position.set(base.x + (explodedView ? offset[0] : 0), base.y + (explodedView ? offset[1] : 0), base.z + (explodedView ? offset[2] : 0));
+  }
+  updateExplodedButton();
+  invalidate();
 }
 
 function updateReferencePlane(model: SpatialSceneV1): void {
@@ -345,6 +372,7 @@ function updateToolbar(): void {
   $('#save-scene').disabled = !transaction;
   $('#restore-scene').disabled = !localStorage.getItem('unfold-spatial-scene.v1');
   $('#compare-scene').disabled = !transaction?.undoStack.length || !!preview || !!compoundPreview;
+  updateExplodedButton();
   $('#add-module').disabled = !assetReady || !transaction || !!preview || !!compoundPreview;
   $('#scene-state').textContent = transaction ? `R${transaction.scene.revision.number} · ${transaction.scene.nodes.length} ELEMENTOS` : 'SEM CENA';
   app!.setAttribute('data-state', transaction ? 'ready' : 'empty');
@@ -1249,6 +1277,12 @@ function onEditorKeydown(event: KeyboardEvent): void {
 window.addEventListener('keydown', onEditorKeydown);
 window.addEventListener('beforeunload', onUnload, { once: true });
 $('#exit-spatial-editor').addEventListener('click', () => cleanup(true));
+$('#explode-scene').addEventListener('click', () => {
+  if (!transaction) return;
+  explodedView = !explodedView;
+  applyExplodedView();
+  status(explodedView ? 'Vista explodida temporária; a Scene Graph canónica não foi alterada.' : 'Vista original restaurada a partir das posições-base da renderização.');
+});
 app.querySelectorAll<HTMLButtonElement>('[data-view-mode]').forEach((button) => button.addEventListener('click', () => {
   currentViewMode = button.dataset.viewMode as typeof currentViewMode;
   updateReferenceView();

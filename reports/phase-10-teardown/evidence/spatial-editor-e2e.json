@@ -1,0 +1,14 @@
+{
+  "fixture": "historical spatial_scene_transaction.v1; UI edit and render interaction only",
+  "viewport": "1440x960",
+  "deviceScaleFactor": 1,
+  "selectedWallId": "wall-manual-8a14d645",
+  "originalLengthM": 15.828900010160002,
+  "previewUncommittedLengthM": 15.828900010160002,
+  "committedLengthM": 16.32890001016,
+  "undoLengthM": 15.828900010160002,
+  "explodedPressed": "true",
+  "restoredPressed": "false",
+  "canonicalPersistenceUnchangedByRenderView": true,
+  "browserErrors": []
+}
