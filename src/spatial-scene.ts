@@ -231,7 +231,7 @@ function applyCommand(scene: SpatialSceneV1, command: SpatialCommand, actor: str
   switch (command.type) {
     case 'AddComponent': nodes.push(structuredClone(command.node)); break;
     case 'UpdateGeometry': {
-      if (!node!.geometry) throw new Error('CONFIRMED_GEOMETRY_LOCKED');
+      if (!node!.geometry) throw new Error('GEOMETRY_REQUIRED');
       // Geometria confirmada já não é um bloqueio absoluto: altera-se com autorização e fica corrected, como o resto.
       node!.geometry = isConfirmedValidation(node!.geometry.provenance.validation)
         ? { ...structuredClone(command.geometry), provenance: rewrittenProvenance(node!.geometry.provenance, structuredClone(withoutProvenance(node!.geometry)), actor, clock) }

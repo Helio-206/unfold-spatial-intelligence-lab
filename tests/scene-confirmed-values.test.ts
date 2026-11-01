@@ -769,3 +769,14 @@ describe('F4 — addOpeningToScene com origem', () => {
     expect(next.scene.nodes.find((node) => node.id === 'door-new')!.component!.properties.width!.provenance).toMatchObject({ validation: 'unreviewed' });
   });
 });
+
+describe('UpdateGeometry num nó sem geometria', () => {
+  it('diz GEOMETRY_REQUIRED, não que a geometria está bloqueada por estar confirmada', () => {
+    const scene = structuredClone(confirmedScene());
+    scene.nodes.find((node) => node.id === 'wall-1')!.geometry = null;
+    const transaction = transactionOf(validateSpatialScene(scene));
+    const preview = previewSceneCommand(transaction, BOX, 'reviewer', clock);
+    expect(preview).toMatchObject({ status: 'blocked', issues: [{ code: 'GEOMETRY_REQUIRED' }] });
+    expect(failure(() => executeSceneCommand(transaction, BOX, 'reviewer', clock))).toBe('GEOMETRY_REQUIRED');
+  });
+});
