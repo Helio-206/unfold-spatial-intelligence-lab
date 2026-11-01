@@ -21,6 +21,7 @@ import { applyElectricalOperation, calculateElectricalSandbox, createIndependent
 import { createEmptyDemoProject, createFourBarDemoProject, parseManualFourBarParameters, type DemoProject } from './demo-project';
 import { answerProjectQuestion, authorizeProposedAction, parseConversationResponse, type ConversationMessage, type ConversationContext } from './spatial-conversation';
 import { parseSpatialAgentResult, SPATIAL_AGENT_REQUEST_SCHEMA, type SpatialAgentRequestV1 } from './spatial-agent';
+import lockupDark from '../design-system/logos/unfold-lockup-on-dark.svg';
 import plusIcon from 'lucide-static/icons/plus.svg?raw';
 import imageIcon from 'lucide-static/icons/image.svg?raw';
 import micIcon from 'lucide-static/icons/mic.svg?raw';
@@ -37,35 +38,35 @@ const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Elemento #app não encontrado.');
 
 app.innerHTML = `
-  <main class="demo-shell" data-demo-phase="EMPTY_LAB" data-project-state="empty" data-inspector-open="false" data-command-state="IDLE">
+  <main class="demo-shell" data-theme="dark" data-demo-phase="EMPTY_LAB" data-project-state="empty" data-inspector-open="false" data-command-state="IDLE">
     <div id="demo-scene" class="demo-scene" aria-label="Laboratório espacial 3D do mecanismo de quatro barras"></div>
     <div class="demo-vignette" aria-hidden="true"></div>
     <header class="demo-header">
-      <a class="demo-brand" href="/demo" aria-label="UNFOLD — laboratório espacial"><span class="demo-brand-copy"><strong>UNFOLD</strong><small>LABORATÓRIO DE INTELIGÊNCIA ESPACIAL</small></span></a>
-      <nav class="demo-nav" aria-label="Navegação da experiência">
-        <a class="is-active" href="/demo" aria-current="page">LAB</a><button id="demo-nav-plans" type="button">PLANOS</button><button id="demo-open-spatial" type="button">CONSTRUIR CENA</button><button id="demo-nav-experiences" type="button" aria-controls="demo-actions" aria-expanded="false" hidden>EXPERIÊNCIAS</button><button id="demo-inspector-toggle" class="demo-context-toggle" type="button" aria-controls="demo-readout" aria-expanded="false" hidden>CONTEXTO</button>
+      <a class="demo-brand" href="/landing/" aria-label="UNFOLD — página inicial"><img class="demo-logo" src="${lockupDark}" alt="UNFOLD — Spatial Intelligence Lab" width="150" height="40" /></a>
+      <nav class="demo-nav" aria-label="Navegação da experiência" data-theme="light">
+        <a class="is-active" href="/demo" aria-current="page">Lab</a><button id="demo-nav-plans" type="button">Planos</button><button id="demo-open-spatial" type="button">Construir cena</button><button id="demo-nav-experiences" type="button" aria-controls="demo-actions" aria-expanded="false" hidden>Experiências</button><button id="demo-inspector-toggle" class="demo-context-toggle" type="button" aria-controls="demo-readout" aria-expanded="false" hidden>Contexto</button>
       </nav>
       <div class="demo-runtime"><i></i><span id="demo-runtime">ENTERING LAB</span></div>
     </header>
 
-    <nav class="demo-process-rail" aria-label="Fluxo do UNFOLD">
-      <button class="demo-process-step is-active" type="button" data-demo-flow="capture" aria-current="step"><span>01</span><strong>CAPTURAR</strong></button>
-      <button class="demo-process-step" type="button" data-demo-flow="understand"><span>02</span><strong>COMPREENDER</strong></button>
-      <button class="demo-process-step" type="button" data-demo-flow="explore"><span>03</span><strong>EXPLORAR</strong></button>
+    <nav class="demo-process-rail" aria-label="Fluxo do UNFOLD" data-theme="light">
+      <button class="demo-process-step is-active" type="button" data-demo-flow="capture" aria-current="step"><span>01</span><strong>Capturar</strong></button>
+      <button class="demo-process-step" type="button" data-demo-flow="understand"><span>02</span><strong>Compreender</strong></button>
+      <button class="demo-process-step" type="button" data-demo-flow="explore"><span>03</span><strong>Explorar</strong></button>
     </nav>
 
     <section id="demo-empty-state" class="demo-empty-state" aria-labelledby="demo-empty-title">
-      <span class="demo-empty-kicker">LABORATÓRIO ESPACIAL · PRONTO</span>
+      <span class="demo-empty-kicker">laboratório espacial · pronto</span>
       <h1 id="demo-empty-title">Uma ideia é suficiente<br />para começar.</h1>
       <p>Traga uma imagem, descreva o que pretende explorar ou configure um mecanismo suportado.</p>
-      <div class="demo-empty-actions">
+      <div class="demo-empty-actions" data-theme="light">
         <button id="demo-empty-photo" type="button"><span class="demo-empty-action-icon" aria-hidden="true">${imageIcon}</span><span class="demo-empty-action-copy"><strong>Adicionar imagem</strong><small>JPEG ou PNG</small></span></button>
         <button id="demo-empty-manual" type="button"><span class="demo-empty-action-icon" aria-hidden="true">${settingsIcon}</span><span class="demo-empty-action-copy"><strong>Criar mecanismo</strong><small>Configuração manual</small></span></button>
         <button id="demo-empty-example" type="button"><span class="demo-empty-action-icon" aria-hidden="true">${boxIcon}</span><span class="demo-empty-action-copy"><strong>Explorar exemplo</strong><small>Four-Bar hipotético</small></span></button>
       </div>
     </section>
 
-    <section id="demo-manual-setup" class="demo-manual-setup" aria-labelledby="demo-manual-title" hidden>
+    <section id="demo-manual-setup" class="demo-manual-setup" aria-labelledby="demo-manual-title" hidden data-theme="light">
       <div class="demo-manual-heading"><div><span class="demo-empty-kicker">CONFIGURAÇÃO MANUAL · QUATRO BARRAS REVOLUTAS</span><h2 id="demo-manual-title">Defina a montagem</h2></div><button id="demo-manual-close" type="button" aria-label="Fechar configuração">×</button></div>
       <p>Insira dimensões do seu projecto em milímetros. Estes valores serão classificados como fornecidos pelo utilizador, não como validação física.</p>
       <form id="demo-manual-form">
@@ -79,7 +80,7 @@ app.innerHTML = `
       </form>
     </section>
 
-    <aside id="demo-readout" class="demo-readout" aria-label="Contexto do mecanismo" hidden>
+    <aside id="demo-readout" class="demo-readout" aria-label="Contexto do mecanismo" hidden data-theme="light">
       <button id="demo-readout-close" class="demo-readout-close" type="button" aria-label="Fechar contexto">×</button>
       <div class="demo-panel-kicker">MECANISMO ACTIVO</div>
       <div class="demo-panel-title"><h1>Four-Bar</h1><span>LAB</span></div>
@@ -101,7 +102,7 @@ app.innerHTML = `
 
     <div class="demo-mode-mark" id="demo-mode-mark" hidden><span aria-hidden="true"></span><div><strong id="demo-mode-title">FOUR-BAR LAB</strong><small id="demo-mode-provenance">PROJECTO HIPOTÉTICO · NÃO RECONSTRUÍDO DA IMAGEM</small></div><button id="demo-return-empty" type="button">Novo projecto</button></div>
 
-    <section class="demo-command" aria-label="Floating spatial command bar">
+    <section class="demo-command" aria-label="Floating spatial command bar" data-theme="light">
       <div id="demo-conversation" class="demo-conversation" hidden aria-label="Conversa com o UNFOLD">
         <div class="demo-conversation-header"><strong>CONVERSA</strong><div><button id="demo-chat-image" type="button" aria-label="Anexar imagem à conversa">＋ Imagem</button><button id="demo-voice-output" type="button" aria-pressed="false">Voz: desligada</button><button id="demo-stop-speech" type="button">Parar voz</button><button id="demo-chat-close" type="button" aria-label="Recolher conversa">×</button></div></div>
         <div id="demo-chat-attachment" class="demo-chat-attachment" hidden><img id="demo-chat-attachment-preview" alt="Pré-visualização do anexo da conversa" /><div><strong id="demo-chat-attachment-name"></strong><span id="demo-chat-attachment-state">A aguardar confirmação de análise.</span></div></div>
@@ -111,10 +112,10 @@ app.innerHTML = `
       <button class="demo-command-add" id="demo-image-add" type="button" aria-label="Adicionar imagem" title="Adicionar imagem">${plusIcon}</button>
       <div class="demo-command-main"><div class="demo-command-row"><textarea id="demo-question" rows="1" aria-label="Comando espacial" placeholder="Pergunta, constrói ou transforma..."></textarea></div><div class="demo-command-feedback" role="status" aria-live="polite"><strong id="demo-command-state">IDLE</strong><span id="demo-command-message">O laboratório está pronto.</span><span class="demo-waveform" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span></div></div>
       <div class="demo-command-tools"><button id="demo-chat-toggle" type="button" aria-label="Abrir conversa" aria-expanded="false">⋯</button><button id="demo-image" type="button" aria-label="Analisar fotografia" title="Analisar fotografia">${imageIcon}</button><button id="demo-mic" type="button" aria-label="Activar microfone" aria-pressed="false">${micIcon}</button><button id="demo-submit" class="demo-command-submit" type="button" aria-label="Enviar comando" title="Enviar comando">${arrowRightIcon}</button></div>
-      <div id="demo-actions" class="demo-actions" hidden><button data-demo-action="explode" type="button"><span>01</span>Desmontar</button><button data-demo-action="reassemble" type="button"><span>02</span>Remontar</button><button data-demo-action="focus" type="button"><span>03</span>Mostrar manivela</button><button data-demo-action="fit" type="button"><span>04</span>Enquadrar</button><button data-demo-action="home" type="button"><span>05</span>Vista inicial</button><button data-demo-action="restore" type="button"><span>06</span>Restaurar parâmetros</button><button id="demo-hand-toggle" type="button" aria-pressed="false"><span>07</span>Activar Hand Control</button></div>
+      <div id="demo-actions" class="demo-actions" hidden data-theme="light"><button data-demo-action="explode" type="button"><span>01</span>Desmontar</button><button data-demo-action="reassemble" type="button"><span>02</span>Remontar</button><button data-demo-action="focus" type="button"><span>03</span>Mostrar manivela</button><button data-demo-action="fit" type="button"><span>04</span>Enquadrar</button><button data-demo-action="home" type="button"><span>05</span>Vista inicial</button><button data-demo-action="restore" type="button"><span>06</span>Restaurar parâmetros</button><button id="demo-hand-toggle" type="button" aria-pressed="false"><span>07</span>Activar Hand Control</button></div>
     </section>
 
-    <section id="demo-image-insight" class="demo-image-insight" data-image-state="idle" tabindex="-1" hidden aria-live="polite" aria-label="Interpretação da fotografia">
+    <section id="demo-image-insight" class="demo-image-insight" data-image-state="idle" tabindex="-1" hidden aria-live="polite" aria-label="Interpretação da fotografia" data-theme="light">
       <div class="demo-image-insight-header"><div><span class="demo-panel-kicker">IMAGEM → INTERPRETAÇÃO</span><h2 id="demo-image-title">Imagem analisada</h2></div><button id="demo-image-close" type="button" aria-label="Fechar análise da imagem">×</button></div>
       <div class="demo-image-stage"><div class="demo-image-preview-frame" id="demo-image-preview-frame"><img id="demo-image-preview" alt="Pré-visualização da imagem seleccionada" /><span id="demo-image-scan-line" aria-hidden="true"></span><div id="demo-image-region-selection" class="demo-image-region-selection" hidden></div></div><div class="demo-image-file-meta"><strong id="demo-image-file-name">—</strong><span id="demo-image-status">Confirme a imagem antes de enviar.</span><span id="demo-image-recognition-status"></span></div></div>
       <div class="demo-image-actions"><button id="demo-image-confirm" type="button">Analisar fotografia</button><button id="demo-image-cancel" type="button">Cancelar</button></div>
@@ -176,11 +177,11 @@ app.innerHTML = `
       </div>
     </section>
     <input id="demo-image-input" type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" hidden />
-    <div id="demo-hand-layer" class="demo-hand-layer" hidden><video id="demo-hand-preview" autoplay muted playsinline aria-label="Pré-visualização opcional da webcam"></video><span id="demo-hand-status" role="status" aria-live="polite">Câmara desligada</span><button id="demo-hand-stop" type="button" aria-label="Desligar Hand Control">×</button></div>
+    <div id="demo-hand-layer" class="demo-hand-layer" hidden data-theme="light"><video id="demo-hand-preview" autoplay muted playsinline aria-label="Pré-visualização opcional da webcam"></video><span id="demo-hand-status" role="status" aria-live="polite">Câmara desligada</span><button id="demo-hand-stop" type="button" aria-label="Desligar Hand Control">×</button></div>
     <div id="demo-hand-cursor" class="demo-hand-cursor" aria-hidden="true" hidden></div>
 
-    <div class="demo-quick-actions" aria-label="Quick laboratory actions" hidden><button data-demo-command="Desmonta o mecanismo" type="button"><span>◌</span>Desmonta o mecanismo</button><button data-demo-command="Mostra-me a manivela" type="button"><span>⌘</span>Mostra-me a manivela</button><button data-demo-command="Aumenta para 50 mm" type="button"><span>↗</span>Aumenta para 50 mm</button><button data-demo-command="Remonta tudo" type="button"><span>◇</span>Remonta tudo</button></div>
-    <div class="demo-tools" hidden><button data-demo-action="fit" type="button" aria-label="Enquadrar mecanismo" title="Enquadrar">${arrowRightIcon}</button><button data-demo-action="focus" type="button" aria-label="Mostrar manivela" title="Mostrar manivela">${imageIcon}</button><button id="demo-tools-toggle" type="button" aria-label="Abrir acções" aria-controls="demo-actions" aria-expanded="false">+</button></div>
+    <div class="demo-quick-actions" aria-label="Quick laboratory actions" hidden data-theme="light"><button data-demo-command="Desmonta o mecanismo" type="button"><span>◌</span>Desmonta o mecanismo</button><button data-demo-command="Mostra-me a manivela" type="button"><span>⌘</span>Mostra-me a manivela</button><button data-demo-command="Aumenta para 50 mm" type="button"><span>↗</span>Aumenta para 50 mm</button><button data-demo-command="Remonta tudo" type="button"><span>◇</span>Remonta tudo</button></div>
+    <div class="demo-tools" hidden data-theme="light"><button data-demo-action="fit" type="button" aria-label="Enquadrar mecanismo" title="Enquadrar">${arrowRightIcon}</button><button data-demo-action="focus" type="button" aria-label="Mostrar manivela" title="Mostrar manivela">${imageIcon}</button><button id="demo-tools-toggle" type="button" aria-label="Abrir acções" aria-controls="demo-actions" aria-expanded="false">+</button></div>
     <div class="demo-footer" hidden><span id="demo-footer-provenance">DESIGN SANDBOX</span><span id="demo-metrics">ONE WEBGL RENDERER · CAMERA READY</span></div>
   </main>`;
 

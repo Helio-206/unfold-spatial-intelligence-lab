@@ -13,6 +13,7 @@ import { SpatialActionOrchestrator, type OrchestratorState } from './spatial-orc
 import { instructionForLengthUpdate, parseSpatialCommand, type SpatialAction } from './spatial-command';
 import { BrowserVoiceInput, type VoiceStatus } from './voice-input';
 import { HandInteractionModel, WebcamHandTracker, type HandInteractionState, type HandLandmark, type HandTrackerMetrics } from './hand-tracking';
+import lockupDark from '../design-system/logos/unfold-lockup-on-dark.svg';
 import './style.css';
 
 const escapeHtml = (value: string): string => value.replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]!));
@@ -25,11 +26,11 @@ const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Elemento #app não encontrado.');
 
 app.innerHTML = `
-  <main class="stage-shell">
+  <main class="stage-shell" data-theme="dark">
     <div id="scene-3d" class="scene" aria-label="Cena 3D interactiva da planta"></div>
     <header class="stage-header">
       <div class="brand-lockup">
-        <span class="brand-mark">UNFOLD</span><span class="brand-rule"></span><span class="brand-context">spatial intelligence instrument</span>
+        <a class="brand-mark" href="/landing/" aria-label="UNFOLD — página inicial"><img src="${lockupDark}" alt="UNFOLD — Spatial Intelligence Lab" width="150" height="40"></a><span class="brand-rule"></span><span class="brand-context">spatial intelligence instrument</span>
       </div>
       <div class="header-actions">
         <span class="live-state"><i class="state-dot"></i><span id="mode-label">model live</span></span>
@@ -43,7 +44,7 @@ app.innerHTML = `
     <section class="ai-readout" aria-live="polite"><div class="readout-kicker"><span class="signal-line"></span><span>AI spatial readout</span></div><p id="answer">Ask about the model. The scene will answer in space.</p><span id="selection" class="readout-selection">no active focus</span></section>
     <div class="scene-meta"><span id="status">CONTRACT VALID · SCALE UNKNOWN</span><span>ORBIT / ZOOM / SELECT</span></div>
 
-    <section id="four-bar-lab-panel" class="lab-panel" aria-label="Four-Bar Lab" aria-hidden="true" hidden>
+    <section id="four-bar-lab-panel" class="lab-panel" aria-label="Four-Bar Lab" aria-hidden="true" hidden data-theme="light">
       <div class="lab-heading"><div><span class="eyebrow">FOUR-BAR LAB</span><h2>Planar mechanism</h2></div><div class="lab-heading-meta"><span class="lab-evidence">hypothetical_user_design</span><button id="hand-control-toggle" class="lab-hand-control" type="button" aria-pressed="false"><span class="hand-control-dot"></span>Hand Control</button><span id="hand-control-status" class="lab-hand-status">CAMERA OFF</span></div></div>
       <div id="hand-control-layer" class="hand-control-layer" hidden><video id="hand-preview" class="hand-preview" autoplay muted playsinline aria-label="Pré-visualização opcional da webcam"></video><span id="hand-control-metrics" class="hand-control-metrics">NO HAND · 0 INF/S</span></div>
       <p class="lab-copy">Geometria reconstruída exclusivamente a partir do solver determinístico. Não é uma reconstrução física do redutor.</p>
@@ -55,7 +56,7 @@ app.innerHTML = `
       <p id="lab-reason" class="lab-reason">All four links satisfy the requested configuration.</p>
     </section>
 
-    <section id="spatial-composer" class="spatial-composer" data-command-state="IDLE" aria-label="Spatial command composer">
+    <section id="spatial-composer" class="spatial-composer" data-command-state="IDLE" aria-label="Spatial command composer" data-theme="light">
       <button id="composer-drag-handle" class="composer-drag-handle" type="button" aria-label="Move command bar" title="Drag to move"><span></span><span></span><span></span></button>
       <div class="composer-main">
         <div class="composer-input-row"><span class="composer-prefix">/</span><textarea id="question" rows="1" aria-label="Spatial command" placeholder="Ask the model to act in space">Show me the living room and its walls.</textarea><button id="submit-question" class="composer-send" type="button" aria-label="Send command" title="Send command">↗</button></div>
@@ -80,7 +81,7 @@ app.innerHTML = `
       <span id="lab-voice-state" class="sr-only">VOICE READY</span><span id="lab-voice-transcript" class="sr-only">Use text if voice is unavailable.</span>
     </section>
 
-    <aside id="reference-drawer" class="reference-drawer" aria-hidden="true">
+    <aside id="reference-drawer" class="reference-drawer" aria-hidden="true" data-theme="light">
       <div class="drawer-topline"><div><span class="eyebrow">SECONDARY REFERENCE</span><h2>Plan trace</h2></div><button id="close-reference" class="close-control" aria-label="Close reference plan">×</button></div>
       <svg id="plan-2d" viewBox="0 0 1000 700" role="img" aria-label="Planta 2D de referência"></svg>
       <div class="drawer-note"><span class="note-mark">i</span><span>2D remains a reference layer. The 3D scene is the source of interaction.</span></div>
