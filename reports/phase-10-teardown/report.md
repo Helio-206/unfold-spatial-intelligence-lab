@@ -182,3 +182,5 @@ npm run build
 npm run dev -- --host 127.0.0.1 --port 5192 --strictPort
 UNFOLD_E2E_URL=http://127.0.0.1:5192 UNFOLD_CDP_PORT=9227 UNFOLD_EVIDENCE_DIR=reports/phase-10-teardown/evidence/case-b-debugger node tests/e2e/phase-10-case-b-detection.cdp.mjs
 ```
+
+Git checkpoint for the implementation and captured E2E evidence: branch `phase-10-open-source-geometry-acceleration`, commit `0d43e0c` (`Improve floor plan evidence debugging and calibration`). Changed files: `src/plan-reconstruction.ts`, `src/plan-scene.ts`, `src/spatial-editor.ts`, `src/spatial-editor.css`, `tests/plan-reconstruction.test.ts`, `tests/e2e/phase-10-case-b-detection.cdp.mjs`, this report, and five HABS browser evidence artifacts under `evidence/case-b-debugger/`. No Meta credentials or new API calls are part of this commit.
