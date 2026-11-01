@@ -203,6 +203,13 @@ function sceneWithRevision(scene: SpatialSceneV1, operationId: string, createdBy
   const number = scene.revision.number + 1;
   return { ...scene, revision: { id: `${scene.id}:r${number}`, number, parentId: scene.revision.id, operationId: `${scene.id}:op${number}:${operationId}`, createdAt: at, createdBy } };
 }
+/**
+ * Uma operação composta (vários comandos internos) fica numa só revisão: o resultado dos passos, com a revisão da base + 1 e o
+ * nome da operação. Os passos intermédios existem só enquanto se calcula.
+ */
+export function withSingleRevision(base: SpatialSceneV1, result: SpatialSceneV1, operationName: string, createdBy: string, clock: () => Date): SpatialSceneV1 {
+  return sceneWithRevision({ ...result, revision: base.revision }, operationName, createdBy, clock);
+}
 function restoreRevision(snapshot: SpatialSceneV1, current: SpatialSceneV1, operationId: 'Undo' | 'Redo', clock: () => Date = () => new Date()): SpatialSceneV1 {
   const at = clock().toISOString();
   const number = current.revision.number + 1;
