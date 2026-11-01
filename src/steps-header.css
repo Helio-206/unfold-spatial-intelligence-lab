@@ -1,0 +1,16 @@
+/* Steps header: one component, every screen. Colours and type come from the design-system tokens;
+   the data-theme of the surface it sits on decides light or dark. */
+.steps-header { display: inline-flex; align-items: center; font: 400 var(--type-label-size)/var(--type-label-line) var(--font-mono); color: var(--ink-muted); }
+.sh-step { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; min-width: 44px; padding: 0 var(--space-3); color: inherit; text-decoration: none; white-space: nowrap; }
+.sh-step:hover { color: var(--ink); }
+.sh-step:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+.sh-name { font-family: var(--font-sans); font-size: var(--type-small-size); }
+.sh-step.is-active { color: var(--ink); font-weight: 500; }
+.sh-step.is-active::before { content: ''; position: absolute; left: 50%; top: 4px; width: 28px; height: 8px; transform: translateX(-50%); background: var(--fold); clip-path: polygon(0 100%, 100% 100%, 90% 25%, 82% 0, 18% 0, 10% 25%); }
+.sh-step.is-unavailable { opacity: .55; cursor: default; }
+.steps-header[data-collapsed="true"] .sh-step:not(.is-active) { padding: 0; }
+.steps-header[data-collapsed="true"] .sh-step:not(.is-active) .sh-name { display: none; }
+@media (max-width: 700px) {
+  .sh-step:not(.is-active) .sh-name { display: none; }
+  .sh-step:not(.is-active) { padding: 0; }
+}

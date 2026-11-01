@@ -1,0 +1,78 @@
+/* Unfold — design tokens. Generated from tokens.json. Light (Paper) is the default theme. */
+:root, [data-theme="light"] {
+  color-scheme: light;
+  --surface: #F3F0E8;
+  --surface-raised: #FBFAF6;
+  --surface-sunken: #ECE8DE;
+  --line: #D8D3C8;
+  --ink: #0B0D10;
+  --ink-muted: #585D64;
+  --fold: #FF5A1F;
+  --fold-ink: #C93A08;
+  --on-fold: #0B0D10;
+  --laser: #4A6600;
+  --depth: #2350E6;
+  --focus-ring: #C93A08;
+  --axis-x: var(--fold);
+
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --type-display-xl-size: clamp(56px, 7.4vw, 112px);
+  --type-display-xl-line: 0.92;
+  --type-display-xl-weight: 600;
+  --type-display-xl-tracking: -0.045em;
+  --type-display-size: clamp(36px, 4vw, 56px);
+  --type-display-line: 1.02;
+  --type-display-weight: 600;
+  --type-display-tracking: -0.035em;
+  --type-title-size: 22px;
+  --type-title-line: 28px;
+  --type-title-weight: 600;
+  --type-title-tracking: -0.01em;
+  --type-lead-size: 20px;
+  --type-lead-line: 30px;
+  --type-lead-weight: 400;
+  --type-body-size: 16px;
+  --type-body-line: 24px;
+  --type-body-weight: 400;
+  --type-small-size: 14px;
+  --type-small-line: 20px;
+  --type-small-weight: 400;
+  --type-label-size: 12px;
+  --type-label-line: 16px;
+  --type-label-weight: 400;
+  --type-data-size: 13px;
+  --type-data-line: 20px;
+  --type-data-weight: 400;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-10: 40px;
+  --space-16: 64px;
+  --space-32: 128px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+/* Dark (Void): opt in with data-theme="dark" on <html> or any container. */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --surface: #0B0D10;
+  --surface-raised: #171A1F;
+  --surface-sunken: #111317;
+  --line: #2A2F36;
+  --ink: #F3F0E8;
+  --ink-muted: #9AA0A8;
+  --fold: #FF5A1F;
+  --fold-ink: #FF7A45;
+  --on-fold: #0B0D10;
+  --laser: #D4FF3A;
+  --depth: #7AA2FF;
+  --focus-ring: #FF7A45;
+  --axis-x: var(--fold);
+}

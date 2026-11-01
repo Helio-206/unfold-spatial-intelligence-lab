@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unfold — From flat to space</title>
+<meta name="description" content="Unfold turns photos, video, floor plans and sketches into measured, verifiable space.">
+<link rel="icon" href="../design-system/logos/unfold-mark-on-light.svg" type="image/svg+xml">
+<style>
+@font-face{font-family:"Geist";src:url("../design-system/fonts/Geist-Regular.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"Geist";src:url("../design-system/fonts/Geist-Medium.woff2") format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:"Geist";src:url("../design-system/fonts/Geist-SemiBold.woff2") format("woff2");font-weight:600;font-display:swap}
+@font-face{font-family:"Geist Mono";src:url("../design-system/fonts/GeistMono-Regular.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"Geist Mono";src:url("../design-system/fonts/GeistMono-Medium.woff2") format("woff2");font-weight:500;font-display:swap}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+<style>
+body{margin:0;background:#F3F0E8}
+a{color:#C93A08}a:hover{color:#0B0D10}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid #C93A08;outline-offset:3px}
+.stage{transform:scale(1)}
+@media (max-width:640px){.stage{transform:scale(.66)}}
+.face{position:absolute;width:128px;height:128px;border-radius:12px;transform-style:preserve-3d;box-sizing:border-box}
+.mf{position:absolute;width:56px;height:56px;border-radius:6px;transform-style:preserve-3d;box-sizing:border-box}
+.lbl{position:absolute;left:12px;bottom:10px;font-family:'Geist Mono',ui-monospace,Menlo,monospace;font-size:11px;line-height:16px;font-weight:500;letter-spacing:.04em;backface-visibility:hidden}
+.rng{-webkit-appearance:none;appearance:none;width:100%;height:44px;background:transparent;cursor:pointer;margin:0}
+.rng::-webkit-slider-runnable-track{height:2px;background:#D8D3C8}
+.rng::-moz-range-track{height:2px;background:#D8D3C8}
+.rng::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:6px;background:#FF5A1F;margin-top:-10px;border:3px solid #F3F0E8}
+.rng::-moz-range-thumb{width:16px;height:16px;border-radius:6px;background:#FF5A1F;border:3px solid #F3F0E8}
+.ruler{height:14px;background-image:repeating-linear-gradient(to right,#585D64 0 1px,transparent 1px 80px),repeating-linear-gradient(to right,#B4AEA2 0 1px,transparent 1px 8px);background-size:100% 14px,100% 6px;background-repeat:no-repeat;background-position:left bottom,left bottom;border-bottom:1px solid #585D64}
+.net{display:grid;gap:8px;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-areas:". a . ." "h b c d" ". e . ."}
+@media (max-width:860px){.net{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"h h" "a b" "c d" "e e"}}
+</style>
+</head>
+<body>
+<div style="background: #F3F0E8; color: #0B0D10; font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; overflow: hidden">
+
+<header style="max-width: 1280px; margin: 0 auto; padding: 24px 40px; display: flex; align-items: center; justify-content: space-between; gap: 24px">
+<a href="#inicio" style="display: flex; align-items: center; min-height: 44px"><img src="../design-system/logos/unfold-lockup-on-light.svg" alt="Unfold — Spatial Intelligence Lab" style="height: 36px; width: auto; display: block"></a>
+<nav aria-label="Primary" style="display: flex; align-items: center; gap: 12px">
+<a href="/demo" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 20px; border-radius: 4px; border: 1px solid #585D64; color: #0B0D10; font-size: 15px; font-weight: 500; text-decoration: none">Open the lab</a>
+<a href="#acesso" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 20px; border-radius: 4px; background: #0B0D10; color: #F3F0E8; font-size: 15px; font-weight: 500; text-decoration: none">Request access</a>
+</nav>
+</header>
+
+<section id="inicio" style="max-width: 1280px; margin: 0 auto; padding: 32px 40px 96px; min-height: 680px; display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 32px; align-items: center">
+<div style="display: flex; flex-direction: column; gap: 28px">
+<h1 style="margin: 0; font-size: clamp(56px, 7.4vw, 112px); line-height: 0.92; font-weight: 600; letter-spacing: -0.045em">From flat<br>to <span style="color: #C93A08">space</span>.</h1>
+<p style="margin: 0; max-width: 24rem; font-size: 20px; line-height: 30px; color: #585D64">An image goes in. A measured space comes out.</p>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+<div class="stage" style="width: 520px; max-width: 100%; height: 460px; perspective: 1400px; perspective-origin: 50% 35%; position: relative">
+<div id="cube-root" style="position: absolute; left: calc(50% - 64px); top: calc(50% - 64px); width: 128px; height: 128px; transform-style: preserve-3d; transform: rotateX(54.90deg) rotateZ(-30.55deg) translateX(-54.40px) translateZ(-9.60px)">
+<div class="face" style="left: 0; top: 0; background: #FBFAF6; border: 1px solid #D8D3C8">
+<svg viewBox="0 0 128 128" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%"><path d="M0 92 L128 82 L128 128 L0 128 Z" fill="#ECE8DE"></path><rect x="78" y="22" width="30" height="34" fill="none" stroke="#585D64" stroke-width="1.5"></rect><rect x="14" y="76" width="44" height="20" rx="5" fill="#2350E6"></rect><rect x="66" y="86" width="34" height="5" rx="1" fill="#FF5A1F"></rect></svg>
+<span class="lbl" style="color: #0B0D10">photo</span>
+</div>
+<div id="face-left" class="face" style="left: -128px; top: 0; background: #2350E6; transform-origin: 100% 50%; transform: rotateY(13.5deg)">
+<span class="lbl" style="color: #F3F0E8">depth</span>
+<span class="lbl" style="color: #F3F0E8; transform: rotateY(180deg)">depth</span>
+</div>
+<div id="face-top" class="face" style="left: 0; top: -128px; background: #4A6600; transform-origin: 50% 100%; transform: rotateX(-13.5deg)">
+<span class="lbl" style="color: #F3F0E8">objects</span>
+<span class="lbl" style="color: #F3F0E8; transform: rotateX(180deg); top: 10px; bottom: auto">objects</span>
+</div>
+<div id="face-bottom" class="face" style="left: 0; top: 128px; background: #0B0D10; transform-origin: 50% 0; transform: rotateX(13.5deg)">
+<span class="lbl" style="color: #F3F0E8">relations</span>
+<span class="lbl" style="color: #F3F0E8; transform: rotateX(180deg); top: 10px; bottom: auto">relations</span>
+</div>
+<div id="face-right" class="face" style="left: 128px; top: 0; background: #D8D3C8; transform-origin: 0 50%; transform: rotateY(-13.5deg)">
+<span class="lbl" style="color: #0B0D10">measures</span>
+<span class="lbl" style="color: #0B0D10; transform: rotateY(180deg)">measures</span>
+<div id="face-lid" class="face" style="left: 128px; top: 0; background: #FF5A1F; transform-origin: 0 50%; transform: rotateY(-13.5deg)">
+<span class="lbl" style="color: #0B0D10">space</span>
+<span class="lbl" style="color: #0B0D10; transform: rotateY(180deg)">space</span>
+</div>
+</div>
+</div>
+</div>
+<label style="width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 4px">
+<span style="display: flex; justify-content: space-between; font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-size: 12px; line-height: 16px; color: #585D64"><span>flat</span><span>space</span></span>
+<input class="rng" type="range" min="0" max="100" step="1" id="fold-range" value="15" aria-label="Fold the flat net into space">
+</label>
+</div>
+</section>
+
+<section style="max-width: 1280px; margin: 0 auto; padding: 0 40px 128px">
+<div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 8px; font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-size: 12px; line-height: 16px; color: #585D64"><span>01 · how it works</span><span>0 → 90°</span></div>
+<div class="ruler" aria-hidden="true"></div>
+<h2 style="margin: 64px 0 56px; max-width: 18ch; font-size: clamp(36px, 4vw, 56px); line-height: 1.02; font-weight: 600; letter-spacing: -0.035em">Three folds between an image and a space.</h2>
+<ol style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px">
+
+<li style="background: #FBFAF6; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 12px">
+<div aria-hidden="true" style="height: 200px; perspective: 900px; perspective-origin: 50% 35%; position: relative">
+<div style="position: absolute; left: calc(50% - 28px); top: calc(50% - 28px); width: 56px; height: 56px; transform-style: preserve-3d; transform: rotateX(54deg) rotateZ(-28deg) translateX(-28px)">
+<div class="mf" style="left: 0; top: 0; background: #ECE8DE; border: 1px solid #D8D3C8"></div>
+<div class="mf" style="left: -56px; top: 0; background: #2350E6; transform-origin: 100% 50%"></div>
+<div class="mf" style="left: 0; top: -56px; background: #4A6600; transform-origin: 50% 100%"></div>
+<div class="mf" style="left: 0; top: 56px; background: #0B0D10; transform-origin: 50% 0"></div>
+<div class="mf" style="left: 56px; top: 0; background: #D8D3C8; transform-origin: 0 50%"><div class="mf" style="left: 56px; top: 0; background: #FF5A1F; transform-origin: 0 50%"></div></div>
+</div>
+</div>
+<span style="font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-size: 12px; line-height: 16px; color: #C93A08">0°</span>
+<h3 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 600; letter-spacing: -0.01em">Send an image</h3>
+<p style="margin: 0; font-size: 16px; line-height: 24px; color: #585D64">Photo, video, floor plan or sketch.</p>
+</li>
+
+<li style="background: #FBFAF6; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 12px">
+<div aria-hidden="true" style="height: 200px; perspective: 900px; perspective-origin: 50% 35%; position: relative">
+<div style="position: absolute; left: calc(50% - 28px); top: calc(50% - 28px); width: 56px; height: 56px; transform-style: preserve-3d; transform: rotateX(57deg) rotateZ(-36.5deg) translateX(-14px) translateZ(-14px)">
+<div class="mf" style="left: 0; top: 0; background: #ECE8DE; border: 1px solid #D8D3C8"></div>
+<div class="mf" style="left: -56px; top: 0; background: #2350E6; transform-origin: 100% 50%; transform: rotateY(45deg)"></div>
+<div class="mf" style="left: 0; top: -56px; background: #4A6600; transform-origin: 50% 100%; transform: rotateX(-45deg)"></div>
+<div class="mf" style="left: 0; top: 56px; background: #0B0D10; transform-origin: 50% 0; transform: rotateX(45deg)"></div>
+<div class="mf" style="left: 56px; top: 0; background: #D8D3C8; transform-origin: 0 50%; transform: rotateY(-45deg)"><div class="mf" style="left: 56px; top: 0; background: #FF5A1F; transform-origin: 0 50%; transform: rotateY(-45deg)"></div></div>
+</div>
+</div>
+<span style="font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-size: 12px; line-height: 16px; color: #C93A08">45°</span>
+<h3 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 600; letter-spacing: -0.01em">Unfold reasons</h3>
+<p style="margin: 0; font-size: 16px; line-height: 24px; color: #585D64">Depth, scale and objects.</p>
+</li>
+
+<li style="background: #FBFAF6; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 12px">
+<div aria-hidden="true" style="height: 200px; perspective: 900px; perspective-origin: 50% 35%; position: relative">
+<div style="position: absolute; left: calc(50% - 28px); top: calc(50% - 28px); width: 56px; height: 56px; transform-style: preserve-3d; transform: rotateX(60deg) rotateZ(-45deg) translateZ(-28px)">
+<div class="mf" style="left: 0; top: 0; background: #ECE8DE; border: 1px solid #D8D3C8"></div>
+<div class="mf" style="left: -56px; top: 0; background: #2350E6; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div class="mf" style="left: 0; top: -56px; background: #4A6600; transform-origin: 50% 100%; transform: rotateX(-90deg)"></div>
+<div class="mf" style="left: 0; top: 56px; background: #0B0D10; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div class="mf" style="left: 56px; top: 0; background: #D8D3C8; transform-origin: 0 50%; transform: rotateY(-90deg)"><div class="mf" style="left: 56px; top: 0; background: #FF5A1F; transform-origin: 0 50%; transform: rotateY(-90deg)"></div></div>
+</div>
+</div>
+<span style="font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-size: 12px; line-height: 16px; color: #C93A08">90°</span>
+<h3 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 600; letter-spacing: -0.01em">Get space back</h3>
+<p style="margin: 0; font-size: 16px; line-height: 24px; color: #585D64">3D scene, floor plan and measurements.</p>
+</li>
+</ol>
+</section>
+
+<section style="max-width: 1280px; margin: 0 auto; padding: 0 40px 128px">
+<div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 8px; font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-size: 12px; line-height: 16px; color: #585D64"><span>02 · result</span><span>sala_01.jpg · illustrative</span></div>
+<div class="ruler" aria-hidden="true"></div>
+<h2 style="margin: 64px 0 56px; max-width: 18ch; font-size: clamp(36px, 4vw, 56px); line-height: 1.02; font-weight: 600; letter-spacing: -0.035em">An ordinary photo. A measured room.</h2>
+<figure style="margin: 0">
+<div style="position: relative; border-radius: 12px; overflow: hidden; background: #FBFAF6; aspect-ratio: 1200 / 640">
+<svg viewBox="0 0 1200 640" role="img" aria-label="The original photo of a room with a sofa, a table, a window and a lamp." style="position: absolute; inset: 0; width: 100%; height: 100%; display: block">
+<polygon points="0,-70 1200,-70 900,90 300,90" fill="#E9E5DB"></polygon>
+<polygon points="300,90 900,90 900,400 300,400" fill="#ECE8DE"></polygon>
+<polygon points="0,-70 300,90 300,400 0,550" fill="#E2DDD1"></polygon>
+<polygon points="1200,-70 900,90 900,400 1200,550" fill="#E5E0D5"></polygon>
+<polygon points="0,550 300,400 900,400 1200,550 1200,640 0,640" fill="#D8D3C8"></polygon>
+<rect x="610" y="140" width="210" height="160" fill="#FBFAF6"></rect>
+<rect x="610" y="140" width="210" height="160" fill="none" stroke="#585D64" stroke-width="4"></rect>
+<path d="M715 140 V300 M610 220 H820" stroke="#585D64" stroke-width="3"></path>
+<polygon points="610,300 820,300 860,330 640,330" fill="#FBFAF6" opacity="0.5"></polygon>
+<rect x="336" y="292" width="228" height="62" rx="14" fill="#2350E6"></rect>
+<rect x="312" y="342" width="276" height="92" rx="16" fill="#2350E6"></rect>
+<rect x="312" y="342" width="276" height="92" rx="16" fill="#0B0D10" opacity="0.12"></rect>
+<rect x="296" y="326" width="40" height="110" rx="12" fill="#2350E6"></rect>
+<rect x="564" y="326" width="40" height="110" rx="12" fill="#2350E6"></rect>
+<polygon points="560,492 800,492 770,456 566,456" fill="#FF5A1F"></polygon>
+<rect x="560" y="492" width="240" height="10" fill="#C93A08"></rect>
+<path d="M568 502 V566 M792 502 V566 M574 460 V516 M764 460 V516" stroke="#C93A08" stroke-width="6" stroke-linecap="round"></path>
+<path d="M1010 520 V250" stroke="#585D64" stroke-width="5"></path>
+<polygon points="968,256 1052,256 1036,206 984,206" fill="#FBFAF6" stroke="#585D64" stroke-width="3"></polygon>
+<ellipse cx="1010" cy="522" rx="34" ry="8" fill="#585D64"></ellipse>
+</svg>
+<div id="compare-top" style="position: absolute; inset: 0; clip-path: inset(0 0 0 50%)">
+<svg viewBox="0 0 1200 640" role="img" aria-label="The same room after Unfold: depth measured in metres, objects placed in 3D boxes, and the table 1.20 metres from the window, plus or minus 4 centimetres. The lamp is flagged as uncertain." style="position: absolute; inset: 0; width: 100%; height: 100%; display: block; background: #FBFAF6">
+<g stroke="#2350E6" stroke-width="1.5" fill="none" opacity="0.5">
+<path d="M0 600 H1200"></path><path d="M60 520 H1140"></path><path d="M180 460 H1020"></path><path d="M260 420 H940"></path>
+</g>
+<g font-family="Geist Mono, ui-monospace, monospace" font-size="13" fill="#2350E6">
+<text x="14" y="592">1 m</text><text x="74" y="512">2 m</text><text x="194" y="452">3 m</text><text x="274" y="414">4 m</text>
+</g>
+<g stroke="#585D64" stroke-width="1.5" fill="none">
+<rect x="300" y="90" width="600" height="310"></rect>
+<path d="M300 90 L0 -70 M900 90 L1200 -70 M300 400 L0 550 M900 400 L1200 550"></path>
+</g>
+<text x="314" y="114" font-family="Geist Mono, ui-monospace, monospace" font-size="13" fill="#585D64">wall · 4.62 m ±6 cm</text>
+<rect x="610" y="140" width="210" height="160" fill="#4A6600" fill-opacity="0.08" stroke="#4A6600" stroke-width="2.5"></rect>
+<polygon points="296,326 604,326 590,300 310,300" fill="#2350E6" fill-opacity="0.1" stroke="#2350E6" stroke-width="2.5" stroke-linejoin="round"></polygon>
+<rect x="296" y="326" width="308" height="110" fill="#2350E6" fill-opacity="0.12" stroke="#2350E6" stroke-width="2.5"></rect>
+<polygon points="560,492 800,492 770,456 566,456" fill="#FF5A1F" fill-opacity="0.18" stroke="#FF5A1F" stroke-width="2.5" stroke-linejoin="round"></polygon>
+<path d="M560 492 V566 H800 V492 M800 566 L770 530 V456 M560 566 L566 530" fill="none" stroke="#FF5A1F" stroke-width="1.5" stroke-dasharray="5 5"></path>
+<polygon points="964,256 1056,256 1036,204 984,204" fill="none" stroke="#C93A08" stroke-width="2" stroke-dasharray="6 5"></polygon>
+<path d="M1010 256 V522" stroke="#C93A08" stroke-width="2" stroke-dasharray="6 5"></path>
+<path d="M680 474 L715 220" stroke="#0B0D10" stroke-width="2" stroke-dasharray="6 6"></path>
+<circle cx="680" cy="474" r="5" fill="#0B0D10"></circle><circle cx="715" cy="220" r="5" fill="#0B0D10"></circle>
+<g font-family="Geist Mono, ui-monospace, monospace" font-size="13">
+<rect x="722" y="330" width="132" height="30" rx="4" fill="#0B0D10"></rect><text x="788" y="350" text-anchor="middle" fill="#F3F0E8">1.20 m ±4 cm</text>
+<rect x="296" y="446" width="150" height="26" rx="4" fill="#2350E6"></rect><text x="371" y="464" text-anchor="middle" fill="#F3F0E8">sofa · 2.10 m</text>
+<rect x="560" y="576" width="164" height="26" rx="4" fill="#FF5A1F"></rect><text x="642" y="594" text-anchor="middle" fill="#0B0D10">table · 1.40 × 0.80</text>
+<rect x="610" y="112" width="92" height="22" rx="4" fill="#4A6600"></rect><text x="656" y="128" text-anchor="middle" fill="#F3F0E8">window</text>
+<rect x="934" y="168" width="152" height="26" rx="4" fill="#FBFAF6" stroke="#C93A08" stroke-width="1.5"></rect><text x="1010" y="186" text-anchor="middle" fill="#C93A08">lamp? · review</text>
+</g>
+</svg>
+</div>
+<div id="compare-handle" aria-hidden="true" style="position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -1px; background: #0B0D10; pointer-events: none">
+<div style="position: absolute; top: 50%; left: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 8px; background: #0B0D10; color: #F3F0E8; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-size: 14px">‹ ›</div>
+</div>
+<span style="position: absolute; top: 16px; left: 16px; padding: 4px 10px; border-radius: 4px; background: #FBFAF6; font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-size: 12px; line-height: 16px; color: #0B0D10; pointer-events: none">photo</span>
+<span style="position: absolute; top: 16px; right: 16px; padding: 4px 10px; border-radius: 4px; background: #0B0D10; font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-size: 12px; line-height: 16px; color: #F3F0E8; pointer-events: none">unfold</span>
+<input type="range" min="0" max="100" step="1" id="compare-range" value="50" aria-label="Compare the photo with the Unfold result" style="position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize">
+</div>
+<figcaption style="margin-top: 12px; display: flex; justify-content: space-between; gap: 16px; font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-size: 12px; line-height: 16px; color: #585D64"><span>drag to compare</span><span>2D, unscaled → 3D, to scale</span></figcaption>
+</figure>
+</section>
+
+<section style="max-width: 1280px; margin: 0 auto; padding: 0 40px 128px">
+<div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 8px; font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-size: 12px; line-height: 16px; color: #585D64"><span>03 · principle</span><span>x · y · z</span></div>
+<div class="ruler" aria-hidden="true"></div>
+<div style="margin-top: 64px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 48px 64px; align-items: start">
+<h2 style="margin: 0; max-width: 12ch; font-size: clamp(36px, 4vw, 56px); line-height: 1.02; font-weight: 600; letter-spacing: -0.035em">Precision over magic.</h2>
+<dl style="margin: 0; display: flex; flex-direction: column">
+<div style="display: grid; grid-template-columns: 48px 1fr; gap: 16px; padding: 20px 0; border-top: 1px solid #D8D3C8"><dt style="display: flex; align-items: center; gap: 8px; font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-size: 13px; line-height: 24px; color: #C93A08"><span style="width: 14px; height: 14px; border-radius: 3px; background: #FF5A1F"></span>X</dt><dd style="margin: 0; font-size: 20px; line-height: 28px"><strong style="font-weight: 600">Where</strong> <span style="color: #585D64">— every object in its place.</span></dd></div>
+<div style="display: grid; grid-template-columns: 48px 1fr; gap: 16px; padding: 20px 0; border-top: 1px solid #D8D3C8"><dt style="display: flex; align-items: center; gap: 8px; font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-size: 13px; line-height: 24px; color: #4A6600"><span style="width: 14px; height: 14px; border-radius: 3px; background: #4A6600"></span>Y</dt><dd style="margin: 0; font-size: 20px; line-height: 28px"><strong style="font-weight: 600">How far</strong> <span style="color: #585D64">— in metres, not adjectives.</span></dd></div>
+<div style="display: grid; grid-template-columns: 48px 1fr; gap: 16px; padding: 20px 0; border-top: 1px solid #D8D3C8; border-bottom: 1px solid #D8D3C8"><dt style="display: flex; align-items: center; gap: 8px; font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-size: 13px; line-height: 24px; color: #2350E6"><span style="width: 14px; height: 14px; border-radius: 3px; background: #2350E6"></span>Z</dt><dd style="margin: 0; font-size: 20px; line-height: 28px"><strong style="font-weight: 600">How sure</strong> <span style="color: #585D64">— the margin of error, always in view.</span></dd></div>
+</dl>
+</div>
+</section>
+
+<section style="max-width: 1280px; margin: 0 auto; padding: 0 40px 128px">
+<div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 8px; font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-size: 12px; line-height: 16px; color: #585D64"><span>04 · who it’s for</span><span>6 faces</span></div>
+<div class="ruler" aria-hidden="true"></div>
+<div class="net" style="margin-top: 64px">
+<div style="grid-area: h; aspect-ratio: 1 / 1; min-height: 200px; background: #0B0D10; color: #F3F0E8; border-radius: 12px; padding: 24px; display: flex; align-items: flex-end">
+<h2 style="margin: 0; font-size: clamp(24px, 2.2vw, 32px); line-height: 1.1; font-weight: 600; letter-spacing: -0.02em">For teams who work with the physical world.</h2>
+</div>
+<div style="grid-area: a; aspect-ratio: 1 / 1; min-height: 200px; background: #FBFAF6; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; justify-content: space-between"><span style="font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-size: 12px; line-height: 16px; color: #585D64">floor plans · areas</span><h3 style="margin: 0; font-size: 24px; line-height: 28px; font-weight: 600; letter-spacing: -0.015em">Architecture &amp; interiors</h3></div>
+<div style="grid-area: b; aspect-ratio: 1 / 1; min-height: 200px; background: #FBFAF6; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; justify-content: space-between"><span style="font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-size: 12px; line-height: 16px; color: #585D64">listings · m²</span><h3 style="margin: 0; font-size: 24px; line-height: 28px; font-weight: 600; letter-spacing: -0.015em">Real estate</h3></div>
+<div style="grid-area: c; aspect-ratio: 1 / 1; min-height: 200px; background: #FBFAF6; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; justify-content: space-between"><span style="font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-size: 12px; line-height: 16px; color: #585D64">maps · obstacles</span><h3 style="margin: 0; font-size: 24px; line-height: 28px; font-weight: 600; letter-spacing: -0.015em">Robotics</h3></div>
+<div style="grid-area: d; aspect-ratio: 1 / 1; min-height: 200px; background: #FBFAF6; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; justify-content: space-between"><span style="font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-size: 12px; line-height: 16px; color: #585D64">true scale</span><h3 style="margin: 0; font-size: 24px; line-height: 28px; font-weight: 600; letter-spacing: -0.015em">AR / VR</h3></div>
+<div style="grid-area: e; aspect-ratio: 1 / 1; min-height: 200px; background: #FF5A1F; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; justify-content: space-between"><span style="font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-size: 12px; line-height: 16px; color: #0B0D10">volumes · measurements</span><h3 style="margin: 0; font-size: 24px; line-height: 28px; font-weight: 600; letter-spacing: -0.015em; color: #0B0D10">Logistics &amp; inspection</h3></div>
+</div>
+</section>
+
+<section id="acesso" style="max-width: 1280px; margin: 0 auto; padding: 0 40px 96px">
+<div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 8px; font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-size: 12px; line-height: 16px; color: #585D64"><span>05 · access</span><span>in phases</span></div>
+<div class="ruler" aria-hidden="true"></div>
+<div style="margin-top: 96px">
+<svg viewBox="0 0 240 72" aria-hidden="true" style="display: block; width: 240px; max-width: 40%; height: auto; margin-left: clamp(24px, 8%, 120px)"><path d="M0 72 H240 L222 10 Q219 0 208 0 H32 Q21 0 18 10 Z" fill="#FF5A1F"></path></svg>
+<div style="margin-top: 8px; background: #0B0D10; color: #F3F0E8; border-radius: 12px; padding: clamp(32px, 6vw, 88px); display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 40px">
+<h2 style="margin: 0; max-width: 14ch; font-size: clamp(40px, 5vw, 76px); line-height: 0.96; font-weight: 600; letter-spacing: -0.04em">Every image has a room inside.</h2>
+<div style="display: flex; flex-direction: column; align-items: flex-start; gap: 12px">
+<a id="request-access" href="mailto:%VITE_UNFOLD_CONTACT_EMAIL%" style="display: inline-flex; align-items: center; min-height: 56px; padding: 0 32px; border-radius: 4px; background: #FF5A1F; color: #0B0D10; font-size: 17px; font-weight: 500; text-decoration: none">Request access</a>
+<p id="request-access-note" hidden style="margin: 0; max-width: 28ch; font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-size: 12px; line-height: 16px; color: #9AA0A8">Access requests are not open yet. Contact address not configured (VITE_UNFOLD_CONTACT_EMAIL).</p>
+</div>
+</div>
+</div>
+</section>
+
+<footer style="max-width: 1280px; margin: 0 auto; padding: 0 40px 40px">
+<div style="border-top: 1px solid #D8D3C8; padding-top: 24px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; font-size: 14px; line-height: 20px; color: #585D64">
+<span>© 2026 Unfold · research prototype: reconstructions stay provisional until reviewed</span><span>Powered by Muse Spark (Meta)</span>
+</div>
+</footer>
+
+</div>
+<script>
+(function () {
+  var link = document.getElementById('request-access');
+  var note = document.getElementById('request-access-note');
+  var email = (link.getAttribute('href') || '').replace(/^mailto:/, '');
+  if (!email || email.indexOf('%VITE_') !== -1) {
+    link.removeAttribute('href');
+    link.setAttribute('aria-disabled', 'true');
+    link.style.opacity = '.45';
+    link.style.cursor = 'not-allowed';
+    note.hidden = false;
+  }
+})();
+</script>
+<script>
+(function () {
+  var S = 128;
+  var $ = function (id) { return document.getElementById(id); };
+  var range = $('fold-range'), stop = false, raf;
+  function fold(t) {
+    var a = t * 90;
+    $('cube-root').style.transform = 'rotateX(' + (54 + 6 * t) + 'deg) rotateZ(' + (-28 - 17 * t) + 'deg) translateX(' + (-(S / 2) * (1 - t)) + 'px) translateZ(' + (-(S / 2) * t) + 'px)';
+    $('face-left').style.transform = 'rotateY(' + a + 'deg)';
+    $('face-right').style.transform = 'rotateY(' + (-a) + 'deg)';
+    $('face-top').style.transform = 'rotateX(' + (-a) + 'deg)';
+    $('face-bottom').style.transform = 'rotateX(' + a + 'deg)';
+    $('face-lid').style.transform = 'rotateY(' + (-a) + 'deg)';
+    range.value = Math.round(t * 100);
+  }
+  range.addEventListener('input', function () { stop = true; cancelAnimationFrame(raf); fold(range.value / 100); });
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) { fold(1); } else {
+    var from = 0.15, start = null;
+    var step = function (ts) {
+      if (stop) return;
+      if (start === null) start = ts;
+      var p = Math.min(1, (ts - start) / 2400);
+      var e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+      fold(from + (1 - from) * e);
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    setTimeout(function () { raf = requestAnimationFrame(step); }, 700);
+  }
+  var cr = $('compare-range');
+  cr.addEventListener('input', function () {
+    var v = cr.value + '%';
+    $('compare-top').style.clipPath = 'inset(0 0 0 ' + v + ')';
+    $('compare-handle').style.left = v;
+  });
+})();
+
+</script>
+</body>
+</html>

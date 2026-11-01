@@ -5,12 +5,12 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { gsap } from 'gsap';
 import { decodePlanImage } from './plan-image';
 import { buildPlanVectorModel, countClosedCandidateContours, detectCandidateIntersections, detectWallCandidates, mergeWallCandidates, splitWallCandidate, traceWallCandidate, type PixelWallCandidate, type Point2 } from './plan-reconstruction';
-import { addOpeningToScene, createPlanScene, planOpeningEdit, planWallEdit, type CompositePlan } from './plan-scene';
+import { addOpeningToScene, createPlanScene, planOpeningEdit, planWallEdit, planWallRemoval, type CompositePlan } from './plan-scene';
 import { createSceneAuthorizer } from './scene-authorizer';
 import { confirmedNotice, explainSceneError } from './scene-messages';
 import type { ConfirmedReference } from './scene-authorization';
 import type { CommandOrigin } from './core';
-import { ARCHITECTURAL_MODULE_DIMENSIONS, buildThreePlanGroup, type ArchitecturalAssets } from './plan-three-adapter';
+import { ARCHITECTURAL_MODULE_DIMENSIONS, buildThreePlanGroup, type ArchitecturalAssets, buildRemovalGhost, type RemovalGhost } from './plan-three-adapter';
 import { commitScenePreview, deserializeSceneTransaction, previewSceneCommand, serializeSceneTransaction, type Node, type SceneCommandContext, type ScenePreview, type SceneTransaction, type SpatialCommand, type SpatialSceneV1 } from './spatial-scene';
 import { clearSpatialSourceImage, readSpatialSourceImage } from './spatial-source-store';
 import { createSpatialCommandEnvelope, parseSpatialIntentV1, resolveSpatialTarget, type SpatialCommandOrigin, type SpatialCommandState, type SpatialCommandV1 } from './spatial-command-protocol';
@@ -19,6 +19,11 @@ import { prepareSpatialHandoff } from './spatial-handoff';
 import { parseSpatialAgentResult, SPATIAL_AGENT_REQUEST_SCHEMA, spatialDomainConflict, type SpatialAgentRequestV1, type SpatialAgentAction } from './spatial-agent';
 import type { TechnicalDocumentV1 } from './technical-document';
 import { cameraFrameAspect, createSpatialCameraView, createSpatialFocusView } from './spatial-camera';
+import { countReconstructionStates, RECONSTRUCTION_STATES, RECONSTRUCTION_STATE_MEANING, reconstructionChip, reconstructionState } from './reconstruction-state';
+import lockupLight from '../design-system/logos/unfold-lockup-on-light.svg';
+import { mountStepsHeader } from './steps-header';
+import { describeWallRemoval, type RemovalDescription } from './removal-preview';
+import { dur as motionDur, EASE as MOTION_EASE, gsap as motionGsap, prefersReducedMotion as motionReduced } from './motion';
 import './spatial-editor.css';
 
 export type SpatialEditorOptions = { onExit?: () => void; source?: 'accepted-document'; onCommandState?: (state: SpatialCommandState, message: string) => void };
@@ -26,58 +31,64 @@ export type SpatialEditorOptions = { onExit?: () => void; source?: 'accepted-doc
 export function mountSpatialEditor(app: HTMLElement, options: SpatialEditorOptions = {}): () => void {
 const acceptedDocumentSource = options.source === 'accepted-document' || new URLSearchParams(location.search).get('source') === 'accepted-document';
 
-app.innerHTML = `<main class="spatial-lab" data-state="empty">
+app.innerHTML = `<main class="spatial-lab" data-state="empty" data-theme="dark">
   <div id="spatial-canvas" aria-label="Cena tridimensional editável"></div>
-  <header class="spatial-header"><a href="/demo" class="brand"><b>UNFOLD</b><span>LABORATÓRIO ESPACIAL</span></a><div class="header-tools"><span id="scene-state">SEM CENA</span><button id="open-scene" type="button">Abrir cena</button><input id="scene-file" type="file" accept=".json,application/json" hidden><button id="save-scene" type="button" disabled>Guardar</button><button id="restore-scene" type="button" disabled>Restaurar</button><button id="exit-spatial-editor" class="return-link" type="button">Voltar ao laboratório</button></div></header>
-  <aside id="source-panel" class="source-panel" aria-label="Fonte e tracing da planta">
-    <div class="panel-heading"><span>01 / DOCUMENTO-FONTE</span><button id="source-toggle" type="button" aria-expanded="true" aria-label="Recolher referência">−</button></div>
+  <header class="spatial-header" data-theme="light"><a href="/landing/" class="brand" aria-label="UNFOLD — página inicial"><img src="${lockupLight}" alt="UNFOLD — Spatial Intelligence Lab" width="150" height="40"></a><div id="steps-slot" class="steps-slot"></div><div class="header-tools"><span id="scene-state" class="u-label">SEM CENA</span><button id="open-scene" type="button">Abrir cena</button><input id="scene-file" type="file" accept=".json,application/json" hidden><button id="save-scene" type="button" disabled>Guardar</button><button id="restore-scene" type="button" disabled>Restaurar</button><button id="exit-spatial-editor" class="return-link" type="button">Voltar ao laboratório</button></div></header>
+  <aside id="source-panel" class="source-panel" data-theme="light" aria-label="Fonte e tracing da planta">
+    <div class="panel-heading"><span>01 · documento-fonte</span><button id="source-toggle" type="button" aria-expanded="true" aria-label="Recolher referência">−</button></div>
     <label class="file-pick" for="plan-file"><span>Importar planta</span><small>PNG · JPEG · WebP · até 20 MiB</small><input id="plan-file" type="file" accept="image/png,image/jpeg,image/webp"></label>
     <div id="plan-workflow" hidden>
       <div class="source-image-frame"><img id="source-image" alt="Planta original, sem alteração"><svg id="plan-overlay" aria-label="Linhas candidatas e traçados manuais"></svg></div>
       <p id="plan-meta" class="micro-copy">Imagem original preservada.</p><section id="accepted-document-context" class="document-handoff" hidden aria-label="Preparação espacial do documento aceite"></section>
       <div class="reference-modes" role="group" aria-label="Vista da reconstrução"><button type="button" data-view-mode="original" aria-pressed="true">Original</button><button type="button" data-view-mode="trace" aria-pressed="false">Tracing</button><button type="button" data-view-mode="model" aria-pressed="false">3D</button><button type="button" data-view-mode="compare" aria-pressed="false">Sobrepor</button></div>
       <details class="workflow-section" open>
-      <summary>02 / TRAÇAR E REVISAR</summary>
+      <summary>02 · traçar e revisar</summary>
       <div class="trace-tools"><button id="detect-lines" type="button">Detectar linhas</button><button id="trace-mode" type="button" aria-pressed="false">Traçar parede</button><button id="scale-mode" type="button" aria-pressed="false">Marcar escala</button><button id="split-segment" type="button" disabled>Dividir</button><button id="join-segments" type="button" disabled>Unir colineares</button></div>
       <label class="field">Sensibilidade das linhas <output id="detection-threshold-value">150</output><input id="detection-threshold" type="range" min="80" max="220" step="5" value="150"></label>
       <p class="micro-copy">O detector só propõe linhas axiais. Confirme visualmente cada segmento; não usa cotas, áreas ou nomes de divisões para inventar escala.</p>
-      <div class="candidate-heading"><span>SEGMENTOS A INCLUIR</span><button id="clear-selection" type="button">Limpar</button></div><p id="contour-summary" class="micro-copy">Contornos não avaliados; área métrica não confirmada.</p><div id="candidate-list" class="candidate-list"></div><div class="candidate-heading"><span>REGIÕES FECHADAS CANDIDATAS</span></div><div id="region-list" class="candidate-list"></div><div class="candidate-heading"><span>DESCONTINUIDADES / ABERTURAS AMBÍGUAS</span></div><div id="opening-candidate-list" class="candidate-list"></div>
+      <div class="candidate-heading"><span>segmentos a incluir</span><button id="clear-selection" type="button">Limpar</button></div><p id="contour-summary" class="micro-copy">Contornos não avaliados; área métrica não confirmada.</p><div id="candidate-list" class="candidate-list"></div><div class="candidate-heading"><span>regiões fechadas candidatas</span></div><div id="region-list" class="candidate-list"></div><div class="candidate-heading"><span>descontinuidades / aberturas ambíguas</span></div><div id="opening-candidate-list" class="candidate-list"></div><div class="candidate-heading"><span>associação semântica → região (semantic_spatial_map.v1)</span></div><div id="semantic-map-panel"><label class="field">Divisão reconhecida (documento aceite)<select id="semantic-element"><option value="">Sem documento aceite</option></select></label><button id="semantic-propose" type="button">Propor associação à região seleccionada</button><p id="semantic-proposal" class="micro-copy" aria-live="polite">A proposta é mostrada antes de aceitar. Nenhum nome/área/cota vira geometria.</p><div class="trace-tools"><button id="semantic-accept" type="button" disabled>Aceitar proposta</button><button id="semantic-reject" type="button" disabled>Rejeitar proposta</button></div><div id="semantic-link-list" class="candidate-list"></div></div>
       </details>
       <details class="workflow-section">
-      <summary>03 / CALIBRAR E CONSTRUIR</summary>
+      <summary>03 · calibrar e construir</summary>
       <label class="field">Comprimento da cota seleccionada<input id="scale-distance" type="number" min="0.001" step="any" placeholder="Introduza o valor impresso"></label>
       <label class="field">Unidade<select id="scale-unit"><option value="m">Metros (m)</option><option value="cm">Centímetros (cm)</option><option value="mm">Milímetros (mm)</option><option value="ft">Pés (ft)</option><option value="in">Polegadas (in)</option></select></label>
       <div class="dimensions-grid"><label class="field">Altura de modelação (m)<input id="wall-height" type="number" min="0.01" step="any" placeholder="Obrigatório · hipótese explícita"></label><label class="field">Espessura (m)<input id="wall-thickness" type="number" min="0.01" step="any" placeholder="Obrigatório · hipótese explícita"></label></div>
       <label class="field">Nota da escala / origem<input id="scale-evidence" maxlength="300" placeholder="Ex.: cota impressa seleccionada no original"></label>
-      <button id="build-scene" class="primary-action" type="button" disabled>Construir geometria proposta</button>
+      <button id="build-scene" class="primary-action u-btn u-btn--primary" type="button" disabled>Construir geometria proposta</button>
       </details>
-      <details class="module-palette"><summary>MÓDULOS BLENDER · CONCEPTUAIS, NÃO DERIVADOS DA PLANTA</summary><label class="field">Biblioteca<select id="module-choice"><option value="wall_ext_3000">Parede exterior</option><option value="partition_int_3000">Divisória</option><option value="door_single_900">Porta</option><option value="window_double_1200">Janela</option><option value="connector_corner_90">Conector de canto</option><option value="connector_isolated_foot">Apoio isolado</option><option value="mechanical_frame_1000">Estrutura mecânica</option></select></label><button id="add-module" type="button" disabled>Adicionar módulo conceptual</button></details>
+      <details class="module-palette"><summary>Módulos Blender · conceptuais, não derivados da planta</summary><label class="field">Biblioteca<select id="module-choice"><option value="wall_ext_3000">Parede exterior</option><option value="partition_int_3000">Divisória</option><option value="door_single_900">Porta</option><option value="window_double_1200">Janela</option><option value="connector_corner_90">Conector de canto</option><option value="connector_isolated_foot">Apoio isolado</option><option value="mechanical_frame_1000">Estrutura mecânica</option></select></label><button id="add-module" type="button" disabled>Adicionar módulo conceptual</button></details>
     </div>
-    <div id="scene-components" class="scene-components" hidden><div class="candidate-heading"><span>COMPONENTES DA CENA</span><span id="component-count"></span></div><div id="component-list"></div></div>
+    <div id="scene-components" class="scene-components" hidden><section id="reconstruction-summary" class="rc-summary" aria-label="Estado da reconstrução"></section><div class="candidate-heading"><span>Componentes da cena</span><span id="component-count"></span></div><div id="component-list"></div></div>
     <p id="source-state" class="source-state" role="status" aria-live="polite">Sem documento-fonte ou cena espacial. Importe uma planta para começar.</p>
     <div id="empty-source" class="empty-source">Ainda não existe um documento técnico associado a esta sessão.</div>
   </aside>
-  <aside id="inspector" class="inspector" hidden aria-label="Inspector do componente">
-    <div class="panel-heading"><span>02 / COMPONENTE</span><button id="clear-focus" type="button" aria-label="Fechar inspector">×</button></div>
+  <aside id="inspector" class="inspector" data-theme="light" hidden aria-label="Inspector do componente">
+    <div class="panel-heading"><span>02 · componente</span><button id="clear-focus" type="button" aria-label="Fechar inspector">×</button></div>
     <h1 id="node-label">—</h1><p id="node-meta" class="micro-copy"></p><p id="node-provenance" class="provenance-note"></p>
     <div id="wall-fields" hidden>
       <div class="dimensions-grid"><label class="field">Comprimento (m)<input id="wall-length" type="number" min="0.01" step="any"></label><label class="field">Altura (m)<input id="wall-height-edit" type="number" min="0.01" step="any"></label><label class="field">Espessura (m)<input id="wall-thickness-edit" type="number" min="0.01" step="any"></label><label class="field">Posição X (m)<input id="wall-x" type="number" step="any"></label><label class="field">Posição Z (m)<input id="wall-z" type="number" step="any"></label></div>
       <button id="preview-wall" type="button">Pré-visualizar alteração</button>
-      <div id="opening-fields" class="opening-fields"><span>ABERTURA · PARÂMETROS EXPLÍCITOS</span><label class="field">Tipo<select id="opening-kind"><option value="door">Porta</option><option value="window">Janela</option></select></label><div class="dimensions-grid"><label class="field">Offset na parede (m)<input id="opening-offset" type="number" min="0" step="any" placeholder="m"></label><label class="field">Largura (m)<input id="opening-width" type="number" min="0.01" step="any" placeholder="m"></label><label class="field">Altura (m)<input id="opening-height" type="number" min="0.01" step="any" placeholder="m"></label><label class="field">Peitoril (m)<input id="opening-sill" type="number" min="0" step="any" placeholder="m"></label></div><button id="add-opening" type="button">Adicionar abertura</button></div>
+      <button id="preview-remove-wall" type="button">Remover parede…</button>
+      <div id="opening-fields" class="opening-fields"><span>abertura · parâmetros explícitos</span><label class="field">Tipo<select id="opening-kind"><option value="door">Porta</option><option value="window">Janela</option></select></label><div class="dimensions-grid"><label class="field">Offset na parede (m)<input id="opening-offset" type="number" min="0" step="any" placeholder="m"></label><label class="field">Largura (m)<input id="opening-width" type="number" min="0.01" step="any" placeholder="m"></label><label class="field">Altura (m)<input id="opening-height" type="number" min="0.01" step="any" placeholder="m"></label><label class="field">Peitoril (m)<input id="opening-sill" type="number" min="0" step="any" placeholder="m"></label></div><button id="add-opening" type="button">Adicionar abertura</button></div>
     </div>
     <div id="opening-detail" hidden><div class="dimensions-grid"><label class="field">Offset na parede (m)<input id="edit-opening-offset" type="number" min="0" step="any"></label><label class="field">Largura (m)<input id="edit-opening-width" type="number" min="0.01" step="any"></label><label class="field">Altura (m)<input id="edit-opening-height" type="number" min="0.01" step="any"></label><label class="field">Peitoril (m)<input id="edit-opening-sill" type="number" min="0" step="any"></label></div><button id="preview-opening" type="button">Pré-visualizar abertura</button><button id="remove-opening" type="button">Remover abertura seleccionada</button></div>
     <p id="preview-status" class="preview-status" aria-live="polite"></p><div class="preview-actions"><button id="commit-preview" type="button" disabled>Aplicar</button><button id="cancel-preview" type="button" disabled>Cancelar</button></div>
   </aside>
-  <section class="stage-empty" id="stage-empty"><span>ESPAÇO LIVRE</span><h1>Uma cena começa por evidência.</h1><p>Importe uma planta real, revise os segmentos e calibre a escala antes de construir a geometria.</p><a href="/demo">Abrir experiência UNFOLD</a></section>
-  <nav class="spatial-toolbar" aria-label="Ferramentas da cena"><button id="mode-translate" type="button" aria-label="Mover" title="Mover">↔</button><button id="mode-rotate" type="button" aria-label="Rodar" title="Rodar">↻</button><button id="mode-scale" type="button" aria-label="Escalar" title="Escalar">⤢</button><i></i><button id="fit-scene" type="button" aria-label="Enquadrar" title="Enquadrar">□</button><button id="home-scene" type="button" aria-label="Início" title="Início">⌂</button><button id="top-view" type="button" aria-label="Vista superior" title="Vista superior">T</button><button id="front-view" type="button" aria-label="Vista frontal" title="Vista frontal">F</button><button id="iso-view" type="button" aria-label="Vista isométrica" title="Vista isométrica">I</button><button id="toggle-reference" type="button" aria-pressed="true" aria-label="Mostrar ou ocultar imagem original" title="Referência">▧</button><button id="compare-scene" type="button" aria-pressed="false" disabled>Antes / Depois</button><button id="undo-scene" type="button" disabled>Desfazer</button><button id="redo-scene" type="button" disabled>Refazer</button></nav>
-  <div class="spatial-status" id="spatial-status" role="status" aria-live="polite">À espera de uma planta. Geometria não presumida.</div><div id="spatial-metrics" class="spatial-metrics"></div>
+  <section class="removal-card" id="removal-card" data-theme="light" hidden aria-label="Remoção de parede"></section>
+  <section class="stage-empty" id="stage-empty"><span class="u-label">espaço livre</span><h1>Uma cena começa por evidência.</h1><p>Importe uma planta real, revise os segmentos e calibre a escala antes de construir a geometria.</p><a class="u-btn u-btn--primary" href="/demo">Abrir experiência UNFOLD</a></section>
+  <nav class="spatial-toolbar" data-theme="light" aria-label="Ferramentas da cena"><button id="mode-translate" type="button" aria-label="Mover" title="Mover">↔</button><button id="mode-rotate" type="button" aria-label="Rodar" title="Rodar">↻</button><button id="mode-scale" type="button" aria-label="Escalar" title="Escalar">⤢</button><i></i><button id="fit-scene" type="button" aria-label="Enquadrar" title="Enquadrar">□</button><button id="home-scene" type="button" aria-label="Início" title="Início">⌂</button><button id="top-view" type="button" aria-label="Vista superior" title="Vista superior">T</button><button id="front-view" type="button" aria-label="Vista frontal" title="Vista frontal">F</button><button id="iso-view" type="button" aria-label="Vista isométrica" title="Vista isométrica">I</button><button id="toggle-reference" type="button" aria-pressed="true" aria-label="Mostrar ou ocultar imagem original" title="Referência">▧</button><button id="compare-scene" type="button" aria-pressed="false" disabled>Antes / Depois</button><button id="undo-scene" type="button" disabled>Desfazer</button><button id="redo-scene" type="button" disabled>Refazer</button></nav>
+  <div class="spatial-status" data-theme="light" id="spatial-status" role="status" aria-live="polite">À espera de uma planta. Geometria não presumida.</div><div id="spatial-metrics" class="spatial-metrics"></div>
 </main>`;
 
 type UiElement = HTMLElement & Pick<HTMLInputElement, 'value'> & Pick<HTMLButtonElement, 'disabled'>;
 const $ = <T extends HTMLElement = UiElement>(selector: string) => app!.querySelector<T>(selector)!;
+/** Escape untrusted labels/ids (document, model or user data) before any innerHTML interpolation. */
+const escapeHtml = (value: string): string => value.replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]!));
+const stepsHeader = mountStepsHeader($('#steps-slot'), 'unfold');
 const status = (text: string) => { $('#spatial-status').textContent = text; };
 const scene = new Scene();
-scene.background = new Color('#111412');
+const cssToken = (name: string, fallback: string): string => getComputedStyle(app!).getPropertyValue(name).trim() || fallback;
+scene.background = new Color(cssToken('--surface', '#0B0D10'));
 const camera = new PerspectiveCamera(42, 1, 0.02, 10_000);
 camera.position.set(8, 7, 9);
 const renderer = new WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -100,6 +111,7 @@ scene.add(gizmo.getHelper());
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const raycaster = new Raycaster(); const pointer = new Vector2();
 let transaction: SceneTransaction | undefined;
+let removalGhost: RemovalGhost | undefined;
 let preview: ScenePreview | undefined;
 let compoundPreview: SceneTransaction | undefined;
 // Autorizações de valores confirmados: emitidas só no clique de confirmação, para a operação que o preview mostrou.
@@ -179,6 +191,7 @@ function resize(): void {
 resizeObserver.observe($('#spatial-canvas'));
 
 function disposeSceneGroup(): void {
+  removalGhost?.dispose(); removalGhost = undefined;
   gizmo.detach();
   root.traverse((object) => {
     if (!(object instanceof Mesh) || hasSharedAssetParent(object)) return;
@@ -209,7 +222,10 @@ function selectNode(id: string | undefined): void {
   const geometry = node.geometry;
   $('#node-meta').textContent = geometry?.kind === 'box' ? `${geometry.sizeM.map((n) => `${n.toFixed(2)} m`).join(' × ')} · ${node.component?.kind ?? 'elemento'}` : `${geometry?.kind ?? 'sem geometria'} · ${node.component?.kind ?? node.nodeType}`;
   const p = geometry?.provenance;
-  $('#node-provenance').textContent = p ? `${p.source} · ${p.validation}${p.evidence ? ` · ${p.evidence}` : ''}` : 'Geometria não especificada.';
+  const rcState = reconstructionState(p);
+  $('#node-provenance').innerHTML = p && rcState
+    ? `${reconstructionChip(rcState)}<dl class="u-readout rc-provenance"><div><dt>Origem</dt><dd>${escapeHtml(p.source)}</dd></div><div><dt>Validação registada</dt><dd>${escapeHtml(p.validation)}</dd></div>${p.evidence ? `<div><dt>Evidência</dt><dd class="rc-evidence">${escapeHtml(p.evidence)}</dd></div>` : ''}</dl><p class="rc-meaning">${escapeHtml(RECONSTRUCTION_STATE_MEANING[rcState])}</p>`
+    : 'Geometria não especificada.';
   const wall = node.component?.kind === 'wall' && geometry?.kind === 'box';
   $('#wall-fields').hidden = !wall;
   const opening = node.component?.kind === 'door' || node.component?.kind === 'window';
@@ -226,7 +242,7 @@ function selectNode(id: string | undefined): void {
   if (object) {
     gizmo.attach(object); gizmo.showY = !wall; gizmo.showX = true; gizmo.showZ = true;
     root.updateMatrixWorld(true);
-    selectionOutline = new Box3Helper(new Box3().setFromObject(object), new Color('#d5a55e'));
+    selectionOutline = new Box3Helper(new Box3().setFromObject(object), new Color(cssToken('--fold', '#FF5A1F')));
     scene.add(selectionOutline);
   }
   invalidate();
@@ -351,12 +367,25 @@ function updateToolbar(): void {
   $('#compare-scene').disabled = !transaction?.undoStack.length || !!preview || !!compoundPreview;
   $('#add-module').disabled = !assetReady || !transaction || !!preview || !!compoundPreview;
   $('#scene-state').textContent = transaction ? `R${transaction.scene.revision.number} · ${transaction.scene.nodes.length} ELEMENTOS` : 'SEM CENA';
+  const becameReady = Boolean(transaction) && app!.getAttribute('data-state') !== 'ready';
   app!.setAttribute('data-state', transaction ? 'ready' : 'empty');
+  // Narrow screens: give the 3D viewport the space once a scene exists; the source drawer stays one tap away.
+  if (becameReady && matchMedia('(max-width: 700px)').matches && !$('#source-panel').classList.contains('source-collapsed')) $('#source-toggle').click();
   $('#stage-empty').hidden = Boolean(transaction);
   $('#scene-components').hidden = !transaction;
   $('#component-count').textContent = transaction ? String(transaction.scene.nodes.length) : '';
-  $('#component-list').innerHTML = (transaction?.scene.nodes ?? []).map((node) => `<button class="component-row ${node.id === selectedId ? 'is-selected' : ''}" type="button" data-scene-node="${node.id}"><span>${node.label}</span><small>${node.component?.kind ?? node.nodeType} · ${node.geometry?.provenance.validation ?? 'sem geometria'}</small></button>`).join('');
+  $('#component-list').innerHTML = (transaction?.scene.nodes ?? []).map((node) => `<button class="component-row ${node.id === selectedId ? 'is-selected' : ''}" type="button" data-scene-node="${escapeHtml(node.id)}"><span>${escapeHtml(node.label)}</span><small>${escapeHtml(node.component?.kind ?? node.nodeType)} · ${escapeHtml(node.geometry?.provenance.validation ?? 'sem geometria')}</small>${(() => { const st = reconstructionState(node.geometry?.provenance); return st ? reconstructionChip(st, node.geometry!.provenance.validation) : ''; })()}</button>`).join('');
+  renderReconstructionSummary();
   updateSourceState();
+}
+
+function renderReconstructionSummary(): void {
+  const nodes = transaction?.scene.nodes ?? [];
+  const counts = countReconstructionStates(nodes.map((node) => reconstructionState(node.geometry?.provenance)));
+  const unresolved = nodes.length - counts.validated - counts.none;
+  const chips = RECONSTRUCTION_STATES.map((state) => `<li data-state="${state}">${reconstructionChip(state)}<b class="u-data">${counts[state]}</b></li>`).join('');
+  $('#reconstruction-summary').innerHTML = `<div class="u-ruler-head u-label"><span>reconstrução · estado</span><span>${nodes.length} componentes</span></div><ul class="rc-counts">${chips}</ul>`
+    + (nodes.length ? `<p class="rc-note" role="status">${counts.validated === nodes.length ? 'Todos os componentes têm validação registada.' : `Reconstrução provisória: ${unresolved} de ${nodes.length} componentes sem validação. Não é certificação dimensional.`}</p>` : '');
 }
 
 function updateSourceState(): void {
@@ -387,16 +416,16 @@ function updateCandidates(): void {
   }
   const topologyTolerance = Math.max(6, Math.min(imageInfo.width, imageInfo.height) * 0.008);
   const vectorModel = buildPlanVectorModel(candidates, { tolerancePx: topologyTolerance, imageSize: { width: imageInfo.width, height: imageInfo.height }, ...(vectorScale ? { scale: vectorScale } : {}) });
-  const regionShapes = vectorModel.regions.filter((region) => region.eligibility === 'construction_candidate').map((region) => `<polygon data-region="${region.id}" data-selected="${selectedRegions.has(region.id)}" points="${region.vertices.map((point) => `${point.x},${point.y}`).join(' ')}" fill="#c8a873" fill-opacity="${selectedRegions.has(region.id) ? '0.22' : '0.09'}" stroke="${selectedRegions.has(region.id) ? '#efbf68' : '#b99968'}" stroke-opacity=".8" stroke-width="3"/>`).join('');
-  const gapMarks = vectorModel.openingCandidates.map((item) => `<line data-opening-candidate="${item.id}" x1="${item.start.x}" y1="${item.start.y}" x2="${item.end.x}" y2="${item.end.y}" stroke="#a65e36" stroke-width="6" stroke-dasharray="4 3" opacity=".9"/>`).join('');
-  const intersectionMarks = vectorModel.intersections.map((item) => `<circle data-intersection="${item.firstId}:${item.secondId}" cx="${item.point.x}" cy="${item.point.y}" r="3.5" fill="#e4b05d" stroke="#392b1d" stroke-width="1"/>`).join('');
+  const regionShapes = vectorModel.regions.filter((region) => region.eligibility === 'construction_candidate').map((region) => `<polygon data-region="${escapeHtml(region.id)}" data-selected="${selectedRegions.has(region.id)}" points="${region.vertices.map((point) => `${point.x},${point.y}`).join(' ')}" class="ov-region" stroke-width="3"/>`).join('');
+  const gapMarks = vectorModel.openingCandidates.map((item) => `<line data-opening-candidate="${escapeHtml(item.id)}" x1="${item.start.x}" y1="${item.start.y}" x2="${item.end.x}" y2="${item.end.y}" class="ov-gap" stroke-width="6" stroke-dasharray="4 3"/>`).join('');
+  const intersectionMarks = vectorModel.intersections.map((item) => `<circle data-intersection="${item.firstId}:${item.secondId}" cx="${item.point.x}" cy="${item.point.y}" r="3.5" class="ov-node"/>`).join('');
   svg.innerHTML = regionShapes + gapMarks + candidates.map((candidate) => {
     const active = selectedCandidates.has(candidate.id);
     const linked = transaction?.scene.nodes.find((node) => node.id === selectedId)?.component?.properties.sourceCandidate?.value === candidate.id;
     const width = Math.max(3.2, candidate.thicknessPx);
-    const handles = active && !transaction ? `<circle data-endpoint="start" data-candidate-id="${candidate.id}" cx="${candidate.start.x}" cy="${candidate.start.y}" r="7"/><circle data-endpoint="end" data-candidate-id="${candidate.id}" cx="${candidate.end.x}" cy="${candidate.end.y}" r="7"/>` : '';
-    return `<line data-id="${candidate.id}" data-thickness="${candidate.thicknessPx}" data-confidence="${candidate.confidence}" x1="${candidate.start.x}" y1="${candidate.start.y}" x2="${candidate.end.x}" y2="${candidate.end.y}" stroke="${linked ? '#fff1ca' : active ? '#e0a943' : '#9a6535'}" stroke-width="${linked ? width + 2 : width}" stroke-linecap="round" opacity="${active || linked ? 1 : 0.78}"/>${handles}`;
-  }).join('') + intersectionMarks + (traceStart && traceEnd ? `<line id="manual-preview" x1="${traceStart.point.x}" y1="${traceStart.point.y}" x2="${traceEnd.x}" y2="${traceEnd.y}" stroke="#d5a55e" stroke-width="3"/>` : '');
+    const handles = active && !transaction ? `<circle data-endpoint="start" data-candidate-id="${escapeHtml(candidate.id)}" cx="${candidate.start.x}" cy="${candidate.start.y}" r="7"/><circle data-endpoint="end" data-candidate-id="${escapeHtml(candidate.id)}" cx="${candidate.end.x}" cy="${candidate.end.y}" r="7"/>` : '';
+    return `<line data-id="${escapeHtml(candidate.id)}" data-thickness="${candidate.thicknessPx}" data-confidence="${candidate.confidence}" x1="${candidate.start.x}" y1="${candidate.start.y}" x2="${candidate.end.x}" y2="${candidate.end.y}" class="ov-wall${linked ? ' is-linked' : active ? ' is-active' : ''}" stroke-width="${linked ? width + 2 : width}" stroke-linecap="round"/>${handles}`;
+  }).join('') + intersectionMarks + (traceStart && traceEnd ? `<line id="manual-preview" x1="${traceStart.point.x}" y1="${traceStart.point.y}" x2="${traceEnd.x}" y2="${traceEnd.y}" class="ov-preview" stroke-width="3" stroke-dasharray="6 4"/>` : '');
   const list = $('#candidate-list');
   list.innerHTML = candidates.map((candidate) => `<button type="button" class="candidate-row ${selectedCandidates.has(candidate.id) ? 'is-selected' : ''}" data-candidate="${candidate.id}" aria-pressed="${selectedCandidates.has(candidate.id)}"><span>${candidate.id}</span><small>${candidate.origin === 'manual_trace' ? 'traçado manual' : candidate.origin === 'manual_correction' ? 'correcção manual' : 'detecção automática'} · ${candidate.orientation} · ${Math.round(Math.hypot(candidate.end.x-candidate.start.x,candidate.end.y-candidate.start.y))} px · confiança heurística ${candidate.confidence.toFixed(2)}</small></button>`).join('') || '<p class="micro-copy">Sem candidatos. Use tracing manual.</p>';
   const regionCandidates = vectorModel.regions.filter((region) => region.eligibility === 'construction_candidate');
@@ -512,9 +541,9 @@ $('#plan-overlay').addEventListener('pointerdown', (event) => {
       }
     }
     const svg = $('#plan-overlay') as unknown as SVGSVGElement;
-    const base = candidates.map((candidate) => `<line x1="${candidate.start.x}" y1="${candidate.start.y}" x2="${candidate.end.x}" y2="${candidate.end.y}" stroke="#687567" stroke-width="2" opacity=".35"/>`).join('');
-    const marker = calibrationPoints.map((p, i) => `<circle cx="${p.x}" cy="${p.y}" r="5" fill="#d5a55e"/><text x="${p.x + 8}" y="${p.y - 8}" fill="#f0e2ca" font-size="12">${i + 1}</text>`).join('');
-    const line = calibrationPoints.length === 2 ? `<line x1="${calibrationPoints[0]!.x}" y1="${calibrationPoints[0]!.y}" x2="${calibrationPoints[1]!.x}" y2="${calibrationPoints[1]!.y}" stroke="#d5a55e" stroke-width="3"/>` : '';
+    const base = candidates.map((candidate) => `<line x1="${candidate.start.x}" y1="${candidate.start.y}" x2="${candidate.end.x}" y2="${candidate.end.y}" class="ov-base" stroke-width="2"/>`).join('');
+    const marker = calibrationPoints.map((p, i) => `<circle cx="${p.x}" cy="${p.y}" r="5" class="ov-calibration"/><text x="${p.x + 8}" y="${p.y - 8}" class="ov-calibration-label" font-size="14">${i + 1}</text>`).join('');
+    const line = calibrationPoints.length === 2 ? `<line x1="${calibrationPoints[0]!.x}" y1="${calibrationPoints[0]!.y}" x2="${calibrationPoints[1]!.x}" y2="${calibrationPoints[1]!.y}" class="ov-calibration-line" stroke-width="3"/>` : '';
     svg.innerHTML = base + line + marker;
     if (calibrationPoints.length === 2) { setTraceMode('none'); status(`Âncoras da escala marcadas: ${Math.hypot(calibrationPoints[1]!.x-calibrationPoints[0]!.x, calibrationPoints[1]!.y-calibrationPoints[0]!.y).toFixed(1)} px. Introduza a cota impressa e uma nota.`); }
     return;
@@ -1018,6 +1047,57 @@ function previewText(text: string, touched: readonly ConfirmedReference[]): stri
   const notice = confirmedNotice(touched, (id) => transaction?.scene.nodes.find((item) => item.id === id)?.label ?? id);
   return notice ? `${text} ${notice}` : text;
 }
+const removalCard = $('#removal-card');
+const escapeCardText = (value: string): string => escapeHtml(value);
+function showRemovalCard(info: RemovalDescription, verdict: { ok: true } | { ok: false; code: string }, notice: string): void {
+  const roomNames = info.rooms.map((room) => `${escapeCardText(room.label)}${room.areaM2 === null ? '' : ` (${room.areaM2.toFixed(1)} m²)`}`);
+  const shown = roomNames.slice(0, 3);
+  const rooms = (shown.length > 1 ? `${shown.slice(0, -1).join(', ')} e ${shown[shown.length - 1]}` : shown[0] ?? '') + (roomNames.length > 3 ? ` e mais ${roomNames.length - 3}` : '');
+  const removes = `1 parede${info.openings.length ? ` e ${info.openings.length} abertura${info.openings.length > 1 ? 's' : ''}` : ''}`;
+  removalCard.innerHTML = verdict.ok
+    ? `<p class="u-label">pré-visualização</p><h2>Remover ${escapeCardText(info.wallLabel)}</h2>
+       <dl class="u-readout"><div><dt>remove</dt><dd>${removes}</dd></div><div><dt>divisões afectadas</dt><dd>nenhuma</dd></div><div class="is-unknown"><dt>estrutura</dt><dd>desconhecida · sem dados estruturais</dd></div></dl>${notice ? `<p class="removal-why">${escapeCardText(notice)}</p>` : ''}
+       <div class="removal-actions"><button type="button" class="u-btn u-btn--primary" id="removal-confirm">Confirmar</button><button type="button" class="u-btn u-btn--outline" id="removal-cancel">Cancelar</button></div>`
+    : `<p class="u-label is-blocked">remoção bloqueada</p><h2>${escapeCardText(info.wallLabel)}</h2>
+       <p class="removal-why">O motor da cena recusa: ${verdict.code === 'REMOVE_HAS_DEPENDENCIES' ? `${info.rooms.length ? `${rooms} ${info.rooms.length > 1 ? 'dependem' : 'depende'}` : 'há elementos que dependem'} desta parede` : escapeCardText(verdict.code)} <span class="u-label">${escapeCardText(verdict.code)}</span></p>
+       <dl class="u-readout"><div class="is-unknown"><dt>fusão das divisões</dt><dd>ainda não existe no motor</dd></div><div class="is-unknown"><dt>estrutura</dt><dd>desconhecida · sem dados estruturais</dd></div></dl>
+       <div class="removal-actions"><button type="button" class="u-btn u-btn--outline" id="removal-close">Fechar</button></div>`;
+  removalCard.hidden = false;
+  motionGsap.fromTo(removalCard, { opacity: 0, x: 16 }, { opacity: 1, x: 0, duration: motionDur('base'), ease: MOTION_EASE.out });
+  app!.querySelector<HTMLButtonElement>('#removal-confirm')?.addEventListener('click', () => $('#commit-preview').click());
+  app!.querySelector<HTMLButtonElement>('#removal-cancel')?.addEventListener('click', () => $('#cancel-preview').click());
+  app!.querySelector<HTMLButtonElement>('#removal-close')?.addEventListener('click', () => { removalGhost?.dispose(); if (removalGhost) root.remove(removalGhost.group); removalGhost = undefined; hideRemovalCard(); invalidate(); });
+  (app!.querySelector<HTMLButtonElement>('#removal-confirm') ?? app!.querySelector<HTMLButtonElement>('#removal-close'))?.focus({ preventScroll: true });
+}
+function hideRemovalCard(): void {
+  if (removalCard.hidden) return;
+  if (motionReduced()) { removalCard.hidden = true; return; }
+  motionGsap.to(removalCard, { opacity: 0, x: 16, duration: motionDur('base'), ease: MOTION_EASE.out, onComplete: () => { removalCard.hidden = true; } });
+}
+function attachRemovalGhost(base: SpatialSceneV1, wallId: string, mode: 'dissolve' | 'blocked'): void {
+  removalGhost?.dispose(); if (removalGhost) root.remove(removalGhost.group);
+  const edge = new Color(cssToken(mode === 'dissolve' ? '--fold' : '--ink-muted', mode === 'dissolve' ? '#FF5A1F' : '#9AA0A8')).getHex();
+  removalGhost = buildRemovalGhost(base, wallId, edge, assets);
+  if (!removalGhost) return;
+  root.add(removalGhost.group); removalGhost.settle(mode, invalidate); invalidate();
+}
+function previewWallRemoval(wallId: string): void {
+  if (!transaction) return;
+  if (preview || compoundPreview) { status('Existe uma pré-visualização pendente. Confirme ou cancele-a primeiro.'); return; }
+  const info = describeWallRemoval(transaction.scene, wallId);
+  if (!info) { status('Seleccione uma parede.'); return; }
+  const base = transaction.scene;
+  let plan: CompositePlan | undefined; let code = '';
+  try { plan = planWallRemoval(transaction, wallId, 'local-user-input'); } catch (error) { code = error instanceof Error ? error.message : 'ERRO'; }
+  focusNode(wallId);
+  if (plan) { previewCompound(plan, `remover ${info.wallLabel}`); attachRemovalGhost(base, wallId, 'dissolve'); showRemovalCard(info, { ok: true }, plan.touchesConfirmed.length ? confirmedNotice(plan.touchesConfirmed, (id) => base.nodes.find((item) => item.id === id)?.label ?? id) : ''); return; }
+  status(`Remoção bloqueada: ${explainSceneError(code)}`);
+  attachRemovalGhost(base, wallId, 'blocked'); showRemovalCard(info, { ok: false, code }, '');
+}
+$('#preview-remove-wall').addEventListener('click', () => { if (selectedId) previewWallRemoval(selectedId); });
+$('#commit-preview').addEventListener('click', hideRemovalCard);
+$('#cancel-preview').addEventListener('click', hideRemovalCard);
+
 function previewCompound(shown: SceneTransaction | CompositePlan, label: string): void {
   if (!transaction) throw new Error('SCENE_NOT_READY');
   const plan = 'commit' in shown ? shown : undefined;
@@ -1187,7 +1267,7 @@ function cleanup(notifyExit = false): void {
   if (raf) cancelAnimationFrame(raf);
   spatialAgentAbort?.abort(); spatialAgentAbort = undefined;
   cameraTween?.kill(); buildTimeline?.kill();
-  resizeObserver.disconnect();
+  resizeObserver.disconnect(); stepsHeader.destroy();
   window.removeEventListener('beforeunload', onUnload);
   window.removeEventListener('keydown', onEditorKeydown);
   unregisterSpatialCommands?.(); unregisterSpatialCommands = undefined;

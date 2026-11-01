@@ -51,7 +51,7 @@ export async function decodePlanImage(file: Blob): Promise<DecodedPlanImage> {
     const canvas = typeof OffscreenCanvas === 'function' ? new OffscreenCanvas(width, height) : document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
-    const context = canvas.getContext('2d', { willReadFrequently: true });
+    const context = canvas.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null;
     if (!context) throw new Error('Não foi possível preparar a imagem para análise.');
     context.drawImage(bitmap, 0, 0);
     const rgba = context.getImageData(0, 0, width, height).data;
