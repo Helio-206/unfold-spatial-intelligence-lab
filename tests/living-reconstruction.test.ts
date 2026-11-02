@@ -311,6 +311,48 @@ describe('living image-to-assembly contracts', () => {
     expect(() => adaptReviewedProposalToAssembly(wrongJointType, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'reviewer', authorizationId: 'wrong-joint-type-001' })).toThrow(/tipo de junta incompatível/);
   });
 
+  it('blocks two proposal joints mapped to one canonical joint with conflicting axes', () => {
+    const proposal = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'duplicate-joint-axis', '9'.repeat(64))));
+    const boomJoint = proposal.joints.find((joint) => joint.id === 'joint-boom')!;
+    proposal.joints.push({ ...structuredClone(boomJoint), id: 'joint-boom-duplicate', axis: [1, 0, 0], source: 'observed', evidenceIds: ['conflicting-axis-evidence'], review: 'verified' });
+    expect(validateAssemblyProposal(proposal)).toEqual(proposal);
+    expect(() => adaptReviewedProposalToAssembly(proposal, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'reviewer', authorizationId: 'duplicate-joint-axis-001' })).toThrow(/junta canónica com correspondência ambígua: boom_joint.*joint-boom.*joint-boom-duplicate/);
+  });
+
+  it('blocks duplicate proposal joints even when their axes match', () => {
+    const proposal = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'duplicate-joint-provenance', 'a'.repeat(64))));
+    const boomJoint = proposal.joints.find((joint) => joint.id === 'joint-boom')!;
+    proposal.joints.push({ ...structuredClone(boomJoint), id: 'joint-boom-duplicate', evidenceIds: ['distinct-provenance-evidence'], review: 'verified' });
+    expect(validateAssemblyProposal(proposal)).toEqual(proposal);
+    expect(() => adaptReviewedProposalToAssembly(proposal, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'reviewer', authorizationId: 'duplicate-joint-provenance-001' })).toThrow(/junta canónica com correspondência ambígua: boom_joint.*joint-boom.*joint-boom-duplicate/);
+  });
+
+  it('converts distinct proposal joints with their own axes and provenance', () => {
+    const proposal = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'distinct-joint-mapping', 'b'.repeat(64))));
+    const boomJoint = proposal.joints.find((joint) => joint.id === 'joint-boom')!;
+    const stickJoint = proposal.joints.find((joint) => joint.id === 'joint-stick')!;
+    boomJoint.evidenceIds = ['boom-joint-evidence'];
+    stickJoint.evidenceIds = ['stick-joint-evidence'];
+    const adapted = adaptReviewedProposalToAssembly(proposal, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'reviewer', authorizationId: 'distinct-joints-001' });
+    expect(adapted.joints.find((joint) => joint.id === 'boom_joint')?.provenance.evidence).toEqual([{ sourceId: 'boom-joint-evidence' }]);
+    expect(adapted.joints.find((joint) => joint.id === 'stick_joint')?.provenance.evidence).toEqual([{ sourceId: 'stick-joint-evidence' }]);
+    expectArrayClose(adapted.joints.find((joint) => joint.id === 'boom_joint')?.axis, sourceVectorToCanonical(boomJoint.axis));
+    expectArrayClose(forwardKinematicsAtReference(adapted).get('boom')?.translationM, sourceVectorToCanonical(proposal.parts.find((part) => part.id === 'part-boom')!.transform.translation), 9);
+    expect(validateAssembly(adapted)).toEqual({ ok: true, issues: [] });
+  });
+
+  it('keeps part and actuator mappings injective', () => {
+    const duplicatePart = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'duplicate-part-mapping', 'c'.repeat(64))));
+    duplicatePart.parts.push({ ...structuredClone(duplicatePart.parts.find((part) => part.id === 'part-boom')!), id: 'part-boom-duplicate' });
+    expect(validateAssemblyProposal(duplicatePart)).toEqual(duplicatePart);
+    expect(() => adaptReviewedProposalToAssembly(duplicatePart, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'reviewer', authorizationId: 'duplicate-part-001' })).toThrow(/parte canónica com correspondência ambígua: boom/);
+
+    const duplicateActuator = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'duplicate-actuator-mapping', 'd'.repeat(64))));
+    duplicateActuator.actuators.push({ ...structuredClone(duplicateActuator.actuators.find((actuator) => actuator.id === 'actuator-boom')!), id: 'actuator-boom-duplicate' });
+    expect(validateAssemblyProposal(duplicateActuator)).toEqual(duplicateActuator);
+    expect(() => adaptReviewedProposalToAssembly(duplicateActuator, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'reviewer', authorizationId: 'duplicate-actuator-001' })).toThrow(/actuador canónico com correspondência ambígua: boom_cylinder/);
+  });
+
   it('fails closed for unconsumed observed geometry and inconsistent proposal topology', () => {
     const unmappedDimension = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'unmapped-track-dimension', '6'.repeat(64))));
     unmappedDimension.parts.find((part) => part.id === 'part-track-left')!.dimensions.length = { value: 4, unit: 'm', source: 'observed', evidenceIds: ['track-length-evidence'], requiredForVerification: true };

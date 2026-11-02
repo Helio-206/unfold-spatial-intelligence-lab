@@ -169,13 +169,6 @@ function proposalPartsForCanonical(part: CanonicalPart, proposalParts: AssemblyP
   });
 }
 
-function proposalJointForCanonical(joint: CanonicalJoint, proposal: AssemblyProposalV1, mapping: Map<string, AssemblyPart>): AssemblyJoint | undefined {
-  const parent = mapping.get(joint.parentPartId);
-  const child = mapping.get(joint.childPartId);
-  if (!parent || !child) return undefined;
-  return proposal.joints.find((candidate) => candidate.parentPartId === parent.id && candidate.childPartId === child.id);
-}
-
 function quantityWithProvenance(quantity: Quantity, evidence: string[]): Quantity {
   return { ...quantity, provenance: conversionProvenance(evidence) };
 }
@@ -356,6 +349,7 @@ export function adaptReviewedProposalToAssembly(proposalInput: AssemblyProposalV
   if (reasons.length) throw new ReconstructionAdapterBlockedError(reasons);
 
   const canonicalByProposalPartId = new Map([...mapping].map(([canonicalId, proposalPart]) => [proposalPart.id, canonicalId]));
+  if (canonicalByProposalPartId.size !== mapping.size) reasons.push('partes propostas com correspondência canónica ambígua');
   for (const [canonicalId, proposalPart] of mapping) {
     const incomingJoint = seed.joints.find((joint) => joint.childPartId === canonicalId);
     const expectedParentId = incomingJoint?.parentPartId ?? null;
@@ -364,6 +358,7 @@ export function adaptReviewedProposalToAssembly(proposalInput: AssemblyProposalV
   }
 
   const proposalJointMapping = new Map<string, CanonicalJoint>();
+  const proposalByCanonicalJointId = new Map<string, AssemblyJoint>();
   for (const proposalJoint of proposal.joints) {
     const canonicalParent = canonicalByProposalPartId.get(proposalJoint.parentPartId);
     const canonicalChild = canonicalByProposalPartId.get(proposalJoint.childPartId);
@@ -372,6 +367,9 @@ export function adaptReviewedProposalToAssembly(proposalInput: AssemblyProposalV
       : undefined;
     if (!canonicalJoint) reasons.push(`junta sem correspondência canónica: ${proposalJoint.id}`);
     else {
+      const existing = proposalByCanonicalJointId.get(canonicalJoint.id);
+      if (existing) reasons.push(`junta canónica com correspondência ambígua: ${canonicalJoint.id} (${existing.id}, ${proposalJoint.id})`);
+      else proposalByCanonicalJointId.set(canonicalJoint.id, proposalJoint);
       proposalJointMapping.set(proposalJoint.id, canonicalJoint);
       if (canonicalJoint.type !== proposalJoint.type) reasons.push(`tipo de junta incompatível: ${proposalJoint.id} (${proposalJoint.type} != ${canonicalJoint.type})`);
     }
@@ -389,6 +387,7 @@ export function adaptReviewedProposalToAssembly(proposalInput: AssemblyProposalV
       continue;
     }
     const candidate = candidates[0]!;
+    if (consumedProposalActuatorIds.has(candidate.id)) reasons.push(`actuador proposto com correspondência canónica ambígua: ${candidate.id}`);
     if (candidate.kind !== 'hydraulic_cylinder') reasons.push(`tipo de actuador incompatível: ${candidate.id}`);
     const mappedJointIds = candidate.jointIds.map((jointId) => proposalJointMapping.get(jointId)?.id);
     const expectedJointIds = [canonicalActuator.drives.jointId, canonicalActuator.slideJointId];
@@ -447,7 +446,7 @@ export function adaptReviewedProposalToAssembly(proposalInput: AssemblyProposalV
   seed.joints = seed.joints.map((joint) => {
     const parent = globalPoses.get(joint.parentPartId);
     const child = globalPoses.get(joint.childPartId);
-    const proposalJoint = proposalJointForCanonical(joint, proposal, mapping);
+    const proposalJoint = proposalByCanonicalJointId.get(joint.id);
     if (!parent || !child) return joint;
     if (joint.type !== 'fixed' && joint.referenceValue === null) {
       reasons.push(`junta ${joint.id} não tem referenceValue para reconciliar a pose proposta`);

@@ -67,15 +67,17 @@ The live path was exercised from the PR worktree with the local ignored `.env`: 
 | Part transform | Translation/rotation converted; scale must be identity | Non-unit scale blocks |
 | Part dimensions | Supported observed length/stroke normalized and applied | Unsupported or unmapped observed dimensions block |
 | Part hierarchy | Must agree with the canonical joint tree | Mismatched parent blocks |
-| Joint endpoints/type/axis | Mapped to the canonical joint; axis converted | Missing mapping, type mismatch or non-zero unsupported anchor blocks |
+| Joint endpoints/type/axis | Exactly one proposal joint maps to each consumed canonical joint; axis and evidence come from that unique source | Missing, duplicate or incompatible mapping, type mismatch or non-zero unsupported anchor blocks |
 | Actuator body/rod/joints/stroke | Must map uniquely; all observed stroke sources reconcile | Missing/ambiguous mapping, joint mismatch, unit error or value conflict blocks |
 | Review state | Pending requires explicit authorization; rejected blocks | Separate part, joint and actuator regressions |
 | Modifications | Pending and verified operations are not silently converted | Both states block; rejected operations remain dismissed |
 
+The final mapping audit checks injectivity across consumed parts, joints and actuators. Two proposal parts or actuators targeting one canonical component block; the joint reverse map keyed by canonical joint ID blocks two sources even when their axes match. Unmapped observed geometry remains blocked.
+
 ## Verification
 
-- Focused reconstruction tests: 28 passed, including actuator-only/matching/conflicting stroke inputs, rejected components and negative boundary/topology paths.
-- Full suite: 72 files, 1418 tests passed with `npx vitest run --testTimeout=15000` after synchronizing `main@ff16954`. The unparameterized `npm test` passed 1417 tests and timed out only in the existing rendering lifecycle test at its 5 s default; no rendering code was changed here.
+- Focused reconstruction tests: 32 passed, including duplicate joint mappings with conflicting or identical axes, distinct joint provenance, part/actuator mapping ambiguity, reference FK and closure constraints.
+- Full suite: 72 files, 1422 tests passed with `npx vitest run --testTimeout=15000` after synchronizing `main@ff16954`. The unparameterized `npm test` passed 1421 tests and timed out only in the existing rendering lifecycle test at its 5 s default; no rendering code was changed here.
 - TypeScript and production build: passed; existing contact-variable and large-chunk warnings remain.
 - `git diff --check`: passed.
 
