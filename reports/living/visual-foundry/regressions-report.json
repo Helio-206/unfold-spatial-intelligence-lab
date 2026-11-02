@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-02T21:06:26.184Z",
+  "generatedAt": "2026-11-02T21:37:09.515Z",
   "apiNote": "All /api calls mocked in the browser.",
   "checks": [
     {
@@ -104,6 +104,26 @@
     },
     {
       "name": "no page errors (6)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "presentThenPoint: no highlight on ghosted parent, reticle and pin kept",
+      "ok": true,
+      "detail": "{\"overlays\":8,\"onGhosted\":0,\"occluded\":false}"
+    },
+    {
+      "name": "pointThenPresent: no highlight on ghosted parent, reticle and pin kept",
+      "ok": true,
+      "detail": "{\"overlays\":8,\"onGhosted\":0,\"occluded\":false}"
+    },
+    {
+      "name": "natural view restores the full highlight",
+      "ok": true,
+      "detail": "{\"overlays\":13,\"onGhosted\":0}"
+    },
+    {
+      "name": "no page errors (7)",
       "ok": true,
       "detail": ""
     }
