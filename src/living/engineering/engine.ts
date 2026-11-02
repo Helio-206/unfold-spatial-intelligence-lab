@@ -16,6 +16,7 @@ import {
   type Configuration, type KinematicState,
 } from './forward-kinematics';
 import { canonicalQuat, distance } from './transform-math';
+import { solveActuatorConfiguration } from './actuator-solver';
 
 export const ENGINE_ID = 'unfold.engineering.forward-kinematics';
 export const ENGINE_VERSION = '0.1.0';
@@ -35,7 +36,14 @@ const ASSUMPTIONS = [
   'Colisões não são verificadas nesta versão do motor; cada forma aparece como não verificada, com a razão.',
 ];
 
-export type EvaluationOptions = { timestampS?: number; index?: number | null };
+export type EvaluationOptions = {
+  timestampS?: number;
+  index?: number | null;
+  /** Avisos do solver de cilindros (ambiguidade, singularidade) que acompanham um quadro ok. */
+  warnings?: MotionFrame['warnings'];
+  /** Descrição do método quando o quadro vem do solver de actuadores. */
+  method?: string;
+};
 
 export function assemblyDigest(assembly: Assembly): string {
   return sha256Hex(canonicalize(assembly));
@@ -168,11 +176,11 @@ export function evaluateConfiguration(assembly: Assembly, config: Configuration,
     parts: partsOf(assembly, reference), joints: jointStates(assembly, config), actuators: actuatorStates(assembly, config, blocked ? null : requested),
     measurements: measurementsOf(assembly, requested, residuals, !blocked),
     solver: {
-      id: ENGINE_ID, version: ENGINE_VERSION, method: 'Cinemática directa sobre a árvore de juntas (rígidos e quaterniões)',
+      id: ENGINE_ID, version: ENGINE_VERSION, method: options.method ?? 'Cinemática directa sobre a árvore de juntas (rígidos e quaterniões)',
       status: blocked ? 'blocked' : 'solved', closureResidualM: maxResidual, toleranceM: CLOSURE_TOLERANCE_M, assumptions: [...ASSUMPTIONS],
     },
     collisions: collisionsOf(assembly),
-    warnings: [] as MotionFrame['warnings'],
+    warnings: options.warnings ?? ([] as MotionFrame['warnings']),
     evidence: assembly.sources.map((source) => ({ sourceId: source.id, locator: 'assembly' })),
   };
   if (!blocked) return { ...base, status: 'ok', poseBasis: 'solved', blocked: null } as MotionFrame;
@@ -187,4 +195,52 @@ export function evaluateConfiguration(assembly: Assembly, config: Configuration,
 export function evaluateReferencePose(assembly: Assembly, options: EvaluationOptions = {}): MotionFrame {
   assertAssembly(assembly);
   return evaluateConfiguration(assembly, referenceConfiguration(assembly), options);
+}
+
+/**
+ * Quadro a partir dos valores dos actuadores (curso dos cilindros, ângulo do accionamento rotativo). Resolve as juntas com o
+ * solver de cilindros e verifica o resultado pela cinemática directa. Se o solver não tem solução, o quadro é `blocked` com
+ * o código do solver e as poses mostradas são as de referência.
+ */
+export function evaluateActuators(assembly: Assembly, values: Record<string, number>, options: EvaluationOptions = {}): MotionFrame {
+  assertAssembly(assembly);
+  const outcome = solveActuatorConfiguration(assembly, values);
+  if (outcome.ok) {
+    const warnings = outcome.warnings.map((w) => ({ code: w.code, severity: 'warning' as const, message: w.message, subjectIds: w.subjectIds }));
+    return evaluateConfiguration(assembly, outcome.config, { ...options, warnings: [...(options.warnings ?? []), ...warnings], method: 'Solver de cilindros: forma fechada (triângulo) e bissecção (balancé de duas barras), verificado por cinemática directa' });
+  }
+  return blockedFromSolver(assembly, values, outcome, options);
+}
+
+function blockedFromSolver(assembly: Assembly, values: Record<string, number>, failure: { code: string; message: string; subjectIds: string[] }, options: EvaluationOptions): MotionFrame {
+  const reference = solveForwardKinematics(assembly, referenceConfiguration(assembly));
+  const timestampS = options.timestampS ?? 0;
+  const index = options.index ?? null;
+  const digest = assemblyDigest(assembly);
+  const actuators: ActuatorState[] = assembly.actuators.map((actuator) => {
+    const value = values[actuator.id]!;
+    if (actuator.kind === 'rotary_drive') {
+      const joint = assembly.joints.find((item) => item.id === actuator.jointId)!;
+      const withinLimits = !joint.limits || (value >= joint.limits.min.value && value <= joint.limits.max.value);
+      return { actuatorId: actuator.id, kind: 'rotary_drive', value, unit: 'rad', lengthM: null, withinLimits, forceN: null, forceStatus: 'unknown', forceReason: 'Sem modelo de binário: o accionamento não tem parâmetros de potência nem de inércia na montagem.' };
+    }
+    return {
+      actuatorId: actuator.id, kind: 'hydraulic_cylinder', value, unit: 'm', lengthM: null,
+      withinLimits: value >= actuator.stroke.min.value && value <= actuator.stroke.max.value,
+      forceN: null, forceStatus: 'unknown', forceReason: 'Sem parâmetros hidráulicos: diâmetros e pressão de alimentação são desconhecidos (null) nesta montagem.',
+    };
+  });
+  return {
+    schema: MOTION_FRAME_SCHEMA, assemblyId: assembly.id, assemblyDigest: digest,
+    inputDigest: inputDigestOf(digest, Object.fromEntries(Object.entries(values)), timestampS, index),
+    index, timestampS, worldFrameId: assembly.frames.find((frame) => frame.kind === 'world')!.id,
+    status: 'blocked', poseBasis: 'reference',
+    parts: partsOf(assembly, reference), joints: [], actuators,
+    measurements: measurementsOf(assembly, reference, [], false),
+    solver: { id: ENGINE_ID, version: ENGINE_VERSION, method: 'Solver de cilindros (recusou a configuração)', status: 'blocked', closureResidualM: null, toleranceM: CLOSURE_TOLERANCE_M, assumptions: [...ASSUMPTIONS] },
+    collisions: collisionsOf(assembly),
+    warnings: options.warnings ?? [],
+    evidence: assembly.sources.map((source) => ({ sourceId: source.id, locator: 'assembly' })),
+    blocked: { code: failure.code, message: failure.message, subjectIds: [...new Set(failure.subjectIds)].sort(), firstInvalidTimeS: null },
+  } as MotionFrame;
 }

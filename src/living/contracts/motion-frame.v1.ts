@@ -189,7 +189,9 @@ export function validateMotionFrame(value: unknown): MotionFrameValidation {
     if (typeof a.withinLimits !== 'boolean') bad(`${path}.withinLimits`, 'Booleano.');
     if (a.kind === 'hydraulic_cylinder') {
       if (a.unit !== 'm') bad(`${path}.unit`, 'Um cilindro é medido em m (curso).');
-      if (!finite(a.lengthM) || (a.lengthM as number) <= 0) bad(`${path}.lengthM`, 'Um cilindro tem comprimento finito > 0.');
+      // Um cilindro tem comprimento medido (finito > 0). Só um quadro bloqueado pode não o ter (o solver recusou a configuração).
+      if (a.lengthM === null) { if (value.status !== 'blocked') bad(`${path}.lengthM`, 'Um cilindro num quadro não bloqueado tem comprimento.'); }
+      else if (!finite(a.lengthM) || (a.lengthM as number) <= 0) bad(`${path}.lengthM`, 'Um cilindro tem comprimento finito > 0.');
     } else if (a.kind === 'rotary_drive') {
       if (a.unit !== 'rad') bad(`${path}.unit`, 'Um accionamento rotativo é medido em rad.');
       if (a.lengthM !== null) bad(`${path}.lengthM`, 'Só os cilindros têm comprimento.');
