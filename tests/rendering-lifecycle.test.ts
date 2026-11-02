@@ -97,4 +97,29 @@ describe('device-aware quality', () => {
     for (let i = 0; i < 40; i += 1) slow.sample((t += 60)); expect(slow.check(t + 2000)).toBe(2);
     for (let i = 0; i < 40; i += 1) slow.sample((t += 5)); expect(slow.check(t + 9000)).toBeNull(); expect(slow.degrade).toBe(2);
   });
+
+  it('sustained frames slower than 80 ms DO degrade (a frame counts by its own cost, however long)', () => {
+    const monitor = new FrameMonitor({ window: 30, cooldownMs: 1000 }); let t = 0;
+    for (let i = 0; i < 40; i += 1) monitor.sample((t += 150), { latencyMs: 12, renderMs: 138 });
+    expect(monitor.check(t)).toBe(1);
+    for (let i = 0; i < 40; i += 1) monitor.sample((t += 233), { latencyMs: 8, renderMs: 225 });
+    expect(monitor.check(t + 2000)).toBe(2);
+  });
+  it('counts slowness that sits in the pipeline, not in the render call (async GPU)', () => {
+    const monitor = new FrameMonitor({ window: 30 }); let t = 0;
+    for (let i = 0; i < 40; i += 1) monitor.sample((t += 100), { latencyMs: 95, renderMs: 3 });
+    expect(monitor.check(t)).toBe(1);
+  });
+  it('distinguishes slow rendering from inactivity', () => {
+    // idle: a frame every five seconds or minutes, each requested and drawn promptly -> the gap between frames is irrelevant
+    const idle = new FrameMonitor({ window: 30 }); let t = 0; for (let i = 0; i < 100; i += 1) idle.sample((t += 5000), { latencyMs: 4, renderMs: 12 }); expect(idle.check(t + 9000)).toBeNull();
+    // the same sparse frames, but each one slow to render, ARE slow
+    const sparseSlow = new FrameMonitor({ window: 30 }); t = 0; for (let i = 0; i < 40; i += 1) sparseSlow.sample((t += 3000), { latencyMs: 6, renderMs: 120 }); expect(sparseSlow.check(t + 9000)).toBe(1);
+    // a stalled or hidden tab (huge request-to-callback latency) is not slow rendering
+    const hidden = new FrameMonitor({ window: 30 }); t = 0; for (let i = 0; i < 40; i += 1) hidden.sample((t += 60_000), { latencyMs: 60_000, renderMs: 10 }); expect(hidden.check(t + 9000)).toBeNull();
+    // one slow burst inside fast frames does not trigger (p95 over the window)
+    const burst = new FrameMonitor({ window: 30 }); t = 0; for (let i = 0; i < 60; i += 1) burst.sample((t += 16), { latencyMs: 8, renderMs: i % 40 === 0 ? 300 : 6 }); expect(burst.check(t + 9000)).toBeNull();
+    // legacy callers (no info): only back-to-back frames count
+    const legacy = new FrameMonitor({ window: 30 }); t = 0; for (let i = 0; i < 100; i += 1) legacy.sample((t += 1000)); expect(legacy.check(t + 9000)).toBeNull();
+  });
 });

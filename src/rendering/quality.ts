@@ -89,19 +89,34 @@ export function resolveProfile(quality: VisualQuality, caps?: DeviceCaps, degrad
 }
 
 /**
- * Watches frame times WITHOUT a loop of its own: the viewer calls `sample(now)` from its existing render function. Only frames drawn back to back
- * (gap under `contiguousMs`, i.e. during a drag or an animation) count, so an idle viewer produces no samples. `check()` returns a degrade step
- * at most once per `cooldownMs`, and never a step that undoes an earlier one (no oscillation: quality only goes down on its own; the user
- * can pick Technical or switch the profile again to reset).
+ * Watches frame cost WITHOUT a loop of its own: the viewer calls `sample(now, info)` from its existing render function.
+ *
+ * The cost of a frame is measured from the moment it was REQUESTED, never from the previous frame, so inactivity cannot look like slowness and
+ * slowness cannot be mistaken for inactivity:
+ *  - `latencyMs`: time between the request for this frame (an input event, a tween tick, the previous frame asking for another) and the moment its
+ *    callback ran. It is long when the main thread or the GPU is still busy with earlier work, and ~0 to one display refresh when the device keeps up.
+ *    A user pausing for ten seconds before the next click adds nothing, because the clock starts at the click.
+ *  - `renderMs`: time spent inside the render call.
+ * cost = latency + render. A latency beyond `maxGapMs` is a stalled or hidden tab, not rendering, and is skipped. Frames of any length count, so a
+ * device that needs 230 ms per frame is sampled at 230 ms.
+ * Without `info` the legacy behaviour applies: a frame counts by its gap since the previous sample only when that gap is under `contiguousMs`.
+ *
+ * `check()` returns a degrade step at most once per `cooldownMs`, and never a step that undoes an earlier one (no oscillation: quality only goes
+ * down on its own; the user can pick Technical or switch the profile again to reset). It needs a window of samples and looks at the 95th percentile,
+ * so one slow burst inside fast frames does nothing.
  */
+export type FrameInfo = { latencyMs: number; renderMs: number };
 export class FrameMonitor {
   private last = 0; private readonly times: number[] = []; private level: Degrade = 0; private lastChange = 0;
-  constructor(private readonly options: { window?: number; slowMs?: number; contiguousMs?: number; cooldownMs?: number } = {}) {}
-  sample(now: number): void {
-    const { window = 90, contiguousMs = 80 } = this.options;
+  constructor(private readonly options: { window?: number; slowMs?: number; contiguousMs?: number; maxGapMs?: number; cooldownMs?: number } = {}) {}
+  sample(now: number, info?: FrameInfo): void {
+    const { window = 90, contiguousMs = 80, maxGapMs = 2000 } = this.options;
     const gap = now - this.last; this.last = now;
-    if (gap <= 0 || gap > contiguousMs) return;
-    this.times.push(gap); if (this.times.length > window) this.times.shift();
+    let cost: number;
+    if (info) { if (info.latencyMs > maxGapMs) return; cost = Math.max(0, info.latencyMs) + Math.max(0, info.renderMs); }
+    else { if (gap > contiguousMs) return; cost = gap; }
+    if (!(cost > 0)) return;
+    this.times.push(cost); if (this.times.length > window) this.times.shift();
   }
   check(now: number): Degrade | null {
     const { window = 90, slowMs = 26, cooldownMs = 4000 } = this.options;
@@ -114,4 +129,6 @@ export class FrameMonitor {
   }
   reset(): void { this.level = 0; this.times.length = 0; this.lastChange = 0; }
   get degrade(): Degrade { return this.level; }
+  /** the costs currently in the window (for diagnostics) */
+  get samples(): readonly number[] { return this.times; }
 }

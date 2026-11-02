@@ -6,3 +6,4 @@ export * from './hires';
 export * from './metrics';
 export * from './lifecycle';
 export * from './viewer';
+export * from './snapshot';

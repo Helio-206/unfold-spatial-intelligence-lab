@@ -26,6 +26,7 @@ import { mountStepsHeader } from './steps-header';
 import { createRenderingController } from './rendering/viewer';
 import { disposeOwnedGeometries } from './rendering/lifecycle';
 import { canvasToBlob, HighResError, renderHighResolution } from './rendering/hires';
+import { snapshotScene } from './rendering/snapshot';
 import type { VisualQuality } from './rendering/quality';
 import { describeRemovalCard, describeWallRemoval, type RemovalCard } from './removal-preview';
 import { dur as motionDur, EASE as MOTION_EASE, gsap as motionGsap, prefersReducedMotion as motionReduced } from './motion';
@@ -110,6 +111,7 @@ orbit.enableDamping = true;
 orbit.dampingFactor = 0.08;
 orbit.maxPolarAngle = Math.PI;
 orbit.addEventListener('start', () => { gsap.killTweensOf(camera.position); gsap.killTweensOf(orbit.target); });
+orbit.addEventListener('change', () => invalidate()); // dragging, wheel and damping repaint the canvas (the viewer draws on demand)
 // Visual profile (Técnico by default): renderer settings, lights and shadows come from one controller; switching it never touches the scene data.
 const rendering = createRenderingController(scene, renderer, 'technical');
 const grid = new GridHelper(36, 36, 0x776e5d, 0x343a34); grid.position.y = -0.035; scene.add(grid);
@@ -123,6 +125,7 @@ let removalGhost: RemovalGhost | undefined;
 let ghostState: { base: SpatialSceneV1; wallId: string; mode: 'dissolve' | 'blocked' } | undefined;
 let displayedModel: SpatialSceneV1 | undefined;
 let exporting: AbortController | undefined;
+let frameRequestedAt = 0; let drawCount = 0;
 let preview: ScenePreview | undefined;
 let compoundPreview: SceneTransaction | undefined;
 // Autorizações de valores confirmados: emitidas só no clique de confirmação, para a operação que o preview mostrou.
@@ -164,7 +167,7 @@ let buildTimeline: gsap.core.Timeline | undefined;
 let disposed = false;
 const resizeObserver = new ResizeObserver(resize);
 
-function invalidate(): void { if (!disposed && !raf) raf = requestAnimationFrame(draw); }
+function invalidate(): void { if (!disposed && !raf) { frameRequestedAt = performance.now(); raf = requestAnimationFrame(draw); } }
 function cameraFitAspect(): number {
   const canvas = $('#spatial-canvas').getBoundingClientRect();
   const panelInset = (selector: string, edge: 'left' | 'right') => {
@@ -183,11 +186,15 @@ function cameraFitAspect(): number {
   });
 }
 function draw(now = performance.now()): void {
-  raf = 0;
-  if (exporting) return; // the export owns the scene while it renders; it asks for a redraw when it ends
+  raf = 0; drawCount += 1;
   const moving = orbit.update();
+  const probe = rendering.wantsProbe();
+  const renderStart = performance.now();
   renderer.render(scene, camera);
-  const degraded = rendering.sampleFrame(now);
+  if (probe) rendering.syncGpu(); // render() only queues the work; this makes the sample include the GPU, on probe frames only
+  const renderMs = performance.now() - renderStart;
+  // Cost of a frame = time from its request to its callback (busy main thread / GPU) + render time. Idle time before the request never counts.
+  const degraded = probe ? rendering.sampleFrame(now, { latencyMs: Math.max(0, now - frameRequestedAt), renderMs }) : null;
   if (degraded) status(degraded === 1 ? 'Apresentação com sombras mais leves: este dispositivo está lento. Escolha Técnico para a máxima fluidez.' : 'Apresentação sem sombras: este dispositivo está lento. Escolha Técnico para a máxima fluidez.');
   frameCount += 1;
   if (now - fpsAt >= 1000) { fps = Math.round(frameCount * 1000 / (now - fpsAt)); frameCount = 0; fpsAt = now; updateMetrics(); }
@@ -1118,42 +1125,50 @@ $('#export-close').addEventListener('click', () => { exportCard.hidden = true; }
 $('#export-cancel').addEventListener('click', () => exporting?.abort());
 const safeName = (value: string) => value.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'cena';
 
-async function exportImage(width: number, height: number): Promise<void> {
+/**
+ * The export renders an isolated snapshot taken here, in one synchronous step: scene (cloned geometry, materials and lights), camera, quality, title and
+ * aspect are all frozen before the first tile. The editor stays fully usable meanwhile (undo/redo, previews, selection, camera tweens, orbit): none of
+ * it can reach the snapshot, so every tile comes from the same state. The gizmo and the selection outline are left out of the copy, not hidden in the
+ * live scene, so the editing view is never touched.
+ */
+async function exportImage(width: number, height: number, tile = 1024): Promise<void> {
   if (exporting || !displayedModel) return;
   const controller = new AbortController(); exporting = controller;
-  const chrome: Object3D[] = []; chrome.push(gizmo.getHelper() as unknown as Object3D); if (selectionOutline) chrome.push(selectionOutline); const visibility = chrome.map((item) => item.visible);
-  chrome.forEach((item) => { item.visible = false; }); // the picture shows the model, not the editing handles
+  const quality = rendering.quality; const title = displayedModel.title; const aspect = camera.aspect;
+  const chrome: Object3D[] = [gizmo.getHelper() as unknown as Object3D]; if (selectionOutline) chrome.push(selectionOutline);
+  const snapshot = snapshotScene(scene, { exclude: chrome });
+  const frozenCamera = camera.clone(); frozenCamera.updateMatrixWorld(true);
   for (const id of ['#quality-technical', '#quality-presentation', '#export-image']) ($(id) as HTMLButtonElement).disabled = true;
-  showExportCard(`A exportar ${width} × ${height} (${rendering.quality === 'presentation' ? 'apresentação' : 'técnico'})…`, 'busy');
+  showExportCard(`A exportar ${width} × ${height} (${quality === 'presentation' ? 'apresentação' : 'técnico'})…`, 'busy');
   try {
-    const { canvas, report } = await renderHighResolution(scene, camera, {
-      width, height, quality: rendering.quality, viewportAspect: camera.aspect, signal: controller.signal,
+    const { canvas, report } = await renderHighResolution(snapshot.scene, frozenCamera, {
+      width, height, quality, viewportAspect: aspect, tile, signal: controller.signal,
       onProgress: ({ done, total }) => { exportCard.style.setProperty('--export-progress', `${Math.round((done / total) * 100)}%`); showExportCard(`A exportar ${width} × ${height}… ${done} de ${total} blocos`, 'busy'); },
     });
     const blob = await canvasToBlob(canvas);
     const link = document.createElement('a'); const url = URL.createObjectURL(blob);
-    link.href = url; link.download = `unfold-${safeName(displayedModel.title)}-${rendering.quality}-${report.actual.width}x${report.actual.height}.png`; document.body.append(link); link.click(); link.remove();
+    link.href = url; link.download = `unfold-${safeName(title)}-${quality}-${report.actual.width}x${report.actual.height}.png`; document.body.append(link); link.click(); link.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
     canvas.width = 0; canvas.height = 0; // release the pixel buffer now
     const size = blob.size > 1_048_576 ? `${(blob.size / 1_048_576).toFixed(1)} MB` : `${Math.round(blob.size / 1024)} kB`;
     const result = `Imagem exportada: ${report.actual.width} × ${report.actual.height} · ${size}. ${report.note}`;
     showExportCard(report.clamped ? `${result} O dispositivo não permitiu o tamanho pedido.` : result, report.clamped ? 'error' : 'done');
-    (window as unknown as { __unfoldLastExport?: unknown }).__unfoldLastExport = { report, bytes: blob.size, name: link.download };
+    (window as unknown as { __unfoldLastExport?: unknown }).__unfoldLastExport = { report, bytes: blob.size, name: link.download, snapshotObjects: snapshot.objects };
     status(result);
   } catch (error) {
     const aborted = error instanceof HighResError && error.code === 'ABORTED';
     showExportCard(aborted ? 'Exportação cancelada. A cena não foi alterada.' : `A exportação falhou: ${error instanceof Error ? error.message : 'erro desconhecido'} Tente um tamanho menor.`, aborted ? 'done' : 'error');
   } finally {
-    chrome.forEach((item, i) => { item.visible = visibility[i]!; });
+    snapshot.dispose();
     for (const id of ['#quality-technical', '#quality-presentation']) ($(id) as HTMLButtonElement).disabled = false;
-    exporting = undefined; updateToolbar(); invalidate();
+    exporting = undefined; updateToolbar();
   }
 }
 if (new URLSearchParams(location.search).has('debug-rendering')) {
   // Test hook for the browser E2E only: read-only counters, plus the export entry point.
   (window as unknown as { __unfoldRendering?: unknown }).__unfoldRendering = {
     info: () => ({ geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, programs: renderer.info.programs?.length ?? 0, calls: renderer.info.render.calls, triangles: renderer.info.render.triangles }),
-    quality: () => rendering.quality, degrade: () => rendering.degrade, exportImage, sceneChildren: () => scene.children.length, lights: () => { let n = 0; scene.traverse((o) => { if ((o as unknown as { isLight?: boolean }).isLight) n += 1; }); return n; },
+    quality: () => rendering.quality, degrade: () => rendering.degrade, frameSamples: () => [...rendering.samples()], draws: () => drawCount, exportImage, sceneChildren: () => scene.children.length, lights: () => { let n = 0; scene.traverse((o) => { if ((o as unknown as { isLight?: boolean }).isLight) n += 1; }); return n; },
     view: (position: number[], target: number[]) => { moveCamera(new Vector3(...(target as [number, number, number])), new Vector3(...(position as [number, number, number])), 0, new Vector3(0, 1, 0)); },
     bounds: () => { const box = new Box3().setFromObject(root); return { min: box.min.toArray(), max: box.max.toArray() }; },
     nodePosition: (id: string) => { const object = root.getObjectByName(id); if (!object) return null; const box = new Box3().setFromObject(object); return { center: box.getCenter(new Vector3()).toArray(), size: box.getSize(new Vector3()).toArray() }; },

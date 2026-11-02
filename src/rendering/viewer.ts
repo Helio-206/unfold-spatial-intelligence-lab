@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { FrameMonitor, readDeviceCaps, resolveProfile, type DeviceCaps, type Degrade, type QualityProfile, type VisualQuality } from './quality';
+import { FrameMonitor, readDeviceCaps, resolveProfile, type FrameInfo, type DeviceCaps, type Degrade, type QualityProfile, type VisualQuality } from './quality';
 import { configureRenderer, createStage, disposeEnvironment, type StageHandle } from './stage';
 import { disposeMaterials } from './materials';
 
@@ -19,13 +19,24 @@ export type RenderingController = {
   setQuality(quality: VisualQuality): boolean;
   fit(bounds: THREE.Box3): void;
   /** call from the render function; returns the new degrade step when the monitor decides to lower the cost */
-  sampleFrame(now: number): Degrade | null;
+  sampleFrame(now: number, info?: FrameInfo): Degrade | null;
+  /**
+   * Presentation only: true on every other frame while the monitor still has work to do. On those frames the caller must call `syncGpu()` right after
+   * rendering and pass the elapsed time to `sampleFrame`, because a CPU timer around `render()` does not see GPU time (the call returns when the
+   * commands are queued). Technical never probes, and probing stops once the lowest step is reached.
+   */
+  wantsProbe(): boolean;
+  /** waits for the GPU to finish what was just drawn (a 1x1 read); the cost is only paid on probe frames */
+  syncGpu(): void;
+  /** costs currently in the monitor's window, for diagnostics */
+  samples(): readonly number[];
   dispose(): void;
 };
 
 export function createRenderingController(scene: THREE.Scene, renderer: THREE.WebGLRenderer, initial: VisualQuality = 'technical'): RenderingController {
   const caps = readDeviceCaps(renderer.getContext());
-  const monitor = new FrameMonitor();
+  const monitor = new FrameMonitor({ window: 45 }); // probes come every other frame: 30 samples are about 60 frames
+  let probeTurn = false; const probePixel = new Uint8Array(4);
   let quality = initial; let degrade: Degrade = 0; let stage: StageHandle | undefined; let bounds: THREE.Box3 | undefined; let disposed = false;
 
   const apply = () => {
@@ -44,9 +55,12 @@ export function createRenderingController(scene: THREE.Scene, renderer: THREE.We
       quality = next; degrade = 0; monitor.reset(); apply(); return true;
     },
     fit(box) { bounds = box.clone(); stage?.fit(bounds); },
-    sampleFrame(now) {
+    samples() { return monitor.samples; },
+    wantsProbe() { if (quality !== 'presentation' || disposed || degrade >= 2) return false; probeTurn = !probeTurn; return probeTurn; },
+    syncGpu() { const gl = renderer.getContext(); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, probePixel); },
+    sampleFrame(now, info) {
       if (quality !== 'presentation' || disposed) return null;
-      monitor.sample(now);
+      monitor.sample(now, info);
       const step = monitor.check(now);
       if (step) { degrade = step; stage?.degrade(step); configureRenderer(renderer, quality, caps, degrade); }
       return step;
