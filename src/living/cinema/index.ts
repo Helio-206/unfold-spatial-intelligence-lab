@@ -8,3 +8,5 @@ export * from './studio-environment';
 export * from './studio-materials';
 export * from './studio-stage';
 export * from './visual-provider';
+export * from './pose-clock';
+export * from './caption';

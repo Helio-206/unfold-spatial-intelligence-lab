@@ -20,8 +20,10 @@ export type PoseSample = {
   blocked: BlockedInfo | null;
   /** true when the sample is a blend of two engine frames (presentation smoothing), false when it is a frame as produced */
   interpolated: boolean;
-  /** sha-256 of the engine input for the frame shown (null for the reference pose) */
+  /** sha-256 of the engine input for the frame shown (null for the reference pose and for any blended sample: no engine input produced it) */
   inputDigest: string | null;
+  /** for a blended sample only: the two engine frames it was blended from and the weight of the second; measurements are NOT carried over */
+  derivedFrom: { fromInputDigest: string; toInputDigest: string; blend: number } | null;
 };
 
 export interface PoseSource {
@@ -36,7 +38,7 @@ export class ReferencePoseSource implements PoseSource {
   readonly durationS = 0;
   constructor(readonly assemblyId: string, private readonly parts: PartTransform[]) {}
   sample(): PoseSample {
-    return { parts: this.parts.map((p) => ({ partId: p.partId, translationM: [...p.translationM], rotation: [...p.rotation] })), status: 'reference', poseBasis: 'reference', timestampS: 0, warnings: [], measurements: [], blocked: null, interpolated: false, inputDigest: null };
+    return { parts: this.parts.map((p) => ({ partId: p.partId, translationM: [...p.translationM], rotation: [...p.rotation] })), status: 'reference', poseBasis: 'reference', timestampS: 0, warnings: [], measurements: [], blocked: null, interpolated: false, inputDigest: null, derivedFrom: null };
   }
 }
 
@@ -51,14 +53,31 @@ export class MotionFramePlayer implements PoseSource {
   readonly assemblyId: string;
   readonly durationS: number;
   private readonly frames: MotionFrame[];
-  /** `frames` are validated one by one; one invalid frame rejects the whole sequence (no partial playback of untrusted data). */
-  constructor(frames: readonly unknown[]) {
-    if (!frames.length) throw new MotionFrameRejected([{ path: '$', message: 'Sequência vazia.' }]);
+  /**
+   * `frames` are validated one by one; one invalid frame rejects the whole sequence (no partial playback of untrusted data). The sequence must also
+   * be ONE sequence: same assembly (and `expect.assemblyId` if given), same effective-assembly digest, same world frame, and every frame that has poses
+   * covers exactly the same parts (exactly `expect.partIds` if given). Pose-less frames (`poseBasis: none`) are allowed and carry no parts.
+   */
+  constructor(frames: readonly unknown[], expect: { assemblyId?: string; partIds?: readonly string[] } = {}) {
+    const reject = (path: string, message: string): never => { throw new MotionFrameRejected([{ path, message }]); };
+    if (!frames.length) reject('$', 'Sequência vazia.');
     const accepted: MotionFrame[] = [];
     frames.forEach((frame, i) => { const v = validateMotionFrame(frame); if (!v.ok) throw new MotionFrameRejected(v.issues.map((x) => ({ path: `frames[${i}]${x.path.slice(1)}`, message: x.message }))); accepted.push(frame as MotionFrame); });
     accepted.sort((a, b) => a.timestampS - b.timestampS);
-    if (new Set(accepted.map((f) => f.assemblyId)).size !== 1) throw new MotionFrameRejected([{ path: '$', message: 'Os quadros pertencem a montagens diferentes.' }]);
-    this.frames = accepted; this.assemblyId = accepted[0]!.assemblyId; this.durationS = accepted.at(-1)!.timestampS;
+    const first = accepted[0]!;
+    if (expect.assemblyId !== undefined && first.assemblyId !== expect.assemblyId) reject('frames[0].assemblyId', `Os quadros são da montagem «${first.assemblyId}», não da montagem em cena («${expect.assemblyId}»).`);
+    const expected = expect.partIds ? new Set(expect.partIds) : null; let reference: Set<string> | null = expected;
+    accepted.forEach((f, i) => {
+      if (f.assemblyId !== first.assemblyId) reject(`frames[${i}].assemblyId`, 'Os quadros pertencem a montagens diferentes.');
+      if (f.assemblyDigest !== first.assemblyDigest) reject(`frames[${i}].assemblyDigest`, 'assemblyDigest diferente: os quadros foram calculados sobre montagens efectivas diferentes.');
+      if (f.worldFrameId !== first.worldFrameId) reject(`frames[${i}].worldFrameId`, `worldFrameId diferente («${f.worldFrameId}» e «${first.worldFrameId}»): poses em referenciais diferentes não se misturam.`);
+      if (f.parts.length === 0) return;
+      const ids = new Set(f.parts.map((p) => p.partId));
+      if (!reference) { reference = ids; return; }
+      const unknown = [...ids].filter((id) => !reference!.has(id)); const missing = [...reference].filter((id) => !ids.has(id));
+      if (unknown.length || missing.length) reject(`frames[${i}].parts`, `As partes do quadro não correspondem às da montagem${unknown.length ? `; desconhecidas: ${unknown.join(', ')}` : ''}${missing.length ? `; em falta: ${missing.join(', ')}` : ''}.`);
+    });
+    this.frames = accepted; this.assemblyId = first.assemblyId; this.durationS = accepted.at(-1)!.timestampS;
   }
   get frameCount(): number { return this.frames.length; }
   sample(timeS: number): PoseSample {
@@ -72,17 +91,20 @@ export class MotionFramePlayer implements PoseSource {
       return asSample(shown, false);
     }
     const parts = a.parts.map((pa): PartTransform => {
-      const pb = b.parts.find((p) => p.partId === pa.partId) ?? pa;
+      const pb = b.parts.find((p) => p.partId === pa.partId) ?? pa; // coverage is validated in the constructor: the ids always match
       va.fromArray(pa.translationM); vb.fromArray(pb.translationM); va.lerp(vb, blend);
       qa.fromArray(pa.rotation); qb.fromArray(pb.rotation); qa.slerp(qb, blend);
       return { partId: pa.partId, translationM: [va.x, va.y, va.z], rotation: [qa.x, qa.y, qa.z, qa.w] };
     });
-    return { ...asSample(a, true), parts, timestampS: t };
+    // Measurements and the input digest belong to the instants the engine computed. A blend is not one of them: nothing is carried over as if computed at `t`.
+    // Warnings describe the two bounding frames, so both sets are kept (deduplicated).
+    const seen = new Set<string>(); const warnings = [...a.warnings, ...b.warnings].filter((w) => { const k = `${w.code}|${w.message}`; if (seen.has(k)) return false; seen.add(k); return true; });
+    return { ...asSample(a, true), parts, timestampS: t, measurements: [], warnings, inputDigest: null, derivedFrom: { fromInputDigest: a.inputDigest, toInputDigest: b.inputDigest, blend } };
   }
 }
 
 function asSample(frame: MotionFrame, interpolated: boolean): PoseSample {
-  return { parts: frame.parts.map((p) => ({ partId: p.partId, translationM: [...p.translationM], rotation: [...p.rotation] })), status: frame.status, poseBasis: frame.poseBasis, timestampS: frame.timestampS, warnings: frame.warnings, measurements: frame.measurements, blocked: frame.blocked, interpolated, inputDigest: frame.inputDigest };
+  return { parts: frame.parts.map((p) => ({ partId: p.partId, translationM: [...p.translationM], rotation: [...p.rotation] })), status: frame.status, poseBasis: frame.poseBasis, timestampS: frame.timestampS, warnings: frame.warnings, measurements: frame.measurements, blocked: frame.blocked, interpolated, inputDigest: frame.inputDigest, derivedFrom: null };
 }
 
 /** Reads `excavator.reference-pose.json`-shaped data with a real check (3 and 4 finite numbers, unit quaternion) instead of a cast. */

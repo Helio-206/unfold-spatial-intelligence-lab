@@ -10,6 +10,7 @@ import { createStudioMaterials, type StudioMaterials } from './studio-materials'
 import { createStudioStage, type StudioStage } from './studio-stage';
 import { applyPose, machineBounds, proxyVisualProvider, type MachineVisualProvider, type MachineVisuals } from './visual-provider';
 import type { PoseSample, PoseSource } from './pose-source';
+import { PoseClock } from './pose-clock';
 
 /**
  * The cinematic runtime: a studio stage, a camera director, a post chain and an on-demand render loop around one machine.
@@ -41,7 +42,7 @@ export class CinemaRuntime {
   readonly renderer: THREE.WebGLRenderer; readonly camera: THREE.PerspectiveCamera; readonly stage: StudioStage; readonly controls: OrbitControls; readonly director: CameraDirector;
   readonly caps: DeviceCaps; readonly visuals: MachineVisuals; readonly framing: MachineFraming;
   private post: StudioPost; private materials: StudioMaterials; private settings: CinemaSettings; private baseSettings: CinemaSettings; private degradeLevel: 0 | 1 | 2 = 0;
-  private poseSource: PoseSource; private poseTimeS = 0; private poseSpeed = 1; private posePlaying = false; private poseLoop = true;
+  private poseSource: PoseSource; private poseClock = new PoseClock(); private poseTimeS = 0; private poseSpeed = 1; private posePlaying = false; private poseLoop = true;
   private raf = 0; private clock = new FrameClock(); private lastFrameAt = 0; private disposed = false; private lost = false;
   private monitor = new FrameMonitor({ window: 45 }); private probeTurn = false; private readonly probePixel = new Uint8Array(4);
   private frames = 0; private lastFrameMs = 0; private observer: ResizeObserver; private pixelRatioCap: number; private size: [number, number] = [1, 1];
@@ -144,12 +145,16 @@ export class CinemaRuntime {
   get playing(): boolean { return this.posePlaying; }
   /** swaps the pose source (reference pose -> engine frames); the framing is kept so the camera does not jump */
   setPoseSource(source: PoseSource): void {
-    this.poseSource = source; this.poseTimeS = 0; this.posePlaying = false; this.showPose(); this.requestFrame();
+    if (source.assemblyId !== this.options.assembly.id) throw new Error(`A fonte de pose é da montagem «${source.assemblyId}», não da montagem em cena («${this.options.assembly.id}»).`);
+    this.poseSource = source; this.poseTimeS = 0; this.posePlaying = false; this.poseClock.pause(); this.showPose(); this.requestFrame();
   }
-  playPose(playing = !this.posePlaying, loop = true): void { if (this.poseSource.durationS <= 0) return; this.posePlaying = playing; this.poseLoop = loop; this.requestFrame(); }
+  playPose(playing = !this.posePlaying, loop = true): void { if (this.poseSource.durationS <= 0) return; this.posePlaying = playing; this.poseLoop = loop; if (playing) this.poseClock.start(performance.now()); else this.poseClock.pause(); this.requestFrame(); }
   seekPose(timeS: number): void { this.poseTimeS = Math.min(Math.max(0, timeS), this.poseSource.durationS); this.showPose(); this.requestFrame(); }
   private showPose(): void {
-    const sample = this.poseSource.sample(this.poseTimeS); const r = applyPose(this.visuals, sample);
+    const sample = this.poseSource.sample(this.poseTimeS);
+    // A sample without poses (invalid assembly, blocked with poseBasis none) shows NO machine: nothing is drawn from an older pose.
+    this.stage.setMachineVisible(sample.parts.length > 0);
+    const r = applyPose(this.visuals, sample);
     if (r.unknown.length) console.warn(`cinema: partes sem objecto visual: ${r.unknown.join(', ')}`);
     this.visuals.root.updateWorldMatrix(true, true); this.stage.poseChanged(); this.options.onSample?.(sample);
   }
@@ -162,8 +167,8 @@ export class CinemaRuntime {
     let moving = false;
     if (this.director.active) { const r = this.director.advance(dt); this.applyCamera(r.pose); moving = r.moving; if (!r.moving) this.setShot(this.shotNow === 'tour' ? 'free' : this.shotNow); }
     if (this.posePlaying) {
-      this.poseTimeS += dt * this.poseSpeed; const end = this.poseSource.durationS;
-      if (this.poseTimeS >= end) { if (this.poseLoop) this.poseTimeS %= Math.max(end, 1e-6); else { this.poseTimeS = end; this.posePlaying = false; } }
+      this.poseTimeS += this.poseClock.tick(performance.now(), this.poseSpeed); const end = this.poseSource.durationS;
+      if (this.poseTimeS >= end) { if (this.poseLoop) this.poseTimeS %= Math.max(end, 1e-6); else { this.poseTimeS = end; this.posePlaying = false; this.poseClock.pause(); } }
       this.showPose(); moving = moving || this.posePlaying;
     }
     const orbiting = this.controls.update(); moving = moving || orbiting;

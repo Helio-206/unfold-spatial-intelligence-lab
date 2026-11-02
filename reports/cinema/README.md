@@ -46,10 +46,20 @@ Lifecycle: 20 tier switches leave geometries (17), textures (5), shader programs
 
 `MotionFramePlayer` validates every `unfold.motion-frame.v1` frame (one invalid frame rejects the sequence), blends only between two `ok` frames and says so, and never blends across a frame that is not `ok`: `blocked` is shown with its `poseBasis`, message and warnings. E2E, with three valid *transport test* frames that repeat the reference pose (not engine output): status and base are shown, the blocked message is surfaced, and the image is pixel-identical to the reference pose. Real engine frames plug in with `runtime.setPoseSource(new MotionFramePlayer(frames))`.
 
+## Review fixes (PR #14, review 5743361419)
+
+- A sample without poses (`invalid_assembly`, `poseBasis: none`) hides the machine, its mirrored copy and its contact shadow together; the next sample with poses restores them (browser: no orange pixels while hidden, image identical to the reference pose after).
+- Frame captions are owned by the frame: a blocked/warning message is cleared when the next frame has none, and a clean frame never erases an unrelated notification (`CaptionState`).
+- `MotionFramePlayer` refuses sequences that do not belong together: different `assemblyDigest`, different `worldFrameId`, an assembly other than the one on stage, part ids the assembly does not have, frames that miss parts. `setPoseSource` refuses a source for another assembly.
+- Pose time is a separate monotonic clock (`PoseClock`) driven by real elapsed time; the 100 ms cap only smooths camera and render motion. Browser: a 4 s sequence on slow software frames reaches 2.4 s or more after 3 s of wall time and ends on time.
+- A blended sample carries no measurements and no input digest (nothing the engine computed at that instant); it records `derivedFrom` (the two input digests and the weight). Warnings of the two bounding frames are kept.
+
+Each was written as a failing unit test first (missing module / wrong behaviour), then fixed; the browser scenario 9 covers the same behaviours end to end.
+
 ## Tests
 
-- `npm test`: 1365 passed (19 new in `tests/living/cinema.test.ts`). `npm run build`: ok.
-- Browser E2E `tests/e2e/cinema.pw.mjs`: 55/55 ([`e2e/results.json`](e2e/results.json)): load and proxy labelling, six shots, determinism, keyboard, tour and hand-over, ablation measurements, 20 tier switches, motion-frame playback and blocked state, full screen / hidden interface, 44 px targets, visible focus, 390 px layout, reduced motion, benchmark per tier, adaptive step-down, idle, no console errors, no request outside localhost.
+- `npm test`: 1382 passed (36 in `tests/living/cinema.test.ts`). `npm run build`: ok.
+- Browser E2E `tests/e2e/cinema.pw.mjs`: 70/70 ([`e2e/results.json`](e2e/results.json)): load and proxy labelling, six shots, determinism, keyboard, tour and hand-over, ablation measurements, 20 tier switches, motion-frame playback and blocked state, full screen / hidden interface, 44 px targets, visible focus, 390 px layout, reduced motion, benchmark per tier, adaptive step-down, idle, no console errors, no request outside localhost.
 - Regressions, unchanged: `wall-removal-merge` 101/101, `confirmed-values-authorization` 60/60, `rendering-integration` 63/63.
 
 ## Limits

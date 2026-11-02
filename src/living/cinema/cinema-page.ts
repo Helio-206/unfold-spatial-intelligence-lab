@@ -5,6 +5,7 @@ import { CinemaRuntime, type CinemaStats } from './cinema-runtime';
 import { SHOT_IDS, type ShotId } from './choreography';
 import { CINEMA_TIERS, type CinemaTier } from './quality';
 import { ReferencePoseSource, referencePartsFrom, type PoseSample } from './pose-source';
+import { CaptionState } from './caption';
 import './cinema.css';
 
 /**
@@ -55,7 +56,8 @@ export async function mountCinema(app: HTMLElement): Promise<CinemaRuntime> {
     </main>`;
   const $ = <T extends HTMLElement>(sel: string) => app.querySelector<T>(sel)!;
   const root = $('#cinema-root'); const caption = $('#cinema-caption');
-  const say = (text: string) => { caption.textContent = text; };
+  const captions = new CaptionState();
+  const say = (text: string) => { caption.textContent = captions.notify(text); };
 
   const refParts = referencePartsFrom(referencePose);
   let runtime: CinemaRuntime;
@@ -75,10 +77,10 @@ export async function mountCinema(app: HTMLElement): Promise<CinemaRuntime> {
   $('#cinema-retry').addEventListener('click', () => location.reload());
 
   function showSample(s: PoseSample): void {
-    $('#ro-pose').textContent = s.status === 'reference' ? 'referência (fixture)' : `${s.poseBasis}${s.interpolated ? ' · suavizada' : ''}`;
+    $('#ro-pose').textContent = s.status === 'reference' ? 'referência (fixture)' : s.poseBasis === 'none' ? 'sem pose' : `${s.poseBasis}${s.interpolated ? ' · suavizada entre dois quadros (sem medidas)' : ''}`;
     $('#ro-status').textContent = s.status === 'reference' ? 'sem movimento' : s.status;
     $('#ro-status').parentElement!.classList.toggle('is-unknown', s.status === 'blocked' || s.status === 'invalid_assembly');
-    if (s.blocked) say(`Bloqueado: ${s.blocked.message}`); else if (s.warnings.length) say(s.warnings[0]!.message);
+    caption.textContent = captions.frame(s);
   }
   const markTier = (tier: CinemaTier) => { app.querySelectorAll<HTMLButtonElement>('[data-tier]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tier === tier))); };
   markTier(runtime.tier);
@@ -127,7 +129,10 @@ export async function mountCinema(app: HTMLElement): Promise<CinemaRuntime> {
       runtime, stats: () => runtime.stats(), seekShot: (id: ShotId, t: number) => runtime.seekShot(id, t), renderNow: () => runtime.renderNow(), setTier: (t: CinemaTier) => { runtime.setTier(t); markTier(t); },
       camera: () => ({ position: runtime.camera.position.toArray(), target: runtime.controls.target.toArray(), fov: runtime.camera.fov }), canvas: () => runtime.renderer.domElement,
       ablate: (f: Parameters<CinemaRuntime['ablate']>[0]) => runtime.ablate(f), screenBox: (id: string) => runtime.screenBox(id), benchmark: (n?: number) => runtime.benchmark(n),
-      playTransportFrames: async () => { const [{ MotionFramePlayer }, { transportTestFrames }] = await Promise.all([import('./pose-source'), import('./test-frames')]); runtime.setPoseSource(new MotionFramePlayer(transportTestFrames())); play.hidden = false; runtime.playPose(true, false); },
+      playTransportFrames: async (variant: 'basic' | 'poseless' = 'basic', autoplay = true) => { const [{ MotionFramePlayer }, { transportTestFrames }] = await Promise.all([import('./pose-source'), import('./test-frames')]); runtime.setPoseSource(new MotionFramePlayer(transportTestFrames({ poseless: variant === 'poseless' }), { assemblyId: assembly.id, partIds: assembly.parts.map((p) => p.id) })); play.hidden = false; if (autoplay) runtime.playPose(true, false); },
+      tryBadSequence: async (kind: string) => { const [{ MotionFramePlayer }, { badSequence }] = await Promise.all([import('./pose-source'), import('./test-frames')]); try { runtime.setPoseSource(new MotionFramePlayer(badSequence(kind), { assemblyId: assembly.id, partIds: assembly.parts.map((p) => p.id) })); return 'ACEITE'; } catch (e) { return e instanceof Error ? e.message : String(e); } },
+      machineVisible: () => ({ stage: runtime.stage.machineVisible, root: runtime.visuals.root.visible, mirror: runtime.stage.scene.getObjectByName('mirror')!.visible, contact: runtime.stage.contact.object.visible }),
+      caption: () => caption.textContent,
       pose: () => ({ timeS: runtime.timeS, playing: runtime.playing, kind: runtime.source.kind }), seekPose: (t: number) => runtime.seekPose(t),
       tiers: CINEMA_TIERS, ready: true,
     };

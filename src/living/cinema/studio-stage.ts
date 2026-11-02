@@ -18,6 +18,9 @@ export type StudioStage = {
   readonly contact: ContactShadow;
   readonly environment: StudioEnvironment;
   attach(visuals: MachineVisuals): void;
+  /** false when the sample on stage has no pose: the machine, its mirrored copy and its contact shadow are hidden together (nothing is drawn from an older pose) */
+  setMachineVisible(visible: boolean): void;
+  readonly machineVisible: boolean;
   /** call after poses changed: syncs the mirrored copy and refreshes the contact shadow */
   poseChanged(): void;
   fit(bounds: THREE.Box3): void;
@@ -58,8 +61,8 @@ export function createStudioStage(renderer: THREE.WebGLRenderer, settings: Cinem
   const contact = createContactShadow(settings.contactResolution); scene.add(contact.object);
   const mirrorRoot = new THREE.Group(); mirrorRoot.name = 'mirror'; mirrorRoot.scale.y = -1; scene.add(mirrorRoot);
 
-  let visuals: MachineVisuals | undefined; const mirrorParts = new Map<string, THREE.Object3D>(); let mirrorOn = settings.mirror;
-  let radius = 6; let center = new THREE.Vector3(4, 1.5, 0); let poseDirty = true;
+  let visuals: MachineVisuals | undefined; const mirrorParts = new Map<string, THREE.Object3D>(); let mirrorOn = settings.mirror; let contactOn = settings.contact;
+  let machineVisible = true; let radius = 6; let center = new THREE.Vector3(4, 1.5, 0); let poseDirty = true;
 
   const enableLayers = (root: THREE.Object3D) => root.traverse((o) => { if ((o as THREE.Mesh).isMesh) { o.layers.enable(CONTACT_LAYER); o.castShadow = true; o.receiveShadow = true; } });
   function buildMirror() {
@@ -73,7 +76,9 @@ export function createStudioStage(renderer: THREE.WebGLRenderer, settings: Cinem
 
   return {
     scene, lights: { key, rim, fill }, floor, contact, environment,
-    attach(next) { if (visuals) scene.remove(visuals.root); visuals = next; scene.add(next.root); enableLayers(next.root); buildMirror(); mirrorRoot.visible = mirrorOn; poseDirty = true; },
+    attach(next) { if (visuals) scene.remove(visuals.root); visuals = next; scene.add(next.root); enableLayers(next.root); buildMirror(); mirrorRoot.visible = mirrorOn && machineVisible; next.root.visible = machineVisible; poseDirty = true; },
+    setMachineVisible(visible) { machineVisible = visible; if (visuals) visuals.root.visible = visible; mirrorRoot.visible = visible && mirrorOn; contact.object.visible = visible && contactOn; if (visible) { poseDirty = true; contact.markDirty(); } },
+    get machineVisible() { return machineVisible; },
     poseChanged() { poseDirty = true; syncMirror(); contact.markDirty(); },
     fit(bounds) {
       center = bounds.getCenter(new THREE.Vector3()); radius = Math.max(2, bounds.getBoundingSphere(new THREE.Sphere()).radius);
@@ -86,7 +91,7 @@ export function createStudioStage(renderer: THREE.WebGLRenderer, settings: Cinem
     apply(s) {
       key.castShadow = s.shadows; key.shadow.mapSize.set(s.shadowMapSize, s.shadowMapSize); key.shadow.radius = s.softShadowRadius;
       if (key.shadow.map) { key.shadow.map.dispose(); key.shadow.map = null; }
-      scene.environmentIntensity = s.environmentIntensity; mirrorOn = s.mirror; mirrorRoot.visible = s.mirror; contact.setEnabled(s.contact);
+      scene.environmentIntensity = s.environmentIntensity; mirrorOn = s.mirror; mirrorRoot.visible = s.mirror && machineVisible; contactOn = s.contact; contact.setEnabled(s.contact); contact.object.visible = s.contact && machineVisible;
       floor.material = floor.material as THREE.MeshStandardMaterial; (floor.material as THREE.MeshStandardMaterial).opacity = s.mirror ? 0.86 : 1; (floor.material as THREE.MeshStandardMaterial).needsUpdate = true;
     },
     prepare(renderer) { if (poseDirty) { syncMirror(); poseDirty = false; } contact.update(renderer, scene); },

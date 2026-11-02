@@ -139,3 +139,90 @@ describe('quality tiers and studio set', () => {
     expect(STUDIO_PANELS.filter((p) => p.radiance > 1).length).toBeGreaterThanOrEqual(5); expect(STUDIO_PANELS.map((p) => p.id)).toEqual(expect.arrayContaining(['key', 'rim', 'strip-left', 'strip-right']));
   });
 });
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Review 5743361419 (PR #14): four P2 findings
+import { PoseClock } from '../../src/living/cinema/pose-clock';
+import { CaptionState } from '../../src/living/cinema/caption';
+
+const poseless = (t: number): MotionFrame => frame(t, { status: 'invalid_assembly', poseBasis: 'none', parts: [], solver: { ...frame(0).solver, status: 'invalid_assembly' }, blocked: { code: 'INVALID_ASSEMBLY', message: 'Montagem inválida (quadro de teste)', subjectIds: [], firstInvalidTimeS: null } });
+const partIds = EXCAVATOR_ASSEMBLY_V1.parts.map((p) => p.id);
+
+describe('review: sequences must belong together', () => {
+  const opts = { assemblyId: EXCAVATOR_ASSEMBLY_V1.id, partIds };
+  it('the test frames are valid, including a pose-less one', () => { expect(validateMotionFrame(poseless(1)).ok).toBe(true); });
+  it('rejects frames from different effective assemblies (assemblyDigest)', () => {
+    expect(() => new MotionFramePlayer([frame(0), frame(1, { assemblyDigest: hex('c') })], opts)).toThrow(/assemblyDigest/);
+  });
+  it('rejects frames in different world frames', () => {
+    expect(() => new MotionFramePlayer([frame(0), frame(1, { worldFrameId: 'outro-mundo' })], opts)).toThrow(/worldFrameId/);
+  });
+  it('rejects a sequence for another assembly than the one on stage', () => {
+    expect(() => new MotionFramePlayer([frame(0), frame(1)], { ...opts, assemblyId: 'outra-montagem' })).toThrow(/outra-montagem|montagem/);
+  });
+  it('rejects part ids the assembly does not have and frames that miss parts', () => {
+    const extra = frame(1); extra.parts = [...extra.parts, { partId: 'fantasma', translationM: [0, 0, 0], rotation: [0, 0, 0, 1] }];
+    expect(() => new MotionFramePlayer([frame(0), extra], opts)).toThrow(/fantasma/);
+    const missing = frame(1); missing.parts = missing.parts.filter((p) => p.partId !== 'bucket');
+    expect(() => new MotionFramePlayer([frame(0), missing], opts)).toThrow(/bucket/);
+  });
+  it('without options it still rejects frames whose part sets differ from each other', () => {
+    const missing = frame(1); missing.parts = missing.parts.filter((p) => p.partId !== 'bucket');
+    expect(() => new MotionFramePlayer([frame(0), missing])).toThrow(/bucket|partes/);
+  });
+  it('accepts a consistent sequence with a pose-less frame (no parts is not a coverage error)', () => {
+    const p = new MotionFramePlayer([frame(0), frame(2), poseless(4)], opts);
+    expect(p.sample(4).parts).toEqual([]); expect(p.sample(4)).toMatchObject({ status: 'invalid_assembly', poseBasis: 'none' });
+  });
+});
+
+describe('review: measurement provenance when interpolating', () => {
+  const m = (id: string, value: number) => ({ id, label: id, status: 'computed' as const, value, unit: 'm' as const, method: 'engine', subjectIds: [] });
+  const a = frame(0, { measurements: [m('reach', 7.1)], inputDigest: hex('1') }); const b = frame(2, { measurements: [m('reach', 7.9)], inputDigest: hex('2') }, 4);
+  const p = new MotionFramePlayer([a, b]);
+  it('an interpolated sample carries no measurement and no input digest of either frame, and says where it comes from', () => {
+    const mid = p.sample(1);
+    expect(mid.interpolated).toBe(true); expect(mid.measurements).toEqual([]); expect(mid.inputDigest).toBeNull();
+    expect(mid.derivedFrom).toEqual({ fromInputDigest: hex('1'), toInputDigest: hex('2'), blend: 0.5 });
+  });
+  it('a frame shown as produced keeps its own measurements and digest, and has no derivedFrom', () => {
+    const s = p.sample(2); expect(s.interpolated).toBe(false); expect(s.measurements).toHaveLength(1); expect(s.inputDigest).toBe(hex('2')); expect(s.derivedFrom).toBeNull();
+  });
+  it('warnings of the two bounding frames are kept (they describe the frames, not a computation at t)', () => {
+    const w = (message: string) => ({ code: message, severity: 'info' as const, message, subjectIds: [] });
+    const q = new MotionFramePlayer([frame(0, { warnings: [w('a')] }), frame(2, { warnings: [w('b'), w('a')] }, 4)]);
+    expect(q.sample(1).warnings.map((x) => x.message).sort()).toEqual(['a', 'b']);
+  });
+});
+
+describe('review: engineering time is not capped by the render smoothing', () => {
+  it('advances by real elapsed time however late the frames are', () => {
+    const clock = new PoseClock(); clock.start(1000);
+    expect(clock.tick(1500)).toBeCloseTo(0.5, 9); expect(clock.tick(3500)).toBeCloseTo(2, 9); expect(clock.tick(3516)).toBeCloseTo(0.016, 9);
+  });
+  it('is monotonic, ignores a non-advancing clock and does not jump while paused', () => {
+    const clock = new PoseClock(); expect(clock.tick(10)).toBe(0); clock.start(100); clock.tick(200); clock.pause();
+    expect(clock.tick(5000)).toBe(0); clock.start(9000); expect(clock.tick(9100)).toBeCloseTo(0.1, 9); expect(clock.tick(9050)).toBe(0);
+  });
+  it('scales by speed', () => { const clock = new PoseClock(); clock.start(0); expect(clock.tick(1000, 2)).toBeCloseTo(2, 9); });
+});
+
+describe('review: frame captions are cleared when the frame stops saying them', () => {
+  const sampleOf = (over: Partial<ReturnType<ReferencePoseSource['sample']>>) => ({ ...new ReferencePoseSource('x', []).sample(), ...over });
+  const blockedSample = sampleOf({ status: 'blocked', poseBasis: 'held_last_valid', blocked: { code: 'L', message: 'Limite da lança', subjectIds: [], firstInvalidTimeS: 1 } });
+  const warnSample = sampleOf({ status: 'ok', poseBasis: 'solved', warnings: [{ code: 'W', severity: 'warning', message: 'perto do limite', subjectIds: [] }] });
+  const cleanSample = sampleOf({ status: 'ok', poseBasis: 'solved' });
+  it('shows blocked and warning messages, then clears them on a clean frame', () => {
+    const c = new CaptionState();
+    expect(c.frame(blockedSample)).toBe('Bloqueado: Limite da lança'); expect(c.frame(warnSample)).toBe('perto do limite'); expect(c.frame(cleanSample)).toBe('');
+    expect(c.text).toBe('');
+  });
+  it('clears when going back to the reference source', () => {
+    const c = new CaptionState(); c.frame(blockedSample); expect(c.frame(new ReferencePoseSource('x', []).sample())).toBe('');
+  });
+  it('does not erase an unrelated notification when a clean frame arrives', () => {
+    const c = new CaptionState(); c.frame(blockedSample); c.notify('Qualidade: Leve'); expect(c.text).toBe('Qualidade: Leve');
+    expect(c.frame(cleanSample)).toBe('Qualidade: Leve'); expect(c.text).toBe('Qualidade: Leve');
+  });
+  it('a clean frame before any message leaves an existing notification alone', () => { const c = new CaptionState(); c.notify('Plano: Herói'); expect(c.frame(cleanSample)).toBe('Plano: Herói'); });
+});

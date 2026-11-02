@@ -10,6 +10,7 @@ import { join, resolve } from 'node:path';
 
 const BASE = process.env.UNFOLD_E2E_URL ?? 'http://127.0.0.1:5199';
 const OUT = resolve(process.env.UNFOLD_E2E_OUT ?? 'reports/cinema/e2e'); mkdirSync(OUT, { recursive: true });
+const ONLY = process.env.UNFOLD_E2E_ONLY; // 1..9
 const checks = []; const external = []; const metrics = {};
 function check(scenario, name, ok, observed) { checks.push({ scenario, name, ok: Boolean(ok), observed }); console.log(`${ok ? 'PASS' : 'FAIL'}  [${scenario}] ${name}${ok ? '' : `  -> ${JSON.stringify(observed)}`}`); }
 const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH ?? '/usr/bin/google-chrome', headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
@@ -42,9 +43,13 @@ async function lum(page, png, rect) {
   }, [png.toString('base64'), rect]);
 }
 
+async function orange(page, png) {
+  return page.evaluate(async (b64) => { const img = new Image(); img.src = `data:image/png;base64,${b64}`; await img.decode(); const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const g = c.getContext('2d'); g.drawImage(img, 0, 0); const d = g.getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] > 170 && d[i + 1] < 150 && d[i + 2] < 90 && d[i] - d[i + 2] > 110) n += 1; return n / (c.width * c.height); }, png.toString('base64'));
+}
+
 try {
   // ------------------------------------------------------------------ 1. carga, canvas, luzes
-  {
+  if (!ONLY || ONLY === '1') {
     const sc = '1 carga';
     const { page, ctx, errors } = await open('tier=studio');
     const s = await C(page, (c) => c.stats());
@@ -62,7 +67,7 @@ try {
   }
 
   // ------------------------------------------------------------------ 2. coreografia de câmara
-  {
+  if (!ONLY || ONLY === '2') {
     const sc = '2 câmara';
     const { page, ctx, errors } = await open('tier=light');
     const ids = ['hero', 'profile', 'bucket', 'reach', 'top', 'orbit']; const cams = {}; const hashes = {};
@@ -95,7 +100,7 @@ try {
   }
 
   // ------------------------------------------------------------------ 3. contacto, reflexos, pós-processamento (ablação no mesmo frame)
-  {
+  if (!ONLY || ONLY === '3') {
     const sc = '3 qualidade visual';
     const { page, ctx, errors } = await open('tier=studio');
     await still(page, 'hero', 3); const png0 = await still(page, 'hero', 3);
@@ -134,7 +139,7 @@ try {
   }
 
   // ------------------------------------------------------------------ 4. ciclo de vida: 20 trocas de nível sem fuga
-  {
+  if (!ONLY || ONLY === '4') {
     const sc = '4 ciclo de vida';
     const { page, ctx, errors } = await open('tier=light');
     const order = ['studio', 'balanced', 'light']; const samples = [];
@@ -150,7 +155,7 @@ try {
   }
 
   // ------------------------------------------------------------------ 5. reprodução de quadros de movimento (transporte) e estado bloqueado
-  {
+  if (!ONLY || ONLY === '5') {
     const sc = '5 quadros de movimento';
     const { page, ctx, errors } = await open('tier=light');
     const ref = hash(await still(page, 'hero', 3));
@@ -170,7 +175,7 @@ try {
   }
 
   // ------------------------------------------------------------------ 6. palco em ecrã inteiro, interface, teclado
-  {
+  if (!ONLY || ONLY === '6') {
     const sc = '6 apresentação';
     const { page, ctx, errors } = await open('tier=light');
     await page.evaluate(() => document.querySelector('#cinema-root').classList.remove('is-presenting', 'is-idle'));
@@ -200,7 +205,7 @@ try {
   }
 
   // ------------------------------------------------------------------ 7. telemóvel e movimento reduzido
-  {
+  if (!ONLY || ONLY === '7') {
     const sc = '7 telemóvel e acessibilidade'; const dist = (a, b) => Math.hypot(...a.map((v, i) => v - b[i]));
     const { page, ctx, errors } = await open('tier=light', { viewport: { width: 390, height: 844 }, hasTouch: true });
     await page.evaluate(() => document.querySelector('#cinema-root').classList.remove('is-presenting', 'is-idle')); await page.waitForTimeout(400);
@@ -221,7 +226,7 @@ try {
   }
 
   // ------------------------------------------------------------------ 8. desempenho, degradação adaptativa e repouso
-  {
+  if (!ONLY || ONLY === '8') {
     const sc = '8 desempenho';
     const { page, ctx, errors } = await open('tier=studio', { viewport: { width: 640, height: 360 } });
     metrics.benchmark = {};
@@ -246,6 +251,48 @@ try {
     await page.keyboard.press('l'); await page.waitForTimeout(1500);
     const g0 = await C(page, (c) => c.stats().frames); await page.waitForTimeout(3000); const g1 = await C(page, (c) => c.stats().frames);
     check(sc, 'depois de degradar e parar a câmara não há ciclo de desenho', g1 - g0 <= 1, [g0, g1]);
+    check(sc, 'sem erros na consola', errors.length === 0, errors);
+    await ctx.close();
+  }
+
+  // ------------------------------------------------------------------ 9. revisão #14: sem pose, legendas, sequências incompatíveis, relógio de engenharia
+  if (!ONLY || ONLY === '9') {
+    const sc = '9 revisão';
+    const { page, ctx, errors } = await open('tier=light');
+    await page.evaluate(() => document.querySelector('#cinema-root').classList.remove('is-presenting', 'is-idle'));
+    const ref = await still(page, 'hero', 3); const refHash = hash(ref); const refOrange = await orange(page, ref);
+    check(sc, 'ponto de partida: a máquina (laranja) vê-se', refOrange > 0.005, refOrange);
+    await C(page, (c) => c.playTransportFrames('poseless', false)); await page.waitForTimeout(300);
+    // (1) pose-less frame hides the machine, mirror and contact shadow; the next pose restores them
+    await C(page, (c) => c.seekPose(6)); const hidden = await grab(page);
+    const vis = await C(page, (c) => c.machineVisible());
+    check(sc, 'um quadro sem pose esconde a máquina, a cópia espelhada e a sombra de contacto', !vis.root && !vis.mirror && !vis.contact && (await orange(page, hidden)) === 0, { vis, orange: await orange(page, hidden) });
+    check(sc, 'o estado diz «sem pose» e a legenda diz porquê', (await page.textContent('#ro-pose')) === 'sem pose' && /Montagem inválida/.test(await C(page, (c) => c.caption())), await page.textContent('#ro-pose'));
+    await C(page, (c) => c.seekPose(0)); const back = await grab(page); const vis2 = await C(page, (c) => c.machineVisible()); const wantMirror = (await C(page, (c) => c.stats())).settings.mirror;
+    check(sc, 'o quadro seguinte com pose repõe tudo, igual à pose de referência', vis2.root && vis2.mirror === wantMirror && vis2.contact && hash(back) === refHash, { vis2, wantMirror, same: hash(back) === refHash });
+    await C(page, (c) => c.seekPose(6)); await C(page, (c) => c.seekPose(2)); await C(page, (c) => c.seekPose(6));
+    check(sc, 'a imagem depende do quadro escolhido e não do histórico (esconder, mostrar, esconder)', (await orange(page, await grab(page))) === 0);
+    // (2) captions
+    await C(page, (c) => c.seekPose(3.9)); const blocked = await C(page, (c) => c.caption());
+    await C(page, (c) => c.seekPose(0)); const cleared = await C(page, (c) => c.caption());
+    check(sc, 'a legenda de bloqueio desaparece quando o quadro recupera', /Bloqueado/.test(blocked) && cleared === '', { blocked, cleared });
+    await C(page, (c) => c.seekPose(3.9)); await page.click('[data-tier="light"]'); const notice = await C(page, (c) => c.caption());
+    await C(page, (c) => c.seekPose(0)); const after = await C(page, (c) => c.caption());
+    check(sc, 'um quadro limpo não apaga uma notificação que não é do quadro', /Qualidade/.test(notice) && after === notice, { notice, after });
+    // (3) incompatible sequences are refused, the stage keeps its source
+    for (const [kind, re] of [['digest', /assemblyDigest/], ['world', /worldFrameId/], ['assembly', /montagem/], ['parts', /bucket/]]) {
+      const msg = await C(page, (c, k) => c.tryBadSequence(k), kind);
+      check(sc, `sequência recusada: ${kind}`, re.test(msg) && msg !== 'ACEITE', msg);
+    }
+    check(sc, 'a recusa não troca a fonte de pose', (await C(page, (c) => c.pose().kind)) === 'motion-frames');
+    // (4) the engineering clock follows wall time, however late the frames are
+    await C(page, (c) => c.playTransportFrames('basic', true)); const w0 = Date.now();
+    await page.waitForTimeout(3000); const t3 = await C(page, (c) => c.pose().timeS); const frames3 = await C(page, (c) => c.stats().frames);
+    metrics.poseClock = { wallS: (Date.now() - w0) / 1000, poseS: t3, framesDrawn: frames3 };
+    check(sc, 'o tempo de pose acompanha o relógio real (≥ 2,4 s em 3 s), apesar de frames lentos', t3 >= 2.4 && t3 <= 3.8, metrics.poseClock);
+    await page.waitForTimeout(2200);
+    const end = await C(page, (c) => c.pose());
+    check(sc, 'chega ao fim da sequência (4 s) a tempo e para', end.timeS === 4 && !end.playing, end);
     check(sc, 'sem erros na consola', errors.length === 0, errors);
     await ctx.close();
   }

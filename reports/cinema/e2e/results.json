@@ -1,12 +1,12 @@
 {
-  "at": "2026-11-02T20:48:25.457Z",
-  "passed": 55,
+  "at": "2026-11-02T22:01:49.908Z",
+  "passed": 70,
   "failed": 0,
   "metrics": {
     "contact": {
-      "withContact": 40.01986158161267,
-      "withoutContact": 53.756157581611845,
-      "ratio": 0.7444702780487069,
+      "withContact": 40.01730797241728,
+      "withoutContact": 53.75462172873826,
+      "ratio": 0.7444440437950892,
       "region": {
         "x": 1027.6483908920359,
         "y": 715.0951294956192,
@@ -22,16 +22,16 @@
         "h": 89.27380616763719
       },
       "withEnvironment": {
-        "mean": 66.22503503684932,
-        "sd": 55.48339277802074,
-        "p50": 50.72319999999999,
-        "p99": 242.9278,
-        "bright": 0.034795215657847045,
+        "mean": 66.250935677178,
+        "sd": 55.48744940875996,
+        "p50": 50.007999999999996,
+        "p99": 243.2126,
+        "bright": 0.03491603237888124,
         "n": 8277
       },
       "withoutEnvironment": {
-        "mean": 18.21236247432642,
-        "sd": 28.41100981574091,
+        "mean": 18.210880778059618,
+        "sd": 28.404827547531077,
         "p50": 2.4412,
         "p99": 69.3432,
         "bright": 0.002899601304820587,
@@ -40,16 +40,16 @@
     },
     "bucketReflections": {
       "with": {
-        "mean": 77.06969907238948,
-        "sd": 55.425834450691475,
+        "mean": 77.06258926194393,
+        "sd": 55.42303241782206,
         "p50": 61.450399999999995,
         "p99": 238,
-        "bright": 0.08194696511393426,
+        "bright": 0.08179572494454528,
         "n": 39672
       },
       "without": {
-        "mean": 36.53093112017994,
-        "sd": 51.76864660663146,
+        "mean": 36.5308328846485,
+        "sd": 51.76859098600288,
         "p50": 16.8676,
         "p99": 234.0682,
         "bright": 0.023391812865497075,
@@ -97,22 +97,22 @@
     "benchmark": {
       "light": {
         "frames": 20,
-        "meanMs": 100.30500000000465,
-        "p95Ms": 566.2000000001863,
+        "meanMs": 96.45,
+        "p95Ms": 317.9000000000233,
         "calls": 17,
         "triangles": 10263
       },
       "balanced": {
         "frames": 20,
-        "meanMs": 384.79000000001395,
-        "p95Ms": 2023.5,
+        "meanMs": 400.1449999999953,
+        "p95Ms": 2202.8000000000466,
         "calls": 52,
         "triangles": 23669
       },
       "studio": {
         "frames": 20,
-        "meanMs": 616.3849999999627,
-        "p95Ms": 2115.399999999907,
+        "meanMs": 644.5449999999953,
+        "p95Ms": 2219.70000000007,
         "calls": 93,
         "triangles": 47327
       }
@@ -124,11 +124,16 @@
       "pixelRatio": 1
     },
     "degradeAt1": {
-      "ms": 34326
+      "ms": 34867
     },
     "degradeAt2": {
-      "ms": 57203,
+      "ms": 57491,
       "level": 2
+    },
+    "poseClock": {
+      "wallS": 3.007,
+      "poseS": 2.4455,
+      "framesDrawn": 15
     }
   },
   "checks": [
@@ -177,7 +182,7 @@
         "lights": 3,
         "contactRenders": 1,
         "frames": 1,
-        "lastFrameMs": 5826.800000000279,
+        "lastFrameMs": 6691.900000000023,
         "caps": {
           "maxTextureSize": 8192,
           "maxSamples": 4,
@@ -193,11 +198,11 @@
       "name": "o canvas mostra a cena (não está em branco nem todo preto)",
       "ok": true,
       "observed": {
-        "mean": 65.53276827769103,
-        "sd": 48.616991110044616,
+        "mean": 65.53372051033006,
+        "sd": 48.617125602686436,
         "p50": 53.5868,
         "p99": 175.0722,
-        "bright": 0.004948611111111111,
+        "bright": 0.004949305555555556,
         "n": 1440000
       }
     },
@@ -216,7 +221,7 @@
       "scenario": "1 carga",
       "name": "o contador de chamadas conta todas as passagens do frame (não só a última)",
       "ok": true,
-      "observed": 110
+      "observed": 93
     },
     {
       "scenario": "1 carga",
@@ -342,7 +347,7 @@
       "scenario": "2 câmara",
       "name": "o percurso (T) move a câmara e fica indicado",
       "ok": true,
-      "observed": 5.349700623824427
+      "observed": 5.837409634530345
     },
     {
       "scenario": "2 câmara",
@@ -354,7 +359,7 @@
       "name": "o zoom está limitado (não atravessa a máquina)",
       "ok": true,
       "observed": {
-        "d": 1.4186946829608098,
+        "d": 1.4186946829608096,
         "min": 1.4186946829608098,
         "max": 34.04867239105943
       }
@@ -376,9 +381,9 @@
       "name": "a sombra de contacto escurece o chão por baixo do balde (≥ 8 % mais escuro do que sem ela)",
       "ok": true,
       "observed": {
-        "withContact": 40.01986158161267,
-        "withoutContact": 53.756157581611845,
-        "ratio": 0.7444702780487069,
+        "withContact": 40.01730797241728,
+        "withoutContact": 53.75462172873826,
+        "ratio": 0.7444440437950892,
         "region": {
           "x": 1027.6483908920359,
           "y": 715.0951294956192,
@@ -399,16 +404,16 @@
           "h": 89.27380616763719
         },
         "withEnvironment": {
-          "mean": 66.22503503684932,
-          "sd": 55.48339277802074,
-          "p50": 50.72319999999999,
-          "p99": 242.9278,
-          "bright": 0.034795215657847045,
+          "mean": 66.250935677178,
+          "sd": 55.48744940875996,
+          "p50": 50.007999999999996,
+          "p99": 243.2126,
+          "bright": 0.03491603237888124,
           "n": 8277
         },
         "withoutEnvironment": {
-          "mean": 18.21236247432642,
-          "sd": 28.41100981574091,
+          "mean": 18.210880778059618,
+          "sd": 28.404827547531077,
           "p50": 2.4412,
           "p99": 69.3432,
           "bright": 0.002899601304820587,
@@ -422,16 +427,16 @@
       "ok": true,
       "observed": {
         "with": {
-          "mean": 77.06969907238948,
-          "sd": 55.425834450691475,
+          "mean": 77.06258926194393,
+          "sd": 55.42303241782206,
           "p50": 61.450399999999995,
           "p99": 238,
-          "bright": 0.08194696511393426,
+          "bright": 0.08179572494454528,
           "n": 39672
         },
         "without": {
-          "mean": 36.53093112017994,
-          "sd": 51.76864660663146,
+          "mean": 36.5308328846485,
+          "sd": 51.76859098600288,
           "p50": 16.8676,
           "p99": 234.0682,
           "bright": 0.023391812865497075,
@@ -534,7 +539,7 @@
       "scenario": "5 quadros de movimento",
       "name": "entre dois quadros ok a pose aparece como suavizada e o estado é ok",
       "ok": true,
-      "observed": "solved · suavizada"
+      "observed": "solved · suavizada entre dois quadros (sem medidas)"
     },
     {
       "scenario": "5 quadros de movimento",
@@ -743,22 +748,22 @@
       "observed": {
         "light": {
           "frames": 20,
-          "meanMs": 100.30500000000465,
-          "p95Ms": 566.2000000001863,
+          "meanMs": 96.45,
+          "p95Ms": 317.9000000000233,
           "calls": 17,
           "triangles": 10263
         },
         "balanced": {
           "frames": 20,
-          "meanMs": 384.79000000001395,
-          "p95Ms": 2023.5,
+          "meanMs": 400.1449999999953,
+          "p95Ms": 2202.8000000000466,
           "calls": 52,
           "triangles": 23669
         },
         "studio": {
           "frames": 20,
-          "meanMs": 616.3849999999627,
-          "p95Ms": 2115.399999999907,
+          "meanMs": 644.5449999999953,
+          "p95Ms": 2219.70000000007,
           "calls": 93,
           "triangles": 47327
         }
@@ -771,22 +776,22 @@
       "observed": {
         "light": {
           "frames": 20,
-          "meanMs": 100.30500000000465,
-          "p95Ms": 566.2000000001863,
+          "meanMs": 96.45,
+          "p95Ms": 317.9000000000233,
           "calls": 17,
           "triangles": 10263
         },
         "balanced": {
           "frames": 20,
-          "meanMs": 384.79000000001395,
-          "p95Ms": 2023.5,
+          "meanMs": 400.1449999999953,
+          "p95Ms": 2202.8000000000466,
           "calls": 52,
           "triangles": 23669
         },
         "studio": {
           "frames": 20,
-          "meanMs": 616.3849999999627,
-          "p95Ms": 2115.399999999907,
+          "meanMs": 644.5449999999953,
+          "p95Ms": 2219.70000000007,
           "calls": 93,
           "triangles": 47327
         }
@@ -826,6 +831,125 @@
     },
     {
       "scenario": "8 desempenho",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "ponto de partida: a máquina (laranja) vê-se",
+      "ok": true,
+      "observed": 0.02509375
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "um quadro sem pose esconde a máquina, a cópia espelhada e a sombra de contacto",
+      "ok": true,
+      "observed": {
+        "vis": {
+          "stage": false,
+          "root": false,
+          "mirror": false,
+          "contact": false
+        },
+        "orange": 0
+      }
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "o estado diz «sem pose» e a legenda diz porquê",
+      "ok": true,
+      "observed": "sem pose"
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "o quadro seguinte com pose repõe tudo, igual à pose de referência",
+      "ok": true,
+      "observed": {
+        "vis2": {
+          "stage": true,
+          "root": true,
+          "mirror": false,
+          "contact": true
+        },
+        "wantMirror": false,
+        "same": true
+      }
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "a imagem depende do quadro escolhido e não do histórico (esconder, mostrar, esconder)",
+      "ok": true
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "a legenda de bloqueio desaparece quando o quadro recupera",
+      "ok": true,
+      "observed": {
+        "blocked": "Bloqueado: Quadro bloqueado de teste: a pose mostrada é a última válida.",
+        "cleared": ""
+      }
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "um quadro limpo não apaga uma notificação que não é do quadro",
+      "ok": true,
+      "observed": {
+        "notice": "Qualidade: Leve",
+        "after": "Qualidade: Leve"
+      }
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "sequência recusada: digest",
+      "ok": true,
+      "observed": "Quadro de movimento recusado: frames[1].assemblyDigest assemblyDigest diferente: os quadros foram calculados sobre montagens efectivas diferentes."
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "sequência recusada: world",
+      "ok": true,
+      "observed": "Quadro de movimento recusado: frames[1].worldFrameId worldFrameId diferente («outro-mundo» e «world»): poses em referenciais diferentes não se misturam."
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "sequência recusada: assembly",
+      "ok": true,
+      "observed": "Quadro de movimento recusado: frames[0].assemblyId Os quadros são da montagem «outra-montagem», não da montagem em cena («excavator-fixture-1»)."
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "sequência recusada: parts",
+      "ok": true,
+      "observed": "Quadro de movimento recusado: frames[1].parts As partes do quadro não correspondem às da montagem; em falta: bucket."
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "a recusa não troca a fonte de pose",
+      "ok": true
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "o tempo de pose acompanha o relógio real (≥ 2,4 s em 3 s), apesar de frames lentos",
+      "ok": true,
+      "observed": {
+        "wallS": 3.007,
+        "poseS": 2.4455,
+        "framesDrawn": 15
+      }
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "chega ao fim da sequência (4 s) a tempo e para",
+      "ok": true,
+      "observed": {
+        "timeS": 4,
+        "playing": false,
+        "kind": "motion-frames"
+      }
+    },
+    {
+      "scenario": "9 revisão",
       "name": "sem erros na consola",
       "ok": true,
       "observed": []
