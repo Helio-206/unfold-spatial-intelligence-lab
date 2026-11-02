@@ -2,7 +2,7 @@ import { sha256Hex } from '../../core/canonical';
 import type { Provenance as CanonicalProvenance } from '../../core/provenance';
 import type { Assembly, Part as CanonicalPart, Joint as CanonicalJoint, Pose, Quantity, Vec3, Quat } from '../contracts/assembly.v1';
 import { validateAssembly } from '../contracts/assembly.v1';
-import type { AssemblyPart, AssemblyProposalV1, AssemblyJoint, AssemblyValueSource } from './contracts';
+import type { AssemblyDimension, AssemblyPart, AssemblyProposalV1, AssemblyJoint, AssemblyValueSource } from './contracts';
 import { validateAssemblyProposal } from './contracts';
 import { RECONSTRUCTION_SOURCE_FRAME } from './library';
 
@@ -156,8 +156,8 @@ function sourceKind(kind: AssemblyProposalV1['source']['kind']): 'drawing' | 'us
   return kind === 'technical_drawing' ? 'drawing' : kind === 'text' ? 'user_input' : 'other';
 }
 
-function proposalPartForCanonical(part: CanonicalPart, proposalParts: AssemblyPart[]): AssemblyPart | undefined {
-  const candidates = proposalParts.filter((candidate) => {
+function proposalPartsForCanonical(part: CanonicalPart, proposalParts: AssemblyPart[]): AssemblyPart[] {
+  return proposalParts.filter((candidate) => {
     if (part.role === 'chassis') return candidate.role === 'chassis';
     if (part.role === 'upper_body') return candidate.role === 'house';
     if (part.role === 'boom' || part.role === 'stick' || part.role === 'bucket') return candidate.role === part.role;
@@ -167,7 +167,6 @@ function proposalPartForCanonical(part: CanonicalPart, proposalParts: AssemblyPa
     }
     return false;
   });
-  return candidates[0];
 }
 
 function proposalJointForCanonical(joint: CanonicalJoint, proposal: AssemblyProposalV1, mapping: Map<string, AssemblyPart>): AssemblyJoint | undefined {
@@ -190,18 +189,32 @@ function cloneAssembly(value: Assembly): Assembly { return structuredClone(value
 
 type ApprovedDimension = { value: number; evidenceIds: string[] };
 
-function approvedDimension(part: AssemblyPart | undefined, name: string, reasons: string[]): ApprovedDimension | undefined {
-  const dimension = part?.dimensions[name];
+function observedDimension(dimension: AssemblyDimension | undefined, label: string, reasons: string[]): ApprovedDimension | undefined {
   if (!dimension || dimension.source !== 'observed') return undefined;
   if (dimension.value === null || !Number.isFinite(dimension.value) || dimension.value <= 0) {
-    reasons.push(`dimensão observada inválida: ${part?.id ?? 'parte'}.${name}`);
+    reasons.push(`dimensão observada inválida: ${label}`);
     return undefined;
   }
-  if (dimension.unit !== 'm') {
-    reasons.push(`dimensão observada sem unidade de engenharia suportada: ${part?.id ?? 'parte'}.${name} (${dimension.unit})`);
+  if (dimension.unit !== 'm' && dimension.unit !== 'mm') {
+    reasons.push(`dimensão observada sem unidade de engenharia suportada: ${label} (${dimension.unit})`);
     return undefined;
   }
-  return { value: dimension.value, evidenceIds: dimension.evidenceIds };
+  return { value: dimension.unit === 'mm' ? dimension.value / 1000 : dimension.value, evidenceIds: dimension.evidenceIds };
+}
+
+function approvedDimension(part: AssemblyPart | undefined, name: string, reasons: string[]): ApprovedDimension | undefined {
+  return observedDimension(part?.dimensions[name], `${part?.id ?? 'parte'}.${name}`, reasons);
+}
+
+function reconcileObservedDimensions(dimensions: Array<{ label: string; value: ApprovedDimension | undefined }>, actuatorId: string, reasons: string[]): ApprovedDimension | undefined {
+  const observed = dimensions.filter((entry): entry is { label: string; value: ApprovedDimension } => entry.value !== undefined);
+  if (!observed.length) return undefined;
+  const reference = observed[0]!.value.value;
+  if (observed.some((entry) => Math.abs(entry.value.value - reference) > 1e-9)) {
+    reasons.push(`cursos observados conflitantes para ${actuatorId}: ${observed.map((entry) => entry.label).join(', ')}`);
+    return undefined;
+  }
+  return { value: reference, evidenceIds: [...new Set(observed.flatMap((entry) => entry.value.evidenceIds))] };
 }
 
 function scaleLocalPartX(part: CanonicalPart, ratio: number, evidenceIds: string[]): CanonicalPart {
@@ -308,14 +321,84 @@ export function adaptReviewedProposalToAssembly(proposalInput: AssemblyProposalV
   if (!review || !review.reviewerId.trim() || !review.authorizationId.trim()) reasons.push('revisão humana e authorizationId são obrigatórios');
   if (proposal.validation.status === 'blocked') reasons.push('a proposta está bloqueada');
   if (proposal.modifications.some((modification) => modification.review === 'pending')) reasons.push('há modificações pendentes');
+  for (const modification of proposal.modifications) if (modification.review === 'verified') reasons.push(`modificação verificada sem adaptação suportada: ${modification.id}`);
+  for (const part of proposal.parts) {
+    if (part.review === 'rejected') reasons.push(`parte rejeitada: ${part.id}`);
+    if (part.transform.scale.some((value) => Math.abs(value - 1) > 1e-12)) reasons.push(`escala não suportada na conversão canónica: ${part.id}`);
+  }
+  for (const joint of proposal.joints) {
+    if (joint.review === 'rejected') reasons.push(`junta rejeitada: ${joint.id}`);
+    if (joint.anchor.some((value) => Math.abs(value) > 1e-12)) reasons.push(`anchor não suportado na conversão canónica: ${joint.id}`);
+  }
+  for (const actuator of proposal.actuators) if (actuator.review === 'rejected') reasons.push(`actuador rejeitado: ${actuator.id}`);
   if (reasons.length) throw new ReconstructionAdapterBlockedError(reasons);
   const seed = cloneAssembly(engineeringSeedInput as Assembly);
   const mapping = new Map<string, AssemblyPart>();
+  const consumedProposalPartIds = new Set<string>();
   for (const canonicalPart of seed.parts) {
-    const proposalPart = proposalPartForCanonical(canonicalPart, proposal.parts);
+    const candidates = proposalPartsForCanonical(canonicalPart, proposal.parts);
+    if (candidates.length > 1) reasons.push(`parte canónica com correspondência ambígua: ${canonicalPart.id}`);
+    const proposalPart = candidates.length === 1 ? candidates[0] : undefined;
     if (!proposalPart && canonicalPart.role !== 'link' && canonicalPart.role !== 'other') reasons.push(`parte obrigatória sem correspondência: ${canonicalPart.id}`);
-    if (proposalPart) mapping.set(canonicalPart.id, proposalPart);
+    if (proposalPart) {
+      mapping.set(canonicalPart.id, proposalPart);
+      consumedProposalPartIds.add(proposalPart.id);
+    }
   }
+  for (const proposalPart of proposal.parts) {
+    if (consumedProposalPartIds.has(proposalPart.id)) continue;
+    if (proposalPart.review === 'verified') reasons.push(`parte verificada sem correspondência canónica: ${proposalPart.id}`);
+    for (const [name, dimension] of Object.entries(proposalPart.dimensions)) {
+      if (dimension.source === 'observed') reasons.push(`dimensão observada em parte sem correspondência canónica: ${proposalPart.id}.${name}`);
+    }
+    if (proposalPart.role !== 'track') reasons.push(`parte proposta sem correspondência canónica: ${proposalPart.id}`);
+  }
+  if (reasons.length) throw new ReconstructionAdapterBlockedError(reasons);
+
+  const canonicalByProposalPartId = new Map([...mapping].map(([canonicalId, proposalPart]) => [proposalPart.id, canonicalId]));
+  for (const [canonicalId, proposalPart] of mapping) {
+    const incomingJoint = seed.joints.find((joint) => joint.childPartId === canonicalId);
+    const expectedParentId = incomingJoint?.parentPartId ?? null;
+    const actualParentId = proposalPart.parentId === null ? null : canonicalByProposalPartId.get(proposalPart.parentId);
+    if (actualParentId !== expectedParentId) reasons.push(`hierarquia de parte incompatível: ${proposalPart.id}`);
+  }
+
+  const proposalJointMapping = new Map<string, CanonicalJoint>();
+  for (const proposalJoint of proposal.joints) {
+    const canonicalParent = canonicalByProposalPartId.get(proposalJoint.parentPartId);
+    const canonicalChild = canonicalByProposalPartId.get(proposalJoint.childPartId);
+    const canonicalJoint = canonicalParent && canonicalChild
+      ? seed.joints.find((joint) => joint.parentPartId === canonicalParent && joint.childPartId === canonicalChild)
+      : undefined;
+    if (!canonicalJoint) reasons.push(`junta sem correspondência canónica: ${proposalJoint.id}`);
+    else {
+      proposalJointMapping.set(proposalJoint.id, canonicalJoint);
+      if (canonicalJoint.type !== proposalJoint.type) reasons.push(`tipo de junta incompatível: ${proposalJoint.id} (${proposalJoint.type} != ${canonicalJoint.type})`);
+    }
+  }
+
+  const proposalActuatorMapping = new Map<string, AssemblyProposalV1['actuators'][number]>();
+  const consumedProposalActuatorIds = new Set<string>();
+  for (const canonicalActuator of seed.actuators) {
+    if (canonicalActuator.kind !== 'hydraulic_cylinder') continue;
+    const proposalBarrel = mapping.get(canonicalActuator.barrelPartId);
+    const proposalRod = mapping.get(canonicalActuator.rodPartId);
+    const candidates = proposal.actuators.filter((actuator) => actuator.bodyPartId === proposalBarrel?.id && actuator.rodPartId === proposalRod?.id);
+    if (candidates.length !== 1) {
+      reasons.push(candidates.length === 0 ? `actuador canónico sem correspondência: ${canonicalActuator.id}` : `actuador canónico com correspondência ambígua: ${canonicalActuator.id}`);
+      continue;
+    }
+    const candidate = candidates[0]!;
+    if (candidate.kind !== 'hydraulic_cylinder') reasons.push(`tipo de actuador incompatível: ${candidate.id}`);
+    const mappedJointIds = candidate.jointIds.map((jointId) => proposalJointMapping.get(jointId)?.id);
+    const expectedJointIds = [canonicalActuator.drives.jointId, canonicalActuator.slideJointId];
+    if (mappedJointIds.some((jointId) => jointId === undefined) || mappedJointIds.length !== expectedJointIds.length || expectedJointIds.some((jointId) => !mappedJointIds.includes(jointId))) {
+      reasons.push(`juntas de actuador incompatíveis: ${candidate.id}`);
+    }
+    proposalActuatorMapping.set(canonicalActuator.id, candidate);
+    consumedProposalActuatorIds.add(candidate.id);
+  }
+  for (const proposalActuator of proposal.actuators) if (!consumedProposalActuatorIds.has(proposalActuator.id)) reasons.push(`actuador sem correspondência canónica: ${proposalActuator.id}`);
   if (reasons.length) throw new ReconstructionAdapterBlockedError(reasons);
 
   const globalPoses = new Map<string, SourcePose>();
@@ -394,19 +477,22 @@ export function adaptReviewedProposalToAssembly(proposalInput: AssemblyProposalV
   const actuatorStrokeActions = new Map<string, ApprovedDimension>();
   for (const actuator of seed.actuators) {
     if (actuator.kind !== 'hydraulic_cylinder') continue;
+    const proposalActuator = proposalActuatorMapping.get(actuator.id);
+    const actuatorStroke = observedDimension(proposalActuator?.stroke, `${proposalActuator?.id ?? actuator.id}.stroke`, reasons);
     const barrel = dimensionActions.get(actuator.barrelPartId)?.dimension;
     const rod = dimensionActions.get(actuator.rodPartId)?.dimension;
-    if (barrel && rod && Math.abs(barrel.value - rod.value) > 1e-9) {
-      reasons.push(`cursos observados conflitantes entre barril e haste de ${actuator.id}`);
-      continue;
-    }
-    const chosen = barrel ?? rod;
+    const chosen = reconcileObservedDimensions([
+      { label: proposalActuator?.id ?? actuator.id, value: actuatorStroke },
+      { label: mapping.get(actuator.barrelPartId)?.id ?? actuator.barrelPartId, value: barrel },
+      { label: mapping.get(actuator.rodPartId)?.id ?? actuator.rodPartId, value: rod },
+    ], actuator.id, reasons);
     if (chosen) actuatorStrokeActions.set(actuator.id, chosen);
   }
   if (reasons.length) throw new ReconstructionAdapterBlockedError(reasons);
   seed.actuators = seed.actuators.map((actuator) => {
     const proposalPart = actuator.kind === 'hydraulic_cylinder' ? mapping.get(actuator.barrelPartId) : undefined;
-    const proposalEvidence = proposalPart?.evidenceIds ?? [];
+    const proposalActuator = actuator.kind === 'hydraulic_cylinder' ? proposalActuatorMapping.get(actuator.id) : undefined;
+    const proposalEvidence = [...new Set([...(proposalActuator?.evidenceIds ?? []), ...(proposalPart?.evidenceIds ?? [])])];
     return {
       ...actuator,
       provenance: conversionProvenance(proposalEvidence),

@@ -230,6 +230,101 @@ describe('living image-to-assembly contracts', () => {
     expect(() => adaptReviewedProposalToAssembly(conflicting, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'stroke-reviewer', authorizationId: 'stroke-rod-002' })).toThrow(/cursos observados conflitantes/);
   });
 
+  it('applies an actuator-only observed stroke with unit normalization and coherent provenance', () => {
+    const proposal = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'actuator-stroke', 'b'.repeat(64))));
+    const proposalActuator = proposal.actuators.find((actuator) => actuator.id === 'actuator-boom')!;
+    proposalActuator.stroke = { value: 1000, unit: 'mm', source: 'observed', evidenceIds: ['actuator-stroke-evidence'], requiredForVerification: true };
+    const adapted = adaptReviewedProposalToAssembly(proposal, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'stroke-reviewer', authorizationId: 'stroke-actuator-001' });
+    const actuator = adapted.actuators.find((candidate) => candidate.id === 'boom_cylinder')!;
+    if (actuator.kind !== 'hydraulic_cylinder') throw new Error('Expected hydraulic cylinder.');
+    expect(actuator.stroke.max.value).toBe(1);
+    expect(actuator.stroke.max.provenance.evidence).toEqual([{ sourceId: 'actuator-stroke-evidence' }]);
+    expect(actuator.provenance.evidence).toEqual([{ sourceId: 'actuator-stroke-evidence' }]);
+    expect(adapted.joints.find((joint) => joint.id === 'boom_cyl_slide')!.limits!.max.value).toBe(1);
+    const rodShape = adapted.parts.find((part) => part.id === 'boom_cyl_rod')!.shapes[0]!;
+    if (rodShape.kind === 'cylinder') expect(rodShape.halfLengthM).toBeCloseTo(0.7515 / 0.76, 9);
+    expect(validateAssembly(adapted)).toEqual({ ok: true, issues: [] });
+  });
+
+  it('accepts matching actuator, barrel and rod strokes and combines their evidence', () => {
+    const proposal = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'matching-strokes', 'c'.repeat(64))));
+    proposal.actuators.find((actuator) => actuator.id === 'actuator-boom')!.stroke = { value: 1000, unit: 'mm', source: 'observed', evidenceIds: ['actuator-evidence'], requiredForVerification: true };
+    proposal.parts.find((part) => part.id === 'part-boom-cylinder-body')!.dimensions.stroke = { value: 1, unit: 'm', source: 'observed', evidenceIds: ['barrel-evidence'], requiredForVerification: true };
+    proposal.parts.find((part) => part.id === 'part-boom-cylinder-rod')!.dimensions.stroke = { value: 1000, unit: 'mm', source: 'observed', evidenceIds: ['rod-evidence'], requiredForVerification: true };
+    const adapted = adaptReviewedProposalToAssembly(proposal, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'stroke-reviewer', authorizationId: 'stroke-matching-001' });
+    const actuator = adapted.actuators.find((candidate) => candidate.id === 'boom_cylinder')!;
+    if (actuator.kind !== 'hydraulic_cylinder') throw new Error('Expected hydraulic cylinder.');
+    expect(actuator.stroke.max.value).toBe(1);
+    expect(actuator.provenance.evidence?.map((evidence) => evidence.sourceId)).toEqual(['actuator-evidence', 'barrel-evidence', 'rod-evidence']);
+  });
+
+  it('rejects conflicting or unsupported observed stroke measurements', () => {
+    const conflicting = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'conflicting-actuator-stroke', 'd'.repeat(64))));
+    conflicting.actuators.find((actuator) => actuator.id === 'actuator-boom')!.stroke = { value: 0.9, unit: 'm', source: 'observed', evidenceIds: ['actuator-evidence'], requiredForVerification: true };
+    conflicting.parts.find((part) => part.id === 'part-boom-cylinder-body')!.dimensions.stroke = { value: 1, unit: 'm', source: 'observed', evidenceIds: ['barrel-evidence'], requiredForVerification: true };
+    expect(() => adaptReviewedProposalToAssembly(conflicting, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'stroke-reviewer', authorizationId: 'stroke-conflict-001' })).toThrow(/cursos observados conflitantes/);
+
+    const unsupported = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'unsupported-actuator-stroke', 'e'.repeat(64))));
+    unsupported.actuators.find((actuator) => actuator.id === 'actuator-boom')!.stroke = { value: 1, unit: 'unknown', source: 'observed', evidenceIds: ['unknown-unit-evidence'], requiredForVerification: true };
+    expect(() => adaptReviewedProposalToAssembly(unsupported, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'stroke-reviewer', authorizationId: 'stroke-unit-001' })).toThrow(/unidade de engenharia suportada/);
+  });
+
+  it('blocks an explicitly rejected required part', () => {
+    const proposal = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'rejected-part', 'f'.repeat(64))));
+    proposal.parts.find((part) => part.id === 'part-bucket')!.review = 'rejected';
+    expect(() => adaptReviewedProposalToAssembly(proposal, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'reviewer', authorizationId: 'reject-part-001' })).toThrow(/parte rejeitada: part-bucket/);
+  });
+
+  it('blocks an explicitly rejected required joint', () => {
+    const proposal = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'rejected-joint', '0'.repeat(64))));
+    proposal.joints.find((joint) => joint.id === 'joint-bucket')!.review = 'rejected';
+    expect(() => adaptReviewedProposalToAssembly(proposal, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'reviewer', authorizationId: 'reject-joint-001' })).toThrow(/junta rejeitada: joint-bucket/);
+  });
+
+  it('blocks an explicitly rejected required actuator', () => {
+    const proposal = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'rejected-actuator', '1'.repeat(64))));
+    proposal.actuators.find((actuator) => actuator.id === 'actuator-boom')!.review = 'rejected';
+    expect(() => adaptReviewedProposalToAssembly(proposal, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'reviewer', authorizationId: 'reject-actuator-001' })).toThrow(/actuador rejeitado: actuator-boom/);
+  });
+
+  it('fails closed for reviewed proposal fields that have no canonical conversion', () => {
+    const scaled = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'unsupported-scale', '2'.repeat(64))));
+    scaled.parts.find((part) => part.id === 'part-boom')!.transform.scale = [2, 1, 1];
+    expect(() => adaptReviewedProposalToAssembly(scaled, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'reviewer', authorizationId: 'unsupported-scale-001' })).toThrow(/escala não suportada/);
+
+    const anchored = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'unsupported-anchor', '3'.repeat(64))));
+    anchored.joints.find((joint) => joint.id === 'joint-boom')!.anchor = [0.1, 0, 0];
+    expect(() => adaptReviewedProposalToAssembly(anchored, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'reviewer', authorizationId: 'unsupported-anchor-001' })).toThrow(/anchor não suportado/);
+
+    const modified = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineTextObservation('Aumenta o boom.', 'verified-modification')));
+    modified.modifications[0]!.review = 'verified';
+    expect(() => adaptReviewedProposalToAssembly(modified, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'reviewer', authorizationId: 'verified-modification-001' })).toThrow(/modificação verificada sem adaptação/);
+  });
+
+  it('fails closed for missing or inconsistent required actuator and joint mappings', () => {
+    const missingActuator = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'missing-actuator', '4'.repeat(64))));
+    missingActuator.actuators = missingActuator.actuators.filter((actuator) => actuator.id !== 'actuator-boom');
+    expect(() => adaptReviewedProposalToAssembly(missingActuator, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'reviewer', authorizationId: 'missing-actuator-001' })).toThrow(/actuador canónico sem correspondência: boom_cylinder/);
+
+    const wrongJointType = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'wrong-joint-type', '5'.repeat(64))));
+    wrongJointType.joints.find((joint) => joint.id === 'joint-boom')!.type = 'fixed';
+    expect(() => adaptReviewedProposalToAssembly(wrongJointType, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'reviewer', authorizationId: 'wrong-joint-type-001' })).toThrow(/tipo de junta incompatível/);
+  });
+
+  it('fails closed for unconsumed observed geometry and inconsistent proposal topology', () => {
+    const unmappedDimension = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'unmapped-track-dimension', '6'.repeat(64))));
+    unmappedDimension.parts.find((part) => part.id === 'part-track-left')!.dimensions.length = { value: 4, unit: 'm', source: 'observed', evidenceIds: ['track-length-evidence'], requiredForVerification: true };
+    expect(() => adaptReviewedProposalToAssembly(unmappedDimension, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'reviewer', authorizationId: 'unmapped-dimension-001' })).toThrow(/dimensão observada em parte sem correspondência canónica/);
+
+    const wrongHierarchy = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'wrong-hierarchy', '7'.repeat(64))));
+    wrongHierarchy.parts.find((part) => part.id === 'part-boom')!.parentId = 'part-chassis';
+    expect(() => adaptReviewedProposalToAssembly(wrongHierarchy, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'reviewer', authorizationId: 'wrong-hierarchy-001' })).toThrow(/hierarquia de parte incompatível/);
+
+    const wrongActuatorJoints = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'wrong-actuator-joints', '8'.repeat(64))));
+    wrongActuatorJoints.actuators.find((actuator) => actuator.id === 'actuator-boom')!.jointIds = ['joint-stick', 'joint-boom-cylinder-slide'];
+    expect(() => adaptReviewedProposalToAssembly(wrongActuatorJoints, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'reviewer', authorizationId: 'wrong-actuator-joints-001' })).toThrow(/juntas de actuador incompatíveis/);
+  });
+
   it('blocks an approved dimension when no coherent canonical mapping exists', () => {
     const proposal = buildExcavatorAssembly(createOfflineImageObservation('image', 'bucket-width', '5'.repeat(64)));
     const bucket = proposal.parts.find((part) => part.id === 'part-bucket')!;

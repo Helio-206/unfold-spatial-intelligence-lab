@@ -163,6 +163,9 @@ function partDimensions(observation: ExcavatorObservationV1, spec: PartSpec): Re
 }
 
 function partParentId(spec: PartSpec): string | null {
+  if (spec.id === 'part-boom-cylinder-rod') return 'part-boom-cylinder-body';
+  if (spec.id === 'part-stick-cylinder-rod') return 'part-stick-cylinder-body';
+  if (spec.id === 'part-bucket-cylinder-rod') return 'part-bucket-cylinder-body';
   if (spec.template.parentRole === null) return null;
   if (spec.template.parentRole === 'chassis') return 'part-chassis';
   if (spec.template.parentRole === 'house') return 'part-house';

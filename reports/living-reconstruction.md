@@ -55,12 +55,27 @@ The live path was exercised from the PR worktree with the local ignored `.env`: 
 - Missing engineering shapes, points, limits, actuator topology or review authorization blocks adaptation instead of manufacturing verified constraints.
 - `Joint.origin` is written at q=0: the proposed reference pose is reconciled by removing the seed `referenceValue` motion. Forward-kinematics regression checks compare the adapted result with the proposal and the independent fixture reference pose.
 - Approved boom/stick lengths update local box geometry, named points, child joint anchors and related constraint provenance. Approved cylinder strokes update actuator maxima, slide limits and rod geometry. Observed dimensions without a coherent canonical mapping block adaptation explicitly.
-- Every mapped parent/child pose, including cylinder base and slide mounts, is reconciled to q=0 before FK. Mapped loop constraints are checked in the reference configuration; inconsistent geometry blocks conversion. Barrel and rod stroke observations must agree or conversion blocks.
+- Every mapped parent/child pose, including cylinder base and slide mounts, is reconciled to q=0 before FK. Mapped loop constraints are checked in the reference configuration; inconsistent geometry blocks conversion.
+- Cylinder stroke is reconciled across the proposal actuator, barrel and rod. Metres and millimetres normalize to metres; conflicts or unknown units block. The selected value and combined evidence update the canonical actuator, prismatic limit, rod geometry and provenance together.
+- Rejected parts, joints and actuators block adaptation. Pending components remain eligible only with the existing explicit human authorization. Verified modifications block until a supported conversion exists.
+- The boundary audit also blocks non-unit scale, non-zero proposal anchors, incompatible part hierarchy/joint type/actuator joints, missing or ambiguous canonical mappings and observed dimensions on unmapped parts. Template-only pending tracks remain proposal data and are not promoted to canonical geometry.
+
+## Proposal-to-canonical boundary audit
+
+| Proposal field | Canonical handling | Negative path |
+| --- | --- | --- |
+| Part transform | Translation/rotation converted; scale must be identity | Non-unit scale blocks |
+| Part dimensions | Supported observed length/stroke normalized and applied | Unsupported or unmapped observed dimensions block |
+| Part hierarchy | Must agree with the canonical joint tree | Mismatched parent blocks |
+| Joint endpoints/type/axis | Mapped to the canonical joint; axis converted | Missing mapping, type mismatch or non-zero unsupported anchor blocks |
+| Actuator body/rod/joints/stroke | Must map uniquely; all observed stroke sources reconcile | Missing/ambiguous mapping, joint mismatch, unit error or value conflict blocks |
+| Review state | Pending requires explicit authorization; rejected blocks | Separate part, joint and actuator regressions |
+| Modifications | Pending and verified operations are not silently converted | Both states block; rejected operations remain dismissed |
 
 ## Verification
 
-- Focused reconstruction tests: 19 passed, including transform isolation across independently generated proposals and canonical adaptation/FK of a subsequent proposal.
-- Full suite: 72 files, 1409 tests passed with `npx vitest run --testTimeout=15000` after synchronizing `main@ff16954`. The unparameterized `npm test` still times out in the existing rendering lifecycle test at its 5 s default; no rendering code was changed here.
+- Focused reconstruction tests: 28 passed, including actuator-only/matching/conflicting stroke inputs, rejected components and negative boundary/topology paths.
+- Full suite: 72 files, 1418 tests passed with `npx vitest run --testTimeout=15000` after synchronizing `main@ff16954`. The unparameterized `npm test` passed 1417 tests and timed out only in the existing rendering lifecycle test at its 5 s default; no rendering code was changed here.
 - TypeScript and production build: passed; existing contact-variable and large-chunk warnings remain.
 - `git diff --check`: passed.
 
@@ -70,4 +85,3 @@ The live path was exercised from the PR worktree with the local ignored `.env`: 
 - No hidden excavator geometry, masses, materials, hydraulic pressures, cylinder bores, joint limits or structural safety claims are inferred as verified.
 - The current library supports the generic excavator family only; the mechanical solver and renderer are intentionally untouched.
 - Human review and an engineering seed remain required before simulation.
-- Dev-Brain STATUS/HANDOFF update is pending because the local Obsidian MCP endpoint was unavailable during this handoff.
