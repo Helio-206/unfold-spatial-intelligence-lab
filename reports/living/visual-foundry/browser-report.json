@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-02T20:36:16.856Z",
+  "generatedAt": "2026-11-02T21:17:41.625Z",
   "renderer": "Chromium via playwright-core; SwiftShader software WebGL in this container",
   "apiCalls": 3,
   "apiCallsNote": "All /api calls were intercepted in the browser (mocked). No model was called.",
@@ -167,17 +167,17 @@
     {
       "name": "performance measured at rest resolution",
       "ok": true,
-      "detail": "{\"fps\":\"0.75\",\"p50ms\":\"2126\",\"drawCalls\":139,\"triangles\":512925,\"pixelRatio\":1,\"software\":true}"
+      "detail": "{\"fps\":\"0.75\",\"p50ms\":\"2124\",\"drawCalls\":139,\"triangles\":512925,\"pixelRatio\":1,\"software\":true}"
     },
     {
       "name": "frame latency distribution recorded",
       "ok": true,
-      "detail": "{\"pixelRatio\":1,\"p50ms\":\"2126.3\",\"p95ms\":\"2170.1\",\"drawCalls\":139,\"triangles\":512925,\"software\":true}"
+      "detail": "{\"pixelRatio\":1,\"p50ms\":\"2123.6\",\"p95ms\":\"2538.6\",\"drawCalls\":139,\"triangles\":512925,\"software\":true}"
     },
     {
       "name": "interaction responsiveness (fixture ask → grounded)",
       "ok": true,
-      "detail": "23 ms"
+      "detail": "26 ms"
     },
     {
       "name": "dispose removes canvas and DOM",
