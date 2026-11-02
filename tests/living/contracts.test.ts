@@ -63,6 +63,20 @@ describe('unfold.assembly.v1: o validador recusa o que não é uma montagem', ()
     ['cilindro com a junta de curso trocada', (a) => { (a.actuators[1] as { slideJointId: string }).slideJointId = 'boom_joint'; }, 'INVALID_ACTUATOR'],
     ['curso invertido', (a) => { const c = a.actuators[1] as { stroke: { min: { value: number }; max: { value: number } } }; c.stroke.min.value = 5; }, 'INVALID_LIMITS'],
     ['transmissão com restrições a mais', (a) => { (a.actuators[1] as { drives: { constraintIds: string[] } }).drives.constraintIds.push('stick_cyl_closure'); }, 'INVALID_ACTUATOR'],
+    ['referenciais estáticos em ciclo (A → B → A)', (a) => {
+      const pose = a.frames[0]!.pose;
+      a.frames.push({ id: 'fa', parentFrameId: 'fb', kind: 'static', pose, description: 'a' }, { id: 'fb', parentFrameId: 'fa', kind: 'static', pose, description: 'b' });
+    }, 'INVALID_FRAME'],
+    ['referencial estático que é pai de si próprio', (a) => { a.frames.push({ id: 'fa', parentFrameId: 'fa', kind: 'static', pose: a.frames[0]!.pose, description: 'a' }); }, 'INVALID_FRAME'],
+    ['cadeia estática que não chega ao mundo (ciclo de três)', (a) => {
+      const pose = a.frames[0]!.pose;
+      a.frames.push({ id: 'fa', parentFrameId: 'fc', kind: 'static', pose, description: 'a' }, { id: 'fb', parentFrameId: 'fa', kind: 'static', pose, description: 'b' }, { id: 'fc', parentFrameId: 'fb', kind: 'static', pose, description: 'c' });
+    }, 'INVALID_FRAME'],
+    ['raiz colocada num referencial dentro de um ciclo', (a) => {
+      const pose = a.frames[0]!.pose;
+      a.frames.push({ id: 'fa', parentFrameId: 'fb', kind: 'static', pose, description: 'a' }, { id: 'fb', parentFrameId: 'fa', kind: 'static', pose, description: 'b' });
+      a.root.frameId = 'fa';
+    }, 'INVALID_FRAME'],
     ['sem referencial do mundo', (a) => { a.frames = []; }, 'INVALID_FRAME'],
     ['massa em falta (tem de ser null, não omitida)', (a) => { delete (a.parts[0] as Partial<Assembly['parts'][number]>).massKg; }, 'MISSING_FIELD'],
     ['política de colisão inválida', (a) => { (a.collision as { onContact: string }).onContact = 'ignore'; }, 'INVALID_ENUM'],
@@ -71,6 +85,11 @@ describe('unfold.assembly.v1: o validador recusa o que não é uma montagem', ()
     const assembly = clone();
     mutate(assembly);
     expect(issues(assembly)).toContain(code);
+  });
+  it('uma cadeia estática válida (filho depois do pai e pai depois do filho na lista) é aceite', () => {
+    const assembly = clone(); const pose = assembly.frames[0]!.pose;
+    assembly.frames.push({ id: 'site', parentFrameId: 'base', kind: 'static', pose, description: 'site' }, { id: 'base', parentFrameId: 'world', kind: 'static', pose, description: 'base' });
+    expect(validateAssembly(assembly).ok).toBe(true);
   });
   it('não-objectos e assertAssembly', () => {
     expect(issues(null)).toEqual(['NOT_AN_OBJECT']);
