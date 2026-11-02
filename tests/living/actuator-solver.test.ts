@@ -97,6 +97,29 @@ describe('relação curso → ângulo (independente: bissecção sobre o comprim
 });
 
 describe('recusas explícitas: cursos e geometrias que o motor não consegue provar', () => {
+  it('bloqueia a configuração de juntas quando o curso excede o limite do actuador', () => {
+    const solved = solveActuatorConfiguration(EXCAVATOR_ASSEMBLY_V1, { ...referenceStrokes(), boom_cylinder: 0.65 });
+    if (!solved.ok) throw new Error(solved.message);
+    const assembly = clone();
+    actuator(assembly, 'boom_cylinder').stroke.max.value = 0.6;
+    const frame = evaluateConfiguration(assembly, solved.config);
+    expect(frame).toMatchObject({ status: 'blocked', poseBasis: 'reference', blocked: { code: 'STROKE_OUT_OF_RANGE' } });
+    expect(frame.actuators.find((item) => item.actuatorId === 'boom_cylinder')?.withinLimits).toBe(false);
+    expect(validateMotionFrame(frame)).toEqual({ ok: true, issues: [] });
+  });
+
+  it('recusa timestamps inválidos tanto em quadros resolvidos como em recusas do solver', () => {
+    for (const strokes of [referenceStrokes(), { ...referenceStrokes(), boom_cylinder: 0.9 }]) {
+      for (const timestampS of [-1, Number.NaN, Number.POSITIVE_INFINITY]) expect(() => evaluateActuators(EXCAVATOR_ASSEMBLY_V1, strokes, { timestampS })).toThrow(/ENGINE_INVALID_TIMESTAMP/);
+    }
+  });
+
+  it('recusa índices inválidos tanto em quadros resolvidos como em recusas do solver', () => {
+    for (const strokes of [referenceStrokes(), { ...referenceStrokes(), boom_cylinder: 0.9 }]) {
+      for (const index of [-1, 0.5]) expect(() => evaluateActuators(EXCAVATOR_ASSEMBLY_V1, strokes, { index })).toThrow(/ENGINE_INVALID_INDEX/);
+    }
+    for (const index of [-1, 0.5]) expect(() => evaluateConfiguration(EXCAVATOR_ASSEMBLY_V1, referenceConfiguration(EXCAVATOR_ASSEMBLY_V1), { index })).toThrow(/ENGINE_INVALID_INDEX/);
+  });
   it('um curso negativo sai do intervalo e é bloqueado, sem pose inventada', () => {
     const frame = evaluateActuators(EXCAVATOR_ASSEMBLY_V1, { ...referenceStrokes(), boom_cylinder: -0.01 });
     expect(frame).toMatchObject({ status: 'blocked', poseBasis: 'reference', blocked: { code: 'STROKE_OUT_OF_RANGE' } });

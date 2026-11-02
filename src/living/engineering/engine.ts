@@ -48,6 +48,14 @@ export type EvaluationOptions = {
   collisionBackend?: CollisionBackend;
 };
 
+function frameCoordinates(options: EvaluationOptions): { timestampS: number; index: number | null } {
+  const timestampS = options.timestampS ?? 0;
+  if (!Number.isFinite(timestampS) || timestampS < 0) throw new Error('ENGINE_INVALID_TIMESTAMP: o instante tem de ser finito e ≥ 0.');
+  const index = options.index ?? null;
+  if (index !== null && (!Number.isInteger(index) || index < 0)) throw new Error('ENGINE_INVALID_INDEX: o índice tem de ser inteiro e ≥ 0.');
+  return { timestampS, index };
+}
+
 export function assemblyDigest(assembly: Assembly): string {
   return sha256Hex(canonicalize(assembly));
 }
@@ -146,9 +154,7 @@ function measurementsOf(assembly: Assembly, state: KinematicState, residuals: Ar
 export function evaluateConfiguration(assembly: Assembly, config: Configuration, options: EvaluationOptions = {}): MotionFrame {
   assertAssembly(assembly);
   validateConfiguration(assembly, config);
-  const timestampS = options.timestampS ?? 0;
-  if (!Number.isFinite(timestampS) || timestampS < 0) throw new Error('ENGINE_INVALID_TIMESTAMP: o instante tem de ser finito e ≥ 0.');
-  const index = options.index ?? null;
+  const { timestampS, index } = frameCoordinates(options);
   const digest = assemblyDigest(assembly);
 
   const requested = solveForwardKinematics(assembly, config);
@@ -157,6 +163,8 @@ export function evaluateConfiguration(assembly: Assembly, config: Configuration,
   const limits = jointLimitViolations(assembly, config);
   const reasons: Array<{ code: string; message: string; subjectIds: string[] }> = [];
   if (limits.length > 0) reasons.push({ code: 'JOINT_LIMIT_EXCEEDED', message: `Fora dos limites: ${limits.map((l) => `${l.jointId}=${l.value}`).join(', ')}.`, subjectIds: limits.map((l) => l.jointId) });
+  const strokeViolations = assembly.actuators.filter((actuator) => actuator.kind === 'hydraulic_cylinder' && (config[actuator.slideJointId]! < actuator.stroke.min.value || config[actuator.slideJointId]! > actuator.stroke.max.value));
+  if (strokeViolations.length) reasons.push({ code: 'STROKE_OUT_OF_RANGE', message: `Curso fora dos limites do actuador: ${strokeViolations.map((actuator) => actuator.id).join(', ')}.`, subjectIds: strokeViolations.map((actuator) => actuator.id) });
   if (maxResidual > CLOSURE_TOLERANCE_M) {
     const open = residuals.filter((r) => r.residualM > CLOSURE_TOLERANCE_M).map((r) => r.constraintId);
     reasons.push({ code: 'LOOP_CLOSURE_VIOLATED', message: `Os pinos não coincidem (resíduo ${maxResidual} m): ${open.join(', ')}.`, subjectIds: open });
@@ -211,6 +219,7 @@ export function evaluateReferencePose(assembly: Assembly, options: EvaluationOpt
  */
 export function evaluateActuators(assembly: Assembly, values: Record<string, number>, options: EvaluationOptions = {}): MotionFrame {
   assertAssembly(assembly);
+  frameCoordinates(options);
   const outcome = solveActuatorConfiguration(assembly, values);
   if (outcome.ok) {
     const warnings = outcome.warnings.map((w) => ({ code: w.code, severity: 'warning' as const, message: w.message, subjectIds: w.subjectIds }));
