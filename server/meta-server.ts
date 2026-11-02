@@ -27,6 +27,9 @@ import {
 } from '../src/design-sandbox';
 import { BACKEND_CONTRACT_VERSION, BACKEND_DIAGNOSTICS_SCHEMA, IMAGE_PIPELINE_VERSION, IMAGE_RESPONSE_CONTRACT, TECHNICAL_DOCUMENT_SCHEMA_VERSION, TECHNICAL_RECOGNITION_SCHEMA_VERSION } from '../src/api-contract';
 import { buildSpatialAgentPrompt, parseSpatialAgentResult, SPATIAL_AGENT_JSON_SCHEMA, validateSpatialAgentRequest } from '../src/spatial-agent';
+import { buildExcavatorAssembly, assemblyMetrics } from '../src/living/reconstruction/generator';
+import { offlineImageObservation, offlineTextObservation, observeExcavatorImage, observeExcavatorText } from '../src/living/reconstruction/muse';
+import { ASSEMBLY_PROPOSAL_SCHEMA, RECONSTRUCTION_OBSERVATION_SCHEMA, validateAssemblyProposal } from '../src/living/reconstruction/contracts';
 
 const MAX_BODY_BYTES = 64 * 1024;
 const MAX_IMAGE_BODY_BYTES = 14 * 1024 * 1024;
@@ -49,6 +52,7 @@ export const PAID_ROUTES = [
   '/api/experiments/preview',
   '/api/conversation',
   '/api/spatial-agent',
+  '/api/living/reconstruction',
 ] as const;
 const PAID_ROUTE_SET: ReadonlySet<string> = new Set(PAID_ROUTES);
 
@@ -315,6 +319,7 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
       contextualConversation: { available: true, apiKeyConfigured: Boolean(apiKey) },
       spatialAgent: { available: true, apiKeyConfigured: Boolean(apiKey), contract: 'spatial_agent_result.v1', maxOutputTokens: 1_600, reasoningEffort: 'medium' },
       imageRegionVerification: { available: true, apiKeyConfigured: Boolean(apiKey) },
+      livingReconstruction: { available: true, apiKeyConfigured: Boolean(apiKey), responseContract: 'unfold.reconstruction.v1', observationSchema: RECONSTRUCTION_OBSERVATION_SCHEMA, assemblySchema: ASSEMBLY_PROPOSAL_SCHEMA, offlineFallback: true },
     },
     metaCallBudget: { limit: metaCallLimit, used: metaCallsUsed, remaining: Math.max(0, metaCallLimit - metaCallsUsed) },
   });
@@ -349,7 +354,8 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
       writeJson(response, rejection.status, { error: { code: rejection.code, message: rejection.message } }, origin);
       return;
     }
-    if (!apiKey) {
+    const reconstructionRoute = request.url === '/api/living/reconstruction';
+    if (!apiKey && !reconstructionRoute) {
       console.info(JSON.stringify({ event: 'meta.text.blocked', reason: 'MODEL_API_KEY_MISSING' }));
       writeJson(response, 503, { error: { code: 'MODEL_API_KEY_MISSING', message: 'Configure MODEL_API_KEY no processo do backend.' } }, origin);
       return;
@@ -382,7 +388,7 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
     const started = performance.now();
     try {
       const body = JSON.parse(await readBody(request,
-        request.url?.startsWith('/api/meta/image')
+          request.url?.startsWith('/api/meta/image') || request.url === '/api/living/reconstruction'
           ? MAX_IMAGE_BODY_BYTES
           : request.url === '/api/experiments/preview' || request.url === '/api/conversation'
             ? MAX_PREVIEW_BODY_BYTES
@@ -590,6 +596,77 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
           }
           const status = upstreamStatus ?? 502;
           writeJson(response, status, { contract: IMAGE_RESPONSE_CONTRACT, error: { code, message: message.replace(/^(?:JSON_INVALID|SCHEMA_INVALID):\s*/, '') }, failedStage, completedStages: stageLogs.map((item) => item.stage), meta }, origin);
+          return;
+        }
+      }
+      if (request.url === '/api/living/reconstruction') {
+        const candidate = body as Record<string, unknown>;
+        const mode = candidate.mode === undefined ? 'live' : candidate.mode;
+        if (mode !== 'live' && mode !== 'offline') {
+          writeJson(response, 400, { error: { code: 'INVALID_RECONSTRUCTION_MODE', message: 'mode deve ser live ou offline.' } }, origin);
+          return;
+        }
+        if (mode === 'live' && !apiKey) {
+          writeJson(response, 503, { error: { code: 'MODEL_API_KEY_MISSING', message: 'Configure MODEL_API_KEY para uma interpretação Muse Spark real; use mode=offline apenas para testes determinísticos.' } }, origin);
+          return;
+        }
+        const sourceKind = candidate.sourceKind === undefined ? (typeof candidate.instruction === 'string' ? 'text' : 'image') : candidate.sourceKind;
+        if (sourceKind !== 'image' && sourceKind !== 'technical_drawing' && sourceKind !== 'text') {
+          writeJson(response, 400, { error: { code: 'INVALID_RECONSTRUCTION_SOURCE', message: 'sourceKind inválido.' } }, origin);
+          return;
+        }
+        const sourceReference = candidate.sourceReference === undefined ? (sourceKind === 'text' ? 'user-instruction' : 'submitted-image') : candidate.sourceReference;
+        if (typeof sourceReference !== 'string' || !sourceReference.trim() || sourceReference.length > 200) {
+          writeJson(response, 400, { error: { code: 'INVALID_RECONSTRUCTION_REFERENCE', message: 'sourceReference inválido.' } }, origin);
+          return;
+        }
+        const peer = request.socket.remoteAddress ?? 'unknown';
+        for (const [key, timestamps] of imageRequests) if (!timestamps.some((time) => Date.now() - time < 60_000)) imageRequests.delete(key);
+        const recent = (imageRequests.get(`reconstruction:${peer}`) ?? []).filter((time) => Date.now() - time < 60_000);
+        if (recent.length >= 10) {
+          writeJson(response, 429, { error: { code: 'RECONSTRUCTION_RATE_LIMITED', message: 'Limite de propostas de reconstrução atingido.' } }, origin);
+          return;
+        }
+        imageRequests.set(`reconstruction:${peer}`, [...recent, Date.now()]);
+        try {
+          let observed: Awaited<ReturnType<typeof offlineImageObservation>> | Awaited<ReturnType<typeof offlineTextObservation>> | Awaited<ReturnType<typeof observeExcavatorImage>> | Awaited<ReturnType<typeof observeExcavatorText>>;
+          if (sourceKind === 'text') {
+            if (typeof candidate.instruction !== 'string' || !candidate.instruction.trim() || candidate.instruction.length > 8_000) {
+              writeJson(response, 400, { error: { code: 'INVALID_RECONSTRUCTION_INSTRUCTION', message: 'instruction é obrigatório e tem limite de 8000 caracteres.' } }, origin);
+              return;
+            }
+            if (mode === 'offline') observed = offlineTextObservation(candidate.instruction, sourceReference);
+            else { reserveMetaCall(); observed = await observeExcavatorText(candidate.instruction, sourceReference, apiKey!, options.fetchImpl); }
+          } else {
+            let image;
+            try { image = validateImageDataUrl(candidate.imageDataUrl); }
+            catch (error) { writeJson(response, 400, { error: { code: 'INVALID_RECONSTRUCTION_IMAGE', message: error instanceof Error ? error.message : 'Imagem inválida.' } }, origin); return; }
+            if (mode === 'offline') observed = offlineImageObservation(image.dataUrl, sourceKind, sourceReference);
+            else { reserveMetaCall(); observed = await observeExcavatorImage(image.dataUrl, sourceKind, sourceReference, apiKey!, options.fetchImpl); }
+          }
+          const assembly = validateAssemblyProposal(buildExcavatorAssembly(observed.observation));
+          const metrics = assemblyMetrics(assembly);
+          const limitations = [
+            'A proposta é review_required e não altera qualquer cena confirmada.',
+            'Geometria de template, hipóteses e valores desconhecidos não são afirmações mecânicas verificadas.',
+            ...(observed.mode === 'offline' ? ['Fallback offline determinístico e baseado em template; não é interpretação visual do raster.'] : []),
+          ];
+          writeJson(response, 200, { contract: 'unfold.reconstruction.v1', status: assembly.validation.status, observation: observed.observation, assembly, metrics, limitations, meta: observed.meta }, origin);
+          return;
+        } catch (error) {
+          if (error instanceof MetaCallBudgetExceeded) {
+            writeJson(response, 429, { error: { code: 'META_CALL_BUDGET_EXHAUSTED', message: error.message }, metaCallBudget: diagnostics().metaCallBudget }, origin);
+            return;
+          }
+          if (error instanceof MetaConcurrencyExceeded) {
+            writeJson(response, 429, { error: { code: 'META_CONCURRENCY_LIMIT', message: error.message } }, origin);
+            return;
+          }
+          const meta = error instanceof MetaApiError ? error.log : undefined;
+          const schemaError = error instanceof Error && (error.message.startsWith('RECONSTRUCTION_SCHEMA_INVALID') || error.message.startsWith('RECONSTRUCTION_JSON_INVALID'));
+          const code = schemaError ? 'RECONSTRUCTION_SCHEMA_INVALID' : error instanceof MetaApiError ? 'RECONSTRUCTION_META_FAILED' : 'RECONSTRUCTION_FAILED';
+          console.info(JSON.stringify({ event: 'living.reconstruction.failed', code, httpStatus: meta?.httpStatus ?? 502, latencyMs: meta?.latencyMs ?? Math.round(performance.now() - started), requestId: meta?.requestId }));
+          writeJson(response, 502, { error: { code, message: schemaError ? 'A observação não passou a validação estrita; nenhuma proposta foi aceite.' : 'A proposta de reconstrução não foi aceite.' }, meta }, origin);
           return;
         }
       }
