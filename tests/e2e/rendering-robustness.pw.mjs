@@ -5,6 +5,7 @@
 //   npm i --no-save playwright-core@1.49.1
 //   UNFOLD_API_TARGET=http://127.0.0.1:9 npx vite --port 5199 --strictPort &
 //   node tests/e2e/rendering-robustness.pw.mjs
+//  C. latência pedido-callback: um 'change' do OrbitControls emitido dentro do frame não pode apagar a hora do pedido do frame em curso.
 // Variáveis: UNFOLD_E2E_URL, UNFOLD_E2E_OUT (por omissão reports/rendering/integration/robustness), CHROME_PATH, UNFOLD_E2E_TILE (bloco, por omissão 256).
 import { chromium } from 'playwright-core';
 import { execFileSync } from 'node:child_process';
@@ -15,7 +16,7 @@ import { join, resolve } from 'node:path';
 
 const BASE = process.env.UNFOLD_E2E_URL ?? 'http://127.0.0.1:5199';
 const OUT = resolve(process.env.UNFOLD_E2E_OUT ?? 'reports/rendering/integration/robustness'); mkdirSync(OUT, { recursive: true });
-const ONLY = process.env.UNFOLD_E2E_ONLY; // A | B
+const ONLY = process.env.UNFOLD_E2E_ONLY; // A | B | C
 const SIZE = (process.env.UNFOLD_E2E_SIZE ?? '3840x2160').split('x').map(Number);
 const TILE = Number(process.env.UNFOLD_E2E_TILE ?? 256);
 const scratch = mkdtempSync(join(tmpdir(), 'unfold-e2e-robust-'));
@@ -150,6 +151,26 @@ try {
     check(sc, 'voltar a escolher Apresentação repõe o perfil do dispositivo', (await R(page, (r) => r.degrade())) === 0 && (await R(page, (r) => r.profile())).shadowMapSize === p0.shadowMapSize);
     check(sc, 'sem erros na consola', errors.length === 0 && fresh.errors.length === 0, [...errors, ...fresh.errors]);
     await fresh.context.close(); await context.close();
+  }
+  // ------------------------------------------------------------------ C. latência pedido-callback com OrbitControls
+  if (!ONLY || ONLY === 'C') {
+    const sc = 'C latência';
+    const { page, errors, context } = await openEditor();
+    await page.waitForTimeout(3000);
+    for (const quality of ['technical', 'presentation']) {
+      await page.click(`#quality-${quality}`); await page.waitForTimeout(1200);
+      const frame = await page.evaluate(() => new Promise((resolve) => {
+        // the camera has moved since the last orbit.update(): the update() INSIDE the next frame emits "change", which calls invalidate() for yet another frame
+        window.__unfoldRendering.requestFrame(true);
+        // the main thread stays busy, so the callback for that request runs late
+        const end = performance.now() + 160; while (performance.now() < end) { /* busy */ }
+        // registered after the editor's own callback, so it runs right after that frame in the same display frame
+        requestAnimationFrame(() => resolve(window.__unfoldRendering.lastFrame()));
+      }));
+      check(sc, `[${quality}] o frame atrasado mede a latência do seu pedido (>= 120 ms), não 0 nem a do pedido seguinte emitido por orbit.update()`, frame.latencyMs >= 120 && frame.latencyMs < 5000, frame);
+    }
+    check(sc, 'sem erros na consola', errors.length === 0, errors);
+    await context.close();
   }
   check('rede', 'nenhum pedido para fora de localhost', external.length === 0, external);
 } finally {

@@ -7,3 +7,4 @@ export * from './metrics';
 export * from './lifecycle';
 export * from './viewer';
 export * from './snapshot';
+export * from './frame-clock';

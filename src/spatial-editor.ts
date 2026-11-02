@@ -27,6 +27,7 @@ import { createRenderingController } from './rendering/viewer';
 import { disposeOwnedGeometries } from './rendering/lifecycle';
 import { canvasToBlob, HighResError, renderHighResolution } from './rendering/hires';
 import { snapshotScene } from './rendering/snapshot';
+import { FrameClock } from './rendering/frame-clock';
 import type { VisualQuality } from './rendering/quality';
 import { describeRemovalCard, describeWallRemoval, type RemovalCard } from './removal-preview';
 import { dur as motionDur, EASE as MOTION_EASE, gsap as motionGsap, prefersReducedMotion as motionReduced } from './motion';
@@ -125,7 +126,7 @@ let removalGhost: RemovalGhost | undefined;
 let ghostState: { base: SpatialSceneV1; wallId: string; mode: 'dissolve' | 'blocked' } | undefined;
 let displayedModel: SpatialSceneV1 | undefined;
 let exporting: AbortController | undefined;
-let frameRequestedAt = 0; let drawCount = 0;
+const frameClock = new FrameClock(); let drawCount = 0; let lastFrame = { latencyMs: 0, renderMs: 0 };
 let preview: ScenePreview | undefined;
 let compoundPreview: SceneTransaction | undefined;
 // Autorizações de valores confirmados: emitidas só no clique de confirmação, para a operação que o preview mostrou.
@@ -167,7 +168,7 @@ let buildTimeline: gsap.core.Timeline | undefined;
 let disposed = false;
 const resizeObserver = new ResizeObserver(resize);
 
-function invalidate(): void { if (!disposed && !raf) { frameRequestedAt = performance.now(); raf = requestAnimationFrame(draw); } }
+function invalidate(): void { if (!disposed && !raf && frameClock.request(performance.now())) raf = requestAnimationFrame(draw); }
 function cameraFitAspect(): number {
   const canvas = $('#spatial-canvas').getBoundingClientRect();
   const panelInset = (selector: string, edge: 'left' | 'right') => {
@@ -186,6 +187,9 @@ function cameraFitAspect(): number {
   });
 }
 function draw(now = performance.now()): void {
+  // First thing: this frame's request-to-callback latency. orbit.update() below can emit "change" -> invalidate(), which starts the NEXT request.
+  // performance.now(), not the rAF timestamp: under a busy main thread the timestamp is the display frame time and can predate the request.
+  const { latencyMs } = frameClock.begin(performance.now());
   raf = 0; drawCount += 1;
   const moving = orbit.update();
   const probe = rendering.wantsProbe();
@@ -194,7 +198,8 @@ function draw(now = performance.now()): void {
   if (probe) rendering.syncGpu(); // render() only queues the work; this makes the sample include the GPU, on probe frames only
   const renderMs = performance.now() - renderStart;
   // Cost of a frame = time from its request to its callback (busy main thread / GPU) + render time. Idle time before the request never counts.
-  const degraded = probe ? rendering.sampleFrame(now, { latencyMs: Math.max(0, now - frameRequestedAt), renderMs }) : null;
+  lastFrame = { latencyMs, renderMs };
+  const degraded = probe ? rendering.sampleFrame(now, { latencyMs, renderMs }) : null;
   if (degraded) status(degraded === 1 ? 'Apresentação com sombras mais leves: este dispositivo está lento. Escolha Técnico para a máxima fluidez.' : 'Apresentação sem sombras: este dispositivo está lento. Escolha Técnico para a máxima fluidez.');
   frameCount += 1;
   if (now - fpsAt >= 1000) { fps = Math.round(frameCount * 1000 / (now - fpsAt)); frameCount = 0; fpsAt = now; updateMetrics(); }
@@ -1168,7 +1173,7 @@ if (new URLSearchParams(location.search).has('debug-rendering')) {
   // Test hook for the browser E2E only: read-only counters, plus the export entry point.
   (window as unknown as { __unfoldRendering?: unknown }).__unfoldRendering = {
     info: () => ({ geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, programs: renderer.info.programs?.length ?? 0, calls: renderer.info.render.calls, triangles: renderer.info.render.triangles }),
-    quality: () => rendering.quality, degrade: () => rendering.degrade, frameSamples: () => [...rendering.samples()], draws: () => drawCount, exportImage, sceneChildren: () => scene.children.length, lights: () => { let n = 0; scene.traverse((o) => { if ((o as unknown as { isLight?: boolean }).isLight) n += 1; }); return n; },
+    quality: () => rendering.quality, degrade: () => rendering.degrade, frameSamples: () => [...rendering.samples()], draws: () => drawCount, lastFrame: () => lastFrame, /** asks for a frame; `nudge` moves the camera so the next orbit.update() inside that frame emits "change" (which calls invalidate() again) */ requestFrame: (nudge = false) => { if (nudge) camera.position.x += 0.5; invalidate(); }, exportImage, sceneChildren: () => scene.children.length, lights: () => { let n = 0; scene.traverse((o) => { if ((o as unknown as { isLight?: boolean }).isLight) n += 1; }); return n; },
     view: (position: number[], target: number[]) => { moveCamera(new Vector3(...(target as [number, number, number])), new Vector3(...(position as [number, number, number])), 0, new Vector3(0, 1, 0)); },
     bounds: () => { const box = new Box3().setFromObject(root); return { min: box.min.toArray(), max: box.max.toArray() }; },
     nodePosition: (id: string) => { const object = root.getObjectByName(id); if (!object) return null; const box = new Box3().setFromObject(object); return { center: box.getCenter(new Vector3()).toArray(), size: box.getSize(new Vector3()).toArray() }; },
