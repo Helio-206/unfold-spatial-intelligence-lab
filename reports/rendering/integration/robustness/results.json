@@ -1,6 +1,6 @@
 {
-  "at": "2026-11-02T18:06:01.131Z",
-  "passed": 21,
+  "at": "2026-11-02T18:45:22.454Z",
+  "passed": 24,
   "failed": 0,
   "checks": [
     {
@@ -43,7 +43,7 @@
           "redo"
         ],
         "progressedBeforeEdit": true,
-        "cardAtStart": "A exportar 3840 × 2160… 5 de 135 blocos",
+        "cardAtStart": "A exportar 3840 × 2160… 7 de 135 blocos",
         "busy": {
           "start": true,
           "beforeApply": true,
@@ -146,7 +146,7 @@
       "scenario": "B degradação",
       "name": "ponto de partida: frames de Apresentação acima de 80 ms neste dispositivo (software)",
       "ok": true,
-      "observed": 193.14000000001397
+      "observed": 174.4199999999837
     },
     {
       "scenario": "B degradação",
@@ -156,11 +156,11 @@
         "reached": {
           "1": {
             "moves": 19,
-            "ms": 7270
+            "ms": 6906
           },
           "2": {
             "moves": 38,
-            "ms": 14663
+            "ms": 14061
           }
         },
         "moves": 38
@@ -183,11 +183,11 @@
         "reached": {
           "1": {
             "moves": 19,
-            "ms": 7270
+            "ms": 6906
           },
           "2": {
             "moves": 38,
-            "ms": 14663
+            "ms": 14061
           }
         }
       }
@@ -214,6 +214,30 @@
     },
     {
       "scenario": "B degradação",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "C latência",
+      "name": "[technical] o frame atrasado mede a latência do seu pedido (>= 120 ms), não 0 nem a do pedido seguinte emitido por orbit.update()",
+      "ok": true,
+      "observed": {
+        "latencyMs": 160.20000000006985,
+        "renderMs": 1.7000000000698492
+      }
+    },
+    {
+      "scenario": "C latência",
+      "name": "[presentation] o frame atrasado mede a latência do seu pedido (>= 120 ms), não 0 nem a do pedido seguinte emitido por orbit.update()",
+      "ok": true,
+      "observed": {
+        "latencyMs": 160.20000000006985,
+        "renderMs": 3
+      }
+    },
+    {
+      "scenario": "C latência",
       "name": "sem erros na consola",
       "ok": true,
       "observed": []
