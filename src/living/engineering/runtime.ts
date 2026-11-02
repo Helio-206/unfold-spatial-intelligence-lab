@@ -248,7 +248,8 @@ export function evaluateParameterChange(session: EngineeringSession, patch: Para
       maxPartDisplacementM = Math.max(maxPartDisplacementM, d);
     }
   }
-  const next: EngineeringSession = { assembly: patched, start: referenceValuesOf(patched), segments: [], durationS: 0, closed: false };
+  // A sessão nova começa nos valores que a comparação usou: a máquina não salta de volta para a referência.
+  const next: EngineeringSession = { assembly: patched, start: values, segments: [], durationS: 0, closed: false };
   return { ok: true, session: next, before, after, maxPartDisplacementM };
 }
 

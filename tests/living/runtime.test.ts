@@ -204,6 +204,21 @@ describe('determinismo, instantes arbitrários e reprodução', () => {
 });
 
 describe('alteração de parâmetros: antes e depois, com a mesma entrada', () => {
+  it('mudar um parâmetro depois de mover a máquina: a sessão devolvida começa nos valores comparados, não na referência', () => {
+    const moved = commandMove(createEngineeringSession(EXCAVATOR_ASSEMBLY_V1), { targets: { boom_cylinder: 0.65 } });
+    if (!moved.ok) throw new Error(moved.message);
+    const changed = evaluateParameterChange(moved.session, { kind: 'actuator_max_rate', actuatorId: 'boom_cylinder', value: 0.3, unit: 'm/s', provenance });
+    if (!changed.ok) throw new Error(changed.code);
+    expect(actuatorValue(changed.after, 'boom_cylinder')).toBeCloseTo(0.65, 12);
+    const atZero = sampleEngineeringMotion(changed.session, 0);
+    expect(actuatorValue(atZero, 'boom_cylinder')).toBeCloseTo(0.65, 12);
+    framesClose(atZero, changed.after);
+    // A continuação parte do mesmo sítio: de 0,65 para 0,6 a 0,3 m/s são 1/6 s.
+    const next = commandMove(changed.session, { targets: { boom_cylinder: 0.6 } });
+    if (!next.ok) throw new Error(next.message);
+    expect(next.durationS).toBeCloseTo(0.05 / 0.3, 12);
+  });
+
   it('uma velocidade máxima diferente muda a duração do mesmo movimento (exactamente o dobro com metade da velocidade)', () => {
     const base = createEngineeringSession(EXCAVATOR_ASSEMBLY_V1);
     const slow = evaluateParameterChange(base, { kind: 'actuator_max_rate', actuatorId: 'boom_cylinder', value: 0.075, unit: 'm/s', provenance });
