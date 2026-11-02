@@ -136,7 +136,15 @@ const finite = (value: unknown): value is number => typeof value === 'number' &&
 const vec = (value: unknown, n: number) => Array.isArray(value) && value.length === n && value.every(finite);
 const SHA256 = /^[a-f0-9]{64}$/;
 
-/** Validação da forma de um quadro (para quem consome, sem confiar no produtor). */
+const ACTUATOR_KINDS = ['hydraulic_cylinder', 'rotary_drive'] as const;
+const MEASUREMENT_UNITS = ['m', 'rad', 'N', 'none'] as const;
+const SOLVER_STATUSES = ['solved', 'blocked', 'invalid_assembly'] as const;
+const CONTACT_KINDS = ['part_part', 'part_ground'] as const;
+const nonEmpty = (v: unknown): v is string => typeof v === 'string' && v.trim().length > 0;
+const stringList = (v: unknown): v is string[] => Array.isArray(v) && v.every((x) => typeof x === 'string');
+const oneOf = (list: readonly unknown[], v: unknown) => list.includes(v);
+
+/** Validação de um quadro inteiro (para quem consome, sem confiar no produtor): forma, enums, unidades, números finitos e coerência entre estados. */
 export function validateMotionFrame(value: unknown): MotionFrameValidation {
   const issues: MotionFrameIssue[] = [];
   const bad = (path: string, message: string) => { issues.push({ path, message }); };
@@ -146,34 +154,139 @@ export function validateMotionFrame(value: unknown): MotionFrameValidation {
   for (const key of ['assemblyDigest', 'inputDigest'] as const) if (typeof value[key] !== 'string' || !SHA256.test(value[key] as string)) bad(`$.${key}`, 'SHA-256 em hexadecimal.');
   if (value.index !== null && !(Number.isInteger(value.index) && (value.index as number) >= 0)) bad('$.index', 'Inteiro ≥ 0 ou null.');
   if (!finite(value.timestampS) || (value.timestampS as number) < 0) bad('$.timestampS', 'Instante finito ≥ 0 (s).');
-  if (typeof value.worldFrameId !== 'string') bad('$.worldFrameId', 'Falta o referencial.');
-  if (!(MOTION_FRAME_STATUSES as readonly unknown[]).includes(value.status)) bad('$.status', 'Estado desconhecido.');
-  if (!(POSE_BASES as readonly unknown[]).includes(value.poseBasis)) bad('$.poseBasis', 'Base da pose desconhecida.');
-  const parts = Array.isArray(value.parts) ? value.parts : (bad('$.parts', 'Falta a lista.'), []);
-  const seen = new Set<string>();
-  parts.forEach((part: unknown, i: number) => {
-    const path = `$.parts[${i}]`;
-    if (!isObject(part) || typeof part.partId !== 'string') { bad(path, 'Parte inválida.'); return; }
-    if (seen.has(part.partId)) bad(`${path}.partId`, 'partId duplicado.'); seen.add(part.partId);
+  if (!nonEmpty(value.worldFrameId)) bad('$.worldFrameId', 'Falta o referencial.');
+  if (!oneOf(MOTION_FRAME_STATUSES, value.status)) bad('$.status', 'Estado desconhecido.');
+  if (!oneOf(POSE_BASES, value.poseBasis)) bad('$.poseBasis', 'Base da pose desconhecida.');
+
+  const array = (key: string): unknown[] => { const v = value[key]; if (!Array.isArray(v)) { bad(`$.${key}`, 'Falta a lista.'); return []; } return v; };
+  const each = (key: string, check: (item: Record<string, unknown>, path: string) => void, idKey?: string) => {
+    const seen = new Set<string>();
+    array(key).forEach((item, i) => {
+      const path = `$.${key}[${i}]`;
+      if (!isObject(item)) { bad(path, 'Registo inválido (esperava-se um objecto).'); return; }
+      check(item, path);
+      if (idKey && typeof item[idKey] === 'string') { if (seen.has(item[idKey] as string)) bad(`${path}.${idKey}`, `${idKey} duplicado.`); seen.add(item[idKey] as string); }
+    });
+  };
+  const text = (item: Record<string, unknown>, path: string, key: string) => { if (!nonEmpty(item[key])) bad(`${path}.${key}`, 'Texto obrigatório.'); };
+
+  each('parts', (part, path) => {
+    text(part, path, 'partId');
     if (!vec(part.translationM, 3)) bad(`${path}.translationM`, 'Vector de 3 números finitos (m).');
     if (!vec(part.rotation, 4) || Math.abs(Math.hypot(...(part.rotation as number[])) - 1) > 1e-6) bad(`${path}.rotation`, 'Quaternião unitário [x,y,z,w].');
+  }, 'partId');
+  each('joints', (joint, path) => {
+    text(joint, path, 'jointId');
+    if (!finite(joint.value)) bad(`${path}.value`, 'Valor finito.');
+    if (!oneOf(['rad', 'm'], joint.unit)) bad(`${path}.unit`, 'Unidade rad ou m.');
+    if (!oneOf(['commanded', 'dependent', 'passive'], joint.kind)) bad(`${path}.kind`, 'kind desconhecido.');
+  }, 'jointId');
+  each('actuators', (a, path) => {
+    text(a, path, 'actuatorId');
+    if (!oneOf(ACTUATOR_KINDS, a.kind)) bad(`${path}.kind`, 'kind desconhecido.');
+    if (!finite(a.value)) bad(`${path}.value`, 'Valor finito.');
+    if (!oneOf(['m', 'rad'], a.unit)) bad(`${path}.unit`, 'Unidade m ou rad.');
+    if (typeof a.withinLimits !== 'boolean') bad(`${path}.withinLimits`, 'Booleano.');
+    if (a.kind === 'hydraulic_cylinder') {
+      if (a.unit !== 'm') bad(`${path}.unit`, 'Um cilindro é medido em m (curso).');
+      if (!finite(a.lengthM) || (a.lengthM as number) <= 0) bad(`${path}.lengthM`, 'Um cilindro tem comprimento finito > 0.');
+    } else if (a.kind === 'rotary_drive') {
+      if (a.unit !== 'rad') bad(`${path}.unit`, 'Um accionamento rotativo é medido em rad.');
+      if (a.lengthM !== null) bad(`${path}.lengthM`, 'Só os cilindros têm comprimento.');
+    }
+    if (!oneOf(['computed', 'unknown'], a.forceStatus)) bad(`${path}.forceStatus`, 'forceStatus desconhecido.');
+    else if (a.forceStatus === 'computed') {
+      if (!finite(a.forceN)) bad(`${path}.forceN`, 'Força calculada tem valor finito.');
+      if (a.forceReason !== null) bad(`${path}.forceReason`, 'Força calculada não tem razão de desconhecida.');
+    } else {
+      if (a.forceN !== null) bad(`${path}.forceN`, 'Força desconhecida tem forceN null.');
+      if (!nonEmpty(a.forceReason)) bad(`${path}.forceReason`, 'Força desconhecida explica porquê.');
+    }
+  }, 'actuatorId');
+  each('measurements', (m, path) => {
+    text(m, path, 'id'); text(m, path, 'label'); text(m, path, 'method');
+    if (!oneOf(MEASUREMENT_UNITS, m.unit)) bad(`${path}.unit`, 'Unidade desconhecida.');
+    if (!stringList(m.subjectIds)) bad(`${path}.subjectIds`, 'Lista de strings.');
+    if (m.status === 'computed') { if (!finite(m.value)) bad(`${path}.value`, 'Uma medida calculada tem valor finito.'); }
+    else if (m.status === 'unknown') { if (m.value !== null) bad(`${path}.value`, 'Uma medida desconhecida tem value null.'); }
+    else bad(`${path}.status`, 'Estado desconhecido.');
+  }, 'id');
+  each('warnings', (w, path) => {
+    text(w, path, 'code'); text(w, path, 'message');
+    if (!oneOf(['info', 'warning'], w.severity)) bad(`${path}.severity`, 'Severidade desconhecida.');
+    if (!stringList(w.subjectIds)) bad(`${path}.subjectIds`, 'Lista de strings.');
   });
-  if (value.status === 'invalid_assembly' && parts.length > 0) bad('$.parts', 'Uma montagem inválida não tem poses.');
-  if (value.status === 'ok' && value.poseBasis !== 'solved') bad('$.poseBasis', 'Um quadro ok tem poseBasis "solved".');
-  if (value.status === 'ok' && value.blocked !== null) bad('$.blocked', 'Um quadro ok não tem bloqueio.');
-  if (value.status !== 'ok' && !isObject(value.blocked)) bad('$.blocked', 'Um quadro bloqueado explica porquê.');
-  for (const key of ['joints', 'actuators', 'measurements', 'warnings', 'evidence'] as const) if (!Array.isArray(value[key])) bad(`$.${key}`, 'Falta a lista.');
-  (Array.isArray(value.measurements) ? value.measurements : []).forEach((m: unknown, i: number) => {
-    if (!isObject(m) || typeof m.id !== 'string') { bad(`$.measurements[${i}]`, 'Medida inválida.'); return; }
-    if (m.status === 'computed' && !finite(m.value)) bad(`$.measurements[${i}].value`, 'Uma medida calculada tem valor finito.');
-    if (m.status === 'unknown' && m.value !== null) bad(`$.measurements[${i}].value`, 'Uma medida desconhecida tem value null.');
+  each('evidence', (e, path) => {
+    text(e, path, 'sourceId');
+    for (const key of ['locator', 'excerpt'] as const) if (e[key] !== undefined && typeof e[key] !== 'string') bad(`${path}.${key}`, 'String quando presente.');
   });
-  (Array.isArray(value.actuators) ? value.actuators : []).forEach((a: unknown, i: number) => {
-    if (isObject(a) && a.forceStatus === 'unknown' && a.forceN !== null) bad(`$.actuators[${i}].forceN`, 'Força desconhecida tem forceN null.');
-    if (isObject(a) && a.forceStatus === 'computed' && !finite(a.forceN)) bad(`$.actuators[${i}].forceN`, 'Força calculada tem valor finito.');
-  });
+
   const solver = value.solver;
-  if (!isObject(solver) || typeof solver.id !== 'string' || !Array.isArray(solver.assumptions) || solver.assumptions.length === 0) bad('$.solver', 'O solver identifica-se e declara os pressupostos.');
-  if (!isObject(value.collisions) || typeof value.collisions.checked !== 'boolean' || !Array.isArray(value.collisions.contacts)) bad('$.collisions', 'Relatório de colisões inválido.');
+  let solverStatus: unknown;
+  if (!isObject(solver)) bad('$.solver', 'Falta o solver.');
+  else {
+    solverStatus = solver.status;
+    for (const key of ['id', 'version', 'method'] as const) text(solver, '$.solver', key);
+    if (!oneOf(SOLVER_STATUSES, solver.status)) bad('$.solver.status', 'Estado desconhecido.');
+    if (solver.closureResidualM !== null && (!finite(solver.closureResidualM) || (solver.closureResidualM as number) < 0)) bad('$.solver.closureResidualM', 'Número finito ≥ 0 ou null.');
+    if (!finite(solver.toleranceM) || (solver.toleranceM as number) <= 0) bad('$.solver.toleranceM', 'Tolerância finita > 0 (m).');
+    if (!Array.isArray(solver.assumptions) || solver.assumptions.length === 0 || solver.assumptions.some((a: unknown) => !nonEmpty(a))) bad('$.solver.assumptions', 'O solver declara pressupostos (lista não vazia de textos).');
+  }
+
+  const collisions = value.collisions;
+  if (!isObject(collisions)) bad('$.collisions', 'Falta o relatório de colisões.');
+  else {
+    if (typeof collisions.checked !== 'boolean') bad('$.collisions.checked', 'Booleano.');
+    if (typeof collisions.groundPlaneChecked !== 'boolean') bad('$.collisions.groundPlaneChecked', 'Booleano.');
+    if (!stringList(collisions.shapesChecked)) bad('$.collisions.shapesChecked', 'Lista de strings.');
+    if (!Array.isArray(collisions.shapesSkipped)) bad('$.collisions.shapesSkipped', 'Falta a lista.');
+    else collisions.shapesSkipped.forEach((skipped: unknown, i: number) => {
+      const path = `$.collisions.shapesSkipped[${i}]`;
+      if (!isObject(skipped)) { bad(path, 'Registo inválido (esperava-se um objecto).'); return; }
+      text(skipped, path, 'shapeId'); text(skipped, path, 'reason');
+    });
+    if (!Array.isArray(collisions.contacts)) bad('$.collisions.contacts', 'Falta a lista.');
+    else collisions.contacts.forEach((contact: unknown, i: number) => {
+      const path = `$.collisions.contacts[${i}]`;
+      if (!isObject(contact)) { bad(path, 'Registo inválido (esperava-se um objecto).'); return; }
+      if (!oneOf(CONTACT_KINDS, contact.kind)) bad(`${path}.kind`, 'kind desconhecido.');
+      if (!stringList(contact.partIds) || (contact.kind === 'part_part' && contact.partIds.length !== 2) || (contact.kind === 'part_ground' && contact.partIds.length !== 1)) bad(`${path}.partIds`, 'part_part tem 2 partes, part_ground tem 1.');
+      if (!stringList(contact.shapeIds)) bad(`${path}.shapeIds`, 'Lista de strings.');
+      if (contact.depthM !== null && (!finite(contact.depthM) || (contact.depthM as number) < 0)) bad(`${path}.depthM`, 'Número finito ≥ 0 ou null.');
+    });
+  }
+
+  // blocked: null ou um registo completo.
+  const blocked = value.blocked;
+  const hasBlocked = blocked !== null && blocked !== undefined;
+  if (blocked === undefined) bad('$.blocked', 'Falta o campo (null quando não há bloqueio).');
+  else if (blocked !== null) {
+    if (!isObject(blocked)) bad('$.blocked', 'Registo inválido (esperava-se um objecto ou null).');
+    else {
+      text(blocked, '$.blocked', 'code'); text(blocked, '$.blocked', 'message');
+      if (!stringList(blocked.subjectIds)) bad('$.blocked.subjectIds', 'Lista de strings.');
+      if (blocked.firstInvalidTimeS !== null && (!finite(blocked.firstInvalidTimeS) || (blocked.firstInvalidTimeS as number) < 0)) bad('$.blocked.firstInvalidTimeS', 'Número finito ≥ 0 ou null.');
+    }
+  }
+
+  // Coerência entre status, poseBasis, blocked, solver.status e poses.
+  const parts = Array.isArray(value.parts) ? value.parts : [];
+  const { status, poseBasis } = value;
+  if (status === 'ok') {
+    if (poseBasis !== 'solved') bad('$.poseBasis', 'Um quadro ok tem poseBasis "solved".');
+    if (hasBlocked) bad('$.blocked', 'Um quadro ok não tem bloqueio.');
+    if (solverStatus !== undefined && solverStatus !== 'solved') bad('$.solver.status', 'Um quadro ok tem solver.status "solved".');
+  } else if (status === 'blocked') {
+    if (poseBasis === 'solved') bad('$.poseBasis', 'Um quadro bloqueado não tem uma pose "solved".');
+    if (!hasBlocked) bad('$.blocked', 'Um quadro bloqueado explica porquê.');
+    if (solverStatus !== undefined && solverStatus !== 'blocked') bad('$.solver.status', 'Um quadro bloqueado tem solver.status "blocked".');
+  } else if (status === 'invalid_assembly') {
+    if (poseBasis !== 'none') bad('$.poseBasis', 'Uma montagem inválida não tem pose (poseBasis "none").');
+    if (parts.length > 0) bad('$.parts', 'Uma montagem inválida não tem poses.');
+    if (!hasBlocked) bad('$.blocked', 'Uma montagem inválida explica porquê.');
+    if (solverStatus !== undefined && solverStatus !== 'invalid_assembly') bad('$.solver.status', 'Uma montagem inválida tem solver.status "invalid_assembly".');
+  }
+  if (poseBasis === 'none' && parts.length > 0) bad('$.parts', 'poseBasis "none" não tem poses.');
+  if ((poseBasis === 'solved' || poseBasis === 'held_last_valid' || poseBasis === 'reference') && parts.length === 0) bad('$.parts', `poseBasis "${String(poseBasis)}" tem poses.`);
   return { ok: issues.length === 0, issues };
 }

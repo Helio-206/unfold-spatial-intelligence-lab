@@ -100,24 +100,116 @@ describe('unfold.assembly.v1: o validador recusa o que não é uma montagem', ()
 });
 
 describe('unfold.motion-frame.v1: o validador de quadros', () => {
-  const frame = () => ({
+  type Frame = Record<string, any>;
+  const frame = (): Frame => ({
     schema: MOTION_FRAME_SCHEMA, assemblyId: 'excavator-fixture-1', assemblyDigest: 'a'.repeat(64), inputDigest: 'b'.repeat(64), index: 0, timestampS: 0, worldFrameId: 'world',
-    status: 'ok', poseBasis: 'solved', parts: [{ partId: 'chassis', translationM: [0, 0, 0], rotation: [0, 0, 0, 1] }], joints: [], actuators: [], measurements: [], warnings: [], evidence: [], blocked: null,
-    solver: { id: 'x', version: '1', method: 'm', status: 'solved', closureResidualM: 0, toleranceM: 1e-9, assumptions: ['a'] },
-    collisions: { checked: true, shapesChecked: [], shapesSkipped: [], groundPlaneChecked: true, contacts: [] },
+    status: 'ok', poseBasis: 'solved', parts: [{ partId: 'chassis', translationM: [0, 0, 0], rotation: [0, 0, 0, 1] }],
+    joints: [{ jointId: 'boom_joint', value: 0.45, unit: 'rad', kind: 'commanded' }],
+    actuators: [
+      { actuatorId: 'boom_cylinder', kind: 'hydraulic_cylinder', value: 0.57, unit: 'm', lengthM: 2.75, withinLimits: true, forceN: null, forceStatus: 'unknown', forceReason: 'Sem parâmetros hidráulicos.' },
+      { actuatorId: 'swing_drive', kind: 'rotary_drive', value: 0, unit: 'rad', lengthM: null, withinLimits: true, forceN: 1200, forceStatus: 'computed', forceReason: null },
+    ],
+    measurements: [
+      { id: 'reach', label: 'Alcance', status: 'computed', value: 7.1, unit: 'm', method: 'FK', subjectIds: ['bucket'] },
+      { id: 'load', label: 'Carga', status: 'unknown', value: null, unit: 'N', method: 'sem modelo', subjectIds: [] },
+    ],
+    warnings: [{ code: 'W', severity: 'info', message: 'm', subjectIds: ['boom'] }],
+    evidence: [{ sourceId: 'src-excavator-fixture', locator: 'x' }], blocked: null,
+    solver: { id: 'x', version: '1', method: 'm', status: 'solved', closureResidualM: 1e-15, toleranceM: 1e-9, assumptions: ['a'] },
+    collisions: { checked: true, shapesChecked: ['boom-box'], shapesSkipped: [{ shapeId: 'c', reason: 'cilindro' }], groundPlaneChecked: true, contacts: [{ kind: 'part_part', partIds: ['a', 'b'], shapeIds: ['x', 'y'], depthM: 0.01 }] },
   });
-  it('aceita um quadro bem formado', () => { expect(validateMotionFrame(frame())).toEqual({ ok: true, issues: [] }); });
-  const bad: Array<[string, (f: ReturnType<typeof frame>) => void]> = [
-    ['schema', (f) => { (f as { schema: string }).schema = 'x'; }],
+  const blockedFrame = (basis = 'held_last_valid'): Frame => ({ ...frame(), status: 'blocked', poseBasis: basis, solver: { ...frame().solver, status: 'blocked' }, blocked: { code: 'JOINT_LIMIT_EXCEEDED', message: 'm', subjectIds: ['boom_joint'], firstInvalidTimeS: 1.5 } });
+  const invalidFrame = (): Frame => ({ ...frame(), status: 'invalid_assembly', poseBasis: 'none', parts: [], solver: { ...frame().solver, status: 'invalid_assembly' }, blocked: { code: 'X', message: 'm', subjectIds: [], firstInvalidTimeS: null } });
+  it('aceita um quadro ok, um bloqueado (pose retida ou de referência) e um de montagem inválida', () => {
+    for (const f of [frame(), blockedFrame(), blockedFrame('reference'), invalidFrame()]) expect(validateMotionFrame(f)).toEqual({ ok: true, issues: [] });
+  });
+  it('aceita um bloqueado sem pose (poseBasis none, sem partes)', () => {
+    const f = blockedFrame('none'); f.parts = [];
+    expect(validateMotionFrame(f).ok).toBe(true);
+  });
+  const bad: Array<[string, (f: Frame) => void, Frame?]> = [
+    ['schema', (f) => { f.schema = 'x'; }],
     ['digest', (f) => { f.inputDigest = 'xyz'; }],
     ['instante negativo', (f) => { f.timestampS = -1; }],
-    ['quaternião não unitário', (f) => { f.parts[0]!.rotation = [0, 0, 0, 2]; }],
-    ['parte duplicada', (f) => { f.parts.push({ ...f.parts[0]! }); }],
-    ['ok com bloqueio', (f) => { (f as { blocked: unknown }).blocked = { code: 'X' }; }],
-    ['bloqueado sem explicação', (f) => { f.status = 'blocked'; }],
-    ['montagem inválida com poses', (f) => { f.status = 'invalid_assembly'; (f as { blocked: unknown }).blocked = { code: 'X' }; }],
+    ['quaternião não unitário', (f) => { f.parts[0].rotation = [0, 0, 0, 2]; }],
+    ['parte duplicada', (f) => { f.parts.push({ ...f.parts[0] }); }],
+    ['partes [null]', (f) => { f.parts = [null]; }],
+    ['juntas [null]', (f) => { f.joints = [null]; }],
+    ['actuadores [null]', (f) => { f.actuators = [null]; }],
+    ['medidas [null]', (f) => { f.measurements = [null]; }],
+    ['avisos [null]', (f) => { f.warnings = [null]; }],
+    ['evidência [null]', (f) => { f.evidence = [null]; }],
+    ['contactos [null]', (f) => { f.collisions.contacts = [null]; }],
+    ['formas saltadas [null]', (f) => { f.collisions.shapesSkipped = [null]; }],
+    ['junta sem jointId', (f) => { delete f.joints[0].jointId; }],
+    ['junta com valor NaN', (f) => { f.joints[0].value = Number.NaN; }],
+    ['junta com unidade desconhecida', (f) => { f.joints[0].unit = 'deg'; }],
+    ['junta com kind desconhecido', (f) => { f.joints[0].kind = 'free'; }],
+    ['junta duplicada', (f) => { f.joints.push({ ...f.joints[0] }); }],
+    ['actuador com unidade que não condiz com o tipo (cilindro em rad)', (f) => { f.actuators[0].unit = 'rad'; }],
+    ['actuador rotativo com lengthM', (f) => { f.actuators[1].lengthM = 1; }],
+    ['cilindro sem lengthM', (f) => { f.actuators[0].lengthM = null; }],
+    ['actuador com withinLimits que não é booleano', (f) => { f.actuators[0].withinLimits = 'sim'; }],
+    ['actuador com kind desconhecido', (f) => { f.actuators[0].kind = 'pump'; }],
+    ['actuador com valor infinito', (f) => { f.actuators[0].value = Infinity; }],
+    ['força desconhecida com valor', (f) => { f.actuators[0].forceN = 5; }],
+    ['força desconhecida sem razão', (f) => { f.actuators[0].forceReason = null; }],
+    ['força calculada sem valor', (f) => { f.actuators[1].forceN = null; }],
+    ['força calculada com razão de desconhecida', (f) => { f.actuators[1].forceReason = 'x'; }],
+    ['actuador duplicado', (f) => { f.actuators.push({ ...f.actuators[0] }); }],
+    ['medida sem método', (f) => { delete f.measurements[0].method; }],
+    ['medida com unidade desconhecida', (f) => { f.measurements[0].unit = 'ft'; }],
+    ['medida calculada com NaN', (f) => { f.measurements[0].value = Number.NaN; }],
+    ['medida desconhecida com valor', (f) => { f.measurements[1].value = 1; }],
+    ['medida com subjectIds que não é lista de strings', (f) => { f.measurements[0].subjectIds = [1]; }],
+    ['medida com estado desconhecido', (f) => { f.measurements[0].status = 'maybe'; }],
+    ['medida duplicada', (f) => { f.measurements.push({ ...f.measurements[0] }); }],
+    ['solver sem id', (f) => { delete f.solver.id; }],
+    ['solver com estado desconhecido', (f) => { f.solver.status = 'done'; }],
+    ['solver com tolerância não positiva', (f) => { f.solver.toleranceM = 0; }],
+    ['solver com resíduo negativo', (f) => { f.solver.closureResidualM = -1; }],
+    ['solver com resíduo NaN', (f) => { f.solver.closureResidualM = Number.NaN; }],
     ['pressupostos vazios', (f) => { f.solver.assumptions = []; }],
-    ['medida desconhecida com valor', (f) => { (f.measurements as unknown[]).push({ id: 'm', status: 'unknown', value: 1 }); }],
+    ['pressupostos que não são strings', (f) => { f.solver.assumptions = [1]; }],
+    ['colisões sem shapesChecked', (f) => { delete f.collisions.shapesChecked; }],
+    ['colisões com groundPlaneChecked em falta', (f) => { delete f.collisions.groundPlaneChecked; }],
+    ['forma saltada sem razão', (f) => { delete f.collisions.shapesSkipped[0].reason; }],
+    ['contacto com kind desconhecido', (f) => { f.collisions.contacts[0].kind = 'edge'; }],
+    ['contacto part_part com uma só parte', (f) => { f.collisions.contacts[0].partIds = ['a']; }],
+    ['contacto part_ground com duas partes', (f) => { f.collisions.contacts[0].kind = 'part_ground'; }],
+    ['contacto com profundidade negativa', (f) => { f.collisions.contacts[0].depthM = -0.1; }],
+    ['contacto com profundidade NaN', (f) => { f.collisions.contacts[0].depthM = Number.NaN; }],
+    ['aviso sem código', (f) => { delete f.warnings[0].code; }],
+    ['aviso com severidade desconhecida', (f) => { f.warnings[0].severity = 'fatal'; }],
+    ['aviso sem mensagem', (f) => { f.warnings[0].message = ''; }],
+    ['evidência sem sourceId', (f) => { f.evidence[0] = { locator: 'x' }; }],
+    ['evidência com locator que não é string', (f) => { f.evidence[0].locator = 3; }],
+    ['ok com bloqueio', (f) => { f.blocked = { code: 'X', message: 'm', subjectIds: [], firstInvalidTimeS: null }; }],
+    ['ok com poseBasis held_last_valid', (f) => { f.poseBasis = 'held_last_valid'; }],
+    ['ok com solver.status blocked', (f) => { f.solver.status = 'blocked'; }],
+    ['ok com solver.status invalid_assembly', (f) => { f.solver.status = 'invalid_assembly'; }],
+    ['solved com status blocked', (f) => { Object.assign(f, blockedFrame()); f.poseBasis = 'solved'; }],
+    ['bloqueado sem explicação', (f) => { Object.assign(f, blockedFrame()); f.blocked = null; }],
+    ['bloqueado com solver.status solved', (f) => { Object.assign(f, blockedFrame()); f.solver.status = 'solved'; }],
+    ['bloqueado com solver.status invalid_assembly', (f) => { Object.assign(f, blockedFrame()); f.solver.status = 'invalid_assembly'; }],
+    ['bloqueado com pose retida mas sem partes', (f) => { Object.assign(f, blockedFrame()); f.parts = []; }],
+    ['bloqueado com poseBasis none mas com partes', (f) => { Object.assign(f, blockedFrame('none')); }],
+    ['bloqueio sem código', (f) => { Object.assign(f, blockedFrame()); f.blocked.code = ''; }],
+    ['bloqueio com subjectIds inválido', (f) => { Object.assign(f, blockedFrame()); f.blocked.subjectIds = [null]; }],
+    ['bloqueio com firstInvalidTimeS negativo', (f) => { Object.assign(f, blockedFrame()); f.blocked.firstInvalidTimeS = -1; }],
+    ['bloqueio com firstInvalidTimeS NaN', (f) => { Object.assign(f, blockedFrame()); f.blocked.firstInvalidTimeS = Number.NaN; }],
+    ['montagem inválida com poses', (f) => { Object.assign(f, invalidFrame()); f.parts = frame().parts; }],
+    ['montagem inválida com poseBasis reference', (f) => { Object.assign(f, invalidFrame()); f.poseBasis = 'reference'; }],
+    ['montagem inválida com solver.status blocked', (f) => { Object.assign(f, invalidFrame()); f.solver.status = 'blocked'; }],
+    ['montagem inválida sem bloqueio', (f) => { Object.assign(f, invalidFrame()); f.blocked = null; }],
+    ['poseBasis solved com status blocked e solver solved', (f) => { f.status = 'blocked'; f.blocked = { code: 'X', message: 'm', subjectIds: [], firstInvalidTimeS: null }; }],
+    ['índice fraccionário', (f) => { f.index = 1.5; }],
+    ['sem blocked (campo em falta)', (f) => { delete f.blocked; }],
   ];
   it.each(bad)('recusa: %s', (_name, mutate) => { const f = frame(); mutate(f); expect(validateMotionFrame(f).ok).toBe(false); });
+  it('as razões apontam o caminho do campo em falta', () => {
+    const f = frame(); delete f.joints[0].jointId;
+    expect(validateMotionFrame(f).issues.map((i) => i.path)).toContain('$.joints[0].jointId');
+  });
+  it('não-objectos', () => { expect(validateMotionFrame(null).ok).toBe(false); expect(validateMotionFrame([]).ok).toBe(false); });
 });
