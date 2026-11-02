@@ -323,7 +323,7 @@ export class SpatialWorkspace {
     const p = m.proposal; if (!p) return '';
     const actions = p.state === 'pending' && p.kind === 'preview_fixture'
       ? `<div class="uw-proposal-actions"><button type="button" class="u-btn u-btn--primary" data-act="approve" data-arg="${esc(m.id)}">${esc(p.approveLabel)}</button><button type="button" class="u-btn u-btn--outline" data-act="reject" data-arg="${esc(m.id)}">Rejeitar</button></div>`
-      : `<p class="u-label">${p.state === 'running' ? 'a mostrar a pré-visualização' : p.state === 'done' ? 'pré-visualização mostrada · fixture' : p.state === 'rejected' ? 'rejeitada · nada mudou' : 'sem acção disponível'}</p>`;
+      : `<p class="u-label">${p.state === 'running' ? 'a mostrar a pré-visualização' : p.state === 'done' ? 'pré-visualização mostrada · fixture' : p.state === 'cancelled' ? 'interrompida · nada concluído' : p.state === 'rejected' ? 'rejeitada · nada mudou' : 'sem acção disponível'}</p>`;
     return `<div class="uw-proposal" data-state="${p.state}"><h3>${esc(p.title)}</h3><p>${esc(p.detail)}</p>${actions}</div>`;
   }
 
@@ -589,7 +589,9 @@ export class SpatialWorkspace {
     this.pending?.abort(); const abort = new AbortController(); this.pending = abort;
     const request = buildAgentRequest(text, this.registry, this.selectedId, this.history);
     const outcome = await askAgent(request, this.agentOptions, abort.signal);
-    if (abort.signal.aborted) { this.dispatch({ type: 'processing', value: false }); return groundOutcome(outcome, this.registry); }
+    // superseded or cancelled: the newer request owns processing state and the composer; this one touches nothing
+    if (abort.signal.aborted || this.pending !== abort || this.disposed) return groundOutcome(outcome, this.registry);
+    this.pending = null;
     const g = groundOutcome(outcome, this.registry);
     this.history = [...this.history, { role: 'user' as const, text }, { role: 'assistant' as const, text: g.text }].slice(-6);
     // a supported experiment, decided locally (never by the model)
@@ -598,7 +600,7 @@ export class SpatialWorkspace {
     const message: Message = {
       id: newId('a'), role: 'assistant', text: g.clarification ? `${g.text} ${g.clarification}` : g.text, source: g.source === 'none' ? 'local' : g.source, sourceNote: g.source === 'none' ? 'Erro · nada executado' : g.sourceNote,
       evidence: g.targets.map((t) => ({ componentId: t.id, label: t.status === 'resolved' ? t.component.label : t.id, status: t.status })),
-      proposal: plan ? { id: newId('p'), title: plan.title, detail: plan.detail, kind: plan.kind, approveLabel: 'Pré-visualizar fixture', state: plan.kind === 'preview_fixture' ? 'pending' : 'done' } : null,
+      proposal: plan ? { id: newId('p'), title: plan.title, detail: plan.detail, kind: plan.kind, approveLabel: 'Pré-visualizar fixture', state: plan.kind === 'preview_fixture' ? 'pending' : 'done', actuatorId: plan.actuatorId } : null,
       error: g.blocked ? `${g.blocked.code} · ${g.blocked.message}` : null, at: Date.now(),
     };
     this.dispatch({ type: 'processing', value: false });
@@ -622,24 +624,33 @@ export class SpatialWorkspace {
   /** Offer the extend experiment for a component without going through the model (Simulate tool). */
   offerExperiment(componentId: string | null, _text: string | null): ExperimentPlan {
     const plan = planExtendExperiment(componentId, this.registry, this.previews);
-    const m: Message = { id: newId('a'), role: 'assistant', text: plan.kind === 'preview_fixture' ? 'Experiência suportada para o cilindro seleccionado.' : plan.detail, source: 'local', sourceNote: 'Planeador local · determinístico', evidence: plan.actuatorId ? [{ componentId: plan.actuatorId, label: this.registry.get(plan.actuatorId)?.label ?? plan.actuatorId, status: 'resolved' }] : [], proposal: { id: newId('p'), title: plan.title, detail: plan.detail, kind: plan.kind, approveLabel: 'Pré-visualizar fixture', state: plan.kind === 'preview_fixture' ? 'pending' : 'done' }, error: null, at: Date.now() };
+    const m: Message = { id: newId('a'), role: 'assistant', text: plan.kind === 'preview_fixture' ? 'Experiência suportada para o cilindro seleccionado.' : plan.detail, source: 'local', sourceNote: 'Planeador local · determinístico', evidence: plan.actuatorId ? [{ componentId: plan.actuatorId, label: this.registry.get(plan.actuatorId)?.label ?? plan.actuatorId, status: 'resolved' }] : [], proposal: { id: newId('p'), title: plan.title, detail: plan.detail, kind: plan.kind, approveLabel: 'Pré-visualizar fixture', state: plan.kind === 'preview_fixture' ? 'pending' : 'done', actuatorId: plan.actuatorId }, error: null, at: Date.now() };
     this.dispatch({ type: 'assistant_message', message: m });
     if (plan.actuatorId) this.pointAt(plan.actuatorId, plan.kind === 'preview_fixture' ? 'awaiting' : 'blocked', 'user_tool', plan.kind === 'preview_fixture' ? 'Proposta: precisa da sua aprovação.' : 'Sem pré-visualização disponível.');
     return plan;
   }
 
+  /** Approve a pending proposal (same path as the button). */
+  approveProposal(messageId: string): Promise<void> { return this.approve(messageId); }
+
   private async approve(messageId: string): Promise<void> {
     const m = this.state.messages.find((x) => x.id === messageId);
     if (!m?.proposal || m.proposal.state !== 'pending' || m.proposal.kind !== 'preview_fixture') return;
-    const actuatorId = m.evidence[0]?.componentId ?? null;
-    const preview = this.previews.find((p) => p.actuatorId === actuatorId);
+    const actuatorId = m.proposal.actuatorId;
+    const preview = actuatorId ? this.previews.find((p) => p.actuatorId === actuatorId) : undefined;
     if (!preview) { this.dispatch({ type: 'proposal_state', messageId, state: 'done' }); return; }
     this.dispatch({ type: 'proposal_state', messageId, state: 'running' });
     this.notice('pose', 'Pré-visualização de fixture: estas poses vêm de um script independente, não do motor de engenharia.', 'critical');
     this.pointAt(preview.actuatorId, 'point', 'user_tool', 'Pré-visualização de fixture aprovada por si.');
     this.approvedRunning = true;
-    await this.play(preview);
+    const outcome = await this.play(preview);
     this.approvedRunning = false;
+    if (this.disposed) return;
+    if (outcome === 'cancelled') {
+      // reset, disposal or a newer preview stopped it: no completion, no final measurements
+      this.dispatch({ type: 'proposal_state', messageId, state: 'cancelled' });
+      return;
+    }
     const first = preview.frames[0]!, last = preview.frames[preview.frames.length - 1]!;
     const meas = (f: typeof first, id: string) => f.measurements.find((x) => x.id === id);
     const a0 = meas(first, 'boom_angle'), a1 = meas(last, 'boom_angle'), h0 = meas(first, 'tip_height'), h1 = meas(last, 'tip_height'), force = meas(last, 'boom_cylinder_force');
@@ -651,11 +662,11 @@ export class SpatialWorkspace {
   private approvedRunning = false;
 
   /** Plays fixture frames on their own clock (frame timestamps), never interpolated: each shown pose is one frame. */
-  private play(preview: FixturePreview): Promise<void> {
+  private play(preview: FixturePreview): Promise<'completed' | 'cancelled'> {
     this.playback?.cancel();
     this.poseLabel = 'fixture-preview';
     const frames = preview.frames;
-    if (this.reducedMotion) { this.scene.setPoses(framePoses(frames[frames.length - 1]!)); this.renderInspector(); return Promise.resolve(); }
+    if (this.reducedMotion) { this.scene.setPoses(framePoses(frames[frames.length - 1]!)); this.renderInspector(); return Promise.resolve('completed'); }
     return new Promise((resolve) => {
       const t0 = performance.now(); let raf = 0; let shown = -1;
       const tick = () => {
@@ -663,10 +674,10 @@ export class SpatialWorkspace {
         let i = shown;
         while (i + 1 < frames.length && frames[i + 1]!.timestampS <= t) i++;
         if (i !== shown && i >= 0) { shown = i; this.foundry.markMotion(); this.scene.setPoses(framePoses(frames[i]!)); }
-        if (shown >= frames.length - 1) { this.playback = null; this.renderRail(); resolve(); return; }
+        if (shown >= frames.length - 1) { this.playback = null; this.renderRail(); resolve('completed'); return; }
         raf = requestAnimationFrame(tick);
       };
-      this.playback = { cancel: () => { cancelAnimationFrame(raf); this.playback = null; resolve(); } };
+      this.playback = { cancel: () => { cancelAnimationFrame(raf); this.playback = null; resolve('cancelled'); } };
       this.renderRail();
       raf = requestAnimationFrame(tick);
     });
@@ -743,7 +754,10 @@ export class SpatialWorkspace {
   partPoses(): PartPose[] { return [...this.model.parts.entries()].map(([partId, g]) => ({ partId, translationM: g.position.toArray() as [number, number, number], rotation: g.quaternion.toArray() as [number, number, number, number] })); }
   selection(): CanonicalComponent | null { return this.selectedId ? this.registry.get(this.selectedId) ?? null : null; }
 
+  private disposed = false;
+
   dispose(): void {
+    this.disposed = true;
     clearTimeout(this.transientTimer);
     this.pending?.abort();
     this.playback?.cancel();

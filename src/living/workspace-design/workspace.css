@@ -111,7 +111,7 @@
 .uw-proposal h3 { margin: 0 0 var(--space-1); font-size: var(--type-small-size); font-weight: 600; }
 .uw-proposal p { color: var(--ink-muted); font-size: var(--type-label-size); line-height: 1.5; }
 .uw-proposal .u-btn { min-height: 40px; padding: 0 var(--space-4); font-size: var(--type-small-size); }
-.uw-proposal[data-state="done"], .uw-proposal[data-state="rejected"] { border-style: solid; border-color: var(--line); }
+.uw-proposal[data-state="done"], .uw-proposal[data-state="rejected"], .uw-proposal[data-state="cancelled"] { border-style: solid; border-color: var(--line); }
 
 /* Inspector: compact card, top right (left of the conversation when it is open) */
 .uw-inspector { position: absolute; top: calc(var(--space-4) + var(--uw-notices-h, 0px)); right: var(--space-4); width: min(300px, calc(100vw - 32px)); padding: var(--space-3) var(--space-4) var(--space-4); z-index: 5; opacity: var(--uw-overlay); transition: right var(--dur-base) var(--ease-in-out), opacity var(--dur-base) var(--ease-in-out); }

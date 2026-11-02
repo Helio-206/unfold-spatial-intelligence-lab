@@ -54,7 +54,7 @@ describe('workspace visibility modes', () => {
   });
 
   it('critical notices and pending approvals are never hidden by focus or overlay level', () => {
-    const pending = msg('a1', 'assistant', { id: 'p1', title: 't', detail: 'd', kind: 'preview_fixture', approveLabel: 'ok', state: 'pending' });
+    const pending = msg('a1', 'assistant', { id: 'p1', title: 't', detail: 'd', kind: 'preview_fixture', approveLabel: 'ok', state: 'pending', actuatorId: 'boom_cylinder' });
     const s = run([
       { type: 'assistant_message', message: pending },
       { type: 'notice', notice: { id: 'pose', severity: 'critical', text: 'fixture pose' } },

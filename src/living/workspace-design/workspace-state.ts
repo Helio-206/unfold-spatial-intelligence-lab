@@ -15,7 +15,9 @@ export type EvidenceLink = { componentId: string; label: string; status: 'resolv
 export type ProposalView = {
   id: string; title: string; detail: string; kind: 'preview_fixture' | 'unavailable';
   /** What approving does. Never a commit to confirmed data in this prototype. */
-  approveLabel: string; state: 'pending' | 'approved' | 'rejected' | 'running' | 'done';
+  approveLabel: string; state: 'pending' | 'approved' | 'rejected' | 'running' | 'done' | 'cancelled';
+  /** The canonical actuator the experiment plan was made for. Approval runs exactly this; never inferred from evidence order. */
+  actuatorId: string | null;
 };
 export type Message = {
   id: string; role: 'user' | 'assistant' | 'system'; text: string; source: MessageSource; sourceNote: string | null;
