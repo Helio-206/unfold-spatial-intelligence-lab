@@ -139,9 +139,9 @@
       "thicknessQuantile": 6
     },
     "selectorPerformance": {
-      "medianLatencyMs": 2.8987,
-      "p95LatencyMs": 4.2393,
-      "observedHeapIncreaseBytes": 2393832,
+      "medianLatencyMs": 2.3382,
+      "p95LatencyMs": 3.5311,
+      "observedHeapIncreaseBytes": 1830200,
       "runs": 100
     },
     "existingProxyRecall": {
@@ -185,31 +185,35 @@
           "detectedTruth": 4,
           "recall": 1,
           "meanOrientationErrorDegrees": 0,
-          "meanEndpointErrorPx": 0,
+          "meanEndpointErrorPx": 237.817,
           "truth": [
             {
               "id": "perimeter-top",
               "matchedCandidates": 4,
               "coverage": 0.794,
-              "endpointErrorPx": 0
+              "coverageGapTolerant": 0.794,
+              "endpointErrorPx": 137.495
             },
             {
               "id": "perimeter-right",
               "matchedCandidates": 5,
               "coverage": 0.981,
-              "endpointErrorPx": 0
+              "coverageGapTolerant": 0.981,
+              "endpointErrorPx": 294.94
             },
             {
               "id": "perimeter-bottom",
               "matchedCandidates": 5,
               "coverage": 0.745,
-              "endpointErrorPx": 0
+              "coverageGapTolerant": 0.745,
+              "endpointErrorPx": 277.395
             },
             {
               "id": "perimeter-left",
               "matchedCandidates": 3,
               "coverage": 0.795,
-              "endpointErrorPx": 0
+              "coverageGapTolerant": 0.795,
+              "endpointErrorPx": 241.44
             }
           ],
           "precisionReason": "Only the principal perimeter is annotated; interior predictions are not false positives."
@@ -230,24 +234,28 @@
               "id": "perimeter-top",
               "matchedCandidates": 0,
               "coverage": 0,
+              "coverageGapTolerant": 0,
               "endpointErrorPx": null
             },
             {
               "id": "perimeter-right",
               "matchedCandidates": 0,
               "coverage": 0,
+              "coverageGapTolerant": 0,
               "endpointErrorPx": null
             },
             {
               "id": "perimeter-bottom",
               "matchedCandidates": 0,
               "coverage": 0,
+              "coverageGapTolerant": 0,
               "endpointErrorPx": null
             },
             {
               "id": "perimeter-left",
               "matchedCandidates": 0,
               "coverage": 0,
+              "coverageGapTolerant": 0,
               "endpointErrorPx": null
             }
           ],
@@ -263,31 +271,35 @@
           "detectedTruth": 3,
           "recall": 0.75,
           "meanOrientationErrorDegrees": 0,
-          "meanEndpointErrorPx": 0,
+          "meanEndpointErrorPx": 237.817,
           "truth": [
             {
               "id": "perimeter-top",
               "matchedCandidates": 3,
               "coverage": 0.719,
-              "endpointErrorPx": 0
+              "coverageGapTolerant": 0.719,
+              "endpointErrorPx": 137.495
             },
             {
               "id": "perimeter-right",
               "matchedCandidates": 4,
               "coverage": 0.858,
-              "endpointErrorPx": 0
+              "coverageGapTolerant": 0.858,
+              "endpointErrorPx": 294.94
             },
             {
               "id": "perimeter-bottom",
               "matchedCandidates": 3,
               "coverage": 0.597,
-              "endpointErrorPx": 0
+              "coverageGapTolerant": 0.597,
+              "endpointErrorPx": 277.395
             },
             {
               "id": "perimeter-left",
               "matchedCandidates": 3,
               "coverage": 0.795,
-              "endpointErrorPx": 0
+              "coverageGapTolerant": 0.795,
+              "endpointErrorPx": 241.44
             }
           ],
           "precisionReason": "Only the principal perimeter is annotated; interior predictions are not false positives."
@@ -303,9 +315,9 @@
       "thicknessQuantile": 4
     },
     "selectorPerformance": {
-      "medianLatencyMs": 4.319,
-      "p95LatencyMs": 5.7274,
-      "observedHeapIncreaseBytes": 3026960,
+      "medianLatencyMs": 3.1074,
+      "p95LatencyMs": 3.6411,
+      "observedHeapIncreaseBytes": 7221080,
       "runs": 100
     },
     "limitations": [
@@ -328,37 +340,42 @@
             "detectedTruth": 5,
             "recall": 1,
             "meanOrientationErrorDegrees": 0,
-            "meanEndpointErrorPx": 0,
+            "meanEndpointErrorPx": 1.971,
             "truth": [
               {
                 "id": "top",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "right",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "bottom",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "left",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "partition",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 3
               }
             ]
           },
@@ -366,8 +383,8 @@
             "expected": 2,
             "detected": 2,
             "recall": 1,
-            "meanBestIoU": 0.98,
-            "bestIoU": [
+            "meanBestBoundingBoxIoU": 0.98,
+            "bestBoundingBoxIoU": [
               0.98,
               0.98
             ]
@@ -391,37 +408,42 @@
             "detectedTruth": 5,
             "recall": 1,
             "meanOrientationErrorDegrees": 0,
-            "meanEndpointErrorPx": 0,
+            "meanEndpointErrorPx": 1.971,
             "truth": [
               {
                 "id": "top",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "right",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "bottom",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "left",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "partition",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 3
               }
             ]
           },
@@ -429,8 +451,8 @@
             "expected": 2,
             "detected": 2,
             "recall": 1,
-            "meanBestIoU": 0.98,
-            "bestIoU": [
+            "meanBestBoundingBoxIoU": 0.98,
+            "bestBoundingBoxIoU": [
               0.98,
               0.98
             ]
@@ -454,37 +476,42 @@
             "detectedTruth": 5,
             "recall": 1,
             "meanOrientationErrorDegrees": 0,
-            "meanEndpointErrorPx": 0,
+            "meanEndpointErrorPx": 1.971,
             "truth": [
               {
                 "id": "top",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "right",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "bottom",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "left",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "partition",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 3
               }
             ]
           },
@@ -492,8 +519,8 @@
             "expected": 2,
             "detected": 2,
             "recall": 1,
-            "meanBestIoU": 0.98,
-            "bestIoU": [
+            "meanBestBoundingBoxIoU": 0.98,
+            "bestBoundingBoxIoU": [
               0.98,
               0.98
             ]
@@ -523,37 +550,42 @@
             "detectedTruth": 5,
             "recall": 1,
             "meanOrientationErrorDegrees": 0,
-            "meanEndpointErrorPx": 0,
+            "meanEndpointErrorPx": 1.971,
             "truth": [
               {
                 "id": "top",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "right",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "bottom",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "left",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "partition",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 3
               }
             ]
           },
@@ -561,8 +593,8 @@
             "expected": 2,
             "detected": 2,
             "recall": 1,
-            "meanBestIoU": 0.987,
-            "bestIoU": [
+            "meanBestBoundingBoxIoU": 0.987,
+            "bestBoundingBoxIoU": [
               0.987,
               0.987
             ]
@@ -586,37 +618,42 @@
             "detectedTruth": 5,
             "recall": 1,
             "meanOrientationErrorDegrees": 0,
-            "meanEndpointErrorPx": 0,
+            "meanEndpointErrorPx": 1.971,
             "truth": [
               {
                 "id": "top",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "right",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "bottom",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "left",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "partition",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 3
               }
             ]
           },
@@ -624,8 +661,8 @@
             "expected": 2,
             "detected": 2,
             "recall": 1,
-            "meanBestIoU": 0.987,
-            "bestIoU": [
+            "meanBestBoundingBoxIoU": 0.987,
+            "bestBoundingBoxIoU": [
               0.987,
               0.987
             ]
@@ -649,37 +686,42 @@
             "detectedTruth": 5,
             "recall": 1,
             "meanOrientationErrorDegrees": 0,
-            "meanEndpointErrorPx": 0,
+            "meanEndpointErrorPx": 1.971,
             "truth": [
               {
                 "id": "top",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "right",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "bottom",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "left",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 1.714
               },
               {
                 "id": "partition",
                 "matchedCandidates": 1,
                 "coverage": 1,
-                "endpointErrorPx": 0
+                "coverageGapTolerant": 1,
+                "endpointErrorPx": 3
               }
             ]
           },
@@ -687,8 +729,8 @@
             "expected": 2,
             "detected": 2,
             "recall": 1,
-            "meanBestIoU": 0.987,
-            "bestIoU": [
+            "meanBestBoundingBoxIoU": 0.987,
+            "bestBoundingBoxIoU": [
               0.987,
               0.987
             ]

@@ -38,6 +38,7 @@ Com o runner corrigido, o detector foi executado cinco vezes em Chrome do sistem
 - 162 candidatos, 14 regiões e 6 contornos fechados.
 - Latência mediana da execução registrada: descodificação 285,8 ms; paredes 99,2 ms; interseções 4,2 ms; modelo/regiões 42,9 ms; contornos 7,3 ms.
 - O baseline cobre pelo menos 60% dos quatro segmentos anotados: recall parcial 4/4. Isso não mede a planta completa.
+- A cobertura publicada é a união física exacta dos intervalos recortados; a união com tolerância de lacunas fica separada em `coverageGapTolerant`. O erro de extremos usa as extensões originais dos candidatos antes do clipping. O erro médio dos extremos é 237,817 px no baseline e no tier adaptativo.
 - Erros de browser: zero.
 
 ## Métodos avaliados
@@ -90,8 +91,8 @@ Não foram promovidos a implementação. O raster do `sample-1` está indisponí
 | Amoureaux baseline | não mensurável | 4/4 parcial | não mensurável | sem GT | sem GT |
 | Amoureaux fixo 6 px | não mensurável | 0/4 parcial | não mensurável | sem GT | sem GT |
 | Amoureaux adaptativo | não mensurável | 3/4 parcial | não mensurável | sem GT | sem GT |
-| sintético ruidoso baseline | 38,5% | 100% | — | 2/2; IoU médio 0,987 | sem GT |
-| sintético ruidoso adaptativo | 100% | 100% | — | 2/2; IoU médio 0,987 | sem GT |
+| sintético ruidoso baseline | 38,5% | 100% | — | 2/2; bounding-box IoU médio 0,987 | sem GT |
+| sintético ruidoso adaptativo | 100% | 100% | — | 2/2; bounding-box IoU médio 0,987 | sem GT |
 
 No `sample-1`, os cinco falsos que permanecem no tier adaptativo são quatro segmentos de mobiliário/fixture colorido e um segmento cinzento de moldura, fixture ou arco. Os 22 falsos negativos são o custo explícito do tier. Na Amoureaux, o segmento inferior fica com cobertura 59,7%, abaixo do limiar documentado de 60%; não foi arredondado para fabricar sucesso.
 
@@ -111,7 +112,8 @@ O seletor adaptativo levou mediana de aproximadamente 3 ms no `sample-1` e 4 ms 
 
 - `src/plan-perception-quality.ts`: tier estrutural determinístico, evidência por candidato, fallback e limite de recursos.
 - `tests/plan-perception-quality.test.ts`: comportamento, junções, fallback e validação.
-- `tests/plan-perception-benchmark.test.ts`: gates determinísticos nos dados do `sample-1` e Amoureaux.
+- `tests/plan-perception-benchmark.test.ts`: gates determinísticos nos dados do `sample-1` e Amoureaux, incluindo cobertura exacta, lacunas e matching 1:1.
+- `scripts/benchmark/metrics.ts`: cobertura física, erro de extremos e matching 1:1 de bounding boxes, partilhados pelo benchmark e pelos testes.
 - `scripts/benchmark/perception-quality.ts`: métricas de parede, região, abertura, latência e memória.
 - `scripts/benchmark/browser.mjs`: Playwright local com Chrome/Chromium do sistema.
 - `reports/benchmark/annotations/`: proveniência e limites das anotações.
@@ -124,7 +126,7 @@ Nenhum ficheiro protegido pelo PR #7 foi alterado. O contrato requerido para int
 - O raster e a licença do `sample-1` continuam indisponíveis; não houve nova execução nessa imagem.
 - A classificação de parede do `sample-1` usa proxy de cor e uma correção manual, não verdade de terreno oficial.
 - Amoureaux possui apenas quatro segmentos parciais, originalmente `unreviewed`.
-- IoU de divisões só é medido nas fixtures sintéticas.
+- Nas fixtures sintéticas, o IoU é de bounding boxes e usa matching 1:1; IoU de polígonos continua indisponível.
 - Não há benchmark real completo de portas e janelas além do resultado negativo do `sample-1`.
 - A melhoria é de triagem de candidatos, não prova de reconstrução arquitetónica superior em dados reais desconhecidos.
 

@@ -3,9 +3,9 @@ import { performance } from 'node:perf_hooks';
 
 import { selectStructuralWallCandidates } from '../../src/plan-perception-quality';
 import { buildPlanVectorModel, detectWallCandidates, type PixelRaster, type PixelWallCandidate, type PlanRegionCandidate, type Point2 } from '../../src/plan-reconstruction';
+import { matchRegionsOneToOne, unionCoverage } from './metrics';
 
 type Segment = { id: string; start: Point2; end: Point2 };
-type RegionBox = { id: string; x0: number; y0: number; x1: number; y1: number };
 type CandidateLabel = { id: string; class: string };
 
 const readJson = <T>(path: string): T => JSON.parse(fs.readFileSync(path, 'utf8')) as T;
@@ -40,19 +40,6 @@ function compatible(prediction: Segment, truth: Segment, tolerancePx: number): b
   return Math.min(p1, t1) - Math.max(p0, t0) >= Math.min(p1 - p0, t1 - t0) * 0.25;
 }
 
-function unionCoverage(intervals: Array<[number, number]>, low: number, high: number, joinTolerancePx: number): { coverage: number; endpointErrorPx: number | null } {
-  const clipped = intervals.map(([a, b]) => [Math.max(low, a), Math.min(high, b)] as [number, number]).filter(([a, b]) => b > a).sort((a, b) => a[0] - b[0]);
-  if (!clipped.length) return { coverage: 0, endpointErrorPx: null };
-  const merged: Array<[number, number]> = [];
-  for (const current of clipped) {
-    const previous = merged.at(-1);
-    if (previous && current[0] <= previous[1] + joinTolerancePx) previous[1] = Math.max(previous[1], current[1]);
-    else merged.push([...current]);
-  }
-  const covered = merged.reduce((sum, [a, b]) => sum + b - a, 0);
-  return { coverage: covered / Math.max(1, high - low), endpointErrorPx: (Math.abs(merged[0]![0] - low) + Math.abs(merged.at(-1)![1] - high)) / 2 };
-}
-
 function wallMetrics(predictions: PixelWallCandidate[], truth: Segment[], tolerancePx: number) {
   const predictionMatches = predictions.map((prediction) => truth.filter((target) => compatible(prediction, target, tolerancePx)));
   const truePredictions = predictionMatches.filter((matches) => matches.length > 0).length;
@@ -60,7 +47,13 @@ function wallMetrics(predictions: PixelWallCandidate[], truth: Segment[], tolera
     const matches = predictions.filter((prediction) => compatible(prediction, target, tolerancePx));
     const [low, high] = interval(target);
     const coverage = unionCoverage(matches.map(interval), low, high, tolerancePx);
-    return { id: target.id, matchedCandidates: matches.length, coverage: round(coverage.coverage), endpointErrorPx: coverage.endpointErrorPx === null ? null : round(coverage.endpointErrorPx) };
+    return {
+      id: target.id,
+      matchedCandidates: matches.length,
+      coverage: round(coverage.coverage),
+      coverageGapTolerant: round(coverage.coverageGapTolerant),
+      endpointErrorPx: coverage.endpointErrorPx === null ? null : round(coverage.endpointErrorPx),
+    };
   });
   const orientationErrors = predictions.flatMap((prediction, index) => predictionMatches[index]!.map((target) => orientationErrorDegrees(prediction, target)));
   const detectedTruth = truthMetrics.filter((item) => item.coverage >= 0.6).length;
@@ -113,24 +106,22 @@ function roomPointRecall(regions: PlanRegionCandidate[], points: Array<{ name: s
   return { expected: points.length, detected: detected.length, recall: round(detected.length / points.length), detectedNames: detected, polygonIoU: null };
 }
 
-function boxForRegion(region: PlanRegionCandidate): RegionBox {
+function boxForRegion(region: PlanRegionCandidate) {
   const xs = region.vertices.map((point) => point.x);
   const ys = region.vertices.map((point) => point.y);
   return { id: region.id, x0: Math.min(...xs), y0: Math.min(...ys), x1: Math.max(...xs), y1: Math.max(...ys) };
 }
 
-function boxIoU(first: RegionBox, second: RegionBox): number {
-  const intersection = Math.max(0, Math.min(first.x1, second.x1) - Math.max(first.x0, second.x0)) * Math.max(0, Math.min(first.y1, second.y1) - Math.max(first.y0, second.y0));
-  const firstArea = (first.x1 - first.x0) * (first.y1 - first.y0);
-  const secondArea = (second.x1 - second.x0) * (second.y1 - second.y0);
-  return intersection / Math.max(1, firstArea + secondArea - intersection);
-}
-
-function roomBoxMetrics(regions: PlanRegionCandidate[], truth: RegionBox[]) {
+function roomBoxMetrics(regions: PlanRegionCandidate[], truth: ReturnType<typeof boxForRegion>[]) {
   const predictions = regions.filter((region) => region.eligibility === 'construction_candidate').map(boxForRegion);
-  const best = truth.map((target) => Math.max(0, ...predictions.map((prediction) => boxIoU(prediction, target))));
-  const detected = best.filter((iou) => iou >= 0.5).length;
-  return { expected: truth.length, detected, recall: round(detected / truth.length), meanBestIoU: round(best.reduce((sum, value) => sum + value, 0) / truth.length), bestIoU: best.map((value) => round(value)) };
+  const matching = matchRegionsOneToOne(predictions, truth);
+  return {
+    expected: truth.length,
+    detected: matching.matches.length,
+    recall: round(matching.matches.length / truth.length),
+    meanBestBoundingBoxIoU: round(matching.bestBoundingBoxIoU.reduce((sum, value) => sum + value, 0) / truth.length),
+    bestBoundingBoxIoU: matching.bestBoundingBoxIoU.map((value) => round(value)),
+  };
 }
 
 function openingMetrics(model: ReturnType<typeof buildPlanVectorModel>, points: Array<[number, number]>, tolerancePx: number) {
