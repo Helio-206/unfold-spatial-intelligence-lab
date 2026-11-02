@@ -1,5 +1,5 @@
 {
-  "measuredAt": "2026-11-02T21:10:02.891Z",
+  "measuredAt": "2026-11-02T21:43:49.349Z",
   "viewport": {
     "width": 1600,
     "height": 1000
@@ -8,8 +8,8 @@
   "orbit4s": {
     "frames": 3,
     "fps": 0.75,
-    "p50": 2123.5999999999767,
-    "p95": 2538.5999999999767,
+    "p50": 2015.5,
+    "p95": 2222.70000000007,
     "stats": {
       "profile": "realtime",
       "drawCalls": 139,
@@ -17,8 +17,8 @@
       "geometries": 68,
       "textures": 19,
       "programs": 15,
-      "lastFrameMs": 3.1000000000931323,
-      "frames": 64,
+      "lastFrameMs": 1.900000000023283,
+      "frames": 60,
       "pixelRatio": 1,
       "motion": false,
       "size": [
@@ -34,6 +34,6 @@
       "libraryTextures": 13
     }
   },
-  "responsivenessMs": 26.29999999993015,
+  "responsivenessMs": 18.5,
   "note": "Software rendering (SwiftShader): figures are a lower bound, not GPU performance."
 }
