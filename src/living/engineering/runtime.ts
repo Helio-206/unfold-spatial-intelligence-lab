@@ -92,10 +92,11 @@ function valuesAt(session: EngineeringSession, t: number): ActuatorValues {
   return endValues(session);
 }
 
-/** Taxa máxima de um actuador (m/s ou rad/s), ou `null` se a montagem não a conhece. */
+/** Taxa máxima de um actuador (m/s ou rad/s), ou `null` se a montagem não a conhece ou se não é positiva (nunca se divide por ela). */
 function maxRateOf(assembly: Assembly, actuatorId: string): number | null {
   const actuator = assembly.actuators.find((item) => item.id === actuatorId)!;
-  return actuator.maxRate ? actuator.maxRate.value : null;
+  const rate = actuator.maxRate ? actuator.maxRate.value : null;
+  return rate !== null && Number.isFinite(rate) && rate > 0 ? rate : null;
 }
 
 /**
@@ -119,6 +120,11 @@ export function commandMove(session: EngineeringSession, command: MoveCommand): 
   const to: ActuatorValues = { ...current, ...command.targets };
   const changed = Object.keys(to).filter((id) => to[id] !== current[id]);
   if (changed.length === 0) return { ok: false, code: 'COMMAND_NO_CHANGE', message: 'Nenhum actuador muda de valor.', blockedCode: null, firstInvalidTimeS: null };
+  // O ponto de partida também tem de ser válido: uma alteração de parâmetro pode tê-lo deixado bloqueado.
+  const start = evaluateActuators(session.assembly, current, { timestampS: session.durationS });
+  if (start.status !== 'ok') {
+    return { ok: false, code: 'START_BLOCKED', message: `A configuração actual não é válida, por isso não se parte dela: ${start.blocked?.message ?? ''}`, blockedCode: start.blocked?.code ?? null, firstInvalidTimeS: session.durationS };
+  }
 
   let duration = command.durationS ?? 0;
   if (command.durationS === undefined) {

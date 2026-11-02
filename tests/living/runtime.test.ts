@@ -204,6 +204,29 @@ describe('determinismo, instantes arbitrários e reprodução', () => {
 });
 
 describe('alteração de parâmetros: antes e depois, com a mesma entrada', () => {
+  it('uma velocidade máxima nula ou negativa é recusada na alteração de parâmetro, antes de qualquer duração ser calculada', () => {
+    for (const value of [0, -0.1]) {
+      const r = evaluateParameterChange(createEngineeringSession(EXCAVATOR_ASSEMBLY_V1), { kind: 'actuator_max_rate', actuatorId: 'boom_cylinder', value, unit: 'm/s', provenance });
+      expect(r, `valor ${value}`).toMatchObject({ ok: false, code: 'PARAMETER_INVALID' });
+    }
+  });
+
+  it('uma montagem com velocidade máxima não positiva não cria sessão', () => {
+    const bad = clone();
+    (bad.actuators[1] as unknown as { maxRate: { value: number } }).maxRate.value = 0;
+    expect(() => createEngineeringSession(bad)).toThrow(AssemblyContractError);
+  });
+
+  it('um comando não é aceite a partir de uma configuração actual bloqueada, mesmo que o destino seja válido', () => {
+    const moved = commandMove(createEngineeringSession(EXCAVATOR_ASSEMBLY_V1), { targets: { boom_cylinder: 0.65 } });
+    if (!moved.ok) throw new Error(moved.message);
+    const patched = evaluateParameterChange(moved.session, { kind: 'joint_limits', jointId: 'boom_joint', min: -0.55, max: 0.721468824192, provenance });
+    if (!patched.ok) throw new Error(patched.code);
+    expect(sampleEngineeringMotion(patched.session, 0).status).toBe('blocked');
+    const r = commandMove(patched.session, { targets: { boom_cylinder: 0.6 } });
+    expect(r).toMatchObject({ ok: false, code: 'START_BLOCKED', blockedCode: 'CYLINDER_OUT_OF_JOINT_RANGE' });
+  });
+
   it('mudar um parâmetro depois de mover a máquina: a sessão devolvida começa nos valores comparados, não na referência', () => {
     const moved = commandMove(createEngineeringSession(EXCAVATOR_ASSEMBLY_V1), { targets: { boom_cylinder: 0.65 } });
     if (!moved.ok) throw new Error(moved.message);

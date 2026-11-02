@@ -249,6 +249,8 @@ export function validateAssembly(value: unknown): AssemblyValidation {
     return provenanceOk(`${path}.provenance`, q.provenance) && isFiniteNumber(q.value) && units.includes(q.unit as AssemblyUnit);
   };
   const optionalQuantity = (path: string, q: unknown, units: readonly AssemblyUnit[]) => { if (q !== null) quantityOk(path, q, units); };
+  // Uma taxa máxima tem de ser positiva: com zero ou negativa, a duração de um movimento não existe ou não faz sentido.
+  const positiveRate = (path: string, q: unknown) => { if (isObject(q) && isFiniteNumber(q.value) && q.value <= 0) add('INVALID_NUMBER', `${path}.value`, 'A velocidade máxima tem de ser positiva.'); };
   const poseOk = (path: string, pose: unknown) => {
     if (!isObject(pose)) { add('MISSING_FIELD', path, 'Falta a pose.'); return; }
     if (!isVec(pose.translationM, 3)) add('INVALID_NUMBER', `${path}.translationM`, 'Vector de 3 números finitos (m).');
@@ -435,6 +437,7 @@ export function validateAssembly(value: unknown): AssemblyValidation {
       const joint = revolute('jointId', actuator.jointId);
       if (joint && joint.type !== 'revolute') add('INVALID_ACTUATOR', `${path}.jointId`, 'Um accionamento rotativo precisa de uma junta revolute.');
       optionalQuantity(`${path}.maxRate`, actuator.maxRate, ['rad/s']);
+      positiveRate(`${path}.maxRate`, actuator.maxRate);
     } else if (actuator.kind === 'hydraulic_cylinder') {
       for (const key of ['barrelPartId', 'rodPartId'] as const) if (typeof actuator[key] !== 'string' || !partIds.has(actuator[key] as string)) add('UNKNOWN_REFERENCE', `${path}.${key}`, 'Parte desconhecida.');
       const slide = revolute('slideJointId', actuator.slideJointId);
@@ -443,6 +446,7 @@ export function validateAssembly(value: unknown): AssemblyValidation {
       else { const lo = stroke(`${path}.stroke.min`, actuator.stroke.min); const hi = stroke(`${path}.stroke.max`, actuator.stroke.max); if (lo && hi && (actuator.stroke.min as Quantity).value >= (actuator.stroke.max as Quantity).value) add('INVALID_LIMITS', `${path}.stroke`, 'min tem de ser menor que max.'); }
       stroke(`${path}.referenceStroke`, actuator.referenceStroke);
       optionalQuantity(`${path}.maxRate`, actuator.maxRate, ['m/s']);
+      positiveRate(`${path}.maxRate`, actuator.maxRate);
       if (!isObject(actuator.hydraulics)) add('MISSING_FIELD', `${path}.hydraulics`, 'hydraulics tem campos null quando desconhecidos.');
       else {
         optionalQuantity(`${path}.hydraulics.boreDiameter`, actuator.hydraulics.boreDiameter, ['m']);
