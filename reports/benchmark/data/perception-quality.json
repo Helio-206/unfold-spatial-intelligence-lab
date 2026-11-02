@@ -1,0 +1,710 @@
+{
+  "schema": "unfold.perception_benchmark.v1",
+  "implementationGate": {
+    "integratedAsDefault": false,
+    "reason": "The adaptive tier improves measured precision but intentionally lowers candidate recall. Raw detector output remains available for review until more independently annotated real plans exist."
+  },
+  "methods": {
+    "baseline": "Existing scanline detector output, unchanged.",
+    "fixedThickness6px": "A fixed 6 px thickness gate; included to expose resolution generalization failure.",
+    "adaptiveStructural": "Adaptive thickness band plus minimum length or two orthogonal endpoint supports; rejected candidates remain in the review fallback."
+  },
+  "sample1": {
+    "evidence": "stored PR #6 output; source raster unavailable, so the detector was not re-executed",
+    "source": {
+      "sha256": "b8876fb66b45c26f2ec72fcaf3354a6cec6e4718e1b61b0fa443045f2667f4d0",
+      "width": 983,
+      "height": 634,
+      "licenseStatus": "unconfirmed",
+      "rasterAvailable": false
+    },
+    "baselineDetectorTimingsMs": {
+      "decode (decodePlanImage)": 51.3,
+      "detect walls (detectWallCandidates)": 11.1,
+      "intersections": 1,
+      "vector model + regions (buildPlanVectorModel)": 67,
+      "closed contours (countClosedCandidateContours)": 6.1
+    },
+    "methods": {
+      "baseline": {
+        "walls": {
+          "predicted": 151,
+          "truePositive": 49,
+          "falsePositive": 102,
+          "falseNegative": 0,
+          "precision": 0.325,
+          "recall": 1,
+          "f1": 0.49,
+          "falseByCategory": {
+            "false: coloured furniture/fixture": 65,
+            "false: light floor strip / tile line": 4,
+            "false: mid-grey (frame, fixture, door arc)": 33
+          }
+        },
+        "rooms": {
+          "expected": 14,
+          "detected": 2,
+          "recall": 0.143,
+          "detectedNames": [
+            "Balcony",
+            "Bedroom 2"
+          ],
+          "polygonIoU": null
+        },
+        "openings": {
+          "expected": 17,
+          "detected": 0,
+          "recall": 0,
+          "candidates": 17,
+          "matchedCandidates": 0,
+          "precision": 0,
+          "tolerancePx": 30
+        }
+      },
+      "fixedThickness6px": {
+        "walls": {
+          "predicted": 40,
+          "truePositive": 28,
+          "falsePositive": 12,
+          "falseNegative": 21,
+          "precision": 0.7,
+          "recall": 0.571,
+          "f1": 0.629,
+          "falseByCategory": {
+            "false: coloured furniture/fixture": 10,
+            "false: light floor strip / tile line": 0,
+            "false: mid-grey (frame, fixture, door arc)": 2
+          }
+        },
+        "rooms": {
+          "expected": 14,
+          "detected": 1,
+          "recall": 0.071,
+          "detectedNames": [
+            "Bedroom 2"
+          ],
+          "polygonIoU": null
+        },
+        "openings": {
+          "expected": 17,
+          "detected": 0,
+          "recall": 0,
+          "candidates": 0,
+          "matchedCandidates": 0,
+          "precision": null,
+          "tolerancePx": 30
+        }
+      },
+      "adaptiveStructural": {
+        "walls": {
+          "predicted": 32,
+          "truePositive": 27,
+          "falsePositive": 5,
+          "falseNegative": 22,
+          "precision": 0.844,
+          "recall": 0.551,
+          "f1": 0.667,
+          "falseByCategory": {
+            "false: coloured furniture/fixture": 4,
+            "false: light floor strip / tile line": 0,
+            "false: mid-grey (frame, fixture, door arc)": 1
+          }
+        },
+        "rooms": {
+          "expected": 14,
+          "detected": 1,
+          "recall": 0.071,
+          "detectedNames": [
+            "Bedroom 2"
+          ],
+          "polygonIoU": null
+        },
+        "openings": {
+          "expected": 17,
+          "detected": 0,
+          "recall": 0,
+          "candidates": 0,
+          "matchedCandidates": 0,
+          "precision": null,
+          "tolerancePx": 30
+        }
+      }
+    },
+    "structuralThresholds": {
+      "minimumThicknessPx": 5,
+      "maximumThicknessPx": 27,
+      "minimumLengthPx": 50.72,
+      "endpointTolerancePx": 8,
+      "lowerThicknessQuantile": 1,
+      "thicknessQuantile": 6
+    },
+    "selectorPerformance": {
+      "medianLatencyMs": 2.8987,
+      "p95LatencyMs": 4.2393,
+      "observedHeapIncreaseBytes": 2393832,
+      "runs": 100
+    },
+    "existingProxyRecall": {
+      "proxyRuns": 29,
+      "proxyFound": 25,
+      "recall": 0.862,
+      "maskPixelCoverage": 0.624
+    },
+    "limitations": [
+      "Candidate labels use an approximate colour-mask proxy plus one manual balcony correction.",
+      "Room points support recall only; polygon IoU is unavailable.",
+      "The source image license remains unconfirmed."
+    ]
+  },
+  "amoureaux": {
+    "evidence": "detector re-executed in system Chrome against the SHA-bound public-domain raster",
+    "source": {
+      "title": "Amoureaux House measured first-floor plan",
+      "sha256": "1d78e739dad568ea49eb193416dc5f91c8b62b904a0170c63af803dd87750026",
+      "width": 3700,
+      "height": 2996,
+      "licenseStatus": "public-domain-us",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Drawing_of_the_First_Floor_Plan--_Amoureaux_House_in_Ste_Genevieve_MO.png",
+      "rasterAvailable": true
+    },
+    "browserErrors": [],
+    "baselineDetectorTimingsMs": {
+      "decode (decodePlanImage)": 285.8,
+      "detect walls (detectWallCandidates)": 99.2,
+      "intersections": 4.2,
+      "vector model + regions (buildPlanVectorModel)": 42.9,
+      "closed contours (countClosedCandidateContours)": 7.3
+    },
+    "methods": {
+      "baseline": {
+        "walls": {
+          "predictions": 162,
+          "matchedPredictions": 17,
+          "precision": null,
+          "truthSegments": 4,
+          "detectedTruth": 4,
+          "recall": 1,
+          "meanOrientationErrorDegrees": 0,
+          "meanEndpointErrorPx": 0,
+          "truth": [
+            {
+              "id": "perimeter-top",
+              "matchedCandidates": 4,
+              "coverage": 0.794,
+              "endpointErrorPx": 0
+            },
+            {
+              "id": "perimeter-right",
+              "matchedCandidates": 5,
+              "coverage": 0.981,
+              "endpointErrorPx": 0
+            },
+            {
+              "id": "perimeter-bottom",
+              "matchedCandidates": 5,
+              "coverage": 0.745,
+              "endpointErrorPx": 0
+            },
+            {
+              "id": "perimeter-left",
+              "matchedCandidates": 3,
+              "coverage": 0.795,
+              "endpointErrorPx": 0
+            }
+          ],
+          "precisionReason": "Only the principal perimeter is annotated; interior predictions are not false positives."
+        }
+      },
+      "fixedThickness6px": {
+        "walls": {
+          "predictions": 9,
+          "matchedPredictions": 0,
+          "precision": null,
+          "truthSegments": 4,
+          "detectedTruth": 0,
+          "recall": 0,
+          "meanOrientationErrorDegrees": null,
+          "meanEndpointErrorPx": null,
+          "truth": [
+            {
+              "id": "perimeter-top",
+              "matchedCandidates": 0,
+              "coverage": 0,
+              "endpointErrorPx": null
+            },
+            {
+              "id": "perimeter-right",
+              "matchedCandidates": 0,
+              "coverage": 0,
+              "endpointErrorPx": null
+            },
+            {
+              "id": "perimeter-bottom",
+              "matchedCandidates": 0,
+              "coverage": 0,
+              "endpointErrorPx": null
+            },
+            {
+              "id": "perimeter-left",
+              "matchedCandidates": 0,
+              "coverage": 0,
+              "endpointErrorPx": null
+            }
+          ],
+          "precisionReason": "Only the principal perimeter is annotated; interior predictions are not false positives."
+        }
+      },
+      "adaptiveStructural": {
+        "walls": {
+          "predictions": 80,
+          "matchedPredictions": 13,
+          "precision": null,
+          "truthSegments": 4,
+          "detectedTruth": 3,
+          "recall": 0.75,
+          "meanOrientationErrorDegrees": 0,
+          "meanEndpointErrorPx": 0,
+          "truth": [
+            {
+              "id": "perimeter-top",
+              "matchedCandidates": 3,
+              "coverage": 0.719,
+              "endpointErrorPx": 0
+            },
+            {
+              "id": "perimeter-right",
+              "matchedCandidates": 4,
+              "coverage": 0.858,
+              "endpointErrorPx": 0
+            },
+            {
+              "id": "perimeter-bottom",
+              "matchedCandidates": 3,
+              "coverage": 0.597,
+              "endpointErrorPx": 0
+            },
+            {
+              "id": "perimeter-left",
+              "matchedCandidates": 3,
+              "coverage": 0.795,
+              "endpointErrorPx": 0
+            }
+          ],
+          "precisionReason": "Only the principal perimeter is annotated; interior predictions are not false positives."
+        }
+      }
+    },
+    "structuralThresholds": {
+      "minimumThicknessPx": 2,
+      "maximumThicknessPx": 15,
+      "minimumLengthPx": 239.68,
+      "endpointTolerancePx": 4,
+      "lowerThicknessQuantile": 1.5,
+      "thicknessQuantile": 4
+    },
+    "selectorPerformance": {
+      "medianLatencyMs": 4.319,
+      "p95LatencyMs": 5.7274,
+      "observedHeapIncreaseBytes": 3026960,
+      "runs": 100
+    },
+    "limitations": [
+      "These four segments were reconstructed from the prior unreviewed manual tracing and its recorded affine image mapping.",
+      "They cover only the principal rectangular perimeter; interior walls, porch and openings are deliberately unannotated.",
+      "Precision cannot be computed because unannotated architectural lines must not be counted as false positives."
+    ]
+  },
+  "synthetic": [
+    {
+      "id": "synthetic-clean",
+      "source": "self-authored deterministic synthetic fixture",
+      "methods": {
+        "baseline": {
+          "walls": {
+            "predictions": 5,
+            "matchedPredictions": 5,
+            "precision": 1,
+            "truthSegments": 5,
+            "detectedTruth": 5,
+            "recall": 1,
+            "meanOrientationErrorDegrees": 0,
+            "meanEndpointErrorPx": 0,
+            "truth": [
+              {
+                "id": "top",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "right",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "bottom",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "left",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "partition",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              }
+            ]
+          },
+          "rooms": {
+            "expected": 2,
+            "detected": 2,
+            "recall": 1,
+            "meanBestIoU": 0.98,
+            "bestIoU": [
+              0.98,
+              0.98
+            ]
+          },
+          "openings": {
+            "expected": 0,
+            "detected": 0,
+            "recall": null,
+            "candidates": 0,
+            "matchedCandidates": 0,
+            "precision": null,
+            "tolerancePx": 8
+          }
+        },
+        "fixedThickness6px": {
+          "walls": {
+            "predictions": 5,
+            "matchedPredictions": 5,
+            "precision": 1,
+            "truthSegments": 5,
+            "detectedTruth": 5,
+            "recall": 1,
+            "meanOrientationErrorDegrees": 0,
+            "meanEndpointErrorPx": 0,
+            "truth": [
+              {
+                "id": "top",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "right",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "bottom",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "left",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "partition",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              }
+            ]
+          },
+          "rooms": {
+            "expected": 2,
+            "detected": 2,
+            "recall": 1,
+            "meanBestIoU": 0.98,
+            "bestIoU": [
+              0.98,
+              0.98
+            ]
+          },
+          "openings": {
+            "expected": 0,
+            "detected": 0,
+            "recall": null,
+            "candidates": 0,
+            "matchedCandidates": 0,
+            "precision": null,
+            "tolerancePx": 8
+          }
+        },
+        "adaptiveStructural": {
+          "walls": {
+            "predictions": 5,
+            "matchedPredictions": 5,
+            "precision": 1,
+            "truthSegments": 5,
+            "detectedTruth": 5,
+            "recall": 1,
+            "meanOrientationErrorDegrees": 0,
+            "meanEndpointErrorPx": 0,
+            "truth": [
+              {
+                "id": "top",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "right",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "bottom",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "left",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "partition",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              }
+            ]
+          },
+          "rooms": {
+            "expected": 2,
+            "detected": 2,
+            "recall": 1,
+            "meanBestIoU": 0.98,
+            "bestIoU": [
+              0.98,
+              0.98
+            ]
+          },
+          "openings": {
+            "expected": 0,
+            "detected": 0,
+            "recall": null,
+            "candidates": 0,
+            "matchedCandidates": 0,
+            "precision": null,
+            "tolerancePx": 8
+          }
+        }
+      }
+    },
+    {
+      "id": "synthetic-noisy",
+      "source": "self-authored deterministic synthetic fixture",
+      "methods": {
+        "baseline": {
+          "walls": {
+            "predictions": 13,
+            "matchedPredictions": 5,
+            "precision": 0.385,
+            "truthSegments": 5,
+            "detectedTruth": 5,
+            "recall": 1,
+            "meanOrientationErrorDegrees": 0,
+            "meanEndpointErrorPx": 0,
+            "truth": [
+              {
+                "id": "top",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "right",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "bottom",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "left",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "partition",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              }
+            ]
+          },
+          "rooms": {
+            "expected": 2,
+            "detected": 2,
+            "recall": 1,
+            "meanBestIoU": 0.987,
+            "bestIoU": [
+              0.987,
+              0.987
+            ]
+          },
+          "openings": {
+            "expected": 0,
+            "detected": 0,
+            "recall": null,
+            "candidates": 0,
+            "matchedCandidates": 0,
+            "precision": null,
+            "tolerancePx": 8
+          }
+        },
+        "fixedThickness6px": {
+          "walls": {
+            "predictions": 5,
+            "matchedPredictions": 5,
+            "precision": 1,
+            "truthSegments": 5,
+            "detectedTruth": 5,
+            "recall": 1,
+            "meanOrientationErrorDegrees": 0,
+            "meanEndpointErrorPx": 0,
+            "truth": [
+              {
+                "id": "top",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "right",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "bottom",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "left",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "partition",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              }
+            ]
+          },
+          "rooms": {
+            "expected": 2,
+            "detected": 2,
+            "recall": 1,
+            "meanBestIoU": 0.987,
+            "bestIoU": [
+              0.987,
+              0.987
+            ]
+          },
+          "openings": {
+            "expected": 0,
+            "detected": 0,
+            "recall": null,
+            "candidates": 0,
+            "matchedCandidates": 0,
+            "precision": null,
+            "tolerancePx": 8
+          }
+        },
+        "adaptiveStructural": {
+          "walls": {
+            "predictions": 5,
+            "matchedPredictions": 5,
+            "precision": 1,
+            "truthSegments": 5,
+            "detectedTruth": 5,
+            "recall": 1,
+            "meanOrientationErrorDegrees": 0,
+            "meanEndpointErrorPx": 0,
+            "truth": [
+              {
+                "id": "top",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "right",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "bottom",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "left",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              },
+              {
+                "id": "partition",
+                "matchedCandidates": 1,
+                "coverage": 1,
+                "endpointErrorPx": 0
+              }
+            ]
+          },
+          "rooms": {
+            "expected": 2,
+            "detected": 2,
+            "recall": 1,
+            "meanBestIoU": 0.987,
+            "bestIoU": [
+              0.987,
+              0.987
+            ]
+          },
+          "openings": {
+            "expected": 0,
+            "detected": 0,
+            "recall": null,
+            "candidates": 0,
+            "matchedCandidates": 0,
+            "precision": null,
+            "tolerancePx": 8
+          }
+        }
+      }
+    }
+  ],
+  "memoryMeasurement": "Selector heap increase is an observed process-level upper bound across 100 runs, not isolated allocation profiling."
+}

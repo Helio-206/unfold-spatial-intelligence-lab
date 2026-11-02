@@ -1,0 +1,22 @@
+{
+  "source": {
+    "title": "Amoureaux House measured first-floor plan",
+    "sha256": "1d78e739dad568ea49eb193416dc5f91c8b62b904a0170c63af803dd87750026",
+    "width": 3700,
+    "height": 2996,
+    "licenseStatus": "public-domain-us",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Drawing_of_the_First_Floor_Plan--_Amoureaux_House_in_Ste_Genevieve_MO.png",
+    "rasterAvailable": true
+  },
+  "walls": [
+    { "id": "perimeter-top", "start": { "x": 773.2443081056354, "y": 732.1684292605523 }, "end": { "x": 2925.703697619719, "y": 732.1684292605523 } },
+    { "id": "perimeter-right", "start": { "x": 2925.703697619719, "y": 732.1684292605522 }, "end": { "x": 2925.703697619719, "y": 1893.5393357537894 } },
+    { "id": "perimeter-bottom", "start": { "x": 2925.703697619719, "y": 1893.5393357537896 }, "end": { "x": 773.2443081056354, "y": 1893.5393357537891 } },
+    { "id": "perimeter-left", "start": { "x": 773.2443081056355, "y": 1893.5393357537894 }, "end": { "x": 773.2443081056355, "y": 732.1684292605522 } }
+  ],
+  "notes": [
+    "These four segments were reconstructed from the prior unreviewed manual tracing and its recorded affine image mapping.",
+    "They cover only the principal rectangular perimeter; interior walls, porch and openings are deliberately unannotated.",
+    "Precision cannot be computed because unannotated architectural lines must not be counted as false positives."
+  ]
+}
