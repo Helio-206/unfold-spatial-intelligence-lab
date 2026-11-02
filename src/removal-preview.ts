@@ -1,3 +1,5 @@
+import { scaleSourceWords, type RoomMergeResult, type ScaleBasis } from './room-merge';
+import { explainSceneError } from './scene-messages';
 import type { Node, SpatialSceneV1 } from './spatial-scene';
 
 /**
@@ -35,4 +37,60 @@ export function describeWallRemoval(scene: SpatialSceneV1, wallId: string): Remo
   const roomIds = new Set(scene.relations.filter((relation) => relation.toNodeId === wallId || relation.fromNodeId === wallId).map((relation) => (relation.fromNodeId === wallId ? relation.toNodeId : relation.fromNodeId)));
   const rooms = scene.nodes.filter((node) => roomIds.has(node.id) && node.component?.kind === 'room').map((node) => ({ id: node.id, label: node.label, areaM2: polygonAreaM2(node) }));
   return { wallId, wallLabel: wall.label, lengthM: wall.geometry?.kind === 'box' ? wall.geometry.sizeM[0] : null, openings, rooms, structure: 'unknown' };
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// O texto do cartão de remoção. Pura: o editor só a desenha.
+// ---------------------------------------------------------------------------------------------------------------------
+export type CardRow = { label: string; value: string; tone?: 'unknown' };
+export type RemovalCard =
+  | { ok: true; title: string; rows: CardRow[]; notice: string }
+  | { ok: false; title: string; reason: string; code: string; rows: CardRow[] };
+export type RemovalOutcome =
+  | { ok: true; plan: { merge?: Extract<RoomMergeResult, { status: 'merge' }> }; notice: string }
+  | { ok: false; code: string };
+
+/** Áreas em m² com vírgula decimal, sem zeros a mais: 21 → «21», 22,5 → «22,5». */
+const m2 = (value: number) => value.toLocaleString('pt-PT', { maximumFractionDigits: 2, useGrouping: false });
+const STATUS_WORD = { pass: 'ok', fail: 'falhou', unknown: 'desconhecida' } as const;
+const STRUCTURE: CardRow = { label: 'estrutura', value: 'desconhecida · sem dados estruturais', tone: 'unknown' };
+
+/** A linha da escala, escrita só a partir do que a cena regista: «baseada numa escala fornecida pelo utilizador · por verificar». */
+export function scaleRow(scale: ScaleBasis): CardRow {
+  if (scale.state === 'unknown') return { label: 'escala', value: 'desconhecida · sem calibração na cena', tone: 'unknown' };
+  if (scale.state === 'rejected') return { label: 'escala', value: `${scaleSourceWords(scale)} · rejeitada, a área não é fiável`, tone: 'unknown' };
+  if (scale.state === 'verified') return { label: 'escala', value: `${scaleSourceWords(scale)} · verificada` };
+  return { label: 'escala', value: `${scaleSourceWords(scale)} · por verificar`, tone: 'unknown' };
+}
+
+function removesRow(info: RemovalDescription): CardRow {
+  const count = info.openings.length;
+  return { label: 'remove', value: `1 parede${count ? ` e ${count} abertura${count > 1 ? 's' : ''}` : ''}` };
+}
+
+/**
+ * O que o cartão diz sobre uma remoção, lido da operação candidata (o plano) e não da cena de partida: a divisão que sai, a sua
+ * área (calculada pelo motor a partir do polígono resultante) e as verificações do Core. A estrutura é sempre desconhecida.
+ */
+export function describeRemovalCard(info: RemovalDescription, outcome: RemovalOutcome): RemovalCard {
+  if (!outcome.ok) {
+    const reason = outcome.code === 'REMOVE_HAS_DEPENDENCIES' ? `O motor recusa porque há elementos que dependem desta parede${info.rooms.length ? ` (${info.rooms.map((room) => room.label).join(', ')} ${info.rooms.length > 1 ? 'dependem' : 'depende'} dela)` : ''}.` : (explainSceneError(outcome.code));
+    return { ok: false, title: info.wallLabel, reason, code: outcome.code, rows: [STRUCTURE] };
+  }
+  const rows: CardRow[] = [removesRow(info)];
+  const merge = outcome.plan.merge;
+  if (!merge) rows.push({ label: 'divisões afectadas', value: 'nenhuma' });
+  else {
+    rows.push({ label: 'divisões', value: `${merge.merged.label} → 1 divisão` });
+    // A área é calculada, mas os metros dependem da escala; o cartão diz de onde vem e se alguém a verificou, sem a promover.
+    rows.push({ label: 'área calculada', value: `${m2(merge.areas.merged)} m²` });
+    rows.push(scaleRow(merge.scale));
+    rows.push(merge.sourceGeometry === 'confirmed' ? { label: 'geometria', value: 'das duas divisões confirmada' } : { label: 'geometria', value: 'das duas divisões por rever', tone: 'unknown' });
+    for (const check of merge.report.checks) {
+      if (check.id === 'architecture.room-merge.area') rows.push({ label: 'área conservada', value: `${STATUS_WORD[check.status]} · ${m2(merge.areas.merged)} m² = ${m2(merge.areas.first)} + ${m2(merge.areas.second)} m²` });
+      else if (check.id === 'architecture.room-merge.simple-polygon') rows.push({ label: 'polígono simples', value: STATUS_WORD[check.status] });
+    }
+  }
+  rows.push(STRUCTURE);
+  return { ok: true, title: `Remover ${info.wallLabel}`, rows, notice: outcome.notice };
 }

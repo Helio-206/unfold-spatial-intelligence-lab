@@ -24,6 +24,16 @@ const MESSAGES: Record<string, string> = {
   PREVIEW_BLOCKED: 'Esta pré-visualização está bloqueada e não pode ser aplicada.',
   GEOMETRY_REQUIRED: 'Este componente não tem geometria para alterar.',
   NEW_GEOMETRY_CANNOT_CLAIM_HUMAN_VERIFICATION: 'Uma geometria nova não pode vir já marcada como verificada por uma pessoa.',
+  ROOM_MERGE_SINGLE_ROOM: 'Esta parede fecha uma só divisão: removê-la abriria a divisão para fora, por isso o motor não a remove.',
+  ROOM_MERGE_MORE_THAN_TWO_ROOMS: 'Esta parede é limite de três ou mais divisões; o motor só funde duas.',
+  ROOM_MERGE_BOUNDARY_INCOMPLETE: 'As referências do contorno de uma das divisões estão em falta, inválidas ou incoerentes com as paredes (por exemplo, uma parede de que a divisão depende não está ligada ao polígono). Fundir assim deixaria uma divisão que não acompanha as edições às suas paredes, por isso o motor não a funde.',
+  ROOM_MERGE_UNSUPPORTED_TRANSFORM: 'Uma das divisões (ou das paredes do seu contorno) tem posição, rotação, escala ou grupo próprios. O motor só funde divisões cujo polígono está já no referencial da cena: converter referenciais a meio podia dar uma união que não é a que se vê, por isso não a faz.',
+  ROOM_MERGE_NOT_POLYGON: 'Uma das divisões não tem um polígono que o motor consiga fundir.',
+  ROOM_MERGE_EDGE_MISMATCH: 'A aresta que as duas divisões partilham não coincide com esta parede (a parede é mais curta ou mais comprida do que a aresta, ou a partilha é só parcial).',
+  ROOM_MERGE_TOUCH_ELSEWHERE: 'As duas divisões tocam-se também noutro troço: a união teria um buraco ou um corte, por isso não é feita.',
+  ROOM_MERGE_NOT_SIMPLE: 'O polígono resultante não seria simples (as divisões sobrepõem-se ou o contorno cruza-se), por isso a fusão não é feita.',
+  ROOM_MERGE_OTHER_RELATIONS: 'Uma das divisões tem ligações que não são paredes do seu contorno, e o motor não sabe o que fazer com elas.',
+  ROOM_MERGE_AREA_NOT_CONSERVED: 'A área da divisão fundida não bate certo com a soma das duas (erro acima de 1e-9): o motor não consegue provar a fusão.',
   AUTHORIZED_VALUE_NOT_CORRECTED: 'Não foi possível registar a autorização desta alteração. Nada foi aplicado.',
 };
 
@@ -40,7 +50,7 @@ const FIELD_NAMES: Record<string, string> = {
   relation: 'relação',
   constraint: 'restrição',
 };
-const PROPERTY_NAMES: Record<string, string> = { length: 'comprimento', height: 'altura', thickness: 'espessura', width: 'largura', sill: 'peitoril' };
+const PROPERTY_NAMES: Record<string, string> = { length: 'comprimento', height: 'altura', thickness: 'espessura', width: 'largura', sill: 'peitoril', area: 'área', name: 'nome' };
 const MAX_LISTED = 6;
 
 function fieldName(field: string): string {

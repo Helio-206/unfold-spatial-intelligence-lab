@@ -7,6 +7,7 @@ import { decodePlanImage } from './plan-image';
 import { buildPlanVectorModel, countClosedCandidateContours, detectCandidateIntersections, detectWallCandidates, mergeWallCandidates, splitWallCandidate, traceWallCandidate, type PixelWallCandidate, type Point2 } from './plan-reconstruction';
 import { addOpeningToScene, createPlanScene, planOpeningEdit, planWallEdit, planWallRemoval, type CompositePlan } from './plan-scene';
 import { createSceneAuthorizer } from './scene-authorizer';
+import { roomDisplayName } from './room-merge';
 import { confirmedNotice, explainSceneError } from './scene-messages';
 import type { ConfirmedReference } from './scene-authorization';
 import type { CommandOrigin } from './core';
@@ -22,7 +23,7 @@ import { cameraFrameAspect, createSpatialCameraView, createSpatialFocusView } fr
 import { countReconstructionStates, RECONSTRUCTION_STATES, RECONSTRUCTION_STATE_MEANING, reconstructionChip, reconstructionState } from './reconstruction-state';
 import lockupLight from '../design-system/logos/unfold-lockup-on-light.svg';
 import { mountStepsHeader } from './steps-header';
-import { describeWallRemoval, type RemovalDescription } from './removal-preview';
+import { describeRemovalCard, describeWallRemoval, type RemovalCard } from './removal-preview';
 import { dur as motionDur, EASE as MOTION_EASE, gsap as motionGsap, prefersReducedMotion as motionReduced } from './motion';
 import './spatial-editor.css';
 
@@ -65,6 +66,7 @@ app.innerHTML = `<main class="spatial-lab" data-state="empty" data-theme="dark">
   <aside id="inspector" class="inspector" data-theme="light" hidden aria-label="Inspector do componente">
     <div class="panel-heading"><span>02 · componente</span><button id="clear-focus" type="button" aria-label="Fechar inspector">×</button></div>
     <h1 id="node-label">—</h1><p id="node-meta" class="micro-copy"></p><p id="node-provenance" class="provenance-note"></p>
+    <div id="room-fields" hidden><label class="field">Nome da divisão<input id="room-name" type="text" maxlength="80" placeholder="Ex.: Cozinha"></label><button id="preview-room-name" type="button">Pré-visualizar nome</button></div>
     <div id="wall-fields" hidden>
       <div class="dimensions-grid"><label class="field">Comprimento (m)<input id="wall-length" type="number" min="0.01" step="any"></label><label class="field">Altura (m)<input id="wall-height-edit" type="number" min="0.01" step="any"></label><label class="field">Espessura (m)<input id="wall-thickness-edit" type="number" min="0.01" step="any"></label><label class="field">Posição X (m)<input id="wall-x" type="number" step="any"></label><label class="field">Posição Z (m)<input id="wall-z" type="number" step="any"></label></div>
       <button id="preview-wall" type="button">Pré-visualizar alteração</button>
@@ -218,7 +220,7 @@ function selectNode(id: string | undefined): void {
   const node = transaction?.scene.nodes.find((candidate) => candidate.id === id);
   $('#inspector').hidden = !node;
   if (!node) { gizmo.detach(); return; }
-  $('#node-label').textContent = node.label;
+  $('#node-label').textContent = roomDisplayName(node);
   const geometry = node.geometry;
   $('#node-meta').textContent = geometry?.kind === 'box' ? `${geometry.sizeM.map((n) => `${n.toFixed(2)} m`).join(' × ')} · ${node.component?.kind ?? 'elemento'}` : `${geometry?.kind ?? 'sem geometria'} · ${node.component?.kind ?? node.nodeType}`;
   const p = geometry?.provenance;
@@ -228,6 +230,9 @@ function selectNode(id: string | undefined): void {
     : 'Geometria não especificada.';
   const wall = node.component?.kind === 'wall' && geometry?.kind === 'box';
   $('#wall-fields').hidden = !wall;
+  const room = node.component?.kind === 'room';
+  $('#room-fields').hidden = !room;
+  if (room) { const named = (node.component?.properties.name ?? node.properties.name)?.value; $('#room-name').value = typeof named === 'string' ? named : ''; }
   const opening = node.component?.kind === 'door' || node.component?.kind === 'window';
   $('#opening-detail').hidden = !opening;
   if (opening) for (const key of ['offset', 'width', 'height', 'sill'] as const) {
@@ -374,7 +379,7 @@ function updateToolbar(): void {
   $('#stage-empty').hidden = Boolean(transaction);
   $('#scene-components').hidden = !transaction;
   $('#component-count').textContent = transaction ? String(transaction.scene.nodes.length) : '';
-  $('#component-list').innerHTML = (transaction?.scene.nodes ?? []).map((node) => `<button class="component-row ${node.id === selectedId ? 'is-selected' : ''}" type="button" data-scene-node="${escapeHtml(node.id)}"><span>${escapeHtml(node.label)}</span><small>${escapeHtml(node.component?.kind ?? node.nodeType)} · ${escapeHtml(node.geometry?.provenance.validation ?? 'sem geometria')}</small>${(() => { const st = reconstructionState(node.geometry?.provenance); return st ? reconstructionChip(st, node.geometry!.provenance.validation) : ''; })()}</button>`).join('');
+  $('#component-list').innerHTML = (transaction?.scene.nodes ?? []).map((node) => `<button class="component-row ${node.id === selectedId ? 'is-selected' : ''}" type="button" data-scene-node="${escapeHtml(node.id)}"><span>${escapeHtml(roomDisplayName(node))}</span><small>${escapeHtml(node.component?.kind ?? node.nodeType)} · ${escapeHtml(node.geometry?.provenance.validation ?? 'sem geometria')}</small>${(() => { const st = reconstructionState(node.geometry?.provenance); return st ? reconstructionChip(st, node.geometry!.provenance.validation) : ''; })()}</button>`).join('');
   renderReconstructionSummary();
   updateSourceState();
 }
@@ -764,7 +769,7 @@ function createSpatialAgentRequest(query: string): SpatialAgentRequestV1 {
     schema: SPATIAL_AGENT_REQUEST_SCHEMA,
     query,
     mode: 'architecture',
-    capabilities: ['Select', 'Inspect', 'Focus', 'Move', 'Rotate', 'Resize', 'AddOpening', 'RemoveOpening', 'Undo', 'Redo', 'Save', 'Restore'],
+    capabilities: ['Select', 'Inspect', 'Focus', 'Move', 'Rotate', 'Resize', 'AddOpening', 'RemoveOpening', 'RemoveWall', 'Undo', 'Redo', 'Save', 'Restore'],
     scene: transaction ? {
       id: transaction.scene.id,
       revisionId: transaction.scene.revision.id,
@@ -795,6 +800,13 @@ function createSpatialAgentRequest(query: string): SpatialAgentRequestV1 {
 function resolveAgentTarget(action: SpatialAgentAction, query: string): { nodeId: string | null; question?: string } {
   if (!transaction) return { nodeId: null, question: 'Não existe uma cena construída. Posso explicar o documento, mas é necessário criar uma cena antes de editar geometria.' };
   const walls = transaction.scene.nodes.filter((node) => node.component?.kind === 'wall');
+  if (action.kind === 'RemoveWall') {
+    // O Muse propõe a remoção; a parede sai sempre do texto do utilizador e da cena, nunca do que o modelo diga.
+    const local = parseSpatialIntentV1(query);
+    if (local.status !== 'recognized' || local.value.intent.kind !== 'RemoveWall') return { nodeId: null, question: 'Não percebi que parede remover. Diga «entre a cozinha e a sala», o id da parede, ou seleccione-a e diga «remove esta parede».' };
+    const resolved = resolveSpatialTarget(transaction.scene, local.value.intent, selectedId);
+    return resolved.status === 'resolved' ? { nodeId: resolved.nodeId } : { nodeId: null, question: resolved.question };
+  }
   if (action.target.reference === 'none') return { nodeId: null };
   if (action.target.reference === 'selected') {
     if (!selectedId) return { nodeId: null, question: 'Seleccione primeiro o componente a que se refere.' };
@@ -833,6 +845,7 @@ function agentIntent(action: SpatialAgentAction, nodeId: string | null): import(
     case 'Move': return { intent: { kind: 'Move', target, parameters: { axis: action.axis!, distance: action.value! * factor }, unit: 'm' } };
     case 'Rotate': return { intent: { kind: 'Rotate', target, parameters: { axis: action.axis!, angle: action.unit === 'deg' ? action.value! * Math.PI / 180 : action.value! }, unit: 'rad' } };
     case 'AddOpening': return { intent: { kind: 'AddOpening', target, parameters: { kind: action.opening!.kind, widthM: action.opening!.widthM, heightM: action.opening!.heightM, offsetM: action.opening!.offsetM, sillM: action.opening!.sillM }, unit: 'm' } };
+    case 'RemoveWall': return { intent: { kind: 'RemoveWall', target, parameters: {}, unit: null } };
     case 'Select': case 'Inspect': case 'Focus': case 'RemoveOpening': case 'Undo': case 'Redo': case 'Save': case 'Restore': return { intent: { kind: action.kind, target, parameters: {}, unit: null } };
   }
 }
@@ -1003,6 +1016,15 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
         selectNode(node.id); setSpatialCommandState('AwaitingConfirmation', 'Abertura e dependência preparadas. Confirme no inspector para gravar.');
         return Promise.resolve({ status: 'preview', message: `${answerPrefix}Pré-visualização da abertura criada. Confirme para aplicar.` });
       }
+      case 'RemoveWall': {
+        if (!node || node.component?.kind !== 'wall') throw new Error('Não foi possível identificar a parede a remover.');
+        pendingCommand = command;
+        const verdict = previewWallRemoval(node.id, { origin: sceneOrigin, actor });
+        if (!verdict.ok) throw new Error(verdict.code);
+        selectNode(node.id);
+        setSpatialCommandState('AwaitingConfirmation', `Remoção de ${node.label} proposta. Confirme para aplicar.`);
+        return Promise.resolve({ status: 'preview', message: `${answerPrefix}Remoção de ${node.label} proposta. Confirme para aplicar.` });
+      }
       case 'RemoveOpening': {
         if (!node || !['door', 'window'].includes(node.component?.kind ?? '')) throw new Error('Seleccione uma porta ou janela para remover.');
         const candidate = previewSceneCommand(transaction, { type: 'RemoveComponent', nodeId: node.id }, actor, undefined, sceneContext);
@@ -1044,23 +1066,20 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
 
 /** O texto do preview, com o aviso de valores confirmados quando a alteração os toca (o clique em «Aplicar» é a autorização). */
 function previewText(text: string, touched: readonly ConfirmedReference[]): string {
-  const notice = confirmedNotice(touched, (id) => transaction?.scene.nodes.find((item) => item.id === id)?.label ?? id);
+  const notice = confirmedNotice(touched, (id) => { const item = transaction?.scene.nodes.find((candidate) => candidate.id === id); return item ? roomDisplayName(item) : id; });
   return notice ? `${text} ${notice}` : text;
 }
 const removalCard = $('#removal-card');
 const escapeCardText = (value: string): string => escapeHtml(value);
-function showRemovalCard(info: RemovalDescription, verdict: { ok: true } | { ok: false; code: string }, notice: string): void {
-  const roomNames = info.rooms.map((room) => `${escapeCardText(room.label)}${room.areaM2 === null ? '' : ` (${room.areaM2.toFixed(1)} m²)`}`);
-  const shown = roomNames.slice(0, 3);
-  const rooms = (shown.length > 1 ? `${shown.slice(0, -1).join(', ')} e ${shown[shown.length - 1]}` : shown[0] ?? '') + (roomNames.length > 3 ? ` e mais ${roomNames.length - 3}` : '');
-  const removes = `1 parede${info.openings.length ? ` e ${info.openings.length} abertura${info.openings.length > 1 ? 's' : ''}` : ''}`;
-  removalCard.innerHTML = verdict.ok
-    ? `<p class="u-label">pré-visualização</p><h2>Remover ${escapeCardText(info.wallLabel)}</h2>
-       <dl class="u-readout"><div><dt>remove</dt><dd>${removes}</dd></div><div><dt>divisões afectadas</dt><dd>nenhuma</dd></div><div class="is-unknown"><dt>estrutura</dt><dd>desconhecida · sem dados estruturais</dd></div></dl>${notice ? `<p class="removal-why">${escapeCardText(notice)}</p>` : ''}
+function showRemovalCard(card: RemovalCard): void {
+  const rows = card.rows.map((row) => `<div${row.tone === 'unknown' ? ' class="is-unknown"' : ''}><dt>${escapeCardText(row.label)}</dt><dd>${escapeCardText(row.value)}</dd></div>`).join('');
+  removalCard.innerHTML = card.ok
+    ? `<p class="u-label">pré-visualização</p><h2>${escapeCardText(card.title)}</h2>
+       <dl class="u-readout">${rows}</dl>${card.notice ? `<p class="removal-why">${escapeCardText(card.notice)}</p>` : ''}
        <div class="removal-actions"><button type="button" class="u-btn u-btn--primary" id="removal-confirm">Confirmar</button><button type="button" class="u-btn u-btn--outline" id="removal-cancel">Cancelar</button></div>`
-    : `<p class="u-label is-blocked">remoção bloqueada</p><h2>${escapeCardText(info.wallLabel)}</h2>
-       <p class="removal-why">O motor da cena recusa: ${verdict.code === 'REMOVE_HAS_DEPENDENCIES' ? `${info.rooms.length ? `${rooms} ${info.rooms.length > 1 ? 'dependem' : 'depende'}` : 'há elementos que dependem'} desta parede` : escapeCardText(verdict.code)} <span class="u-label">${escapeCardText(verdict.code)}</span></p>
-       <dl class="u-readout"><div class="is-unknown"><dt>fusão das divisões</dt><dd>ainda não existe no motor</dd></div><div class="is-unknown"><dt>estrutura</dt><dd>desconhecida · sem dados estruturais</dd></div></dl>
+    : `<p class="u-label is-blocked">remoção bloqueada</p><h2>${escapeCardText(card.title)}</h2>
+       <p class="removal-why">${escapeCardText(card.reason)} <span class="u-label">${escapeCardText(card.code)}</span></p>
+       <dl class="u-readout">${rows}</dl>
        <div class="removal-actions"><button type="button" class="u-btn u-btn--outline" id="removal-close">Fechar</button></div>`;
   removalCard.hidden = false;
   motionGsap.fromTo(removalCard, { opacity: 0, x: 16 }, { opacity: 1, x: 0, duration: motionDur('base'), ease: MOTION_EASE.out });
@@ -1081,20 +1100,36 @@ function attachRemovalGhost(base: SpatialSceneV1, wallId: string, mode: 'dissolv
   if (!removalGhost) return;
   root.add(removalGhost.group); removalGhost.settle(mode, invalidate); invalidate();
 }
-function previewWallRemoval(wallId: string): void {
-  if (!transaction) return;
-  if (preview || compoundPreview) { status('Existe uma pré-visualização pendente. Confirme ou cancele-a primeiro.'); return; }
+/** Prepara a remoção de uma parede. `{ ok: false }` quando o motor a recusa (e o cartão mostra a razão) ou não há o que remover. */
+function previewWallRemoval(wallId: string, options: { origin?: CommandOrigin; actor?: string } = {}): { ok: true } | { ok: false; code: string } {
+  if (!transaction) return { ok: false, code: 'SCENE_NOT_READY' };
+  if (preview || compoundPreview) { status('Existe uma pré-visualização pendente. Confirme ou cancele-a primeiro.'); return { ok: false, code: 'PREVIEW_PENDING' }; }
   const info = describeWallRemoval(transaction.scene, wallId);
-  if (!info) { status('Seleccione uma parede.'); return; }
+  if (!info) { status('Seleccione uma parede.'); return { ok: false, code: 'NODE_NOT_FOUND' }; }
   const base = transaction.scene;
   let plan: CompositePlan | undefined; let code = '';
-  try { plan = planWallRemoval(transaction, wallId, 'local-user-input'); } catch (error) { code = error instanceof Error ? error.message : 'ERRO'; }
+  try { plan = planWallRemoval(transaction, wallId, options.actor ?? 'local-user-input', { origin: options.origin }); } catch (error) { code = error instanceof Error ? error.message : 'ERRO'; }
   focusNode(wallId);
-  if (plan) { previewCompound(plan, `remover ${info.wallLabel}`); attachRemovalGhost(base, wallId, 'dissolve'); showRemovalCard(info, { ok: true }, plan.touchesConfirmed.length ? confirmedNotice(plan.touchesConfirmed, (id) => base.nodes.find((item) => item.id === id)?.label ?? id) : ''); return; }
+  if (plan) { previewCompound(plan, `remover ${info.wallLabel}`); attachRemovalGhost(base, wallId, 'dissolve'); showRemovalCard(describeRemovalCard(info, { ok: true, plan, notice: plan.touchesConfirmed.length ? confirmedNotice(plan.touchesConfirmed, (id) => { const item = base.nodes.find((candidate) => candidate.id === id); return item ? roomDisplayName(item) : id; }) : '' })); return { ok: true }; }
   status(`Remoção bloqueada: ${explainSceneError(code)}`);
-  attachRemovalGhost(base, wallId, 'blocked'); showRemovalCard(info, { ok: false, code }, '');
+  attachRemovalGhost(base, wallId, 'blocked'); showRemovalCard(describeRemovalCard(info, { ok: false, code }));
+  return { ok: false, code };
 }
 $('#preview-remove-wall').addEventListener('click', () => { if (selectedId) previewWallRemoval(selectedId); });
+// O nome de uma divisão é uma propriedade escrita por uma pessoa (UpdateParameter, source "user"), com o preview e o clique de sempre.
+$('#preview-room-name').addEventListener('click', () => {
+  try {
+    if (!transaction || !selectedId) throw new Error('Seleccione uma divisão.');
+    if (preview || compoundPreview) throw new Error('Existe uma pré-visualização pendente. Confirme ou cancele-a primeiro.');
+    const name = $('#room-name').value.trim();
+    if (!name || name.length > 80) throw new Error('O nome tem de ter entre 1 e 80 caracteres.');
+    const candidate = previewSceneCommand(transaction, { type: 'UpdateParameter', nodeId: selectedId, property: 'name', value: name }, 'local-user-input');
+    if (candidate.status === 'blocked') throw new Error(candidate.issues.map((issue) => issue.message).join(' '));
+    preview = candidate; compoundPreview = undefined; pendingCommand = undefined;
+    $('#preview-status').textContent = previewText(`Pré-visualização: chamar «${name}» a esta divisão.`, candidate.touchesConfirmed);
+    $('#commit-preview').disabled = false; $('#cancel-preview').disabled = false; renderModel(candidate.candidate!);
+  } catch (error) { status(error instanceof Error ? explainSceneError(error.message) : 'Nome inválido.'); }
+});
 $('#commit-preview').addEventListener('click', hideRemovalCard);
 $('#cancel-preview').addEventListener('click', hideRemovalCard);
 
