@@ -1,0 +1,304 @@
+{
+  "at": "2026-11-02T19:00:37.320Z",
+  "passed": 31,
+  "failed": 0,
+  "checks": [
+    {
+      "scenario": "A exportação isolada",
+      "name": "a exportação base é reprodutível (mesmo PNG duas vezes, 135 blocos)",
+      "ok": true,
+      "observed": [
+        "34937f4d3523fd5f",
+        "34937f4d3523fd5f"
+      ]
+    },
+    {
+      "scenario": "A exportação isolada",
+      "name": "a exportação tem vários blocos",
+      "ok": true,
+      "observed": 135
+    },
+    {
+      "scenario": "A exportação isolada",
+      "name": "a edição foi aplicada com a exportação a meio (blocos já feitos, ainda a decorrer antes e depois de aplicar)",
+      "ok": true,
+      "observed": {
+        "start": true,
+        "beforeApply": true,
+        "afterApply": true
+      }
+    },
+    {
+      "scenario": "A exportação isolada",
+      "name": "a cena mudou de verdade durante a exportação (revisões)",
+      "ok": true,
+      "observed": {
+        "actions": [
+          "view",
+          "top-view (tween)",
+          "select wall-edge-0-0-400-0",
+          "preview+cancel",
+          "apply",
+          "undo",
+          "redo"
+        ],
+        "progressedBeforeEdit": true,
+        "cardAtStart": "A exportar 3840 × 2160… 7 de 135 blocos",
+        "busy": {
+          "start": true,
+          "beforeApply": true,
+          "afterApply": true
+        },
+        "cardShown": true,
+        "revisionAfterApply": 5,
+        "geometriesAfterApply": 108,
+        "revisionAfterUndo": 6,
+        "revisionAfterRedo": 7,
+        "stillExporting": true,
+        "geo0": 112,
+        "cameraDuring": {
+          "position": [
+            -0.08763499999999969,
+            11.845392,
+            2.038277
+          ],
+          "target": [
+            4,
+            1.085487,
+            -1.5
+          ],
+          "fov": 42,
+          "aspect": 1.44
+        }
+      }
+    },
+    {
+      "scenario": "A exportação isolada",
+      "name": "a câmara do editor mudou durante a exportação",
+      "ok": true,
+      "observed": [
+        {
+          "position": [
+            11.402877,
+            4.213093000000001,
+            -1.4999999999999996
+          ],
+          "target": [
+            4,
+            1.4,
+            -1.5
+          ],
+          "fov": 42,
+          "aspect": 1.44
+        },
+        {
+          "position": [
+            -0.08763499999999969,
+            11.845392,
+            2.038277
+          ],
+          "target": [
+            4,
+            1.085487,
+            -1.5
+          ],
+          "fov": 42,
+          "aspect": 1.44
+        }
+      ]
+    },
+    {
+      "scenario": "A exportação isolada",
+      "name": "o PNG exportado é idêntico ao da exportação sem interferência (todos os blocos do mesmo estado)",
+      "ok": true,
+      "observed": [
+        "34937f4d3523fd5f",
+        "34937f4d3523fd5f"
+      ]
+    },
+    {
+      "scenario": "A exportação isolada",
+      "name": "o relatório descreve o mesmo tamanho e blocos",
+      "ok": true
+    },
+    {
+      "scenario": "A exportação isolada",
+      "name": "o cartão acaba em «exportada», sem erro",
+      "ok": true
+    },
+    {
+      "scenario": "A exportação isolada",
+      "name": "depois da exportação o editor continua a responder e os botões voltam",
+      "ok": true
+    },
+    {
+      "scenario": "A exportação isolada",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "B degradação",
+      "name": "o editor arranca em Técnico e Técnico nunca degrada",
+      "ok": true
+    },
+    {
+      "scenario": "B degradação",
+      "name": "ponto de partida: frames de Apresentação acima de 80 ms neste dispositivo (software)",
+      "ok": true,
+      "observed": 160.09000000000523
+    },
+    {
+      "scenario": "B degradação",
+      "name": "frames lentos sustentados (>80 ms) fazem descer um nível: sombras mais leves",
+      "ok": true,
+      "observed": {
+        "reached": {
+          "1": {
+            "moves": 20,
+            "ms": 6879
+          },
+          "2": {
+            "moves": 42,
+            "ms": 13818
+          }
+        },
+        "moves": 42
+      }
+    },
+    {
+      "scenario": "B degradação",
+      "name": "o perfil aplicado baixou mesmo o custo (mapa de sombras mais pequeno)",
+      "ok": true,
+      "observed": [
+        1024,
+        512
+      ]
+    },
+    {
+      "scenario": "B degradação",
+      "name": "depois do cooldown desce o segundo nível: sem sombras",
+      "ok": true,
+      "observed": {
+        "reached": {
+          "1": {
+            "moves": 20,
+            "ms": 6879
+          },
+          "2": {
+            "moves": 42,
+            "ms": 13818
+          }
+        }
+      }
+    },
+    {
+      "scenario": "B degradação",
+      "name": "o aviso é mostrado ao utilizador",
+      "ok": true
+    },
+    {
+      "scenario": "B degradação",
+      "name": "sem oscilação: fica no nível 2",
+      "ok": true
+    },
+    {
+      "scenario": "B degradação",
+      "name": "inactividade não degrada",
+      "ok": true
+    },
+    {
+      "scenario": "B degradação",
+      "name": "voltar a escolher Apresentação repõe o perfil do dispositivo",
+      "ok": true
+    },
+    {
+      "scenario": "B degradação",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "C latência",
+      "name": "[technical] o frame atrasado mede a latência do seu pedido (>= 120 ms), não 0 nem a do pedido seguinte emitido por orbit.update()",
+      "ok": true,
+      "observed": {
+        "latencyMs": 160.20000000001164,
+        "renderMs": 0.8999999999941792
+      }
+    },
+    {
+      "scenario": "C latência",
+      "name": "[presentation] o frame atrasado mede a latência do seu pedido (>= 120 ms), não 0 nem a do pedido seguinte emitido por orbit.update()",
+      "ok": true,
+      "observed": {
+        "latencyMs": 160.30000000004657,
+        "renderMs": 5.7000000000116415
+      }
+    },
+    {
+      "scenario": "C latência",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "D frame final",
+      "name": "ponto de partida: o canvas mostra o modelo",
+      "ok": true,
+      "observed": 0.217715
+    },
+    {
+      "scenario": "D frame final",
+      "name": "a degradação aconteceu num pedido de frame isolado",
+      "ok": true,
+      "observed": {
+        "level": 1,
+        "attempts": 2
+      }
+    },
+    {
+      "scenario": "D frame final",
+      "name": "depois da degradação há exactamente mais um frame (o que repõe o canvas) além do que a decidiu",
+      "ok": true,
+      "observed": {
+        "framesSinceRequest": 2
+      }
+    },
+    {
+      "scenario": "D frame final",
+      "name": "sem ciclo de desenho: nenhum frame extra em 2,5 s sem input",
+      "ok": true,
+      "observed": [
+        12,
+        12
+      ]
+    },
+    {
+      "scenario": "D frame final",
+      "name": "o canvas continua visível depois de reconfigurar o renderer",
+      "ok": true,
+      "observed": {
+        "before": 0.217715,
+        "after": 0.217715
+      }
+    },
+    {
+      "scenario": "D frame final",
+      "name": "o perfil aplicado já é o degradado",
+      "ok": true
+    },
+    {
+      "scenario": "D frame final",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "rede",
+      "name": "nenhum pedido para fora de localhost",
+      "ok": true,
+      "observed": []
+    }
+  ]
+}

@@ -1,0 +1,1770 @@
+{
+ "environment": {
+  "glbBytes": 188460,
+  "loadMs": 22.9,
+  "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36"
+ },
+ "shots": [
+  {
+   "fixture": "two-rooms",
+   "view": "isometric",
+   "variant": "before",
+   "stats": {
+    "build": {
+     "ms": 7
+    },
+    "scene": {
+     "nodes": 47,
+     "meshes": 27,
+     "lines": 0,
+     "triangles": 2116,
+     "vertices": 4256,
+     "geometries": 18,
+     "materials": 8,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 28,
+     "triangles": 2116,
+     "lines": 74,
+     "geometries": 19,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "two-rooms",
+   "view": "isometric",
+   "variant": "technical",
+   "stats": {
+    "build": {
+     "ms": 8.1
+    },
+    "scene": {
+     "nodes": 43,
+     "meshes": 27,
+     "lines": 0,
+     "triangles": 1732,
+     "vertices": 3536,
+     "geometries": 21,
+     "materials": 7,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 36,
+     "triangles": 1744,
+     "lines": 74,
+     "geometries": 22,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "two-rooms",
+   "view": "isometric",
+   "variant": "presentation",
+   "stats": {
+    "build": {
+     "ms": 115.7
+    },
+    "scene": {
+     "nodes": 47,
+     "meshes": 31,
+     "lines": 0,
+     "triangles": 1780,
+     "vertices": 3632,
+     "geometries": 25,
+     "materials": 7,
+     "textures": 7,
+     "textureBytes": 2446675,
+     "presentationOnlyMeshes": 4,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 60,
+     "triangles": 1792,
+     "lines": 74,
+     "geometries": 26,
+     "textures": 9
+    }
+   }
+  },
+  {
+   "fixture": "two-rooms",
+   "view": "top",
+   "variant": "before",
+   "stats": {
+    "build": {
+     "ms": 1.4
+    },
+    "scene": {
+     "nodes": 47,
+     "meshes": 27,
+     "lines": 0,
+     "triangles": 2116,
+     "vertices": 4256,
+     "geometries": 18,
+     "materials": 8,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 28,
+     "triangles": 2116,
+     "lines": 74,
+     "geometries": 19,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "two-rooms",
+   "view": "top",
+   "variant": "technical",
+   "stats": {
+    "build": {
+     "ms": 3.1
+    },
+    "scene": {
+     "nodes": 43,
+     "meshes": 27,
+     "lines": 0,
+     "triangles": 1732,
+     "vertices": 3536,
+     "geometries": 21,
+     "materials": 7,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 36,
+     "triangles": 1744,
+     "lines": 74,
+     "geometries": 22,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "two-rooms",
+   "view": "top",
+   "variant": "presentation",
+   "stats": {
+    "build": {
+     "ms": 3.2
+    },
+    "scene": {
+     "nodes": 47,
+     "meshes": 31,
+     "lines": 0,
+     "triangles": 1780,
+     "vertices": 3632,
+     "geometries": 25,
+     "materials": 7,
+     "textures": 7,
+     "textureBytes": 2446675,
+     "presentationOnlyMeshes": 4,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 60,
+     "triangles": 1792,
+     "lines": 74,
+     "geometries": 26,
+     "textures": 9
+    }
+   }
+  },
+  {
+   "fixture": "two-rooms",
+   "view": "cutaway",
+   "variant": "before",
+   "stats": {
+    "build": {
+     "ms": 1.9
+    },
+    "scene": {
+     "nodes": 47,
+     "meshes": 27,
+     "lines": 0,
+     "triangles": 2116,
+     "vertices": 4256,
+     "geometries": 18,
+     "materials": 8,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 28,
+     "triangles": 2116,
+     "lines": 74,
+     "geometries": 19,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "two-rooms",
+   "view": "cutaway",
+   "variant": "technical",
+   "stats": {
+    "build": {
+     "ms": 2.8
+    },
+    "scene": {
+     "nodes": 43,
+     "meshes": 27,
+     "lines": 0,
+     "triangles": 1732,
+     "vertices": 3536,
+     "geometries": 21,
+     "materials": 7,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 36,
+     "triangles": 1744,
+     "lines": 74,
+     "geometries": 22,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "two-rooms",
+   "view": "cutaway",
+   "variant": "presentation",
+   "stats": {
+    "build": {
+     "ms": 2.3
+    },
+    "scene": {
+     "nodes": 47,
+     "meshes": 31,
+     "lines": 0,
+     "triangles": 1780,
+     "vertices": 3632,
+     "geometries": 25,
+     "materials": 7,
+     "textures": 7,
+     "textureBytes": 2446675,
+     "presentationOnlyMeshes": 4,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 60,
+     "triangles": 1792,
+     "lines": 74,
+     "geometries": 26,
+     "textures": 9
+    }
+   }
+  },
+  {
+   "fixture": "two-rooms",
+   "view": "door-detail",
+   "variant": "before",
+   "stats": {
+    "build": {
+     "ms": 2.1
+    },
+    "scene": {
+     "nodes": 47,
+     "meshes": 27,
+     "lines": 0,
+     "triangles": 2116,
+     "vertices": 4256,
+     "geometries": 18,
+     "materials": 8,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 24,
+     "triangles": 1684,
+     "lines": 74,
+     "geometries": 15,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "two-rooms",
+   "view": "door-detail",
+   "variant": "technical",
+   "stats": {
+    "build": {
+     "ms": 5.8
+    },
+    "scene": {
+     "nodes": 43,
+     "meshes": 27,
+     "lines": 0,
+     "triangles": 1732,
+     "vertices": 3536,
+     "geometries": 21,
+     "materials": 7,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 32,
+     "triangles": 1312,
+     "lines": 74,
+     "geometries": 18,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "two-rooms",
+   "view": "door-detail",
+   "variant": "presentation",
+   "stats": {
+    "build": {
+     "ms": 1.7
+    },
+    "scene": {
+     "nodes": 47,
+     "meshes": 31,
+     "lines": 0,
+     "triangles": 1780,
+     "vertices": 3632,
+     "geometries": 25,
+     "materials": 7,
+     "textures": 7,
+     "textureBytes": 2446675,
+     "presentationOnlyMeshes": 4,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 44,
+     "triangles": 1336,
+     "lines": 74,
+     "geometries": 26,
+     "textures": 9
+    }
+   }
+  },
+  {
+   "fixture": "two-rooms",
+   "view": "window-detail",
+   "variant": "before",
+   "stats": {
+    "build": {
+     "ms": 5.5
+    },
+    "scene": {
+     "nodes": 47,
+     "meshes": 27,
+     "lines": 0,
+     "triangles": 2116,
+     "vertices": 4256,
+     "geometries": 18,
+     "materials": 8,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 26,
+     "triangles": 2028,
+     "lines": 74,
+     "geometries": 19,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "two-rooms",
+   "view": "window-detail",
+   "variant": "technical",
+   "stats": {
+    "build": {
+     "ms": 1.4
+    },
+    "scene": {
+     "nodes": 43,
+     "meshes": 27,
+     "lines": 0,
+     "triangles": 1732,
+     "vertices": 3536,
+     "geometries": 21,
+     "materials": 7,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 32,
+     "triangles": 1644,
+     "lines": 74,
+     "geometries": 21,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "two-rooms",
+   "view": "window-detail",
+   "variant": "presentation",
+   "stats": {
+    "build": {
+     "ms": 1.8
+    },
+    "scene": {
+     "nodes": 47,
+     "meshes": 31,
+     "lines": 0,
+     "triangles": 1780,
+     "vertices": 3632,
+     "geometries": 25,
+     "materials": 7,
+     "textures": 7,
+     "textureBytes": 2446675,
+     "presentationOnlyMeshes": 4,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 44,
+     "triangles": 1668,
+     "lines": 74,
+     "geometries": 26,
+     "textures": 9
+    }
+   }
+  },
+  {
+   "fixture": "two-rooms",
+   "view": "material-detail",
+   "variant": "before",
+   "stats": {
+    "build": {
+     "ms": 1.7
+    },
+    "scene": {
+     "nodes": 47,
+     "meshes": 27,
+     "lines": 0,
+     "triangles": 2116,
+     "vertices": 4256,
+     "geometries": 18,
+     "materials": 8,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 20,
+     "triangles": 1476,
+     "lines": 74,
+     "geometries": 13,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "two-rooms",
+   "view": "material-detail",
+   "variant": "technical",
+   "stats": {
+    "build": {
+     "ms": 2.5
+    },
+    "scene": {
+     "nodes": 43,
+     "meshes": 27,
+     "lines": 0,
+     "triangles": 1732,
+     "vertices": 3536,
+     "geometries": 21,
+     "materials": 7,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 27,
+     "triangles": 1092,
+     "lines": 74,
+     "geometries": 16,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "two-rooms",
+   "view": "material-detail",
+   "variant": "presentation",
+   "stats": {
+    "build": {
+     "ms": 4.2
+    },
+    "scene": {
+     "nodes": 47,
+     "meshes": 31,
+     "lines": 0,
+     "triangles": 1780,
+     "vertices": 3632,
+     "geometries": 25,
+     "materials": 7,
+     "textures": 7,
+     "textureBytes": 2446675,
+     "presentationOnlyMeshes": 4,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 33,
+     "triangles": 1104,
+     "lines": 74,
+     "geometries": 25,
+     "textures": 9
+    }
+   }
+  },
+  {
+   "fixture": "two-rooms",
+   "view": "corner-detail",
+   "variant": "before",
+   "stats": {
+    "build": {
+     "ms": 1.4
+    },
+    "scene": {
+     "nodes": 47,
+     "meshes": 27,
+     "lines": 0,
+     "triangles": 2116,
+     "vertices": 4256,
+     "geometries": 18,
+     "materials": 8,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 27,
+     "triangles": 2072,
+     "lines": 74,
+     "geometries": 19,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "two-rooms",
+   "view": "corner-detail",
+   "variant": "technical",
+   "stats": {
+    "build": {
+     "ms": 1.4
+    },
+    "scene": {
+     "nodes": 43,
+     "meshes": 27,
+     "lines": 0,
+     "triangles": 1732,
+     "vertices": 3536,
+     "geometries": 21,
+     "materials": 7,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 35,
+     "triangles": 1700,
+     "lines": 74,
+     "geometries": 22,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "two-rooms",
+   "view": "corner-detail",
+   "variant": "presentation",
+   "stats": {
+    "build": {
+     "ms": 2
+    },
+    "scene": {
+     "nodes": 47,
+     "meshes": 31,
+     "lines": 0,
+     "triangles": 1780,
+     "vertices": 3632,
+     "geometries": 25,
+     "materials": 7,
+     "textures": 7,
+     "textureBytes": 2446675,
+     "presentationOnlyMeshes": 4,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 59,
+     "triangles": 1748,
+     "lines": 74,
+     "geometries": 26,
+     "textures": 9
+    }
+   }
+  },
+  {
+   "fixture": "two-rooms",
+   "view": "interior",
+   "variant": "before",
+   "stats": {
+    "build": {
+     "ms": 1.2
+    },
+    "scene": {
+     "nodes": 47,
+     "meshes": 27,
+     "lines": 0,
+     "triangles": 2116,
+     "vertices": 4256,
+     "geometries": 18,
+     "materials": 8,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 26,
+     "triangles": 1900,
+     "lines": 74,
+     "geometries": 17,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "two-rooms",
+   "view": "interior",
+   "variant": "technical",
+   "stats": {
+    "build": {
+     "ms": 1.4
+    },
+    "scene": {
+     "nodes": 43,
+     "meshes": 27,
+     "lines": 0,
+     "triangles": 1732,
+     "vertices": 3536,
+     "geometries": 21,
+     "materials": 7,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 34,
+     "triangles": 1528,
+     "lines": 74,
+     "geometries": 20,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "two-rooms",
+   "view": "interior",
+   "variant": "presentation",
+   "stats": {
+    "build": {
+     "ms": 4.1
+    },
+    "scene": {
+     "nodes": 47,
+     "meshes": 31,
+     "lines": 0,
+     "triangles": 1780,
+     "vertices": 3632,
+     "geometries": 25,
+     "materials": 7,
+     "textures": 7,
+     "textureBytes": 2446675,
+     "presentationOnlyMeshes": 4,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 52,
+     "triangles": 1564,
+     "lines": 74,
+     "geometries": 26,
+     "textures": 9
+    }
+   }
+  },
+  {
+   "fixture": "multi-room",
+   "view": "isometric",
+   "variant": "before",
+   "stats": {
+    "build": {
+     "ms": 2
+    },
+    "scene": {
+     "nodes": 109,
+     "meshes": 63,
+     "lines": 0,
+     "triangles": 5057,
+     "vertices": 10211,
+     "geometries": 24,
+     "materials": 8,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 64,
+     "triangles": 5057,
+     "lines": 74,
+     "geometries": 25,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "multi-room",
+   "view": "isometric",
+   "variant": "technical",
+   "stats": {
+    "build": {
+     "ms": 1.7
+    },
+    "scene": {
+     "nodes": 99,
+     "meshes": 63,
+     "lines": 0,
+     "triangles": 4097,
+     "vertices": 8411,
+     "geometries": 33,
+     "materials": 7,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 84,
+     "triangles": 4145,
+     "lines": 74,
+     "geometries": 34,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "multi-room",
+   "view": "isometric",
+   "variant": "presentation",
+   "stats": {
+    "build": {
+     "ms": 3.1
+    },
+    "scene": {
+     "nodes": 103,
+     "meshes": 67,
+     "lines": 0,
+     "triangles": 4145,
+     "vertices": 8507,
+     "geometries": 37,
+     "materials": 7,
+     "textures": 7,
+     "textureBytes": 2446675,
+     "presentationOnlyMeshes": 4,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 108,
+     "triangles": 4193,
+     "lines": 74,
+     "geometries": 38,
+     "textures": 9
+    }
+   }
+  },
+  {
+   "fixture": "multi-room",
+   "view": "isometric",
+   "variant": "presentation-on-editor-rig",
+   "stats": {
+    "build": {
+     "ms": 2.5
+    },
+    "scene": {
+     "nodes": 103,
+     "meshes": 67,
+     "lines": 0,
+     "triangles": 4145,
+     "vertices": 8507,
+     "geometries": 37,
+     "materials": 7,
+     "textures": 7,
+     "textureBytes": 2446675,
+     "presentationOnlyMeshes": 4,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 108,
+     "triangles": 4193,
+     "lines": 74,
+     "geometries": 38,
+     "textures": 7
+    }
+   }
+  },
+  {
+   "fixture": "multi-room",
+   "view": "top",
+   "variant": "before",
+   "stats": {
+    "build": {
+     "ms": 1.1
+    },
+    "scene": {
+     "nodes": 109,
+     "meshes": 63,
+     "lines": 0,
+     "triangles": 5057,
+     "vertices": 10211,
+     "geometries": 24,
+     "materials": 8,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 64,
+     "triangles": 5057,
+     "lines": 74,
+     "geometries": 25,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "multi-room",
+   "view": "top",
+   "variant": "technical",
+   "stats": {
+    "build": {
+     "ms": 1.9
+    },
+    "scene": {
+     "nodes": 99,
+     "meshes": 63,
+     "lines": 0,
+     "triangles": 4097,
+     "vertices": 8411,
+     "geometries": 33,
+     "materials": 7,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 84,
+     "triangles": 4145,
+     "lines": 74,
+     "geometries": 34,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "multi-room",
+   "view": "top",
+   "variant": "presentation",
+   "stats": {
+    "build": {
+     "ms": 2.9
+    },
+    "scene": {
+     "nodes": 103,
+     "meshes": 67,
+     "lines": 0,
+     "triangles": 4145,
+     "vertices": 8507,
+     "geometries": 37,
+     "materials": 7,
+     "textures": 7,
+     "textureBytes": 2446675,
+     "presentationOnlyMeshes": 4,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 108,
+     "triangles": 4193,
+     "lines": 74,
+     "geometries": 38,
+     "textures": 9
+    }
+   }
+  },
+  {
+   "fixture": "multi-room",
+   "view": "cutaway",
+   "variant": "before",
+   "stats": {
+    "build": {
+     "ms": 2.3
+    },
+    "scene": {
+     "nodes": 109,
+     "meshes": 63,
+     "lines": 0,
+     "triangles": 5057,
+     "vertices": 10211,
+     "geometries": 24,
+     "materials": 8,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 64,
+     "triangles": 5057,
+     "lines": 74,
+     "geometries": 25,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "multi-room",
+   "view": "cutaway",
+   "variant": "technical",
+   "stats": {
+    "build": {
+     "ms": 1.8
+    },
+    "scene": {
+     "nodes": 99,
+     "meshes": 63,
+     "lines": 0,
+     "triangles": 4097,
+     "vertices": 8411,
+     "geometries": 33,
+     "materials": 7,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 84,
+     "triangles": 4145,
+     "lines": 74,
+     "geometries": 34,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "multi-room",
+   "view": "cutaway",
+   "variant": "presentation",
+   "stats": {
+    "build": {
+     "ms": 4.5
+    },
+    "scene": {
+     "nodes": 103,
+     "meshes": 67,
+     "lines": 0,
+     "triangles": 4145,
+     "vertices": 8507,
+     "geometries": 37,
+     "materials": 7,
+     "textures": 7,
+     "textureBytes": 2446675,
+     "presentationOnlyMeshes": 4,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 108,
+     "triangles": 4193,
+     "lines": 74,
+     "geometries": 38,
+     "textures": 9
+    }
+   }
+  },
+  {
+   "fixture": "multi-room",
+   "view": "interior",
+   "variant": "before",
+   "stats": {
+    "build": {
+     "ms": 2.9
+    },
+    "scene": {
+     "nodes": 109,
+     "meshes": 63,
+     "lines": 0,
+     "triangles": 5057,
+     "vertices": 10211,
+     "geometries": 24,
+     "materials": 8,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 56,
+     "triangles": 4417,
+     "lines": 74,
+     "geometries": 25,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "multi-room",
+   "view": "interior",
+   "variant": "technical",
+   "stats": {
+    "build": {
+     "ms": 1.7
+    },
+    "scene": {
+     "nodes": 99,
+     "meshes": 63,
+     "lines": 0,
+     "triangles": 4097,
+     "vertices": 8411,
+     "geometries": 33,
+     "materials": 7,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 74,
+     "triangles": 3589,
+     "lines": 74,
+     "geometries": 33,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "multi-room",
+   "view": "interior",
+   "variant": "presentation",
+   "stats": {
+    "build": {
+     "ms": 3.4
+    },
+    "scene": {
+     "nodes": 103,
+     "meshes": 67,
+     "lines": 0,
+     "triangles": 4145,
+     "vertices": 8507,
+     "geometries": 37,
+     "materials": 7,
+     "textures": 7,
+     "textureBytes": 2446675,
+     "presentationOnlyMeshes": 4,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 92,
+     "triangles": 3625,
+     "lines": 74,
+     "geometries": 38,
+     "textures": 9
+    }
+   }
+  },
+  {
+   "fixture": "provisional",
+   "view": "isometric",
+   "variant": "before",
+   "stats": {
+    "build": {
+     "ms": 1.1
+    },
+    "scene": {
+     "nodes": 47,
+     "meshes": 27,
+     "lines": 0,
+     "triangles": 2116,
+     "vertices": 4256,
+     "geometries": 18,
+     "materials": 8,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 28,
+     "triangles": 2116,
+     "lines": 74,
+     "geometries": 19,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "provisional",
+   "view": "isometric",
+   "variant": "technical",
+   "stats": {
+    "build": {
+     "ms": 3.9
+    },
+    "scene": {
+     "nodes": 45,
+     "meshes": 27,
+     "lines": 2,
+     "triangles": 1732,
+     "vertices": 3648,
+     "geometries": 23,
+     "materials": 10,
+     "textures": 1,
+     "textureBytes": 349525,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 2
+    },
+    "renderer": {
+     "calls": 38,
+     "triangles": 1744,
+     "lines": 130,
+     "geometries": 24,
+     "textures": 1
+    }
+   }
+  },
+  {
+   "fixture": "provisional",
+   "view": "isometric",
+   "variant": "presentation",
+   "stats": {
+    "build": {
+     "ms": 1.6
+    },
+    "scene": {
+     "nodes": 49,
+     "meshes": 31,
+     "lines": 2,
+     "triangles": 1780,
+     "vertices": 3744,
+     "geometries": 27,
+     "materials": 10,
+     "textures": 8,
+     "textureBytes": 2796200,
+     "presentationOnlyMeshes": 4,
+     "provisionalMeshes": 2
+    },
+    "renderer": {
+     "calls": 62,
+     "triangles": 1792,
+     "lines": 130,
+     "geometries": 28,
+     "textures": 10
+    }
+   }
+  },
+  {
+   "fixture": "provisional",
+   "view": "top",
+   "variant": "before",
+   "stats": {
+    "build": {
+     "ms": 0.9
+    },
+    "scene": {
+     "nodes": 47,
+     "meshes": 27,
+     "lines": 0,
+     "triangles": 2116,
+     "vertices": 4256,
+     "geometries": 18,
+     "materials": 8,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 28,
+     "triangles": 2116,
+     "lines": 74,
+     "geometries": 19,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "provisional",
+   "view": "top",
+   "variant": "technical",
+   "stats": {
+    "build": {
+     "ms": 1.1
+    },
+    "scene": {
+     "nodes": 45,
+     "meshes": 27,
+     "lines": 2,
+     "triangles": 1732,
+     "vertices": 3648,
+     "geometries": 23,
+     "materials": 10,
+     "textures": 1,
+     "textureBytes": 349525,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 2
+    },
+    "renderer": {
+     "calls": 38,
+     "triangles": 1744,
+     "lines": 130,
+     "geometries": 24,
+     "textures": 1
+    }
+   }
+  },
+  {
+   "fixture": "provisional",
+   "view": "top",
+   "variant": "presentation",
+   "stats": {
+    "build": {
+     "ms": 3.5
+    },
+    "scene": {
+     "nodes": 49,
+     "meshes": 31,
+     "lines": 2,
+     "triangles": 1780,
+     "vertices": 3744,
+     "geometries": 27,
+     "materials": 10,
+     "textures": 8,
+     "textureBytes": 2796200,
+     "presentationOnlyMeshes": 4,
+     "provisionalMeshes": 2
+    },
+    "renderer": {
+     "calls": 62,
+     "triangles": 1792,
+     "lines": 130,
+     "geometries": 28,
+     "textures": 10
+    }
+   }
+  },
+  {
+   "fixture": "provisional",
+   "view": "material-detail",
+   "variant": "before",
+   "stats": {
+    "build": {
+     "ms": 1.2
+    },
+    "scene": {
+     "nodes": 47,
+     "meshes": 27,
+     "lines": 0,
+     "triangles": 2116,
+     "vertices": 4256,
+     "geometries": 18,
+     "materials": 8,
+     "textures": 0,
+     "textureBytes": 0,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 0
+    },
+    "renderer": {
+     "calls": 20,
+     "triangles": 1476,
+     "lines": 74,
+     "geometries": 13,
+     "textures": 0
+    }
+   }
+  },
+  {
+   "fixture": "provisional",
+   "view": "material-detail",
+   "variant": "technical",
+   "stats": {
+    "build": {
+     "ms": 2.3
+    },
+    "scene": {
+     "nodes": 45,
+     "meshes": 27,
+     "lines": 2,
+     "triangles": 1732,
+     "vertices": 3648,
+     "geometries": 23,
+     "materials": 10,
+     "textures": 1,
+     "textureBytes": 349525,
+     "presentationOnlyMeshes": 0,
+     "provisionalMeshes": 2
+    },
+    "renderer": {
+     "calls": 29,
+     "triangles": 1092,
+     "lines": 130,
+     "geometries": 18,
+     "textures": 1
+    }
+   }
+  },
+  {
+   "fixture": "provisional",
+   "view": "material-detail",
+   "variant": "presentation",
+   "stats": {
+    "build": {
+     "ms": 2.8
+    },
+    "scene": {
+     "nodes": 49,
+     "meshes": 31,
+     "lines": 2,
+     "triangles": 1780,
+     "vertices": 3744,
+     "geometries": 27,
+     "materials": 10,
+     "textures": 8,
+     "textureBytes": 2796200,
+     "presentationOnlyMeshes": 4,
+     "provisionalMeshes": 2
+    },
+    "renderer": {
+     "calls": 35,
+     "triangles": 1104,
+     "lines": 130,
+     "geometries": 27,
+     "textures": 10
+    }
+   }
+  }
+ ],
+ "bench": [
+  {
+   "fixtureId": "two-rooms",
+   "variant": "before",
+   "build": {
+    "ms": 1.1
+   },
+   "frame": {
+    "frames": 60,
+    "meanMs": 34.09,
+    "p50Ms": 35,
+    "p95Ms": 41,
+    "worstMs": 42.9,
+    "fps": 29.3
+   },
+   "draw": {
+    "callsPerFrame": 28,
+    "trianglesPerFrame": 2116,
+    "lines": 74
+   },
+   "memory": {
+    "geometries": 19,
+    "textures": 0,
+    "jsHeapBytes": 53553078
+   },
+   "scene": {
+    "nodes": 47,
+    "meshes": 27,
+    "lines": 0,
+    "triangles": 2116,
+    "vertices": 4256,
+    "geometries": 18,
+    "materials": 8,
+    "textures": 0,
+    "textureBytes": 0,
+    "presentationOnlyMeshes": 0,
+    "provisionalMeshes": 0
+   },
+   "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+  },
+  {
+   "fixtureId": "two-rooms",
+   "variant": "technical",
+   "build": {
+    "ms": 1.3
+   },
+   "frame": {
+    "frames": 60,
+    "meanMs": 28.43,
+    "p50Ms": 28,
+    "p95Ms": 34.4,
+    "worstMs": 36.6,
+    "fps": 35.2
+   },
+   "draw": {
+    "callsPerFrame": 36,
+    "trianglesPerFrame": 1744,
+    "lines": 74
+   },
+   "memory": {
+    "geometries": 22,
+    "textures": 0,
+    "jsHeapBytes": 29851114
+   },
+   "scene": {
+    "nodes": 43,
+    "meshes": 27,
+    "lines": 0,
+    "triangles": 1732,
+    "vertices": 3536,
+    "geometries": 21,
+    "materials": 7,
+    "textures": 0,
+    "textureBytes": 0,
+    "presentationOnlyMeshes": 0,
+    "provisionalMeshes": 0
+   },
+   "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+  },
+  {
+   "fixtureId": "two-rooms",
+   "variant": "presentation",
+   "build": {
+    "ms": 7
+   },
+   "frame": {
+    "frames": 60,
+    "meanMs": 154.26,
+    "p50Ms": 156.7,
+    "p95Ms": 178.4,
+    "worstMs": 185.8,
+    "fps": 6.5
+   },
+   "draw": {
+    "callsPerFrame": 60,
+    "trianglesPerFrame": 1792,
+    "lines": 74
+   },
+   "memory": {
+    "geometries": 26,
+    "textures": 9,
+    "jsHeapBytes": 33062525
+   },
+   "scene": {
+    "nodes": 47,
+    "meshes": 31,
+    "lines": 0,
+    "triangles": 1780,
+    "vertices": 3632,
+    "geometries": 25,
+    "materials": 7,
+    "textures": 7,
+    "textureBytes": 2446675,
+    "presentationOnlyMeshes": 4,
+    "provisionalMeshes": 0
+   },
+   "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+  },
+  {
+   "fixtureId": "two-rooms",
+   "variant": "presentation-on-editor-rig",
+   "build": {
+    "ms": 19.2
+   },
+   "frame": {
+    "frames": 60,
+    "meanMs": 44.99,
+    "p50Ms": 44.1,
+    "p95Ms": 55.6,
+    "worstMs": 61,
+    "fps": 22.2
+   },
+   "draw": {
+    "callsPerFrame": 60,
+    "trianglesPerFrame": 1792,
+    "lines": 74
+   },
+   "memory": {
+    "geometries": 26,
+    "textures": 7,
+    "jsHeapBytes": 19886670
+   },
+   "scene": {
+    "nodes": 47,
+    "meshes": 31,
+    "lines": 0,
+    "triangles": 1780,
+    "vertices": 3632,
+    "geometries": 25,
+    "materials": 7,
+    "textures": 7,
+    "textureBytes": 2446675,
+    "presentationOnlyMeshes": 4,
+    "provisionalMeshes": 0
+   },
+   "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+  },
+  {
+   "fixtureId": "multi-room",
+   "variant": "before",
+   "build": {
+    "ms": 2.7
+   },
+   "frame": {
+    "frames": 60,
+    "meanMs": 44.48,
+    "p50Ms": 44.2,
+    "p95Ms": 52.9,
+    "worstMs": 59,
+    "fps": 22.5
+   },
+   "draw": {
+    "callsPerFrame": 64,
+    "trianglesPerFrame": 5057,
+    "lines": 74
+   },
+   "memory": {
+    "geometries": 25,
+    "textures": 0,
+    "jsHeapBytes": 19950668
+   },
+   "scene": {
+    "nodes": 109,
+    "meshes": 63,
+    "lines": 0,
+    "triangles": 5057,
+    "vertices": 10211,
+    "geometries": 24,
+    "materials": 8,
+    "textures": 0,
+    "textureBytes": 0,
+    "presentationOnlyMeshes": 0,
+    "provisionalMeshes": 0
+   },
+   "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+  },
+  {
+   "fixtureId": "multi-room",
+   "variant": "technical",
+   "build": {
+    "ms": 2.5
+   },
+   "frame": {
+    "frames": 60,
+    "meanMs": 37.56,
+    "p50Ms": 37.6,
+    "p95Ms": 44.6,
+    "worstMs": 49.4,
+    "fps": 26.6
+   },
+   "draw": {
+    "callsPerFrame": 84,
+    "trianglesPerFrame": 4145,
+    "lines": 74
+   },
+   "memory": {
+    "geometries": 34,
+    "textures": 0,
+    "jsHeapBytes": 22335266
+   },
+   "scene": {
+    "nodes": 99,
+    "meshes": 63,
+    "lines": 0,
+    "triangles": 4097,
+    "vertices": 8411,
+    "geometries": 33,
+    "materials": 7,
+    "textures": 0,
+    "textureBytes": 0,
+    "presentationOnlyMeshes": 0,
+    "provisionalMeshes": 0
+   },
+   "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+  },
+  {
+   "fixtureId": "multi-room",
+   "variant": "presentation",
+   "build": {
+    "ms": 4.4
+   },
+   "frame": {
+    "frames": 60,
+    "meanMs": 178.08,
+    "p50Ms": 169.8,
+    "p95Ms": 235.2,
+    "worstMs": 252.1,
+    "fps": 5.6
+   },
+   "draw": {
+    "callsPerFrame": 108,
+    "trianglesPerFrame": 4193,
+    "lines": 74
+   },
+   "memory": {
+    "geometries": 38,
+    "textures": 9,
+    "jsHeapBytes": 21698088
+   },
+   "scene": {
+    "nodes": 103,
+    "meshes": 67,
+    "lines": 0,
+    "triangles": 4145,
+    "vertices": 8507,
+    "geometries": 37,
+    "materials": 7,
+    "textures": 7,
+    "textureBytes": 2446675,
+    "presentationOnlyMeshes": 4,
+    "provisionalMeshes": 0
+   },
+   "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+  },
+  {
+   "fixtureId": "multi-room",
+   "variant": "presentation-on-editor-rig",
+   "build": {
+    "ms": 3
+   },
+   "frame": {
+    "frames": 60,
+    "meanMs": 47.73,
+    "p50Ms": 47.6,
+    "p95Ms": 54.8,
+    "worstMs": 58,
+    "fps": 21
+   },
+   "draw": {
+    "callsPerFrame": 108,
+    "trianglesPerFrame": 4193,
+    "lines": 74
+   },
+   "memory": {
+    "geometries": 38,
+    "textures": 7,
+    "jsHeapBytes": 23634861
+   },
+   "scene": {
+    "nodes": 103,
+    "meshes": 67,
+    "lines": 0,
+    "triangles": 4145,
+    "vertices": 8507,
+    "geometries": 37,
+    "materials": 7,
+    "textures": 7,
+    "textureBytes": 2446675,
+    "presentationOnlyMeshes": 4,
+    "provisionalMeshes": 0
+   },
+   "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+  }
+ ],
+ "hires": [
+  {
+   "report": {
+    "requested": {
+     "width": 2560,
+     "height": 1440
+    },
+    "actual": {
+     "width": 2560,
+     "height": 1440
+    },
+    "tile": 1024,
+    "tiles": 6,
+    "ms": 4126,
+    "limits": {
+     "maxTextureSize": 8192,
+     "maxViewport": [
+      8192,
+      8192
+     ],
+     "maxSamples": 4,
+     "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+    },
+    "clamped": false,
+    "aspectChanged": false,
+    "note": "Camera framing identical to the viewport."
+   },
+   "canvas": [
+    2560,
+    1440
+   ],
+   "pngBytes": 1084176
+  },
+  {
+   "report": {
+    "requested": {
+     "width": 3840,
+     "height": 2160
+    },
+    "actual": {
+     "width": 3840,
+     "height": 2160
+    },
+    "tile": 1024,
+    "tiles": 12,
+    "ms": 4794,
+    "limits": {
+     "maxTextureSize": 8192,
+     "maxViewport": [
+      8192,
+      8192
+     ],
+     "maxSamples": 4,
+     "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+    },
+    "clamped": false,
+    "aspectChanged": false,
+    "note": "Camera framing identical to the viewport."
+   },
+   "canvas": [
+    3840,
+    2160
+   ],
+   "pngBytes": 2151775
+  }
+ ],
+ "errors": []
+}
