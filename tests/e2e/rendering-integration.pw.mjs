@@ -71,7 +71,7 @@ try {
     await shot(page, '01-tecnico');
     const base = await info(page); const sceneGeo0 = await R(page, (r) => r.sceneGeometries()); const lights0 = await R(page, (r) => r.lights());
     const samples = [];
-    for (let i = 0; i < 12; i += 1) {
+    for (let i = 0; i < 20; i += 1) {
       await page.click('#quality-presentation'); await frames(page);
       const mid = await info(page); const lp = await R(page, (r) => r.lights());
       if (i === 0) await shot(page, '02-apresentacao');
@@ -79,8 +79,8 @@ try {
       samples.push({ pres: mid, tech: await info(page), lightsPres: lp, lightsTech: await R(page, (r) => r.lights()) });
     }
     const first = samples[1], last = samples.at(-1);
-    check(sc, 'geometrias não crescem entre o ciclo 2 e o 12', last.tech.geometries === first.tech.geometries && last.pres.geometries === first.pres.geometries, { first: first.tech, last: last.tech });
-    check(sc, 'texturas não crescem entre o ciclo 2 e o 12', last.tech.textures === first.tech.textures && last.pres.textures === first.pres.textures, { first: first.pres.textures, last: last.pres.textures });
+    check(sc, 'geometrias não crescem entre o ciclo 2 e o 20', last.tech.geometries === first.tech.geometries && last.pres.geometries === first.pres.geometries, { first: first.tech, last: last.tech });
+    check(sc, 'texturas não crescem entre o ciclo 2 e o 20', last.tech.textures === first.tech.textures && last.pres.textures === first.pres.textures, { first: first.pres.textures, last: last.pres.textures });
     check(sc, 'programas de shader estabilizam', last.pres.programs === first.pres.programs, { first: first.pres.programs, last: last.pres.programs });
     check(sc, 'luzes constantes por perfil, sem duplicados', samples.every((s) => s.lightsTech === lights0 && s.lightsPres === samples[0].lightsPres), samples.map((s) => [s.lightsTech, s.lightsPres]));
     check(sc, 'a cena volta ao mesmo número de geometrias próprias (renderer.info só conta as já enviadas à GPU)', (await R(page, (r) => r.sceneGeometries())) === sceneGeo0, { before: sceneGeo0, after: await R(page, (r) => r.sceneGeometries()) });

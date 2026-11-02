@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-02T16:37:09.347Z",
+  "at": "2026-11-02T18:02:02.018Z",
   "passed": 63,
   "failed": 0,
   "checks": [
@@ -14,7 +14,7 @@
     },
     {
       "scenario": "1 técnico/apresentação",
-      "name": "geometrias não crescem entre o ciclo 2 e o 12",
+      "name": "geometrias não crescem entre o ciclo 2 e o 20",
       "ok": true,
       "observed": {
         "first": {
@@ -35,7 +35,7 @@
     },
     {
       "scenario": "1 técnico/apresentação",
-      "name": "texturas não crescem entre o ciclo 2 e o 12",
+      "name": "texturas não crescem entre o ciclo 2 e o 20",
       "ok": true,
       "observed": {
         "first": 9,
@@ -56,6 +56,38 @@
       "name": "luzes constantes por perfil, sem duplicados",
       "ok": true,
       "observed": [
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
         [
           3,
           3

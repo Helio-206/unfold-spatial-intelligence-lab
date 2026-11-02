@@ -14,7 +14,7 @@
       },
       "tile": 1024,
       "tiles": 4,
-      "ms": 3066,
+      "ms": 2967,
       "limits": {
         "maxTextureSize": 8192,
         "maxViewport": [
@@ -47,7 +47,7 @@
       },
       "tile": 1024,
       "tiles": 6,
-      "ms": 3420,
+      "ms": 2954,
       "limits": {
         "maxTextureSize": 8192,
         "maxViewport": [
@@ -80,7 +80,7 @@
       },
       "tile": 1024,
       "tiles": 12,
-      "ms": 5314,
+      "ms": 4849,
       "limits": {
         "maxTextureSize": 8192,
         "maxViewport": [

@@ -13,6 +13,7 @@ and provenance come from the scene exactly as the engine produced them.
 | `procedural-textures.ts` | Seeded, deterministic 256 px normal / roughness / timber / hatch textures generated in code. |
 | `stage.ts` | `configureRenderer()` (colour management, tone mapping, shadow filter), `createStage()` (lights, shadow fitting, small shared environment). |
 | `viewer.ts` | Rendering controller used by the editor (stage lifecycle, quality switch, adaptive degrade). |
+| `snapshot.ts` | Isolated scene copy for renders that take time (export). |
 | `lifecycle.ts` | Geometry disposal that respects shared assets. |
 | `hires.ts` | `renderHighResolution()`: tiled still of the same scene and camera at any size the hardware allows. |
 | `metrics.ts` | Scene and renderer counters, frame-time summaries. |
@@ -49,9 +50,9 @@ No third-party image, texture or model is bundled by this change.
 - `viewer.ts` `createRenderingController(scene, renderer)` owns the stage (lights, environment, shadows) and the renderer configuration. `setQuality()` disposes the previous stage and creates the new one, so lights and environment never duplicate; `dispose()` releases stage, environment and the shared material library.
 - The editor rebuilds the displayed model with `{ quality }` on a switch. It is the same scene object: no revision, no undo entry, no change to geometry, provenance or authorization. Selection, camera and a pending removal preview (card and ghost) survive.
 - Two controls, centred under the header: **Técnico / Apresentação** (default Técnico) and **Exportar imagem** (1920x1080, 2560x1440, 3840x2160; keyboard operable, Escape closes).
-- Export draws the current quality with the current camera through a temporary renderer in tiles, hides the gizmo and selection outline, suspends the editor's own drawing, reports the actual size and says so when the device clamped it.
+- Export renders an isolated snapshot (`snapshot.ts`: cloned objects, geometries, materials, lights, frozen camera/quality/title) through a temporary renderer in tiles, so undo/redo, previews, selection, tweens and camera moves during the export cannot change any tile. The gizmo and selection outline are left out of the copy; the editor keeps drawing. It reports the actual size and says so when the device clamped it.
 - `lifecycle.ts` `disposeOwnedGeometries()` frees every owned mesh/line/points geometry once and never touches shared GLB geometry.
-- Adaptive quality: `readDeviceCaps` + `resolveProfile` pick shadow resolution and pixel ratio from the device (software renderer or small textures: 1024 px shadows, pixel ratio 1). `FrameMonitor` only ever steps Presentation *down* (halve the shadow map, then no shadows), after contiguous slow frames and with a cooldown; it never switches to Presentation by itself and never oscillates.
+- Adaptive quality: `readDeviceCaps` + `resolveProfile` pick shadow resolution and pixel ratio from the device (software renderer or small textures: 1024 px shadows, pixel ratio 1). `FrameMonitor` only ever steps Presentation *down* (halve the shadow map, then no shadows). A frame costs request-to-callback plus render time (idle time never counts; frames of any length count), and in Presentation every other frame does a 1x1 GPU sync so GPU time is included; it works on a window p95 with a cooldown; it never switches to Presentation by itself and never oscillates.
 - Floors: `planFloors` compares floor polygons in world space. Identical duplicates are drawn once (confirmed preferred) and reported in `group.userData.floorConflicts` and the status line; partial overlaps are both drawn, translucent and hatched; different elevations are not conflicts. Canonical room nodes are never removed.
 - Debug only: `?debug-rendering` exposes `window.__unfoldRendering` (counters, camera, benchmark, tile/editor comparison). Not used by the product.
 

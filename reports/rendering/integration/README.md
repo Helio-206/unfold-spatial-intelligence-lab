@@ -46,12 +46,12 @@ No cutaway sheet: the editor has no section tool and none was added.
 
 | scene | profile | frame ms mean / p95 | draw calls | triangles | rebuild on switch (ms) |
 |---|---|---|---|---|---|
-| five rooms | technical | 42.3 / 47.6 | 83 | 4 145 | 18 to 22 |
-| five rooms | presentation | 233 / 258 | 107 | 4 193 | 16 to 22 |
-| real plan | technical | 31.1 / 34.2 | 57 | 217 | 47 to 59 |
-| real plan | presentation | 111 / 121 | 135 | 373 | 55 to 90 |
+| five rooms | technical | 35.0 / 41.6 | 83 | 4 145 | 16 to 21 |
+| five rooms | presentation | 205 / 251 | 107 | 4 193 | 24 to 34 |
+| real plan | technical | 28.6 / 38.8 | 57 | 217 | 58 to 89 |
+| real plan | presentation | 105 / 117 | 135 | 373 | 43 to 81 |
 
-Resolved profile on this machine (software renderer detected): shadow map 1024, pixel ratio 1 (presentation); technical has no shadows. Presentation is about 3.5 to 5.5x technical on a CPU rasteriser; the ratio on a GPU is unknown and must be measured before changing the default (it stays Technical).
+Resolved profile on this machine (software renderer detected): shadow map 1024, pixel ratio 1 (presentation); technical has no shadows. Presentation is about 3.5 to 6x technical on a CPU rasteriser; the ratio on a GPU is unknown and must be measured before changing the default (it stays Technical).
 
 ## High resolution export from the editor
 
@@ -59,9 +59,9 @@ Presentation, five rooms, through the real menu. Files in [`exports/`](exports/)
 
 | requested | actual | tiles | time | PNG |
 |---|---|---|---|---|
-| 1920 x 1080 | 1920 x 1080 | 4 | 4.2 s | 0.5 MB |
-| 2560 x 1440 | 2560 x 1440 | 6 | 4.0 s | 0.8 MB |
-| 3840 x 2160 | 3840 x 2160 | 12 | 4.9 s | 1.7 MB |
+| 1920 x 1080 | 1920 x 1080 | 4 | 3.4 s | 0.5 MB |
+| 2560 x 1440 | 2560 x 1440 | 6 | 3.4 s | 0.8 MB |
+| 3840 x 2160 | 3840 x 2160 | 12 | 4.5 s | 1.7 MB |
 
 Here `MAX_TEXTURE_SIZE` is 8192 so nothing was clamped. On a device that clamps, the card says "O dispositivo não permitiu o tamanho pedido", the file name carries the real size, and nothing claims 4K. Framing: the export shows what the viewport shows (wider output adds room at the sides).
 
@@ -79,13 +79,25 @@ The differing pixels are isolated antialiasing differences on edges, not seams (
 
 ## Browser E2E
 
-`tests/e2e/rendering-integration.pw.mjs`: 63/63 ([`results.json`](results.json)). Covers: starts in Technical; 12 switches with no growth in geometries, textures, shader programs or lights; no revision and unchanged stored scene; camera and selection kept; keyboard (Enter/Space, menu arrows, Escape); removal preview in both modes, switching quality with the card open, cancel, blocked removal, successful removal, one undo entry, undo and redo; export 1920, 2560 and 3840 with real PNG sizes, honest card text, unchanged camera, scene and resource counts, cancel mid-export; 4 exit/re-enter cycles; 390 px layout, visible focus, reduced motion; no console errors; no request outside localhost (nothing paid).
+`tests/e2e/rendering-integration.pw.mjs`: 63/63 ([`results.json`](results.json)). Covers: starts in Technical; 20 switches with no growth in geometries, textures, shader programs or lights; no revision and unchanged stored scene; camera and selection kept; keyboard (Enter/Space, menu arrows, Escape); removal preview in both modes, switching quality with the card open, cancel, blocked removal, successful removal, one undo entry, undo and redo; export 1920, 2560 and 3840 with real PNG sizes, honest card text, unchanged camera, scene and resource counts, cancel mid-export; 4 exit/re-enter cycles; 390 px layout, visible focus, reduced motion; no console errors; no request outside localhost (nothing paid).
 
 PR #7 regression gate, run unchanged on this branch: `wall-removal-merge.pw.mjs` 101/101, `confirmed-values-authorization.pw.mjs` 60/60.
 
+## Review fixes (PR #10 review)
+
+**1. Export from a snapshot, not from the live scene.** The tiled export yields between tiles, and the editor stays usable. Instead of trying to lock every path that can mutate the scene (undo/redo, preview apply/cancel, selection, GSAP tweens, camera), `exportImage` now renders an isolated copy built in one synchronous step: `snapshotScene` clones objects, geometries, materials and lights (light targets re-linked inside the copy), and the camera, quality, title and aspect are frozen with it. The gizmo and selection outline are excluded from the copy rather than hidden in the live scene, so the editing view is never touched and the editor keeps drawing during the export. Unit tests: `tests/rendering-snapshot.test.ts`.
+
+Browser regression (`tests/e2e/rendering-robustness.pw.mjs`, scenario A): a 3840x2160 export in 135 tiles; while it runs the test jumps the camera, starts a tween, changes the selection, previews, cancels, previews again and applies the wall removal (geometry rebuilt), then undoes and redoes, asserting the export was still busy before and after the edit. The PNG must be byte-identical to the same export without interference. Result: identical (the baseline itself is reproducible, so the comparison is meaningful). Against the previous commit (`144f6f3`), with an 8K export so the edits land mid-export, the same test fails: the PNG differs.
+
+**2. Slow-frame degradation.** `FrameMonitor.sample()` threw away every frame gap above 80 ms, so the monitor could never see a device that needs 100 to 250 ms per frame. Now a frame costs *request to callback* (time the frame waited because the main thread or GPU was busy) plus render time; idle time before the request never counts, and a stalled or hidden tab (latency over 2 s) is skipped. The CPU timer alone is not enough: `render()` returns when commands are queued, and on this pipeline it measured 1 to 4 ms for frames that really take 100 to 250 ms. So in Presentation, every other frame does a 1x1 `readPixels` right after rendering to include the GPU; Technical never probes and probing stops at the last step. Unit tests cover sustained 150 and 233 ms frames, async-GPU slowness, idle, hidden tab and bursts. Browser regression (scenario B): in Presentation, a paced orbit drag takes the profile to 512 px shadows and then to no shadows (with the status message), nothing happens when idle, no oscillation after step 2, and choosing Presentation again resets it. Technical stays the default and never degrades.
+
+**Found while doing this**: dragging with the mouse did not repaint the canvas at all (OrbitControls 'change' was never wired to the on-demand renderer; same on current `main`). Added the listener; without it neither interaction nor the monitor can work.
+
+Gates after the fixes, on the branch merged with the newest `main` (PR #8): `npm test` 1226 passed, `npm run build` ok, rendering integration E2E 63/63 (20 profile-switch cycles; scene geometries stay 101 and 107), robustness E2E 21/21, `wall-removal-merge` 101/101, `confirmed-values-authorization` 60/60. The exported PNGs are byte-identical to the ones exported from the live scene before the change.
+
 ## Limitations
 
-- Software rendering only. Frame times, the adaptive thresholds and the shadow size need a check on real hardware.
+- Software rendering only. Frame times, the adaptive thresholds, the shadow size and the cost of the Presentation GPU probe (one 1x1 read every other frame) need a check on real hardware.
 - Duplicate coplanar *walls* are not deduplicated (only floors).
 - Hairline seam where two collinear wall segments abut.
 - No cutaway/section tool, so no cutaway evidence.

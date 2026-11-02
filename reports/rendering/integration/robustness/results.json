@@ -1,0 +1,228 @@
+{
+  "at": "2026-11-02T18:06:01.131Z",
+  "passed": 21,
+  "failed": 0,
+  "checks": [
+    {
+      "scenario": "A exportação isolada",
+      "name": "a exportação base é reprodutível (mesmo PNG duas vezes, 135 blocos)",
+      "ok": true,
+      "observed": [
+        "34937f4d3523fd5f",
+        "34937f4d3523fd5f"
+      ]
+    },
+    {
+      "scenario": "A exportação isolada",
+      "name": "a exportação tem vários blocos",
+      "ok": true,
+      "observed": 135
+    },
+    {
+      "scenario": "A exportação isolada",
+      "name": "a edição foi aplicada com a exportação a meio (blocos já feitos, ainda a decorrer antes e depois de aplicar)",
+      "ok": true,
+      "observed": {
+        "start": true,
+        "beforeApply": true,
+        "afterApply": true
+      }
+    },
+    {
+      "scenario": "A exportação isolada",
+      "name": "a cena mudou de verdade durante a exportação (revisões)",
+      "ok": true,
+      "observed": {
+        "actions": [
+          "view",
+          "top-view (tween)",
+          "select wall-edge-0-0-400-0",
+          "preview+cancel",
+          "apply",
+          "undo",
+          "redo"
+        ],
+        "progressedBeforeEdit": true,
+        "cardAtStart": "A exportar 3840 × 2160… 5 de 135 blocos",
+        "busy": {
+          "start": true,
+          "beforeApply": true,
+          "afterApply": true
+        },
+        "cardShown": true,
+        "revisionAfterApply": 5,
+        "geometriesAfterApply": 108,
+        "revisionAfterUndo": 6,
+        "revisionAfterRedo": 7,
+        "stillExporting": true,
+        "geo0": 112,
+        "cameraDuring": {
+          "position": [
+            10.424408,
+            3.841275,
+            -1.4999999999999996
+          ],
+          "target": [
+            4,
+            1.4,
+            -1.5
+          ],
+          "fov": 42,
+          "aspect": 1.44
+        }
+      }
+    },
+    {
+      "scenario": "A exportação isolada",
+      "name": "a câmara do editor mudou durante a exportação",
+      "ok": true,
+      "observed": [
+        {
+          "position": [
+            11.402877,
+            4.213093000000001,
+            -1.4999999999999996
+          ],
+          "target": [
+            4,
+            1.4,
+            -1.5
+          ],
+          "fov": 42,
+          "aspect": 1.44
+        },
+        {
+          "position": [
+            10.424408,
+            3.841275,
+            -1.4999999999999996
+          ],
+          "target": [
+            4,
+            1.4,
+            -1.5
+          ],
+          "fov": 42,
+          "aspect": 1.44
+        }
+      ]
+    },
+    {
+      "scenario": "A exportação isolada",
+      "name": "o PNG exportado é idêntico ao da exportação sem interferência (todos os blocos do mesmo estado)",
+      "ok": true,
+      "observed": [
+        "34937f4d3523fd5f",
+        "34937f4d3523fd5f"
+      ]
+    },
+    {
+      "scenario": "A exportação isolada",
+      "name": "o relatório descreve o mesmo tamanho e blocos",
+      "ok": true
+    },
+    {
+      "scenario": "A exportação isolada",
+      "name": "o cartão acaba em «exportada», sem erro",
+      "ok": true
+    },
+    {
+      "scenario": "A exportação isolada",
+      "name": "depois da exportação o editor continua a responder e os botões voltam",
+      "ok": true
+    },
+    {
+      "scenario": "A exportação isolada",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "B degradação",
+      "name": "o editor arranca em Técnico e Técnico nunca degrada",
+      "ok": true
+    },
+    {
+      "scenario": "B degradação",
+      "name": "ponto de partida: frames de Apresentação acima de 80 ms neste dispositivo (software)",
+      "ok": true,
+      "observed": 193.14000000001397
+    },
+    {
+      "scenario": "B degradação",
+      "name": "frames lentos sustentados (>80 ms) fazem descer um nível: sombras mais leves",
+      "ok": true,
+      "observed": {
+        "reached": {
+          "1": {
+            "moves": 19,
+            "ms": 7270
+          },
+          "2": {
+            "moves": 38,
+            "ms": 14663
+          }
+        },
+        "moves": 38
+      }
+    },
+    {
+      "scenario": "B degradação",
+      "name": "o perfil aplicado baixou mesmo o custo (mapa de sombras mais pequeno)",
+      "ok": true,
+      "observed": [
+        1024,
+        512
+      ]
+    },
+    {
+      "scenario": "B degradação",
+      "name": "depois do cooldown desce o segundo nível: sem sombras",
+      "ok": true,
+      "observed": {
+        "reached": {
+          "1": {
+            "moves": 19,
+            "ms": 7270
+          },
+          "2": {
+            "moves": 38,
+            "ms": 14663
+          }
+        }
+      }
+    },
+    {
+      "scenario": "B degradação",
+      "name": "o aviso é mostrado ao utilizador",
+      "ok": true
+    },
+    {
+      "scenario": "B degradação",
+      "name": "sem oscilação: fica no nível 2",
+      "ok": true
+    },
+    {
+      "scenario": "B degradação",
+      "name": "inactividade não degrada",
+      "ok": true
+    },
+    {
+      "scenario": "B degradação",
+      "name": "voltar a escolher Apresentação repõe o perfil do dispositivo",
+      "ok": true
+    },
+    {
+      "scenario": "B degradação",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "rede",
+      "name": "nenhum pedido para fora de localhost",
+      "ok": true,
+      "observed": []
+    }
+  ]
+}
