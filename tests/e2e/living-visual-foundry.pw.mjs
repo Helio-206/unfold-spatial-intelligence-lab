@@ -87,7 +87,8 @@ const captures = {};
   await page.locator('.uw-stage').focus();
   for (let i = 0; i < 6; i++) await page.keyboard.press('ArrowLeft');
   await settle(page, 300);
-  const hv2 = await page.evaluate(() => { const v = window.__workspace.handView(); const el = document.querySelector('.uw-hand svg.uw-reticle'); return { v, left: parseFloat(el.style.left), top: parseFloat(el.style.top) }; });
+  // force the frame that repositions the reticle (software frames take ~2 s; don't race the rAF)
+  const hv2 = await page.evaluate(() => { window.__workspace.renderNow(); const v = window.__workspace.handView(); const el = document.querySelector('.uw-hand svg.uw-reticle'); return { v, left: parseFloat(el.style.left), top: parseFloat(el.style.top) }; });
   check('hand tracks the target through camera motion', hv2.v.x !== null && Math.abs(hv2.left - hv2.v.x) <= 1 && (Math.abs(hv2.v.x - hv.v.x) > 5 || Math.abs(hv2.v.y - hv.v.y) > 5), { before: [hv.v.x, hv.v.y], after: [hv2.v.x, hv2.v.y] });
   const owner = await page.evaluate(() => window.__workspace.cameraState().owner);
   check('keyboard orbit is owned by the user', owner === 'idle' || owner === 'user_keyboard', owner);
