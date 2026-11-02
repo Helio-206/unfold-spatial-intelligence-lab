@@ -310,8 +310,8 @@ describe('verificações do Core no relatório da fusão', () => {
     return merged(planRoomMerge(scene, sharedWallId(scene, 'sala', 'cozinha'), AT)).report;
   };
 
-  it('tem exactamente as três verificações: área, polígono simples e estrutura', () => {
-    expect(report().checks.map((check) => check.id)).toEqual(['architecture.room-merge.area', 'architecture.room-merge.simple-polygon', 'architecture.room-merge.structure']);
+  it('tem exactamente as quatro verificações: área, polígono simples, escala e estrutura', () => {
+    expect(report().checks.map((check) => check.id)).toEqual(['architecture.room-merge.area', 'architecture.room-merge.simple-polygon', 'architecture.room-merge.scale', 'architecture.room-merge.structure']);
   });
 
   it('a conservação de área passa, com o medido (21) contra o esperado (12 + 9)', () => {
@@ -334,15 +334,15 @@ describe('verificações do Core no relatório da fusão', () => {
     expect(check.reason).toMatch(/estruturalmente seguro/);
   });
 
-  it('o resumo do relatório é "unknown": nada na cena pode passar por estruturalmente verificado', () => {
-    expect(summarizeReport(report())).toMatchObject({ pass: 2, fail: 0, unknown: 1, status: 'unknown' });
+  it('o resumo do relatório é "unknown": nada na cena pode passar por estruturalmente verificado, nem a escala por verificada', () => {
+    expect(summarizeReport(report())).toMatchObject({ pass: 2, fail: 0, unknown: 2, status: 'unknown' });
   });
 
   it('o relatório cita o domínio, a cena, a revisão e as entradas com a sua proveniência', () => {
     const scene = sceneFromRooms([A, B]).scene;
     const result = merged(planRoomMerge(scene, sharedWallId(scene, 'sala', 'cozinha'), AT));
     expect(result.report).toMatchObject({ domain: 'architecture', subjectId: scene.id, revisionId: scene.revision.id, generatedAt: AT });
-    expect(result.report.inputs.map((input) => `${input.entityId}.${input.field}`).sort()).toEqual(['cozinha.geometry', 'sala.geometry']);
+    expect(result.report.inputs.map((input) => `${input.entityId}.${input.field}`).sort()).toEqual(['cozinha.geometry', 'rooms.imageWorldMapping', 'sala.geometry']);
     expect(result.report.assumptions.length).toBeGreaterThan(0);
   });
 });

@@ -1,4 +1,4 @@
-import type { RoomMergeResult } from './room-merge';
+import { scaleSourceWords, type RoomMergeResult, type ScaleBasis } from './room-merge';
 import { explainSceneError } from './scene-messages';
 import type { Node, SpatialSceneV1 } from './spatial-scene';
 
@@ -55,6 +55,14 @@ const m2 = (value: number) => value.toLocaleString('pt-PT', { maximumFractionDig
 const STATUS_WORD = { pass: 'ok', fail: 'falhou', unknown: 'desconhecida' } as const;
 const STRUCTURE: CardRow = { label: 'estrutura', value: 'desconhecida · sem dados estruturais', tone: 'unknown' };
 
+/** A linha da escala, escrita só a partir do que a cena regista: «baseada numa escala fornecida pelo utilizador · por verificar». */
+export function scaleRow(scale: ScaleBasis): CardRow {
+  if (scale.state === 'unknown') return { label: 'escala', value: 'desconhecida · sem calibração na cena', tone: 'unknown' };
+  if (scale.state === 'rejected') return { label: 'escala', value: `${scaleSourceWords(scale)} · rejeitada, a área não é fiável`, tone: 'unknown' };
+  if (scale.state === 'verified') return { label: 'escala', value: `${scaleSourceWords(scale)} · verificada` };
+  return { label: 'escala', value: `${scaleSourceWords(scale)} · por verificar`, tone: 'unknown' };
+}
+
 function removesRow(info: RemovalDescription): CardRow {
   const count = info.openings.length;
   return { label: 'remove', value: `1 parede${count ? ` e ${count} abertura${count > 1 ? 's' : ''}` : ''}` };
@@ -73,7 +81,11 @@ export function describeRemovalCard(info: RemovalDescription, outcome: RemovalOu
   const merge = outcome.plan.merge;
   if (!merge) rows.push({ label: 'divisões afectadas', value: 'nenhuma' });
   else {
-    rows.push({ label: 'divisões', value: `${merge.merged.label} → 1 divisão, ${m2(merge.areas.merged)} m² · calculado` });
+    rows.push({ label: 'divisões', value: `${merge.merged.label} → 1 divisão` });
+    // A área é calculada, mas os metros dependem da escala; o cartão diz de onde vem e se alguém a verificou, sem a promover.
+    rows.push({ label: 'área calculada', value: `${m2(merge.areas.merged)} m²` });
+    rows.push(scaleRow(merge.scale));
+    rows.push(merge.sourceGeometry === 'confirmed' ? { label: 'geometria', value: 'das duas divisões confirmada' } : { label: 'geometria', value: 'das duas divisões por rever', tone: 'unknown' });
     for (const check of merge.report.checks) {
       if (check.id === 'architecture.room-merge.area') rows.push({ label: 'área conservada', value: `${STATUS_WORD[check.status]} · ${m2(merge.areas.merged)} m² = ${m2(merge.areas.first)} + ${m2(merge.areas.second)} m²` });
       else if (check.id === 'architecture.room-merge.simple-polygon') rows.push({ label: 'polígono simples', value: STATUS_WORD[check.status] });

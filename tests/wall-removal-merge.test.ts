@@ -45,7 +45,7 @@ describe('remover a parede entre duas divisões funde-as', () => {
     const plan = planWallRemoval(t, wallOf(t), 'reviewer');
     expect(plan.merge).toMatchObject({ status: 'merge', roomIds: ['sala', 'cozinha'] });
     expect(plan.merge!.areas.merged).toBeCloseTo(21, 9);
-    expect(plan.report!.checks.map((c) => [c.id, c.status])).toEqual([['architecture.room-merge.area', 'pass'], ['architecture.room-merge.simple-polygon', 'pass'], ['architecture.room-merge.structure', 'unknown']]);
+    expect(plan.report!.checks.map((c) => [c.id, c.status])).toEqual([['architecture.room-merge.area', 'pass'], ['architecture.room-merge.simple-polygon', 'pass'], ['architecture.room-merge.scale', 'unknown'], ['architecture.room-merge.structure', 'unknown']]);
     expect(serializeSceneTransaction(t)).toBe(before);
   });
 

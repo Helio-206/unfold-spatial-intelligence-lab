@@ -44,8 +44,32 @@ export type RoomMergeResult =
     /** Todas as relações das duas divisões antigas, que desaparecem com elas. */
     removedRelationIds: string[];
     areas: { first: number; second: number; merged: number };
+    /** Em que escala assentam os metros quadrados: a que a cena traz, tal como está registada (nunca promovida). */
+    scale: ScaleBasis;
+    /** `confirmed` só se a geometria das duas divisões de origem estiver verificada ou corrigida por alguém. */
+    sourceGeometry: 'confirmed' | 'unreviewed';
     report: VerificationReport;
   };
+
+/**
+ * A base da escala (pixels → metros) da cena, lida da proveniência que lá está. `verified` só com `verified`/`corrected`;
+ * o que uma pessoa escreveu e ninguém reviu é `unverified`, não confirmado. Sem calibração, `unknown`.
+ */
+export type ScaleBasis = { state: 'verified' | 'unverified' | 'rejected' | 'unknown'; source: PropertyProvenance['source'] | null; validation: PropertyProvenance['validation'] | null; evidence: string | null };
+
+export function describeScaleBasis(scene: SpatialSceneV1): ScaleBasis {
+  const provenance = scene.imageWorldMapping?.provenance;
+  if (!provenance) return { state: 'unknown', source: null, validation: null, evidence: null };
+  const state = provenance.validation === 'verified' || provenance.validation === 'corrected' ? 'verified' : provenance.validation === 'rejected' ? 'rejected' : 'unverified';
+  return { state, source: provenance.source, validation: provenance.validation, evidence: provenance.evidence ?? null };
+}
+
+const SCALE_SOURCE_WORDS: Record<PropertyProvenance['source'], string> = {
+  user: 'fornecida pelo utilizador', technical_document: 'lida do documento técnico', derived: 'derivada pelo motor', solver: 'calculada por um solver', system: 'definida pelo sistema',
+};
+/** «fornecida pelo utilizador» e afins: de onde vem a escala, sem dizer nada sobre se está certa. */
+const scaleSentence = (scale: ScaleBasis): string => (scale.state === 'unknown' ? 'que não está registada' : `${scaleSourceWords(scale)}${scale.state === 'verified' ? ' e verificada' : scale.state === 'rejected' ? ' e rejeitada' : ', por verificar'}`);
+export const scaleSourceWords = (scale: ScaleBasis): string => (scale.source ? SCALE_SOURCE_WORDS[scale.source] : 'sem origem conhecida');
 
 type Point = [number, number];
 type Vertex = [number, number, number];
@@ -354,6 +378,8 @@ export function planRoomMerge(scene: SpatialSceneV1, wallId: string, recordedAt:
   const areaConserved = Math.abs(areaMerged - expected) <= areaTolerance;
   if (!areaConserved) return blocked('ROOM_MERGE_AREA_NOT_CONSERVED', ids);
 
+  const scale = describeScaleBasis(scene);
+  const sourceGeometry = [first, second].every((room) => room.geometry!.provenance.validation === 'verified' || room.geometry!.provenance.validation === 'corrected') ? 'confirmed' : 'unreviewed';
   const mergedId = `room-merged-${sha256Hex([first.id, second.id].sort().join('|')).slice(0, 12)}`;
   const provenance = (evidence: string): PropertyProvenance => ({ source: 'derived', validation: 'unreviewed', recordedAt, evidence });
   const geometryEvidence = `Divisão resultante da remoção de ${wall.label}: união de ${roomDisplayName(first)} e ${roomDisplayName(second)}, calculada pelo motor a partir dos dois polígonos.`;
@@ -381,7 +407,7 @@ export function planRoomMerge(scene: SpatialSceneV1, wallId: string, recordedAt:
         boundaryRefs: text(JSON.stringify(refs)),
         mergedFrom: text(JSON.stringify([first.id, second.id])),
         removedWall: text(wallId),
-        area: { value: areaMerged, unit: 'm2', provenance: provenance('Área calculada pelo motor a partir do polígono resultante; não vem de nenhum documento nem foi escrita à mão.') },
+        area: { value: areaMerged, unit: 'm2', provenance: provenance(`Área calculada pelo motor a partir do polígono resultante; não vem de nenhum documento nem foi escrita à mão. Os metros dependem da escala da cena, ${scaleSentence(scale)}.`) },
       },
     },
     properties: {},
@@ -391,12 +417,22 @@ export function planRoomMerge(scene: SpatialSceneV1, wallId: string, recordedAt:
   const relations: SceneRelation[] = remainingIds.map((id) => ({ id: `bounded-${mergedId}-${id}`, fromNodeId: mergedId, toNodeId: id, kind: 'bounded_by', properties: {}, provenance: base }));
   const removedRelationIds = scene.relations.filter((relation) => involved.has(relation.fromNodeId) || involved.has(relation.toNodeId)).map((relation) => relation.id);
 
+  const scaleCheck: Check = scale.state === 'unknown'
+    ? { id: 'architecture.room-merge.scale', status: 'unknown', subject: [scene.id], reason: 'A cena não tem calibração de escala: os metros quadrados não têm base conhecida.' }
+    : scale.state === 'rejected'
+      ? { id: 'architecture.room-merge.scale', status: 'fail', subject: [scene.id], reason: `A escala (${scaleSourceWords(scale)}) foi rejeitada: a área calculada não é fiável.` }
+      : scale.state === 'unverified'
+        ? { id: 'architecture.room-merge.scale', status: 'unknown', subject: [scene.id], reason: `A área em m² assenta numa escala ${scaleSourceWords(scale)} que ninguém verificou (${scale.validation}): conservar a área não prova que a escala esteja certa.` }
+        : sourceGeometry === 'confirmed'
+          ? { id: 'architecture.room-merge.scale', status: 'pass', subject: [scene.id, first.id, second.id], reason: `A escala foi verificada (${scale.validation}) e a geometria das duas divisões também.` }
+          : { id: 'architecture.room-merge.scale', status: 'unknown', subject: [scene.id, first.id, second.id], reason: `A escala foi verificada (${scale.validation}), mas a geometria das duas divisões ainda não foi revista por ninguém.` };
   const checks: Check[] = [
     {
       id: 'architecture.room-merge.area', status: 'pass', subject: [first.id, second.id, mergedId], measured: areaMerged, expected, tolerance: areaTolerance, unit: 'm2',
       reason: `A área da divisão nova (${areaMerged.toFixed(3)} m²) é a soma das duas (${areaFirst.toFixed(3)} + ${areaSecond.toFixed(3)} m²).`,
     },
     { id: 'architecture.room-merge.simple-polygon', status: 'pass', subject: [mergedId], reason: 'O polígono resultante não tem auto-intersecções, vértices repetidos nem buracos.' },
+    scaleCheck,
     { id: 'architecture.room-merge.structure', status: 'unknown', subject: [wallId], reason: 'Estrutura desconhecida, sem dados estruturais: não se sabe se a parede é de carga. Geometricamente possível não é estruturalmente seguro.' },
   ];
   const report: VerificationReport = {
@@ -406,7 +442,11 @@ export function planRoomMerge(scene: SpatialSceneV1, wallId: string, recordedAt:
     generatedAt: recordedAt,
     checks,
     assumptions: ['Divisões planas no plano do chão (x, z), em metros.', `Dois pontos a menos de ${TOL * 1000} mm contam como o mesmo.`, 'Só se funde uma parede entre exactamente duas divisões em lados opostos.'],
-    inputs: [first, second].map((room) => ({ entityId: room.id, field: 'geometry', origin: toProvenance(room.geometry!.provenance.source), validation: room.geometry!.provenance.validation })),
+    inputs: [
+      ...[first, second].map((room) => ({ entityId: room.id, field: 'geometry', origin: toProvenance(room.geometry!.provenance.source), validation: room.geometry!.provenance.validation })),
+      // A escala também é uma entrada: sem ela os metros quadrados não querem dizer nada. Entra com a proveniência que tem, sem promoção.
+      ...(scene.imageWorldMapping ? [{ entityId: scene.id, field: 'imageWorldMapping', origin: toProvenance(scene.imageWorldMapping.provenance.source), validation: scene.imageWorldMapping.provenance.validation }] : []),
+    ],
   };
-  return { status: 'merge', wallId, roomIds: [first.id, second.id], merged, relations, removedRelationIds, areas: { first: areaFirst, second: areaSecond, merged: areaMerged }, report };
+  return { status: 'merge', wallId, roomIds: [first.id, second.id], merged, relations, removedRelationIds, areas: { first: areaFirst, second: areaSecond, merged: areaMerged }, scale, sourceGeometry, report };
 }
