@@ -21,6 +21,10 @@ import { EngineInputError, referenceConfiguration, solveForwardKinematics, type 
 export const JOINT_WINDOW_TOLERANCE = 1e-9;
 /** Abaixo deste |dg/dq| (m/rad) a caçamba quase não se mexe com o curso: singularidade. */
 export const SINGULAR_SLOPE_M_PER_RAD = 1e-6;
+/** Distância (m) abaixo da qual uma amostra da caçamba conta como raiz. Muito abaixo do fecho (1e-9 m) e acima do ruído (≈1e-15 m). */
+export const ROOT_TOLERANCE_M = 1e-12;
+/** Raízes mais próximas do que isto (rad) são a mesma raiz. */
+const ROOT_MERGE_RAD = 1e-7;
 const SAMPLES = 720;
 const TWO_PI = 2 * Math.PI;
 
@@ -46,14 +50,19 @@ export function planarCircleAngles(input: { r2: [number, number]; vB: [number, n
     const reachMin = Math.abs(lr - lb); const reachMax = lr + lb;
     throw new EngineDomainError('CYLINDER_UNREACHABLE', `Comprimento fora do alcance geométrico [${reachMin.toFixed(6)}, ${reachMax.toFixed(6)}] no plano da junta.`);
   }
+  // A classificação (singular ou não) não altera os ângulos: os dois são sempre −δ ± acos(c), com o acos verdadeiro.
+  // Perto do alcance máximo (c ≈ −1, acos ≈ π) e perto da tangência (c ≈ 1) o cálculo continua a ser exacto.
   const singular = Math.abs(c) >= 1 - 1e-9;
   const cc = Math.max(-1, Math.min(1, c));
   const delta = Math.atan2(r2[1], r2[0]) - Math.atan2(vB[1], vB[0]);
   const alpha = Math.acos(cc);
-  const thetas = singular ? [-delta] : [-delta + alpha, -delta - alpha];
   const wrap = (t: number) => { const w = Math.atan2(Math.sin(t), Math.cos(t)); return w === -Math.PI ? Math.PI : w; };
-  const candidates = thetas.map((t) => sign * wrap(t));
-  return { candidates, singular };
+  const wrapped: number[] = [];
+  for (const t of [-delta + alpha, -delta - alpha].map(wrap)) {
+    // Dois ângulos iguais módulo 2π (α ≈ 0 ou α ≈ π) contam como um só.
+    if (!wrapped.some((u) => Math.abs(u - t) < 1e-12 || Math.abs(Math.abs(u - t) - 2 * Math.PI) < 1e-12)) wrapped.push(t);
+  }
+  return { candidates: wrapped.map((t) => sign * t), singular };
 }
 
 /** Sinal do eixo da junta (+1 ou −1 em torno de Z da origem). Recusa eixos fora do plano da origem. */
@@ -203,14 +212,21 @@ function solveTwoLinkChain(assembly: Assembly, cylinder: HydraulicCylinder, valu
   };
 
   const lo = driven.limits.min.value; const hi = driven.limits.max.value;
-  const grid = Array.from({ length: SAMPLES + 1 }, (_, i) => lo + ((hi - lo) * i) / SAMPLES);
+  // Os extremos da grelha são exactamente os limites: um valor a zero no limite é uma raiz no limite.
+  const grid = Array.from({ length: SAMPLES + 1 }, (_, i) => (i === 0 ? lo : i === SAMPLES ? hi : lo + ((hi - lo) * i) / SAMPLES));
   const values = grid.map((q) => g(q));
   if (values.every((v) => v === null)) return fail('CYLINDER_UNREACHABLE', `Nenhuma posição da caçamba alcança este curso de ${cylinder.id}.`, [cylinder.id, driven.id]);
   const roots: number[] = [];
+  const addRoot = (q: number) => { if (!roots.some((r) => Math.abs(r - q) < ROOT_MERGE_RAD)) roots.push(q); };
+  // Raízes em amostras (incluindo os extremos): |g| dentro da tolerância de raiz.
+  for (let i = 0; i <= SAMPLES; i += 1) {
+    const v = values[i];
+    if (v !== null && v !== undefined && Math.abs(v) <= ROOT_TOLERANCE_M) addRoot(grid[i]!);
+  }
+  // Mudanças de sinal entre amostras vizinhas: bissecção.
   for (let i = 0; i < SAMPLES; i += 1) {
     const a = values[i]; const b = values[i + 1];
     if (a === null || b === null || a === undefined || b === undefined) continue;
-    if (a === 0) { roots.push(grid[i]!); continue; }
     if (a * b < 0) {
       let left = grid[i]!; let right = grid[i + 1]!; let fl = a;
       for (let iter = 0; iter < 200 && right - left > 1e-14; iter += 1) {
@@ -219,12 +235,14 @@ function solveTwoLinkChain(assembly: Assembly, cylinder: HydraulicCylinder, valu
         if (fm === 0) { left = right = mid; break; }
         if (Math.sign(fm) === Math.sign(fl)) { left = mid; fl = fm; } else right = mid;
       }
-      roots.push((left + right) / 2);
+      addRoot((left + right) / 2);
     }
   }
   if (roots.length === 0) return fail('CYLINDER_OUT_OF_JOINT_RANGE', `O curso pede uma caçamba fora dos limites [${lo}, ${hi}].`, [driven.id, cylinder.id]);
   const warnings: SolverWarning[] = [];
-  const qb = roots.length === 1 ? roots[0]! : roots.reduce((best, q) => (Math.abs(q - qbRef) < Math.abs(best - qbRef) ? q : best));
+  const chosenRoot = roots.length === 1 ? roots[0]! : roots.reduce((best, q) => (Math.abs(q - qbRef) < Math.abs(best - qbRef) ? q : best));
+  // Uma raiz dentro da tolerância pode cair ligeiramente fora do limite por arredondamento: fixa-se no limite.
+  const qb = Math.min(hi, Math.max(lo, chosenRoot));
   if (roots.length > 1) warnings.push({ code: 'BRANCH_AMBIGUOUS', message: `Mais de uma posição da caçamba alcança o curso de ${cylinder.id}; escolhida a mais próxima da referência.`, subjectIds: [driven.id] });
   const h = 1e-7;
   const up = g(qb + h); const down = g(qb - h);

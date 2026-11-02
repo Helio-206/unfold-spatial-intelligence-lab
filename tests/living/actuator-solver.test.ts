@@ -186,6 +186,29 @@ describe('janela dos limites: tolerância numérica no limite, recusa fora dele'
   });
 });
 
+describe('revisão: extremos aceites, ângulo verdadeiro no alcance máximo, sem pose tangente inventada', () => {
+  it('um curso que põe a caçamba exactamente no limite superior é aceite: a extremidade também é raiz', () => {
+    const frame = evaluateActuators(EXCAVATOR_ASSEMBLY_V1, { ...referenceStrokes(), bucket_cylinder: 0.0509951824124073 });
+    expect(frame.blocked?.code ?? null).not.toBe('CYLINDER_OUT_OF_JOINT_RANGE');
+    expect(frame.status).toBe('ok');
+    expect(frame.joints.find((j) => j.jointId === 'bucket_joint')!.value).toBeCloseTo(0, 9);
+  });
+
+  it('no alcance máximo geométrico (c = −1) o ângulo é π, não o mínimo de extensão', () => {
+    const { candidates, singular } = planarCircleAngles({ r2: [2, 0], vB: [1, 0], K: 9, sign: 1 });
+    expect(singular).toBe(true);
+    expect(candidates.some((t) => Math.abs(Math.abs(t) - Math.PI) < 1e-12)).toBe(true);
+    expect(candidates.some((t) => Math.abs(t) < 1e-12)).toBe(false);
+  });
+
+  it('quase tangente, mas não singular (c = 1 − 1e-7): dá os dois ângulos exactos, não uma pose tangente aproximada', () => {
+    const { candidates, singular } = planarCircleAngles({ r2: [2, 0], vB: [1, 0], K: 1 + 4e-7, sign: 1 });
+    expect(singular).toBe(false);
+    expect(candidates).toHaveLength(2);
+    expect(Math.abs(candidates[0]! - candidates[1]!)).toBeCloseTo(2 * Math.acos(1 - 1e-7), 12);
+  });
+});
+
 describe('ângulos de um círculo: forma fechada e singularidades', () => {
   it('um caso geral dá dois ângulos: sin θ = 3/8, ou seja θ = asin(3/8) e π − asin(3/8)', () => {
     // r₂ = (2,0), v_B = (0,2): |R(θ)r₂ − v_B|² = 8 − 8·sin θ. Igualar a K = 5 dá sin θ = 3/8.
