@@ -49,6 +49,7 @@ The live path was exercised from the PR worktree with the local ignored `.env`: 
 - Text dimensions require the requested semantic name in the local part phrase: chassis length and width are independent, mixed units are preserved, and an omitted measurement remains unknown.
 - Unknown, hypothesis, observed and template values remain separate.
 - Template dimensions are hypothetical and carry `requiredForVerification: true`.
+- Each generated proposal owns deep copies of template transform vectors (`translation`, `rotationEulerDeg` and `scale`); edits to one proposal cannot modify the shared library or another proposal.
 - User text can create pending dimension or replacement proposals only; it cannot execute commands or mutate confirmed scene data.
 - Image payloads use the existing JPEG/PNG signature and size validation, server-only credentials and the existing origin/host/token guards.
 - Missing engineering shapes, points, limits, actuator topology or review authorization blocks adaptation instead of manufacturing verified constraints.
@@ -58,8 +59,8 @@ The live path was exercised from the PR worktree with the local ignored `.env`: 
 
 ## Verification
 
-- Focused reconstruction tests: 18 passed.
-- Full suite: 72 files, 1408 tests passed with `npx vitest run --testTimeout=15000` after synchronizing `main@ff16954`. The unparameterized `npm test` still times out in the existing rendering lifecycle test at its 5 s default; no rendering code was changed here.
+- Focused reconstruction tests: 19 passed, including transform isolation across independently generated proposals and canonical adaptation/FK of a subsequent proposal.
+- Full suite: 72 files, 1409 tests passed with `npx vitest run --testTimeout=15000` after synchronizing `main@ff16954`. The unparameterized `npm test` still times out in the existing rendering lifecycle test at its 5 s default; no rendering code was changed here.
 - TypeScript and production build: passed; existing contact-variable and large-chunk warnings remain.
 - `git diff --check`: passed.
 

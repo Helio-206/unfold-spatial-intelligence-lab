@@ -7,6 +7,7 @@ import { validateAssemblyProposal, type ExcavatorObservationV1 } from '../src/li
 import { adaptReviewedProposalToAssembly, forwardKinematicsAtReference, ReconstructionAdapterBlockedError, sourceEulerDegreesToCanonicalQuaternion, sourceVectorToCanonical } from '../src/living/reconstruction/adapter';
 import { EXCAVATOR_ASSEMBLY_V1 } from '../src/living/contracts/fixtures/excavator.assembly.v1';
 import { validateAssembly } from '../src/living/contracts/assembly.v1';
+import { EXCAVATOR_TEMPLATE_LIBRARY } from '../src/living/reconstruction/library';
 
 const ALLOWED_ORIGIN = 'http://127.0.0.1:5173';
 const jpegA = 'data:image/jpeg;base64,/9j/4AA=';
@@ -84,6 +85,39 @@ describe('living image-to-assembly contracts', () => {
     expect(first.parts.find((part) => part.id === 'part-boom')?.geometrySource).toBe('hypothesis');
     expect(first.joints.every((joint) => joint.axis.some((component) => component !== 0))).toBe(true);
     expect(assemblyMetrics(first)).toMatchObject({ schemaValid: true, partRecognition: 0, jointConnectivity: 0 });
+  });
+
+  it('isolates mutable template transforms across proposals and canonical adaptation', () => {
+    const templateBoom = EXCAVATOR_TEMPLATE_LIBRARY.find((template) => template.libraryKey === 'excavator.boom.single')!;
+    const pristineTransform = structuredClone(templateBoom.transform);
+    const proposalA = buildExcavatorAssembly(createOfflineImageObservation('image', 'transform-isolation-a', '8'.repeat(64)));
+    const proposalB = buildExcavatorAssembly(createOfflineImageObservation('technical_drawing', 'transform-isolation-b', '9'.repeat(64)));
+    const boomA = proposalA.parts.find((part) => part.id === 'part-boom')!;
+    const boomB = proposalB.parts.find((part) => part.id === 'part-boom')!;
+
+    expect(boomA.transform).not.toBe(boomB.transform);
+    expect(boomA.transform).not.toBe(templateBoom.transform);
+    expect(boomB.transform).not.toBe(templateBoom.transform);
+    expect(boomA.transform.translation).not.toBe(boomB.transform.translation);
+    expect(boomA.transform.rotationEulerDeg).not.toBe(boomB.transform.rotationEulerDeg);
+    expect(boomA.transform.scale).not.toBe(boomB.transform.scale);
+
+    boomA.transform.translation[0] += 0.25;
+    boomA.transform.rotationEulerDeg[2] += 1;
+    boomA.transform.scale[0] += 0.1;
+
+    expect(boomB.transform).toEqual(pristineTransform);
+    expect(templateBoom.transform).toEqual(pristineTransform);
+    const proposalC = buildExcavatorAssembly(createOfflineImageObservation('image', 'transform-isolation-c', 'a'.repeat(64)));
+    expect(proposalC.parts.find((part) => part.id === 'part-boom')?.transform).toEqual(pristineTransform);
+    expect(validateAssemblyProposal(proposalA)).toEqual(proposalA);
+    expect(validateAssemblyProposal(proposalB)).toEqual(proposalB);
+    expect(validateAssemblyProposal(proposalC)).toEqual(proposalC);
+
+    const adapted = adaptReviewedProposalToAssembly(canonicalReferenceProposal(proposalC), EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'transform-isolation-reviewer', authorizationId: 'transform-isolation-001' });
+    expect(validateAssembly(adapted)).toEqual({ ok: true, issues: [] });
+    const expectedBoom = sourceVectorToCanonical(canonicalReferenceProposal(proposalC).parts.find((part) => part.id === 'part-boom')!.transform.translation);
+    expectArrayClose(forwardKinematicsAtReference(adapted).get('boom')?.translationM, expectedBoom, 9);
   });
 
   it('rejects malformed model output and invalid topology before assembly generation', () => {

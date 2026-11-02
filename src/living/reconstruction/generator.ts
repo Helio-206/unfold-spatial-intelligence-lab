@@ -204,6 +204,10 @@ function modifications(requests: ReconstructionRequest[]): AssemblyModification[
   return requests.map((request) => ({ id: `mod-${request.id}`, operation: request.operation, targetPartId: modificationTarget(request.target), targetText: request.target, value: request.value, unit: request.unit, evidenceIds: request.evidence.map((evidence) => evidence.id), review: 'pending' }));
 }
 
+function cloneTransform(transform: AssemblyPart['transform']): AssemblyPart['transform'] {
+  return { translation: [...transform.translation], rotationEulerDeg: [...transform.rotationEulerDeg], scale: [...transform.scale] };
+}
+
 export function buildExcavatorAssembly(observation: ExcavatorObservationV1, options: ExcavatorAssemblyBuildOptions = {}): AssemblyProposalV1 {
   if (observation.machineType !== 'excavator') throw new Error('ASSEMBLY_UNSUPPORTED_MACHINE: apenas escavadoras são suportadas.');
   const mode = options.mode ?? 'offline';
@@ -213,7 +217,7 @@ export function buildExcavatorAssembly(observation: ExcavatorObservationV1, opti
     const dimensions = partDimensions(observation, spec);
     const partGeometrySource = geometrySource(entity, dimensions);
     const partEvidenceIds = unique([...sourceIds.filter((id) => entity?.evidence.some((evidence) => evidence.id === id)), ...Object.values(dimensions).flatMap((dimension) => dimension.evidenceIds)]);
-    return { id: spec.id, role: spec.template.role, libraryKey: spec.template.libraryKey, parentId: partParentId(spec), transform: spec.template.transform, geometrySource: partGeometrySource, dimensions, evidenceIds: partEvidenceIds, provenance: provenanceFor(partGeometrySource, partEvidenceIds, mode, observation.source.kind), review: 'pending' };
+    return { id: spec.id, role: spec.template.role, libraryKey: spec.template.libraryKey, parentId: partParentId(spec), transform: cloneTransform(spec.template.transform), geometrySource: partGeometrySource, dimensions, evidenceIds: partEvidenceIds, provenance: provenanceFor(partGeometrySource, partEvidenceIds, mode, observation.source.kind), review: 'pending' };
   });
   const joints: AssemblyJoint[] = [
     joint(observation, 'joint-swing', 'part-chassis', 'part-house', 'house', 'chassis'),
