@@ -2,17 +2,13 @@
 // usage: node scripts/benchmark/run-detect.mjs .local-fixtures/sample-1.png reports/benchmark/sample-1.raw.json [threshold] [runs]
 import fs from 'node:fs';
 import { createServer } from 'vite';
-import { createRequire } from 'node:module';
-import { execSync } from 'node:child_process';
-
-// Playwright is not a project dependency; use a local install if there is one, otherwise the global one.
-const { chromium } = await (async () => { try { return await import('playwright'); } catch { return createRequire(import.meta.url)(`${execSync('npm root -g').toString().trim()}/playwright`); } })();
+import { launchSystemChromium } from './browser.mjs';
 
 const [, , imagePath, outPath, thresholdArg, runsArg] = process.argv;
 if (!imagePath || !outPath) throw new Error('usage: run-detect.mjs <image> <out.json> [threshold] [runs]');
 const server = await createServer({ server: { port: 5189, host: '127.0.0.1' }, logLevel: 'error' });
 await server.listen();
-const browser = await chromium.launch();
+const browser = await launchSystemChromium();
 try {
   const page = await browser.newPage();
   const errors = [];

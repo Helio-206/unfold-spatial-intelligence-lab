@@ -1,0 +1,32 @@
+{
+  "source": {
+    "sha256": "b8876fb66b45c26f2ec72fcaf3354a6cec6e4718e1b61b0fa443045f2667f4d0",
+    "width": 983,
+    "height": 634,
+    "licenseStatus": "unconfirmed",
+    "rasterAvailable": false
+  },
+  "roomPoints": [
+    { "name": "Balcony", "x": 480, "y": 50 },
+    { "name": "Bedroom 2", "x": 130, "y": 122 },
+    { "name": "Master Bedroom", "x": 845, "y": 195 },
+    { "name": "Dining", "x": 365, "y": 222 },
+    { "name": "Living", "x": 596, "y": 222 },
+    { "name": "Kitchen", "x": 522, "y": 533 },
+    { "name": "Foyer", "x": 664, "y": 533 },
+    { "name": "Maid's Qtr", "x": 405, "y": 480 },
+    { "name": "Walk-in Closet", "x": 850, "y": 468 },
+    { "name": "T&B (left)", "x": 110, "y": 333 },
+    { "name": "T&B (master)", "x": 915, "y": 543 },
+    { "name": "Bedroom 3", "x": 130, "y": 603 },
+    { "name": "Bath beside kitchen", "x": 305, "y": 420 },
+    { "name": "Bath below", "x": 300, "y": 530 }
+  ],
+  "doors": [[214, 300], [146, 293], [215, 375], [288, 375], [275, 582], [452, 531], [428, 560], [723, 336], [852, 517], [664, 632]],
+  "windows": [[134, 94], [385, 95], [490, 95], [595, 95], [840, 93], [8, 330], [8, 578]],
+  "notes": [
+    "Room points and opening centres were manually recorded before the baseline pipeline results were inspected.",
+    "Room polygons are unavailable, so polygon IoU cannot be measured on sample-1.",
+    "The colour-mask wall proxy is approximate ground truth and remains separate from manual counts."
+  ]
+}
