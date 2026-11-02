@@ -9,7 +9,7 @@
  * environment, inverse tone-mapped background, depth-from-below contact shadow. See NOTICE.md.
  */
 import {
-  BackSide, CircleGeometry, Color, DoubleSide, FogExp2, Group, HemisphereLight, Mesh, MeshBasicMaterial, MeshDepthMaterial,
+  BackSide, CircleGeometry, Color, DirectionalLight, DoubleSide, FogExp2, Group, HemisphereLight, Mesh, MeshBasicMaterial, MeshDepthMaterial,
   MeshStandardMaterial, OrthographicCamera, PlaneGeometry, PMREMGenerator, Scene, ShaderMaterial, SphereGeometry, SpotLight,
   SRGBColorSpace, WebGLRenderTarget, type Object3D, type Texture, type WebGLRenderer,
 } from 'three';
@@ -99,6 +99,10 @@ export class Studio {
     this.key.shadow.camera.near = 6; this.key.shadow.camera.far = 40;
     this.group.add(this.key, this.key.target);
     const rim = new HemisphereLight(0xdfe6f0, 0x0b0c0e, 0.18); this.group.add(rim);
+    // edge light from behind-left: separates dark tracks, barrels and the boom from the Void background (no shadow)
+    const edge = new DirectionalLight(0xe8eef6, 1.6); edge.position.set(-9, 7, 6); edge.target.position.set(2, 1, 0);
+    const kick = new DirectionalLight(0xfff4e6, 0.7); kick.position.set(6, 2.2, -10); kick.target.position.set(1, 0.6, 0); // low front kick for the undercarriage
+    this.group.add(edge, edge.target, kick, kick.target);
     this.group.traverse((o) => { o.userData.studio = true; });
     scene.add(this.group);
     this.contact = new ContactShadow(renderer, scene, profile.contactShadowSize, 15, 0.85);

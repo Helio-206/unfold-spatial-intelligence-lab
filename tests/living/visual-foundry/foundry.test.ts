@@ -10,7 +10,8 @@ import { neutralToneMap, untonemap } from '../../../src/living/visual-foundry/st
 import { Color, SRGBColorSpace } from 'three';
 
 /** Real-time budget for the flagship model. A regression above these fails the suite. */
-const BUDGET = { triangles: 300_000, meshes: 90, materials: 12, textures: 10, buildMs: 4000 };
+/** textures: 9 micro-roughness maps + 4 small (128²) albedo-variation maps. */
+const BUDGET = { triangles: 300_000, meshes: 90, materials: 12, textures: 14, buildMs: 4000 };
 
 describe('canonical component registry', () => {
   const registry = buildComponentRegistry(EXCAVATOR_ASSEMBLY_V1);

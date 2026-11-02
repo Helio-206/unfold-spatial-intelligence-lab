@@ -54,7 +54,7 @@ export function buildBoom(view: CanonicalView): PartBuilder {
   // elbow doubler plates (reinforcement), slightly proud of each side
   const dbl = xs.filter((x) => x > L * 0.3 && x < L * 0.64);
   const dblShape = shapeFrom(chaikin([...dbl.map((x) => [x, c(x) + d(x) / 2 - 0.07] as P2), ...dbl.reverse().map((x) => [x, c(x) - d(x) / 2 + 0.07] as P2)], 1));
-  b.addMirroredZ(extrudeZ(dblShape, 0.012, halfW + 0.006, 0.003), 'paint');
+  b.addMirroredZ(extrudeZ(dblShape, 0.016, halfW + 0.008, 0), 'paint'); // flat plate, square edges: no rounded pillow
   // nose fork around the stick pivot (stick sits between the fork plates)
   const fork = shapeFrom(hullWithCircles([[endX - 0.1, c(endX) + d(endX) / 2 - 0.02], [endX - 0.1, c(endX) - d(endX) / 2 + 0.02]], [[tip, 0.2]]));
   b.addMirroredZ(extrudeZ(fork, 0.055, 0.19, 0.008, 24), 'paint');
@@ -122,7 +122,8 @@ export function buildBucket(view: CanonicalView): PartBuilder {
   const linkPin = view.point('bucket', 'link_pin');
   const halfW = 0.55, plate = 0.028;
   // back/bottom wrap from the top of the back to the cutting edge (cavity on the -normal side)
-  const wrap: P2[] = chaikin([[-0.16, 0.12], [0.3, 0.29], [0.86, 0.23], [1.24, -0.02], [1.37, -0.42], [tip[0] + 0.02, tip[1] + 0.02]], 2, false);
+  // rounder heel than a box: the wrap bulges at the back and turns tightly into the cutting edge
+  const wrap: P2[] = chaikin([[-0.16, 0.12], [0.34, 0.31], [0.92, 0.25], [1.3, 0.0], [1.43, -0.36], [1.4, -0.56], [tip[0] + 0.02, tip[1] + 0.02]], 2, false);
   const lip: P2 = [-0.3, -0.52];
   // side plates: wrap outline + mouth + top
   const side: P2[] = [...band(wrap, 0, plate).slice(0, wrap.length), [tip[0] - 0.02, tip[1] - 0.01], lip, [linkPin[0] - 0.05, linkPin[1] + 0.02], [-0.28, -0.02]];
@@ -140,19 +141,24 @@ export function buildBucket(view: CanonicalView): PartBuilder {
   const e0 = wrap[wrap.length - 2]!, e1 = wrap[wrap.length - 1]!;
   const dir = Math.atan2(e1[1] - e0[1], e1[0] - e0[0]);
   const ext = (k: number): [number, number] => [e1[0] + Math.cos(dir) * k, e1[1] + Math.sin(dir) * k];
-  const adapter: P2[] = [[-0.12, -0.045], [0.06, -0.035], [0.08, -0.025], [0.08, 0.025], [0.06, 0.03], [-0.12, 0.05]];
-  const toothTip: P2[] = [[0, -0.032], [0.15, -0.01], [0.2, 0.0], [0.2, 0.008], [0.12, 0.022], [0, 0.03]];
+  // adapter (welded nose) and a longer replaceable tip with a visible taper and a centre ridge, so teeth read at a distance
+  const adapter: P2[] = [[-0.16, -0.05], [0.08, -0.04], [0.11, -0.028], [0.11, 0.03], [0.08, 0.04], [-0.16, 0.058]];
+  const toothTip: P2[] = [[0, -0.036], [0.16, -0.016], [0.27, -0.004], [0.28, 0.004], [0.2, 0.016], [0.06, 0.03], [0, 0.034]];
   const teeth = 5;
   for (let k = 0; k < teeth; k++) {
     const z = -halfW + 0.12 + (k * (halfW * 2 - 0.24)) / (teeth - 1);
     const at = ext(0);
-    b.add(extrudeZ(shapeFrom(adapter), 0.1, 0, 0.012, 2), 'castDark', m4([at[0], at[1], z], dir));
-    const t0 = ext(0.075);
-    b.add(extrudeZ(shapeFrom(toothTip), 0.085, 0, 0.01, 2), 'castDark', m4([t0[0], t0[1], z], dir));
-    b.add(boss(0.012, 0.11, 0.002, 10), 'machined', m4([at[0] + Math.cos(dir) * 0.06, at[1] + Math.sin(dir) * 0.06, z]));
+    b.add(extrudeZ(shapeFrom(adapter), 0.11, 0, 0.012, 2), 'castDark', m4([at[0], at[1], z], dir));
+    const t0 = ext(0.1);
+    b.add(extrudeZ(shapeFrom(toothTip), 0.095, 0, 0.012, 2), 'machined', m4([t0[0], t0[1], z], dir));
+    b.add(boss(0.013, 0.125, 0.002, 10), 'brushed', m4([at[0] + Math.cos(dir) * 0.085, at[1] + Math.sin(dir) * 0.085, z]));
   }
   // side cutters at the front of the side plates
   for (const s of [-1, 1]) b.add(extrudeZ(shapeFrom([[0, -0.03], [0.22, -0.02], [0.24, 0.03], [0, 0.04]]), 0.04, s * (halfW + 0.006), 0.006), 'castDark', m4([e0[0] - Math.cos(dir) * 0.16, e0[1] - Math.sin(dir) * 0.16, 0], dir));
+  // side-plate edge reinforcement along the mouth (tip → lip) and around the heel, a touch proud of the side plate
+  const mouth: P2[] = [[tip[0] - 0.02, tip[1] - 0.01], [(tip[0] + lip[0]) / 2, (tip[1] + lip[1]) / 2 - 0.03], lip];
+  b.addMirroredZ(extrudeZ(shapeFrom(band(mouth, -0.045, 0.0)), 0.03, halfW + 0.012, 0.005), 'castDark');
+  b.addMirroredZ(extrudeZ(shapeFrom(band(wrap.slice(Math.floor(wrap.length * 0.45)), 0.0, 0.03)), 0.026, halfW - 0.004, 0.004), 'castDark');
   // wear strips on the outside of the wrap
   const strip = wrap.slice(2, -5);
   for (const z of [-0.32, 0.32]) b.add(extrudeZ(shapeFrom(band(strip, 0.002, 0.016)), 0.05, z, 0.005), 'paint');

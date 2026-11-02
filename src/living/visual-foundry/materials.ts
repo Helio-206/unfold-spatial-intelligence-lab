@@ -68,6 +68,23 @@ function finishTexture(finish: Finish, repeat: [number, number]): DataTexture {
   return texture;
 }
 
+/** Low-frequency albedo field in [1 - depth, 1]: large soft patches (metres apart), no noise, no streaks. */
+export function variationPixels(depth: number, size = 128): Uint8Array {
+  const R = rng(9173);
+  const field = new Float32Array(size * size);
+  for (let b = 0; b < 60; b++) {
+    const cx = R() * size, cy = R() * size, r = 10 + R() * 36, v = R();
+    for (let y = Math.floor(cy - r); y <= cy + r; y++) for (let x = Math.floor(cx - r); x <= cx + r; x++) {
+      const d = Math.hypot(x - cx, y - cy) / r; if (d >= 1) continue;
+      const i = ((y % size + size) % size) * size + ((x % size + size) % size); field[i] = field[i]! + v * (1 - d * d) * (1 - d * d);
+    }
+  }
+  let max = 0; for (const f of field) max = Math.max(max, f);
+  const out = new Uint8Array(size * size * 4);
+  for (let i = 0; i < field.length; i++) { const v = Math.round((1 - depth * (field[i]! / (max || 1))) * 255); out.set([v, v, v, 255], i * 4); }
+  return out;
+}
+
 /** sRGB hex (as written in design-system/tokens.css) to a linear Color. */
 const srgb = (hex: string) => new Color().setStyle(hex, SRGBColorSpace);
 
@@ -75,6 +92,8 @@ type Preset = {
   color: Color; metalness: number; roughness: number; finish: Finish | null; repeat?: [number, number];
   clearcoat?: number; clearcoatRoughness?: number; envMapIntensity?: number; transparent?: boolean; opacity?: number;
   ior?: number; specularIntensity?: number; doubleSided?: boolean; description: string;
+  /** Depth of a low-frequency albedo variation (0 = none). Restrained: panel-to-panel tone, not dirt. */
+  variation?: number;
 };
 
 /**
@@ -82,10 +101,10 @@ type Preset = {
  * under the key light), the dark paint is Void raised (#171A1F). They are object colours, not UI colours.
  */
 export const PRESETS: Record<MaterialKey, Preset> = {
-  paint: { color: srgb('#DEDAD0'), metalness: 0, roughness: 0.4, finish: 'paint', repeat: [3, 3], clearcoat: 0.7, clearcoatRoughness: 0.16, description: 'Painted industrial steel, Paper body paint, clear-coated.' },
-  paintDark: { color: srgb('#383B41'), metalness: 0, roughness: 0.42, finish: 'paint', repeat: [3, 3], clearcoat: 0.5, clearcoatRoughness: 0.22, description: 'Painted steel, Void graphite.' },
-  castDark: { color: srgb('#55575B'), metalness: 0.85, roughness: 0.52, finish: 'cast', repeat: [2, 2], description: 'Dark cast steel: sprockets, idlers, rollers, counterweight underside.' },
-  shoe: { color: srgb('#4A4C50'), metalness: 0.8, roughness: 0.5, finish: 'cast', repeat: [1, 1], description: 'Forged track shoes, worn but restrained.' },
+  paint: { color: srgb('#DAD5CA'), metalness: 0, roughness: 0.4, variation: 0.05, finish: 'paint', repeat: [3, 3], clearcoat: 0.7, clearcoatRoughness: 0.16, description: 'Painted industrial steel, Paper body paint, clear-coated.' },
+  paintDark: { color: srgb('#4B4F57'), metalness: 0, roughness: 0.38, variation: 0.06, finish: 'paint', repeat: [3, 3], clearcoat: 0.5, clearcoatRoughness: 0.22, description: 'Painted steel, Void graphite.' },
+  castDark: { color: srgb('#6E7075'), metalness: 0.82, roughness: 0.46, variation: 0.1, finish: 'cast', repeat: [2, 2], description: 'Dark cast steel: sprockets, idlers, rollers, counterweight underside.' },
+  shoe: { color: srgb('#64666B'), metalness: 0.8, roughness: 0.44, variation: 0.12, finish: 'cast', repeat: [1, 1], description: 'Forged track shoes, worn but restrained.' },
   machined: { color: srgb('#A9ABAE'), metalness: 1, roughness: 0.26, finish: 'turned', repeat: [1, 12], description: 'Machined steel faces: pins, bosses, bushings.' },
   brushed: { color: srgb('#8E9196'), metalness: 1, roughness: 0.34, finish: 'brushed', repeat: [2, 6], description: 'Brushed steel: keeper plates, clamps, fittings.' },
   steelTube: { color: srgb('#7F8287'), metalness: 1, roughness: 0.3, finish: 'brushed', repeat: [1, 8], description: 'Drawn steel hydraulic tubing.' },
@@ -115,6 +134,12 @@ export function createMaterialLibrary(): MaterialLibrary {
       specularIntensity: p.specularIntensity ?? 1, side: p.doubleSided ? DoubleSide : FrontSide,
     });
     if (p.transparent) m.depthWrite = false;
+    if (p.variation) {
+      const v = new DataTexture(variationPixels(p.variation), 128, 128, RGBAFormat, UnsignedByteType);
+      v.wrapS = v.wrapT = RepeatWrapping; v.magFilter = LinearFilter; v.minFilter = LinearMipmapLinearFilter; v.generateMipmaps = true;
+      v.repeat.set(0.35, 0.35); v.needsUpdate = true; v.name = `variation:${key}`;
+      textures.push(v); m.map = v; // multiplies the base colour: ±5–12 % tone between panels
+    }
     if (p.finish) {
       const t = finishTexture(p.finish, p.repeat ?? [2, 2]); textures.push(t);
       m.roughnessMap = t;

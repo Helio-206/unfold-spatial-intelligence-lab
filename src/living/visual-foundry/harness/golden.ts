@@ -1,6 +1,6 @@
 /** Isolated still harness: the excavator alone in the studio, camera from the query string. Used for Golden Frame captures. */
 import '../../../brand.css';
-import { Box3, Vector3 } from 'three';
+import { Box3, Mesh, Raycaster, Vector3 } from 'three';
 import { EXCAVATOR_ASSEMBLY_V1 } from '../../contracts/fixtures/excavator.assembly.v1';
 import { buildExcavator } from '../excavator/build';
 import { createMaterialLibrary } from '../materials';
@@ -24,4 +24,18 @@ foundry.camera.position.set(target.x + dist * Math.cos(el) * Math.cos(az), targe
 foundry.camera.lookAt(target);
 foundry.camera.updateProjectionMatrix();
 foundry.renderNow();
-(window as unknown as Record<string, unknown>).__foundry = { stats: () => foundry.stats(), bounds: { min: box.min.toArray(), max: box.max.toArray() }, ready: true, render: () => foundry.renderNow() };
+/** Camera directions from which a world point is visible (no canonical mesh in between); used to frame close-ups. */
+const clearViews = (p: [number, number, number], dist: number, ignorePartIds: string[] = []) => {
+  const target = new Vector3(...p), out: Array<{ az: number; el: number }> = [], meshes: Mesh[] = [];
+  model.root.traverse((o) => { const m = o as Mesh; if (m.isMesh && !ignorePartIds.includes(String(m.userData.partId))) meshes.push(m); });
+  const ray = new Raycaster();
+  for (let el = -10; el <= 70; el += 5) for (let az = -180; az < 180; az += 5) {
+    const a = (az * Math.PI) / 180, e = (el * Math.PI) / 180;
+    const cam = new Vector3(target.x + dist * Math.cos(e) * Math.cos(a), target.y + dist * Math.sin(e), target.z - dist * Math.cos(e) * Math.sin(a));
+    if (cam.y < 0.1) continue;
+    const dir = target.clone().sub(cam); const d = dir.length(); ray.set(cam, dir.normalize()); ray.far = d - 0.02;
+    if (!ray.intersectObjects(meshes, false).length) out.push({ az, el });
+  }
+  return out;
+};
+(window as unknown as Record<string, unknown>).__foundry = { clearViews, stats: () => foundry.stats(), bounds: { min: box.min.toArray(), max: box.max.toArray() }, ready: true, render: () => foundry.renderNow() };

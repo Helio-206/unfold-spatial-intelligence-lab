@@ -18,8 +18,8 @@ renderer da aplicação, no solver, na API de reconstrução nem nos tokens glob
 | 3 | Modo assistido, Digital Hand no cilindro da lança | `captures/03-assisted-digital-hand.png` |
 | 4 | Conversa expandida com o objecto visível + proposta | `captures/04-conversation.png`, `04b-fixture-preview-result.png` |
 | 5 | Modo foco | `captures/05-focus.png` |
-| 6 | Grande plano de uma articulação hidráulica | `captures/06-hydraulic-joint.png` |
-| 7 | Caçamba e rastos | `captures/07-bucket.png`, `07b-tracks.png` |
+| 6 | Grande plano da articulação `boom_cyl_base` (pino real, olhal do barril, orelhas) | `captures/06-hydraulic-joint.png`, `06b-boom-plates.png` |
+| 7 | Caçamba (boca e dentes, vista do lado da máquina) e rastos | `captures/07-bucket.png`, `07b-tracks.png` |
 | 8 | Ecrã estreito (390×844) | `captures/08-mobile.png`, `08b-mobile-conversation.png` |
 | D5 | Pergunta → alvo → explicação → interrupção → foco → regresso | `captures/d5-*.png` |
 
@@ -45,7 +45,7 @@ Não passei nenhuma captura só por estar melhor do que a anterior.
 
 ## Verificações funcionais
 
-Vitest (`tests/living/visual-foundry/`, 67 testes): modos e restauro, Esc, nível das sobreposições, avisos críticos e
+Vitest (`tests/living/visual-foundry/`, 67 testes; suite completa 1346): modos e restauro, Esc, nível das sobreposições, avisos críticos e
 aprovações nunca escondidos, árbitro da câmara (utilizador ganha, período de silêncio, gestos bloqueiam o assistente),
 resolução por id canónico, projecção mundo→ecrã, alvo atrás da câmara, ocluído e desconhecido, rótulos de incerteza,
 pedido `spatial_agent_request.v1` em modo `mechanical`, `fetch` simulado que conta chamadas (fixture = 0 chamadas),
@@ -86,6 +86,40 @@ Perfis: `realtime` (pixel ratio ≤ 1,5, MSAA 4×, sombras 2048, sem AO) e `expo
 
 Técnicas adaptadas do Airsup machine-skill (MIT) — aviso completo em `src/living/visual-foundry/NOTICE.md`. Sem activos 3D,
 HDRIs ou texturas externas.
+
+## Revisão do PR #13 (review `5742598032`)
+
+### Defeitos corrigidos (teste de browser a falhar primeiro)
+
+`tests/e2e/living-visual-foundry-regressions.pw.mjs` — 8/14 a falhar antes, 14/14 depois (`regressions-report.json`).
+
+1. **Aprovação dependia da ordem da evidência.** Resposta ao vivo (simulada) com `evidenceIds: ['boom', 'boom_cylinder']`:
+   a grounding escolhia `boom_cylinder`, mas a aprovação procurava a pré-visualização por `evidence[0]` (`boom`), não
+   encontrava nada e marcava a proposta como concluída sem mostrar nada. Agora a proposta guarda o `actuatorId` canónico
+   do plano e a aprovação usa só esse.
+2. **Cancelamento lido como conclusão.** `resetPose()`, uma nova pré-visualização ou `dispose()` a meio resolviam a mesma
+   promessa que o fim normal; aparecia «Pré-visualização de fixture concluída» com as medidas do último quadro, que nunca
+   tinha sido mostrado. Agora `play()` devolve `completed` ou `cancelled`; cancelado → proposta `cancelled`
+   («interrompida · nada concluído»), sem mensagem de conclusão nem medidas; após `dispose()` nada é publicado.
+3. **Pedidos sobrepostos.** Um pedido mais antigo, abortado por um novo, punha `processing = false` enquanto o novo ainda
+   estava em curso. Agora só o pedido corrente mexe no estado de processamento e no compositor; a resposta abortada não aparece.
+
+### Passagem visual dirigida (antes/depois em [`before-after/`](before-after/))
+
+| Pedido | O que mudou |
+|---|---|
+| Rastos e cilindros legíveis | Metais escuros e pintura grafite mais claros (`castDark` #6E7075, `shoe` #64666B, `paintDark` #4B4F57); luz de recorte por trás-esquerda e luz baixa frontal para o material circulante, sem sombra |
+| Silhueta da caçamba e dentes | Envolvente com calcanhar mais redondo; dentes mais longos (ponta 0,28 m com nervura) em aço maquinado sobre adaptadores fundidos; reforço de aresta na boca e no calcanhar das chapas laterais |
+| Placas de reforço «almofada» | Placas planas com arestas vivas (sem chanfro, 16 mm), ângulo de vinco 20° nas extrusões |
+| Variação de material contida | Mapa de albedo de baixa frequência (±5–12 % entre painéis) em pintura, grafite, fundidos e sapatas; sem sujidade, riscos nem efeitos |
+| Pino hidráulico real no grande plano | `06-hydraulic-joint.png` enquadra a articulação canónica `boom_cyl_base`. A direcção da câmara saiu de um varrimento por raycast contra as malhas reais: o pino só é visível quase de frente (az ≈ 0°, el 10–25°), porque o canal do convés, a cabina e o compartimento o tapam dos lados |
+
+Ids canónicos, renderer, contratos, os três modos, tipografia, tokens e layout da interface ficam iguais. O orçamento de
+texturas subiu de 10 para 14 (quatro mapas de variação de 128²).
+
+Avaliação: os rastos e os cilindros já se lêem contra o Void, a caçamba lê-se como caçamba e os dentes vêem-se.
+Continua abaixo do turbofan da Airsup: a estrutura superior ainda é muito em caixa, e as luzes extra aclaram um pouco o
+chão perto da máquina.
 
 ### Ronda final (após as correcções)
 

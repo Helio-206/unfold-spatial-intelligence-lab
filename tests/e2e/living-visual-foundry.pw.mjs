@@ -295,14 +295,17 @@ const captures = {};
 {
   const golden = [
     ['02-golden-frame', '?profile=export&az=36&el=9&dist=13.2&tx=2.9&ty=1.9', 2],
-    ['06-hydraulic-joint', '?profile=export&az=58&el=6&dist=3.2&tx=2.0&ty=1.15&tz=0', 2],
-    ['07-bucket', '?profile=export&az=20&el=14&dist=4.2&tx=7.5&ty=1.45', 2],
+    // joint boom_cyl_base: pin head, base lugs and barrel eye; only a near-frontal view sees it past the deck channel
+    ['06-hydraulic-joint', '?profile=export&az=-10&el=12&dist=1.7&tx=0.62&ty=1.0&tz=0.12&fov=26', 2],
+    ['06b-boom-plates', '?profile=export&az=70&el=5&dist=5&tx=3.0&ty=2.6&tz=0', 2],
+    // bucket seen from the machine side: mouth, cutting edge and the row of teeth
+    ['07-bucket', '?profile=export&az=150&el=6&dist=4.2&tx=7.3&ty=1.1&tz=0', 2],
     ['07b-tracks', '?profile=export&az=62&el=7&dist=4.4&tx=-0.1&ty=0.45&tz=-1.1', 2],
   ];
   for (const [name, q, dpr] of golden) {
     const ctx = await browser.newContext({ viewport: VIEW, deviceScaleFactor: dpr });
     const p = await ctx.newPage();
-    await p.goto(`${GOLDEN}${q}&dpr=${dpr}`);
+    await p.goto(`${GOLDEN}${q}&dpr=${dpr}`, { waitUntil: 'commit', timeout: 240_000 });
     await p.waitForFunction(() => window.__foundry?.ready, null, { timeout: 240_000 });
     await p.waitForTimeout(300);
     await p.evaluate(() => window.__foundry.render());
