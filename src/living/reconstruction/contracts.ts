@@ -1,7 +1,8 @@
 import { ORIGINS, VALIDATIONS, type Provenance } from '../../core/provenance';
 
 export const RECONSTRUCTION_OBSERVATION_SCHEMA = 'unfold.excavator_observation.v1' as const;
-export const ASSEMBLY_PROPOSAL_SCHEMA = 'unfold.assembly.v1' as const;
+/** Reviewable reconstruction proposal. The engineering contract is `unfold.assembly.v1`. */
+export const ASSEMBLY_PROPOSAL_SCHEMA = 'unfold.assembly_proposal.v1' as const;
 
 export const EXCAVATOR_ENTITY_KINDS = [
   'chassis', 'boom', 'stick', 'bucket', 'joint', 'cylinder', 'track', 'counterweight', 'house', 'unknown',
@@ -188,7 +189,6 @@ const evidenceSchema = {
     id: { type: 'string', pattern: '^[a-z0-9][a-z0-9_-]{0,63}$' },
     kind: { enum: ['image_region', 'drawing_annotation', 'text_span', 'user_instruction', 'template'] },
     detail: { type: 'string', minLength: 1, maxLength: 1000 },
-    locator: { type: 'string', maxLength: 200 },
   },
 } as const;
 
@@ -210,7 +210,7 @@ export const OBSERVATION_JSON_SCHEMA = {
     schema: { const: RECONSTRUCTION_OBSERVATION_SCHEMA },
     source: {
       type: 'object', additionalProperties: false, required: ['kind', 'reference'],
-      properties: { kind: { enum: sourceKinds }, reference: { type: 'string', minLength: 1, maxLength: 200 }, sha256: { type: 'string', pattern: '^[a-f0-9]{64}$' } },
+      properties: { kind: { enum: sourceKinds }, reference: { type: 'string', minLength: 1, maxLength: 200 } },
     },
     machineType: { enum: ['excavator', 'unknown'] },
     entities: {

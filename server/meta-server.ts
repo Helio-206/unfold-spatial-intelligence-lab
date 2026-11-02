@@ -30,6 +30,7 @@ import { buildSpatialAgentPrompt, parseSpatialAgentResult, SPATIAL_AGENT_JSON_SC
 import { buildExcavatorAssembly, assemblyMetrics } from '../src/living/reconstruction/generator';
 import { offlineImageObservation, offlineTextObservation, observeExcavatorImage, observeExcavatorText } from '../src/living/reconstruction/muse';
 import { ASSEMBLY_PROPOSAL_SCHEMA, RECONSTRUCTION_OBSERVATION_SCHEMA, validateAssemblyProposal } from '../src/living/reconstruction/contracts';
+import { adapterBlockReason } from '../src/living/reconstruction/adapter';
 
 const MAX_BODY_BYTES = 64 * 1024;
 const MAX_IMAGE_BODY_BYTES = 14 * 1024 * 1024;
@@ -644,14 +645,14 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
             if (mode === 'offline') observed = offlineImageObservation(image.dataUrl, sourceKind, sourceReference);
             else { reserveMetaCall(); observed = await observeExcavatorImage(image.dataUrl, sourceKind, sourceReference, apiKey!, options.fetchImpl); }
           }
-          const assembly = validateAssemblyProposal(buildExcavatorAssembly(observed.observation));
-          const metrics = assemblyMetrics(assembly);
+          const assemblyProposal = validateAssemblyProposal(buildExcavatorAssembly(observed.observation, { mode: observed.mode }));
+          const metrics = assemblyMetrics(assemblyProposal);
           const limitations = [
             'A proposta é review_required e não altera qualquer cena confirmada.',
             'Geometria de template, hipóteses e valores desconhecidos não são afirmações mecânicas verificadas.',
             ...(observed.mode === 'offline' ? ['Fallback offline determinístico e baseado em template; não é interpretação visual do raster.'] : []),
           ];
-          writeJson(response, 200, { contract: 'unfold.reconstruction.v1', status: assembly.validation.status, observation: observed.observation, assembly, metrics, limitations, meta: observed.meta }, origin);
+          writeJson(response, 200, { contract: 'unfold.reconstruction.v1', status: assemblyProposal.validation.status, observation: observed.observation, assemblyProposal, engineering: { status: 'blocked', reason: adapterBlockReason() }, metrics, limitations, meta: observed.meta }, origin);
           return;
         } catch (error) {
           if (error instanceof MetaCallBudgetExceeded) {

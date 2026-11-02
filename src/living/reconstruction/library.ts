@@ -1,5 +1,12 @@
 import type { AssemblyPart, AssemblyDimension, AssemblyValueSource } from './contracts';
 
+/**
+ * Template frame used only inside the proposal layer: +X forward, +Y to the
+ * operator's left, +Z up. The engineering adapter converts it to the
+ * canonical +X forward, +Y up, +Z operator-right frame.
+ */
+export const RECONSTRUCTION_SOURCE_FRAME = 'reconstruction.template.x-forward-y-left-z-up' as const;
+
 export type ExcavatorTemplate = {
   role: AssemblyPart['role'];
   libraryKey: string;

@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { createMetaServer } from '../server/meta-server';
 import { buildExcavatorAssembly, assemblyMetrics } from '../src/living/reconstruction/generator';
 import { createOfflineImageObservation, createOfflineTextObservation, parseExcavatorObservation } from '../src/living/reconstruction/observation';
-import { validateAssemblyProposal } from '../src/living/reconstruction/contracts';
+import { validateAssemblyProposal, type ExcavatorObservationV1 } from '../src/living/reconstruction/contracts';
+import { adaptReviewedProposalToAssembly, ReconstructionAdapterBlockedError, sourceEulerDegreesToCanonicalQuaternion, sourceVectorToCanonical } from '../src/living/reconstruction/adapter';
+import { EXCAVATOR_ASSEMBLY_V1 } from '../src/living/contracts/fixtures/excavator.assembly.v1';
+import { validateAssembly } from '../src/living/contracts/assembly.v1';
 
 const ALLOWED_ORIGIN = 'http://127.0.0.1:5173';
 const jpegA = 'data:image/jpeg;base64,/9j/4AA=';
@@ -52,6 +55,51 @@ describe('living image-to-assembly contracts', () => {
     cyclic.parts[1]!.parentId = cyclic.parts[0]!.id;
     expect(() => validateAssemblyProposal(cyclic)).toThrow(/ciclo|raiz/);
   });
+
+  it('resolves arbitrary model entity IDs and matches dimensions semantically', () => {
+    const observation = createOfflineImageObservation('image', 'arbitrary-ids', 'd'.repeat(64)) as ExcavatorObservationV1;
+    observation.entities = observation.entities.map((entity) => ({ ...entity, id: `${entity.id}-1`, label: entity.label }));
+    observation.dimensions = [
+      { id: 'width', partId: 'bucket-1', label: 'largura do balde', value: 1.2, unit: 'm', status: 'observed', evidence: observation.entities[4]!.evidence },
+      { id: 'depth', partId: 'bucket-1', label: 'profundidade do balde', value: 0.8, unit: 'unknown', status: 'observed', evidence: observation.entities[4]!.evidence },
+    ];
+    const proposal = buildExcavatorAssembly(observation, { mode: 'live' });
+    expect(proposal.parts.find((part) => part.id === 'part-bucket')?.dimensions.width).toMatchObject({ value: 1.2, unit: 'm', source: 'observed' });
+    expect(proposal.parts.find((part) => part.id === 'part-bucket')?.dimensions.depth).toMatchObject({ value: 0.8, unit: 'unknown', source: 'observed' });
+    expect(proposal.parts.find((part) => part.id === 'part-bucket')?.dimensions.depth?.unit).not.toBe('deg');
+    expect(proposal.parts.find((part) => part.id === 'part-bucket')?.provenance.inference?.provider).toBe('meta');
+  });
+
+  it('keeps offline hypotheses synthetic and never attributes them to Muse', () => {
+    const proposal = buildExcavatorAssembly(createOfflineImageObservation('image', 'offline-provenance', 'e'.repeat(64)));
+    expect(proposal.parts.every((part) => part.provenance.inference === undefined)).toBe(true);
+    expect(proposal.parts.every((part) => part.provenance.actor?.id !== 'muse-spark-1.3')).toBe(true);
+    expect(proposal.parts.some((part) => part.provenance.origin === 'synthetic')).toBe(true);
+  });
+
+  it('converts source frame and units explicitly', () => {
+    expect(sourceVectorToCanonical([1, 2, 3])).toEqual([1, 3, -2]);
+    expect(sourceEulerDegreesToCanonicalQuaternion([0, 0, 0])).toEqual([0, 0, 0, 1]);
+  });
+
+  it('adapts a reviewed proposal to the engineering fixture and validates the actual canonical output', () => {
+    const proposal = buildExcavatorAssembly(createOfflineImageObservation('image', 'engineering-fixture', 'f'.repeat(64)));
+    const adapted = adaptReviewedProposalToAssembly(proposal, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'fixture-reviewer', authorizationId: 'fixture-review-001' });
+    expect(validateAssembly(adapted)).toEqual({ ok: true, issues: [] });
+    expect(adapted.schema).toBe('unfold.assembly.v1');
+    expect(adapted.units).toEqual({ length: 'm', angle: 'rad', time: 's' });
+    expect(adapted.root.pose.rotation).toHaveLength(4);
+    expect(adapted.provenance.validation).toBe('unreviewed');
+    expect(adapted.provenance.origin).toBe('derived');
+  });
+
+  it('fails closed when engineering information or explicit review is missing', () => {
+    const proposal = buildExcavatorAssembly(createOfflineImageObservation('image', 'blocked-adapter', '1'.repeat(64)));
+    expect(() => adaptReviewedProposalToAssembly(proposal, EXCAVATOR_ASSEMBLY_V1, { reviewerId: '', authorizationId: '' })).toThrow(ReconstructionAdapterBlockedError);
+    const incomplete = structuredClone(EXCAVATOR_ASSEMBLY_V1);
+    incomplete.parts = incomplete.parts.filter((part) => part.id !== 'boom');
+    expect(() => adaptReviewedProposalToAssembly(proposal, incomplete, { reviewerId: 'reviewer', authorizationId: 'auth-1' })).toThrow(/engineeringSeed inválido|parte obrigatória/);
+  });
 });
 
 describe('living reconstruction API', () => {
@@ -60,10 +108,10 @@ describe('living reconstruction API', () => {
     const server = createMetaServer({ fetchImpl: provider, maxMetaCalls: 2 });
     await withServer(server, async (port) => {
       const textResponse = await fetch(`http://127.0.0.1:${port}/api/living/reconstruction`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify({ mode: 'offline', sourceKind: 'text', instruction: 'Escavadora com boom de 4200 mm e troca o balde.', sourceReference: 'text-fixture' }) });
-      const textBody = await textResponse.json() as { contract?: string; status?: string; assembly?: { schema?: string; modifications?: Array<{ review?: string }> }; meta?: { status?: string } };
+      const textBody = await textResponse.json() as { contract?: string; status?: string; assemblyProposal?: { schema?: string; modifications?: Array<{ review?: string }> }; engineering?: { status?: string }; meta?: { status?: string } };
       expect(textResponse.status).toBe(200);
-      expect(textBody).toMatchObject({ contract: 'unfold.reconstruction.v1', status: 'review_required', assembly: { schema: 'unfold.assembly.v1' }, meta: { status: 'mocked' } });
-      expect(textBody.assembly?.modifications?.[0]?.review).toBe('pending');
+      expect(textBody).toMatchObject({ contract: 'unfold.reconstruction.v1', status: 'review_required', assemblyProposal: { schema: 'unfold.assembly_proposal.v1' }, engineering: { status: 'blocked' }, meta: { status: 'mocked' } });
+      expect(textBody.assemblyProposal?.modifications?.[0]?.review).toBe('pending');
 
       const imageResponse = await fetch(`http://127.0.0.1:${port}/api/living/reconstruction`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify({ mode: 'offline', sourceKind: 'technical_drawing', imageDataUrl: jpegA, sourceReference: 'drawing-fixture' }) });
       expect(imageResponse.status).toBe(200);
@@ -80,8 +128,8 @@ describe('living reconstruction API', () => {
     await withServer(server, async (port) => {
       const response = await fetch(`http://127.0.0.1:${port}/api/living/reconstruction`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify({ sourceKind: 'text', instruction: 'Escavadora com boom de 4 m', sourceReference: 'live-fixture' }) });
       expect(response.status).toBe(200);
-      const body = await response.json() as { meta?: { requestId?: string }; assembly?: { validation?: { status?: string } } };
-      expect(body).toMatchObject({ meta: { requestId: 'reconstruction-live' }, assembly: { validation: { status: 'review_required' } } });
+      const body = await response.json() as { meta?: { requestId?: string }; assemblyProposal?: { validation?: { status?: string } } };
+      expect(body).toMatchObject({ meta: { requestId: 'reconstruction-live' }, assemblyProposal: { validation: { status: 'review_required' } } });
       const request = provider.mock.calls[0]?.[1];
       const requestBody = JSON.parse(String(request?.body)) as { model?: string; text?: { format?: { name?: string; strict?: boolean } } };
       expect(requestBody).toMatchObject({ model: 'muse-spark-1.3', text: { format: { name: 'excavator_observation_v1', strict: true } } });

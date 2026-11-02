@@ -20,6 +20,9 @@ import { validateAssemblyProposal } from './contracts';
 
 type PartSpec = { id: string; entityId: string; template: ExcavatorTemplate };
 
+export type ReconstructionExecutionMode = 'live' | 'offline';
+export type ExcavatorAssemblyBuildOptions = { mode?: ReconstructionExecutionMode };
+
 const PART_SPECS: readonly PartSpec[] = [
   { id: 'part-chassis', entityId: 'chassis', template: EXCAVATOR_TEMPLATE_LIBRARY[0]! },
   { id: 'part-house', entityId: 'house', template: EXCAVATOR_TEMPLATE_LIBRARY[1]! },
@@ -44,22 +47,81 @@ const ACTUATOR_SPECS = [
 
 function normalize(value: string): string { return value.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); }
 function unique<T>(values: T[]): T[] { return [...new Set(values)]; }
-function dimensionUnit(value: number, unit: ExcavatorObservationDimension['unit']): { value: number; unit: 'm' | 'deg' } {
+function dimensionUnit(value: number, unit: ExcavatorObservationDimension['unit']): { value: number; unit: AssemblyDimension['unit'] } {
   if (unit === 'mm') return { value: value / 1000, unit: 'm' };
   if (unit === 'm') return { value, unit: 'm' };
-  return { value, unit: 'deg' };
+  if (unit === 'deg') return { value, unit: 'deg' };
+  return { value, unit: 'unknown' };
 }
 function sourceForStatus(status: ExcavatorObservationEntity['status'] | ExcavatorObservationDimension['status']): AssemblyValueSource {
   return status === 'observed' ? 'observed' : status === 'hypothesis' ? 'hypothesis' : 'unknown';
 }
-function entityFor(observation: ExcavatorObservationV1, id: string): ExcavatorObservationEntity | undefined { return observation.entities.find((entity) => entity.id === id); }
-function dimensionFor(observation: ExcavatorObservationV1, entityId: string, name: string): ExcavatorObservationDimension | undefined {
-  const normalizedName = normalize(name);
+type SemanticEntityRole = PartSpec['entityId'] | 'joint-swing' | 'joint-boom' | 'joint-stick' | 'joint-bucket';
+
+function roleFromText(text: string): SemanticEntityRole | null {
+  const value = normalize(text);
+  if (value.includes('track left') || value.includes('left track') || value.includes('lagarta esquerda') || value.includes('esteira esquerda')) return 'track-left';
+  if (value.includes('track right') || value.includes('right track') || value.includes('lagarta direita') || value.includes('esteira direita')) return 'track-right';
+  if (value.includes('boom cylinder') || value.includes('cilindro do boom') || value.includes('boom cilindro')) return 'boom-cylinder';
+  if (value.includes('stick cylinder') || value.includes('cilindro do stick') || value.includes('stick cilindro')) return 'stick-cylinder';
+  if (value.includes('bucket cylinder') || value.includes('cilindro do balde') || value.includes('bucket cilindro')) return 'bucket-cylinder';
+  if (value.includes('joint swing') || value.includes('junta de rotacao') || value.includes('junta swing')) return 'joint-swing';
+  if (value.includes('joint boom') || value.includes('junta boom')) return 'joint-boom';
+  if (value.includes('joint stick') || value.includes('junta stick')) return 'joint-stick';
+  if (value.includes('joint bucket') || value.includes('junta bucket') || value.includes('junta balde')) return 'joint-bucket';
+  if (value.includes('chassis') || value.includes('undercarriage') || value.includes('base')) return 'chassis';
+  if (value.includes('house') || value.includes('upper body') || value.includes('upper_body') || value.includes('girat')) return 'house';
+  if (value.includes('boom') || value.includes('lanca')) return 'boom';
+  if (value.includes('stick') || value.includes('braco')) return 'stick';
+  if (value.includes('bucket') || value.includes('balde')) return 'bucket';
+  if (value.includes('track') || value.includes('lagarta') || value.includes('esteira')) return null;
+  return null;
+}
+
+function semanticRole(entity: ExcavatorObservationEntity): SemanticEntityRole | null {
+  return roleFromText(`${entity.id} ${entity.label}`) ?? (entity.kind === 'chassis' ? 'chassis' : entity.kind === 'house' ? 'house' : entity.kind === 'boom' ? 'boom' : entity.kind === 'stick' ? 'stick' : entity.kind === 'bucket' ? 'bucket' : entity.kind === 'track' ? roleFromText(entity.id) : entity.kind === 'joint' ? roleFromText(entity.id) : entity.kind === 'cylinder' ? roleFromText(entity.id) : null);
+}
+
+function entityFor(observation: ExcavatorObservationV1, role: SemanticEntityRole): ExcavatorObservationEntity | undefined {
+  const direct = observation.entities
+    .filter((entity) => semanticRole(entity) === role)
+    .sort((left, right) => right.confidence - left.confidence)[0];
+  if (direct) return direct;
+  if (!role.endsWith('-cylinder')) return undefined;
+  const targetRole = role.replace(/-cylinder$/, '');
+  const related = observation.entities.filter((entity) => entity.kind === 'cylinder' && observation.relations.some((relation) => {
+    if (relation.relation !== 'actuated_by') return false;
+    const other = relation.from === entity.id ? relation.to : relation.to === entity.id ? relation.from : null;
+    if (!other) return false;
+    const otherEntity = observation.entities.find((candidate) => candidate.id === other);
+    return otherEntity !== undefined && semanticRole(otherEntity) === targetRole;
+  })).sort((left, right) => right.confidence - left.confidence)[0];
+  return related;
+}
+
+const DIMENSION_LABELS: Record<string, readonly string[]> = {
+  length: ['length', 'comprimento'],
+  width: ['width', 'largura'],
+  height: ['height', 'altura'],
+  depth: ['depth', 'profundidade'],
+  stroke: ['stroke', 'curso', 'extensao', 'extensão'],
+  bore: ['bore', 'diametro interno', 'diâmetro interno', 'diametro', 'diâmetro'],
+};
+
+function dimensionLabelMatches(label: string, name: string): boolean {
+  const normalized = normalize(label);
+  return (DIMENSION_LABELS[name] ?? [name]).some((alias) => {
+    const candidate = normalize(alias);
+    return normalized === candidate || normalized.startsWith(`${candidate} `) || normalized.endsWith(` ${candidate}`) || normalized.includes(` ${candidate} `);
+  });
+}
+
+function dimensionFor(observation: ExcavatorObservationV1, role: SemanticEntityRole, name: string): ExcavatorObservationDimension | undefined {
   return observation.dimensions.find((dimension) => {
-    if (dimension.partId !== entityId) return false;
-    const label = normalize(dimension.label);
-    return label.includes(normalizedName) || normalizedName.includes(label) || (name === 'width' && label.includes('largura')) || (name === 'length' && (label.includes('comprimento') || label.includes('length')));
-  }) ?? observation.dimensions.find((dimension) => dimension.partId === entityId);
+    if (dimension.partId === null || !dimensionLabelMatches(dimension.label, name)) return false;
+    const entity = observation.entities.find((candidate) => candidate.id === dimension.partId);
+    return entity !== undefined && semanticRole(entity) === role;
+  });
 }
 function partSource(entity: ExcavatorObservationEntity | undefined): AssemblyValueSource {
   return entity ? sourceForStatus(entity.status) : 'unknown';
@@ -73,13 +135,20 @@ function geometrySource(entity: ExcavatorObservationEntity | undefined, dimensio
   if (hasTemplate) return 'template';
   return 'unknown';
 }
-function provenanceFor(source: AssemblyPart['geometrySource'], ids: string[]): Provenance {
+function provenanceFor(source: AssemblyPart['geometrySource'], ids: string[], mode: ReconstructionExecutionMode, sourceKind: ExcavatorObservationV1['source']['kind']): Provenance {
   const origin = source === 'observed' ? 'observed' : source === 'hypothesis' || source === 'mixed' ? 'model_inferred' : source === 'template' ? 'synthetic' : 'unknown';
-  return { origin, validation: 'unreviewed', recordedAt: new Date().toISOString(), actor: { kind: source === 'template' ? 'system' : 'model', id: source === 'template' ? 'living-reconstruction-template' : 'muse-spark-1.3' }, evidence: ids.length ? ids.map((sourceId) => ({ sourceId })) : undefined, inference: origin === 'model_inferred' ? { provider: 'meta', model: 'muse-spark-1.3', cached: false } : undefined };
+  const offline = mode === 'offline';
+  const safeOrigin = offline && origin === 'model_inferred' ? 'synthetic' : origin;
+  const actor = safeOrigin === 'synthetic' || safeOrigin === 'unknown'
+    ? { kind: 'system' as const, id: offline ? 'living-reconstruction-offline-template' : 'living-reconstruction-template' }
+    : safeOrigin === 'observed' && sourceKind === 'text'
+      ? { kind: 'human' as const, id: 'user-instruction' }
+      : { kind: 'model' as const, id: 'muse-spark-1.3' };
+  return { origin: safeOrigin, validation: 'unreviewed', recordedAt: new Date().toISOString(), actor, evidence: ids.length ? ids.map((sourceId) => ({ sourceId })) : undefined, inference: !offline && safeOrigin === 'model_inferred' ? { provider: 'meta', model: 'muse-spark-1.3', cached: false } : undefined };
 }
 
-function assemblyDimension(observation: ExcavatorObservationV1, entityId: string, name: string, template: ExcavatorTemplate): AssemblyDimension {
-  const observed = dimensionFor(observation, entityId, name);
+function assemblyDimension(observation: ExcavatorObservationV1, entityRole: SemanticEntityRole, name: string, template: ExcavatorTemplate): AssemblyDimension {
+  const observed = dimensionFor(observation, entityRole, name);
   if (observed && observed.value !== null && observed.status !== 'unknown') {
     const normalized = dimensionUnit(observed.value, observed.unit);
     return { value: normalized.value, unit: normalized.unit, source: sourceForStatus(observed.status), evidenceIds: observed.evidence.map((evidence) => evidence.id), requiredForVerification: true };
@@ -104,7 +173,12 @@ function partParentId(spec: PartSpec): string | null {
 }
 
 function sourceRelation(observation: ExcavatorObservationV1, from: string, to: string): ExcavatorObservationRelation | undefined {
-  return observation.relations.find((relation) => relation.from === from && relation.to === to) ?? observation.relations.find((relation) => relation.from === to && relation.to === from);
+  const endpointRole = (id: string): SemanticEntityRole | string => {
+    const entity = observation.entities.find((candidate) => candidate.id === id);
+    return entity ? semanticRole(entity) ?? normalize(entity.label) : roleFromText(id) ?? normalize(id);
+  };
+  return observation.relations.find((relation) => endpointRole(relation.from) === from && endpointRole(relation.to) === to)
+    ?? observation.relations.find((relation) => endpointRole(relation.from) === to && endpointRole(relation.to) === from);
 }
 
 function jointSource(relation: ExcavatorObservationRelation | undefined): AssemblyValueSource { return relation ? sourceForStatus(relation.status) : 'template'; }
@@ -112,7 +186,8 @@ function jointEvidence(relation: ExcavatorObservationRelation | undefined): stri
 
 function joint(observation: ExcavatorObservationV1, id: string, parentPartId: string, childPartId: string, fromEntity: string, toEntity: string, type: AssemblyJoint['type'] = 'revolute'): AssemblyJoint {
   const relation = sourceRelation(observation, fromEntity, toEntity);
-  return { id, type, parentPartId, childPartId, anchor: [0, 0, 0], axis: [0, 1, 0], source: jointSource(relation), evidenceIds: jointEvidence(relation), review: 'pending' };
+  const axis = id === 'joint-swing' ? [0, 0, 1] as [number, number, number] : [0, -1, 0] as [number, number, number];
+  return { id, type, parentPartId, childPartId, anchor: [0, 0, 0], axis, source: jointSource(relation), evidenceIds: jointEvidence(relation), review: 'pending' };
 }
 
 function modificationTarget(target: string): string | null {
@@ -129,15 +204,16 @@ function modifications(requests: ReconstructionRequest[]): AssemblyModification[
   return requests.map((request) => ({ id: `mod-${request.id}`, operation: request.operation, targetPartId: modificationTarget(request.target), targetText: request.target, value: request.value, unit: request.unit, evidenceIds: request.evidence.map((evidence) => evidence.id), review: 'pending' }));
 }
 
-export function buildExcavatorAssembly(observation: ExcavatorObservationV1): AssemblyProposalV1 {
+export function buildExcavatorAssembly(observation: ExcavatorObservationV1, options: ExcavatorAssemblyBuildOptions = {}): AssemblyProposalV1 {
   if (observation.machineType !== 'excavator') throw new Error('ASSEMBLY_UNSUPPORTED_MACHINE: apenas escavadoras são suportadas.');
+  const mode = options.mode ?? 'offline';
   const sourceIds = observation.entities.flatMap((entity) => entity.evidence.map((evidence) => evidence.id));
   const parts: AssemblyPart[] = PART_SPECS.map((spec) => {
     const entity = entityFor(observation, spec.entityId);
     const dimensions = partDimensions(observation, spec);
     const partGeometrySource = geometrySource(entity, dimensions);
     const partEvidenceIds = unique([...sourceIds.filter((id) => entity?.evidence.some((evidence) => evidence.id === id)), ...Object.values(dimensions).flatMap((dimension) => dimension.evidenceIds)]);
-    return { id: spec.id, role: spec.template.role, libraryKey: spec.template.libraryKey, parentId: partParentId(spec), transform: spec.template.transform, geometrySource: partGeometrySource, dimensions, evidenceIds: partEvidenceIds, provenance: provenanceFor(partGeometrySource, partEvidenceIds), review: 'pending' };
+    return { id: spec.id, role: spec.template.role, libraryKey: spec.template.libraryKey, parentId: partParentId(spec), transform: spec.template.transform, geometrySource: partGeometrySource, dimensions, evidenceIds: partEvidenceIds, provenance: provenanceFor(partGeometrySource, partEvidenceIds, mode, observation.source.kind), review: 'pending' };
   });
   const joints: AssemblyJoint[] = [
     joint(observation, 'joint-swing', 'part-chassis', 'part-house', 'house', 'chassis'),
