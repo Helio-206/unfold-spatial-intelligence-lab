@@ -1,0 +1,2552 @@
+{
+ "proxyRuns": 29,
+ "proxyFound": 25,
+ "proxyMissed": [
+  {
+   "orientation": "horizontal",
+   "x0": 5,
+   "x1": 634,
+   "y0": 625,
+   "y1": 633,
+   "covered": 0.5691573926868044
+  },
+  {
+   "orientation": "vertical",
+   "x0": 5,
+   "x1": 15,
+   "y0": 361,
+   "y1": 553,
+   "covered": 0.5348176219801042
+  },
+  {
+   "orientation": "vertical",
+   "x0": 722,
+   "x1": 727,
+   "y0": 167,
+   "y1": 311,
+   "covered": 0.0
+  },
+  {
+   "orientation": "vertical",
+   "x0": 963,
+   "x1": 975,
+   "y0": 94,
+   "y1": 632,
+   "covered": 0.11732800456751356
+  }
+ ],
+ "candidates": 151,
+ "realCandidates": 49,
+ "falseCandidates": 102,
+ "falseByKind": {
+  "false: coloured furniture/fixture": 65,
+  "false: light floor strip / tile line": 4,
+  "false: mid-grey (frame, fixture, door arc)": 33
+ },
+ "realByKind": {
+  "wall": 46,
+  "wall (balcony frame)": 3
+ },
+ "maskPixelsCoveredByRealCandidates": 0.624,
+ "candidatesDetail": [
+  {
+   "id": "line-0",
+   "orientation": "vertical",
+   "start": {
+    "x": 248.5,
+    "y": 2.1666666666666665
+   },
+   "end": {
+    "x": 248.5,
+    "y": 102
+   },
+   "thicknessPx": 6,
+   "wallFraction": 0.16326530612244897,
+   "class": "wall (balcony frame)"
+  },
+  {
+   "id": "line-1",
+   "orientation": "vertical",
+   "start": {
+    "x": 724,
+    "y": 2.4285714285714284
+   },
+   "end": {
+    "x": 724,
+    "y": 132.14285714285714
+   },
+   "thicknessPx": 7,
+   "wallFraction": 0.359375,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-2",
+   "orientation": "horizontal",
+   "start": {
+    "x": 246.14285714285714,
+    "y": 5
+   },
+   "end": {
+    "x": 726.5714285714286,
+    "y": 5
+   },
+   "thicknessPx": 7,
+   "wallFraction": 0.0,
+   "class": "wall (balcony frame)"
+  },
+  {
+   "id": "line-3",
+   "orientation": "vertical",
+   "start": {
+    "x": 23,
+    "y": 88
+   },
+   "end": {
+    "x": 23,
+    "y": 115
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.6153846153846154,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-4",
+   "orientation": "vertical",
+   "start": {
+    "x": 57,
+    "y": 88
+   },
+   "end": {
+    "x": 57,
+    "y": 137
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.3333333333333333,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-5",
+   "orientation": "vertical",
+   "start": {
+    "x": 244,
+    "y": 88
+   },
+   "end": {
+    "x": 244,
+    "y": 168
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.3,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-6",
+   "orientation": "vertical",
+   "start": {
+    "x": 260.5,
+    "y": 88
+   },
+   "end": {
+    "x": 260.5,
+    "y": 166.5
+   },
+   "thicknessPx": 2,
+   "wallFraction": 0.28205128205128205,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-7",
+   "orientation": "vertical",
+   "start": {
+    "x": 737,
+    "y": 88
+   },
+   "end": {
+    "x": 737,
+    "y": 167
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.28205128205128205,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-8",
+   "orientation": "vertical",
+   "start": {
+    "x": 921,
+    "y": 88
+   },
+   "end": {
+    "x": 921,
+    "y": 143
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.2962962962962963,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-9",
+   "orientation": "vertical",
+   "start": {
+    "x": 955,
+    "y": 88
+   },
+   "end": {
+    "x": 955,
+    "y": 116
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.5714285714285714,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-10",
+   "orientation": "horizontal",
+   "start": {
+    "x": 544,
+    "y": 93
+   },
+   "end": {
+    "x": 597,
+    "y": 93
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.19230769230769232,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-11",
+   "orientation": "horizontal",
+   "start": {
+    "x": 183.5,
+    "y": 94.5
+   },
+   "end": {
+    "x": 332.64285714285717,
+    "y": 94.5
+   },
+   "thicknessPx": 14,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-12",
+   "orientation": "horizontal",
+   "start": {
+    "x": 650.5333333333333,
+    "y": 95
+   },
+   "end": {
+    "x": 769.8,
+    "y": 95
+   },
+   "thicknessPx": 15,
+   "wallFraction": 0.9830508474576272,
+   "class": "wall"
+  },
+  {
+   "id": "line-13",
+   "orientation": "horizontal",
+   "start": {
+    "x": 381,
+    "y": 95.25
+   },
+   "end": {
+    "x": 501,
+    "y": 95.25
+   },
+   "thicknessPx": 3.5,
+   "wallFraction": 0.5833333333333334,
+   "class": "wall (balcony frame)"
+  },
+  {
+   "id": "line-14",
+   "orientation": "horizontal",
+   "start": {
+    "x": 6.133333333333334,
+    "y": 95.5
+   },
+   "end": {
+    "x": 81.73333333333333,
+    "y": 95.5
+   },
+   "thicknessPx": 16,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-15",
+   "orientation": "horizontal",
+   "start": {
+    "x": 910.6666666666666,
+    "y": 96
+   },
+   "end": {
+    "x": 972.8,
+    "y": 96
+   },
+   "thicknessPx": 17,
+   "wallFraction": 0.9032258064516129,
+   "class": "wall"
+  },
+  {
+   "id": "line-16",
+   "orientation": "vertical",
+   "start": {
+    "x": 13.5,
+    "y": 103.3
+   },
+   "end": {
+    "x": 13.5,
+    "y": 278.25
+   },
+   "thicknessPx": 20,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-17",
+   "orientation": "vertical",
+   "start": {
+    "x": 221,
+    "y": 113
+   },
+   "end": {
+    "x": 221,
+    "y": 152
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-18",
+   "orientation": "horizontal",
+   "start": {
+    "x": 107,
+    "y": 117
+   },
+   "end": {
+    "x": 154,
+    "y": 117
+   },
+   "thicknessPx": 1,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-19",
+   "orientation": "horizontal",
+   "start": {
+    "x": 801,
+    "y": 121
+   },
+   "end": {
+    "x": 911,
+    "y": 121
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-20",
+   "orientation": "horizontal",
+   "start": {
+    "x": 350,
+    "y": 123
+   },
+   "end": {
+    "x": 380,
+    "y": 123
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-21",
+   "orientation": "horizontal",
+   "start": {
+    "x": 91,
+    "y": 125
+   },
+   "end": {
+    "x": 132,
+    "y": 125
+   },
+   "thicknessPx": 1,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-22",
+   "orientation": "horizontal",
+   "start": {
+    "x": 349,
+    "y": 128
+   },
+   "end": {
+    "x": 380,
+    "y": 128
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.2,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-23",
+   "orientation": "horizontal",
+   "start": {
+    "x": 23,
+    "y": 137
+   },
+   "end": {
+    "x": 57,
+    "y": 137
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-24",
+   "orientation": "vertical",
+   "start": {
+    "x": 957.5,
+    "y": 137.875
+   },
+   "end": {
+    "x": 957.5,
+    "y": 257.125
+   },
+   "thicknessPx": 8,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-25",
+   "orientation": "vertical",
+   "start": {
+    "x": 926.5,
+    "y": 140
+   },
+   "end": {
+    "x": 926.5,
+    "y": 187.8
+   },
+   "thicknessPx": 6,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-26",
+   "orientation": "horizontal",
+   "start": {
+    "x": 929.8,
+    "y": 143
+   },
+   "end": {
+    "x": 975,
+    "y": 143
+   },
+   "thicknessPx": 5,
+   "wallFraction": 0.36363636363636365,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-27",
+   "orientation": "vertical",
+   "start": {
+    "x": 483,
+    "y": 145
+   },
+   "end": {
+    "x": 483,
+    "y": 269
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-28",
+   "orientation": "vertical",
+   "start": {
+    "x": 506,
+    "y": 148
+   },
+   "end": {
+    "x": 506,
+    "y": 250
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-29",
+   "orientation": "vertical",
+   "start": {
+    "x": 511,
+    "y": 148
+   },
+   "end": {
+    "x": 511,
+    "y": 252
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-30",
+   "orientation": "vertical",
+   "start": {
+    "x": 555,
+    "y": 148
+   },
+   "end": {
+    "x": 555,
+    "y": 189
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-31",
+   "orientation": "horizontal",
+   "start": {
+    "x": 689,
+    "y": 149
+   },
+   "end": {
+    "x": 721,
+    "y": 149
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.125,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-32",
+   "orientation": "vertical",
+   "start": {
+    "x": 689,
+    "y": 149
+   },
+   "end": {
+    "x": 689,
+    "y": 250
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.24,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-33",
+   "orientation": "horizontal",
+   "start": {
+    "x": 505.5,
+    "y": 150
+   },
+   "end": {
+    "x": 555,
+    "y": 150
+   },
+   "thicknessPx": 5,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-34",
+   "orientation": "horizontal",
+   "start": {
+    "x": 348,
+    "y": 154
+   },
+   "end": {
+    "x": 381,
+    "y": 154
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-35",
+   "orientation": "vertical",
+   "start": {
+    "x": 331,
+    "y": 155
+   },
+   "end": {
+    "x": 331,
+    "y": 287
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-36",
+   "orientation": "vertical",
+   "start": {
+    "x": 398,
+    "y": 155
+   },
+   "end": {
+    "x": 398,
+    "y": 286
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-37",
+   "orientation": "vertical",
+   "start": {
+    "x": 230.5,
+    "y": 156.5
+   },
+   "end": {
+    "x": 230.5,
+    "y": 210
+   },
+   "thicknessPx": 2,
+   "wallFraction": 0.15384615384615385,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-38",
+   "orientation": "vertical",
+   "start": {
+    "x": 296,
+    "y": 160
+   },
+   "end": {
+    "x": 296,
+    "y": 191
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-39",
+   "orientation": "vertical",
+   "start": {
+    "x": 301,
+    "y": 160
+   },
+   "end": {
+    "x": 301,
+    "y": 191
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.2,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-40",
+   "orientation": "vertical",
+   "start": {
+    "x": 429,
+    "y": 160
+   },
+   "end": {
+    "x": 429,
+    "y": 191
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-41",
+   "orientation": "vertical",
+   "start": {
+    "x": 434,
+    "y": 160
+   },
+   "end": {
+    "x": 434,
+    "y": 191
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-42",
+   "orientation": "vertical",
+   "start": {
+    "x": 522.5,
+    "y": 163
+   },
+   "end": {
+    "x": 522.5,
+    "y": 250
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-43",
+   "orientation": "horizontal",
+   "start": {
+    "x": 522,
+    "y": 163.5
+   },
+   "end": {
+    "x": 555,
+    "y": 163.5
+   },
+   "thicknessPx": 2,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-44",
+   "orientation": "vertical",
+   "start": {
+    "x": 252,
+    "y": 167
+   },
+   "end": {
+    "x": 252,
+    "y": 306.85714285714283
+   },
+   "thicknessPx": 7,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-45",
+   "orientation": "vertical",
+   "start": {
+    "x": 745,
+    "y": 172.0222222222222
+   },
+   "end": {
+    "x": 745,
+    "y": 287.8666666666667
+   },
+   "thicknessPx": 47,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-46",
+   "orientation": "vertical",
+   "start": {
+    "x": 703,
+    "y": 179.8181818181818
+   },
+   "end": {
+    "x": 703,
+    "y": 219.36363636363637
+   },
+   "thicknessPx": 11,
+   "wallFraction": 0.0,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-47",
+   "orientation": "horizontal",
+   "start": {
+    "x": 840,
+    "y": 183
+   },
+   "end": {
+    "x": 869,
+    "y": 183
+   },
+   "thicknessPx": 1,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-48",
+   "orientation": "vertical",
+   "start": {
+    "x": 660,
+    "y": 184
+   },
+   "end": {
+    "x": 660,
+    "y": 212
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-49",
+   "orientation": "horizontal",
+   "start": {
+    "x": 505,
+    "y": 196
+   },
+   "end": {
+    "x": 549,
+    "y": 196
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-50",
+   "orientation": "horizontal",
+   "start": {
+    "x": 931.1428571428571,
+    "y": 198
+   },
+   "end": {
+    "x": 975,
+    "y": 198
+   },
+   "thicknessPx": 7,
+   "wallFraction": 0.38095238095238093,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-51",
+   "orientation": "horizontal",
+   "start": {
+    "x": 821.5,
+    "y": 200.5
+   },
+   "end": {
+    "x": 864.5,
+    "y": 200.5
+   },
+   "thicknessPx": 2,
+   "wallFraction": 0.9523809523809523,
+   "class": "wall"
+  },
+  {
+   "id": "line-52",
+   "orientation": "vertical",
+   "start": {
+    "x": 296,
+    "y": 205
+   },
+   "end": {
+    "x": 296,
+    "y": 236
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-53",
+   "orientation": "vertical",
+   "start": {
+    "x": 434,
+    "y": 205
+   },
+   "end": {
+    "x": 434,
+    "y": 236
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-54",
+   "orientation": "vertical",
+   "start": {
+    "x": 555,
+    "y": 205
+   },
+   "end": {
+    "x": 555,
+    "y": 236
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-55",
+   "orientation": "vertical",
+   "start": {
+    "x": 302.5,
+    "y": 206
+   },
+   "end": {
+    "x": 302.5,
+    "y": 235
+   },
+   "thicknessPx": 4,
+   "wallFraction": 0.21428571428571427,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-56",
+   "orientation": "vertical",
+   "start": {
+    "x": 427.5,
+    "y": 206
+   },
+   "end": {
+    "x": 427.5,
+    "y": 235
+   },
+   "thicknessPx": 4,
+   "wallFraction": 0.21428571428571427,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-57",
+   "orientation": "horizontal",
+   "start": {
+    "x": 813,
+    "y": 208
+   },
+   "end": {
+    "x": 869,
+    "y": 208
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.9285714285714286,
+   "class": "wall"
+  },
+  {
+   "id": "line-58",
+   "orientation": "vertical",
+   "start": {
+    "x": 928,
+    "y": 210.33333333333334
+   },
+   "end": {
+    "x": 928,
+    "y": 257
+   },
+   "thicknessPx": 3,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-59",
+   "orientation": "horizontal",
+   "start": {
+    "x": 583,
+    "y": 220.5
+   },
+   "end": {
+    "x": 611,
+    "y": 220.5
+   },
+   "thicknessPx": 2,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-60",
+   "orientation": "horizontal",
+   "start": {
+    "x": 346,
+    "y": 222
+   },
+   "end": {
+    "x": 382.3333333333333,
+    "y": 222
+   },
+   "thicknessPx": 9,
+   "wallFraction": 0.6666666666666666,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-61",
+   "orientation": "horizontal",
+   "start": {
+    "x": 720.7037037037037,
+    "y": 230.5
+   },
+   "end": {
+    "x": 768.2222222222222,
+    "y": 230.5
+   },
+   "thicknessPx": 108,
+   "wallFraction": 0.21739130434782608,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-62",
+   "orientation": "horizontal",
+   "start": {
+    "x": 505,
+    "y": 245
+   },
+   "end": {
+    "x": 551,
+    "y": 245
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-63",
+   "orientation": "horizontal",
+   "start": {
+    "x": 562,
+    "y": 245
+   },
+   "end": {
+    "x": 596,
+    "y": 245
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-64",
+   "orientation": "vertical",
+   "start": {
+    "x": 554.5,
+    "y": 248.5
+   },
+   "end": {
+    "x": 554.5,
+    "y": 293.5
+   },
+   "thicknessPx": 2,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-65",
+   "orientation": "vertical",
+   "start": {
+    "x": 296,
+    "y": 250
+   },
+   "end": {
+    "x": 296,
+    "y": 281
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-66",
+   "orientation": "vertical",
+   "start": {
+    "x": 301,
+    "y": 250
+   },
+   "end": {
+    "x": 301,
+    "y": 281
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.2,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-67",
+   "orientation": "vertical",
+   "start": {
+    "x": 429,
+    "y": 250
+   },
+   "end": {
+    "x": 429,
+    "y": 281
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.4,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-68",
+   "orientation": "vertical",
+   "start": {
+    "x": 434,
+    "y": 250
+   },
+   "end": {
+    "x": 434,
+    "y": 281
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-69",
+   "orientation": "vertical",
+   "start": {
+    "x": 603,
+    "y": 252
+   },
+   "end": {
+    "x": 603,
+    "y": 293
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.15,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-70",
+   "orientation": "vertical",
+   "start": {
+    "x": 110,
+    "y": 253.14285714285714
+   },
+   "end": {
+    "x": 110,
+    "y": 295
+   },
+   "thicknessPx": 7,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-71",
+   "orientation": "horizontal",
+   "start": {
+    "x": 929.6666666666666,
+    "y": 253.5
+   },
+   "end": {
+    "x": 971.6666666666666,
+    "y": 253.5
+   },
+   "thicknessPx": 8,
+   "wallFraction": 0.2857142857142857,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-72",
+   "orientation": "vertical",
+   "start": {
+    "x": 238,
+    "y": 254
+   },
+   "end": {
+    "x": 238,
+    "y": 307
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.3076923076923077,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-73",
+   "orientation": "horizontal",
+   "start": {
+    "x": 4,
+    "y": 255
+   },
+   "end": {
+    "x": 113,
+    "y": 255
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.25925925925925924,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-74",
+   "orientation": "vertical",
+   "start": {
+    "x": 19,
+    "y": 255
+   },
+   "end": {
+    "x": 19,
+    "y": 295
+   },
+   "thicknessPx": 1,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-75",
+   "orientation": "vertical",
+   "start": {
+    "x": 921,
+    "y": 257
+   },
+   "end": {
+    "x": 921,
+    "y": 291
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-76",
+   "orientation": "horizontal",
+   "start": {
+    "x": 547,
+    "y": 276
+   },
+   "end": {
+    "x": 603,
+    "y": 276
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-77",
+   "orientation": "vertical",
+   "start": {
+    "x": 660,
+    "y": 284
+   },
+   "end": {
+    "x": 660,
+    "y": 315
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-78",
+   "orientation": "horizontal",
+   "start": {
+    "x": 331,
+    "y": 287
+   },
+   "end": {
+    "x": 397,
+    "y": 287
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.09090909090909091,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-79",
+   "orientation": "horizontal",
+   "start": {
+    "x": 550,
+    "y": 289
+   },
+   "end": {
+    "x": 603,
+    "y": 289
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.07692307692307693,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-80",
+   "orientation": "vertical",
+   "start": {
+    "x": 178,
+    "y": 289.14285714285717
+   },
+   "end": {
+    "x": 178,
+    "y": 399.85714285714283
+   },
+   "thicknessPx": 7,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-81",
+   "orientation": "horizontal",
+   "start": {
+    "x": 921,
+    "y": 291
+   },
+   "end": {
+    "x": 955,
+    "y": 291
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-82",
+   "orientation": "horizontal",
+   "start": {
+    "x": 4,
+    "y": 291.5
+   },
+   "end": {
+    "x": 120.125,
+    "y": 291.5
+   },
+   "thicknessPx": 8,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-83",
+   "orientation": "vertical",
+   "start": {
+    "x": 165,
+    "y": 295
+   },
+   "end": {
+    "x": 165,
+    "y": 341
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.17391304347826086,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-84",
+   "orientation": "horizontal",
+   "start": {
+    "x": 349,
+    "y": 318
+   },
+   "end": {
+    "x": 380,
+    "y": 318
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.4,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-85",
+   "orientation": "horizontal",
+   "start": {
+    "x": 349,
+    "y": 323
+   },
+   "end": {
+    "x": 380,
+    "y": 323
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-86",
+   "orientation": "horizontal",
+   "start": {
+    "x": 724.5,
+    "y": 358.5
+   },
+   "end": {
+    "x": 774,
+    "y": 358.5
+   },
+   "thicknessPx": 4,
+   "wallFraction": 0.041666666666666664,
+   "class": "false: light floor strip / tile line"
+  },
+  {
+   "id": "line-87",
+   "orientation": "vertical",
+   "start": {
+    "x": 721,
+    "y": 360
+   },
+   "end": {
+    "x": 721,
+    "y": 413
+   },
+   "thicknessPx": 1,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-88",
+   "orientation": "vertical",
+   "start": {
+    "x": 243.5,
+    "y": 360.5
+   },
+   "end": {
+    "x": 243.5,
+    "y": 412.5
+   },
+   "thicknessPx": 2,
+   "wallFraction": 0.3076923076923077,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-89",
+   "orientation": "vertical",
+   "start": {
+    "x": 260.5,
+    "y": 360.5
+   },
+   "end": {
+    "x": 260.5,
+    "y": 412.5
+   },
+   "thicknessPx": 2,
+   "wallFraction": 0.34615384615384615,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-90",
+   "orientation": "vertical",
+   "start": {
+    "x": 238,
+    "y": 370
+   },
+   "end": {
+    "x": 238,
+    "y": 423
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.2692307692307692,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-91",
+   "orientation": "vertical",
+   "start": {
+    "x": 364,
+    "y": 370
+   },
+   "end": {
+    "x": 364,
+    "y": 451
+   },
+   "thicknessPx": 1,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-92",
+   "orientation": "vertical",
+   "start": {
+    "x": 414,
+    "y": 370
+   },
+   "end": {
+    "x": 414,
+    "y": 474
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.09615384615384616,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-93",
+   "orientation": "vertical",
+   "start": {
+    "x": 453.5,
+    "y": 370
+   },
+   "end": {
+    "x": 453.5,
+    "y": 513.375
+   },
+   "thicknessPx": 8,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-94",
+   "orientation": "vertical",
+   "start": {
+    "x": 572.5,
+    "y": 370
+   },
+   "end": {
+    "x": 572.5,
+    "y": 485
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.10526315789473684,
+   "class": "false: light floor strip / tile line"
+  },
+  {
+   "id": "line-95",
+   "orientation": "vertical",
+   "start": {
+    "x": 612,
+    "y": 370
+   },
+   "end": {
+    "x": 612,
+    "y": 602
+   },
+   "thicknessPx": 1,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-96",
+   "orientation": "vertical",
+   "start": {
+    "x": 267,
+    "y": 373.5
+   },
+   "end": {
+    "x": 267,
+    "y": 423
+   },
+   "thicknessPx": 3,
+   "wallFraction": 0.25,
+   "class": "false: light floor strip / tile line"
+  },
+  {
+   "id": "line-97",
+   "orientation": "horizontal",
+   "start": {
+    "x": 573.25,
+    "y": 373.5
+   },
+   "end": {
+    "x": 618.5,
+    "y": 373.5
+   },
+   "thicknessPx": 8,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-98",
+   "orientation": "horizontal",
+   "start": {
+    "x": 333.38461538461536,
+    "y": 376.75
+   },
+   "end": {
+    "x": 497,
+    "y": 376.75
+   },
+   "thicknessPx": 7.5,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-99",
+   "orientation": "vertical",
+   "start": {
+    "x": 929,
+    "y": 393
+   },
+   "end": {
+    "x": 929,
+    "y": 523
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.2,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-100",
+   "orientation": "vertical",
+   "start": {
+    "x": 109,
+    "y": 393.6666666666667
+   },
+   "end": {
+    "x": 109,
+    "y": 441.77777777777777
+   },
+   "thicknessPx": 11,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-101",
+   "orientation": "vertical",
+   "start": {
+    "x": 740,
+    "y": 394
+   },
+   "end": {
+    "x": 740,
+    "y": 523
+   },
+   "thicknessPx": 1,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-102",
+   "orientation": "vertical",
+   "start": {
+    "x": 771,
+    "y": 394
+   },
+   "end": {
+    "x": 771,
+    "y": 523
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.171875,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-103",
+   "orientation": "vertical",
+   "start": {
+    "x": 960,
+    "y": 394
+   },
+   "end": {
+    "x": 960,
+    "y": 523
+   },
+   "thicknessPx": 1,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-104",
+   "orientation": "horizontal",
+   "start": {
+    "x": 4,
+    "y": 397
+   },
+   "end": {
+    "x": 180.85714285714286,
+    "y": 397
+   },
+   "thicknessPx": 7,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-105",
+   "orientation": "horizontal",
+   "start": {
+    "x": 737.375,
+    "y": 398
+   },
+   "end": {
+    "x": 773.75,
+    "y": 398
+   },
+   "thicknessPx": 9,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-106",
+   "orientation": "horizontal",
+   "start": {
+    "x": 926.25,
+    "y": 398
+   },
+   "end": {
+    "x": 975,
+    "y": 398
+   },
+   "thicknessPx": 9,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-107",
+   "orientation": "vertical",
+   "start": {
+    "x": 182,
+    "y": 401
+   },
+   "end": {
+    "x": 182,
+    "y": 439
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.10526315789473684,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-108",
+   "orientation": "horizontal",
+   "start": {
+    "x": 374,
+    "y": 405
+   },
+   "end": {
+    "x": 403,
+    "y": 405
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-109",
+   "orientation": "vertical",
+   "start": {
+    "x": 14.5,
+    "y": 409.09090909090907
+   },
+   "end": {
+    "x": 14.5,
+    "y": 557.3636363636364
+   },
+   "thicknessPx": 22,
+   "wallFraction": 0.9864864864864865,
+   "class": "wall"
+  },
+  {
+   "id": "line-110",
+   "orientation": "vertical",
+   "start": {
+    "x": 251.5,
+    "y": 419.5
+   },
+   "end": {
+    "x": 251.5,
+    "y": 571.75
+   },
+   "thicknessPx": 8,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-111",
+   "orientation": "vertical",
+   "start": {
+    "x": 495.5,
+    "y": 424
+   },
+   "end": {
+    "x": 495.5,
+    "y": 506.5
+   },
+   "thicknessPx": 2,
+   "wallFraction": 0.0,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-112",
+   "orientation": "horizontal",
+   "start": {
+    "x": 4,
+    "y": 440
+   },
+   "end": {
+    "x": 181,
+    "y": 440
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.20454545454545456,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-113",
+   "orientation": "horizontal",
+   "start": {
+    "x": 843,
+    "y": 464
+   },
+   "end": {
+    "x": 874,
+    "y": 464
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.9333333333333333,
+   "class": "wall"
+  },
+  {
+   "id": "line-114",
+   "orientation": "horizontal",
+   "start": {
+    "x": 450,
+    "y": 465
+   },
+   "end": {
+    "x": 495,
+    "y": 465
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.22727272727272727,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-115",
+   "orientation": "horizontal",
+   "start": {
+    "x": 249,
+    "y": 467
+   },
+   "end": {
+    "x": 361,
+    "y": 467
+   },
+   "thicknessPx": 7,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-116",
+   "orientation": "horizontal",
+   "start": {
+    "x": 214,
+    "y": 471
+   },
+   "end": {
+    "x": 255,
+    "y": 471
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.25,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-117",
+   "orientation": "horizontal",
+   "start": {
+    "x": 827.5,
+    "y": 472.5
+   },
+   "end": {
+    "x": 868.5,
+    "y": 472.5
+   },
+   "thicknessPx": 2,
+   "wallFraction": 0.9,
+   "class": "wall"
+  },
+  {
+   "id": "line-118",
+   "orientation": "horizontal",
+   "start": {
+    "x": 366,
+    "y": 477
+   },
+   "end": {
+    "x": 412,
+    "y": 477
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-119",
+   "orientation": "vertical",
+   "start": {
+    "x": 233.5,
+    "y": 485
+   },
+   "end": {
+    "x": 233.5,
+    "y": 548.5
+   },
+   "thicknessPx": 2,
+   "wallFraction": 0.0967741935483871,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-120",
+   "orientation": "vertical",
+   "start": {
+    "x": 718,
+    "y": 487.962962962963
+   },
+   "end": {
+    "x": 718,
+    "y": 569.0370370370371
+   },
+   "thicknessPx": 27,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-121",
+   "orientation": "horizontal",
+   "start": {
+    "x": 382,
+    "y": 488
+   },
+   "end": {
+    "x": 412,
+    "y": 488
+   },
+   "thicknessPx": 1,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-122",
+   "orientation": "vertical",
+   "start": {
+    "x": 574,
+    "y": 489
+   },
+   "end": {
+    "x": 574,
+    "y": 557
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-123",
+   "orientation": "horizontal",
+   "start": {
+    "x": 99,
+    "y": 496
+   },
+   "end": {
+    "x": 150,
+    "y": 496
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-124",
+   "orientation": "horizontal",
+   "start": {
+    "x": 4,
+    "y": 498.5
+   },
+   "end": {
+    "x": 49.833333333333336,
+    "y": 498.5
+   },
+   "thicknessPx": 6,
+   "wallFraction": 0.36363636363636365,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-125",
+   "orientation": "vertical",
+   "start": {
+    "x": 362,
+    "y": 503
+   },
+   "end": {
+    "x": 362,
+    "y": 560
+   },
+   "thicknessPx": 1,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-126",
+   "orientation": "vertical",
+   "start": {
+    "x": 398.5,
+    "y": 503
+   },
+   "end": {
+    "x": 398.5,
+    "y": 547
+   },
+   "thicknessPx": 4,
+   "wallFraction": 0.22727272727272727,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-127",
+   "orientation": "vertical",
+   "start": {
+    "x": 58,
+    "y": 504.2
+   },
+   "end": {
+    "x": 58,
+    "y": 564
+   },
+   "thicknessPx": 5,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-128",
+   "orientation": "horizontal",
+   "start": {
+    "x": 355,
+    "y": 506
+   },
+   "end": {
+    "x": 403.57142857142856,
+    "y": 506
+   },
+   "thicknessPx": 7,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-129",
+   "orientation": "horizontal",
+   "start": {
+    "x": 415,
+    "y": 514.5
+   },
+   "end": {
+    "x": 453.5,
+    "y": 514.5
+   },
+   "thicknessPx": 4,
+   "wallFraction": 0.2631578947368421,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-130",
+   "orientation": "horizontal",
+   "start": {
+    "x": 886.6666666666666,
+    "y": 518.5
+   },
+   "end": {
+    "x": 975,
+    "y": 518.5
+   },
+   "thicknessPx": 10,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-131",
+   "orientation": "vertical",
+   "start": {
+    "x": 831,
+    "y": 523
+   },
+   "end": {
+    "x": 831,
+    "y": 569
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.17391304347826086,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-132",
+   "orientation": "horizontal",
+   "start": {
+    "x": 495,
+    "y": 528
+   },
+   "end": {
+    "x": 526,
+    "y": 528
+   },
+   "thicknessPx": 1,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-133",
+   "orientation": "horizontal",
+   "start": {
+    "x": 574,
+    "y": 528
+   },
+   "end": {
+    "x": 619,
+    "y": 528
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.2727272727272727,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-134",
+   "orientation": "horizontal",
+   "start": {
+    "x": 705.0126582278481,
+    "y": 528
+   },
+   "end": {
+    "x": 747.9873417721519,
+    "y": 528
+   },
+   "thicknessPx": 79,
+   "wallFraction": 0.2857142857142857,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-135",
+   "orientation": "horizontal",
+   "start": {
+    "x": 355,
+    "y": 556
+   },
+   "end": {
+    "x": 409,
+    "y": 556
+   },
+   "thicknessPx": 7,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-136",
+   "orientation": "vertical",
+   "start": {
+    "x": 443,
+    "y": 556.5
+   },
+   "end": {
+    "x": 443,
+    "y": 595
+   },
+   "thicknessPx": 3,
+   "wallFraction": 0.3157894736842105,
+   "class": "false: light floor strip / tile line"
+  },
+  {
+   "id": "line-137",
+   "orientation": "vertical",
+   "start": {
+    "x": 457,
+    "y": 557
+   },
+   "end": {
+    "x": 457,
+    "y": 602
+   },
+   "thicknessPx": 1,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-138",
+   "orientation": "vertical",
+   "start": {
+    "x": 545,
+    "y": 558
+   },
+   "end": {
+    "x": 545,
+    "y": 602
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.22727272727272727,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-139",
+   "orientation": "vertical",
+   "start": {
+    "x": 488,
+    "y": 560
+   },
+   "end": {
+    "x": 488,
+    "y": 606
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.30434782608695654,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-140",
+   "orientation": "horizontal",
+   "start": {
+    "x": 215.5,
+    "y": 561.5
+   },
+   "end": {
+    "x": 255,
+    "y": 561.5
+   },
+   "thicknessPx": 4,
+   "wallFraction": 0.2631578947368421,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-141",
+   "orientation": "horizontal",
+   "start": {
+    "x": 18,
+    "y": 562.5
+   },
+   "end": {
+    "x": 90.5,
+    "y": 562.5
+   },
+   "thicknessPx": 4,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-142",
+   "orientation": "vertical",
+   "start": {
+    "x": 638,
+    "y": 565
+   },
+   "end": {
+    "x": 638,
+    "y": 623
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.06896551724137931,
+   "class": "false: mid-grey (frame, fixture, door arc)"
+  },
+  {
+   "id": "line-143",
+   "orientation": "horizontal",
+   "start": {
+    "x": 23,
+    "y": 584
+   },
+   "end": {
+    "x": 57,
+    "y": 584
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-144",
+   "orientation": "horizontal",
+   "start": {
+    "x": 450,
+    "y": 598.5
+   },
+   "end": {
+    "x": 619,
+    "y": 598.5
+   },
+   "thicknessPx": 8,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-145",
+   "orientation": "horizontal",
+   "start": {
+    "x": 101,
+    "y": 599
+   },
+   "end": {
+    "x": 164,
+    "y": 599
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.967741935483871,
+   "class": "wall"
+  },
+  {
+   "id": "line-146",
+   "orientation": "horizontal",
+   "start": {
+    "x": 101,
+    "y": 607.5
+   },
+   "end": {
+    "x": 142.5,
+    "y": 607.5
+   },
+   "thicknessPx": 2,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-147",
+   "orientation": "horizontal",
+   "start": {
+    "x": 734.125,
+    "y": 610.5
+   },
+   "end": {
+    "x": 790.25,
+    "y": 610.5
+   },
+   "thicknessPx": 8,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-148",
+   "orientation": "horizontal",
+   "start": {
+    "x": 23,
+    "y": 618
+   },
+   "end": {
+    "x": 57,
+    "y": 618
+   },
+   "thicknessPx": 1,
+   "wallFraction": 0.0,
+   "class": "false: coloured furniture/fixture"
+  },
+  {
+   "id": "line-149",
+   "orientation": "horizontal",
+   "start": {
+    "x": 44.75,
+    "y": 625
+   },
+   "end": {
+    "x": 580.3333333333334,
+    "y": 625
+   },
+   "thicknessPx": 17,
+   "wallFraction": 1.0,
+   "class": "wall"
+  },
+  {
+   "id": "line-150",
+   "orientation": "horizontal",
+   "start": {
+    "x": 694,
+    "y": 628.5
+   },
+   "end": {
+    "x": 975,
+    "y": 628.5
+   },
+   "thicknessPx": 10,
+   "wallFraction": 1.0,
+   "class": "wall"
+  }
+ ],
+ "proxy": [
+  {
+   "orientation": "horizontal",
+   "x0": 5,
+   "x1": 77,
+   "y0": 89,
+   "y1": 100,
+   "covered": 0.9090909090909091
+  },
+  {
+   "orientation": "horizontal",
+   "x0": 191,
+   "x1": 326,
+   "y0": 89,
+   "y1": 100,
+   "covered": 0.9234567901234568
+  },
+  {
+   "orientation": "horizontal",
+   "x0": 653,
+   "x1": 762,
+   "y0": 89,
+   "y1": 101,
+   "covered": 0.8461538461538461
+  },
+  {
+   "orientation": "horizontal",
+   "x0": 919,
+   "x1": 976,
+   "y0": 89,
+   "y1": 101,
+   "covered": 0.8125854993160054
+  },
+  {
+   "orientation": "horizontal",
+   "x0": 5,
+   "x1": 119,
+   "y0": 289,
+   "y1": 294,
+   "covered": 1.0
+  },
+  {
+   "orientation": "horizontal",
+   "x0": 315,
+   "x1": 495,
+   "y0": 371,
+   "y1": 375,
+   "covered": 0.9
+  },
+  {
+   "orientation": "horizontal",
+   "x0": 575,
+   "x1": 619,
+   "y0": 371,
+   "y1": 376,
+   "covered": 1.0
+  },
+  {
+   "orientation": "horizontal",
+   "x0": 738,
+   "x1": 772,
+   "y0": 394,
+   "y1": 399,
+   "covered": 1.0
+  },
+  {
+   "orientation": "horizontal",
+   "x0": 929,
+   "x1": 976,
+   "y0": 394,
+   "y1": 399,
+   "covered": 1.0
+  },
+  {
+   "orientation": "horizontal",
+   "x0": 250,
+   "x1": 362,
+   "y0": 465,
+   "y1": 469,
+   "covered": 1.0
+  },
+  {
+   "orientation": "horizontal",
+   "x0": 878,
+   "x1": 976,
+   "y0": 517,
+   "y1": 522,
+   "covered": 0.9183673469387755
+  },
+  {
+   "orientation": "horizontal",
+   "x0": 356,
+   "x1": 407,
+   "y0": 554,
+   "y1": 559,
+   "covered": 1.0
+  },
+  {
+   "orientation": "horizontal",
+   "x0": 451,
+   "x1": 619,
+   "y0": 597,
+   "y1": 601,
+   "covered": 1.0
+  },
+  {
+   "orientation": "horizontal",
+   "x0": 732,
+   "x1": 793,
+   "y0": 608,
+   "y1": 613,
+   "covered": 0.9419889502762431
+  },
+  {
+   "orientation": "horizontal",
+   "x0": 5,
+   "x1": 634,
+   "y0": 625,
+   "y1": 633,
+   "covered": 0.5691573926868044
+  },
+  {
+   "orientation": "horizontal",
+   "x0": 697,
+   "x1": 975,
+   "y0": 624,
+   "y1": 633,
+   "covered": 1.0
+  },
+  {
+   "orientation": "vertical",
+   "x0": 5,
+   "x1": 16,
+   "y0": 89,
+   "y1": 307,
+   "covered": 0.7117669605212725
+  },
+  {
+   "orientation": "vertical",
+   "x0": 5,
+   "x1": 15,
+   "y0": 361,
+   "y1": 553,
+   "covered": 0.5348176219801042
+  },
+  {
+   "orientation": "vertical",
+   "x0": 108,
+   "x1": 113,
+   "y0": 254,
+   "y1": 295,
+   "covered": 1.0
+  },
+  {
+   "orientation": "vertical",
+   "x0": 108,
+   "x1": 113,
+   "y0": 394,
+   "y1": 442,
+   "covered": 0.9863013698630136
+  },
+  {
+   "orientation": "vertical",
+   "x0": 176,
+   "x1": 181,
+   "y0": 291,
+   "y1": 399,
+   "covered": 1.0
+  },
+  {
+   "orientation": "vertical",
+   "x0": 250,
+   "x1": 254,
+   "y0": 167,
+   "y1": 307,
+   "covered": 0.9985734664764622
+  },
+  {
+   "orientation": "vertical",
+   "x0": 250,
+   "x1": 254,
+   "y0": 413,
+   "y1": 571,
+   "covered": 0.9620253164556962
+  },
+  {
+   "orientation": "vertical",
+   "x0": 451,
+   "x1": 456,
+   "y0": 371,
+   "y1": 511,
+   "covered": 1.0
+  },
+  {
+   "orientation": "vertical",
+   "x0": 451,
+   "x1": 456,
+   "y0": 552,
+   "y1": 634,
+   "covered": 0.6341463414634146
+  },
+  {
+   "orientation": "vertical",
+   "x0": 613,
+   "x1": 618,
+   "y0": 372,
+   "y1": 634,
+   "covered": 0.7493638676844784
+  },
+  {
+   "orientation": "vertical",
+   "x0": 722,
+   "x1": 727,
+   "y0": 167,
+   "y1": 311,
+   "covered": 0.0
+  },
+  {
+   "orientation": "vertical",
+   "x0": 787,
+   "x1": 792,
+   "y0": 610,
+   "y1": 634,
+   "covered": 0.625
+  },
+  {
+   "orientation": "vertical",
+   "x0": 963,
+   "x1": 975,
+   "y0": 94,
+   "y1": 632,
+   "covered": 0.11732800456751356
+  }
+ ]
+}

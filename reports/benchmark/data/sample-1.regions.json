@@ -1,0 +1,146 @@
+{
+ "totalRegions": 10,
+ "eligible": 4,
+ "regions": [
+  {
+   "id": "region-1",
+   "eligibility": "low_quality_candidate",
+   "areaPx2": 630,
+   "bbox": [
+    554.5,
+    276,
+    603,
+    289
+   ],
+   "method": null
+  },
+  {
+   "id": "region-2",
+   "eligibility": "low_quality_candidate",
+   "areaPx2": 808,
+   "bbox": [
+    506,
+    196,
+    522.5,
+    245
+   ],
+   "method": null
+  },
+  {
+   "id": "region-3",
+   "eligibility": "low_quality_candidate",
+   "areaPx2": 1288,
+   "bbox": [
+    506,
+    148,
+    555,
+    196
+   ],
+   "method": null
+  },
+  {
+   "id": "region-4",
+   "eligibility": "low_quality_candidate",
+   "areaPx2": 3134,
+   "bbox": [
+    109,
+    393.6666666666667,
+    182,
+    440
+   ],
+   "method": null
+  },
+  {
+   "id": "region-5",
+   "eligibility": "low_quality_candidate",
+   "areaPx2": 3575,
+   "bbox": [
+    13.5,
+    253.14285714285714,
+    110,
+    291.5
+   ],
+   "method": null
+  },
+  {
+   "id": "region-6",
+   "eligibility": "low_quality_candidate",
+   "areaPx2": 3875,
+   "bbox": [
+    929,
+    393,
+    960,
+    518.5
+   ],
+   "method": null
+  },
+  {
+   "id": "region-7",
+   "eligibility": "construction_candidate",
+   "areaPx2": 6209,
+   "bbox": [
+    572.5,
+    370,
+    612,
+    528
+   ],
+   "method": null
+  },
+  {
+   "id": "room-251-5-721-95",
+   "eligibility": "construction_candidate",
+   "areaPx2": 42448,
+   "bbox": [
+    250.66666666666666,
+    5,
+    721,
+    95.25
+   ],
+   "method": "orthogonal_wall_support"
+  },
+  {
+   "id": "room-14-398-251-560",
+   "eligibility": "construction_candidate",
+   "areaPx2": 38419,
+   "bbox": [
+    14,
+    397.6666666666667,
+    250.66666666666666,
+    560
+   ],
+   "method": "orthogonal_wall_support"
+  },
+  {
+   "id": "room-14-95-251-292",
+   "eligibility": "construction_candidate",
+   "areaPx2": 46446,
+   "bbox": [
+    14,
+    95.25,
+    250.66666666666666,
+    291.5
+   ],
+   "method": "orthogonal_wall_support"
+  }
+ ],
+ "spaceToRegions": {
+  "Balcony": [
+   "room-251-5-721-95"
+  ],
+  "Bedroom 2": [
+   "room-14-95-251-292"
+  ],
+  "Master Bedroom": [],
+  "Dining": [],
+  "Living": [],
+  "Kitchen": [],
+  "Foyer": [],
+  "Maid's Qtr": [],
+  "Walk-in Closet": [],
+  "T&B (left)": [],
+  "T&B (master)": [],
+  "Bedroom 3": [],
+  "Bath beside kitchen": [],
+  "Bath below": []
+ }
+}
