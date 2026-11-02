@@ -1,14 +1,19 @@
 import { describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { createMetaServer } from '../server/meta-server';
 import { buildExcavatorAssembly, assemblyMetrics } from '../src/living/reconstruction/generator';
 import { createOfflineImageObservation, createOfflineTextObservation, parseExcavatorObservation } from '../src/living/reconstruction/observation';
 import { validateAssemblyProposal, type ExcavatorObservationV1 } from '../src/living/reconstruction/contracts';
-import { adaptReviewedProposalToAssembly, ReconstructionAdapterBlockedError, sourceEulerDegreesToCanonicalQuaternion, sourceVectorToCanonical } from '../src/living/reconstruction/adapter';
+import { adaptReviewedProposalToAssembly, forwardKinematicsAtReference, ReconstructionAdapterBlockedError, sourceEulerDegreesToCanonicalQuaternion, sourceVectorToCanonical } from '../src/living/reconstruction/adapter';
 import { EXCAVATOR_ASSEMBLY_V1 } from '../src/living/contracts/fixtures/excavator.assembly.v1';
 import { validateAssembly } from '../src/living/contracts/assembly.v1';
 
 const ALLOWED_ORIGIN = 'http://127.0.0.1:5173';
 const jpegA = 'data:image/jpeg;base64,/9j/4AA=';
+function expectArrayClose(actual: readonly number[] | undefined, expected: readonly number[], precision = 8): void {
+  expect(actual).toBeDefined();
+  expected.forEach((value, index) => expect(actual?.[index]).toBeCloseTo(value, precision));
+}
 
 async function withServer<T>(server: ReturnType<typeof createMetaServer>, callback: (port: number) => Promise<T>): Promise<T> {
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -91,6 +96,67 @@ describe('living image-to-assembly contracts', () => {
     expect(adapted.root.pose.rotation).toHaveLength(4);
     expect(adapted.provenance.validation).toBe('unreviewed');
     expect(adapted.provenance.origin).toBe('derived');
+  });
+
+  it('removes reference motion from Joint.origin and recovers the proposed pose by FK', () => {
+    const proposal = buildExcavatorAssembly(createOfflineImageObservation('image', 'fk-proposal', '2'.repeat(64)));
+    const adapted = adaptReviewedProposalToAssembly(proposal, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'fk-reviewer', authorizationId: 'fk-001' });
+    const fk = forwardKinematicsAtReference(adapted);
+    const expected = new Map([
+      ['chassis', { translationM: sourceVectorToCanonical(proposal.parts.find((part) => part.id === 'part-chassis')!.transform.translation), rotation: sourceEulerDegreesToCanonicalQuaternion(proposal.parts.find((part) => part.id === 'part-chassis')!.transform.rotationEulerDeg) }],
+      ['upper_body', { translationM: sourceVectorToCanonical(proposal.parts.find((part) => part.id === 'part-house')!.transform.translation), rotation: sourceEulerDegreesToCanonicalQuaternion(proposal.parts.find((part) => part.id === 'part-house')!.transform.rotationEulerDeg) }],
+      ['boom', { translationM: sourceVectorToCanonical(proposal.parts.find((part) => part.id === 'part-boom')!.transform.translation), rotation: sourceEulerDegreesToCanonicalQuaternion(proposal.parts.find((part) => part.id === 'part-boom')!.transform.rotationEulerDeg) }],
+      ['stick', { translationM: sourceVectorToCanonical(proposal.parts.find((part) => part.id === 'part-stick')!.transform.translation), rotation: sourceEulerDegreesToCanonicalQuaternion(proposal.parts.find((part) => part.id === 'part-stick')!.transform.rotationEulerDeg) }],
+      ['bucket', { translationM: sourceVectorToCanonical(proposal.parts.find((part) => part.id === 'part-bucket')!.transform.translation), rotation: sourceEulerDegreesToCanonicalQuaternion(proposal.parts.find((part) => part.id === 'part-bucket')!.transform.rotationEulerDeg) }],
+    ]);
+    for (const [partId, pose] of expected) {
+      expectArrayClose(fk.get(partId)?.translationM, pose.translationM, 9);
+      expectArrayClose(fk.get(partId)?.rotation, pose.rotation, 9);
+    }
+
+    const reference = JSON.parse(readFileSync(new URL('../src/living/contracts/fixtures/excavator.reference-pose.json', import.meta.url), 'utf8')) as { parts: Array<{ partId: string; translationM: [number, number, number]; rotation: [number, number, number, number] }> };
+    const fixtureUpper = reference.parts.find((part) => part.partId === 'upper_body')!;
+    const fixtureProposal = structuredClone(proposal);
+    fixtureProposal.parts.find((part) => part.id === 'part-house')!.transform = { translation: [0, 0, fixtureUpper.translationM[1]], rotationEulerDeg: [0, 0, 0], scale: [1, 1, 1] };
+    const fixtureAdapted = adaptReviewedProposalToAssembly(fixtureProposal, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'fk-reviewer', authorizationId: 'fk-fixture-001' });
+    const fixtureFk = forwardKinematicsAtReference(fixtureAdapted).get('upper_body')!;
+    expectArrayClose(fixtureFk.translationM, fixtureUpper.translationM, 9);
+  });
+
+  it('applies approved boom length to geometry, points and child joint anchors', () => {
+    const proposal = buildExcavatorAssembly(createOfflineImageObservation('image', 'boom-7m', '3'.repeat(64)));
+    const boom = proposal.parts.find((part) => part.id === 'part-boom')!;
+    boom.dimensions.length = { value: 7, unit: 'm', source: 'observed', evidenceIds: ['boom-7m-evidence'], requiredForVerification: true };
+    const adapted = adaptReviewedProposalToAssembly(proposal, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'dimension-reviewer', authorizationId: 'dimension-001' });
+    const baseline = buildExcavatorAssembly(createOfflineImageObservation('image', 'boom-baseline', '6'.repeat(64)));
+    const baselineAdapted = adaptReviewedProposalToAssembly(baseline, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'dimension-reviewer', authorizationId: 'dimension-baseline' });
+    const shape = adapted.parts.find((part) => part.id === 'boom')!.shapes[0]!;
+    expect(shape.kind).toBe('box');
+    if (shape.kind === 'box') expect(shape.halfExtentsM[0]).toBeCloseTo(3.5, 9);
+    expect(adapted.parts.find((part) => part.id === 'boom')!.points[0]!.positionM[0]).toBeCloseTo(2.75, 9);
+    expect(adapted.joints.find((joint) => joint.id === 'stick_joint')!.origin.translationM[0]).toBeCloseTo(baselineAdapted.joints.find((joint) => joint.id === 'stick_joint')!.origin.translationM[0] * (7 / 5.6), 9);
+    expect(validateAssembly(adapted)).toEqual({ ok: true, issues: [] });
+  });
+
+  it('applies approved cylinder stroke to actuator limits and rod geometry', () => {
+    const proposal = buildExcavatorAssembly(createOfflineImageObservation('image', 'boom-stroke', '4'.repeat(64)));
+    const cylinder = proposal.parts.find((part) => part.id === 'part-boom-cylinder-body')!;
+    cylinder.dimensions.stroke = { value: 1, unit: 'm', source: 'observed', evidenceIds: ['boom-stroke-evidence'], requiredForVerification: true };
+    const adapted = adaptReviewedProposalToAssembly(proposal, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'stroke-reviewer', authorizationId: 'stroke-001' });
+    const actuator = adapted.actuators.find((candidate) => candidate.id === 'boom_cylinder')!;
+    expect(actuator.kind).toBe('hydraulic_cylinder');
+    if (actuator.kind === 'hydraulic_cylinder') expect(actuator.stroke.max.value).toBe(1);
+    expect(adapted.joints.find((joint) => joint.id === 'boom_cyl_slide')!.limits!.max.value).toBe(1);
+    const rodShape = adapted.parts.find((part) => part.id === 'boom_cyl_rod')!.shapes[0]!;
+    if (rodShape.kind === 'cylinder') expect(rodShape.halfLengthM).toBeCloseTo(0.7515 / 0.76, 9);
+    expect(validateAssembly(adapted)).toEqual({ ok: true, issues: [] });
+  });
+
+  it('blocks an approved dimension when no coherent canonical mapping exists', () => {
+    const proposal = buildExcavatorAssembly(createOfflineImageObservation('image', 'bucket-width', '5'.repeat(64)));
+    const bucket = proposal.parts.find((part) => part.id === 'part-bucket')!;
+    bucket.dimensions.width = { value: 1.2, unit: 'm', source: 'observed', evidenceIds: ['bucket-width-evidence'], requiredForVerification: true };
+    expect(() => adaptReviewedProposalToAssembly(proposal, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'dimension-reviewer', authorizationId: 'dimension-002' })).toThrow(/sem adaptação geométrica suportada/);
   });
 
   it('fails closed when engineering information or explicit review is missing', () => {

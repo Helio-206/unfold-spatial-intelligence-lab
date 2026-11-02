@@ -9,7 +9,7 @@ This slice produces a reviewable proposal under `src/living/reconstruction/`:
 - `adaptReviewedProposalToAssembly()` is the explicit, validated adapter to the canonical engineering `Assembly`. It requires a validated engineering seed and explicit human review authorization, and fails closed when either is absent.
 - The proposal is never written to `spatial_scene.v1`, never sent to a solver, and never executes text returned by Muse Spark.
 
-The canonical engineering contract was integrated from commit `efa8fe0fb0fab6ce6beda979df4f77240260c5db`. The adapter consumes its `validateAssembly()` and the synthetic excavator fixture; it does not redefine that schema.
+The canonical engineering contract is synchronized with merged PR #11 (`40088fa906c22a4dde15d62279160e12c74da42a`, on `main` merge `855a0f59cc2ee38acc69d31acc1aea8aed4ba435`). The adapter consumes its `validateAssembly()` and the synthetic excavator fixture; it does not redefine that schema.
 
 ## Coordinate and unit conversion
 
@@ -51,11 +51,13 @@ The live path was exercised from the PR worktree with the local ignored `.env`: 
 - User text can create pending dimension or replacement proposals only; it cannot execute commands or mutate confirmed scene data.
 - Image payloads use the existing JPEG/PNG signature and size validation, server-only credentials and the existing origin/host/token guards.
 - Missing engineering shapes, points, limits, actuator topology or review authorization blocks adaptation instead of manufacturing verified constraints.
+- `Joint.origin` is written at q=0: the proposed reference pose is reconciled by removing the seed `referenceValue` motion. Forward-kinematics regression checks compare the adapted result with the proposal and the independent fixture reference pose.
+- Approved boom/stick lengths update local box geometry, named points, child joint anchors and related constraint provenance. Approved cylinder strokes update actuator maxima, slide limits and rod geometry. Observed dimensions without a coherent canonical mapping block adaptation explicitly.
 
 ## Verification
 
-- Focused reconstruction tests: 12 passed.
-- Full suite: 66 files, 1260 tests, zero failures.
+- Focused reconstruction tests: 16 passed.
+- Full suite: 66 files, 1339 tests, zero failures.
 - TypeScript and production build: passed; existing contact-variable and large-chunk warnings remain.
 - `git diff --check`: passed.
 
