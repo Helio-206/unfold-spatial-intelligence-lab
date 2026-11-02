@@ -3,7 +3,9 @@
 //   Corredor (10,0)-(14,6) e Despensa (14,0)-(17,3): a Despensa só encosta a metade do Corredor, e o Corredor perde o vértice
 //   onde a parede acaba (partilha parcial, bloqueada).
 // `confirmed` põe um valor confirmado em cada uma das divisões da fusão limpa (a área da Sala; a geometria da Cozinha).
-// Uso: npx tsx tests/e2e/wall-removal-merge-seed.ts <ficheiro-de-saída> [confirmed]   (escreve também <saída>.meta.json)
+// `transformed` dá à Sala uma translação própria (o motor recusa fundir: referencial diferente do da cena).
+// `verified-scale` confirma a escala da cena e a geometria da Sala e da Cozinha (o cartão passa a dizer «verificada»).
+// Uso: npx tsx tests/e2e/wall-removal-merge-seed.ts <ficheiro-de-saída> [confirmed|transformed|verified-scale]   (escreve também <saída>.meta.json)
 import { writeFileSync } from 'node:fs';
 import { executeSceneCommand, serializeSceneTransaction, validateSpatialScene, type PropertyProvenance } from '../../src/spatial-scene';
 import { dropVertexKeepRefs, mutateScene, nodeOf, sceneFromRooms, sharedWallId, wallBetween } from '../helpers/rooms';
@@ -31,6 +33,17 @@ if (variant === 'confirmed') {
   t = mutateScene(t, (scene) => {
     nodeOf(scene, 'sala').component!.properties.area = { value: 12, unit: 'm2', provenance: verified };
     nodeOf(scene, 'cozinha').geometry!.provenance = corrected;
+  });
+}
+if (variant === 'transformed') {
+  t = mutateScene(t, (scene) => { nodeOf(scene, 'sala').transform.translationM = [2, 0, 0]; });
+}
+if (variant === 'verified-scale') {
+  const at = '2026-11-01T10:00:00.000Z';
+  const verified: PropertyProvenance = { source: 'user', validation: 'verified', actor: 'reviewer', evidence: 'Escala conferida com uma cota medida em obra.', recordedAt: at };
+  t = mutateScene(t, (scene) => {
+    scene.imageWorldMapping!.provenance = verified;
+    for (const id of ['sala', 'cozinha']) nodeOf(scene, id).geometry!.provenance = { ...verified, evidence: 'Geometria conferida em obra.' };
   });
 }
 const valid = { ...t, scene: validateSpatialScene(t.scene), undoStack: [], redoStack: [] };

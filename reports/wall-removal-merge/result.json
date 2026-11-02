@@ -11,7 +11,59 @@
       "ok": true,
       "observed": {
         "remove": "1 parede",
-        "divisões": "Sala + Cozinha → 1 divisão, 21 m² · calculado",
+        "divisões": "Sala + Cozinha → 1 divisão",
+        "área calculada": "21 m²",
+        "escala": "fornecida pelo utilizador · por verificar",
+        "geometria": "das duas divisões por rever",
+        "área conservada": "ok · 21 m² = 12 + 9 m²",
+        "polígono simples": "ok",
+        "estrutura": "desconhecida · sem dados estruturais"
+      }
+    },
+    {
+      "scenario": "1 fusão limpa",
+      "name": "diz de que escala depende a área: fornecida pelo utilizador, por verificar, marcada como desconhecida",
+      "ok": true,
+      "observed": {
+        "hidden": false,
+        "label": "pré-visualização",
+        "title": "Remover Parede 2",
+        "why": "",
+        "rows": {
+          "remove": "1 parede",
+          "divisões": "Sala + Cozinha → 1 divisão",
+          "área calculada": "21 m²",
+          "escala": "fornecida pelo utilizador · por verificar",
+          "geometria": "das duas divisões por rever",
+          "área conservada": "ok · 21 m² = 12 + 9 m²",
+          "polígono simples": "ok",
+          "estrutura": "desconhecida · sem dados estruturais"
+        },
+        "unknownRows": [
+          "escala",
+          "geometria",
+          "estrutura"
+        ],
+        "confirm": true,
+        "close": false
+      }
+    },
+    {
+      "scenario": "1 fusão limpa",
+      "name": "diz que a geometria das divisões ainda não foi revista",
+      "ok": true,
+      "observed": "das duas divisões por rever"
+    },
+    {
+      "scenario": "1 fusão limpa",
+      "name": "não afirma escala verificada nem segurança estrutural",
+      "ok": true,
+      "observed": {
+        "remove": "1 parede",
+        "divisões": "Sala + Cozinha → 1 divisão",
+        "área calculada": "21 m²",
+        "escala": "fornecida pelo utilizador · por verificar",
+        "geometria": "das duas divisões por rever",
         "área conservada": "ok · 21 m² = 12 + 9 m²",
         "polígono simples": "ok",
         "estrutura": "desconhecida · sem dados estruturais"
@@ -40,12 +92,17 @@
         "why": "",
         "rows": {
           "remove": "1 parede",
-          "divisões": "Sala + Cozinha → 1 divisão, 21 m² · calculado",
+          "divisões": "Sala + Cozinha → 1 divisão",
+          "área calculada": "21 m²",
+          "escala": "fornecida pelo utilizador · por verificar",
+          "geometria": "das duas divisões por rever",
           "área conservada": "ok · 21 m² = 12 + 9 m²",
           "polígono simples": "ok",
           "estrutura": "desconhecida · sem dados estruturais"
         },
         "unknownRows": [
+          "escala",
+          "geometria",
           "estrutura"
         ],
         "confirm": true,
@@ -63,12 +120,17 @@
         "why": "",
         "rows": {
           "remove": "1 parede",
-          "divisões": "Sala + Cozinha → 1 divisão, 21 m² · calculado",
+          "divisões": "Sala + Cozinha → 1 divisão",
+          "área calculada": "21 m²",
+          "escala": "fornecida pelo utilizador · por verificar",
+          "geometria": "das duas divisões por rever",
           "área conservada": "ok · 21 m² = 12 + 9 m²",
           "polígono simples": "ok",
           "estrutura": "desconhecida · sem dados estruturais"
         },
         "unknownRows": [
+          "escala",
+          "geometria",
           "estrutura"
         ],
         "confirm": true,
@@ -141,8 +203,8 @@
           "provenance": {
             "source": "derived",
             "validation": "unreviewed",
-            "recordedAt": "2026-11-02T14:47:35.167Z",
-            "evidence": "Área calculada pelo motor a partir do polígono resultante; não vem de nenhum documento nem foi escrita à mão."
+            "recordedAt": "2026-11-02T15:27:14.697Z",
+            "evidence": "Área calculada pelo motor a partir do polígono resultante; não vem de nenhum documento nem foi escrita à mão. Os metros dependem da escala da cena, fornecida pelo utilizador, por verificar."
           }
         }
       }
@@ -154,7 +216,7 @@
       "observed": {
         "source": "derived",
         "validation": "unreviewed",
-        "recordedAt": "2026-11-02T14:47:35.167Z",
+        "recordedAt": "2026-11-02T15:27:14.697Z",
         "evidence": "Divisão resultante da remoção de Parede 2: união de Sala e Cozinha, calculada pelo motor a partir dos dois polígonos."
       }
     },
@@ -318,11 +380,14 @@
     },
     {
       "scenario": "3 valores confirmados",
-      "name": "mostra a mesma fusão (21 m²)",
+      "name": "mostra a mesma fusão (21 m²) e a escala por verificar",
       "ok": true,
       "observed": {
         "remove": "1 parede",
-        "divisões": "Sala + Cozinha → 1 divisão, 21 m² · calculado",
+        "divisões": "Sala + Cozinha → 1 divisão",
+        "área calculada": "21 m²",
+        "escala": "fornecida pelo utilizador · por verificar",
+        "geometria": "das duas divisões por rever",
         "área conservada": "ok · 21 m² = 12 + 9 m²",
         "polígono simples": "ok",
         "estrutura": "desconhecida · sem dados estruturais"
@@ -367,8 +432,8 @@
         "provenance": {
           "source": "derived",
           "validation": "unreviewed",
-          "recordedAt": "2026-11-02T14:47:55.174Z",
-          "evidence": "Área calculada pelo motor a partir do polígono resultante; não vem de nenhum documento nem foi escrita à mão."
+          "recordedAt": "2026-11-02T15:27:31.963Z",
+          "evidence": "Área calculada pelo motor a partir do polígono resultante; não vem de nenhum documento nem foi escrita à mão. Os metros dependem da escala da cena, fornecida pelo utilizador, por verificar."
         }
       }
     },
@@ -404,7 +469,10 @@
       "observed": {
         "card": {
           "remove": "1 parede",
-          "divisões": "Sala + Cozinha → 1 divisão, 21 m² · calculado",
+          "divisões": "Sala + Cozinha → 1 divisão",
+          "área calculada": "21 m²",
+          "escala": "fornecida pelo utilizador · por verificar",
+          "geometria": "das duas divisões por rever",
           "área conservada": "ok · 21 m² = 12 + 9 m²",
           "polígono simples": "ok",
           "estrutura": "desconhecida · sem dados estruturais"
@@ -483,12 +551,17 @@
         "why": "Atenção: esta alteração toca em valores confirmados (Cozinha: geometria; Sala: área). «Aplicar» autoriza-a.",
         "rows": {
           "remove": "1 parede",
-          "divisões": "Sala + Cozinha → 1 divisão, 21 m² · calculado",
+          "divisões": "Sala + Cozinha → 1 divisão",
+          "área calculada": "21 m²",
+          "escala": "fornecida pelo utilizador · por verificar",
+          "geometria": "das duas divisões por rever",
           "área conservada": "ok · 21 m² = 12 + 9 m²",
           "polígono simples": "ok",
           "estrutura": "desconhecida · sem dados estruturais"
         },
         "unknownRows": [
+          "escala",
+          "geometria",
           "estrutura"
         ],
         "confirm": true,
@@ -568,7 +641,7 @@
             "source": "user",
             "validation": "unreviewed",
             "actor": "local-user-input",
-            "recordedAt": "2026-11-02T14:48:16.463Z"
+            "recordedAt": "2026-11-02T15:27:49.629Z"
           }
         },
         {
@@ -577,7 +650,7 @@
             "source": "user",
             "validation": "unreviewed",
             "actor": "local-user-input",
-            "recordedAt": "2026-11-02T14:48:18.734Z"
+            "recordedAt": "2026-11-02T15:27:51.300Z"
           }
         }
       ]
@@ -615,11 +688,14 @@
     },
     {
       "scenario": "5 nomes e inglês",
-      "name": "o cartão usa os nomes que a pessoa deu: «Living room + Kitchen → 1 divisão, 21 m²»",
+      "name": "o cartão usa os nomes que a pessoa deu: «Living room + Kitchen → 1 divisão», 21 m²",
       "ok": true,
       "observed": {
         "remove": "1 parede",
-        "divisões": "Living room + Kitchen → 1 divisão, 21 m² · calculado",
+        "divisões": "Living room + Kitchen → 1 divisão",
+        "área calculada": "21 m²",
+        "escala": "fornecida pelo utilizador · por verificar",
+        "geometria": "das duas divisões por rever",
         "área conservada": "ok · 21 m² = 12 + 9 m²",
         "polígono simples": "ok",
         "estrutura": "desconhecida · sem dados estruturais"
@@ -663,6 +739,306 @@
     },
     {
       "scenario": "5 recusas do comando",
+      "name": "sem erros de consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "7 divisão transformada",
+      "name": "o cartão aparece",
+      "ok": true
+    },
+    {
+      "scenario": "7 divisão transformada",
+      "name": "cartão de bloqueio com o código e a razão por extenso (referencial próprio)",
+      "ok": true,
+      "observed": "Uma das divisões (ou das paredes do seu contorno) tem posição, rotação, escala ou grupo próprios. O motor só funde divisões cujo polígono está já no referencial da cena: converter referenciais a meio podia dar uma união que não é a que se vê, por isso não a faz. ROOM_MERGE_UNSUPPORTED_TRANSFORM"
+    },
+    {
+      "scenario": "7 divisão transformada",
+      "name": "não há Confirmar, só Fechar; a estrutura continua desconhecida",
+      "ok": true,
+      "observed": {
+        "hidden": false,
+        "label": "remoção bloqueada",
+        "title": "Parede 2",
+        "why": "Uma das divisões (ou das paredes do seu contorno) tem posição, rotação, escala ou grupo próprios. O motor só funde divisões cujo polígono está já no referencial da cena: converter referenciais a meio podia dar uma união que não é a que se vê, por isso não a faz. ROOM_MERGE_UNSUPPORTED_TRANSFORM",
+        "rows": {
+          "estrutura": "desconhecida · sem dados estruturais"
+        },
+        "unknownRows": [
+          "estrutura"
+        ],
+        "confirm": false,
+        "close": true
+      }
+    },
+    {
+      "scenario": "7 divisão transformada",
+      "name": "o bloqueio não mostra área nem escala (não há fusão)",
+      "ok": true,
+      "observed": {
+        "estrutura": "desconhecida · sem dados estruturais"
+      }
+    },
+    {
+      "scenario": "7 divisão transformada",
+      "name": "nada foi aplicado: revisão, persistência e Aplicar intactos",
+      "ok": true,
+      "observed": {
+        "previewStatus": "",
+        "commitDisabled": true,
+        "cmdState": "IDLE",
+        "cmdMsg": "Editor arquitectónico activo. Comandos locais passam por preview e confirmação; a IA não escreve directamente na cena.",
+        "spatial": "Remoção bloqueada: Uma das divisões (ou das paredes do seu contorno) tem posição, rotação, escala ou grupo próprios. O motor só funde divisões cujo polígono está já no referencial da cena: converter referenciais a meio podia dar uma união que não é a que se vê, por isso não a faz.",
+        "list": [
+          "wall-edge-0-0-400-0|Parede 1",
+          "wall-edge-400-0-400-300|Parede 2",
+          "wall-edge-0-300-400-300|Parede 3",
+          "wall-edge-0-0-0-300|Parede 4",
+          "sala|Sala",
+          "wall-edge-400-0-700-0|Parede 5",
+          "wall-edge-700-0-700-300|Parede 6",
+          "wall-edge-400-300-700-300|Parede 7",
+          "cozinha|Cozinha",
+          "wall-edge-1000-0-1400-0|Parede 8",
+          "wall-edge-1400-0-1400-300|Parede 9",
+          "wall-edge-1400-300-1400-600|Parede 10",
+          "wall-edge-1000-600-1400-600|Parede 11",
+          "wall-edge-1000-0-1000-600|Parede 12",
+          "corredor|Corredor",
+          "wall-edge-1400-0-1700-0|Parede 13",
+          "wall-edge-1700-0-1700-300|Parede 14",
+          "wall-edge-1400-300-1700-300|Parede 15",
+          "despensa|Despensa"
+        ]
+      }
+    },
+    {
+      "scenario": "7 divisão transformada",
+      "name": "Fechar fecha o cartão e continua tudo igual",
+      "ok": true,
+      "observed": {
+        "hidden": true,
+        "same": true
+      }
+    },
+    {
+      "scenario": "7 divisão transformada",
+      "name": "sem erros de consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "8 editar, fundir, editar",
+      "name": "editar a parede exterior da Sala alarga a Sala (5 × 3 = 15 m²) por uma só revisão",
+      "ok": true,
+      "observed": {
+        "area": 15,
+        "rev": 5
+      }
+    },
+    {
+      "scenario": "8 editar, fundir, editar",
+      "name": "o cartão da fusão aparece depois da edição",
+      "ok": true
+    },
+    {
+      "scenario": "8 editar, fundir, editar",
+      "name": "a área calculada vem do polígono editado: 15 + 9 = 24 m², com a escala por verificar",
+      "ok": true,
+      "observed": {
+        "remove": "1 parede",
+        "divisões": "Sala + Cozinha → 1 divisão",
+        "área calculada": "24 m²",
+        "escala": "fornecida pelo utilizador · por verificar",
+        "geometria": "das duas divisões por rever",
+        "área conservada": "ok · 24 m² = 15 + 9 m²",
+        "polígono simples": "ok",
+        "estrutura": "desconhecida · sem dados estruturais"
+      }
+    },
+    {
+      "scenario": "8 editar, fundir, editar",
+      "name": "confirmar aplica a fusão",
+      "ok": true
+    },
+    {
+      "scenario": "8 editar, fundir, editar",
+      "name": "a divisão fundida tem 24 m² e as referências completas: todas as paredes de que depende, nenhuma da removida",
+      "ok": true,
+      "observed": {
+        "kind": "room",
+        "dependsOn": [
+          "wall-edge-0-0-400-0",
+          "wall-edge-0-300-400-300",
+          "wall-edge-0-0-0-300",
+          "wall-edge-400-0-700-0",
+          "wall-edge-700-0-700-300",
+          "wall-edge-400-300-700-300"
+        ],
+        "properties": {
+          "boundaryRefs": {
+            "value": "[{\"wallId\":\"wall-edge-0-0-400-0\",\"startIndex\":1,\"endIndex\":0,\"startEndpoint\":\"a\",\"endEndpoint\":\"b\"},{\"wallId\":\"wall-edge-0-300-400-300\",\"startIndex\":3,\"endIndex\":2,\"startEndpoint\":\"a\",\"endEndpoint\":\"b\"},{\"wallId\":\"wall-edge-0-0-0-300\",\"startIndex\":2,\"endIndex\":1,\"startEndpoint\":\"a\",\"endEndpoint\":\"b\"},{\"wallId\":\"wall-edge-400-0-700-0\",\"startIndex\":0,\"endIndex\":5,\"startEndpoint\":\"a\",\"endEndpoint\":\"b\"},{\"wallId\":\"wall-edge-700-0-700-300\",\"startIndex\":5,\"endIndex\":4,\"startEndpoint\":\"a\",\"endEndpoint\":\"b\"},{\"wallId\":\"wall-edge-400-300-700-300\",\"startIndex\":4,\"endIndex\":3,\"startEndpoint\":\"a\",\"endEndpoint\":\"b\"}]",
+            "provenance": {
+              "source": "derived",
+              "validation": "unreviewed",
+              "recordedAt": "2026-11-02T15:28:11.108Z",
+              "evidence": "Divisão resultante da remoção de Parede 2: união de Sala e Cozinha, calculada pelo motor a partir dos dois polígonos."
+            }
+          },
+          "mergedFrom": {
+            "value": "[\"sala\",\"cozinha\"]",
+            "provenance": {
+              "source": "derived",
+              "validation": "unreviewed",
+              "recordedAt": "2026-11-02T15:28:11.108Z",
+              "evidence": "Divisão resultante da remoção de Parede 2: união de Sala e Cozinha, calculada pelo motor a partir dos dois polígonos."
+            }
+          },
+          "removedWall": {
+            "value": "wall-edge-400-0-400-300",
+            "provenance": {
+              "source": "derived",
+              "validation": "unreviewed",
+              "recordedAt": "2026-11-02T15:28:11.108Z",
+              "evidence": "Divisão resultante da remoção de Parede 2: união de Sala e Cozinha, calculada pelo motor a partir dos dois polígonos."
+            }
+          },
+          "area": {
+            "value": 24,
+            "unit": "m2",
+            "provenance": {
+              "source": "derived",
+              "validation": "unreviewed",
+              "recordedAt": "2026-11-02T15:28:11.108Z",
+              "evidence": "Área calculada pelo motor a partir do polígono resultante; não vem de nenhum documento nem foi escrita à mão. Os metros dependem da escala da cena, fornecida pelo utilizador, por verificar."
+            }
+          }
+        }
+      }
+    },
+    {
+      "scenario": "8 editar, fundir, editar",
+      "name": "uma só revisão para a fusão (R+2)",
+      "ok": true,
+      "observed": 6
+    },
+    {
+      "scenario": "8 editar, fundir, editar",
+      "name": "editar a mesma parede outra vez depois da fusão faz a divisão fundida seguir (x mínimo −2, 27 m²)",
+      "ok": true,
+      "observed": {
+        "minX": -2,
+        "area": 27
+      }
+    },
+    {
+      "scenario": "8 editar, fundir, editar",
+      "name": "a divisão fundida continua derivada e por rever",
+      "ok": true,
+      "observed": {
+        "source": "derived",
+        "validation": "unreviewed",
+        "recordedAt": "2026-11-02T15:28:13.929Z",
+        "evidence": "Polígono recalculado após edição da parede wall-edge-0-0-0-300; geometria derivada permanece por rever."
+      }
+    },
+    {
+      "scenario": "8 editar, fundir, editar",
+      "name": "desfazer três vezes devolve a cena inicial, com o conteúdo de antes",
+      "ok": true,
+      "observed": {
+        "undo": 0,
+        "redo": 3
+      }
+    },
+    {
+      "scenario": "8 editar, fundir, editar",
+      "name": "refazer três vezes repõe exactamente o estado depois da segunda edição",
+      "ok": true,
+      "observed": {
+        "undo": 3,
+        "redo": 0
+      }
+    },
+    {
+      "scenario": "8 editar, fundir, editar",
+      "name": "sem erros de consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "9 escala verificada",
+      "name": "o cartão aparece",
+      "ok": true
+    },
+    {
+      "scenario": "9 escala verificada",
+      "name": "a escala aparece como verificada e sem marca de desconhecida",
+      "ok": true,
+      "observed": {
+        "hidden": false,
+        "label": "pré-visualização",
+        "title": "Remover Parede 2",
+        "why": "Atenção: esta alteração toca em valores confirmados (Cozinha: geometria; Sala: geometria). «Aplicar» autoriza-a.",
+        "rows": {
+          "remove": "1 parede",
+          "divisões": "Sala + Cozinha → 1 divisão",
+          "área calculada": "21 m²",
+          "escala": "fornecida pelo utilizador · verificada",
+          "geometria": "das duas divisões confirmada",
+          "área conservada": "ok · 21 m² = 12 + 9 m²",
+          "polígono simples": "ok",
+          "estrutura": "desconhecida · sem dados estruturais"
+        },
+        "unknownRows": [
+          "estrutura"
+        ],
+        "confirm": true,
+        "close": false
+      }
+    },
+    {
+      "scenario": "9 escala verificada",
+      "name": "a geometria das duas divisões aparece como confirmada",
+      "ok": true,
+      "observed": "das duas divisões confirmada"
+    },
+    {
+      "scenario": "9 escala verificada",
+      "name": "a estrutura continua desconhecida, mesmo com escala verificada",
+      "ok": true,
+      "observed": {
+        "hidden": false,
+        "label": "pré-visualização",
+        "title": "Remover Parede 2",
+        "why": "Atenção: esta alteração toca em valores confirmados (Cozinha: geometria; Sala: geometria). «Aplicar» autoriza-a.",
+        "rows": {
+          "remove": "1 parede",
+          "divisões": "Sala + Cozinha → 1 divisão",
+          "área calculada": "21 m²",
+          "escala": "fornecida pelo utilizador · verificada",
+          "geometria": "das duas divisões confirmada",
+          "área conservada": "ok · 21 m² = 12 + 9 m²",
+          "polígono simples": "ok",
+          "estrutura": "desconhecida · sem dados estruturais"
+        },
+        "unknownRows": [
+          "estrutura"
+        ],
+        "confirm": true,
+        "close": false
+      }
+    },
+    {
+      "scenario": "9 escala verificada",
+      "name": "o preview não altera nada",
+      "ok": true,
+      "observed": 4
+    },
+    {
+      "scenario": "9 escala verificada",
       "name": "sem erros de consola",
       "ok": true,
       "observed": []
