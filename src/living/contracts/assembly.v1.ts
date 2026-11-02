@@ -295,6 +295,26 @@ export function validateAssembly(value: unknown): AssemblyValidation {
     else if (typeof frame.parentFrameId !== 'string' || !frameIds.has(frame.parentFrameId)) add('UNKNOWN_REFERENCE', path, 'Pai desconhecido.');
   });
 
+  // Toda a cadeia de pais tem de chegar ao mundo: um ciclo (A → B → A, ou um referencial pai de si próprio) nunca chega.
+  const parentFrame = new Map<string, string | null>();
+  for (const frame of frames) if (isObject(frame) && typeof frame.id === 'string' && !parentFrame.has(frame.id)) parentFrame.set(frame.id, typeof frame.parentFrameId === 'string' ? frame.parentFrameId : null);
+  const reachesWorld = new Map<string, boolean>();
+  const worldId = (worlds[0] as { id?: string } | undefined)?.id;
+  for (const start of parentFrame.keys()) {
+    const chain: string[] = []; let cursor: string | null | undefined = start; let ok = false;
+    while (cursor !== null && cursor !== undefined) {
+      if (cursor === worldId) { ok = true; break; }
+      if (reachesWorld.has(cursor)) { ok = reachesWorld.get(cursor)!; break; }
+      if (chain.includes(cursor)) break;
+      chain.push(cursor); cursor = parentFrame.get(cursor);
+    }
+    for (const id of chain) reachesWorld.set(id, ok);
+    if (!ok && !reachesWorld.has(start)) reachesWorld.set(start, false);
+  }
+  frames.forEach((frame, i) => {
+    if (isObject(frame) && typeof frame.id === 'string' && frame.kind === 'static' && reachesWorld.get(frame.id) === false) add('INVALID_FRAME', `$.frames[${i}].parentFrameId`, `A cadeia de pais de ${frame.id} não chega ao mundo (ciclo ou pai em falta).`);
+  });
+
   // Partes.
   const partIds = new Set<string>();
   const pointsByPart = new Map<string, Set<string>>();
@@ -337,6 +357,7 @@ export function validateAssembly(value: unknown): AssemblyValidation {
   else {
     if (typeof root.partId !== 'string' || !partIds.has(root.partId)) add('UNKNOWN_REFERENCE', '$.root.partId', 'Parte raiz desconhecida.');
     if (typeof root.frameId !== 'string' || !frameIds.has(root.frameId)) add('UNKNOWN_REFERENCE', '$.root.frameId', 'Referencial da raiz desconhecido.');
+    else if (reachesWorld.get(root.frameId) === false) add('INVALID_FRAME', '$.root.frameId', 'O referencial da raiz não chega ao mundo.');
     poseOk('$.root.pose', root.pose);
   }
 
