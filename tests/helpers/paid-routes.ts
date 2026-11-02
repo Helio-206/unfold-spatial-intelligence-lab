@@ -6,6 +6,7 @@ import { vi } from 'vitest';
 import { createMetaServer, type ServerOptions } from '../../server/meta-server';
 import { createPhase3DReferenceFixture } from '../../src/phase3d-fixture';
 import { SPATIAL_AGENT_REQUEST_SCHEMA } from '../../src/spatial-agent';
+import { createOfflineTextObservation } from '../../src/living/reconstruction/observation';
 
 export const ALLOWED_ORIGIN = 'http://127.0.0.1:5173';
 const validJpegDataUrl = 'data:image/jpeg;base64,/9j/4AA=';
@@ -43,6 +44,10 @@ export function paidRouteCases(): Record<string, PaidRouteCase> {
         history: [],
       },
       upstreamText: JSON.stringify({ schema: 'spatial_agent_result.v1', kind: 'PROPOSE_ACTION', text: 'Proponho aumentar a parede seleccionada em 30 cm.', basis: 'scene', evidenceIds: ['wall-a'], question: null, action: { kind: 'Resize', target: { reference: 'selected', label: null, ordinal: null }, value: 0.3, valueMode: 'increase_by', unit: 'm', axis: null, opening: null } }),
+    },
+    '/api/living/reconstruction': {
+      body: { sourceKind: 'text', instruction: 'Escavadora', sourceReference: 'guard-fixture' },
+      upstreamText: JSON.stringify(createOfflineTextObservation('Escavadora', 'guard-fixture')),
     },
   };
 }

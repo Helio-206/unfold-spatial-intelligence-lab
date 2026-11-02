@@ -194,7 +194,7 @@
   .source-panel.reference-hidden { transform: translateY(calc(100% + 80px)); }
   .spatial-lab:has(.inspector:not([hidden])) .source-panel { display: none; }
   .stage-empty { top: 34%; width: calc(100vw - 32px); }
-  .spatial-toolbar { left: var(--space-2); right: var(--space-2); bottom: var(--space-2); transform: none; justify-content: flex-start; max-width: none; }
+  .spatial-toolbar { left: var(--space-2); right: var(--space-2); bottom: var(--space-2); transform: none; justify-content: flex-start; max-width: none; width: auto; }
   .spatial-status { bottom: auto; top: 128px; pointer-events: none; left: var(--space-2); right: var(--space-2); transform: none; width: auto; max-width: none; }
   .spatial-metrics { display: none; }
   .dimensions-grid { grid-template-columns: 1fr; }
@@ -220,3 +220,23 @@
 /* The card takes the inspector's place while it is open. */
 .spatial-lab:has(.removal-card:not([hidden])) .inspector { visibility: hidden; }
 @media (max-width: 700px) { .removal-card { left: var(--space-2); right: var(--space-2); top: auto; bottom: 72px; width: auto; } }
+
+/* Visual profile switch and image export. Same controls, spacing and tokens as the rest of the toolbar. */
+.quality-switch { flex: 0 0 auto; display: flex; padding: 2px; border: 1px solid var(--line); border-radius: var(--radius-md); }
+.quality-switch button { min-width: 0; border-radius: var(--radius-sm); white-space: nowrap; }
+.spatial-toolbar #export-image { white-space: nowrap; }
+.export-menu { position: absolute; z-index: 7; display: grid; min-width: 190px; padding: var(--space-1); background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-lg); }
+.export-menu button { min-height: 44px; padding: 0 var(--space-3); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--ink); text-align: left; font-family: var(--font-mono); font-size: var(--type-data-size); cursor: pointer; }
+.export-menu button:hover { background: var(--surface-sunken); }
+.export-menu small { display: block; color: var(--ink-muted); font-family: var(--font-sans); font-size: var(--type-label-size); }
+.export-card { position: absolute; z-index: 6; right: var(--space-4); bottom: 148px; width: 340px; padding: var(--space-3) var(--space-4); background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-lg); }
+.export-card p { margin: 0 0 var(--space-3); font-size: var(--type-small-size); line-height: var(--type-small-line); }
+.export-card[data-state="error"] { border-style: dashed; border-color: var(--fold-ink); }
+.export-card[data-state="busy"] p::after { content: ''; display: block; height: 2px; margin-top: var(--space-2); background: linear-gradient(90deg, var(--fold) 0 var(--export-progress, 0%), var(--line) var(--export-progress, 0%)); }
+.export-actions { display: flex; gap: var(--space-2); }
+.export-actions .u-btn { flex: 1; padding: 0 var(--space-3); }
+@media (max-width: 700px) { .export-card { left: var(--space-2); right: var(--space-2); bottom: 72px; width: auto; } .quality-switch button { padding: 0 var(--space-2); } }
+.view-controls { position: absolute; z-index: 5; top: 112px; left: 50%; transform: translateX(-50%); width: max-content; display: flex; align-items: center; gap: var(--space-1); max-width: calc(100vw - 32px); padding: var(--space-1); background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-lg); }
+.view-controls > button { flex: 0 0 auto; min-width: 44px; min-height: 44px; padding: 0 var(--space-3); border-color: transparent; border-radius: var(--radius-md); font-size: var(--type-small-size); white-space: nowrap; }
+.view-controls > button:hover:not(:disabled) { border-color: var(--ink-muted); }
+@media (max-width: 700px) { .view-controls { top: 192px; max-width: calc(100vw - 16px); } .view-controls > button { padding: 0 var(--space-2); } }
