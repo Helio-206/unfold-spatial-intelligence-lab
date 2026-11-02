@@ -1,5 +1,5 @@
 {
-  "measuredAt": "2026-11-02T21:43:49.349Z",
+  "measuredAt": "2026-11-02T21:54:25.523Z",
   "viewport": {
     "width": 1600,
     "height": 1000
@@ -8,8 +8,8 @@
   "orbit4s": {
     "frames": 3,
     "fps": 0.75,
-    "p50": 2015.5,
-    "p95": 2222.70000000007,
+    "p50": 2015.2999999998137,
+    "p95": 2163.7999999998137,
     "stats": {
       "profile": "realtime",
       "drawCalls": 139,
@@ -17,8 +17,8 @@
       "geometries": 68,
       "textures": 19,
       "programs": 15,
-      "lastFrameMs": 1.900000000023283,
-      "frames": 60,
+      "lastFrameMs": 1.7999999998137355,
+      "frames": 64,
       "pixelRatio": 1,
       "motion": false,
       "size": [

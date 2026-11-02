@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-02T21:51:11.153Z",
+  "generatedAt": "2026-11-02T22:01:24.504Z",
   "renderer": "Chromium via playwright-core; SwiftShader software WebGL in this container",
   "apiCalls": 3,
   "apiCallsNote": "All /api calls were intercepted in the browser (mocked). No model was called.",
@@ -46,7 +46,7 @@
     },
     {
       "name": "hand tracks the target through camera motion",
-      "ok": false,
+      "ok": true,
       "detail": "{\"before\":[888.2181698971016,542.9063022732637],\"after\":[838.4175038495847,538.9787281962006]}"
     },
     {
@@ -62,7 +62,7 @@
     {
       "name": "user input interrupts the assistant camera move at once",
       "ok": true,
-      "detail": "{\"position\":[-9.586482241211991,2.5068335814171645,4.4354940821311315],\"target\":[2.599937593567904,1.5999865239840445,0],\"transitioning\":false,\"owner\":\"user_pointer\"}"
+      "detail": "{\"position\":[-9.58624649827598,2.506834158673628,4.4354309928031945],\"target\":[2.6,1.6,0],\"transitioning\":false,\"owner\":\"user_pointer\"}"
     },
     {
       "name": "assistant may not move the camera right after user input",
@@ -167,12 +167,12 @@
     {
       "name": "performance measured at rest resolution",
       "ok": true,
-      "detail": "{\"fps\":\"0.75\",\"p50ms\":\"2016\",\"drawCalls\":139,\"triangles\":512925,\"pixelRatio\":1,\"software\":true}"
+      "detail": "{\"fps\":\"0.75\",\"p50ms\":\"2015\",\"drawCalls\":139,\"triangles\":512925,\"pixelRatio\":1,\"software\":true}"
     },
     {
       "name": "frame latency distribution recorded",
       "ok": true,
-      "detail": "{\"pixelRatio\":1,\"p50ms\":\"2015.5\",\"p95ms\":\"2222.7\",\"drawCalls\":139,\"triangles\":512925,\"software\":true}"
+      "detail": "{\"pixelRatio\":1,\"p50ms\":\"2015.3\",\"p95ms\":\"2163.8\",\"drawCalls\":139,\"triangles\":512925,\"software\":true}"
     },
     {
       "name": "interaction responsiveness (fixture ask → grounded)",
