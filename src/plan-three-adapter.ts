@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 import type { Node, SpatialSceneV1 } from './spatial-scene';
-import { buildArchitecturalGroup, type BuildOptions } from './rendering/architecture';
+import { getMaterials } from './rendering/materials';
+import { disposeOwnedGeometries } from './rendering/lifecycle';
+import type { VisualQuality } from './rendering/quality';
+import { buildArchitecturalGroup, buildWallGeometry, openingRects, type BuildOptions } from './rendering/architecture';
 import { gsap } from 'gsap';
 import { DURATION, EASE } from './motion/tokens';
 import { prefersReducedMotion } from './motion';
-
-const wallMaterial = new THREE.MeshStandardMaterial({ color: 0xc9c5b8, roughness: 0.88 });
 
 export const ARCHITECTURAL_MODULE_DIMENSIONS: Record<string, [number, number, number]> = {
   wall_ext_3000: [3, 2.8, 0.2],
@@ -18,51 +19,11 @@ export const ARCHITECTURAL_MODULE_DIMENSIONS: Record<string, [number, number, nu
 };
 export type ArchitecturalAssets = Partial<Record<keyof typeof ARCHITECTURAL_MODULE_DIMENSIONS, THREE.Object3D>>;
 
-function markSharedAsset(object: THREE.Object3D): THREE.Object3D {
-  object.userData.sharedAsset = true;
-  return object;
-}
-
-function rectangle(x0: number, y0: number, x1: number, y1: number): THREE.Path {
-  const path = new THREE.Path();
-  path.moveTo(x0, y0);
-  path.lineTo(x1, y0);
-  path.lineTo(x1, y1);
-  path.lineTo(x0, y1);
-  path.lineTo(x0, y0);
-  return path;
-}
-
-function wallMesh(node: Node, openings: Node[], assets: ArchitecturalAssets): THREE.Object3D | undefined {
+/** The same wall solid the architectural group draws (same extrusion, same openings), so a removal preview never differs from the wall it previews. */
+function wallMesh(node: Node, openings: Node[]): THREE.Mesh | undefined {
   if (node.geometry?.kind !== 'box') return undefined;
   const [length, height, thickness] = node.geometry.sizeM;
-  if (openings.length === 0 && assets.wall_ext_3000) {
-    const wall = markSharedAsset(assets.wall_ext_3000.clone(true));
-    const scale = [length / 3, height / 2.8, thickness / 0.2];
-    wall.scale.set(scale[0]!, scale[1]!, scale[2]!);
-    wall.position.set(-1.5 * scale[0]!, 0, 0);
-    return wall;
-  }
-  const shape = new THREE.Shape();
-  shape.moveTo(-length / 2, 0);
-  shape.lineTo(-length / 2, height);
-  shape.lineTo(length / 2, height);
-  shape.lineTo(length / 2, 0);
-  shape.lineTo(-length / 2, 0);
-  for (const opening of openings) {
-    const offset = opening.component?.properties.offset?.value;
-    const width = opening.component?.properties.width?.value;
-    const openingHeight = opening.component?.properties.height?.value;
-    const sill = opening.component?.properties.sill?.value;
-    if (![offset, width, openingHeight, sill].every((value) => typeof value === 'number' && Number.isFinite(value))) continue;
-    const x0 = -length / 2 + Number(offset);
-    const x1 = x0 + Number(width);
-    if (x0 < -length / 2 || x1 > length / 2 || Number(sill) < 0 || Number(sill) + Number(openingHeight) > height) continue;
-    shape.holes.push(rectangle(x0, Number(sill), x1, Number(sill) + Number(openingHeight)));
-  }
-  const geometry = new THREE.ExtrudeGeometry(shape, { depth: thickness, bevelEnabled: false, curveSegments: 1, steps: 1 });
-  geometry.translate(0, 0, -thickness / 2);
-  return new THREE.Mesh(geometry, wallMaterial);
+  return new THREE.Mesh(buildWallGeometry(length, height, thickness, openingRects(node, openings)));
 }
 
 function applyTransform(object: THREE.Object3D, node: Node): void {
@@ -93,11 +54,11 @@ export type RemovalGhost = {
   dispose(): void;
 };
 
-export function buildRemovalGhost(scene: SpatialSceneV1, wallId: string, edgeColor: number, assets: ArchitecturalAssets = {}): RemovalGhost | undefined {
+export function buildRemovalGhost(scene: SpatialSceneV1, wallId: string, edgeColor: number, _assets: ArchitecturalAssets = {}, quality: VisualQuality = 'technical'): RemovalGhost | undefined {
   const node = scene.nodes.find((item) => item.id === wallId);
   if (!node || node.component?.kind !== 'wall') return undefined;
   const attached = scene.nodes.filter((item) => item.nodeType === 'component' && item.component?.dependsOn.includes(node.id) && (item.component.kind === 'door' || item.component.kind === 'window'));
-  const mesh = wallMesh(node, attached, assets);
+  const mesh = wallMesh(node, attached);
   if (!mesh) return undefined;
 
   const chain: Node[] = [];
@@ -108,9 +69,9 @@ export function buildRemovalGhost(scene: SpatialSceneV1, wallId: string, edgeCol
   for (const link of chain) { const holder = new THREE.Group(); applyTransform(holder, link); parent.add(holder); parent = holder; }
   parent.add(mesh);
 
-  const fill = new THREE.MeshStandardMaterial({ color: 0xc9c5b8, roughness: 0.88, transparent: true, opacity: 0.92, depthWrite: false });
+  const wall = getMaterials(quality).m.wallFace; // the ghost wears the same plaster as the wall it previews
+  const fill = new THREE.MeshStandardMaterial({ color: wall.color.clone(), roughness: wall.roughness, transparent: true, opacity: 0.92, depthWrite: false });
   const edge = new THREE.LineDashedMaterial({ color: edgeColor, dashSize: 0.16, gapSize: 0.1, transparent: true, opacity: 0, depthTest: false });
-  const ownGeometry: THREE.BufferGeometry[] = [];
   const meshes: THREE.Mesh[] = [];
   mesh.traverse((object) => { if (object instanceof THREE.Mesh) meshes.push(object); });
   for (const item of meshes) {
@@ -120,7 +81,6 @@ export function buildRemovalGhost(scene: SpatialSceneV1, wallId: string, edgeCol
     lines.computeLineDistances();
     lines.renderOrder = 3;
     item.add(lines);
-    ownGeometry.push(lines.geometry);
   }
 
   return {
@@ -139,8 +99,7 @@ export function buildRemovalGhost(scene: SpatialSceneV1, wallId: string, edgeCol
     dispose() {
       gsap.killTweensOf([fill, edge]);
       fill.dispose(); edge.dispose();
-      ownGeometry.forEach((geometry) => geometry.dispose());
-      for (const item of meshes) if (!item.parent?.userData.sharedAsset && !item.userData.sharedAsset) item.geometry.dispose();
+      disposeOwnedGeometries(group); // the wall solid and its edge lines, once
     },
   };
 }
