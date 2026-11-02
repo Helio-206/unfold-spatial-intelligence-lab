@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-02T19:55:32.456Z",
+  "generatedAt": "2026-11-02T20:36:16.856Z",
   "renderer": "Chromium via playwright-core; SwiftShader software WebGL in this container",
   "apiCalls": 3,
   "apiCallsNote": "All /api calls were intercepted in the browser (mocked). No model was called.",
@@ -167,22 +167,22 @@
     {
       "name": "performance measured at rest resolution",
       "ok": true,
-      "detail": "{\"fps\":\"1.00\",\"p50ms\":\"1872\",\"drawCalls\":139,\"triangles\":511461,\"pixelRatio\":1,\"software\":true}"
+      "detail": "{\"fps\":\"0.75\",\"p50ms\":\"2126\",\"drawCalls\":139,\"triangles\":512925,\"pixelRatio\":1,\"software\":true}"
     },
     {
       "name": "frame latency distribution recorded",
       "ok": true,
-      "detail": "{\"pixelRatio\":1,\"p50ms\":\"1871.9\",\"p95ms\":\"6257.9\",\"drawCalls\":139,\"triangles\":511461,\"software\":true}"
+      "detail": "{\"pixelRatio\":1,\"p50ms\":\"2126.3\",\"p95ms\":\"2170.1\",\"drawCalls\":139,\"triangles\":512925,\"software\":true}"
     },
     {
       "name": "interaction responsiveness (fixture ask → grounded)",
       "ok": true,
-      "detail": "21 ms"
+      "detail": "23 ms"
     },
     {
       "name": "dispose removes canvas and DOM",
       "ok": true,
-      "detail": "{\"before\":{\"geometries\":68,\"textures\":15},\"canvas\":false,\"root\":false}"
+      "detail": "{\"before\":{\"geometries\":68,\"textures\":19},\"canvas\":false,\"root\":false}"
     },
     {
       "name": "no page errors in workspace session",
@@ -237,22 +237,27 @@
     {
       "name": "golden capture 02-golden-frame",
       "ok": true,
-      "detail": "{\"profile\":\"export\",\"size\":[3200,2000],\"triangles\":1010685,\"drawCalls\":263}"
+      "detail": "{\"profile\":\"export\",\"size\":[3200,2000],\"triangles\":1013613,\"drawCalls\":263}"
     },
     {
       "name": "golden capture 06-hydraulic-joint",
       "ok": true,
-      "detail": "{\"profile\":\"export\",\"size\":[3200,2000],\"triangles\":932637,\"drawCalls\":199}"
+      "detail": "{\"profile\":\"export\",\"size\":[3200,2000],\"triangles\":929229,\"drawCalls\":193}"
+    },
+    {
+      "name": "golden capture 06b-boom-plates",
+      "ok": true,
+      "detail": "{\"profile\":\"export\",\"size\":[3200,2000],\"triangles\":963933,\"drawCalls\":217}"
     },
     {
       "name": "golden capture 07-bucket",
       "ok": true,
-      "detail": "{\"profile\":\"export\",\"size\":[3200,2000],\"triangles\":999053,\"drawCalls\":247}"
+      "detail": "{\"profile\":\"export\",\"size\":[3200,2000],\"triangles\":645853,\"drawCalls\":189}"
     },
     {
       "name": "golden capture 07b-tracks",
       "ok": true,
-      "detail": "{\"profile\":\"export\",\"size\":[3200,2000],\"triangles\":929173,\"drawCalls\":193}"
+      "detail": "{\"profile\":\"export\",\"size\":[3200,2000],\"triangles\":929229,\"drawCalls\":193}"
     },
     {
       "name": "no request left localhost",
@@ -274,6 +279,7 @@
     "mobileConversation": "captures/08b-mobile-conversation.png",
     "02-golden-frame": "captures/02-golden-frame.png",
     "06-hydraulic-joint": "captures/06-hydraulic-joint.png",
+    "06b-boom-plates": "captures/06b-boom-plates.png",
     "07-bucket": "captures/07-bucket.png",
     "07b-tracks": "captures/07b-tracks.png"
   }

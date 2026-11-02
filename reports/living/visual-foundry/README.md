@@ -117,6 +117,9 @@ HDRIs ou texturas externas.
 Ids canónicos, renderer, contratos, os três modos, tipografia, tokens e layout da interface ficam iguais. O orçamento de
 texturas subiu de 10 para 14 (quatro mapas de variação de 128²).
 
+Browser: 52/52 (`browser-report.json`) e 14/14 regressões. O grande plano mostra o pino real, a orelha e o olhal do barril,
+mas fica apertado: o canal do convés ocupa metade do quadro, e não há ângulo mais aberto sem atravessar a cabina ou o compartimento.
+
 Avaliação: os rastos e os cilindros já se lêem contra o Void, a caçamba lê-se como caçamba e os dentes vêem-se.
 Continua abaixo do turbofan da Airsup: a estrutura superior ainda é muito em caixa, e as luzes extra aclaram um pouco o
 chão perto da máquina.
