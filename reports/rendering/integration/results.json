@@ -1,0 +1,596 @@
+{
+  "at": "2026-11-02T18:02:02.018Z",
+  "passed": 63,
+  "failed": 0,
+  "checks": [
+    {
+      "scenario": "1 técnico/apresentação",
+      "name": "o editor arranca em Técnico",
+      "ok": true,
+      "observed": {
+        "t": "true",
+        "p": "false"
+      }
+    },
+    {
+      "scenario": "1 técnico/apresentação",
+      "name": "geometrias não crescem entre o ciclo 2 e o 20",
+      "ok": true,
+      "observed": {
+        "first": {
+          "geometries": 27,
+          "textures": 8,
+          "programs": 8,
+          "calls": 34,
+          "triangles": 232
+        },
+        "last": {
+          "geometries": 27,
+          "textures": 8,
+          "programs": 8,
+          "calls": 34,
+          "triangles": 232
+        }
+      }
+    },
+    {
+      "scenario": "1 técnico/apresentação",
+      "name": "texturas não crescem entre o ciclo 2 e o 20",
+      "ok": true,
+      "observed": {
+        "first": 9,
+        "last": 9
+      }
+    },
+    {
+      "scenario": "1 técnico/apresentação",
+      "name": "programas de shader estabilizam",
+      "ok": true,
+      "observed": {
+        "first": 8,
+        "last": 8
+      }
+    },
+    {
+      "scenario": "1 técnico/apresentação",
+      "name": "luzes constantes por perfil, sem duplicados",
+      "ok": true,
+      "observed": [
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          3
+        ]
+      ]
+    },
+    {
+      "scenario": "1 técnico/apresentação",
+      "name": "a cena volta ao mesmo número de geometrias próprias (renderer.info só conta as já enviadas à GPU)",
+      "ok": true,
+      "observed": {
+        "before": 103,
+        "after": 103
+      }
+    },
+    {
+      "scenario": "1 técnico/apresentação",
+      "name": "a alternância não cria revisão nem altera a cena guardada",
+      "ok": true,
+      "observed": {
+        "r0": 4,
+        "r": 4
+      }
+    },
+    {
+      "scenario": "1 técnico/apresentação",
+      "name": "câmara e selecção preservadas",
+      "ok": true,
+      "observed": {
+        "cam0": {
+          "position": [
+            11.17619,
+            4.126952000000001,
+            -1.4999999999999996
+          ],
+          "target": [
+            4,
+            1.4,
+            -1.5
+          ],
+          "fov": 42,
+          "aspect": 1.44
+        },
+        "cam1": {
+          "position": [
+            11.17619,
+            4.126952000000001,
+            -1.4999999999999996
+          ],
+          "target": [
+            4,
+            1.4,
+            -1.5
+          ],
+          "fov": 42,
+          "aspect": 1.44
+        }
+      }
+    },
+    {
+      "scenario": "1 técnico/apresentação",
+      "name": "estado do botão coerente",
+      "ok": true,
+      "observed": {
+        "t": "true",
+        "p": "false"
+      }
+    },
+    {
+      "scenario": "1 técnico/apresentação",
+      "name": "Enter no botão activa Apresentação",
+      "ok": true
+    },
+    {
+      "scenario": "1 técnico/apresentação",
+      "name": "Espaço no botão activa Técnico",
+      "ok": true
+    },
+    {
+      "scenario": "1 técnico/apresentação",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "2 remoção e undo/redo",
+      "name": "[technical] o cartão de preview aparece",
+      "ok": true
+    },
+    {
+      "scenario": "2 remoção e undo/redo",
+      "name": "[technical] preview não altera revisão nem persistência",
+      "ok": true
+    },
+    {
+      "scenario": "2 remoção e undo/redo",
+      "name": "mudar de qualidade com o preview aberto mantém o cartão e não aplica",
+      "ok": true
+    },
+    {
+      "scenario": "2 remoção e undo/redo",
+      "name": "[technical] cancelar não altera nada",
+      "ok": true
+    },
+    {
+      "scenario": "2 remoção e undo/redo",
+      "name": "[presentation] o cartão de preview aparece",
+      "ok": true
+    },
+    {
+      "scenario": "2 remoção e undo/redo",
+      "name": "[presentation] preview não altera revisão nem persistência",
+      "ok": true
+    },
+    {
+      "scenario": "2 remoção e undo/redo",
+      "name": "[presentation] cancelar não altera nada",
+      "ok": true
+    },
+    {
+      "scenario": "2 remoção e undo/redo",
+      "name": "remoção parcial é bloqueada",
+      "ok": true
+    },
+    {
+      "scenario": "2 remoção e undo/redo",
+      "name": "bloqueio não altera a cena",
+      "ok": true
+    },
+    {
+      "scenario": "2 remoção e undo/redo",
+      "name": "confirmar aplica uma revisão",
+      "ok": true,
+      "observed": 5
+    },
+    {
+      "scenario": "2 remoção e undo/redo",
+      "name": "uma entrada de desfazer",
+      "ok": true,
+      "observed": 1
+    },
+    {
+      "scenario": "2 remoção e undo/redo",
+      "name": "desfazer repõe todos os nós (a revisão de desfazer é nova, por desenho)",
+      "ok": true,
+      "observed": 6
+    },
+    {
+      "scenario": "2 remoção e undo/redo",
+      "name": "refazer reaplica",
+      "ok": true
+    },
+    {
+      "scenario": "2 remoção e undo/redo",
+      "name": "geometrias não crescem depois de remover/desfazer/refazer",
+      "ok": true,
+      "observed": {
+        "before": 44,
+        "after": 40
+      }
+    },
+    {
+      "scenario": "2 remoção e undo/redo",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "[1920x1080] o menu abre e o foco entra no menu",
+      "ok": true
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "[1920x1080] PNG real com o tamanho relatado",
+      "ok": true,
+      "observed": {
+        "w": 1920,
+        "h": 1080,
+        "report": {
+          "width": 1920,
+          "height": 1080
+        },
+        "bytes": 685535
+      }
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "[1920x1080] pedido 1920x1080, obtido 1920x1080: o cartão diz a verdade",
+      "ok": true
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "[1920x1080] ficheiro indica a qualidade e o tamanho reais",
+      "ok": true,
+      "observed": "unfold-divisoes-de-teste-presentation-1920x1080.png"
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "[1920x1080] geometrias e texturas do editor inalteradas",
+      "ok": true,
+      "observed": {
+        "before": {
+          "geometries": 43,
+          "textures": 9,
+          "programs": 8,
+          "calls": 64,
+          "triangles": 292
+        },
+        "after": {
+          "geometries": 43,
+          "textures": 9,
+          "programs": 8,
+          "calls": 64,
+          "triangles": 292
+        }
+      }
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "[1920x1080] botões voltam a estar activos",
+      "ok": true
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "[2560x1440] o menu abre e o foco entra no menu",
+      "ok": true
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "[2560x1440] PNG real com o tamanho relatado",
+      "ok": true,
+      "observed": {
+        "w": 2560,
+        "h": 1440,
+        "report": {
+          "width": 2560,
+          "height": 1440
+        },
+        "bytes": 1056299
+      }
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "[2560x1440] pedido 2560x1440, obtido 2560x1440: o cartão diz a verdade",
+      "ok": true
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "[2560x1440] ficheiro indica a qualidade e o tamanho reais",
+      "ok": true,
+      "observed": "unfold-divisoes-de-teste-presentation-2560x1440.png"
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "[2560x1440] geometrias e texturas do editor inalteradas",
+      "ok": true,
+      "observed": {
+        "before": {
+          "geometries": 43,
+          "textures": 9,
+          "programs": 8,
+          "calls": 64,
+          "triangles": 292
+        },
+        "after": {
+          "geometries": 43,
+          "textures": 9,
+          "programs": 8,
+          "calls": 64,
+          "triangles": 292
+        }
+      }
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "[2560x1440] botões voltam a estar activos",
+      "ok": true
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "[3840x2160] o menu abre e o foco entra no menu",
+      "ok": true
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "[3840x2160] PNG real com o tamanho relatado",
+      "ok": true,
+      "observed": {
+        "w": 3840,
+        "h": 2160,
+        "report": {
+          "width": 3840,
+          "height": 2160
+        },
+        "bytes": 1895924
+      }
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "[3840x2160] pedido 3840x2160, obtido 3840x2160: o cartão diz a verdade",
+      "ok": true
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "[3840x2160] ficheiro indica a qualidade e o tamanho reais",
+      "ok": true,
+      "observed": "unfold-divisoes-de-teste-presentation-3840x2160.png"
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "[3840x2160] geometrias e texturas do editor inalteradas",
+      "ok": true,
+      "observed": {
+        "before": {
+          "geometries": 43,
+          "textures": 9,
+          "programs": 8,
+          "calls": 64,
+          "triangles": 292
+        },
+        "after": {
+          "geometries": 43,
+          "textures": 9,
+          "programs": 8,
+          "calls": 64,
+          "triangles": 292
+        }
+      }
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "[3840x2160] botões voltam a estar activos",
+      "ok": true
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "a câmara do editor não mudou",
+      "ok": true
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "exportar não cria revisão nem altera a cena",
+      "ok": true
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "cancelar a exportação devolve o editor ao normal",
+      "ok": true
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "o editor volta a desenhar depois de cancelar",
+      "ok": true
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "a cena não mudou",
+      "ok": true
+    },
+    {
+      "scenario": "3 exportação",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "4 ciclo de vida",
+      "name": "entrar/sair 4 vezes não faz crescer geometrias (página nova de cada vez)",
+      "ok": true,
+      "observed": [
+        34,
+        34,
+        34,
+        34
+      ]
+    },
+    {
+      "scenario": "4 ciclo de vida",
+      "name": "o editor reentra em Técnico",
+      "ok": true
+    },
+    {
+      "scenario": "4 ciclo de vida",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "5 teclado e móvel",
+      "name": "foco visível no botão de qualidade",
+      "ok": true,
+      "observed": {
+        "outline": "solid",
+        "width": "2px",
+        "shadow": "none"
+      }
+    },
+    {
+      "scenario": "5 teclado e móvel",
+      "name": "a barra cabe no ecrã de 390 px (rola na horizontal se preciso)",
+      "ok": true,
+      "observed": {
+        "right": 382,
+        "left": 8,
+        "vw": 390,
+        "scrollW": 745,
+        "clientW": 372,
+        "overflowX": "auto"
+      }
+    },
+    {
+      "scenario": "5 teclado e móvel",
+      "name": "a página não rola na horizontal",
+      "ok": true,
+      "observed": [
+        390,
+        390
+      ]
+    },
+    {
+      "scenario": "5 teclado e móvel",
+      "name": "o menu de exportação abre com o teclado, dentro do ecrã, no primeiro item",
+      "ok": true,
+      "observed": {
+        "hidden": false,
+        "left": 200,
+        "right": 390,
+        "vw": 390,
+        "active": "1920x1080"
+      }
+    },
+    {
+      "scenario": "5 teclado e móvel",
+      "name": "setas percorrem os itens",
+      "ok": true
+    },
+    {
+      "scenario": "5 teclado e móvel",
+      "name": "Escape fecha o menu e devolve o foco",
+      "ok": true
+    },
+    {
+      "scenario": "5 teclado e móvel",
+      "name": "movimento reduzido: troca de qualidade sem erros",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "5 teclado e móvel",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "rede",
+      "name": "nenhum pedido para fora de localhost",
+      "ok": true,
+      "observed": []
+    }
+  ]
+}
