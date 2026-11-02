@@ -4,6 +4,7 @@ import {
   serializeSceneTransaction,
   deserializeSceneTransaction,
   stageSceneCommand,
+  withSingleRevision,
   type Node,
   type PropertyProvenance,
   type SceneCommandContext,
@@ -13,7 +14,8 @@ import {
   type SpatialCommand,
   type SpatialSceneV1,
 } from './spatial-scene';
-import { AuthorizationError, operationDigest, type CanonicalOperation, type CommandOrigin } from './core';
+import { AuthorizationError, operationDigest, type CanonicalOperation, type CommandOrigin, type VerificationReport } from './core';
+import { planRoomMerge, type RoomMergeResult } from './room-merge';
 import { sceneOperation, stampAuthorization, touchedConfirmed, type ConfirmedReference } from './scene-authorization';
 import { calibrateScale, type PixelWallCandidate, type PlanRegionCandidate, type Point2 } from './plan-reconstruction';
 
@@ -290,6 +292,9 @@ export type CompositePlan = {
   operationDigest: string;
   touchesConfirmed: ConfirmedReference[];
   requiresAuthorization: boolean;
+  /** Só na remoção de uma parede que separa duas divisões: a fusão calculada (divisão nova, áreas) e o seu relatório. */
+  merge?: Extract<RoomMergeResult, { status: 'merge' }>;
+  report?: VerificationReport;
   commit(options?: SceneCommitOptions, current?: SceneTransaction): SceneTransaction;
 };
 
@@ -304,9 +309,11 @@ function planComposite(base: SceneTransaction, name: string, actor: string, orig
   const context = compositeContext(actor, origin);
   const clock = () => new Date(evaluatedAt);
   const staged = steps(base, (transaction, command) => stageSceneCommand(transaction, command, actor, clock, context), evaluatedAt);
-  const result: SceneTransaction = { scene: staged.scene, undoStack: [...base.undoStack, base.scene].slice(-100), redoStack: [] };
-  const operation = sceneOperation(base.scene, staged.scene, name);
-  const touchesConfirmed = touchedConfirmed(base.scene, staged.scene);
+  // Os passos internos só existem enquanto se calcula: a operação inteira é uma revisão e uma entrada de desfazer.
+  const scene = withSingleRevision(base.scene, staged.scene, name, actor, clock);
+  const result: SceneTransaction = { scene, undoStack: [...base.undoStack, base.scene].slice(-100), redoStack: [] };
+  const operation = sceneOperation(base.scene, scene, name);
+  const touchesConfirmed = touchedConfirmed(base.scene, scene);
   const plan: CompositePlan = {
     baseRevisionId: base.scene.revision.id,
     transaction: result,
@@ -418,14 +425,26 @@ function applyWallEdit(transaction: SceneTransaction, wallId: string, edit: Wall
 }
 
 export function planWallRemoval(transaction: SceneTransaction, wallId: string, actor = 'user', options: Pick<CompositeOptions, 'origin'> = {}): CompositePlan {
-  return planComposite(transaction, 'RemoveWall', actor, options.origin, new Date().toISOString(), (base, stage) => {
+  const evaluatedAt = new Date().toISOString();
+  const plan = planComposite(transaction, 'RemoveWall', actor, options.origin, evaluatedAt, (base, stage) => {
     const wall = base.scene.nodes.find((node) => node.id === wallId);
     if (!wall) throw new Error(`Parede ${wallId} não encontrada.`);
-    const dependents = base.scene.nodes.filter((node) => node.component?.dependsOn.includes(wallId)).map((node) => node.id);
+    // Se a parede separa duas divisões, a remoção funde-as numa só; se o motor não consegue provar a fusão, bloqueia com a razão.
+    const merge = planRoomMerge(base.scene, wallId, evaluatedAt);
+    if (merge.status === 'blocked') throw new Error(merge.code);
     let next = base;
+    if (merge.status === 'merge') {
+      next = stage(next, { type: 'AddComponent', node: merge.merged });
+      for (const relation of merge.relations) next = stage(next, { type: 'ConnectComponents', relation });
+      for (const id of merge.removedRelationIds) next = stage(next, { type: 'DisconnectComponents', relationId: id });
+      for (const id of merge.roomIds) next = stage(next, { type: 'RemoveComponent', nodeId: id });
+    }
+    const dependents = next.scene.nodes.filter((node) => node.component?.dependsOn.includes(wallId)).map((node) => node.id);
     for (const id of dependents.reverse()) next = stage(next, { type: 'RemoveComponent', nodeId: id });
     return stage(next, { type: 'RemoveComponent', nodeId: wallId });
   });
+  const merge = planRoomMerge(transaction.scene, wallId, evaluatedAt);
+  return merge.status === 'merge' ? Object.assign(plan, { merge, report: merge.report }) : plan;
 }
 export function removeWallFromScene(transaction: SceneTransaction, wallId: string, actor = 'user', options: CompositeOptions = {}): SceneTransaction {
   return planWallRemoval(transaction, wallId, actor, options).commit(options);
