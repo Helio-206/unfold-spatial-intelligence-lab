@@ -1,4 +1,4 @@
-import type { Provenance } from '../../core/provenance';
+import { ORIGINS, VALIDATIONS, type Provenance } from '../../core/provenance';
 
 export const RECONSTRUCTION_OBSERVATION_SCHEMA = 'unfold.excavator_observation.v1' as const;
 export const ASSEMBLY_PROPOSAL_SCHEMA = 'unfold.assembly.v1' as const;
@@ -398,7 +398,7 @@ export function validateAssemblyProposal(value: unknown): AssemblyProposalV1 {
       dimensions[key] = { value: dimensionValue, unit: unit as AssemblyDimension['unit'], source: source as AssemblyValueSource, evidenceIds: raw.evidenceIds as string[], requiredForVerification: raw.requiredForVerification };
     }
     if (!Array.isArray(item.evidenceIds) || item.evidenceIds.some((id) => typeof id !== 'string')) fail(`parts.${index}.evidenceIds`, 'evidências inválidas');
-    if (!isRecord(item.provenance) || typeof item.provenance.origin !== 'string' || typeof item.provenance.validation !== 'string' || typeof item.provenance.recordedAt !== 'string') fail(`parts.${index}.provenance`, 'proveniência inválida');
+    if (!isRecord(item.provenance) || !ORIGINS.includes(item.provenance.origin as typeof ORIGINS[number]) || !VALIDATIONS.includes(item.provenance.validation as typeof VALIDATIONS[number]) || typeof item.provenance.recordedAt !== 'string' || !item.provenance.recordedAt) fail(`parts.${index}.provenance`, 'proveniência inválida');
     assemblyReview(item.review, `parts.${index}.review`);
     return {
       id: stringAt(item.id, `parts.${index}.id`, 64),
