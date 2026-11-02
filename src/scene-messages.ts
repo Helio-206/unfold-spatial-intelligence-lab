@@ -48,7 +48,7 @@ const FIELD_NAMES: Record<string, string> = {
   relation: 'relação',
   constraint: 'restrição',
 };
-const PROPERTY_NAMES: Record<string, string> = { length: 'comprimento', height: 'altura', thickness: 'espessura', width: 'largura', sill: 'peitoril' };
+const PROPERTY_NAMES: Record<string, string> = { length: 'comprimento', height: 'altura', thickness: 'espessura', width: 'largura', sill: 'peitoril', area: 'área', name: 'nome' };
 const MAX_LISTED = 6;
 
 function fieldName(field: string): string {

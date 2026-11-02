@@ -80,9 +80,9 @@ describe('aviso de que o preview toca valores confirmados', () => {
   });
 
   it('traduz os campos conhecidos e deixa o nome dos desconhecidos', () => {
-    const fields = ['geometry', 'transform.translationM', 'transform.rotation', 'transform.scale', 'component.properties.thickness', 'component.properties.height', 'component.properties.width', 'component.properties.offset', 'component.properties.sill', 'properties.note', 'node', 'relation'];
+    const fields = ['geometry', 'transform.translationM', 'transform.rotation', 'transform.scale', 'component.properties.thickness', 'component.properties.height', 'component.properties.width', 'component.properties.offset', 'component.properties.sill', 'component.properties.area', 'properties.name', 'properties.note', 'node', 'relation'];
     const notice = confirmedNotice(fields.map((field) => ({ entityId: 'wall-1', field, validation: 'verified' as const })), labelOf);
-    for (const word of ['geometria', 'posição', 'rotação', 'escala', 'espessura', 'altura', 'largura', 'offset', 'peitoril', 'note', 'o próprio componente', 'relação']) expect(notice, word).toContain(word);
+    for (const word of ['geometria', 'posição', 'rotação', 'escala', 'espessura', 'altura', 'largura', 'offset', 'peitoril', 'área', 'nome', 'note', 'o próprio componente', 'relação']) expect(notice, word).toContain(word);
     expect(notice).not.toMatch(/component\.properties|transform\.|translationM/);
   });
 

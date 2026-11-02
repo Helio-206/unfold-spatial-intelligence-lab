@@ -1,0 +1,714 @@
+{
+  "checks": [
+    {
+      "scenario": "1 fusão limpa",
+      "name": "o cartão aparece",
+      "ok": true
+    },
+    {
+      "scenario": "1 fusão limpa",
+      "name": "diz as duas divisões, a divisão que sai e a área calculada",
+      "ok": true,
+      "observed": {
+        "remove": "1 parede",
+        "divisões": "Sala + Cozinha → 1 divisão, 21 m² · calculado",
+        "área conservada": "ok · 21 m² = 12 + 9 m²",
+        "polígono simples": "ok",
+        "estrutura": "desconhecida · sem dados estruturais"
+      }
+    },
+    {
+      "scenario": "1 fusão limpa",
+      "name": "a área conservada: 21 = 12 + 9",
+      "ok": true,
+      "observed": "ok · 21 m² = 12 + 9 m²"
+    },
+    {
+      "scenario": "1 fusão limpa",
+      "name": "o polígono é simples",
+      "ok": true,
+      "observed": "ok"
+    },
+    {
+      "scenario": "1 fusão limpa",
+      "name": "a estrutura é desconhecida, sem dados estruturais, e está marcada como desconhecida",
+      "ok": true,
+      "observed": {
+        "hidden": false,
+        "label": "pré-visualização",
+        "title": "Remover Parede 2",
+        "why": "",
+        "rows": {
+          "remove": "1 parede",
+          "divisões": "Sala + Cozinha → 1 divisão, 21 m² · calculado",
+          "área conservada": "ok · 21 m² = 12 + 9 m²",
+          "polígono simples": "ok",
+          "estrutura": "desconhecida · sem dados estruturais"
+        },
+        "unknownRows": [
+          "estrutura"
+        ],
+        "confirm": true,
+        "close": false
+      }
+    },
+    {
+      "scenario": "1 fusão limpa",
+      "name": "tem o botão Confirmar e não é um cartão de bloqueio",
+      "ok": true,
+      "observed": {
+        "hidden": false,
+        "label": "pré-visualização",
+        "title": "Remover Parede 2",
+        "why": "",
+        "rows": {
+          "remove": "1 parede",
+          "divisões": "Sala + Cozinha → 1 divisão, 21 m² · calculado",
+          "área conservada": "ok · 21 m² = 12 + 9 m²",
+          "polígono simples": "ok",
+          "estrutura": "desconhecida · sem dados estruturais"
+        },
+        "unknownRows": [
+          "estrutura"
+        ],
+        "confirm": true,
+        "close": false
+      }
+    },
+    {
+      "scenario": "1 fusão limpa",
+      "name": "o preview não altera a revisão nem a persistência",
+      "ok": true,
+      "observed": 4
+    },
+    {
+      "scenario": "1 fusão limpa",
+      "name": "sem clique nada é aplicado",
+      "ok": true,
+      "observed": 4
+    },
+    {
+      "scenario": "1 fusão limpa",
+      "name": "confirmar aplica",
+      "ok": true
+    },
+    {
+      "scenario": "1 fusão limpa",
+      "name": "uma só revisão: R+1",
+      "ok": true,
+      "observed": {
+        "before": 4,
+        "after": 5
+      }
+    },
+    {
+      "scenario": "1 fusão limpa",
+      "name": "uma só entrada de desfazer",
+      "ok": true,
+      "observed": 1
+    },
+    {
+      "scenario": "1 fusão limpa",
+      "name": "a revisão tem o nome da operação",
+      "ok": true,
+      "observed": "e2e-merge:op5:RemoveWall"
+    },
+    {
+      "scenario": "1 fusão limpa",
+      "name": "três divisões: a fundida, o Corredor e a Despensa",
+      "ok": true,
+      "observed": [
+        "Divisão proposta 3",
+        "Divisão proposta 4",
+        "Sala + Cozinha"
+      ]
+    },
+    {
+      "scenario": "1 fusão limpa",
+      "name": "a parede e as duas divisões antigas desapareceram",
+      "ok": true,
+      "observed": 17
+    },
+    {
+      "scenario": "1 fusão limpa",
+      "name": "a área do polígono é 21 m² e a propriedade «area» também",
+      "ok": true,
+      "observed": {
+        "area": 21,
+        "prop": {
+          "value": 21,
+          "unit": "m2",
+          "provenance": {
+            "source": "derived",
+            "validation": "unreviewed",
+            "recordedAt": "2026-11-02T14:47:35.167Z",
+            "evidence": "Área calculada pelo motor a partir do polígono resultante; não vem de nenhum documento nem foi escrita à mão."
+          }
+        }
+      }
+    },
+    {
+      "scenario": "1 fusão limpa",
+      "name": "a divisão nova é derived e unreviewed, sem authorizationId",
+      "ok": true,
+      "observed": {
+        "source": "derived",
+        "validation": "unreviewed",
+        "recordedAt": "2026-11-02T14:47:35.167Z",
+        "evidence": "Divisão resultante da remoção de Parede 2: união de Sala e Cozinha, calculada pelo motor a partir dos dois polígonos."
+      }
+    },
+    {
+      "scenario": "1 fusão limpa",
+      "name": "o cartão fechou",
+      "ok": true
+    },
+    {
+      "scenario": "1 fusão limpa",
+      "name": "desfazer: volta a haver as duas divisões e a parede, com o conteúdo de antes",
+      "ok": true,
+      "observed": 19
+    },
+    {
+      "scenario": "1 fusão limpa",
+      "name": "desfazer: uma só entrada desfeita (e a revisão avança 1)",
+      "ok": true,
+      "observed": {
+        "rev": 6,
+        "redo": 1
+      }
+    },
+    {
+      "scenario": "1 fusão limpa",
+      "name": "sem erros de consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "2 bloqueios",
+      "name": "uma só divisão: cartão de bloqueio com a razão numa frase",
+      "ok": true,
+      "observed": {
+        "hidden": false,
+        "label": "remoção bloqueada",
+        "title": "Parede 4",
+        "why": "Esta parede fecha uma só divisão: removê-la abriria a divisão para fora, por isso o motor não a remove. ROOM_MERGE_SINGLE_ROOM",
+        "rows": {
+          "estrutura": "desconhecida · sem dados estruturais"
+        },
+        "unknownRows": [
+          "estrutura"
+        ],
+        "confirm": false,
+        "close": true
+      }
+    },
+    {
+      "scenario": "2 bloqueios",
+      "name": "o cartão de bloqueio não tem Confirmar, só Fechar, e a estrutura continua desconhecida",
+      "ok": true,
+      "observed": {
+        "hidden": false,
+        "label": "remoção bloqueada",
+        "title": "Parede 4",
+        "why": "Esta parede fecha uma só divisão: removê-la abriria a divisão para fora, por isso o motor não a remove. ROOM_MERGE_SINGLE_ROOM",
+        "rows": {
+          "estrutura": "desconhecida · sem dados estruturais"
+        },
+        "unknownRows": [
+          "estrutura"
+        ],
+        "confirm": false,
+        "close": true
+      }
+    },
+    {
+      "scenario": "2 bloqueios",
+      "name": "não promete a fusão («ainda não existe no motor» já não aparece)",
+      "ok": true,
+      "observed": {
+        "hidden": false,
+        "label": "remoção bloqueada",
+        "title": "Parede 4",
+        "why": "Esta parede fecha uma só divisão: removê-la abriria a divisão para fora, por isso o motor não a remove. ROOM_MERGE_SINGLE_ROOM",
+        "rows": {
+          "estrutura": "desconhecida · sem dados estruturais"
+        },
+        "unknownRows": [
+          "estrutura"
+        ],
+        "confirm": false,
+        "close": true
+      }
+    },
+    {
+      "scenario": "2 bloqueios",
+      "name": "nada foi aplicado e Aplicar está desactivado",
+      "ok": true,
+      "observed": {
+        "previewStatus": "",
+        "commitDisabled": true,
+        "cmdState": "IDLE",
+        "cmdMsg": "Editor arquitectónico activo. Comandos locais passam por preview e confirmação; a IA não escreve directamente na cena.",
+        "spatial": "Remoção bloqueada: Esta parede fecha uma só divisão: removê-la abriria a divisão para fora, por isso o motor não a remove.",
+        "list": [
+          "wall-edge-0-0-400-0|Parede 1",
+          "wall-edge-400-0-400-300|Parede 2",
+          "wall-edge-0-300-400-300|Parede 3",
+          "wall-edge-0-0-0-300|Parede 4",
+          "sala|Sala",
+          "wall-edge-400-0-700-0|Parede 5",
+          "wall-edge-700-0-700-300|Parede 6",
+          "wall-edge-400-300-700-300|Parede 7",
+          "cozinha|Cozinha",
+          "wall-edge-1000-0-1400-0|Parede 8",
+          "wall-edge-1400-0-1400-300|Parede 9",
+          "wall-edge-1400-300-1400-600|Parede 10",
+          "wall-edge-1000-600-1400-600|Parede 11",
+          "wall-edge-1000-0-1000-600|Parede 12",
+          "corredor|Corredor",
+          "wall-edge-1400-0-1700-0|Parede 13",
+          "wall-edge-1700-0-1700-300|Parede 14",
+          "wall-edge-1400-300-1700-300|Parede 15",
+          "despensa|Despensa"
+        ]
+      }
+    },
+    {
+      "scenario": "2 bloqueios",
+      "name": "Fechar fecha o cartão",
+      "ok": true
+    },
+    {
+      "scenario": "2 bloqueios",
+      "name": "partilha parcial: bloqueada, com a razão",
+      "ok": true,
+      "observed": {
+        "hidden": false,
+        "label": "remoção bloqueada",
+        "title": "Parede 9",
+        "why": "A aresta que as duas divisões partilham não coincide com esta parede (a parede é mais curta ou mais comprida do que a aresta, ou a partilha é só parcial). ROOM_MERGE_EDGE_MISMATCH",
+        "rows": {
+          "estrutura": "desconhecida · sem dados estruturais"
+        },
+        "unknownRows": [
+          "estrutura"
+        ],
+        "confirm": false,
+        "close": true
+      }
+    },
+    {
+      "scenario": "2 bloqueios",
+      "name": "a cena continua intacta",
+      "ok": true,
+      "observed": 4
+    },
+    {
+      "scenario": "2 bloqueios",
+      "name": "sem erros de consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "3 valores confirmados",
+      "name": "o cartão avisa que toca em valores confirmados e quais (com os nomes)",
+      "ok": true,
+      "observed": "Atenção: esta alteração toca em valores confirmados (Cozinha: geometria; Sala: área). «Aplicar» autoriza-a."
+    },
+    {
+      "scenario": "3 valores confirmados",
+      "name": "mostra a mesma fusão (21 m²)",
+      "ok": true,
+      "observed": {
+        "remove": "1 parede",
+        "divisões": "Sala + Cozinha → 1 divisão, 21 m² · calculado",
+        "área conservada": "ok · 21 m² = 12 + 9 m²",
+        "polígono simples": "ok",
+        "estrutura": "desconhecida · sem dados estruturais"
+      }
+    },
+    {
+      "scenario": "3 valores confirmados",
+      "name": "o preview não altera nada e passado tempo continua igual",
+      "ok": true,
+      "observed": 4
+    },
+    {
+      "scenario": "3 valores confirmados",
+      "name": "sem o clique, nada se aplica",
+      "ok": true,
+      "observed": 4
+    },
+    {
+      "scenario": "3 valores confirmados",
+      "name": "cancelar deixa tudo como estava",
+      "ok": true,
+      "observed": 4
+    },
+    {
+      "scenario": "3 valores confirmados",
+      "name": "com o clique de confirmação aplica-se",
+      "ok": true
+    },
+    {
+      "scenario": "3 valores confirmados",
+      "name": "uma só revisão",
+      "ok": true,
+      "observed": 5
+    },
+    {
+      "scenario": "3 valores confirmados",
+      "name": "a divisão nova não herda o confirmado (nem a área da Sala nem a geometria da Cozinha)",
+      "ok": true,
+      "observed": {
+        "value": 21,
+        "unit": "m2",
+        "provenance": {
+          "source": "derived",
+          "validation": "unreviewed",
+          "recordedAt": "2026-11-02T14:47:55.174Z",
+          "evidence": "Área calculada pelo motor a partir do polígono resultante; não vem de nenhum documento nem foi escrita à mão."
+        }
+      }
+    },
+    {
+      "scenario": "3 valores confirmados",
+      "name": "os valores antigos saíram com as divisões antigas",
+      "ok": true,
+      "observed": 17
+    },
+    {
+      "scenario": "3 valores confirmados",
+      "name": "sem erros de consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "4 comando via Muse",
+      "name": "o cartão aparece",
+      "ok": true
+    },
+    {
+      "scenario": "4 comando via Muse",
+      "name": "o Muse (simulado) foi consultado uma vez",
+      "ok": true,
+      "observed": [
+        "Remove a parede entre a cozinha e a sala"
+      ]
+    },
+    {
+      "scenario": "4 comando via Muse",
+      "name": "o cartão mostra a fusão calculada e o estado é «a aguardar confirmação»",
+      "ok": true,
+      "observed": {
+        "card": {
+          "remove": "1 parede",
+          "divisões": "Sala + Cozinha → 1 divisão, 21 m² · calculado",
+          "área conservada": "ok · 21 m² = 12 + 9 m²",
+          "polígono simples": "ok",
+          "estrutura": "desconhecida · sem dados estruturais"
+        },
+        "state": "AWAITING_CONFIRMATION"
+      }
+    },
+    {
+      "scenario": "4 comando via Muse",
+      "name": "a proposta não altera nada até ao clique humano",
+      "ok": true,
+      "observed": 4
+    },
+    {
+      "scenario": "4 comando via Muse",
+      "name": "o clique humano aplica",
+      "ok": true
+    },
+    {
+      "scenario": "4 comando via Muse",
+      "name": "uma divisão fundida, unreviewed, uma revisão",
+      "ok": true,
+      "observed": 5
+    },
+    {
+      "scenario": "4 comando via Muse",
+      "name": "sem erros de consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "4 Muse sobre valores confirmados",
+      "name": "a proposta do Muse que toca valores confirmados é recusada, com a razão por extenso",
+      "ok": true,
+      "observed": "REJECTED | Uma proposta do Muse (ou do sistema) não pode alterar, apagar nem repor valores que uma pessoa confirmou. Faça essa alteração directamente no inspector. Nenhuma revisão foi aplicada."
+    },
+    {
+      "scenario": "4 Muse sobre valores confirmados",
+      "name": "o cartão mostra o bloqueio e não há Confirmar",
+      "ok": true,
+      "observed": {
+        "hidden": false,
+        "label": "remoção bloqueada",
+        "title": "Parede 2",
+        "why": "Uma proposta do Muse (ou do sistema) não pode alterar, apagar nem repor valores que uma pessoa confirmou. Faça essa alteração directamente no inspector. MACHINE_CANNOT_TOUCH_CONFIRMED",
+        "rows": {
+          "estrutura": "desconhecida · sem dados estruturais"
+        },
+        "unknownRows": [
+          "estrutura"
+        ],
+        "confirm": false,
+        "close": true
+      }
+    },
+    {
+      "scenario": "4 Muse sobre valores confirmados",
+      "name": "nada se aplicou: revisão e persistência intactas",
+      "ok": true,
+      "observed": 4
+    },
+    {
+      "scenario": "4 Muse sobre valores confirmados",
+      "name": "sem erros de consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "4 Muse indisponível, parser local (PT) sobre confirmados",
+      "name": "o parser local trata o comando como humano: há cartão com Confirmar",
+      "ok": true,
+      "observed": {
+        "hidden": false,
+        "label": "pré-visualização",
+        "title": "Remover Parede 2",
+        "why": "Atenção: esta alteração toca em valores confirmados (Cozinha: geometria; Sala: área). «Aplicar» autoriza-a.",
+        "rows": {
+          "remove": "1 parede",
+          "divisões": "Sala + Cozinha → 1 divisão, 21 m² · calculado",
+          "área conservada": "ok · 21 m² = 12 + 9 m²",
+          "polígono simples": "ok",
+          "estrutura": "desconhecida · sem dados estruturais"
+        },
+        "unknownRows": [
+          "estrutura"
+        ],
+        "confirm": true,
+        "close": false
+      }
+    },
+    {
+      "scenario": "4 Muse indisponível, parser local (PT) sobre confirmados",
+      "name": "ainda nada aplicado",
+      "ok": true,
+      "observed": 4
+    },
+    {
+      "scenario": "4 Muse indisponível, parser local (PT) sobre confirmados",
+      "name": "o clique autoriza e aplica",
+      "ok": true
+    },
+    {
+      "scenario": "4 Muse indisponível, parser local (PT) sobre confirmados",
+      "name": "uma só revisão",
+      "ok": true,
+      "observed": 5
+    },
+    {
+      "scenario": "4 Muse indisponível, parser local (PT) sobre confirmados",
+      "name": "sem erros de consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "5 nomes e inglês",
+      "name": "o inspector de uma divisão tem o campo do nome",
+      "ok": true,
+      "observed": "room-fields hidden"
+    },
+    {
+      "scenario": "5 nomes e inglês",
+      "name": "o preview do nome não altera nada",
+      "ok": true,
+      "observed": {
+        "previewStatus": "Pré-visualização: chamar «Kitchen» a esta divisão.",
+        "commitDisabled": false,
+        "cmdState": "IDLE",
+        "cmdMsg": "Editor arquitectónico activo. Comandos locais passam por preview e confirmação; a IA não escreve directamente na cena.",
+        "spatial": "Biblioteca Blender carregada; activos parede, porta e janela.",
+        "list": [
+          "wall-edge-0-0-400-0|Parede 1",
+          "wall-edge-400-0-400-300|Parede 2",
+          "wall-edge-0-300-400-300|Parede 3",
+          "wall-edge-0-0-0-300|Parede 4",
+          "sala|Sala",
+          "wall-edge-400-0-700-0|Parede 5",
+          "wall-edge-700-0-700-300|Parede 6",
+          "wall-edge-400-300-700-300|Parede 7",
+          "cozinha|Cozinha",
+          "wall-edge-1000-0-1400-0|Parede 8",
+          "wall-edge-1400-0-1400-300|Parede 9",
+          "wall-edge-1400-300-1400-600|Parede 10",
+          "wall-edge-1000-600-1400-600|Parede 11",
+          "wall-edge-1000-0-1000-600|Parede 12",
+          "corredor|Corredor",
+          "wall-edge-1400-0-1700-0|Parede 13",
+          "wall-edge-1700-0-1700-300|Parede 14",
+          "wall-edge-1400-300-1700-300|Parede 15",
+          "despensa|Despensa"
+        ]
+      }
+    },
+    {
+      "scenario": "5 nomes e inglês",
+      "name": "o nome fica como propriedade escrita por uma pessoa (source user, unreviewed, sem confirmação)",
+      "ok": true,
+      "observed": [
+        {
+          "value": "Kitchen",
+          "provenance": {
+            "source": "user",
+            "validation": "unreviewed",
+            "actor": "local-user-input",
+            "recordedAt": "2026-11-02T14:48:16.463Z"
+          }
+        },
+        {
+          "value": "Living room",
+          "provenance": {
+            "source": "user",
+            "validation": "unreviewed",
+            "actor": "local-user-input",
+            "recordedAt": "2026-11-02T14:48:18.734Z"
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "5 nomes e inglês",
+      "name": "a lista e o inspector mostram o nome",
+      "ok": true,
+      "observed": [
+        "wall-edge-0-0-400-0|Parede 1",
+        "wall-edge-400-0-400-300|Parede 2",
+        "wall-edge-0-300-400-300|Parede 3",
+        "wall-edge-0-0-0-300|Parede 4",
+        "sala|Living room",
+        "wall-edge-400-0-700-0|Parede 5",
+        "wall-edge-700-0-700-300|Parede 6",
+        "wall-edge-400-300-700-300|Parede 7",
+        "cozinha|Kitchen",
+        "wall-edge-1000-0-1400-0|Parede 8",
+        "wall-edge-1400-0-1400-300|Parede 9",
+        "wall-edge-1400-300-1400-600|Parede 10",
+        "wall-edge-1000-600-1400-600|Parede 11",
+        "wall-edge-1000-0-1000-600|Parede 12",
+        "corredor|Corredor",
+        "wall-edge-1400-0-1700-0|Parede 13",
+        "wall-edge-1700-0-1700-300|Parede 14",
+        "wall-edge-1400-300-1700-300|Parede 15",
+        "despensa|Despensa"
+      ]
+    },
+    {
+      "scenario": "5 nomes e inglês",
+      "name": "o comando em inglês gera o cartão",
+      "ok": true
+    },
+    {
+      "scenario": "5 nomes e inglês",
+      "name": "o cartão usa os nomes que a pessoa deu: «Living room + Kitchen → 1 divisão, 21 m²»",
+      "ok": true,
+      "observed": {
+        "remove": "1 parede",
+        "divisões": "Living room + Kitchen → 1 divisão, 21 m² · calculado",
+        "área conservada": "ok · 21 m² = 12 + 9 m²",
+        "polígono simples": "ok",
+        "estrutura": "desconhecida · sem dados estruturais"
+      }
+    },
+    {
+      "scenario": "5 nomes e inglês",
+      "name": "confirmar aplica uma só revisão",
+      "ok": true,
+      "observed": 7
+    },
+    {
+      "scenario": "5 nomes e inglês",
+      "name": "sem erros de consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "5 recusas do comando",
+      "name": "«remove a parede entre a cozinha e a varanda» é recusado com a razão e sem alterar nada",
+      "ok": true,
+      "observed": "CLARIFICATION | Não encontrei uma divisão chamada “varanda”. Dê um nome à divisão no inspector ou indique a parede pelo id."
+    },
+    {
+      "scenario": "5 recusas do comando",
+      "name": "«remove a parede entre a sala e a despensa» é recusado com a razão e sem alterar nada",
+      "ok": true,
+      "observed": "CLARIFICATION | As divisões “sala” e “despensa” não partilham nenhuma parede."
+    },
+    {
+      "scenario": "5 recusas do comando",
+      "name": "«remove a parede entre a sala e a sala» é recusado com a razão e sem alterar nada",
+      "ok": true,
+      "observed": "CLARIFICATION | Indique duas divisões diferentes: uma parede separa uma divisão de outra, não de si própria."
+    },
+    {
+      "scenario": "5 recusas do comando",
+      "name": "«remove a parede W99» é recusado com a razão e sem alterar nada",
+      "ok": true,
+      "observed": "CLARIFICATION | Não existe a parede “w99” nesta cena."
+    },
+    {
+      "scenario": "5 recusas do comando",
+      "name": "sem erros de consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "6 Four-Bar Lab",
+      "name": "abre",
+      "ok": true,
+      "observed": "/demo"
+    },
+    {
+      "scenario": "6 Four-Bar Lab",
+      "name": "sem erros de consola nem excepções",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "6 Circuit Lab",
+      "name": "abre",
+      "ok": true,
+      "observed": "/circuit"
+    },
+    {
+      "scenario": "6 Circuit Lab",
+      "name": "sem erros de consola nem excepções",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "6 editor espacial",
+      "name": "abre",
+      "ok": true,
+      "observed": "/spatial-editor"
+    },
+    {
+      "scenario": "6 editor espacial",
+      "name": "sem erros de consola nem excepções",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "rede",
+      "name": "nenhum pedido saiu para fora de localhost (nenhuma chamada à Meta)",
+      "ok": true,
+      "observed": []
+    }
+  ],
+  "external": []
+}
