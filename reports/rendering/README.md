@@ -97,5 +97,6 @@ Draw calls include the viewer's 74-line grid and, in presentation, the shadow pa
 - A hairline can show where two collinear wall segments abut (their end faces are coplanar).
 - Duplicate coplanar floors (a room selected both from a closed region and from orthogonal support) still fight each other.
 - Glass is alpha-blended, not transmissive (cost); procedural textures are stylised, not photographic.
-- The viewer does not use any of this yet except the new default `technical` geometry (it calls `buildThreePlanGroup(model, assets)` without options). Switching profiles, the stage lights and image export need the follow-up in `src/rendering/README.md` once PR #7 is merged.
+- Superseded: the editor integration is done in the follow-up, see [`integration/`](integration/README.md).
+- Duplicate coplanar floors: fixed in the follow-up.
 - `assets/blender/` was not changed: Blender is not available in this environment, and the existing module library did not need changes for these results.

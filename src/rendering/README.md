@@ -7,11 +7,13 @@ and provenance come from the scene exactly as the engine produced them.
 
 | file | what it does |
 |---|---|
-| `quality.ts` | `technical` and `presentation` profiles, and `adaptQuality()` (frame-time based, with hysteresis). |
+| `quality.ts` | `technical` and `presentation` profiles, device caps, `resolveProfile()` and `FrameMonitor`. |
 | `architecture.ts` | `buildArchitecturalGroup(scene, assets, { quality })`: wall solids, openings with depth, frames and glass, floors, provisional outlines, corner fillers. |
 | `materials.ts` | One shared material library per profile (plaster, cap/concrete, timber floor, powder-coated metal, glass, neutral, ambiguous-hatch). |
 | `procedural-textures.ts` | Seeded, deterministic 256 px normal / roughness / timber / hatch textures generated in code. |
 | `stage.ts` | `configureRenderer()` (colour management, tone mapping, shadow filter), `createStage()` (lights, shadow fitting, small shared environment). |
+| `viewer.ts` | Rendering controller used by the editor (stage lifecycle, quality switch, adaptive degrade). |
+| `lifecycle.ts` | Geometry disposal that respects shared assets. |
 | `hires.ts` | `renderHighResolution()`: tiled still of the same scene and camera at any size the hardware allows. |
 | `metrics.ts` | Scene and renderer counters, frame-time summaries. |
 | `fixtures.ts` | Three deterministic scenes built with the product's own `createPlanScene` / `addOpeningToScene`. |
@@ -42,18 +44,21 @@ No third-party image, texture or model is bundled by this change.
 - Blender modules: `public/assets/architectural_library.glb`, built by `assets/blender/build_architectural_library.py` in this repository (unchanged).
 - Frozen "before" adapter: `scripts/rendering/baseline/` (a copy of this repository's own code at `f090210`; used only by the comparison script).
 
-## Hooks for the viewer (follow-up after PR #7; not done here because they touch `spatial-editor.ts`)
+## How the editor uses it (`src/spatial-editor.ts`)
 
-1. After creating the renderer: `configureRenderer(renderer, quality)`.
-2. Replace the three hard-coded lights with `const stage = createStage(scene, quality, renderer)`; call `stage.fit(new Box3().setFromObject(root))` after each `renderModel`. `stage.dispose()` on cleanup.
-3. Pass `{ quality }` in the `buildThreePlanGroup(model, assets, { quality })` call inside `renderModel`; rebuild on toggle (same scene object, no scene change).
-4. A toolbar toggle bound to that quality, optionally driven by `adaptQuality(current, recentFrameMs)`.
-5. A "Export image" action calling `renderHighResolution(scene, camera, { width, height, quality })` and `canvasToBlob`.
-6. Cleanup: the viewer disposes geometries only; shared materials are released with `disposeMaterials()` when the editor is torn down for good.
+- `viewer.ts` `createRenderingController(scene, renderer)` owns the stage (lights, environment, shadows) and the renderer configuration. `setQuality()` disposes the previous stage and creates the new one, so lights and environment never duplicate; `dispose()` releases stage, environment and the shared material library.
+- The editor rebuilds the displayed model with `{ quality }` on a switch. It is the same scene object: no revision, no undo entry, no change to geometry, provenance or authorization. Selection, camera and a pending removal preview (card and ghost) survive.
+- Two controls, centred under the header: **Técnico / Apresentação** (default Técnico) and **Exportar imagem** (1920x1080, 2560x1440, 3840x2160; keyboard operable, Escape closes).
+- Export draws the current quality with the current camera through a temporary renderer in tiles, hides the gizmo and selection outline, suspends the editor's own drawing, reports the actual size and says so when the device clamped it.
+- `lifecycle.ts` `disposeOwnedGeometries()` frees every owned mesh/line/points geometry once and never touches shared GLB geometry.
+- Adaptive quality: `readDeviceCaps` + `resolveProfile` pick shadow resolution and pixel ratio from the device (software renderer or small textures: 1024 px shadows, pixel ratio 1). `FrameMonitor` only ever steps Presentation *down* (halve the shadow map, then no shadows), after contiguous slow frames and with a cooldown; it never switches to Presentation by itself and never oscillates.
+- Floors: `planFloors` compares floor polygons in world space. Identical duplicates are drawn once (confirmed preferred) and reported in `group.userData.floorConflicts` and the status line; partial overlaps are both drawn, translucent and hatched; different elevations are not conflicts. Canonical room nodes are never removed.
+- Debug only: `?debug-rendering` exposes `window.__unfoldRendering` (counters, camera, benchmark, tile/editor comparison). Not used by the product.
 
 ## Known limits
 
 - Measured only with software rendering (SwiftShader) in headless Chrome. No real-GPU numbers.
 - Corner fillers need endpoints within 2 cm and equal thickness; walls that do not meet exactly keep their notch (their geometry is not altered to hide it).
-- Duplicate coplanar floors (a room selected both from a closed region and from orthogonal support) still fight each other; `polygonOffset` only separates floors from the ground.
+- Duplicate coplanar *walls* (candidate walls plus region edge walls on the same line) are not deduplicated.
+- No cutaway section in the editor.
 - Procedural textures are a stylised plaster / concrete / timber, not photographic.

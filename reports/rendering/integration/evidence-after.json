@@ -1,0 +1,409 @@
+{
+  "label": "after",
+  "base": "http://127.0.0.1:5199",
+  "at": "2026-11-02T16:57:17.651Z",
+  "renderer": "see exports",
+  "scenes": {
+    "two-rooms": {
+      "kind": "synthetic fixture",
+      "errors": []
+    },
+    "multi-room": {
+      "kind": "synthetic fixture",
+      "errors": [],
+      "measure": {
+        "rebuild": {
+          "technical": [
+            20.899999999906868,
+            17.59999999962747,
+            22.5,
+            22.5,
+            17.899999999906868
+          ],
+          "presentation": [
+            22.399999999906868,
+            21.899999999906868,
+            20.700000000186265,
+            21,
+            15.699999999720603
+          ]
+        },
+        "bench": {
+          "technical": {
+            "frames": 60,
+            "meanMs": 42.28333333331781,
+            "p95Ms": 47.60000000009313,
+            "calls": 83,
+            "triangles": 4145,
+            "geometries": 33,
+            "textures": 8,
+            "sceneGeometries": 101
+          },
+          "presentation": {
+            "frames": 60,
+            "meanMs": 232.70166666667598,
+            "p95Ms": 258.39999999990687,
+            "calls": 107,
+            "triangles": 4193,
+            "geometries": 37,
+            "textures": 9,
+            "sceneGeometries": 105
+          }
+        },
+        "profile": {
+          "technical": {
+            "quality": "technical",
+            "textures": false,
+            "shadows": false,
+            "shadowMapSize": 1024,
+            "environment": false,
+            "environmentIntensity": 0,
+            "cornerFillers": false,
+            "openingDetail": true,
+            "provisionalOutline": true,
+            "toneMapping": "none",
+            "exposure": 1,
+            "antialias": true,
+            "maxPixelRatio": 1.7
+          },
+          "presentation": {
+            "quality": "presentation",
+            "textures": true,
+            "shadows": true,
+            "shadowMapSize": 1024,
+            "environment": true,
+            "environmentIntensity": 0.32,
+            "cornerFillers": true,
+            "openingDetail": true,
+            "provisionalOutline": true,
+            "toneMapping": "aces",
+            "exposure": 0.92,
+            "antialias": true,
+            "maxPixelRatio": 1
+          }
+        },
+        "geometriesAfterCycles": [
+          {
+            "frames": 1,
+            "meanMs": 221.39999999990687,
+            "p95Ms": 221.39999999990687,
+            "calls": 83,
+            "triangles": 4145,
+            "geometries": 33,
+            "textures": 8,
+            "sceneGeometries": 101
+          },
+          {
+            "frames": 1,
+            "meanMs": 227.40000000037253,
+            "p95Ms": 227.40000000037253,
+            "calls": 83,
+            "triangles": 4145,
+            "geometries": 33,
+            "textures": 8,
+            "sceneGeometries": 101
+          },
+          {
+            "frames": 1,
+            "meanMs": 198.09999999962747,
+            "p95Ms": 198.09999999962747,
+            "calls": 83,
+            "triangles": 4145,
+            "geometries": 33,
+            "textures": 8,
+            "sceneGeometries": 101
+          },
+          {
+            "frames": 1,
+            "meanMs": 195.20000000018626,
+            "p95Ms": 195.20000000018626,
+            "calls": 83,
+            "triangles": 4145,
+            "geometries": 33,
+            "textures": 8,
+            "sceneGeometries": 101
+          }
+        ],
+        "consistency": {
+          "technical": {
+            "tiles": {
+              "mode": "tiles",
+              "width": 1920,
+              "height": 1080,
+              "meanAbsDiff": 0.0009543788580246913,
+              "maxDiff": 44,
+              "fractionOver8": 0.000029417438271604938,
+              "seamMeanAbsDiff": 0.009413580246913581,
+              "tileA": 512,
+              "tileB": 4096
+            },
+            "editorVsExport": {
+              "mode": "editor",
+              "width": 1440,
+              "height": 900,
+              "meanAbsDiff": 0.00031944444444444446,
+              "maxDiff": 41,
+              "fractionOver8": 0.00000771604938271605,
+              "seamMeanAbsDiff": null,
+              "tileA": 0,
+              "tileB": 1024
+            }
+          },
+          "presentation": {
+            "tiles": {
+              "mode": "tiles",
+              "width": 1920,
+              "height": 1080,
+              "meanAbsDiff": 0.0010358796296296297,
+              "maxDiff": 49,
+              "fractionOver8": 0.00003809799382716049,
+              "seamMeanAbsDiff": 0.009259259259259259,
+              "tileA": 512,
+              "tileB": 4096
+            },
+            "editorVsExport": {
+              "mode": "editor",
+              "width": 1440,
+              "height": 900,
+              "meanAbsDiff": 0.0003587962962962963,
+              "maxDiff": 49,
+              "fractionOver8": 0.00000771604938271605,
+              "seamMeanAbsDiff": null,
+              "tileA": 0,
+              "tileB": 1024
+            }
+          }
+        }
+      }
+    },
+    "provisional": {
+      "kind": "synthetic fixture",
+      "errors": []
+    },
+    "real-sample-1": {
+      "kind": "real plan through the editor pipeline",
+      "errors": [],
+      "measure": {
+        "rebuild": {
+          "technical": [
+            59.3000000002794,
+            59.10000000009313,
+            56.700000000186265,
+            49,
+            46.6999999997206
+          ],
+          "presentation": [
+            67.20000000018626,
+            90.39999999990687,
+            59.3000000002794,
+            62.799999999813735,
+            55.200000000186265
+          ]
+        },
+        "bench": {
+          "technical": {
+            "frames": 60,
+            "meanMs": 31.10000000000776,
+            "p95Ms": 34.1999999997206,
+            "calls": 57,
+            "triangles": 217,
+            "geometries": 40,
+            "textures": 11,
+            "sceneGeometries": 107
+          },
+          "presentation": {
+            "frames": 60,
+            "meanMs": 110.57833333335196,
+            "p95Ms": 121,
+            "calls": 135,
+            "triangles": 373,
+            "geometries": 53,
+            "textures": 12,
+            "sceneGeometries": 120
+          }
+        },
+        "profile": {
+          "technical": {
+            "quality": "technical",
+            "textures": false,
+            "shadows": false,
+            "shadowMapSize": 1024,
+            "environment": false,
+            "environmentIntensity": 0,
+            "cornerFillers": false,
+            "openingDetail": true,
+            "provisionalOutline": true,
+            "toneMapping": "none",
+            "exposure": 1,
+            "antialias": true,
+            "maxPixelRatio": 1.7
+          },
+          "presentation": {
+            "quality": "presentation",
+            "textures": true,
+            "shadows": true,
+            "shadowMapSize": 1024,
+            "environment": true,
+            "environmentIntensity": 0.32,
+            "cornerFillers": true,
+            "openingDetail": true,
+            "provisionalOutline": true,
+            "toneMapping": "aces",
+            "exposure": 0.92,
+            "antialias": true,
+            "maxPixelRatio": 1
+          }
+        },
+        "geometriesAfterCycles": [
+          {
+            "frames": 1,
+            "meanMs": 131.29999999981374,
+            "p95Ms": 131.29999999981374,
+            "calls": 57,
+            "triangles": 217,
+            "geometries": 40,
+            "textures": 11,
+            "sceneGeometries": 107
+          },
+          {
+            "frames": 1,
+            "meanMs": 143.89999999990687,
+            "p95Ms": 143.89999999990687,
+            "calls": 57,
+            "triangles": 217,
+            "geometries": 40,
+            "textures": 11,
+            "sceneGeometries": 107
+          },
+          {
+            "frames": 1,
+            "meanMs": 140.59999999962747,
+            "p95Ms": 140.59999999962747,
+            "calls": 57,
+            "triangles": 217,
+            "geometries": 40,
+            "textures": 11,
+            "sceneGeometries": 107
+          },
+          {
+            "frames": 1,
+            "meanMs": 128.70000000018626,
+            "p95Ms": 128.70000000018626,
+            "calls": 57,
+            "triangles": 217,
+            "geometries": 40,
+            "textures": 11,
+            "sceneGeometries": 107
+          }
+        ]
+      }
+    }
+  },
+  "exports": [
+    {
+      "requested": "1920x1080",
+      "file": "unfold-fixture-presentation-1920x1080.png",
+      "png": {
+        "width": 1920,
+        "height": 1080,
+        "bytes": 485684
+      },
+      "report": {
+        "requested": {
+          "width": 1920,
+          "height": 1080
+        },
+        "actual": {
+          "width": 1920,
+          "height": 1080
+        },
+        "tile": 1024,
+        "tiles": 4,
+        "ms": 4233,
+        "limits": {
+          "maxTextureSize": 8192,
+          "maxViewport": [
+            8192,
+            8192
+          ],
+          "maxSamples": 4,
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "software": true
+        },
+        "clamped": false,
+        "framing": "wider",
+        "note": "A imagem mostra o enquadramento do ecrã e mais espaço nas laterais."
+      }
+    },
+    {
+      "requested": "2560x1440",
+      "file": "unfold-fixture-presentation-2560x1440.png",
+      "png": {
+        "width": 2560,
+        "height": 1440,
+        "bytes": 823715
+      },
+      "report": {
+        "requested": {
+          "width": 2560,
+          "height": 1440
+        },
+        "actual": {
+          "width": 2560,
+          "height": 1440
+        },
+        "tile": 1024,
+        "tiles": 6,
+        "ms": 4003,
+        "limits": {
+          "maxTextureSize": 8192,
+          "maxViewport": [
+            8192,
+            8192
+          ],
+          "maxSamples": 4,
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "software": true
+        },
+        "clamped": false,
+        "framing": "wider",
+        "note": "A imagem mostra o enquadramento do ecrã e mais espaço nas laterais."
+      }
+    },
+    {
+      "requested": "3840x2160",
+      "file": "unfold-fixture-presentation-3840x2160.png",
+      "png": {
+        "width": 3840,
+        "height": 2160,
+        "bytes": 1718088
+      },
+      "report": {
+        "requested": {
+          "width": 3840,
+          "height": 2160
+        },
+        "actual": {
+          "width": 3840,
+          "height": 2160
+        },
+        "tile": 1024,
+        "tiles": 12,
+        "ms": 4882,
+        "limits": {
+          "maxTextureSize": 8192,
+          "maxViewport": [
+            8192,
+            8192
+          ],
+          "maxSamples": 4,
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "software": true
+        },
+        "clamped": false,
+        "framing": "wider",
+        "note": "A imagem mostra o enquadramento do ecrã e mais espaço nas laterais."
+      }
+    }
+  ]
+}
