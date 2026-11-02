@@ -421,7 +421,7 @@ export function adaptReviewedProposalToAssembly(proposalInput: AssemblyProposalV
     const stroke = actuatorStrokeActions.get(actuator.id);
     if (stroke) applyCylinderStroke(seed, actuator, stroke, reasons);
   }
-  reasons.push(...validateMappedConstraintClosure(seed, new Set(mapping.keys())));
+  reasons.push(...validateMappedConstraintClosure(seed, new Set(seed.parts.map((part) => part.id))));
   if (reasons.length) throw new ReconstructionAdapterBlockedError(reasons);
   const result = validateAssembly(seed);
   if (!result.ok) throw new ReconstructionAdapterBlockedError(result.issues.map((issue) => `${issue.path}: ${issue.code}`));
