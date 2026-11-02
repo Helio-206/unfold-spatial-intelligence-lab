@@ -1,4 +1,4 @@
-import { AmbientLight, Box3, Box3Helper, BufferGeometry, Color, DirectionalLight, DoubleSide, Float32BufferAttribute, GridHelper, Group, Mesh, MeshBasicMaterial, Object3D, PerspectiveCamera, Quaternion, Raycaster, Scene, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer } from 'three';
+import { Box3, Box3Helper, BufferGeometry, Color, DoubleSide, Float32BufferAttribute, GridHelper, Group, Mesh, MeshBasicMaterial, Object3D, PerspectiveCamera, Quaternion, Raycaster, Scene, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -23,6 +23,10 @@ import { cameraFrameAspect, createSpatialCameraView, createSpatialFocusView } fr
 import { countReconstructionStates, RECONSTRUCTION_STATES, RECONSTRUCTION_STATE_MEANING, reconstructionChip, reconstructionState } from './reconstruction-state';
 import lockupLight from '../design-system/logos/unfold-lockup-on-light.svg';
 import { mountStepsHeader } from './steps-header';
+import { createRenderingController } from './rendering/viewer';
+import { disposeOwnedGeometries } from './rendering/lifecycle';
+import { canvasToBlob, HighResError, renderHighResolution } from './rendering/hires';
+import type { VisualQuality } from './rendering/quality';
 import { describeRemovalCard, describeWallRemoval, type RemovalCard } from './removal-preview';
 import { dur as motionDur, EASE as MOTION_EASE, gsap as motionGsap, prefersReducedMotion as motionReduced } from './motion';
 import './spatial-editor.css';
@@ -79,6 +83,9 @@ app.innerHTML = `<main class="spatial-lab" data-state="empty" data-theme="dark">
   <section class="removal-card" id="removal-card" data-theme="light" hidden aria-label="Remoção de parede"></section>
   <section class="stage-empty" id="stage-empty"><span class="u-label">espaço livre</span><h1>Uma cena começa por evidência.</h1><p>Importe uma planta real, revise os segmentos e calibre a escala antes de construir a geometria.</p><a class="u-btn u-btn--primary" href="/demo">Abrir experiência UNFOLD</a></section>
   <nav class="spatial-toolbar" data-theme="light" aria-label="Ferramentas da cena"><button id="mode-translate" type="button" aria-label="Mover" title="Mover">↔</button><button id="mode-rotate" type="button" aria-label="Rodar" title="Rodar">↻</button><button id="mode-scale" type="button" aria-label="Escalar" title="Escalar">⤢</button><i></i><button id="fit-scene" type="button" aria-label="Enquadrar" title="Enquadrar">□</button><button id="home-scene" type="button" aria-label="Início" title="Início">⌂</button><button id="top-view" type="button" aria-label="Vista superior" title="Vista superior">T</button><button id="front-view" type="button" aria-label="Vista frontal" title="Vista frontal">F</button><button id="iso-view" type="button" aria-label="Vista isométrica" title="Vista isométrica">I</button><button id="toggle-reference" type="button" aria-pressed="true" aria-label="Mostrar ou ocultar imagem original" title="Referência">▧</button><button id="compare-scene" type="button" aria-pressed="false" disabled>Antes / Depois</button><button id="undo-scene" type="button" disabled>Desfazer</button><button id="redo-scene" type="button" disabled>Refazer</button></nav>
+  <div class="view-controls" data-theme="light" role="group" aria-label="Vista e exportação"><div class="quality-switch" role="group" aria-label="Qualidade visual"><button id="quality-technical" type="button" aria-pressed="true" title="Técnico: geometria e fronteiras legíveis, mais rápido">Técnico</button><button id="quality-presentation" type="button" aria-pressed="false" title="Apresentação: materiais, sombras e detalhe">Apresentação</button></div><button id="export-image" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="export-menu" disabled>Exportar imagem</button></div>
+  <div class="export-menu" id="export-menu" role="menu" data-theme="light" hidden><button role="menuitem" type="button" data-export="1920x1080">1920 × 1080</button><button role="menuitem" type="button" data-export="2560x1440">2560 × 1440</button><button role="menuitem" type="button" data-export="3840x2160">3840 × 2160 <small>depende do dispositivo</small></button></div>
+  <section class="export-card" id="export-card" data-theme="light" hidden role="status" aria-live="polite"><p id="export-text"></p><div class="export-actions"><button type="button" class="u-btn u-btn--outline" id="export-cancel">Cancelar</button><button type="button" class="u-btn u-btn--outline" id="export-close" hidden>Fechar</button></div></section>
   <div class="spatial-status" data-theme="light" id="spatial-status" role="status" aria-live="polite">À espera de uma planta. Geometria não presumida.</div><div id="spatial-metrics" class="spatial-metrics"></div>
 </main>`;
 
@@ -103,9 +110,8 @@ orbit.enableDamping = true;
 orbit.dampingFactor = 0.08;
 orbit.maxPolarAngle = Math.PI;
 orbit.addEventListener('start', () => { gsap.killTweensOf(camera.position); gsap.killTweensOf(orbit.target); });
-const ambient = new AmbientLight(0xc9c7bb, 1.25); scene.add(ambient);
-const keyLight = new DirectionalLight(0xffead0, 3.2); keyLight.position.set(-5, 9, 6); scene.add(keyLight);
-const fillLight = new DirectionalLight(0xa5b09a, 1.05); fillLight.position.set(7, 4, -7); scene.add(fillLight);
+// Visual profile (Técnico by default): renderer settings, lights and shadows come from one controller; switching it never touches the scene data.
+const rendering = createRenderingController(scene, renderer, 'technical');
 const grid = new GridHelper(36, 36, 0x776e5d, 0x343a34); grid.position.y = -0.035; scene.add(grid);
 const root = new Group(); scene.add(root);
 const gizmo = new TransformControls(camera, renderer.domElement);
@@ -114,6 +120,9 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const raycaster = new Raycaster(); const pointer = new Vector2();
 let transaction: SceneTransaction | undefined;
 let removalGhost: RemovalGhost | undefined;
+let ghostState: { base: SpatialSceneV1; wallId: string; mode: 'dissolve' | 'blocked' } | undefined;
+let displayedModel: SpatialSceneV1 | undefined;
+let exporting: AbortController | undefined;
 let preview: ScenePreview | undefined;
 let compoundPreview: SceneTransaction | undefined;
 // Autorizações de valores confirmados: emitidas só no clique de confirmação, para a operação que o preview mostrou.
@@ -175,8 +184,11 @@ function cameraFitAspect(): number {
 }
 function draw(now = performance.now()): void {
   raf = 0;
+  if (exporting) return; // the export owns the scene while it renders; it asks for a redraw when it ends
   const moving = orbit.update();
   renderer.render(scene, camera);
+  const degraded = rendering.sampleFrame(now);
+  if (degraded) status(degraded === 1 ? 'Apresentação com sombras mais leves: este dispositivo está lento. Escolha Técnico para a máxima fluidez.' : 'Apresentação sem sombras: este dispositivo está lento. Escolha Técnico para a máxima fluidez.');
   frameCount += 1;
   if (now - fpsAt >= 1000) { fps = Math.round(frameCount * 1000 / (now - fpsAt)); frameCount = 0; fpsAt = now; updateMetrics(); }
   if (moving) invalidate();
@@ -193,18 +205,10 @@ function resize(): void {
 resizeObserver.observe($('#spatial-canvas'));
 
 function disposeSceneGroup(): void {
-  removalGhost?.dispose(); removalGhost = undefined;
+  removalGhost?.dispose(); removalGhost = undefined; ghostState = undefined;
   gizmo.detach();
-  root.traverse((object) => {
-    if (!(object instanceof Mesh) || hasSharedAssetParent(object)) return;
-    object.geometry.dispose();
-  });
+  disposeOwnedGeometries(root); // meshes AND outline lines; shared GLB geometry and the shared material library are left alone
   root.clear();
-}
-function hasSharedAssetParent(object: Object3D): boolean {
-  let current: Object3D | null = object;
-  while (current) { if (current.userData.sharedAsset === true) return true; current = current.parent; }
-  return false;
 }
 function assetByName(source: Object3D | undefined, name: string): Object3D | undefined {
   if (!source) return undefined;
@@ -299,12 +303,14 @@ function renderModel(model = transaction?.scene, animate = false): void {
   buildTimeline?.kill();
   if (!model) { grid.visible = true; updateReferenceView(); invalidate(); return; }
   grid.visible = false;
-  const started = performance.now(); disposeSceneGroup();
-  const renderGroup = buildThreePlanGroup(model, assets);
+  const started = performance.now(); disposeSceneGroup(); displayedModel = model;
+  const renderGroup = buildThreePlanGroup(model, assets, { quality: rendering.quality });
   root.add(renderGroup);
   root.traverse((object) => { if (object instanceof Mesh && object.parent && object.userData.id === undefined) { const node = object.parent; if (node.name && model.nodes.some((item) => item.id === node.name)) object.userData.id = node.name; } });
   buildMs = performance.now() - started;
   const bounds = new Box3().setFromObject(root);
+  rendering.fit(bounds);
+  announceFloorConflicts(renderGroup);
   if (!bounds.isEmpty()) {
     const home = createSpatialCameraView(bounds, cameraFitAspect(), 'isometric');
     cameraHome = { target: home.target.clone(), position: home.position.clone() };
@@ -368,6 +374,7 @@ function updateToolbar(): void {
   $('#undo-scene').disabled = !transaction?.undoStack.length || !!preview || !!compoundPreview;
   $('#redo-scene').disabled = !transaction?.redoStack.length || !!preview || !!compoundPreview;
   $('#save-scene').disabled = !transaction;
+  $('#export-image').disabled = !displayedModel || !!exporting;
   $('#restore-scene').disabled = !localStorage.getItem('unfold-spatial-scene.v1');
   $('#compare-scene').disabled = !transaction?.undoStack.length || !!preview || !!compoundPreview;
   $('#add-module').disabled = !assetReady || !transaction || !!preview || !!compoundPreview;
@@ -1064,6 +1071,129 @@ async function handleSpatialCommand(input: string, origin: SpatialCommandOrigin,
   }
 }
 
+// ---- visual profile and image export --------------------------------------------------------------------------------------------------
+// Visual-only actions: none of these creates a revision, touches the transaction, the undo history, provenance or the serialized scene.
+const exportButton = $('#export-image'); const exportMenu = $('#export-menu'); const exportCard = $('#export-card');
+function announceFloorConflicts(group: Object3D): void {
+  const conflicts = (group.userData.floorConflicts ?? []) as Array<{ kind: 'duplicate' | 'partial'; ids: string[] }>;
+  if (!conflicts.length) return;
+  const duplicates = conflicts.filter((c) => c.kind === 'duplicate').reduce((n, c) => n + c.ids.length - 1, 0); const partial = conflicts.filter((c) => c.kind === 'partial').length;
+  status([duplicates ? `${duplicates} piso${duplicates > 1 ? 's' : ''} repetido${duplicates > 1 ? 's' : ''} desenhado${duplicates > 1 ? 's' : ''} uma só vez (os nós continuam na cena)` : '', partial ? `${partial} sobreposição${partial > 1 ? 'ões' : ''} parcial${partial > 1 ? 'is' : ''} de pisos, mostrada${partial > 1 ? 's' : ''} a tracejado` : ''].filter(Boolean).join(' · ') + '.');
+}
+function setQualityButtons(): void {
+  for (const [id, q] of [['#quality-technical', 'technical'], ['#quality-presentation', 'presentation']] as const) $(id).setAttribute('aria-pressed', String(rendering.quality === q));
+}
+function setQuality(quality: VisualQuality): void {
+  if (exporting || !rendering.setQuality(quality)) return;
+  setQualityButtons();
+  if (displayedModel) {
+    const ghost = ghostState;
+    renderModel(displayedModel); // same scene object; selection, camera and interaction state are untouched
+    if (ghost) attachRemovalGhost(ghost.base, ghost.wallId, ghost.mode);
+  } else invalidate();
+  status(quality === 'presentation' ? 'Vista de apresentação: materiais, sombras e detalhe. A geometria é a mesma.' : 'Vista técnica: geometria e fronteiras em primeiro lugar. A geometria é a mesma.');
+}
+$('#quality-technical').addEventListener('click', () => setQuality('technical'));
+$('#quality-presentation').addEventListener('click', () => setQuality('presentation'));
+
+function closeExportMenu(focusButton = false): void { exportMenu.hidden = true; exportButton.setAttribute('aria-expanded', 'false'); if (focusButton) exportButton.focus(); }
+exportButton.addEventListener('click', () => {
+  const open = exportMenu.hidden; exportMenu.hidden = !open; exportButton.setAttribute('aria-expanded', String(open));
+  if (open) { const r = exportButton.getBoundingClientRect(); const host = app!.getBoundingClientRect(); exportMenu.style.left = `${Math.min(Math.max(8, r.left - host.left), host.width - 190)}px`; exportMenu.style.top = `${r.bottom - host.top + 8}px`; exportMenu.style.bottom = 'auto'; ($('#export-menu button') as HTMLElement).focus(); }
+});
+exportMenu.addEventListener('click', (event) => {
+  const target = (event.target as HTMLElement).closest<HTMLElement>('[data-export]'); if (!target) return;
+  const [w, h] = target.dataset.export!.split('x').map(Number); closeExportMenu(true); void exportImage(w!, h!);
+});
+exportMenu.addEventListener('keydown', (event) => {
+  const items = [...exportMenu.querySelectorAll<HTMLElement>('[role="menuitem"]')]; const at = items.indexOf(document.activeElement as HTMLElement);
+  if (event.key === 'ArrowDown') { items[(at + 1) % items.length]!.focus(); event.preventDefault(); } else if (event.key === 'ArrowUp') { items[(at - 1 + items.length) % items.length]!.focus(); event.preventDefault(); }
+  else if (event.key === 'Escape') { closeExportMenu(true); event.stopPropagation(); }
+});
+function showExportCard(text: string, state: 'busy' | 'done' | 'error'): void {
+  $('#export-text').textContent = text; exportCard.dataset.state = state; exportCard.hidden = false;
+  $('#export-cancel').hidden = state !== 'busy'; $('#export-close').hidden = state === 'busy';
+}
+$('#export-close').addEventListener('click', () => { exportCard.hidden = true; });
+$('#export-cancel').addEventListener('click', () => exporting?.abort());
+const safeName = (value: string) => value.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'cena';
+
+async function exportImage(width: number, height: number): Promise<void> {
+  if (exporting || !displayedModel) return;
+  const controller = new AbortController(); exporting = controller;
+  const chrome: Object3D[] = []; chrome.push(gizmo.getHelper() as unknown as Object3D); if (selectionOutline) chrome.push(selectionOutline); const visibility = chrome.map((item) => item.visible);
+  chrome.forEach((item) => { item.visible = false; }); // the picture shows the model, not the editing handles
+  for (const id of ['#quality-technical', '#quality-presentation', '#export-image']) ($(id) as HTMLButtonElement).disabled = true;
+  showExportCard(`A exportar ${width} × ${height} (${rendering.quality === 'presentation' ? 'apresentação' : 'técnico'})…`, 'busy');
+  try {
+    const { canvas, report } = await renderHighResolution(scene, camera, {
+      width, height, quality: rendering.quality, viewportAspect: camera.aspect, signal: controller.signal,
+      onProgress: ({ done, total }) => { exportCard.style.setProperty('--export-progress', `${Math.round((done / total) * 100)}%`); showExportCard(`A exportar ${width} × ${height}… ${done} de ${total} blocos`, 'busy'); },
+    });
+    const blob = await canvasToBlob(canvas);
+    const link = document.createElement('a'); const url = URL.createObjectURL(blob);
+    link.href = url; link.download = `unfold-${safeName(displayedModel.title)}-${rendering.quality}-${report.actual.width}x${report.actual.height}.png`; document.body.append(link); link.click(); link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    canvas.width = 0; canvas.height = 0; // release the pixel buffer now
+    const size = blob.size > 1_048_576 ? `${(blob.size / 1_048_576).toFixed(1)} MB` : `${Math.round(blob.size / 1024)} kB`;
+    const result = `Imagem exportada: ${report.actual.width} × ${report.actual.height} · ${size}. ${report.note}`;
+    showExportCard(report.clamped ? `${result} O dispositivo não permitiu o tamanho pedido.` : result, report.clamped ? 'error' : 'done');
+    (window as unknown as { __unfoldLastExport?: unknown }).__unfoldLastExport = { report, bytes: blob.size, name: link.download };
+    status(result);
+  } catch (error) {
+    const aborted = error instanceof HighResError && error.code === 'ABORTED';
+    showExportCard(aborted ? 'Exportação cancelada. A cena não foi alterada.' : `A exportação falhou: ${error instanceof Error ? error.message : 'erro desconhecido'} Tente um tamanho menor.`, aborted ? 'done' : 'error');
+  } finally {
+    chrome.forEach((item, i) => { item.visible = visibility[i]!; });
+    for (const id of ['#quality-technical', '#quality-presentation']) ($(id) as HTMLButtonElement).disabled = false;
+    exporting = undefined; updateToolbar(); invalidate();
+  }
+}
+if (new URLSearchParams(location.search).has('debug-rendering')) {
+  // Test hook for the browser E2E only: read-only counters, plus the export entry point.
+  (window as unknown as { __unfoldRendering?: unknown }).__unfoldRendering = {
+    info: () => ({ geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, programs: renderer.info.programs?.length ?? 0, calls: renderer.info.render.calls, triangles: renderer.info.render.triangles }),
+    quality: () => rendering.quality, degrade: () => rendering.degrade, exportImage, sceneChildren: () => scene.children.length, lights: () => { let n = 0; scene.traverse((o) => { if ((o as unknown as { isLight?: boolean }).isLight) n += 1; }); return n; },
+    view: (position: number[], target: number[]) => { moveCamera(new Vector3(...(target as [number, number, number])), new Vector3(...(position as [number, number, number])), 0, new Vector3(0, 1, 0)); },
+    bounds: () => { const box = new Box3().setFromObject(root); return { min: box.min.toArray(), max: box.max.toArray() }; },
+    nodePosition: (id: string) => { const object = root.getObjectByName(id); if (!object) return null; const box = new Box3().setFromObject(object); return { center: box.getCenter(new Vector3()).toArray(), size: box.getSize(new Vector3()).toArray() }; },
+    /** Same scene and camera rendered twice at `width` x `height` with different tile sizes (seam test) or against the editor's own canvas. */
+    compare: async (mode: 'tiles' | 'editor', width: number, height: number, tileA = 512, tileB = 4096) => {
+      const read = (source: HTMLCanvasElement) => { const copy = document.createElement('canvas'); copy.width = source.width; copy.height = source.height; const context = copy.getContext('2d')!; context.drawImage(source, 0, 0); return context.getImageData(0, 0, source.width, source.height); };
+      let first: ImageData; let second: ImageData; let seams: number[] = [];
+      if (mode === 'editor') {
+        renderer.render(scene, camera); first = read(renderer.domElement); width = first.width; height = first.height;
+        second = read((await renderHighResolution(scene, camera, { width, height, quality: rendering.quality, viewportAspect: camera.aspect, tile: tileB })).canvas);
+      } else {
+        first = read((await renderHighResolution(scene, camera, { width, height, quality: rendering.quality, viewportAspect: camera.aspect, tile: tileA })).canvas);
+        second = read((await renderHighResolution(scene, camera, { width, height, quality: rendering.quality, viewportAspect: camera.aspect, tile: tileB })).canvas);
+        for (let x = tileA; x < width; x += tileA) seams.push(x);
+      }
+      let sum = 0; let max = 0; let visible = 0; let seamSum = 0; let seamCount = 0;
+      const seamColumns = new Set<number>(); for (const x of seams) { seamColumns.add(x - 1); seamColumns.add(x); }
+      for (let i = 0; i < first.data.length; i += 4) {
+        const d = Math.max(Math.abs(first.data[i]! - second.data[i]!), Math.abs(first.data[i + 1]! - second.data[i + 1]!), Math.abs(first.data[i + 2]! - second.data[i + 2]!));
+        sum += d; if (d > max) max = d; if (d > 8) visible += 1;
+        if (seamColumns.has((i / 4) % first.width)) { seamSum += d; seamCount += 1; }
+      }
+      const pixels = first.width * first.height;
+      return { mode, width: first.width, height: first.height, meanAbsDiff: sum / pixels, maxDiff: max, fractionOver8: visible / pixels, seamMeanAbsDiff: seamCount ? seamSum / seamCount : null, tileA, tileB };
+    },
+    inspect: () => { const rows: unknown[] = []; root.traverse((o) => { const m = o as unknown as { isMesh?: boolean; isLine?: boolean; material?: { transparent?: boolean; opacity?: number; type?: string } | Array<{ transparent?: boolean; opacity?: number; type?: string }> }; if (!m.isMesh && !m.isLine) return; const mat = Array.isArray(m.material) ? m.material[0] : m.material; rows.push({ parent: o.parent?.name, kind: m.isLine ? 'line' : 'mesh', visible: o.visible, verts: (o as unknown as { geometry?: { attributes?: { position?: { count: number } } } }).geometry?.attributes?.position?.count, box: new Box3().setFromObject(o).getSize(new Vector3()).toArray().map((n) => +n.toFixed(2)), mat: mat?.type, opacity: mat?.opacity, transparent: mat?.transparent, flags: Object.keys(o.userData ?? {}).join(',') }); }); return rows; },
+    profile: () => ({ ...rendering.profile }),
+    benchmark: (frames = 60) => {
+      const gl = renderer.getContext(); const pixel = new Uint8Array(4); const times: number[] = [];
+      for (let i = 0; i < 5; i += 1) renderer.render(scene, camera);
+      for (let i = 0; i < frames; i += 1) { const t = performance.now(); renderer.render(scene, camera); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel); times.push(performance.now() - t); }
+      times.sort((a, b) => a - b);
+      const { calls, triangles } = renderer.info.render; const { geometries, textures } = renderer.info.memory;
+      return { frames, meanMs: times.reduce((a, b) => a + b, 0) / frames, p95Ms: times[Math.floor(frames * 0.95)]!, calls, triangles, geometries, textures, sceneGeometries: (() => { const seen = new Set<unknown>(); scene.traverse((o) => { const g = (o as unknown as { geometry?: unknown }).geometry; if (g) seen.add(g); }); return seen.size; })() };
+    },
+    sceneGeometries: () => { const seen = new Set<unknown>(); scene.traverse((o) => { const g = (o as unknown as { geometry?: unknown }).geometry; if (g) seen.add(g); }); return seen.size; },
+    camera: () => ({ position: camera.position.toArray(), target: orbit.target.toArray(), fov: camera.fov, aspect: camera.aspect }), canvas: () => renderer.domElement,
+  };
+}
+
 /** O texto do preview, com o aviso de valores confirmados quando a alteração os toca (o clique em «Aplicar» é a autorização). */
 function previewText(text: string, touched: readonly ConfirmedReference[]): string {
   const notice = confirmedNotice(touched, (id) => { const item = transaction?.scene.nodes.find((candidate) => candidate.id === id); return item ? roomDisplayName(item) : id; });
@@ -1085,7 +1215,7 @@ function showRemovalCard(card: RemovalCard): void {
   motionGsap.fromTo(removalCard, { opacity: 0, x: 16 }, { opacity: 1, x: 0, duration: motionDur('base'), ease: MOTION_EASE.out });
   app!.querySelector<HTMLButtonElement>('#removal-confirm')?.addEventListener('click', () => $('#commit-preview').click());
   app!.querySelector<HTMLButtonElement>('#removal-cancel')?.addEventListener('click', () => $('#cancel-preview').click());
-  app!.querySelector<HTMLButtonElement>('#removal-close')?.addEventListener('click', () => { removalGhost?.dispose(); if (removalGhost) root.remove(removalGhost.group); removalGhost = undefined; hideRemovalCard(); invalidate(); });
+  app!.querySelector<HTMLButtonElement>('#removal-close')?.addEventListener('click', () => { removalGhost?.dispose(); if (removalGhost) root.remove(removalGhost.group); removalGhost = undefined; ghostState = undefined; hideRemovalCard(); invalidate(); });
   (app!.querySelector<HTMLButtonElement>('#removal-confirm') ?? app!.querySelector<HTMLButtonElement>('#removal-close'))?.focus({ preventScroll: true });
 }
 function hideRemovalCard(): void {
@@ -1094,10 +1224,11 @@ function hideRemovalCard(): void {
   motionGsap.to(removalCard, { opacity: 0, x: 16, duration: motionDur('base'), ease: MOTION_EASE.out, onComplete: () => { removalCard.hidden = true; } });
 }
 function attachRemovalGhost(base: SpatialSceneV1, wallId: string, mode: 'dissolve' | 'blocked'): void {
-  removalGhost?.dispose(); if (removalGhost) root.remove(removalGhost.group);
+  removalGhost?.dispose(); if (removalGhost) root.remove(removalGhost.group); ghostState = undefined;
   const edge = new Color(cssToken(mode === 'dissolve' ? '--fold' : '--ink-muted', mode === 'dissolve' ? '#FF5A1F' : '#9AA0A8')).getHex();
-  removalGhost = buildRemovalGhost(base, wallId, edge, assets);
+  removalGhost = buildRemovalGhost(base, wallId, edge, assets, rendering.quality);
   if (!removalGhost) return;
+  ghostState = { base, wallId, mode };
   root.add(removalGhost.group); removalGhost.settle(mode, invalidate); invalidate();
 }
 /** Prepara a remoção de uma parede. `{ ok: false }` quando o motor a recusa (e o cartão mostra a razão) ou não há o que remover. */
@@ -1306,7 +1437,8 @@ function cleanup(notifyExit = false): void {
   window.removeEventListener('beforeunload', onUnload);
   window.removeEventListener('keydown', onEditorKeydown);
   unregisterSpatialCommands?.(); unregisterSpatialCommands = undefined;
-  disposeSceneGroup(); gizmo.dispose(); orbit.dispose(); renderer.forceContextLoss(); renderer.dispose();
+  exporting?.abort();
+  disposeSceneGroup(); gizmo.dispose(); orbit.dispose(); rendering.dispose(); renderer.forceContextLoss(); renderer.dispose();
   referenceGroup?.traverse((object) => { if (object instanceof Mesh) { object.geometry.dispose(); object.material.dispose(); } });
   referenceTexture?.dispose();
   if (libraryRoot) libraryRoot.traverse((object) => { if (object instanceof Mesh) { object.geometry.dispose(); const materials = Array.isArray(object.material) ? object.material : [object.material]; materials.forEach((material) => material.dispose()); } });
@@ -1319,7 +1451,9 @@ function cleanup(notifyExit = false): void {
 }
 const onUnload = () => cleanup();
 function onEditorKeydown(event: KeyboardEvent): void {
-  if (event.key === 'Escape' && (preview || compoundPreview)) cancelPreview();
+  if (event.key === 'Escape' && exporting) exporting.abort();
+  else if (event.key === 'Escape' && !exportMenu.hidden) closeExportMenu(true);
+  else if (event.key === 'Escape' && (preview || compoundPreview)) cancelPreview();
   else if (event.key === 'Escape') cleanup(true);
   else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); executeHistory(event.shiftKey ? 'Redo' : 'Undo'); }
 }
