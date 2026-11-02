@@ -106,7 +106,7 @@ No `sample-1`, os cinco falsos que permanecem no tier adaptativo são quatro seg
 
 Como não existe perda silenciosa de coordenadas, não foi introduzido processamento multirresolução. Uma versão futura deve manter transformação explícita entre pirâmides e análise localizada; isso só se justifica quando memória ou latência excederem o orçamento medido.
 
-O seletor adaptativo levou mediana de aproximadamente 3 ms no `sample-1` e 4 ms na Amoureaux em 100 execuções. O aumento observado de heap, registrado no JSON, é uma medida do processo inteiro e não um perfil isolado de alocação.
+No run integrado, o seletor adaptativo levou mediana de 4,6612 ms no `sample-1` e 4,8736 ms na Amoureaux em 100 execuções; p95 de 7,2170 ms e 6,6704 ms. O aumento observado de heap, registrado no JSON, é uma medida do processo inteiro e não um perfil isolado de alocação. As diferenças face ao relatório anterior são variação de execução do processo, não alteração das métricas de qualidade: os contadores, precisão, recall, cobertura, erros de extremos, matching de divisões e aberturas permaneceram iguais.
 
 ## Alterações
 

@@ -139,9 +139,9 @@
       "thicknessQuantile": 6
     },
     "selectorPerformance": {
-      "medianLatencyMs": 2.3382,
-      "p95LatencyMs": 3.5311,
-      "observedHeapIncreaseBytes": 1830200,
+      "medianLatencyMs": 4.6612,
+      "p95LatencyMs": 7.217,
+      "observedHeapIncreaseBytes": 1585272,
       "runs": 100
     },
     "existingProxyRecall": {
@@ -315,9 +315,9 @@
       "thicknessQuantile": 4
     },
     "selectorPerformance": {
-      "medianLatencyMs": 3.1074,
-      "p95LatencyMs": 3.6411,
-      "observedHeapIncreaseBytes": 7221080,
+      "medianLatencyMs": 4.8736,
+      "p95LatencyMs": 6.6704,
+      "observedHeapIncreaseBytes": 6871920,
       "runs": 100
     },
     "limitations": [
