@@ -22,6 +22,7 @@ export type RoomMergeBlockCode =
   | 'ROOM_MERGE_SINGLE_ROOM'
   | 'ROOM_MERGE_MORE_THAN_TWO_ROOMS'
   | 'ROOM_MERGE_NOT_POLYGON'
+  | 'ROOM_MERGE_UNSUPPORTED_TRANSFORM'
   | 'ROOM_MERGE_EDGE_MISMATCH'
   | 'ROOM_MERGE_TOUCH_ELSEWHERE'
   | 'ROOM_MERGE_NOT_SIMPLE'
@@ -140,6 +141,20 @@ function contact(a0: Point, a1: Point, b0: Point, b1: Point): { kind: 'none' } |
   return { kind: 'point', at: point, crossing: interior && hit.t > 0 && hit.t < 1 && hit.u > 0 && hit.u < 1 };
 }
 
+/** Abaixo disto uma transformada conta como identidade (ruído de vírgula flutuante); acima, é uma transformada de verdade. */
+const FRAME_TOLERANCE = 1e-9;
+const isZero = (value: number) => Math.abs(value) <= FRAME_TOLERANCE;
+const isOne = (value: number) => Math.abs(value - 1) <= FRAME_TOLERANCE;
+/**
+ * O polígono de uma divisão está no referencial da cena? O motor compara-o com os extremos das paredes, que calcula em
+ * coordenadas da cena, e `applyWallEdit` escreve extremos de parede directamente nos vértices da divisão. Isso só é verdade se
+ * a divisão não tiver posição, rotação, escala nem pai próprios. A fusão não tenta converter referenciais: recusa-os.
+ */
+const roomInSceneFrame = (node: Node): boolean => node.parentId === null && node.transform.translationM.every(isZero) && node.transform.scale.every(isOne)
+  && node.transform.rotation.slice(0, 3).every(isZero) && isOne(Math.abs(node.transform.rotation[3]!));
+/** Uma parede só serve se os extremos que o motor lê (centro ± metade do comprimento, no plano do chão) são os do mundo. */
+const wallInSceneFrame = (node: Node): boolean => node.parentId === null && node.transform.scale.every(isOne) && isZero(node.transform.rotation[0]) && isZero(node.transform.rotation[2]);
+
 const propertyString = (node: Node, key: string): string | undefined => {
   const value = (node.component?.properties[key] ?? node.properties[key])?.value;
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
@@ -177,6 +192,10 @@ export function planRoomMerge(scene: SpatialSceneV1, wallId: string, recordedAt:
   // Só `bounded_by` com paredes sabe o motor refazer. Qualquer outra relação ligada a uma das divisões fica sem dono.
   const involved = new Set(ids);
   if (scene.relations.some((relation) => (involved.has(relation.fromNodeId) || involved.has(relation.toNodeId)) && !(relation.kind === 'bounded_by' && involved.has(relation.fromNodeId) && !involved.has(relation.toNodeId)))) return blocked('ROOM_MERGE_OTHER_RELATIONS', ids);
+
+  // Referenciais: nada de converter, nada de adivinhar. Uma fusão nunca se prova com relações que são falsas no mundo.
+  const involvedWalls = [...new Set([wallId, ...first.component!.dependsOn, ...second.component!.dependsOn])].flatMap((id) => scene.nodes.filter((node) => node.id === id));
+  if (!roomInSceneFrame(first) || !roomInSceneFrame(second) || involvedWalls.some((node) => node.component?.kind === 'wall' && !wallInSceneFrame(node))) return blocked('ROOM_MERGE_UNSUPPORTED_TRANSFORM', ids);
 
   const ends = wallEndpointsXZ(wall);
   if (!ends) return blocked('ROOM_MERGE_EDGE_MISMATCH', ids);
