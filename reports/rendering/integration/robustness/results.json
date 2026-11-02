@@ -1,6 +1,6 @@
 {
-  "at": "2026-11-02T18:45:22.454Z",
-  "passed": 24,
+  "at": "2026-11-02T19:00:37.320Z",
+  "passed": 31,
   "failed": 0,
   "checks": [
     {
@@ -58,13 +58,13 @@
         "geo0": 112,
         "cameraDuring": {
           "position": [
-            10.424408,
-            3.841275,
-            -1.4999999999999996
+            -0.08763499999999969,
+            11.845392,
+            2.038277
           ],
           "target": [
             4,
-            1.4,
+            1.085487,
             -1.5
           ],
           "fov": 42,
@@ -93,13 +93,13 @@
         },
         {
           "position": [
-            10.424408,
-            3.841275,
-            -1.4999999999999996
+            -0.08763499999999969,
+            11.845392,
+            2.038277
           ],
           "target": [
             4,
-            1.4,
+            1.085487,
             -1.5
           ],
           "fov": 42,
@@ -146,7 +146,7 @@
       "scenario": "B degradação",
       "name": "ponto de partida: frames de Apresentação acima de 80 ms neste dispositivo (software)",
       "ok": true,
-      "observed": 174.4199999999837
+      "observed": 160.09000000000523
     },
     {
       "scenario": "B degradação",
@@ -155,15 +155,15 @@
       "observed": {
         "reached": {
           "1": {
-            "moves": 19,
-            "ms": 6906
+            "moves": 20,
+            "ms": 6879
           },
           "2": {
-            "moves": 38,
-            "ms": 14061
+            "moves": 42,
+            "ms": 13818
           }
         },
-        "moves": 38
+        "moves": 42
       }
     },
     {
@@ -182,12 +182,12 @@
       "observed": {
         "reached": {
           "1": {
-            "moves": 19,
-            "ms": 6906
+            "moves": 20,
+            "ms": 6879
           },
           "2": {
-            "moves": 38,
-            "ms": 14061
+            "moves": 42,
+            "ms": 13818
           }
         }
       }
@@ -223,8 +223,8 @@
       "name": "[technical] o frame atrasado mede a latência do seu pedido (>= 120 ms), não 0 nem a do pedido seguinte emitido por orbit.update()",
       "ok": true,
       "observed": {
-        "latencyMs": 160.20000000006985,
-        "renderMs": 1.7000000000698492
+        "latencyMs": 160.20000000001164,
+        "renderMs": 0.8999999999941792
       }
     },
     {
@@ -232,12 +232,64 @@
       "name": "[presentation] o frame atrasado mede a latência do seu pedido (>= 120 ms), não 0 nem a do pedido seguinte emitido por orbit.update()",
       "ok": true,
       "observed": {
-        "latencyMs": 160.20000000006985,
-        "renderMs": 3
+        "latencyMs": 160.30000000004657,
+        "renderMs": 5.7000000000116415
       }
     },
     {
       "scenario": "C latência",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "D frame final",
+      "name": "ponto de partida: o canvas mostra o modelo",
+      "ok": true,
+      "observed": 0.217715
+    },
+    {
+      "scenario": "D frame final",
+      "name": "a degradação aconteceu num pedido de frame isolado",
+      "ok": true,
+      "observed": {
+        "level": 1,
+        "attempts": 2
+      }
+    },
+    {
+      "scenario": "D frame final",
+      "name": "depois da degradação há exactamente mais um frame (o que repõe o canvas) além do que a decidiu",
+      "ok": true,
+      "observed": {
+        "framesSinceRequest": 2
+      }
+    },
+    {
+      "scenario": "D frame final",
+      "name": "sem ciclo de desenho: nenhum frame extra em 2,5 s sem input",
+      "ok": true,
+      "observed": [
+        12,
+        12
+      ]
+    },
+    {
+      "scenario": "D frame final",
+      "name": "o canvas continua visível depois de reconfigurar o renderer",
+      "ok": true,
+      "observed": {
+        "before": 0.217715,
+        "after": 0.217715
+      }
+    },
+    {
+      "scenario": "D frame final",
+      "name": "o perfil aplicado já é o degradado",
+      "ok": true
+    },
+    {
+      "scenario": "D frame final",
       "name": "sem erros na consola",
       "ok": true,
       "observed": []

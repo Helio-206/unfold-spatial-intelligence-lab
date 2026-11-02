@@ -30,6 +30,8 @@ export type RenderingController = {
   syncGpu(): void;
   /** costs currently in the monitor's window, for diagnostics */
   samples(): readonly number[];
+  /** diagnostics/tests only: fills the monitor's window with `count` frames that cost `costMs`, so the next probe frame decides */
+  primeMonitor(costMs: number, count: number): void;
   dispose(): void;
 };
 
@@ -56,6 +58,7 @@ export function createRenderingController(scene: THREE.Scene, renderer: THREE.We
     },
     fit(box) { bounds = box.clone(); stage?.fit(bounds); },
     samples() { return monitor.samples; },
+    primeMonitor(costMs, count) { for (let i = 0; i < count; i += 1) monitor.sample(performance.now() + i, { latencyMs: 0, renderMs: costMs }); },
     wantsProbe() { if (quality !== 'presentation' || disposed || degrade >= 2) return false; probeTurn = !probeTurn; return probeTurn; },
     syncGpu() { const gl = renderer.getContext(); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, probePixel); },
     sampleFrame(now, info) {

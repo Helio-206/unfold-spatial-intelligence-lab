@@ -200,7 +200,7 @@ function draw(now = performance.now()): void {
   // Cost of a frame = time from its request to its callback (busy main thread / GPU) + render time. Idle time before the request never counts.
   lastFrame = { latencyMs, renderMs };
   const degraded = probe ? rendering.sampleFrame(now, { latencyMs, renderMs }) : null;
-  if (degraded) status(degraded === 1 ? 'Apresentação com sombras mais leves: este dispositivo está lento. Escolha Técnico para a máxima fluidez.' : 'Apresentação sem sombras: este dispositivo está lento. Escolha Técnico para a máxima fluidez.');
+  if (degraded) { invalidate(); status(degraded === 1 ? 'Apresentação com sombras mais leves: este dispositivo está lento. Escolha Técnico para a máxima fluidez.' : 'Apresentação sem sombras: este dispositivo está lento. Escolha Técnico para a máxima fluidez.'); } // configureRenderer() reset the drawing buffer: exactly one more frame, coalesced with any pending one (the next sample cannot degrade again before the cooldown)
   frameCount += 1;
   if (now - fpsAt >= 1000) { fps = Math.round(frameCount * 1000 / (now - fpsAt)); frameCount = 0; fpsAt = now; updateMetrics(); }
   if (moving) invalidate();
@@ -1173,7 +1173,7 @@ if (new URLSearchParams(location.search).has('debug-rendering')) {
   // Test hook for the browser E2E only: read-only counters, plus the export entry point.
   (window as unknown as { __unfoldRendering?: unknown }).__unfoldRendering = {
     info: () => ({ geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, programs: renderer.info.programs?.length ?? 0, calls: renderer.info.render.calls, triangles: renderer.info.render.triangles }),
-    quality: () => rendering.quality, degrade: () => rendering.degrade, frameSamples: () => [...rendering.samples()], draws: () => drawCount, lastFrame: () => lastFrame, /** asks for a frame; `nudge` moves the camera so the next orbit.update() inside that frame emits "change" (which calls invalidate() again) */ requestFrame: (nudge = false) => { if (nudge) camera.position.x += 0.5; invalidate(); }, exportImage, sceneChildren: () => scene.children.length, lights: () => { let n = 0; scene.traverse((o) => { if ((o as unknown as { isLight?: boolean }).isLight) n += 1; }); return n; },
+    quality: () => rendering.quality, degrade: () => rendering.degrade, frameSamples: () => [...rendering.samples()], draws: () => drawCount, lastFrame: () => lastFrame, /** asks for a frame; `nudge` moves the camera so the next orbit.update() inside that frame emits "change" (which calls invalidate() again) */ primeMonitor: (costMs: number, count: number) => rendering.primeMonitor(costMs, count), requestFrame: (nudge = false) => { if (nudge) camera.position.x += 0.5; invalidate(); }, exportImage, sceneChildren: () => scene.children.length, lights: () => { let n = 0; scene.traverse((o) => { if ((o as unknown as { isLight?: boolean }).isLight) n += 1; }); return n; },
     view: (position: number[], target: number[]) => { moveCamera(new Vector3(...(target as [number, number, number])), new Vector3(...(position as [number, number, number])), 0, new Vector3(0, 1, 0)); },
     bounds: () => { const box = new Box3().setFromObject(root); return { min: box.min.toArray(), max: box.max.toArray() }; },
     nodePosition: (id: string) => { const object = root.getObjectByName(id); if (!object) return null; const box = new Box3().setFromObject(object); return { center: box.getCenter(new Vector3()).toArray(), size: box.getSize(new Vector3()).toArray() }; },

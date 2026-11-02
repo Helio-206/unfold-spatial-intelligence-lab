@@ -6,6 +6,7 @@
 //   UNFOLD_API_TARGET=http://127.0.0.1:9 npx vite --port 5199 --strictPort &
 //   node tests/e2e/rendering-robustness.pw.mjs
 //  C. latência pedido-callback: um 'change' do OrbitControls emitido dentro do frame não pode apagar a hora do pedido do frame em curso.
+//  D. degradação num frame final inactivo: reconfigurar o renderer apaga o canvas, por isso tem de haver exactamente mais um frame depois.
 // Variáveis: UNFOLD_E2E_URL, UNFOLD_E2E_OUT (por omissão reports/rendering/integration/robustness), CHROME_PATH, UNFOLD_E2E_TILE (bloco, por omissão 256).
 import { chromium } from 'playwright-core';
 import { execFileSync } from 'node:child_process';
@@ -16,7 +17,7 @@ import { join, resolve } from 'node:path';
 
 const BASE = process.env.UNFOLD_E2E_URL ?? 'http://127.0.0.1:5199';
 const OUT = resolve(process.env.UNFOLD_E2E_OUT ?? 'reports/rendering/integration/robustness'); mkdirSync(OUT, { recursive: true });
-const ONLY = process.env.UNFOLD_E2E_ONLY; // A | B | C
+const ONLY = process.env.UNFOLD_E2E_ONLY; // A | B | C | D
 const SIZE = (process.env.UNFOLD_E2E_SIZE ?? '3840x2160').split('x').map(Number);
 const TILE = Number(process.env.UNFOLD_E2E_TILE ?? 256);
 const scratch = mkdtempSync(join(tmpdir(), 'unfold-e2e-robust-'));
@@ -169,6 +170,37 @@ try {
       }));
       check(sc, `[${quality}] o frame atrasado mede a latência do seu pedido (>= 120 ms), não 0 nem a do pedido seguinte emitido por orbit.update()`, frame.latencyMs >= 120 && frame.latencyMs < 5000, frame);
     }
+    check(sc, 'sem erros na consola', errors.length === 0, errors);
+    await context.close();
+  }
+  // ------------------------------------------------------------------ D. degradação num frame final
+  if (!ONLY || ONLY === 'D') {
+    const sc = 'D frame final';
+    const { page, errors, context } = await openEditor();
+    await page.waitForTimeout(3000); await page.click('#quality-presentation'); await page.waitForTimeout(1500);
+    const drawn = () => R(page, (r) => r.draws());
+    // fraction of pixels in the canvas area that differ from the corner colour (0 = blank canvas)
+    const content = async () => {
+      const png = (await page.screenshot({ clip: { x: 384, y: 180, width: 1000, height: 600 } })).toString('base64');
+      return page.evaluate(async (b64) => { const img = new Image(); img.src = `data:image/png;base64,${b64}`; await img.decode(); const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const g = c.getContext('2d'); g.drawImage(img, 0, 0); const d = g.getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (Math.abs(d[i] - d[0]) + Math.abs(d[i + 1] - d[1]) + Math.abs(d[i + 2] - d[2]) > 24) n += 1; return n / (c.width * c.height); }, png);
+    };
+    const before = await content();
+    check(sc, 'ponto de partida: o canvas mostra o modelo', before > 0.02, before);
+    await R(page, (r) => r.primeMonitor(200, 40)); // 40 frames of 200 ms are already in the window: the NEXT probe frame decides to degrade
+    // single, isolated frame requests: nothing animates, nothing orbits, no input follows
+    let level = 0; let attempts = 0; let lastRequest = 0;
+    while (level < 1 && attempts < 6) { attempts += 1; lastRequest = await drawn(); await R(page, (r) => r.requestFrame()); await page.waitForTimeout(700); level = await R(page, (r) => r.degrade()); }
+    check(sc, 'a degradação aconteceu num pedido de frame isolado', level === 1, { level, attempts });
+    await page.waitForTimeout(800);
+    const afterDegrade = await drawn();
+    // frames after the one that degraded: the 'probe' alternates, so the degrading frame is the one requested last; exactly one more must follow
+    const framesSinceRequest = afterDegrade - lastRequest;
+    check(sc, 'depois da degradação há exactamente mais um frame (o que repõe o canvas) além do que a decidiu', framesSinceRequest === 2, { framesSinceRequest });
+    await page.waitForTimeout(2500);
+    check(sc, 'sem ciclo de desenho: nenhum frame extra em 2,5 s sem input', (await drawn()) === afterDegrade, [afterDegrade, await drawn()]);
+    const after = await content();
+    check(sc, 'o canvas continua visível depois de reconfigurar o renderer', after > 0.02 && Math.abs(after - before) < 0.15, { before, after });
+    check(sc, 'o perfil aplicado já é o degradado', (await R(page, (r) => r.profile())).shadowMapSize === 512);
     check(sc, 'sem erros na consola', errors.length === 0, errors);
     await context.close();
   }
