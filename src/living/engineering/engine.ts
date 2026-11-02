@@ -165,7 +165,9 @@ export function evaluateConfiguration(assembly: Assembly, config: Configuration,
   // Colisões na configuração pedida. Com a política `block`, um contacto recusa a configuração; com `warn`, é só um aviso.
   const backend = options.collisionBackend ?? primitiveCollisionBackend;
   const collisions = backend.check({ assembly, state: requested });
-  const contactText = collisions.contacts.map((c) => (c.kind === 'part_ground' ? `${c.partIds[0]} abaixo do chão (${c.depthM!.toFixed(4)} m)` : `${c.partIds[0]} com ${c.partIds[1]} (${c.depthM!.toFixed(4)} m)`));
+  // A profundidade pode ser desconhecida (null, válido no contrato): formata-se sem assumir um número.
+  const depthText = (d: number | null) => (d === null ? 'profundidade desconhecida' : `${d.toFixed(4)} m`);
+  const contactText = collisions.contacts.map((c) => (c.kind === 'part_ground' ? `${c.partIds[0]} abaixo do chão (${depthText(c.depthM)})` : `${c.partIds[0]} com ${c.partIds[1]} (${depthText(c.depthM)})`));
   const contactSubjects = [...new Set(collisions.contacts.flatMap((c) => c.partIds))].sort();
   const extraWarnings: FrameWarning[] = [];
   if (collisions.contacts.length > 0) {

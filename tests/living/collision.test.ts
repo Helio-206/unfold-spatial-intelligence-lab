@@ -5,6 +5,7 @@ import { boxesOverlap, primitiveCollisionBackend, type CollisionInput } from '..
 import { evaluateConfiguration, evaluateReferencePose } from '../../src/living/engineering/engine';
 import { referenceConfiguration, solveForwardKinematics } from '../../src/living/engineering/forward-kinematics';
 import { type Rigid } from '../../src/living/engineering/transform-math';
+import type { CollisionBackend } from '../../src/living/engineering/collision';
 
 const clone = (): Assembly => structuredClone(EXCAVATOR_ASSEMBLY_V1);
 const box = (center: [number, number, number], half: [number, number, number], rotZ = 0): { world: Rigid; half: [number, number, number] } => ({
@@ -30,6 +31,26 @@ describe('sobreposição de caixas orientadas (eixos de separação, SAT)', () =
   });
   it('encostar exactamente (sem penetração) não conta como colisão', () => {
     expect(boxesOverlap(box([0, 0, 0], [1, 1, 1]), box([2, 0, 0], [1, 1, 1])).overlap).toBe(false);
+  });
+});
+
+describe('revisão: contacto sem profundidade conhecida (null) não faz rebentar a formatação', () => {
+  const unknownDepth: CollisionBackend = {
+    name: 'teste-profundidade-desconhecida', version: '0',
+    check: () => ({ checked: true, shapesChecked: [], shapesSkipped: [], groundPlaneChecked: false, contacts: [{ kind: 'part_ground', partIds: ['boom'], shapeIds: ['boom-box'], depthM: null }] }),
+  };
+  it('com a política block, o quadro fica bloqueado por COLLISION com a profundidade dita desconhecida', () => {
+    const frame = evaluateReferencePose(EXCAVATOR_ASSEMBLY_V1, { collisionBackend: unknownDepth });
+    expect(frame).toMatchObject({ status: 'blocked', blocked: { code: 'COLLISION' } });
+    expect(frame.blocked!.message).toMatch(/profundidade desconhecida/);
+    expect(validateMotionFrame(frame).ok).toBe(true);
+  });
+  it('com a política warn, o mesmo contacto é só um aviso e a pose de referência continua ok', () => {
+    const warn = clone();
+    warn.collision = { ...warn.collision, onContact: 'warn' };
+    const frame = evaluateReferencePose(warn, { collisionBackend: unknownDepth });
+    expect(frame.status).toBe('ok');
+    expect(frame.warnings.find((w) => w.code === 'COLLISION')!.message).toMatch(/profundidade desconhecida/);
   });
 });
 
