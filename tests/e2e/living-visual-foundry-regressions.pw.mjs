@@ -156,8 +156,8 @@ const msgs = (page) => page.evaluate(() => window.__workspace.getState().message
   const ok = await page.evaluate(() => window.__workspace.presentJoint('boom_cyl_base'));
   await page.evaluate(() => window.__workspace.renderNow());
   const pinVisible = await page.evaluate(() => { const ws = window.__workspace; ws.pointAt('boom_cyl_base', 'inspect', 'user_tool'); ws.renderNow(); const v = ws.handView(); ws.dispatch({ type: 'set_overlay', level: 'hidden' }); return { occluded: v.occluded, onScreen: v.x !== null }; });
-  // drop the highlight rim (it would tint the ghosted parent part), keep isolation and the reticle
-  await page.evaluate(() => { const ws = window.__workspace; ws.clearSelection(); ws.presentJoint('boom_cyl_base'); ws.renderNow(); });
+  // highlight stays on solid meshes only; the ghosted parent is not tinted
+  await page.evaluate(() => window.__workspace.renderNow());
   await page.screenshot({ path: join(OUT, 'captures', '06c-hydraulic-joint-isolated.png'), timeout: 180_000 });
   const during = await snap();
   await page.evaluate(() => window.__workspace.presentJoint(null));
@@ -165,6 +165,29 @@ const msgs = (page) => page.evaluate(() => window.__workspace.getState().message
   check('joint presentation isolates boom_cyl_base and the pin is no longer occluded', ok && pinVisible.onScreen && pinVisible.occluded === false, pinVisible);
   check('isolation is presentation only: poses and geometry unchanged, natural view restored', before.poses === during.poses && during.poses === after.poses && before.stats === during.stats, { tris: [before.stats, during.stats] });
   check('no page errors (6)', errors.length === 0, errors.join(' | '));
+  await context.close();
+}
+
+// 7. Isolated joint + Digital Hand: no highlight rim over the ghosted parent, in both orders
+{
+  const { page, context, errors } = await open(() => {}, 'fixture');
+  const r = await page.evaluate(() => {
+    const ws = window.__workspace; const out = {};
+    ws.setView({ target: [0.62, 1.0, 0], azimuthDeg: 40, elevationDeg: 14, distance: 2.4 });
+    ws.presentJoint('boom_cyl_base'); ws.pointAt('boom_cyl_base', 'inspect', 'user_tool'); ws.renderNow();
+    out.presentThenPoint = { ...ws.highlightCoverage(), hand: ws.handView() };
+    ws.presentJoint(null); ws.pointAt('boom_cyl_base', 'inspect', 'user_tool'); ws.presentJoint('boom_cyl_base'); ws.renderNow();
+    out.pointThenPresent = { ...ws.highlightCoverage(), hand: ws.handView() };
+    ws.presentJoint(null); ws.renderNow();
+    out.restored = ws.highlightCoverage();
+    return out;
+  });
+  for (const k of ['presentThenPoint', 'pointThenPresent']) {
+    const v = r[k];
+    check(`${k}: no highlight on ghosted parent, reticle and pin kept`, v.onGhosted === 0 && v.overlays > 0 && v.hand.state === 'inspect' && v.hand.x !== null && v.hand.occluded === false, { overlays: v.overlays, onGhosted: v.onGhosted, occluded: v.hand.occluded });
+  }
+  check('natural view restores the full highlight', r.restored.onGhosted === 0 && r.restored.overlays > r.presentThenPoint.overlays, r.restored);
+  check('no page errors (7)', errors.length === 0, errors.join(' | '));
   await context.close();
 }
 

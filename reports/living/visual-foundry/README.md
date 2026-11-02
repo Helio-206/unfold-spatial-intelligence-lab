@@ -146,3 +146,14 @@ Regressões novas em `tests/e2e/living-visual-foundry-regressions.pw.mjs` (21 ve
    fica em fantasma. É só troca de material: poses e geometria ficam iguais (verificado), e `presentJoint(null)` repõe
    tudo. Capturas: `captures/06c-hydraulic-joint-isolated.png` (apresentação) e `captures/06c-hydraulic-joint-natural.png`
    (a mesma câmara, sem alterações). O `06-hydraulic-joint.png` natural mantém-se.
+
+## Revisão do PR #13 (review `5743457040`)
+
+Quando a Digital Hand apontava para uma junta isolada, o destaque laranja voltava a cobrir a estrutura-mãe em fantasma.
+Agora o destaque só se aplica a malhas sólidas, e a isolação volta a aplicar o destaque corrente, por isso a ordem não
+importa (`presentJoint → pointAt` e `pointAt → presentJoint`). A regressão (secção 7) falhava antes (5 sobreposições em
+malhas fantasma) e passa agora. O teste não chama `clearSelection()`. Ficam intactos o retículo, a visibilidade do pino,
+o fantasma e a reposição da vista natural.
+
+Depois disto o desenvolvimento visual parou. Provider para o palco cinemático: `src/living/visual-foundry/provider.ts`
+e `INTEGRATION.md`.

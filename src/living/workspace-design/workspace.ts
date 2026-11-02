@@ -714,6 +714,8 @@ export class SpatialWorkspace {
     return true;
   }
 
+  highlightCoverage(): { overlays: number; onGhosted: number } { return this.scene.highlightCoverage(); }
+
   resetPose(): void {
     this.playback?.cancel();
     this.poseLabel = 'reference';

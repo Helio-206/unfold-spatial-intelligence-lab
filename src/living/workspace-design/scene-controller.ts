@@ -75,7 +75,11 @@ export class SceneController {
     this.explodeTween = gsap.to(s, { k: to, duration: DURATION.slow, ease: EASE.inOut, onUpdate: () => { this.explodeK = s.k; this.applyDisplay(); }, onComplete: () => { this.explodeTween = null; } });
   }
 
+  private highlighted: CanonicalComponent | null = null;
+
+  /** Rim highlight on the component's solid meshes only: never on meshes ghosted by an isolation. */
   highlight(component: CanonicalComponent | null, opacity = 1): void {
+    this.highlighted = component;
     for (const m of this.highlightMeshes) m.removeFromParent();
     this.highlightMeshes = [];
     this.rim.uniforms.uOpacity!.value = opacity;
@@ -83,7 +87,7 @@ export class SceneController {
       for (const pid of component.partIds) {
         this.model.parts.get(pid)?.traverse((o) => {
           const mesh = o as Mesh;
-          if (!mesh.isMesh || mesh.userData.highlightOverlay || mesh.userData.materialKey === 'glass') return;
+          if (!mesh.isMesh || mesh.userData.highlightOverlay || mesh.userData.materialKey === 'glass' || mesh.material === this.ghost) return;
           const overlay = new Mesh(mesh.geometry, this.rim); overlay.userData.highlightOverlay = true; overlay.renderOrder = 3; overlay.raycast = () => {};
           mesh.add(overlay); this.highlightMeshes.push(overlay);
         });
@@ -111,6 +115,8 @@ export class SceneController {
         this.ghosted.set(mesh, mesh.material); mesh.material = this.ghost;
       });
     }
+    // re-apply the current highlight under the new isolation (either order: isolate→point or point→isolate)
+    if (this.highlighted) this.highlight(this.highlighted, this.rim.uniforms.uOpacity!.value as number);
     this.requestRender();
   }
 
@@ -126,6 +132,11 @@ export class SceneController {
   }
 
   worldOf(partId: string): Vector3 { const g = this.model.parts.get(partId); return g ? new Vector3().setFromMatrixPosition(g.matrixWorld) : new Vector3(); }
+
+  /** Diagnostics: highlight overlays in place, and how many sit on ghosted (isolated-away) meshes. */
+  highlightCoverage(): { overlays: number; onGhosted: number } {
+    return { overlays: this.highlightMeshes.length, onGhosted: this.highlightMeshes.filter((o) => (o.parent as Mesh | null)?.material === this.ghost).length };
+  }
 
   dispose(): void {
     this.explodeTween?.kill();
