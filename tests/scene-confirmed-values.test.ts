@@ -319,7 +319,8 @@ describe('F2 — editWallInScene com geometria confirmada', () => {
     expect(door(next.scene).transform.translationM[0]).toBeCloseTo(-1.55);
     expect(door(next.scene).transform.translationM[1]).toBeCloseTo(1.05);
     expect(door(next.scene).component!.properties.offset).toMatchObject({ value: 0.5, provenance: { validation: 'unreviewed' } });
-    expect(next.scene.revision.number).toBe(9);
+    // Os 9 passos internos são uma só revisão (antes eram 9).
+    expect(next.scene.revision.number).toBe(1);
     expect(next.undoStack).toHaveLength(1);
     expect(next.redoStack).toEqual([]);
   });
@@ -441,7 +442,8 @@ describe('F3 — removeWallFromScene em cascata', () => {
     expect(plan).toMatchObject({ requiresAuthorization: false, touchesConfirmed: [] });
     const next = removeWallFromScene(transaction, 'wall-1', 'reviewer');
     expect(next.scene.nodes).toEqual([]);
-    expect(next.scene.revision.number).toBe(2);
+    // A porta e a parede saem numa só revisão (antes eram 2).
+    expect(next.scene.revision.number).toBe(1);
     expect(next.undoStack).toEqual([transaction.scene]);
     expect(next.redoStack).toEqual([]);
   });
@@ -452,7 +454,7 @@ describe('operações compostas — uma autorização cobre a operação inteira
   const MOVING_EDIT = { start: { x: -2.5, y: 0 }, end: { x: 3.5, y: 0 }, actor: 'reviewer' };
   const everything = () => transactionOf(confirmDoor(confirmedScene(['geometry', 'transform.translationM']), 'corrected', ['translationM']));
 
-  it('editWallInScene: o plano agrega tudo o que os ~9 passos tocam e o digest cobre o agregado', () => {
+  it('editWallInScene: o plano agrega tudo o que os passos tocam e o digest cobre o agregado', () => {
     const plan = planWallEdit(everything(), 'wall-1', MOVING_EDIT);
     expect(plan.touchesConfirmed).toEqual([
       { entityId: 'door-1', field: 'transform.translationM', validation: 'corrected' },
@@ -463,7 +465,7 @@ describe('operações compostas — uma autorização cobre a operação inteira
     expect(plan.operation.name).toBe('EditWall');
     expect(plan.operation.affected).toEqual(['door-1', 'wall-1']);
     expect(plan.operation.changes.map((change) => `${change.entityId}:${change.field}`)).toEqual(expect.arrayContaining(['wall-1:geometry', 'wall-1:transform.translationM', 'door-1:transform.translationM']));
-    expect(plan.transaction.scene.revision.number).toBe(9);
+    expect(plan.transaction.scene.revision.number).toBe(1);
   });
 
   it('sem autorização nada é aplicado (tudo ou nada)', () => {
@@ -869,9 +871,9 @@ describe('passos sem efeito num valor confirmado', () => {
       expect(plan.touchesConfirmed).toEqual([{ entityId: 'wall-1', field: 'transform.translationM', validation: 'verified' }]);
     });
 
-    it('numa parede sem nada confirmado o número de revisões e os valores são os de sempre', () => {
+    it('numa parede sem nada confirmado os valores são os de sempre e a edição é uma só revisão', () => {
       const next = editWallInScene(transactionOf(confirmedScene()), 'wall-1', MOVE_ONLY);
-      expect(next.scene.revision.number).toBe(9);
+      expect(next.scene.revision.number).toBe(1);
       expect(wall(next.scene).geometry!.provenance).toMatchObject({ validation: 'unreviewed', actor: 'reviewer' });
     });
   });

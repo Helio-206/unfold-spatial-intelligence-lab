@@ -15,17 +15,21 @@ function twoRooms() {
 }
 
 describe('wall removal preview', () => {
-  it('the engine refuses to remove a wall that bounds rooms, and says which rooms', () => {
+  it('a wall that bounds two rooms is removed by merging them, and the description still names the rooms', () => {
     const t = twoRooms();
     const shared = t.scene.nodes.find((n) => n.id.startsWith('wall-edge-120-0-120-200'))!;
-    const before = JSON.stringify(t.scene);
-    expect(() => removeWallFromScene(t, shared.id)).toThrow('REMOVE_HAS_DEPENDENCIES');
-    expect(JSON.stringify(t.scene)).toBe(before);
+    // Antes o motor recusava com REMOVE_HAS_DEPENDENCIES; agora a remoção funde as duas divisões numa (ver wall-removal-merge.test.ts).
     const info = describeWallRemoval(t.scene, shared.id)!;
     expect(info.rooms.map((r) => r.id).sort()).toEqual(['region-1', 'region-2']);
     // areas come from the room polygons in the scene, not from the drawing
     expect(info.rooms.every((r) => typeof r.areaM2 === 'number' && r.areaM2 > 0)).toBe(true);
     expect(info.structure).toBe('unknown');
+    const before = JSON.stringify(t.scene);
+    const next = removeWallFromScene(t, shared.id);
+    expect(JSON.stringify(t.scene)).toBe(before);
+    const rooms = next.scene.nodes.filter((n) => n.component?.kind === 'room');
+    expect(rooms).toHaveLength(1);
+    expect(polygonAreaM2(rooms[0]!)).toBeCloseTo(info.rooms[0]!.areaM2! + info.rooms[1]!.areaM2!, 9);
   });
 
   it('a wall with no dependants can be removed; its openings are listed and go with it', () => {

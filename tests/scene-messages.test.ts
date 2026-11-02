@@ -6,7 +6,9 @@ import { confirmedScene, failure, transactionOf, model } from './helpers/scene-a
 
 // Todos os códigos de AuthorizationFailure do Core, mais os da guarda da cena.
 const CORE_CODES = ['AUTHORIZATION_REQUIRED', 'AUTHORIZATION_UNKNOWN', 'AUTHORIZATION_ALREADY_USED', 'AUTHORIZATION_EXPIRED', 'AUTHORIZATION_DIGEST_MISMATCH', 'AUTHORIZATION_REVISION_MISMATCH', 'AUTHORIZATION_SESSION_MISMATCH', 'MODEL_CANNOT_AUTHORIZE'];
-const SCENE_CODES = ['MACHINE_CANNOT_TOUCH_CONFIRMED', 'CONFIRMATION_REQUIRES_HUMAN_ACTOR', 'CONTEXT_INCONSISTENT', 'STALE_PREVIEW', 'PREVIEW_TAMPERED', 'PREVIEW_BLOCKED', 'GEOMETRY_REQUIRED', 'NEW_GEOMETRY_CANNOT_CLAIM_HUMAN_VERIFICATION', 'AUTHORIZED_VALUE_NOT_CORRECTED'];
+// Os motivos por que a fusão de duas divisões fica bloqueada.
+const ROOM_MERGE_CODES = ['ROOM_MERGE_SINGLE_ROOM', 'ROOM_MERGE_MORE_THAN_TWO_ROOMS', 'ROOM_MERGE_NOT_POLYGON', 'ROOM_MERGE_UNSUPPORTED_TRANSFORM', 'ROOM_MERGE_BOUNDARY_INCOMPLETE', 'ROOM_MERGE_EDGE_MISMATCH', 'ROOM_MERGE_TOUCH_ELSEWHERE', 'ROOM_MERGE_NOT_SIMPLE', 'ROOM_MERGE_OTHER_RELATIONS', 'ROOM_MERGE_AREA_NOT_CONSERVED'];
+const SCENE_CODES = ['MACHINE_CANNOT_TOUCH_CONFIRMED', 'CONFIRMATION_REQUIRES_HUMAN_ACTOR', 'CONTEXT_INCONSISTENT', 'STALE_PREVIEW', 'PREVIEW_TAMPERED', 'PREVIEW_BLOCKED', 'GEOMETRY_REQUIRED', 'NEW_GEOMETRY_CANNOT_CLAIM_HUMAN_VERIFICATION', 'AUTHORIZED_VALUE_NOT_CORRECTED', ...ROOM_MERGE_CODES];
 
 describe('mensagens para o utilizador', () => {
   it.each([...CORE_CODES, ...SCENE_CODES])('%s tem uma explicação em português, sem o código cru', (code) => {
@@ -78,9 +80,9 @@ describe('aviso de que o preview toca valores confirmados', () => {
   });
 
   it('traduz os campos conhecidos e deixa o nome dos desconhecidos', () => {
-    const fields = ['geometry', 'transform.translationM', 'transform.rotation', 'transform.scale', 'component.properties.thickness', 'component.properties.height', 'component.properties.width', 'component.properties.offset', 'component.properties.sill', 'properties.note', 'node', 'relation'];
+    const fields = ['geometry', 'transform.translationM', 'transform.rotation', 'transform.scale', 'component.properties.thickness', 'component.properties.height', 'component.properties.width', 'component.properties.offset', 'component.properties.sill', 'component.properties.area', 'properties.name', 'properties.note', 'node', 'relation'];
     const notice = confirmedNotice(fields.map((field) => ({ entityId: 'wall-1', field, validation: 'verified' as const })), labelOf);
-    for (const word of ['geometria', 'posição', 'rotação', 'escala', 'espessura', 'altura', 'largura', 'offset', 'peitoril', 'note', 'o próprio componente', 'relação']) expect(notice, word).toContain(word);
+    for (const word of ['geometria', 'posição', 'rotação', 'escala', 'espessura', 'altura', 'largura', 'offset', 'peitoril', 'área', 'nome', 'note', 'o próprio componente', 'relação']) expect(notice, word).toContain(word);
     expect(notice).not.toMatch(/component\.properties|transform\.|translationM/);
   });
 
