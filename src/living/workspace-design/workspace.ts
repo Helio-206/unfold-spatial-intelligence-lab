@@ -473,11 +473,15 @@ export class SpatialWorkspace {
   select(id: string): void {
     const c = this.registry.get(id);
     if (!c) { this.hand.attend(id, 'blocked'); this.updateHandOverlay(); return; }
-    this.selectedId = id; this.inspectorOpen = true;
+    this.setSelectedComponent(c, true);
     this.scene.highlight(c);
     this.hand.attend(id, 'select');
-    if (this.scene.isolatedId && this.scene.isolatedId !== id) this.scene.isolate(c);
     this.render();
+  }
+
+  private setSelectedComponent(component: CanonicalComponent, inspectorOpen: boolean): void {
+    this.selectedId = component.id; this.inspectorOpen = inspectorOpen;
+    if (this.scene.isolatedId && this.scene.isolatedId !== component.id) this.scene.isolate(component);
   }
 
   clearSelection(): void {
@@ -590,9 +594,9 @@ export class SpatialWorkspace {
     const request = buildAgentRequest(text, this.registry, this.selectedId, this.history);
     const outcome = await askAgent(request, this.agentOptions, abort.signal);
     // superseded or cancelled: the newer request owns processing state and the composer; this one touches nothing
-    if (abort.signal.aborted || this.pending !== abort || this.disposed) return groundOutcome(outcome, this.registry);
+    if (abort.signal.aborted || this.pending !== abort || this.disposed) return groundOutcome(outcome, this.registry, request.scene?.selectedId ?? null);
     this.pending = null;
-    const g = groundOutcome(outcome, this.registry);
+    const g = groundOutcome(outcome, this.registry, request.scene?.selectedId ?? null);
     this.history = [...this.history, { role: 'user' as const, text }, { role: 'assistant' as const, text: g.text }].slice(-6);
     // a supported experiment, decided locally (never by the model)
     let plan: ExperimentPlan | null = null;
@@ -611,9 +615,10 @@ export class SpatialWorkspace {
     if (g.blocked) { if (g.primary) this.pointAt(g.primary.id, 'blocked', 'assistant', g.blocked.message); else this.hand.release(); }
     else if (g.primary) {
       const state: HandState = plan?.kind === 'preview_fixture' ? 'awaiting' : g.act === 'select' ? 'select' : g.act === 'inspect' ? 'inspect' : 'point';
+      if (g.act === 'select' || g.act === 'inspect') this.setSelectedComponent(g.primary, g.act === 'inspect');
       const res = this.pointAt(g.primary.id, state, 'assistant', res0(plan));
       if (!res.cameraMoved && res.cameraReason === 'user_active') this.setComposerState('COMPLETE', 'Câmara mantida: está a interagir com a vista.');
-      if (g.act === 'select' || g.act === 'inspect') { this.selectedId = g.primary.id; this.inspectorOpen = g.act === 'inspect'; this.renderInspector(); this.renderRail(); }
+      if (g.act === 'select' || g.act === 'inspect') { this.renderInspector(); this.renderRail(); }
       if (g.act === 'focus') { const s = this.componentSphere(g.primary.id); if (s) this.director.focusSphere(s, 'assistant', 0.5); }
     } else this.hand.release();
     this.foundry.requestRender();
@@ -745,8 +750,9 @@ export class SpatialWorkspace {
     let last: { x: number; y: number } | null = null;
     const tracker = new WebcamHandTracker({
       video,
-      onState: (state: HandInteractionState, message?: string) => { this.setComposerState(state === 'ERROR' ? 'ERROR' : 'IDLE', message ?? `Gestos: ${state}`); },
+      onState: (state: HandInteractionState, message?: string) => { if (this.handTracker === tracker && !this.disposed) this.setComposerState(state === 'ERROR' ? 'ERROR' : 'IDLE', message ?? `Gestos: ${state}`); },
       onLandmarks: (landmarks) => {
+        if (this.handTracker !== tracker || this.disposed) return;
         const rect = this.el.stage!.getBoundingClientRect();
         const f = this.handModel.update(landmarks, { left: rect.left, top: rect.top, width: rect.width, height: rect.height });
         const cur = this.el.userHand!;
@@ -761,7 +767,12 @@ export class SpatialWorkspace {
       onError: () => {},
     });
     this.handTracker = tracker; this.arbiter.setHandTracking(true); this.renderRail();
-    try { await tracker.start(); } catch { this.handTracker = null; this.arbiter.setHandTracking(false); this.renderRail(); }
+    try {
+      await tracker.start();
+      if (this.handTracker !== tracker || this.disposed) tracker.stop();
+    } catch {
+      if (this.handTracker === tracker && !this.disposed) { this.handTracker = null; this.arbiter.setHandTracking(false); this.renderRail(); }
+    }
   }
 
   // ------------------------------------------------------------------------------------------------ diagnostics

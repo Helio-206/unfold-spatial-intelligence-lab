@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { EXCAVATOR_ASSEMBLY_V1 } from '../../../src/living/contracts/fixtures/excavator.assembly.v1';
 import { buildComponentRegistry } from '../../../src/living/visual-foundry/component-registry';
 import { loadFixturePreview } from '../../../src/living/visual-foundry/poses';
-import { askAgent, buildAgentRequest } from '../../../src/living/workspace-design/agent-client';
+import { askAgent, buildAgentRequest, type AgentOutcome } from '../../../src/living/workspace-design/agent-client';
 import { planExtendExperiment } from '../../../src/living/workspace-design/experiments';
 import { groundOutcome } from '../../../src/living/workspace-design/grounding';
 
@@ -19,6 +19,20 @@ describe('agent request', () => {
     expect(r.capabilities).toEqual(['Select', 'Inspect', 'Focus']);
     expect(r.scene?.selectedId).toBe('boom_cylinder');
     expect(r.scene?.components.every((c) => c.verification.startsWith('fixture/'))).toBe(true);
+  });
+});
+
+describe('selected target grounding', () => {
+  const selectedAction = (evidenceIds: string[]): AgentOutcome => ({ status: 'ok', source: 'live', meta: { model: null, requestId: null }, result: { schema: 'spatial_agent_result.v1', kind: 'PROPOSE_ACTION', text: 'Focar.', basis: 'scene', evidenceIds, question: null, action: { kind: 'Focus', target: { reference: 'selected', label: null, ordinal: null }, value: null, valueMode: null, unit: null, axis: null, opening: null } } });
+  it('resolves the canonical selection captured for the request', () => {
+    expect(groundOutcome(selectedAction(['boom_cylinder']), registry, 'boom_cylinder')).toMatchObject({ act: 'focus', primary: { id: 'boom_cylinder' }, blocked: null });
+    expect(groundOutcome(selectedAction(['boom_cyl_barrel']), registry, 'boom_cylinder')).toMatchObject({ act: 'focus', primary: { id: 'boom_cylinder' }, blocked: null });
+  });
+  it('blocks missing, unknown or incompatible selection evidence', () => {
+    expect(groundOutcome(selectedAction([]), registry, null).blocked?.code).toBe('UNGROUNDED_TARGET');
+    expect(groundOutcome(selectedAction([]), registry, 'unknown-component').blocked?.code).toBe('UNGROUNDED_TARGET');
+    expect(groundOutcome(selectedAction(['bucket']), registry, 'boom_cylinder').blocked?.code).toBe('UNGROUNDED_TARGET');
+    expect(groundOutcome(selectedAction(['boom_cylinder', 'bucket']), registry, 'boom_cylinder').blocked?.code).toBe('UNGROUNDED_TARGET');
   });
 });
 

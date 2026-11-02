@@ -25,7 +25,7 @@ export type Grounded = {
 
 const ACT: Record<string, SpatialAct> = { Select: 'select', Inspect: 'inspect', Focus: 'focus' };
 
-export function groundOutcome(outcome: AgentOutcome, registry: ComponentRegistry): Grounded {
+export function groundOutcome(outcome: AgentOutcome, registry: ComponentRegistry, selectedId: string | null = null): Grounded {
   if (outcome.status === 'error') {
     const unsupported = outcome.code === 'SPATIAL_AGENT_ACTION_NOT_ALLOWED' || outcome.code === 'SPATIAL_AGENT_ACTION_NOT_AUTHORIZED';
     return {
@@ -45,7 +45,11 @@ export function groundOutcome(outcome: AgentOutcome, registry: ComponentRegistry
   if (r.kind === 'PROPOSE_ACTION') {
     act = ACT[r.action.kind] ?? null;
     if (!act) blocked = { code: 'UNSUPPORTED_ACTION', message: `«${r.action.kind}» não é suportado neste espaço de trabalho.` };
-    else if (r.action.target.reference === 'label' && r.action.target.label) {
+    else if (r.action.target.reference === 'selected') {
+      const selected = selectedId ? registry.get(selectedId) : undefined;
+      if (selected && r.evidenceIds.every((id) => id === selected.id || selected.partIds.includes(id))) primary = selected;
+      else blocked = { code: 'UNGROUNDED_TARGET', message: 'A selecção do pedido está ausente ou não corresponde à evidência.' };
+    } else if (r.action.target.reference === 'label' && r.action.target.label) {
       const matches = registry.byLabel(r.action.target.label);
       if (matches.length === 1) primary = matches[0]!;
       else blocked = { code: matches.length ? 'AMBIGUOUS_TARGET' : 'TARGET_NOT_FOUND', message: matches.length ? `Há vários componentes chamados «${r.action.target.label}».` : `Não encontrei «${r.action.target.label}» na montagem.` };

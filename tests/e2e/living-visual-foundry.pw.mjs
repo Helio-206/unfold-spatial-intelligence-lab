@@ -179,8 +179,9 @@ const captures = {};
   check('nothing moves before approval', posesBefore === posesPending);
   check('hand waits for confirmation', conv.hand === 'awaiting', conv.hand);
   captures.conversation = await shot(page, '04-conversation');
+  const proposalId = await page.evaluate(() => window.__workspace.getState().messages.find((m) => m.proposal?.state === 'pending')?.id);
   await page.locator('[data-act="approve"]').first().click();
-  await settle(page, 2800);
+  await page.waitForFunction((id) => window.__workspace.getState().messages.some((m) => m.id === id && m.proposal?.state === 'done'), proposalId, { timeout: 60_000 });
   const after = await page.evaluate(() => ({ source: window.__workspace.poseSource, notice: document.querySelector('.uw-notices')?.textContent ?? '', last: window.__workspace.getState().messages.at(-1)?.text ?? '' }));
   check('approved preview is labelled fixture, never engine', after.source === 'fixture-preview' && /não do motor|não calculados pelo motor/.test(after.notice + after.last), after.notice.slice(0, 120));
   const finalMatches = await page.evaluate(async () => {
