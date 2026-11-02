@@ -71,13 +71,19 @@ describe('relação curso → ângulo (independente: bissecção sobre o comprim
 
   it('o comprimento medido na geometria é exactamente o comprimento fechado mais o curso, para qualquer curso alcançável', () => {
     const strokes: Record<string, number> = { ...referenceStrokes(), boom_cylinder: 0.3, stick_cylinder: 0.5 };
-    const frame = evaluateActuators(EXCAVATOR_ASSEMBLY_V1, strokes);
-    expect(frame.status).toBe('ok');
+    const out = solveActuatorConfiguration(EXCAVATOR_ASSEMBLY_V1, strokes);
+    if (!out.ok) throw new Error(out.message);
+    const state = solveForwardKinematics(EXCAVATOR_ASSEMBLY_V1, out.config);
     for (const id of ['boom_cylinder', 'stick_cylinder']) {
       const cyl = actuator(EXCAVATOR_ASSEMBLY_V1, id);
       const closed = EXCAVATOR_ASSEMBLY_V1.joints.find((j) => j.id === cyl.slideJointId)!.origin.translationM[0];
-      expect(frame.measurements.find((m) => m.id === `cylinder.${id}.length`)!.value).toBeCloseTo(closed + strokes[id]!, 9);
+      const barrel = state.parts.get(cyl.barrelPartId)!.t; const rod = state.parts.get(cyl.rodPartId)!.t;
+      expect(Math.hypot(rod[0] - barrel[0], rod[1] - barrel[1], rod[2] - barrel[2])).toBeCloseTo(closed + strokes[id]!, 9);
     }
+    // Esta configuração alcança o curso, mas a haste do braço fica quase 2 m abaixo do chão: a colisão recusa-a, e diz quem.
+    const frame = evaluateActuators(EXCAVATOR_ASSEMBLY_V1, strokes);
+    expect(frame).toMatchObject({ status: 'blocked', blocked: { code: 'COLLISION' } });
+    expect(frame.blocked!.subjectIds).toContain('stick');
   });
 
   it('a haste acompanha o barril: a origem da haste fica a (Lc + curso) do barril na direcção do eixo do cilindro', () => {

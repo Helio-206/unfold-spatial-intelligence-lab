@@ -8,8 +8,8 @@
  *  - O motor não lê relógio, aleatoriedade nem estado anterior: o mesmo input dá o mesmo quadro, byte a byte.
  */
 import { canonicalize, sha256Hex } from '../../core';
-import { assertAssembly, type Assembly, type Shape, type Vec3 } from '../contracts/assembly.v1';
-import type { ActuatorState, JointState, Measurement, MotionFrame, PartTransform } from '../contracts/motion-frame.v1';
+import { assertAssembly, type Assembly, type Vec3 } from '../contracts/assembly.v1';
+import type { ActuatorState, FrameWarning, JointState, Measurement, MotionFrame, PartTransform } from '../contracts/motion-frame.v1';
 import { MOTION_FRAME_SCHEMA } from '../contracts/motion-frame.v1';
 import {
   jointLimitViolations, loopResiduals, referenceConfiguration, solveForwardKinematics, validateConfiguration, worldPoint,
@@ -17,6 +17,7 @@ import {
 } from './forward-kinematics';
 import { canonicalQuat, distance } from './transform-math';
 import { solveActuatorConfiguration } from './actuator-solver';
+import { notEvaluatedCollisions, primitiveCollisionBackend, type CollisionBackend } from './collision';
 
 export const ENGINE_ID = 'unfold.engineering.forward-kinematics';
 export const ENGINE_VERSION = '0.1.0';
@@ -33,7 +34,7 @@ const ASSUMPTIONS = [
   'Cada quadro avalia-se a partir da configuração; nunca se integra a partir do quadro anterior.',
   `Fecho de laços aceite até ${CLOSURE_TOLERANCE_M} m (ver CLOSURE_TOLERANCE_M).`,
   'Força, pressão e capacidade de carga não são calculadas: a montagem não tem parâmetros hidráulicos (diâmetros e pressão são null).',
-  'Colisões não são verificadas nesta versão do motor; cada forma aparece como não verificada, com a razão.',
+  'Colisões: caixas contra caixas (SAT) e contra o plano do chão; cilindros só contra o chão. Cada forma indica se foi verificada, com a razão.',
 ];
 
 export type EvaluationOptions = {
@@ -43,6 +44,8 @@ export type EvaluationOptions = {
   warnings?: MotionFrame['warnings'];
   /** Descrição do método quando o quadro vem do solver de actuadores. */
   method?: string;
+  /** Verificador de colisões. Por omissão, o primitivo. */
+  collisionBackend?: CollisionBackend;
 };
 
 export function assemblyDigest(assembly: Assembly): string {
@@ -136,15 +139,6 @@ function measurementsOf(assembly: Assembly, state: KinematicState, residuals: Ar
   return out.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
 
-function collisionsOf(assembly: Assembly) {
-  const shapes = assembly.parts.flatMap((part) => part.shapes.map((shape: Shape) => shape.id));
-  return {
-    checked: false, shapesChecked: [] as string[],
-    shapesSkipped: shapes.map((shapeId) => ({ shapeId, reason: 'Verificação de colisões ainda não implementada neste motor (fase 5).' })),
-    groundPlaneChecked: false, contacts: [] as never[],
-  };
-}
-
 /**
  * Avalia uma configuração. Lança `AssemblyContractError` se a montagem for inválida e `EngineInputError` se os valores
  * forem inválidos; devolve sempre um quadro válido, `ok` ou `blocked`.
@@ -168,6 +162,17 @@ export function evaluateConfiguration(assembly: Assembly, config: Configuration,
     reasons.push({ code: 'LOOP_CLOSURE_VIOLATED', message: `Os pinos não coincidem (resíduo ${maxResidual} m): ${open.join(', ')}.`, subjectIds: open });
   }
 
+  // Colisões na configuração pedida. Com a política `block`, um contacto recusa a configuração; com `warn`, é só um aviso.
+  const backend = options.collisionBackend ?? primitiveCollisionBackend;
+  const collisions = backend.check({ assembly, state: requested });
+  const contactText = collisions.contacts.map((c) => (c.kind === 'part_ground' ? `${c.partIds[0]} abaixo do chão (${c.depthM!.toFixed(4)} m)` : `${c.partIds[0]} com ${c.partIds[1]} (${c.depthM!.toFixed(4)} m)`));
+  const contactSubjects = [...new Set(collisions.contacts.flatMap((c) => c.partIds))].sort();
+  const extraWarnings: FrameWarning[] = [];
+  if (collisions.contacts.length > 0) {
+    if (assembly.collision.onContact === 'block') reasons.push({ code: 'COLLISION', message: `Colisão: ${contactText.join('; ')}.`, subjectIds: contactSubjects });
+    else extraWarnings.push({ code: 'COLLISION', severity: 'warning', message: `Contacto (política warn): ${contactText.join('; ')}.`, subjectIds: contactSubjects });
+  }
+
   const blocked = reasons.length > 0;
   const reference = blocked ? solveForwardKinematics(assembly, referenceConfiguration(assembly)) : requested;
   const base = {
@@ -179,8 +184,8 @@ export function evaluateConfiguration(assembly: Assembly, config: Configuration,
       id: ENGINE_ID, version: ENGINE_VERSION, method: options.method ?? 'Cinemática directa sobre a árvore de juntas (rígidos e quaterniões)',
       status: blocked ? 'blocked' : 'solved', closureResidualM: maxResidual, toleranceM: CLOSURE_TOLERANCE_M, assumptions: [...ASSUMPTIONS],
     },
-    collisions: collisionsOf(assembly),
-    warnings: options.warnings ?? ([] as MotionFrame['warnings']),
+    collisions,
+    warnings: [...(options.warnings ?? []), ...extraWarnings],
     evidence: assembly.sources.map((source) => ({ sourceId: source.id, locator: 'assembly' })),
   };
   if (!blocked) return { ...base, status: 'ok', poseBasis: 'solved', blocked: null } as MotionFrame;
@@ -238,7 +243,7 @@ function blockedFromSolver(assembly: Assembly, values: Record<string, number>, f
     parts: partsOf(assembly, reference), joints: [], actuators,
     measurements: measurementsOf(assembly, reference, [], false),
     solver: { id: ENGINE_ID, version: ENGINE_VERSION, method: 'Solver de cilindros (recusou a configuração)', status: 'blocked', closureResidualM: null, toleranceM: CLOSURE_TOLERANCE_M, assumptions: [...ASSUMPTIONS] },
-    collisions: collisionsOf(assembly),
+    collisions: notEvaluatedCollisions(assembly),
     warnings: options.warnings ?? [],
     evidence: assembly.sources.map((source) => ({ sourceId: source.id, locator: 'assembly' })),
     blocked: { code: failure.code, message: failure.message, subjectIds: [...new Set(failure.subjectIds)].sort(), firstInvalidTimeS: null },
