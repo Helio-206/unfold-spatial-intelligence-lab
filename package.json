@@ -8,6 +8,7 @@
     "dev:phase4c": "vite --host 127.0.0.1 --port 5173",
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
+    "benchmark:perception": "tsx scripts/benchmark/perception-quality.ts",
     "server": "tsx server/index.ts",
     "server:phase4c": "UNFOLD_BACKEND_PORT=8787 tsx server/index.ts",
     "server:phase4c:mock": "UNFOLD_PHASE4C_MOCK=1 UNFOLD_BACKEND_PORT=8791 tsx server/phase4c-mock.ts",
@@ -28,6 +29,7 @@
   "devDependencies": {
     "@types/node": "^24.8.0",
     "@types/three": "^0.180.0",
+    "playwright-core": "^1.64.1",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "vite": "^7.1.7",

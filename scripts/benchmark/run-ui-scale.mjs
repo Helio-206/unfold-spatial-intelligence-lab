@@ -2,15 +2,13 @@
 // calibrate with ONE reference measure typed by a person, build, and read back what the scene says about the scale.
 // usage: node scripts/benchmark/run-ui-scale.mjs <image> <out.json> <x0> <x1> <y> <metres>
 import fs from 'node:fs';
-import { createRequire } from 'node:module';
-import { execSync } from 'node:child_process';
 import { createServer } from 'vite';
-const { chromium } = await (async () => { try { return await import('playwright'); } catch { return createRequire(import.meta.url)(`${execSync('npm root -g').toString().trim()}/playwright`); } })();
+import { launchSystemChromium } from './browser.mjs';
 
 const [, , imagePath, outPath, x0, x1, y, metres] = process.argv;
 const server = await createServer({ server: { port: 5190, host: '127.0.0.1' }, logLevel: 'error' });
 await server.listen();
-const browser = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await launchSystemChromium({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 const out = { requests: [] };
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
