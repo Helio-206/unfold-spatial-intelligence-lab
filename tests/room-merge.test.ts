@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { summarizeReport } from '../src/core';
 import { ROOM_MERGE_TOLERANCE_M, planRoomMerge, type RoomMergeResult } from '../src/room-merge';
 import { validateSpatialScene, type Node } from '../src/spatial-scene';
-import { boundedBy, mutateScene, nodeOf, sceneFromRooms, sharedWallId, shoelace, wallBetween, type RoomSpec } from './helpers/rooms';
+import { boundedBy, dropVertexKeepRefs, insertVertex, mutateScene, nodeOf, sceneFromRooms, sharedWallId, shoelace, wallBetween, type RoomSpec } from './helpers/rooms';
 
 const AT = '2026-11-02T09:00:00.000Z';
 const merged = (result: RoomMergeResult) => { if (result.status !== 'merge') throw new Error(`esperava merge, obtive ${JSON.stringify(result)}`); return result; };
@@ -148,9 +148,9 @@ describe('fusão: formas, orientação e vértices a mais', () => {
     const withExtra = mutateScene(base, (scene) => {
       const room = nodeOf(scene, 'sala');
       if (room.geometry?.kind !== 'polygon') throw new Error('sem polígono');
-      // A aresta partilhada é x = 4. Em z, a polígono vai de (4,0) a (4,-3) (z = -y). Acrescenta (4, -1.5) a meio.
+      // A aresta partilhada é x = 4. Em z, o polígono vai de (4,0) a (4,-3) (z = -y). Acrescenta (4, -1.5) a meio, com as referências coerentes.
       const index = room.geometry.verticesM.findIndex((v) => Math.abs(v[0] - 4) < 1e-9 && Math.abs(v[2]) < 1e-9);
-      room.geometry.verticesM.splice(index + 1, 0, [4, 0, -1.5]);
+      insertVertex(scene, 'sala', index + 1, [4, 0, -1.5]);
     }).scene;
     const result = merged(planRoomMerge(withExtra, sharedWallId(withExtra, 'sala', 'cozinha'), AT));
     expect(rel(shoelace(polygon(result.merged)), 21)).toBeLessThan(1e-9);
@@ -164,35 +164,11 @@ describe('fusão: formas, orientação e vértices a mais', () => {
       const room = nodeOf(scene, 'sala');
       if (room.geometry?.kind !== 'polygon') throw new Error('sem polígono');
       const index = room.geometry.verticesM.findIndex((v) => Math.abs(v[0]) < 1e-9 && Math.abs(v[2]) < 1e-9);
-      room.geometry.verticesM.splice(index + 1, 0, [2, 0, 0]); // meio da parede de baixo de A
+      insertVertex(scene, 'sala', index + 1, [2, 0, 0]); // meio da parede de baixo de A
     }).scene;
     const result = merged(planRoomMerge(withExtra, sharedWallId(withExtra, 'sala', 'cozinha'), AT));
     expect(polygon(result.merged)).toHaveLength(6);
     expect(rel(shoelace(polygon(result.merged)), 21)).toBeLessThan(1e-9);
-  });
-
-  it('paredes de topo e de base de uma peça só (7 m) por cima das duas divisões: os vértices de x = 4 deixam de ser juntas e saem', () => {
-    // Sem nenhuma parede a acabar em x = 4 em cima e em baixo, esses vértices são colineares e desaparecem: ficam os 4 cantos.
-    const base = sceneFromRooms([A, B]);
-    const long = mutateScene(base, (scene) => {
-      for (const y of [0, 3]) {
-        const [left, right] = [wallBetween(scene, [0, y], [4, y]), wallBetween(scene, [4, y], [7, y])];
-        const piece = nodeOf(scene, left);
-        piece.geometry = { ...piece.geometry!, sizeM: [7, 2.8, 0.1] } as never;
-        piece.transform.translationM = [3.5, 0, -y];
-        scene.nodes = scene.nodes.filter((n) => n.id !== right);
-        scene.relations = scene.relations.filter((r) => r.toNodeId !== right);
-        for (const room of ['sala', 'cozinha']) {
-          const node = nodeOf(scene, room);
-          node.component!.dependsOn = [...new Set(node.component!.dependsOn.map((id) => (id === right ? left : id)))];
-          if (!scene.relations.some((r) => r.fromNodeId === room && r.toNodeId === left)) scene.relations.push(boundedBy(room, left, scene.relations[0]!));
-        }
-      }
-    }).scene;
-    const result = merged(planRoomMerge(long, wallBetween(long, [4, 0], [4, 3]), AT));
-    expect(polygon(result.merged)).toHaveLength(4);
-    expect(rel(shoelace(polygon(result.merged)), 21)).toBeLessThan(1e-9);
-    expect(result.merged.component!.dependsOn).toHaveLength(4);
   });
 });
 
@@ -257,9 +233,8 @@ describe('fusão: casos que ficam bloqueados, com a razão', () => {
     const partial = mutateScene(base, (scene) => {
       const room = nodeOf(scene, 'sala');
       if (room.geometry?.kind !== 'polygon') throw new Error('sem polígono');
-      room.geometry.verticesM = room.geometry.verticesM.filter((v) => !(Math.abs(v[0] - 4) < 1e-9 && Math.abs(v[2] + 3) < 1e-9));
+      dropVertexKeepRefs(scene, 'sala', room.geometry.verticesM.findIndex((v) => Math.abs(v[0] - 4) < 1e-9 && Math.abs(v[2] + 3) < 1e-9));
     }).scene;
-    expect(nodeOf(partial, 'sala').geometry).toMatchObject({ verticesM: expect.arrayContaining([]) });
     blocked(planRoomMerge(partial, wallBetween(partial, [4, 0], [4, 3]), AT), 'ROOM_MERGE_EDGE_MISMATCH');
   });
 

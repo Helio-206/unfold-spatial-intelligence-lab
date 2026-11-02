@@ -6,7 +6,7 @@
 // Uso: npx tsx tests/e2e/wall-removal-merge-seed.ts <ficheiro-de-saída> [confirmed]   (escreve também <saída>.meta.json)
 import { writeFileSync } from 'node:fs';
 import { executeSceneCommand, serializeSceneTransaction, validateSpatialScene, type PropertyProvenance } from '../../src/spatial-scene';
-import { mutateScene, nodeOf, sceneFromRooms, sharedWallId, wallBetween } from '../helpers/rooms';
+import { dropVertexKeepRefs, mutateScene, nodeOf, sceneFromRooms, sharedWallId, wallBetween } from '../helpers/rooms';
 
 const [out, variant] = [process.argv[2]!, process.argv[3]];
 let t = sceneFromRooms([
@@ -19,7 +19,7 @@ const meta = { sharedWall: sharedWallId(t.scene, 'sala', 'cozinha'), outerWall: 
 t = mutateScene(t, (scene) => {
   const corredor = nodeOf(scene, 'corredor');
   if (corredor.geometry?.kind !== 'polygon') throw new Error('sem polígono');
-  corredor.geometry.verticesM = corredor.geometry.verticesM.filter((v) => !(Math.abs(v[0] - 14) < 1e-9 && Math.abs(v[2] + 3) < 1e-9));
+  dropVertexKeepRefs(scene, 'corredor', corredor.geometry.verticesM.findIndex((v) => Math.abs(v[0] - 14) < 1e-9 && Math.abs(v[2] + 3) < 1e-9));
 });
 for (const [id, value] of [['sala', 'Sala'], ['cozinha', 'Cozinha'], ['corredor', 'Corredor'], ['despensa', 'Despensa']] as const) {
   t = executeSceneCommand(t, { type: 'UpdateParameter', nodeId: id, property: 'name', value }, 'reviewer').transaction;

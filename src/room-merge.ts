@@ -22,6 +22,7 @@ export type RoomMergeBlockCode =
   | 'ROOM_MERGE_SINGLE_ROOM'
   | 'ROOM_MERGE_MORE_THAN_TWO_ROOMS'
   | 'ROOM_MERGE_NOT_POLYGON'
+  | 'ROOM_MERGE_BOUNDARY_INCOMPLETE'
   | 'ROOM_MERGE_UNSUPPORTED_TRANSFORM'
   | 'ROOM_MERGE_EDGE_MISMATCH'
   | 'ROOM_MERGE_TOUCH_ELSEWHERE'
@@ -97,7 +98,6 @@ function isSimpleRing(ring: Point[]): boolean {
   return true;
 }
 
-type WallLine = { id: string; a: Point; b: Point };
 /** Extremos de uma parede no plano do chão (x, z), ou undefined se a parede não tem a caixa paramétrica. */
 export function wallEndpointsXZ(wall: Node): [Point, Point] | undefined {
   if (wall.geometry?.kind !== 'box') return undefined;
@@ -155,6 +155,82 @@ const roomInSceneFrame = (node: Node): boolean => node.parentId === null && node
 /** Uma parede só serve se os extremos que o motor lê (centro ± metade do comprimento, no plano do chão) são os do mundo. */
 const wallInSceneFrame = (node: Node): boolean => node.parentId === null && node.transform.scale.every(isOne) && isZero(node.transform.rotation[0]) && isZero(node.transform.rotation[2]);
 
+// ---------------------------------------------------------------------------------------------------------------------
+// Invariantes da fronteira de uma divisão: cada parede de `dependsOn` tem as suas boundaryRefs e cada referência é válida.
+// `applyWallEdit` só actualiza o polígono pelas boundaryRefs; uma parede em dependsOn sem elas é uma dependência que não actualiza nada.
+// ---------------------------------------------------------------------------------------------------------------------
+export type BoundaryRef = { wallId: string; startIndex: number; endIndex: number; startEndpoint: 'a' | 'b'; endEndpoint: 'a' | 'b' };
+export type BoundaryViolationCode = 'NOT_A_ROOM' | 'UNREADABLE_REFS' | 'UNKNOWN_WALL' | 'MISSING_REF' | 'STALE_REF' | 'BAD_INDEX' | 'BAD_ENDPOINT' | 'INCONSISTENT_ENDPOINT' | 'DUPLICATE_REF' | 'CONTRADICTORY_REF';
+export type BoundaryViolation = { code: BoundaryViolationCode; wallId?: string; detail: string };
+
+type RawRef = { wallId: string; startIndex: number; endIndex: number; startEndpoint: string; endEndpoint: string };
+/** Lê o JSON de `boundaryRefs`. Só diz `undefined` se não for uma lista de objectos com a forma certa; os valores errados ficam para o verificador. */
+function readBoundaryRefs(node: Node): RawRef[] | undefined {
+  const value = node.component?.properties.boundaryRefs?.value;
+  if (typeof value !== 'string') return undefined;
+  let parsed: unknown;
+  try { parsed = JSON.parse(value); } catch { return undefined; }
+  if (!Array.isArray(parsed)) return undefined;
+  const wellFormed = parsed.every((ref) => ref && typeof ref === 'object' && typeof ref.wallId === 'string' && typeof ref.startIndex === 'number' && typeof ref.endIndex === 'number' && typeof ref.startEndpoint === 'string' && typeof ref.endEndpoint === 'string');
+  return wellFormed ? (parsed as RawRef[]) : undefined;
+}
+
+/**
+ * Verifica as invariantes de uma divisão contra as paredes da cena. `removedWallIds`: paredes que a operação em curso remove e que
+ * já não podem ser referenciadas. Devolve todas as violações (lista vazia = consistente). Reutilizável por outras operações.
+ */
+export function checkBoundaryIntegrity(scene: SpatialSceneV1, roomId: string, options: { removedWallIds?: string[] } = {}): BoundaryViolation[] {
+  const room = scene.nodes.find((node) => node.id === roomId);
+  return checkRoomBoundary(room, new Map(scene.nodes.map((node) => [node.id, node])), options.removedWallIds ?? []);
+}
+
+function checkRoomBoundary(room: Node | undefined, nodes: Map<string, Node>, removed: string[]): BoundaryViolation[] {
+  if (!room || room.component?.kind !== 'room' || room.geometry?.kind !== 'polygon') return [{ code: 'NOT_A_ROOM', detail: 'Não é uma divisão com polígono.' }];
+  const violations: BoundaryViolation[] = [];
+  const add = (code: BoundaryViolationCode, detail: string, wallId?: string) => violations.push({ code, detail, ...(wallId ? { wallId } : {}) });
+  const refs = readBoundaryRefs(room);
+  if (!refs) return [{ code: 'UNREADABLE_REFS', detail: 'boundaryRefs em falta, ilegível ou com a forma errada.' }];
+  const vertices = room.geometry.verticesM;
+  const dependsOn = new Set(room.component.dependsOn);
+  const wallOf = (id: string) => { const node = nodes.get(id); return node?.component?.kind === 'wall' && !removed.includes(id) ? node : undefined; };
+
+  for (const id of dependsOn) {
+    if (removed.includes(id)) add('STALE_REF', 'dependsOn ainda inclui uma parede removida.', id);
+    else if (!wallOf(id)) add('UNKNOWN_WALL', 'dependsOn inclui uma parede que não existe.', id);
+    else if (!refs.some((ref) => ref.wallId === id)) add('MISSING_REF', 'A parede está em dependsOn mas não tem nenhuma boundaryRef: editá-la não actualizaria o polígono.', id);
+  }
+  const seen = new Map<string, RawRef>();
+  const startsOf = new Map<string, number>();
+  const endpointAt = new Map<string, string>();
+  for (const ref of refs) {
+    if (!dependsOn.has(ref.wallId) || removed.includes(ref.wallId)) { add('STALE_REF', 'boundaryRef de uma parede que já não é da divisão.', ref.wallId); continue; }
+    const wall = wallOf(ref.wallId);
+    if (!wall) { add('UNKNOWN_WALL', 'boundaryRef de uma parede que não existe.', ref.wallId); continue; }
+    const validIndex = (index: number) => Number.isInteger(index) && index >= 0 && index < vertices.length;
+    if (!validIndex(ref.startIndex) || !validIndex(ref.endIndex) || ref.startIndex === ref.endIndex) { add('BAD_INDEX', `Índices de vértice inválidos (${ref.startIndex}, ${ref.endIndex}) num polígono de ${vertices.length} vértices.`, ref.wallId); continue; }
+    if (!['a', 'b'].includes(ref.startEndpoint) || !['a', 'b'].includes(ref.endEndpoint)) { add('BAD_ENDPOINT', 'O extremo tem de ser «a» ou «b».', ref.wallId); continue; }
+    const key = JSON.stringify([ref.wallId, ref.startIndex, ref.endIndex, ref.startEndpoint, ref.endEndpoint]);
+    if (seen.has(key)) { add('DUPLICATE_REF', 'boundaryRef repetida.', ref.wallId); continue; }
+    seen.set(key, ref);
+    const startKey = `${ref.wallId}|start|${ref.startIndex}`;
+    if (startsOf.has(startKey) && startsOf.get(startKey) !== ref.endIndex) add('CONTRADICTORY_REF', 'O mesmo vértice de início liga a dois vértices de fim diferentes.', ref.wallId);
+    startsOf.set(startKey, ref.endIndex);
+    for (const [index, endpoint] of [[ref.startIndex, ref.startEndpoint], [ref.endIndex, ref.endEndpoint]] as const) {
+      const vertexKey = `${ref.wallId}|${index}`;
+      if (endpointAt.has(vertexKey) && endpointAt.get(vertexKey) !== endpoint) add('CONTRADICTORY_REF', 'O mesmo vértice está ligado aos dois extremos da parede.', ref.wallId);
+      endpointAt.set(vertexKey, endpoint);
+    }
+    const ends = wallEndpointsXZ(wall);
+    if (!ends) { add('UNKNOWN_WALL', 'A parede não tem geometria paramétrica.', ref.wallId); continue; }
+    // O extremo recordado tem de ser o mais perto do vértice: uma edição anterior pode ter esticado o polígono para lá da parede,
+    // mas não troca de lado. Se trocou (ordem dos extremos invertida), seguir a referência levaria o vértice para o lado errado.
+    const nearer = (vertex: Vertex, endpoint: string) => { const at = xz(vertex); const mine = ends[endpoint === 'a' ? 0 : 1]; const other = ends[endpoint === 'a' ? 1 : 0]; return dist(at, mine) <= dist(at, other) + TOL; };
+    const separate = dist(ends[0], ends[1]) > TOL;
+    if (separate && (!nearer(vertices[ref.startIndex]!, ref.startEndpoint) || !nearer(vertices[ref.endIndex]!, ref.endEndpoint) || ref.startEndpoint === ref.endEndpoint)) add('INCONSISTENT_ENDPOINT', 'Os extremos recordados não correspondem à posição dos vértices.', ref.wallId);
+  }
+  return violations;
+}
+
 const propertyString = (node: Node, key: string): string | undefined => {
   const value = (node.component?.properties[key] ?? node.properties[key])?.value;
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
@@ -197,12 +273,30 @@ export function planRoomMerge(scene: SpatialSceneV1, wallId: string, recordedAt:
   const involvedWalls = [...new Set([wallId, ...first.component!.dependsOn, ...second.component!.dependsOn])].flatMap((id) => scene.nodes.filter((node) => node.id === id));
   if (!roomInSceneFrame(first) || !roomInSceneFrame(second) || involvedWalls.some((node) => node.component?.kind === 'wall' && !wallInSceneFrame(node))) return blocked('ROOM_MERGE_UNSUPPORTED_TRANSFORM', ids);
 
+  // Fronteira: as referências de partida têm de estar completas e ser válidas. Nada de filtrar o que falha e seguir.
+  const sourceRefs: BoundaryRef[][] = [];
+  for (const room of [first, second]) {
+    const raw = readBoundaryRefs(room);
+    const polygonLength = room.geometry!.kind === 'polygon' ? room.geometry!.verticesM.length : 0;
+    const keep = (raw ?? []).filter((ref) => ref.wallId !== wallId);
+    const dependsOn = room.component!.dependsOn;
+    const nodesById = new Map(scene.nodes.map((node) => [node.id, node]));
+    const usable = !!raw
+      && dependsOn.every((id) => nodesById.get(id)?.component?.kind === 'wall' && (id === wallId || keep.some((ref) => ref.wallId === id)))
+      && keep.every((ref) => dependsOn.includes(ref.wallId) && Number.isInteger(ref.startIndex) && Number.isInteger(ref.endIndex) && ref.startIndex >= 0 && ref.endIndex >= 0 && ref.startIndex < polygonLength && ref.endIndex < polygonLength && ref.startIndex !== ref.endIndex && ['a', 'b'].includes(ref.startEndpoint) && ['a', 'b'].includes(ref.endEndpoint));
+    if (!usable) return blocked('ROOM_MERGE_BOUNDARY_INCOMPLETE', ids);
+    const unique = new Map(keep.map((ref) => [JSON.stringify([ref.wallId, ref.startIndex, ref.endIndex, ref.startEndpoint, ref.endEndpoint]), ref as BoundaryRef]));
+    sourceRefs.push([...unique.values()]);
+  }
+
   const ends = wallEndpointsXZ(wall);
   if (!ends) return blocked('ROOM_MERGE_EDGE_MISMATCH', ids);
   const [w0, w1] = ends;
 
   // Anéis no mesmo sentido (área positiva), sem a repetição do primeiro vértice no fim.
-  const oriented = rings.map((ring) => { const r = ring!; return signedArea(r.map(xz)) < 0 ? [...r].reverse() : r; }) as [Vertex[], Vertex[]];
+  type Tagged = { v: Vertex; key: string };
+  const taggedRings = rings.map((ring, which) => { const tagged: Tagged[] = ring!.map((v, i) => ({ v, key: `${which}:${i}` })); return signedArea(ring!.map(xz)) < 0 ? tagged.reverse() : tagged; }) as [Tagged[], Tagged[]];
+  const oriented = taggedRings.map((ring) => ring.map((item) => item.v)) as [Vertex[], Vertex[]];
   if (!oriented.every((ring) => isSimpleRing(ring.map(xz)))) return blocked('ROOM_MERGE_NOT_SIMPLE', ids);
   const chains = oriented.map((ring) => chainAlong(ring, w0, w1));
   if (!chains[0] || !chains[1]) return blocked('ROOM_MERGE_EDGE_MISMATCH', ids);
@@ -211,36 +305,46 @@ export function planRoomMerge(scene: SpatialSceneV1, wallId: string, recordedAt:
   // Lados opostos da parede: o troço de B percorre-se ao contrário do de A.
   if (!near(xz(B[cb.start]!), xz(A[ca.end]!)) || !near(xz(B[cb.end]!), xz(A[ca.start]!))) return blocked('ROOM_MERGE_NOT_SIMPLE', ids);
 
-  const restA = forward(A.length, ca.end, ca.start).map((i) => A[i]!);
-  const restB = forward(B.length, cb.end, cb.start).map((i) => B[i]!);
+  const restA = forward(A.length, ca.end, ca.start).map((i) => taggedRings[0][i]!);
+  const restB = forward(B.length, cb.end, cb.start).map((i) => taggedRings[1][i]!);
   const q = xz(A[ca.end]!); const p = xz(A[ca.start]!);
   for (let i = 0; i + 1 < restA.length; i += 1) {
     for (let j = 0; j + 1 < restB.length; j += 1) {
-      const found = contact(xz(restA[i]!), xz(restA[i + 1]!), xz(restB[j]!), xz(restB[j + 1]!));
+      const found = contact(xz(restA[i]!.v), xz(restA[i + 1]!.v), xz(restB[j]!.v), xz(restB[j + 1]!.v));
       if (found.kind === 'none') continue;
       if (found.kind === 'overlap') return blocked('ROOM_MERGE_TOUCH_ELSEWHERE', ids);
       if (near(found.at, p) || near(found.at, q)) continue;
       return blocked(found.crossing ? 'ROOM_MERGE_NOT_SIMPLE' : 'ROOM_MERGE_TOUCH_ELSEWHERE', ids);
     }
   }
-  const union: Vertex[] = [...restA, ...restB.slice(1, -1)];
+  const union: Tagged[] = [...restA, ...restB.slice(1, -1)];
+  // Os dois extremos do troço partilhado existem nas duas divisões; na união fica a versão de A, e as referências de B apontam para ela.
+  const alias = new Map<string, string>([[taggedRings[1][cb.start]!.key, taggedRings[0][ca.end]!.key], [taggedRings[1][cb.end]!.key, taggedRings[0][ca.start]!.key]]);
 
-  // Paredes que ficam, e as juntas entre elas: um vértice colinear só sai se nenhuma parede acabar nele.
+  // Paredes que ficam e as suas referências (as das duas divisões, já validadas), com os vértices de origem mapeados para a união.
   const remainingIds = [...new Set([...first.component!.dependsOn, ...second.component!.dependsOn])].filter((id) => id !== wallId);
-  const remaining: WallLine[] = remainingIds.flatMap((id) => { const e = wallEndpointsXZ(scene.nodes.find((node) => node.id === id)!); return e ? [{ id, a: e[0], b: e[1] }] : []; });
-  const junctions = remaining.flatMap((line) => [line.a, line.b]);
-  const ring: Vertex[] = [];
-  for (const vertex of union) { if (!ring.length || !near(xz(vertex), xz(ring[ring.length - 1]!))) ring.push(vertex); }
-  while (ring.length > 1 && near(xz(ring[0]!), xz(ring[ring.length - 1]!))) ring.pop();
+  const ring: Tagged[] = [];
+  for (const item of union) {
+    if (ring.length && near(xz(item.v), xz(ring[ring.length - 1]!.v))) alias.set(item.key, ring[ring.length - 1]!.key);
+    else ring.push(item);
+  }
+  while (ring.length > 1 && near(xz(ring[0]!.v), xz(ring[ring.length - 1]!.v))) alias.set(ring.pop()!.key, ring[0]!.key);
+  const resolve = (key: string) => alias.get(key) ?? key;
+  const carried = sourceRefs.flatMap((refs, which) => refs.map((ref) => ({ ...ref, startKey: resolve(`${which}:${ref.startIndex}`), endKey: resolve(`${which}:${ref.endIndex}`) })));
+  const present = new Set(ring.map((item) => item.key));
+  // Uma referência que aponta para um vértice que a união não tem (por exemplo, dentro do troço partilhado) não se consegue representar.
+  if (carried.some((ref) => !present.has(ref.startKey) || !present.has(ref.endKey) || ref.startKey === ref.endKey)) return blocked('ROOM_MERGE_BOUNDARY_INCOMPLETE', ids);
+  // Um vértice colinear só sai se nenhuma referência o usar: são as referências, não a geometria, que dizem onde as paredes se juntam.
+  const referenced = new Set(carried.flatMap((ref) => [ref.startKey, ref.endKey]));
   for (let changed = true; changed && ring.length > 3;) {
     changed = false;
     for (let i = 0; i < ring.length; i += 1) {
-      const before = xz(ring[(i + ring.length - 1) % ring.length]!); const here = xz(ring[i]!); const after = xz(ring[(i + 1) % ring.length]!);
+      const before = xz(ring[(i + ring.length - 1) % ring.length]!.v); const here = xz(ring[i]!.v); const after = xz(ring[(i + 1) % ring.length]!.v);
       const straight = pointSegmentDistance(here, before, after) <= TOL && (here[0] - before[0]) * (after[0] - here[0]) + (here[1] - before[1]) * (after[1] - here[1]) > 0;
-      if (straight && !junctions.some((junction) => near(junction, here))) { ring.splice(i, 1); changed = true; break; }
+      if (straight && !referenced.has(ring[i]!.key)) { ring.splice(i, 1); changed = true; break; }
     }
   }
-  const points = ring.map(xz);
+  const points = ring.map((item) => xz(item.v));
   if (!isSimpleRing(points)) return blocked('ROOM_MERGE_NOT_SIMPLE', ids);
 
   const areaFirst = polygonAreaM2(first)!; const areaSecond = polygonAreaM2(second)!;
@@ -255,15 +359,12 @@ export function planRoomMerge(scene: SpatialSceneV1, wallId: string, recordedAt:
   const geometryEvidence = `Divisão resultante da remoção de ${wall.label}: união de ${roomDisplayName(first)} e ${roomDisplayName(second)}, calculada pelo motor a partir dos dois polígonos.`;
   const base = provenance(geometryEvidence);
 
-  // boundaryRefs refeitos a partir das paredes que ficam e do novo polígono.
-  const refs: Array<{ wallId: string; startIndex: number; endIndex: number; startEndpoint: 'a' | 'b'; endEndpoint: 'a' | 'b' }> = [];
-  for (const line of remaining) {
-    for (let i = 0; i < points.length; i += 1) {
-      const start = points[i]!; const end = points[(i + 1) % points.length]!;
-      if (pointSegmentDistance(start, line.a, line.b) <= TOL && pointSegmentDistance(end, line.a, line.b) <= TOL) {
-        refs.push({ wallId: line.id, startIndex: i, endIndex: (i + 1) % points.length, startEndpoint: dist(start, line.a) <= dist(start, line.b) ? 'a' : 'b', endEndpoint: dist(end, line.a) <= dist(end, line.b) ? 'a' : 'b' });
-      }
-    }
+  // boundaryRefs: as que já existiam, com os índices novos. Os extremos recordados (a/b) mantêm-se: foram escritos quando as paredes foram ligadas.
+  const indexOf = new Map(ring.map((item, index) => [item.key, index]));
+  const refs: BoundaryRef[] = [];
+  for (const ref of carried) {
+    const mapped: BoundaryRef = { wallId: ref.wallId, startIndex: indexOf.get(ref.startKey)!, endIndex: indexOf.get(ref.endKey)!, startEndpoint: ref.startEndpoint, endEndpoint: ref.endEndpoint };
+    if (!refs.some((existing) => JSON.stringify(existing) === JSON.stringify(mapped))) refs.push(mapped);
   }
   const text = (value: string): SpatialProperty => ({ value, provenance: base });
   const merged: Node = {
@@ -272,7 +373,7 @@ export function planRoomMerge(scene: SpatialSceneV1, wallId: string, recordedAt:
     nodeType: 'component',
     parentId: null,
     transform: { translationM: [0, 0, 0], rotation: [0, 0, 0, 1], scale: [1, 1, 1], provenance: { translationM: base, rotation: base, scale: base } },
-    geometry: { kind: 'polygon', verticesM: ring.map((v) => [...v] as Vertex), provenance: base },
+    geometry: { kind: 'polygon', verticesM: ring.map((item) => [...item.v] as Vertex), provenance: base },
     component: {
       kind: 'room',
       dependsOn: remainingIds,
@@ -285,6 +386,8 @@ export function planRoomMerge(scene: SpatialSceneV1, wallId: string, recordedAt:
     },
     properties: {},
   };
+  // Prova final: a divisão que vamos devolver cumpre as invariantes contra as paredes da cena (a removida já não conta).
+  if (checkRoomBoundary(merged, new Map(scene.nodes.map((node) => [node.id, node])), [wallId]).length > 0) return blocked('ROOM_MERGE_BOUNDARY_INCOMPLETE', ids);
   const relations: SceneRelation[] = remainingIds.map((id) => ({ id: `bounded-${mergedId}-${id}`, fromNodeId: mergedId, toNodeId: id, kind: 'bounded_by', properties: {}, provenance: base }));
   const removedRelationIds = scene.relations.filter((relation) => involved.has(relation.fromNodeId) || involved.has(relation.toNodeId)).map((relation) => relation.id);
 

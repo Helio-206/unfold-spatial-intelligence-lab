@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { AuthorizationLedger, type Actor } from '../src/core';
 import { addOpeningToScene, editWallInScene, planWallEdit, planWallRemoval, removeWallFromScene } from '../src/plan-scene';
 import { commitScenePreview, executeSceneCommand, previewSceneCommand, serializeSceneTransaction, validateSpatialScene, type SceneTransaction, type SpatialSceneV1 } from '../src/spatial-scene';
-import { boundedBy, mutateScene, nodeOf, sceneFromRooms, sharedWallId, shoelace, wallBetween, type RoomSpec } from './helpers/rooms';
+import { boundedBy, dropVertexKeepRefs, mutateScene, nodeOf, sceneFromRooms, sharedWallId, shoelace, wallBetween, type RoomSpec } from './helpers/rooms';
 import { provenanceFor } from './helpers/scenes';
 
 const human: Actor & { kind: 'human' } = { kind: 'human', id: 'reviewer' };
@@ -147,7 +147,7 @@ describe('o que o motor não prova fica bloqueado, com a cena intacta', () => {
     const t = mutateScene(sceneFromRooms([tall, small]), (s) => {
       const room = nodeOf(s, 'sala');
       if (room.geometry?.kind !== 'polygon') throw new Error('sem polígono');
-      room.geometry.verticesM = room.geometry.verticesM.filter((v) => !(Math.abs(v[0] - 4) < 1e-9 && Math.abs(v[2] + 3) < 1e-9));
+      dropVertexKeepRefs(s, 'sala', room.geometry.verticesM.findIndex((v) => Math.abs(v[0] - 4) < 1e-9 && Math.abs(v[2] + 3) < 1e-9));
     });
     blocked(t, wallBetween(t.scene, [4, 0], [4, 3]), 'ROOM_MERGE_EDGE_MISMATCH');
   });

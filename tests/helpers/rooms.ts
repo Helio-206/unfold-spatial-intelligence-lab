@@ -82,3 +82,26 @@ export function mutateScene(transaction: SceneTransaction, edit: (scene: Spatial
 }
 
 export const boundedBy = (room: string, wall: string, template: SceneRelation): SceneRelation => ({ ...structuredClone(template), id: `bounded-${room}-${wall}`, fromNodeId: room, toNodeId: wall });
+
+export type BoundaryRef = { wallId: string; startIndex: number; endIndex: number; startEndpoint: 'a' | 'b'; endEndpoint: 'a' | 'b' };
+export const refsOf = (room: Node): BoundaryRef[] => JSON.parse(String(room.component!.properties.boundaryRefs!.value)) as BoundaryRef[];
+export const setRefs = (room: Node, refs: unknown): void => { room.component!.properties.boundaryRefs!.value = typeof refs === 'string' ? refs : JSON.stringify(refs); };
+export const verticesOf = (room: Node): Array<[number, number, number]> => { if (room.geometry?.kind !== 'polygon') throw new Error('sem polígono'); return room.geometry.verticesM; };
+
+/** Acrescenta um vértice à divisão na posição `at` e desloca os índices de boundaryRefs que o vértice empurra, como faria qualquer edição consistente. */
+export function insertVertex(scene: SpatialSceneV1, roomId: string, at: number, vertex: [number, number, number]): void {
+  const room = nodeOf(scene, roomId);
+  verticesOf(room).splice(at, 0, vertex);
+  setRefs(room, refsOf(room).map((ref) => ({ ...ref, startIndex: ref.startIndex >= at ? ref.startIndex + 1 : ref.startIndex, endIndex: ref.endIndex >= at ? ref.endIndex + 1 : ref.endIndex })));
+}
+
+/**
+ * Tira um vértice à divisão mantendo as referências coerentes: as que acabavam nele passam a acabar no vértice seguinte e as que
+ * começavam nele passam a começar no anterior (é a forma de uma divisão em que a aresta é mais comprida do que a parede).
+ */
+export function dropVertexKeepRefs(scene: SpatialSceneV1, roomId: string, index: number): void {
+  const room = nodeOf(scene, roomId);
+  verticesOf(room).splice(index, 1);
+  const shift = (i: number, role: 'start' | 'end') => (i > index ? i - 1 : i === index ? (role === 'end' ? index : index - 1) : i);
+  setRefs(room, refsOf(room).map((ref) => ({ ...ref, startIndex: shift(ref.startIndex, 'start'), endIndex: shift(ref.endIndex, 'end') })));
+}
