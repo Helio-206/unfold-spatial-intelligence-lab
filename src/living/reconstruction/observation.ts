@@ -89,12 +89,33 @@ function parseNumber(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function dimensionMatches(text: string, target: MachinePart): { label: string; value: number; unit: 'mm' | 'm' } | null {
+type DimensionName = 'length' | 'width' | 'depth' | 'stroke';
+
+const DIMENSION_WORDS: Record<DimensionName, readonly string[]> = {
+  length: ['comprimento', 'length', 'longitudinal'],
+  width: ['largura', 'width'],
+  depth: ['profundidade', 'depth'],
+  stroke: ['curso', 'stroke', 'extensao', 'extensão'],
+};
+
+function dimensionMatches(text: string, target: MachinePart, name: DimensionName): { label: string; value: number; unit: 'mm' | 'm' } | null {
   const token = target === 'boom-cylinder' ? '(?:cilindro\\s+do\\s+boom|boom\\s+cilindro)' : target === 'stick-cylinder' ? '(?:cilindro\\s+do\\s+stick|stick\\s+cilindro)' : target === 'bucket-cylinder' ? '(?:cilindro\\s+do\\s+balde|bucket\\s+cilindro)' : target === 'bucket' ? '(?:bucket|balde)' : target === 'chassis' ? '(?:chassis|base)' : target;
-  const match = new RegExp(`${token}[^\\d]{0,40}(\\d+(?:[.,]\\d+)?)\\s*(mm|m)\\b`, 'i').exec(text);
-  if (!match) return null;
-  const value = parseNumber(match[1]!); if (value === null) return null;
-  return { label: target === 'bucket' ? 'largura do balde' : `comprimento do ${target}`, value, unit: match[2]!.toLowerCase() as 'mm' | 'm' };
+  const targetPattern = new RegExp(token, 'i');
+  const numberPattern = /(\d+(?:[.,]\d+)?)\s*(mm|m)\b/gi;
+  const targetSpecificity = target === 'chassis' || name === 'depth' || name === 'stroke' || (name === 'width' && target !== 'bucket');
+  for (const match of text.matchAll(numberPattern)) {
+    const index = match.index ?? 0;
+    const localStart = Math.max(0, index - 24);
+    const localEnd = Math.min(text.length, index + match[0].length + 24);
+    const local = text.slice(localStart, localEnd);
+    if (!targetPattern.test(text.slice(Math.max(0, index - 80), index))) continue;
+    const hasMeaning = DIMENSION_WORDS[name].some((word) => new RegExp(`\\b${word}\\b`, 'i').test(local));
+    if (targetSpecificity && !hasMeaning) continue;
+    const value = parseNumber(match[1]!); if (value === null) continue;
+    const label = name === 'width' ? `largura do ${target}` : name === 'depth' ? `profundidade do ${target}` : name === 'stroke' ? `curso do ${target}` : `comprimento do ${target}`;
+    return { label, value, unit: match[2]!.toLowerCase() as 'mm' | 'm' };
+  }
+  return null;
 }
 
 function requestFromText(text: string, sourceEvidence: SourceEvidence): ReconstructionRequest[] {
@@ -133,7 +154,8 @@ export function createOfflineTextObservation(instruction: string, sourceReferenc
   const dimensions = genericDimensions(sourceEvidence);
   for (const dimension of dimensions) {
     const target = dimension.partId as MachinePart;
-    const parsed = dimensionMatches(instruction, target);
+    const name: DimensionName = dimension.id.includes('-width') ? 'width' : dimension.id.includes('-depth') ? 'depth' : dimension.id.includes('-stroke') ? 'stroke' : 'length';
+    const parsed = dimensionMatches(instruction, target, name);
     if (parsed) { dimension.value = parsed.value; dimension.unit = parsed.unit; dimension.status = 'observed'; dimension.evidence = [sourceEvidence]; }
   }
   const requests = requestFromText(instruction, sourceEvidence);

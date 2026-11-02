@@ -9,7 +9,7 @@ This slice produces a reviewable proposal under `src/living/reconstruction/`:
 - `adaptReviewedProposalToAssembly()` is the explicit, validated adapter to the canonical engineering `Assembly`. It requires a validated engineering seed and explicit human review authorization, and fails closed when either is absent.
 - The proposal is never written to `spatial_scene.v1`, never sent to a solver, and never executes text returned by Muse Spark.
 
-The canonical engineering contract is synchronized with merged PR #11 (`40088fa906c22a4dde15d62279160e12c74da42a`, on `main` merge `855a0f59cc2ee38acc69d31acc1aea8aed4ba435`). The adapter consumes its `validateAssembly()` and the synthetic excavator fixture; it does not redefine that schema.
+The canonical engineering contract is synchronized with `main` after merged PR #11 (`40088fa906c22a4dde15d62279160e12c74da42a`, merge `855a0f59cc2ee38acc69d31acc1aea8aed4ba435`) and PR #10 (`main@ff16954d0ac9ea01bebe49935f521dde6990ab6c`). The adapter consumes `validateAssembly()` and the synthetic excavator fixture; it does not redefine that schema.
 
 ## Coordinate and unit conversion
 
@@ -46,6 +46,7 @@ The live path was exercised from the PR worktree with the local ignored `.env`: 
 
 - Entity and relation resolution uses semantic roles rather than exact model IDs.
 - Dimensions match semantic labels and the resolved part role; unrelated measurements are not reused.
+- Text dimensions require the requested semantic name in the local part phrase: chassis length and width are independent, mixed units are preserved, and an omitted measurement remains unknown.
 - Unknown, hypothesis, observed and template values remain separate.
 - Template dimensions are hypothetical and carry `requiredForVerification: true`.
 - User text can create pending dimension or replacement proposals only; it cannot execute commands or mutate confirmed scene data.
@@ -53,11 +54,12 @@ The live path was exercised from the PR worktree with the local ignored `.env`: 
 - Missing engineering shapes, points, limits, actuator topology or review authorization blocks adaptation instead of manufacturing verified constraints.
 - `Joint.origin` is written at q=0: the proposed reference pose is reconciled by removing the seed `referenceValue` motion. Forward-kinematics regression checks compare the adapted result with the proposal and the independent fixture reference pose.
 - Approved boom/stick lengths update local box geometry, named points, child joint anchors and related constraint provenance. Approved cylinder strokes update actuator maxima, slide limits and rod geometry. Observed dimensions without a coherent canonical mapping block adaptation explicitly.
+- Every mapped parent/child pose, including cylinder base and slide mounts, is reconciled to q=0 before FK. Mapped loop constraints are checked in the reference configuration; inconsistent geometry blocks conversion. Barrel and rod stroke observations must agree or conversion blocks.
 
 ## Verification
 
-- Focused reconstruction tests: 16 passed.
-- Full suite: 66 files, 1339 tests, zero failures.
+- Focused reconstruction tests: 18 passed.
+- Full suite: 72 files, 1408 tests passed with `npx vitest run --testTimeout=15000` after synchronizing `main@ff16954`. The unparameterized `npm test` still times out in the existing rendering lifecycle test at its 5 s default; no rendering code was changed here.
 - TypeScript and production build: passed; existing contact-variable and large-chunk warnings remain.
 - `git diff --check`: passed.
 
@@ -67,3 +69,4 @@ The live path was exercised from the PR worktree with the local ignored `.env`: 
 - No hidden excavator geometry, masses, materials, hydraulic pressures, cylinder bores, joint limits or structural safety claims are inferred as verified.
 - The current library supports the generic excavator family only; the mechanical solver and renderer are intentionally untouched.
 - Human review and an engineering seed remain required before simulation.
+- Dev-Brain STATUS/HANDOFF update is pending because the local Obsidian MCP endpoint was unavailable during this handoff.

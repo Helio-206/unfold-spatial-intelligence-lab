@@ -270,6 +270,31 @@ function applyCylinderStroke(assembly: Assembly, actuator: Extract<Assembly['act
   }
 }
 
+function validateMappedConstraintClosure(assembly: Assembly, mappedPartIds: ReadonlySet<string>, toleranceM = 1e-6): string[] {
+  const fk = forwardKinematicsAtReference(assembly);
+  const pointWorld = (partId: string, pointId: string): Vec3 | null => {
+    const pose = fk.get(partId);
+    const part = assembly.parts.find((candidate) => candidate.id === partId);
+    const point = part?.points.find((candidate) => candidate.id === pointId);
+    if (!pose || !point) return null;
+    const rotated = qRotate(pose.rotation, point.positionM);
+    return [pose.translationM[0] + rotated[0], pose.translationM[1] + rotated[1], pose.translationM[2] + rotated[2]];
+  };
+  const reasons: string[] = [];
+  for (const constraint of assembly.constraints) {
+    if (!mappedPartIds.has(constraint.a.partId) || !mappedPartIds.has(constraint.b.partId)) continue;
+    const a = pointWorld(constraint.a.partId, constraint.a.pointId);
+    const b = pointWorld(constraint.b.partId, constraint.b.pointId);
+    if (!a || !b) {
+      reasons.push(`constraint ${constraint.id} referencia ponto ausente`);
+      continue;
+    }
+    const distance = Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+    if (distance > toleranceM) reasons.push(`constraint ${constraint.id} inconsistente na configuração de referência (${distance.toFixed(6)} m)`);
+  }
+  return reasons;
+}
+
 /**
  * Converts an explicitly reviewed reconstruction proposal using an engineering
  * assembly seed. The seed supplies mandatory shapes, points, limits and loop
@@ -340,21 +365,22 @@ export function adaptReviewedProposalToAssembly(proposalInput: AssemblyProposalV
     const parent = globalPoses.get(joint.parentPartId);
     const child = globalPoses.get(joint.childPartId);
     const proposalJoint = proposalJointForCanonical(joint, proposal, mapping);
-    if (!parent || !child || !proposalJoint) return joint;
+    if (!parent || !child) return joint;
     if (joint.type !== 'fixed' && joint.referenceValue === null) {
       reasons.push(`junta ${joint.id} não tem referenceValue para reconciliar a pose proposta`);
       return joint;
     }
     const adapted = relativePose(parent, child);
-    const axis = sourceVectorToCanonical(proposalJoint.axis);
+    const axis = proposalJoint ? sourceVectorToCanonical(proposalJoint.axis) : joint.axis;
     const axisNorm = Math.hypot(...axis);
     if (!(axisNorm > 0)) {
-      reasons.push(`eixo inválido na junta proposta ${proposalJoint.id}`);
+      reasons.push(`eixo inválido na junta ${proposalJoint?.id ?? joint.id}`);
       return joint;
     }
     const normalizedAxis: Vec3 = [axis[0] / axisNorm, axis[1] / axisNorm, axis[2] / axisNorm];
     const canonicalJoint = { ...joint, axis: normalizedAxis };
-    return { ...canonicalJoint, origin: poseWithoutReferenceMotion(adapted, canonicalJoint), provenance: conversionProvenance(proposalJoint.evidenceIds) };
+    const evidenceIds = proposalJoint?.evidenceIds ?? [...(mapping.get(joint.parentPartId)?.evidenceIds ?? []), ...(mapping.get(joint.childPartId)?.evidenceIds ?? [])];
+    return { ...canonicalJoint, origin: poseWithoutReferenceMotion(adapted, canonicalJoint), provenance: conversionProvenance(evidenceIds) };
   });
   for (const [partId, action] of dimensionActions) {
     if (action.name !== 'length') continue;
@@ -365,6 +391,19 @@ export function adaptReviewedProposalToAssembly(proposalInput: AssemblyProposalV
       if (constraint.a.partId === partId || constraint.b.partId === partId) constraint.provenance = provenance;
     }
   }
+  const actuatorStrokeActions = new Map<string, ApprovedDimension>();
+  for (const actuator of seed.actuators) {
+    if (actuator.kind !== 'hydraulic_cylinder') continue;
+    const barrel = dimensionActions.get(actuator.barrelPartId)?.dimension;
+    const rod = dimensionActions.get(actuator.rodPartId)?.dimension;
+    if (barrel && rod && Math.abs(barrel.value - rod.value) > 1e-9) {
+      reasons.push(`cursos observados conflitantes entre barril e haste de ${actuator.id}`);
+      continue;
+    }
+    const chosen = barrel ?? rod;
+    if (chosen) actuatorStrokeActions.set(actuator.id, chosen);
+  }
+  if (reasons.length) throw new ReconstructionAdapterBlockedError(reasons);
   seed.actuators = seed.actuators.map((actuator) => {
     const proposalPart = actuator.kind === 'hydraulic_cylinder' ? mapping.get(actuator.barrelPartId) : undefined;
     const proposalEvidence = proposalPart?.evidenceIds ?? [];
@@ -379,9 +418,10 @@ export function adaptReviewedProposalToAssembly(proposalInput: AssemblyProposalV
   });
   for (const actuator of seed.actuators) {
     if (actuator.kind !== 'hydraulic_cylinder') continue;
-    const action = dimensionActions.get(actuator.barrelPartId);
-    if (action?.name === 'stroke') applyCylinderStroke(seed, actuator, action.dimension, reasons);
+    const stroke = actuatorStrokeActions.get(actuator.id);
+    if (stroke) applyCylinderStroke(seed, actuator, stroke, reasons);
   }
+  reasons.push(...validateMappedConstraintClosure(seed, new Set(mapping.keys())));
   if (reasons.length) throw new ReconstructionAdapterBlockedError(reasons);
   const result = validateAssembly(seed);
   if (!result.ok) throw new ReconstructionAdapterBlockedError(result.issues.map((issue) => `${issue.path}: ${issue.code}`));

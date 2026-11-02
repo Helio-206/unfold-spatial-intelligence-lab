@@ -15,6 +15,31 @@ function expectArrayClose(actual: readonly number[] | undefined, expected: reado
   expected.forEach((value, index) => expect(actual?.[index]).toBeCloseTo(value, precision));
 }
 
+function quaternionMultiply(a: [number, number, number, number], b: [number, number, number, number]): [number, number, number, number] {
+  return [a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1], a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0], a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3], a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2]];
+}
+
+function canonicalReferenceProposal(proposal: ReturnType<typeof buildExcavatorAssembly>): ReturnType<typeof buildExcavatorAssembly> {
+  const reference = JSON.parse(readFileSync(new URL('../src/living/contracts/fixtures/excavator.reference-pose.json', import.meta.url), 'utf8')) as { parts: Array<{ partId: string; translationM: [number, number, number]; rotation: [number, number, number, number] }> };
+  const canonicalToProposal = new Map<string, string>([['chassis', 'part-chassis'], ['upper_body', 'part-house'], ['boom', 'part-boom'], ['stick', 'part-stick'], ['bucket', 'part-bucket'], ['boom_cyl_barrel', 'part-boom-cylinder-body'], ['boom_cyl_rod', 'part-boom-cylinder-rod'], ['stick_cyl_barrel', 'part-stick-cylinder-body'], ['stick_cyl_rod', 'part-stick-cylinder-rod'], ['bucket_cyl_barrel', 'part-bucket-cylinder-body'], ['bucket_cyl_rod', 'part-bucket-cylinder-rod']]);
+  const frame: [number, number, number, number] = [-Math.SQRT1_2, 0, 0, Math.SQRT1_2];
+  const frameInverse: [number, number, number, number] = [Math.SQRT1_2, 0, 0, Math.SQRT1_2];
+  const toSourceEuler = (canonical: [number, number, number, number]): [number, number, number] => {
+    const source = quaternionMultiply(quaternionMultiply(frameInverse, canonical), frame);
+    const [x, y, z, w] = source;
+    const pitch = Math.asin(Math.max(-1, Math.min(1, 2 * (w * y - z * x))));
+    return [Math.atan2(2 * (w * x + y * z), 1 - 2 * (x * x + y * y)) * 180 / Math.PI, pitch * 180 / Math.PI, Math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z)) * 180 / Math.PI];
+  };
+  const result = structuredClone(proposal);
+  for (const pose of reference.parts) {
+    const proposalId = canonicalToProposal.get(pose.partId);
+    if (!proposalId) continue;
+    const part = result.parts.find((candidate) => candidate.id === proposalId)!;
+    part.transform = { translation: [pose.translationM[0], -pose.translationM[2], pose.translationM[1]], rotationEulerDeg: toSourceEuler(pose.rotation), scale: [1, 1, 1] };
+  }
+  return result;
+}
+
 async function withServer<T>(server: ReturnType<typeof createMetaServer>, callback: (port: number) => Promise<T>): Promise<T> {
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   const address = server.address();
@@ -38,6 +63,15 @@ describe('living image-to-assembly contracts', () => {
     expect(assembly.parts.find((part) => part.id === 'part-stick')?.geometrySource).toBe('hypothesis');
     expect(assembly.parts.some((part) => part.geometrySource === 'template' || part.geometrySource === 'mixed')).toBe(true);
     expect(assembly.modifications[0]).toMatchObject({ targetPartId: 'part-boom', review: 'pending' });
+  });
+
+  it('matches text dimensions by part and semantic dimension, preserving omitted values', () => {
+    const both = createOfflineTextObservation('Escavadora com chassis de 3.2 m de comprimento e 2.4 m de largura.');
+    expect(both.dimensions.find((dimension) => dimension.id === 'dim-chassis-length')).toMatchObject({ value: 3.2, unit: 'm', status: 'observed' });
+    expect(both.dimensions.find((dimension) => dimension.id === 'dim-chassis-width')).toMatchObject({ value: 2.4, unit: 'm', status: 'observed' });
+    const lengthOnly = createOfflineTextObservation('Escavadora com chassis de 3200 mm de comprimento.');
+    expect(lengthOnly.dimensions.find((dimension) => dimension.id === 'dim-chassis-length')).toMatchObject({ value: 3200, unit: 'mm', status: 'observed' });
+    expect(lengthOnly.dimensions.find((dimension) => dimension.id === 'dim-chassis-width')).toMatchObject({ value: null, unit: 'unknown', status: 'unknown' });
   });
 
   it('generates reviewable assemblies for two distinct image sources without treating the raster as verified geometry', () => {
@@ -88,7 +122,7 @@ describe('living image-to-assembly contracts', () => {
   });
 
   it('adapts a reviewed proposal to the engineering fixture and validates the actual canonical output', () => {
-    const proposal = buildExcavatorAssembly(createOfflineImageObservation('image', 'engineering-fixture', 'f'.repeat(64)));
+    const proposal = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'engineering-fixture', 'f'.repeat(64))));
     const adapted = adaptReviewedProposalToAssembly(proposal, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'fixture-reviewer', authorizationId: 'fixture-review-001' });
     expect(validateAssembly(adapted)).toEqual({ ok: true, issues: [] });
     expect(adapted.schema).toBe('unfold.assembly.v1');
@@ -99,7 +133,7 @@ describe('living image-to-assembly contracts', () => {
   });
 
   it('removes reference motion from Joint.origin and recovers the proposed pose by FK', () => {
-    const proposal = buildExcavatorAssembly(createOfflineImageObservation('image', 'fk-proposal', '2'.repeat(64)));
+    const proposal = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'fk-proposal', '2'.repeat(64))));
     const adapted = adaptReviewedProposalToAssembly(proposal, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'fk-reviewer', authorizationId: 'fk-001' });
     const fk = forwardKinematicsAtReference(adapted);
     const expected = new Map([
@@ -108,6 +142,12 @@ describe('living image-to-assembly contracts', () => {
       ['boom', { translationM: sourceVectorToCanonical(proposal.parts.find((part) => part.id === 'part-boom')!.transform.translation), rotation: sourceEulerDegreesToCanonicalQuaternion(proposal.parts.find((part) => part.id === 'part-boom')!.transform.rotationEulerDeg) }],
       ['stick', { translationM: sourceVectorToCanonical(proposal.parts.find((part) => part.id === 'part-stick')!.transform.translation), rotation: sourceEulerDegreesToCanonicalQuaternion(proposal.parts.find((part) => part.id === 'part-stick')!.transform.rotationEulerDeg) }],
       ['bucket', { translationM: sourceVectorToCanonical(proposal.parts.find((part) => part.id === 'part-bucket')!.transform.translation), rotation: sourceEulerDegreesToCanonicalQuaternion(proposal.parts.find((part) => part.id === 'part-bucket')!.transform.rotationEulerDeg) }],
+      ['boom_cyl_barrel', { translationM: sourceVectorToCanonical(proposal.parts.find((part) => part.id === 'part-boom-cylinder-body')!.transform.translation), rotation: sourceEulerDegreesToCanonicalQuaternion(proposal.parts.find((part) => part.id === 'part-boom-cylinder-body')!.transform.rotationEulerDeg) }],
+      ['boom_cyl_rod', { translationM: sourceVectorToCanonical(proposal.parts.find((part) => part.id === 'part-boom-cylinder-rod')!.transform.translation), rotation: sourceEulerDegreesToCanonicalQuaternion(proposal.parts.find((part) => part.id === 'part-boom-cylinder-rod')!.transform.rotationEulerDeg) }],
+      ['stick_cyl_barrel', { translationM: sourceVectorToCanonical(proposal.parts.find((part) => part.id === 'part-stick-cylinder-body')!.transform.translation), rotation: sourceEulerDegreesToCanonicalQuaternion(proposal.parts.find((part) => part.id === 'part-stick-cylinder-body')!.transform.rotationEulerDeg) }],
+      ['stick_cyl_rod', { translationM: sourceVectorToCanonical(proposal.parts.find((part) => part.id === 'part-stick-cylinder-rod')!.transform.translation), rotation: sourceEulerDegreesToCanonicalQuaternion(proposal.parts.find((part) => part.id === 'part-stick-cylinder-rod')!.transform.rotationEulerDeg) }],
+      ['bucket_cyl_barrel', { translationM: sourceVectorToCanonical(proposal.parts.find((part) => part.id === 'part-bucket-cylinder-body')!.transform.translation), rotation: sourceEulerDegreesToCanonicalQuaternion(proposal.parts.find((part) => part.id === 'part-bucket-cylinder-body')!.transform.rotationEulerDeg) }],
+      ['bucket_cyl_rod', { translationM: sourceVectorToCanonical(proposal.parts.find((part) => part.id === 'part-bucket-cylinder-rod')!.transform.translation), rotation: sourceEulerDegreesToCanonicalQuaternion(proposal.parts.find((part) => part.id === 'part-bucket-cylinder-rod')!.transform.rotationEulerDeg) }],
     ]);
     for (const [partId, pose] of expected) {
       expectArrayClose(fk.get(partId)?.translationM, pose.translationM, 9);
@@ -123,23 +163,15 @@ describe('living image-to-assembly contracts', () => {
     expectArrayClose(fixtureFk.translationM, fixtureUpper.translationM, 9);
   });
 
-  it('applies approved boom length to geometry, points and child joint anchors', () => {
-    const proposal = buildExcavatorAssembly(createOfflineImageObservation('image', 'boom-7m', '3'.repeat(64)));
+  it('fails closed when an approved boom length cannot preserve loop closure', () => {
+    const proposal = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'boom-7m', '3'.repeat(64))));
     const boom = proposal.parts.find((part) => part.id === 'part-boom')!;
     boom.dimensions.length = { value: 7, unit: 'm', source: 'observed', evidenceIds: ['boom-7m-evidence'], requiredForVerification: true };
-    const adapted = adaptReviewedProposalToAssembly(proposal, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'dimension-reviewer', authorizationId: 'dimension-001' });
-    const baseline = buildExcavatorAssembly(createOfflineImageObservation('image', 'boom-baseline', '6'.repeat(64)));
-    const baselineAdapted = adaptReviewedProposalToAssembly(baseline, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'dimension-reviewer', authorizationId: 'dimension-baseline' });
-    const shape = adapted.parts.find((part) => part.id === 'boom')!.shapes[0]!;
-    expect(shape.kind).toBe('box');
-    if (shape.kind === 'box') expect(shape.halfExtentsM[0]).toBeCloseTo(3.5, 9);
-    expect(adapted.parts.find((part) => part.id === 'boom')!.points[0]!.positionM[0]).toBeCloseTo(2.75, 9);
-    expect(adapted.joints.find((joint) => joint.id === 'stick_joint')!.origin.translationM[0]).toBeCloseTo(baselineAdapted.joints.find((joint) => joint.id === 'stick_joint')!.origin.translationM[0] * (7 / 5.6), 9);
-    expect(validateAssembly(adapted)).toEqual({ ok: true, issues: [] });
+    expect(() => adaptReviewedProposalToAssembly(proposal, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'dimension-reviewer', authorizationId: 'dimension-001' })).toThrow(/constraint .*inconsistente/);
   });
 
   it('applies approved cylinder stroke to actuator limits and rod geometry', () => {
-    const proposal = buildExcavatorAssembly(createOfflineImageObservation('image', 'boom-stroke', '4'.repeat(64)));
+    const proposal = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'boom-stroke', '4'.repeat(64))));
     const cylinder = proposal.parts.find((part) => part.id === 'part-boom-cylinder-body')!;
     cylinder.dimensions.stroke = { value: 1, unit: 'm', source: 'observed', evidenceIds: ['boom-stroke-evidence'], requiredForVerification: true };
     const adapted = adaptReviewedProposalToAssembly(proposal, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'stroke-reviewer', authorizationId: 'stroke-001' });
@@ -150,6 +182,18 @@ describe('living image-to-assembly contracts', () => {
     const rodShape = adapted.parts.find((part) => part.id === 'boom_cyl_rod')!.shapes[0]!;
     if (rodShape.kind === 'cylinder') expect(rodShape.halfLengthM).toBeCloseTo(0.7515 / 0.76, 9);
     expect(validateAssembly(adapted)).toEqual({ ok: true, issues: [] });
+  });
+
+  it('consumes rod-side cylinder stroke observations and rejects conflicts', () => {
+    const rodOnly = canonicalReferenceProposal(buildExcavatorAssembly(createOfflineImageObservation('image', 'rod-stroke', '7'.repeat(64))));
+    rodOnly.parts.find((part) => part.id === 'part-boom-cylinder-rod')!.dimensions.stroke = { value: 1, unit: 'm', source: 'observed', evidenceIds: ['rod-stroke-evidence'], requiredForVerification: true };
+    const adapted = adaptReviewedProposalToAssembly(rodOnly, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'stroke-reviewer', authorizationId: 'stroke-rod-001' });
+    const actuator = adapted.actuators.find((candidate) => candidate.id === 'boom_cylinder')!;
+    if (actuator.kind === 'hydraulic_cylinder') expect(actuator.stroke.max.value).toBe(1);
+
+    const conflicting = structuredClone(rodOnly);
+    conflicting.parts.find((part) => part.id === 'part-boom-cylinder-body')!.dimensions.stroke = { value: 0.9, unit: 'm', source: 'observed', evidenceIds: ['barrel-stroke-evidence'], requiredForVerification: true };
+    expect(() => adaptReviewedProposalToAssembly(conflicting, EXCAVATOR_ASSEMBLY_V1, { reviewerId: 'stroke-reviewer', authorizationId: 'stroke-rod-002' })).toThrow(/cursos observados conflitantes/);
   });
 
   it('blocks an approved dimension when no coherent canonical mapping exists', () => {
