@@ -323,7 +323,7 @@ export class SpatialWorkspace {
     const p = m.proposal; if (!p) return '';
     const actions = p.state === 'pending' && p.kind === 'preview_fixture'
       ? `<div class="uw-proposal-actions"><button type="button" class="u-btn u-btn--primary" data-act="approve" data-arg="${esc(m.id)}">${esc(p.approveLabel)}</button><button type="button" class="u-btn u-btn--outline" data-act="reject" data-arg="${esc(m.id)}">Rejeitar</button></div>`
-      : `<p class="u-label">${p.state === 'running' ? 'a mostrar a pré-visualização' : p.state === 'done' ? 'pré-visualização mostrada · fixture' : p.state === 'cancelled' ? 'interrompida · nada concluído' : p.state === 'rejected' ? 'rejeitada · nada mudou' : 'sem acção disponível'}</p>`;
+      : `<p class="u-label">${p.state === 'running' ? 'a mostrar a pré-visualização' : p.state === 'done' ? 'pré-visualização mostrada · fixture' : p.state === 'cancelled' ? 'interrompida · nada concluído' : p.state === 'failed' ? 'sem pré-visualização · nada executado' : p.state === 'rejected' ? 'rejeitada · nada mudou' : 'sem acção disponível'}</p>`;
     return `<div class="uw-proposal" data-state="${p.state}"><h3>${esc(p.title)}</h3><p>${esc(p.detail)}</p>${actions}</div>`;
   }
 
@@ -638,13 +638,20 @@ export class SpatialWorkspace {
     if (!m?.proposal || m.proposal.state !== 'pending' || m.proposal.kind !== 'preview_fixture') return;
     const actuatorId = m.proposal.actuatorId;
     const preview = actuatorId ? this.previews.find((p) => p.actuatorId === actuatorId) : undefined;
-    if (!preview) { this.dispatch({ type: 'proposal_state', messageId, state: 'done' }); return; }
+    if (!preview) {
+      // fail closed: the planned actuator has no available preview, so nothing ran and nothing is reported as done
+      this.dispatch({ type: 'proposal_state', messageId, state: 'failed' });
+      this.notice('agent-error', `Sem pré-visualização disponível para «${actuatorId ?? 'desconhecido'}». Nada foi executado.`, 'critical');
+      return;
+    }
     this.dispatch({ type: 'proposal_state', messageId, state: 'running' });
     this.notice('pose', 'Pré-visualização de fixture: estas poses vêm de um script independente, não do motor de engenharia.', 'critical');
     this.pointAt(preview.actuatorId, 'point', 'user_tool', 'Pré-visualização de fixture aprovada por si.');
+    const generation = ++this.playbackGeneration;
     this.approvedRunning = true;
     const outcome = await this.play(preview);
-    this.approvedRunning = false;
+    // only the newest playback may clear the agency; a superseded one returns here after the newer one started
+    if (generation === this.playbackGeneration) this.approvedRunning = false;
     if (this.disposed) return;
     if (outcome === 'cancelled') {
       // reset, disposal or a newer preview stopped it: no completion, no final measurements
@@ -660,6 +667,8 @@ export class SpatialWorkspace {
 
   /** True while an action the person approved is being shown (the hand says so). */
   private approvedRunning = false;
+  /** Incremented for every approved playback; a continuation acts only if it is still the current generation. */
+  private playbackGeneration = 0;
 
   /** Plays fixture frames on their own clock (frame timestamps), never interpolated: each shown pose is one frame. */
   private play(preview: FixturePreview): Promise<'completed' | 'cancelled'> {
@@ -687,6 +696,22 @@ export class SpatialWorkspace {
     this.dispatch({ type: 'proposal_state', messageId, state: 'rejected' });
     if (this.hand.state === 'awaiting' || this.hand.state === 'proposal') this.hand.setState('attention', 'Proposta rejeitada. Nada mudou.');
     this.foundry.requestRender();
+  }
+
+  /**
+   * Presentation view of a joint: the child part stays solid, the parent part keeps only its pin hardware solid
+   * (machined, cast bosses, brushed keepers), everything else is ghosted. Existing isolation, no geometry or pose change.
+   */
+  presentJoint(jointId: string | null): boolean {
+    if (!jointId) { this.scene.isolate(null); this.notice('presentation', null); this.renderRail(); return true; }
+    const c = this.registry.get(jointId);
+    if (!c || c.kind !== 'joint') return false;
+    const [parent, child] = c.partIds;
+    const hardware = new Set(['machined', 'castDark', 'brushed']);
+    this.scene.isolate({ ...c, partIds: [child!] }, (mesh) => mesh.userData.partId === parent && hardware.has(String(mesh.userData.materialKey)));
+    this.notice('presentation', `Vista isolada de ${c.id} · só apresentação: geometria e poses inalteradas.`, 'info');
+    this.renderRail();
+    return true;
   }
 
   resetPose(): void {

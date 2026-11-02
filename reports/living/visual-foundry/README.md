@@ -130,3 +130,19 @@ chão perto da máquina.
 apanha o corpo do cilindro e não o pino da base; e os metais escuros (rastos, barris) continuam demasiado próximos do
 preto no fundo Void. Ficam como trabalho em aberto: reposicionar essa câmara sobre o pino `boom_cyl_base` e subir o
 albedo/recorte dos metais escuros.
+
+## Revisão do PR #13 (review `5743045223`)
+
+Regressões novas em `tests/e2e/living-visual-foundry-regressions.pw.mjs` (21 verificações; as duas primeiras falhavam antes da correcção):
+
+1. **Falha fechada na aprovação.** Antes, quando o `actuatorId` guardado não tinha pré-visualização disponível, a proposta
+   ficava `done` sem nada ter corrido. Agora fica `failed` («sem pré-visualização · nada executado»), aparece um aviso
+   crítico e a pose não muda.
+2. **Agência da mão com reproduções sobrepostas.** Antes, quando B substituía A, a continuação cancelada de A punha
+   `approvedRunning = false` e a mão de B passava de «acção aprovada» para «observa». Agora cada reprodução aprovada tem um
+   número de geração, e só a mais recente pode limpar a agência.
+3. **Pino hidráulico visível.** `presentJoint('boom_cyl_base')` usa o isolamento existente: a parte filha (barril)
+   fica sólida, a parte-mãe só mantém sólido o hardware do pino (maquinado, bossas, chapas de retenção), e o resto
+   fica em fantasma. É só troca de material: poses e geometria ficam iguais (verificado), e `presentJoint(null)` repõe
+   tudo. Capturas: `captures/06c-hydraulic-joint-isolated.png` (apresentação) e `captures/06c-hydraulic-joint-natural.png`
+   (a mesma câmara, sem alterações). O `06-hydraulic-joint.png` natural mantém-se.

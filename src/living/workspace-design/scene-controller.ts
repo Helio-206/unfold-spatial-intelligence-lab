@@ -95,7 +95,8 @@ export class SceneController {
   setHighlightOpacity(opacity: number): void { this.rim.uniforms.uOpacity!.value = opacity; this.requestRender(); }
 
   /** Show only one component's parts solid; everything else becomes a faint ghost (display only). */
-  isolate(component: CanonicalComponent | null): void {
+  /** `keepMesh` keeps extra meshes solid (e.g. a parent part's pins and bosses). Material swap only: geometry and poses untouched. */
+  isolate(component: CanonicalComponent | null, keepMesh?: (mesh: Mesh) => boolean): void {
     for (const [mesh, mat] of this.ghosted) mesh.material = mat;
     this.ghosted.clear();
     this.isolatedId = component?.id ?? null;
@@ -106,6 +107,7 @@ export class SceneController {
         if (!mesh.isMesh || mesh.userData.highlightOverlay) return;
         const pid = partIdOf(mesh);
         if (pid && keep.has(pid)) return;
+        if (keepMesh?.(mesh)) return;
         this.ghosted.set(mesh, mesh.material); mesh.material = this.ghost;
       });
     }

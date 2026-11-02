@@ -109,6 +109,65 @@ const msgs = (page) => page.evaluate(() => window.__workspace.getState().message
   await context.close();
 }
 
+// 4. Fail closed: a saved actuator id with no available preview never becomes 'done'
+{
+  const { page, context, errors } = await open(() => {}, 'fixture');
+  const r = await page.evaluate(async () => {
+    const ws = window.__workspace;
+    ws.dispatch({ type: 'assistant_message', message: { id: 'bogus-1', role: 'assistant', text: 't', source: 'local', sourceNote: 'x', evidence: [{ componentId: 'boom_cylinder', label: 'x', status: 'resolved' }], proposal: { id: 'p-bogus', title: 't', detail: 'd', kind: 'preview_fixture', approveLabel: 'ok', state: 'pending', actuatorId: 'stick_cylinder' }, error: null, at: 0 } });
+    await ws.approveProposal('bogus-1');
+    const m = ws.getState().messages;
+    return { state: m.find((x) => x.id === 'bogus-1').proposal.state, completed: m.some((x) => /concluída/.test(x.text)), pose: ws.poseSource };
+  });
+  check('unresolvable actuator id fails closed (not done, no completion, no pose change)', r.state !== 'done' && r.state !== 'running' && !r.completed && r.pose === 'reference', r);
+  check('no page errors (4)', errors.length === 0, errors.join(' | '));
+  await context.close();
+}
+
+// 5. Supersession: A's cancelled continuation must not clear B's 'performing_approved' agency
+{
+  const { page, context, errors } = await open(() => {}, 'fixture');
+  const r = await page.evaluate(async () => {
+    const ws = window.__workspace;
+    const offer = () => { ws.offerExperiment('boom_cylinder', null); return ws.getState().messages.at(-1).id; };
+    const a = offer(); const runA = ws.approveProposal(a);
+    await new Promise((res) => { const t = () => (ws.poseSource === 'fixture-preview' ? res() : requestAnimationFrame(t)); t(); });
+    const b = offer(); const runB = ws.approveProposal(b);
+    await runA; await new Promise((res) => setTimeout(res, 50));
+    ws.renderNow();
+    const during = document.querySelector('.uw-hand').dataset.agency;
+    await runB; ws.renderNow();
+    return { during, after: document.querySelector('.uw-hand').dataset.agency };
+  });
+  check("superseded playback does not clear the newer playback's approved agency", r.during === 'performing_approved' && r.after !== 'performing_approved', r);
+  check('no page errors (5)', errors.length === 0, errors.join(' | '));
+  await context.close();
+}
+
+// 6. Joint presentation (isolation): material swap only; natural view restored; capture both
+{
+  const { page, context, errors } = await open(() => {}, 'fixture');
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.evaluate(() => { const ws = window.__workspace; ws.dispatch({ type: 'enter_focus' }); ws.setView({ target: [0.62, 1.0, 0], azimuthDeg: 40, elevationDeg: 14, distance: 2.4 }); });
+  const snap = () => page.evaluate(() => { const ws = window.__workspace; const geo = []; document.querySelector('canvas'); return { poses: JSON.stringify(ws.partPoses()), stats: ws.stats().modelTriangles }; });
+  const before = await snap();
+  await page.waitForTimeout(800); await page.evaluate(() => window.__workspace.renderNow());
+  await page.screenshot({ path: join(OUT, 'captures', '06c-hydraulic-joint-natural.png'), timeout: 180_000 });
+  const ok = await page.evaluate(() => window.__workspace.presentJoint('boom_cyl_base'));
+  await page.evaluate(() => window.__workspace.renderNow());
+  const pinVisible = await page.evaluate(() => { const ws = window.__workspace; ws.pointAt('boom_cyl_base', 'inspect', 'user_tool'); ws.renderNow(); const v = ws.handView(); ws.dispatch({ type: 'set_overlay', level: 'hidden' }); return { occluded: v.occluded, onScreen: v.x !== null }; });
+  // drop the highlight rim (it would tint the ghosted parent part), keep isolation and the reticle
+  await page.evaluate(() => { const ws = window.__workspace; ws.clearSelection(); ws.presentJoint('boom_cyl_base'); ws.renderNow(); });
+  await page.screenshot({ path: join(OUT, 'captures', '06c-hydraulic-joint-isolated.png'), timeout: 180_000 });
+  const during = await snap();
+  await page.evaluate(() => window.__workspace.presentJoint(null));
+  const after = await snap();
+  check('joint presentation isolates boom_cyl_base and the pin is no longer occluded', ok && pinVisible.onScreen && pinVisible.occluded === false, pinVisible);
+  check('isolation is presentation only: poses and geometry unchanged, natural view restored', before.poses === during.poses && during.poses === after.poses && before.stats === during.stats, { tris: [before.stats, during.stats] });
+  check('no page errors (6)', errors.length === 0, errors.join(' | '));
+  await context.close();
+}
+
 await browser.close();
 await server.close();
 const failed = checks.filter((c) => !c.ok);

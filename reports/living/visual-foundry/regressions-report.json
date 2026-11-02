@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-02T20:25:43.571Z",
+  "generatedAt": "2026-11-02T21:06:26.184Z",
   "apiNote": "All /api calls mocked in the browser.",
   "checks": [
     {
@@ -69,6 +69,41 @@
     },
     {
       "name": "no page errors (3)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "unresolvable actuator id fails closed (not done, no completion, no pose change)",
+      "ok": true,
+      "detail": "{\"state\":\"failed\",\"completed\":false,\"pose\":\"reference\"}"
+    },
+    {
+      "name": "no page errors (4)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "superseded playback does not clear the newer playback's approved agency",
+      "ok": true,
+      "detail": "{\"during\":\"performing_approved\",\"after\":\"observing\"}"
+    },
+    {
+      "name": "no page errors (5)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "joint presentation isolates boom_cyl_base and the pin is no longer occluded",
+      "ok": true,
+      "detail": "{\"occluded\":false,\"onScreen\":true}"
+    },
+    {
+      "name": "isolation is presentation only: poses and geometry unchanged, natural view restored",
+      "ok": true,
+      "detail": "{\"tris\":[253744,253744]}"
+    },
+    {
+      "name": "no page errors (6)",
       "ok": true,
       "detail": ""
     }
