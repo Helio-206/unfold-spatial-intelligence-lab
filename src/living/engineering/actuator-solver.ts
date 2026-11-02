@@ -94,6 +94,13 @@ export function insideWindow(q: number, min: number, max: number): number | null
   return null;
 }
 
+/** Agrupa soluções numericamente iguais, preservando os valores originais e a ordem dos ramos. */
+export function deduplicateAngles(angles: readonly number[]): number[] {
+  const unique: number[] = [];
+  for (const angle of angles) if (!unique.some((candidate) => Math.abs(candidate - angle) < 1e-12)) unique.push(angle);
+  return unique;
+}
+
 type Fail = { ok: false; code: string; message: string; subjectIds: string[] };
 const fail = (code: string, message: string, subjectIds: string[]): Fail => ({ ok: false, code, message, subjectIds });
 
@@ -138,7 +145,7 @@ function solveDirectTriangle(assembly: Assembly, cylinder: HydraulicCylinder, va
     throw error;
   }
   const inside = angles.candidates.map((q) => insideWindow(q, driven.limits!.min.value, driven.limits!.max.value)).filter((q): q is number => q !== null);
-  const unique = [...new Set(inside.map((q) => Number(q.toFixed(12))))];
+  const unique = deduplicateAngles(inside);
   if (unique.length === 0) return fail('CYLINDER_OUT_OF_JOINT_RANGE', `O curso pede um ângulo de ${driven.id} fora dos limites [${driven.limits.min.value}, ${driven.limits.max.value}].`, [driven.id, cylinder.id]);
   const warnings: SolverWarning[] = [];
   const refQ = reference[driven.id]!;

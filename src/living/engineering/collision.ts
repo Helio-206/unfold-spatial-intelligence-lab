@@ -3,7 +3,7 @@
  *
  * O que se verifica, e o que não:
  *  - Caixas contra o plano do chão (política `collision.groundPlane`), e caixas contra caixas de partes não ligadas por
- *    juntas e não listadas em `ignorePairs`. Caixas com `purpose: "visual"` não entram.
+ *    juntas ou pinos coincidentes e não listadas em `ignorePairs`. Caixas com `purpose: "visual"` não entram.
  *  - Cilindros: só o contacto com o chão é calculado (exacto). Entre peças são saltados, com a razão. Um cilindro nunca
  *    aparece como verificado por inteiro.
  *  - Nada é dito sobre formas que não estão no relatório: `shapesChecked` e `shapesSkipped` cobrem todas as formas.
@@ -71,7 +71,10 @@ function lowestCylinderY(world: Rigid, radiusM: number, halfLengthM: number): nu
 }
 
 function jointedPairs(assembly: Assembly): Set<string> {
-  return new Set(assembly.joints.map((joint: Joint) => [joint.parentPartId, joint.childPartId].sort().join('|')));
+  return new Set([
+    ...assembly.joints.map((joint: Joint) => [joint.parentPartId, joint.childPartId].sort().join('|')),
+    ...assembly.constraints.filter((constraint) => constraint.kind === 'coincident_points').map((constraint) => [constraint.a.partId, constraint.b.partId].sort().join('|')),
+  ]);
 }
 
 function ignoredPairs(assembly: Assembly): Set<string> {

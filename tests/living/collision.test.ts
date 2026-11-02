@@ -86,6 +86,17 @@ describe('colisões na referência: o que se verifica e o que não se verifica, 
     expect(report.contacts).toEqual([]);
     expect(evaluateReferencePose(EXCAVATOR_ASSEMBLY_V1).status).toBe('ok');
   });
+
+  it('exclui partes ligadas por um pino coincidente mesmo quando ambas têm caixas de colisão', () => {
+    const assembly = clone();
+    assembly.parts.find((part) => part.id === 'bucket_link')!.shapes[0]!.purpose = 'both';
+    const report = primitiveCollisionBackend.check(input(assembly));
+    expect(report.contacts.some((contact) => contact.kind === 'part_part' && contact.partIds.includes('bucket') && contact.partIds.includes('bucket_link'))).toBe(false);
+    expect(report.contacts.some((contact) => contact.kind === 'part_part' && contact.partIds.includes('stick') && contact.partIds.includes('bucket_link'))).toBe(true);
+    expect(evaluateReferencePose(assembly)).toMatchObject({ status: 'blocked', blocked: { code: 'COLLISION', subjectIds: ['bucket_link', 'stick'] } });
+    assembly.collision.ignorePairs.push(['bucket_link', 'stick']);
+    expect(evaluateReferencePose(assembly).status).toBe('ok');
+  });
 });
 
 describe('colisões no quadro: contactos reais, política de bloqueio e aviso', () => {
@@ -122,6 +133,7 @@ describe('colisões no quadro: contactos reais, política de bloqueio e aviso', 
     const before = withContact(false);
     const after = withContact(true);
     expect(before.map((c) => c.partIds.slice().sort().join('|'))).toContain('boom|chassis');
+    expect(before.map((c) => c.partIds.slice().sort().join('|'))).not.toContain('chassis|upper_body');
     expect(after.map((c) => c.partIds.slice().sort().join('|'))).not.toContain('boom|chassis');
     expect(after.length).toBe(before.length - 1);
   });

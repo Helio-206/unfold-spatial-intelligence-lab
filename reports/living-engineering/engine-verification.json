@@ -17,7 +17,7 @@
       "CYLINDER_UNREACHABLE": 191,
       "COLLISION": 734
     },
-    "worstClosureM": 2.0188824941278586e-13,
+    "worstClosureM": 3.580361673049448e-15,
     "warnings": 0
   },
   "bucketEnvelope": {

@@ -530,7 +530,7 @@
             "forceReason": "Sem parâmetros hidráulicos: diâmetros e pressão de alimentação são desconhecidos (null) nesta montagem.",
             "forceStatus": "unknown",
             "kind": "hydraulic_cylinder",
-            "lengthM": 2.7492780826214984,
+            "lengthM": 2.749278082621498,
             "unit": "m",
             "value": 0.5692780826214978,
             "withinLimits": true
@@ -541,7 +541,7 @@
             "forceReason": "Sem parâmetros hidráulicos: diâmetros e pressão de alimentação são desconhecidos (null) nesta montagem.",
             "forceStatus": "unknown",
             "kind": "hydraulic_cylinder",
-            "lengthM": 2.60681002911168,
+            "lengthM": 2.6068100291116796,
             "unit": "m",
             "value": 0.32681002911167933,
             "withinLimits": true
@@ -552,7 +552,7 @@
             "forceReason": "Sem parâmetros hidráulicos: diâmetros e pressão de alimentação são desconhecidos (null) nesta montagem.",
             "forceStatus": "unknown",
             "kind": "hydraulic_cylinder",
-            "lengthM": 2.6871382678525695,
+            "lengthM": 2.6871382678525704,
             "unit": "m",
             "value": 0.47713826785256996,
             "withinLimits": true
@@ -614,13 +614,13 @@
           }
         ],
         "index": null,
-        "inputDigest": "9aac4e17bed359f734866232504c758a18943cd6332e9318d7e45e5618206ee2",
+        "inputDigest": "6ff7786a9799c2bbfa09259f0f0fa875545a9999a350e9d0faf6ecf8e7dcb3ce",
         "joints": [
           {
             "jointId": "boom_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": 0.3399255999533743
+            "value": 0.33992559995337374
           },
           {
             "jointId": "boom_cyl_slide",
@@ -632,7 +632,7 @@
             "jointId": "boom_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": 0.45
+            "value": 0.4499999999999993
           },
           {
             "jointId": "bucket_cyl_base",
@@ -668,7 +668,7 @@
             "jointId": "stick_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": -0.08101069806015089
+            "value": -0.08101069806015085
           },
           {
             "jointId": "stick_cyl_slide",
@@ -680,7 +680,7 @@
             "jointId": "stick_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": -1.2
+            "value": -1.200000000000001
           },
           {
             "jointId": "swing",
@@ -700,7 +700,7 @@
               "boom"
             ],
             "unit": "m",
-            "value": 2.220446049250313e-16
+            "value": 4.440892098500626e-16
           },
           {
             "id": "closure.bucket_cyl_closure",
@@ -736,7 +736,7 @@
               "stick"
             ],
             "unit": "m",
-            "value": 0
+            "value": 8.881784197001252e-16
           },
           {
             "id": "cylinder.boom_cylinder.length",
@@ -748,7 +748,7 @@
               "boom_cyl_rod"
             ],
             "unit": "m",
-            "value": 2.7492780826214984
+            "value": 2.749278082621498
           },
           {
             "id": "cylinder.bucket_cylinder.length",
@@ -760,7 +760,7 @@
               "bucket_cyl_rod"
             ],
             "unit": "m",
-            "value": 2.6871382678525695
+            "value": 2.6871382678525704
           },
           {
             "id": "cylinder.stick_cylinder.length",
@@ -772,7 +772,7 @@
               "stick_cyl_rod"
             ],
             "unit": "m",
-            "value": 2.60681002911168
+            "value": 2.6068100291116796
           },
           {
             "id": "tip.x",
@@ -783,7 +783,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 7.146908205051036
+            "value": 7.146908205051033
           },
           {
             "id": "tip.y",
@@ -794,7 +794,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 0.6616474588684267
+            "value": 0.6616474588684214
           },
           {
             "id": "tip.z",
@@ -814,7 +814,7 @@
             "rotation": [
               0,
               0,
-              0.22310636213174545,
+              0.2231063621317451,
               0.9747941070689433
             ],
             "translationM": [
@@ -828,8 +828,8 @@
             "rotation": [
               0,
               0,
-              0.16914568517363784,
-              0.9855910598149419
+              0.16914568517363757,
+              0.9855910598149421
             ],
             "translationM": [
               0.6,
@@ -842,12 +842,12 @@
             "rotation": [
               0,
               0,
-              0.16914568517363784,
-              0.9855910598149419
+              0.16914568517363757,
+              0.9855910598149421
             ],
             "translationM": [
-              3.1919629456426275,
-              1.9166559136331005,
+              3.191962945642628,
+              1.916655913633099,
               0
             ]
           },
@@ -856,12 +856,12 @@
             "rotation": [
               0,
               0,
-              -0.7345477822465805,
-              0.6785569656238379
+              -0.734547782246581,
+              0.6785569656238373
             ],
             "translationM": [
-              7.897727628994845,
-              1.9061434181341403,
+              7.8977276289948435,
+              1.9061434181341332,
               0
             ]
           },
@@ -870,12 +870,12 @@
             "rotation": [
               0,
               0,
-              -0.22650683558288925,
-              0.9740095756378507
+              -0.22650683558289017,
+              0.9740095756378506
             ],
             "translationM": [
-              5.712241924882975,
-              3.0811124547996354,
+              5.712241924882974,
+              3.0811124547996322,
               0
             ]
           },
@@ -884,12 +884,12 @@
             "rotation": [
               0,
               0,
-              -0.22650683558288925,
-              0.9740095756378507
+              -0.22650683558289017,
+              0.9740095756378506
             ],
             "translationM": [
-              8.123651072530885,
-              1.8954404962893197,
+              8.123651072530883,
+              1.8954404962893117,
               0
             ]
           },
@@ -898,12 +898,12 @@
             "rotation": [
               0,
               0,
-              0.9463983256630004,
-              0.3230018717937552
+              0.946398325663,
+              0.32300187179375617
             ],
             "translationM": [
-              8.123651072530885,
-              1.8954404962893194,
+              8.123651072530883,
+              1.8954404962893119,
               0
             ]
           },
@@ -926,12 +926,12 @@
             "rotation": [
               0,
               0,
-              -0.03900349985567381,
+              -0.039003499855674806,
               0.9992390739953118
             ],
             "translationM": [
-              7.585294047371956,
-              1.937532223053948,
+              7.585294047371955,
+              1.9375322230539416,
               0
             ]
           },
@@ -940,12 +940,12 @@
             "rotation": [
               0,
               0,
-              -0.3662725290860476,
-              0.9305076219123143
+              -0.36627252908604846,
+              0.9305076219123138
             ],
             "translationM": [
-              5.812414352704456,
-              3.848813884200643,
+              5.812414352704457,
+              3.8488138842006396,
               0
             ]
           },
@@ -954,12 +954,12 @@
             "rotation": [
               0,
               0,
-              0.18344978418038582,
-              0.9830290823186106
+              0.18344978418038552,
+              0.9830290823186109
             ],
             "translationM": [
-              3.156550900320899,
-              3.254432422264543,
+              3.1565509003209,
+              3.254432422264541,
               0
             ]
           },
@@ -968,12 +968,12 @@
             "rotation": [
               0,
               0,
-              0.18344978418038582,
-              0.9830290823186106
+              0.18344978418038552,
+              0.9830290823186109
             ],
             "translationM": [
-              5.587902681157262,
-              4.194638275097359,
+              5.587902681157263,
+              4.194638275097357,
               0
             ]
           },
@@ -1048,7 +1048,7 @@
             "forceReason": "Sem parâmetros hidráulicos: diâmetros e pressão de alimentação são desconhecidos (null) nesta montagem.",
             "forceStatus": "unknown",
             "kind": "hydraulic_cylinder",
-            "lengthM": 2.6068100291116787,
+            "lengthM": 2.6068100291116796,
             "unit": "m",
             "value": 0.32681002911167933,
             "withinLimits": true
@@ -1059,7 +1059,7 @@
             "forceReason": "Sem parâmetros hidráulicos: diâmetros e pressão de alimentação são desconhecidos (null) nesta montagem.",
             "forceStatus": "unknown",
             "kind": "hydraulic_cylinder",
-            "lengthM": 2.68713826785257,
+            "lengthM": 2.6871382678525704,
             "unit": "m",
             "value": 0.47713826785256996,
             "withinLimits": true
@@ -1121,13 +1121,13 @@
           }
         ],
         "index": null,
-        "inputDigest": "7b240b22e195b32d7ada45e0fdecf3b3a0c8f17c704b8f720ad1a03b5d6c48ca",
+        "inputDigest": "5078cdd8c362d228297c00ea65529a74476cc5b8149c0ec37f62c66281ffa865",
         "joints": [
           {
             "jointId": "boom_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": 0.4397738428191402
+            "value": 0.43977384281910653
           },
           {
             "jointId": "boom_cyl_slide",
@@ -1139,7 +1139,7 @@
             "jointId": "boom_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": 0.572573054604
+            "value": 0.5725730546039585
           },
           {
             "jointId": "bucket_cyl_base",
@@ -1175,7 +1175,7 @@
             "jointId": "stick_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": -0.08101069806015089
+            "value": -0.08101069806015085
           },
           {
             "jointId": "stick_cyl_slide",
@@ -1187,7 +1187,7 @@
             "jointId": "stick_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": -1.2
+            "value": -1.200000000000001
           },
           {
             "jointId": "swing",
@@ -1207,7 +1207,7 @@
               "boom"
             ],
             "unit": "m",
-            "value": 1.2314970930892997e-14
+            "value": 8.881784197001252e-16
           },
           {
             "id": "closure.bucket_cyl_closure",
@@ -1219,7 +1219,7 @@
               "idler_link"
             ],
             "unit": "m",
-            "value": 1.9860273225978185e-15
+            "value": 4.440892098500626e-16
           },
           {
             "id": "closure.bucket_link_closure",
@@ -1243,7 +1243,7 @@
               "stick"
             ],
             "unit": "m",
-            "value": 8.881784197001252e-16
+            "value": 1.2560739669470201e-15
           },
           {
             "id": "cylinder.boom_cylinder.length",
@@ -1267,7 +1267,7 @@
               "bucket_cyl_rod"
             ],
             "unit": "m",
-            "value": 2.68713826785257
+            "value": 2.6871382678525704
           },
           {
             "id": "cylinder.stick_cylinder.length",
@@ -1279,7 +1279,7 @@
               "stick_cyl_rod"
             ],
             "unit": "m",
-            "value": 2.6068100291116787
+            "value": 2.6068100291116796
           },
           {
             "id": "tip.x",
@@ -1290,7 +1290,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 7.202917121195726
+            "value": 7.2029171211957195
           },
           {
             "id": "tip.y",
@@ -1301,7 +1301,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 1.4256107500509025
+            "value": 1.4256107500506403
           },
           {
             "id": "tip.z",
@@ -1321,8 +1321,8 @@
             "rotation": [
               0,
               0,
-              0.28239184919233956,
-              0.95929914182685
+              0.28239184919231963,
+              0.9592991418268558
             ],
             "translationM": [
               0.95,
@@ -1335,8 +1335,8 @@
             "rotation": [
               0,
               0,
-              0.21811926857790434,
-              0.975922120189434
+              0.21811926857788788,
+              0.9759221201894377
             ],
             "translationM": [
               0.6,
@@ -1349,12 +1349,12 @@
             "rotation": [
               0,
               0,
-              0.21811926857790434,
-              0.975922120189434
+              0.21811926857788788,
+              0.9759221201894377
             ],
             "translationM": [
-              3.1241992217497354,
-              2.1876465255803956,
+              3.124199221749776,
+              2.1876465255803104,
               0
             ]
           },
@@ -1363,12 +1363,12 @@
             "rotation": [
               0,
               0,
-              -0.6916083475943056,
-              0.7222727279482968
+              -0.691608347594321,
+              0.722272727948282
             ],
             "translationM": [
-              7.795943400252631,
-              2.752569616160897,
+              7.795943400252682,
+              2.752569616160609,
               0
             ]
           },
@@ -1377,12 +1377,12 @@
             "rotation": [
               0,
               0,
-              -0.16642528167268503,
-              0.9860540683046582
+              -0.16642528167270604,
+              0.9860540683046548
             ],
             "translationM": [
-              5.483195501974379,
-              3.6515118606958423,
+              5.483195501974468,
+              3.6515118606956536,
               0
             ]
           },
@@ -1391,12 +1391,12 @@
             "rotation": [
               0,
               0,
-              -0.16642528167268503,
-              0.9860540683046582
+              -0.16642528167270604,
+              0.9860540683046548
             ],
             "translationM": [
-              8.021480420596774,
-              2.769569831732594,
+              8.021480420596825,
+              2.769569831732297,
               0
             ]
           },
@@ -1405,12 +1405,12 @@
             "rotation": [
               0,
               0,
-              0.9644048008203919,
-              0.26443029356444847
+              0.9644048008203862,
+              0.26443029356446907
             ],
             "translationM": [
-              8.021480420596776,
-              2.769569831732595,
+              8.021480420596825,
+              2.7695698317322974,
               0
             ]
           },
@@ -1433,12 +1433,12 @@
             "rotation": [
               0,
               0,
-              0.02227128996564143,
-              0.9997519640607195
+              0.02227128996562011,
+              0.99975196406072
             ],
             "translationM": [
-              7.482016111782047,
-              2.7455228045764537,
+              7.482016111782097,
+              2.7455228045761793,
               0
             ]
           },
@@ -1447,12 +1447,12 @@
             "rotation": [
               0,
               0,
-              -0.3085929896682067,
-              0.9511941792965503
+              -0.308592989668227,
+              0.9511941792965438
             ],
             "translationM": [
-              5.488752309905094,
-              4.425701192762373,
+              5.488752309905216,
+              4.425701192762184,
               0
             ]
           },
@@ -1461,12 +1461,12 @@
             "rotation": [
               0,
               0,
-              0.24331410090182484,
-              0.9699475492532246
+              0.2433141009018047,
+              0.9699475492532296
             ],
             "translationM": [
-              2.925487798653026,
-              3.511056428192164,
+              2.9254877986531094,
+              3.5110564281920817,
               0
             ]
           },
@@ -1475,12 +1475,12 @@
             "rotation": [
               0,
               0,
-              0.24331410090182484,
-              0.9699475492532246
+              0.2433141009018047,
+              0.9699475492532296
             ],
             "translationM": [
-              5.223642387631808,
-              4.741480750543196,
+              5.223642387631943,
+              4.741480750543019,
               0
             ]
           },
@@ -1510,7 +1510,7 @@
             "Força, pressão e capacidade de carga não são calculadas: a montagem não tem parâmetros hidráulicos (diâmetros e pressão são null).",
             "Colisões: caixas contra caixas (SAT) e contra o plano do chão; cilindros só contra o chão. Cada forma indica se foi verificada, com a razão."
           ],
-          "closureResidualM": 1.2314970930892997e-14,
+          "closureResidualM": 1.2560739669470201e-15,
           "id": "unfold.engineering.forward-kinematics",
           "method": "Solver de cilindros: forma fechada (triângulo) e bissecção (balancé de duas barras), verificado por cinemática directa",
           "status": "solved",
@@ -1566,7 +1566,7 @@
             "forceReason": "Sem parâmetros hidráulicos: diâmetros e pressão de alimentação são desconhecidos (null) nesta montagem.",
             "forceStatus": "unknown",
             "kind": "hydraulic_cylinder",
-            "lengthM": 2.6871382678525704,
+            "lengthM": 2.6871382678525695,
             "unit": "m",
             "value": 0.47713826785256996,
             "withinLimits": true
@@ -1628,13 +1628,13 @@
           }
         ],
         "index": null,
-        "inputDigest": "6fdf0398bc748aff9b8560ab0b9b2d909a9d6068118d826f8917f2eb17fedadf",
+        "inputDigest": "9a06023eae9902c2b6828235f460a583b0c40442e5f83570bf098766b23ed202",
         "joints": [
           {
             "jointId": "boom_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": 0.5597998804083497
+            "value": 0.5597998804084159
           },
           {
             "jointId": "boom_cyl_slide",
@@ -1646,7 +1646,7 @@
             "jointId": "boom_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": 0.721568824192
+            "value": 0.721568824192083
           },
           {
             "jointId": "bucket_cyl_base",
@@ -1682,7 +1682,7 @@
             "jointId": "stick_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": -0.08101069806015089
+            "value": -0.08101069806015085
           },
           {
             "jointId": "stick_cyl_slide",
@@ -1694,7 +1694,7 @@
             "jointId": "stick_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": -1.2
+            "value": -1.200000000000001
           },
           {
             "jointId": "swing",
@@ -1714,7 +1714,7 @@
               "boom"
             ],
             "unit": "m",
-            "value": 1.9959327572255808e-14
+            "value": 4.440892098500626e-16
           },
           {
             "id": "closure.bucket_cyl_closure",
@@ -1726,7 +1726,7 @@
               "idler_link"
             ],
             "unit": "m",
-            "value": 8.881784197001252e-16
+            "value": 9.930136612989092e-16
           },
           {
             "id": "closure.bucket_link_closure",
@@ -1738,7 +1738,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 1.2560739669470201e-15
+            "value": 0
           },
           {
             "id": "closure.stick_cyl_closure",
@@ -1750,7 +1750,7 @@
               "stick"
             ],
             "unit": "m",
-            "value": 0
+            "value": 8.881784197001252e-16
           },
           {
             "id": "cylinder.boom_cylinder.length",
@@ -1774,7 +1774,7 @@
               "bucket_cyl_rod"
             ],
             "unit": "m",
-            "value": 2.6871382678525704
+            "value": 2.6871382678525695
           },
           {
             "id": "cylinder.stick_cylinder.length",
@@ -1797,7 +1797,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 7.144681581599331
+            "value": 7.144681581599258
           },
           {
             "id": "tip.y",
@@ -1808,7 +1808,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 2.354649862601431
+            "value": 2.354649862601943
           },
           {
             "id": "tip.z",
@@ -1828,8 +1828,8 @@
             "rotation": [
               0,
               0,
-              0.3530082536113319,
-              0.9356202076068462
+              0.3530082536113707,
+              0.9356202076068313
             ],
             "translationM": [
               0.95,
@@ -1842,8 +1842,8 @@
             "rotation": [
               0,
               0,
-              0.276259484169909,
-              0.9610830855894696
+              0.27625948416994073,
+              0.9610830855894605
             ],
             "translationM": [
               0.6,
@@ -1856,12 +1856,12 @@
             "rotation": [
               0,
               0,
-              0.276259484169909,
-              0.9610830855894696
+              0.27625948416994073,
+              0.9610830855894605
             ],
             "translationM": [
-              2.9980327473189554,
-              2.502777076876642,
+              2.998032747318856,
+              2.5027770768768,
               0
             ]
           },
@@ -1870,12 +1870,12 @@
             "rotation": [
               0,
               0,
-              -0.6359320117494572,
-              0.7717450851364641
+              -0.6359320117494256,
+              0.7717450851364901
             ],
             "translationM": [
-              7.534156968788546,
-              3.754938733789734,
+              7.534156968788357,
+              3.7549387337902775,
               0
             ]
           },
@@ -1884,12 +1884,12 @@
             "rotation": [
               0,
               0,
-              -0.09257265797985245,
-              0.9957059319872233
+              -0.09257265797981165,
+              0.9957059319872273
             ],
             "translationM": [
-              5.113589240392874,
-              4.300605181584923,
+              5.113589240392641,
+              4.300605181585268,
               0
             ]
           },
@@ -1898,12 +1898,12 @@
             "rotation": [
               0,
               0,
-              -0.09257265797985245,
-              0.9957059319872233
+              -0.09257265797981165,
+              0.9957059319872273
             ],
             "translationM": [
-              7.754671586710926,
-              3.8052304643002763,
+              7.754671586710733,
+              3.8052304643008377,
               0
             ]
           },
@@ -1912,12 +1912,12 @@
             "rotation": [
               0,
               0,
-              0.981411127194827,
-              0.19191716811733966
+              0.9814111271948347,
+              0.19191716811729936
             ],
             "translationM": [
-              7.754671586710927,
-              3.8052304643002763,
+              7.754671586710734,
+              3.805230464300838,
               0
             ]
           },
@@ -1940,12 +1940,12 @@
             "rotation": [
               0,
               0,
-              0.096620049553296,
-              0.9953213380734477
+              0.09662004955333686,
+              0.9953213380734438
             ],
             "translationM": [
-              7.224753855404662,
-              3.701369027533678,
+              7.224753855404479,
+              3.7013690275341964,
               0
             ]
           },
@@ -1954,12 +1954,12 @@
             "rotation": [
               0,
               0,
-              -0.2369406241190058,
-              0.9715241328150814
+              -0.23694062411896594,
+              0.9715241328150911
             ],
             "translationM": [
-              5.004159867128598,
-              5.067041879732257,
+              5.004159867128302,
+              5.067041879732593,
               0
             ]
           },
@@ -1968,12 +1968,12 @@
             "rotation": [
               0,
               0,
-              0.31483144491011056,
-              0.9491475972133165
+              0.3148314449101499,
+              0.9491475972133033
             ],
             "translationM": [
-              2.6050691979943785,
-              3.782026719793229,
+              2.6050691979941893,
+              3.782026719793366,
               0
             ]
           },
@@ -1982,12 +1982,12 @@
             "rotation": [
               0,
               0,
-              0.31483144491011056,
-              0.9491475972133165
+              0.3148314449101499,
+              0.9491475972133033
             ],
             "translationM": [
-              4.695111261490097,
-              5.339968535361382,
+              4.695111261489779,
+              5.339968535361691,
               0
             ]
           },
@@ -2017,7 +2017,7 @@
             "Força, pressão e capacidade de carga não são calculadas: a montagem não tem parâmetros hidráulicos (diâmetros e pressão são null).",
             "Colisões: caixas contra caixas (SAT) e contra o plano do chão; cilindros só contra o chão. Cada forma indica se foi verificada, com a razão."
           ],
-          "closureResidualM": 1.9959327572255808e-14,
+          "closureResidualM": 9.930136612989092e-16,
           "id": "unfold.engineering.forward-kinematics",
           "method": "Solver de cilindros: forma fechada (triângulo) e bissecção (balancé de duas barras), verificado por cinemática directa",
           "status": "solved",
@@ -2073,7 +2073,7 @@
             "forceReason": "Sem parâmetros hidráulicos: diâmetros e pressão de alimentação são desconhecidos (null) nesta montagem.",
             "forceStatus": "unknown",
             "kind": "hydraulic_cylinder",
-            "lengthM": 2.6871382678525704,
+            "lengthM": 2.6871382678525695,
             "unit": "m",
             "value": 0.47713826785256996,
             "withinLimits": true
@@ -2135,13 +2135,13 @@
           }
         ],
         "index": null,
-        "inputDigest": "6fdf0398bc748aff9b8560ab0b9b2d909a9d6068118d826f8917f2eb17fedadf",
+        "inputDigest": "9a06023eae9902c2b6828235f460a583b0c40442e5f83570bf098766b23ed202",
         "joints": [
           {
             "jointId": "boom_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": 0.5597998804083497
+            "value": 0.5597998804084159
           },
           {
             "jointId": "boom_cyl_slide",
@@ -2153,7 +2153,7 @@
             "jointId": "boom_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": 0.721568824192
+            "value": 0.721568824192083
           },
           {
             "jointId": "bucket_cyl_base",
@@ -2189,7 +2189,7 @@
             "jointId": "stick_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": -0.08101069806015089
+            "value": -0.08101069806015085
           },
           {
             "jointId": "stick_cyl_slide",
@@ -2201,7 +2201,7 @@
             "jointId": "stick_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": -1.2
+            "value": -1.200000000000001
           },
           {
             "jointId": "swing",
@@ -2221,7 +2221,7 @@
               "boom"
             ],
             "unit": "m",
-            "value": 1.9959327572255808e-14
+            "value": 4.440892098500626e-16
           },
           {
             "id": "closure.bucket_cyl_closure",
@@ -2233,7 +2233,7 @@
               "idler_link"
             ],
             "unit": "m",
-            "value": 8.881784197001252e-16
+            "value": 9.930136612989092e-16
           },
           {
             "id": "closure.bucket_link_closure",
@@ -2245,7 +2245,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 1.2560739669470201e-15
+            "value": 0
           },
           {
             "id": "closure.stick_cyl_closure",
@@ -2257,7 +2257,7 @@
               "stick"
             ],
             "unit": "m",
-            "value": 0
+            "value": 8.881784197001252e-16
           },
           {
             "id": "cylinder.boom_cylinder.length",
@@ -2281,7 +2281,7 @@
               "bucket_cyl_rod"
             ],
             "unit": "m",
-            "value": 2.6871382678525704
+            "value": 2.6871382678525695
           },
           {
             "id": "cylinder.stick_cylinder.length",
@@ -2304,7 +2304,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 7.144681581599331
+            "value": 7.144681581599258
           },
           {
             "id": "tip.y",
@@ -2315,7 +2315,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 2.354649862601431
+            "value": 2.354649862601943
           },
           {
             "id": "tip.z",
@@ -2335,8 +2335,8 @@
             "rotation": [
               0,
               0,
-              0.3530082536113319,
-              0.9356202076068462
+              0.3530082536113707,
+              0.9356202076068313
             ],
             "translationM": [
               0.95,
@@ -2349,8 +2349,8 @@
             "rotation": [
               0,
               0,
-              0.276259484169909,
-              0.9610830855894696
+              0.27625948416994073,
+              0.9610830855894605
             ],
             "translationM": [
               0.6,
@@ -2363,12 +2363,12 @@
             "rotation": [
               0,
               0,
-              0.276259484169909,
-              0.9610830855894696
+              0.27625948416994073,
+              0.9610830855894605
             ],
             "translationM": [
-              2.9980327473189554,
-              2.502777076876642,
+              2.998032747318856,
+              2.5027770768768,
               0
             ]
           },
@@ -2377,12 +2377,12 @@
             "rotation": [
               0,
               0,
-              -0.6359320117494572,
-              0.7717450851364641
+              -0.6359320117494256,
+              0.7717450851364901
             ],
             "translationM": [
-              7.534156968788546,
-              3.754938733789734,
+              7.534156968788357,
+              3.7549387337902775,
               0
             ]
           },
@@ -2391,12 +2391,12 @@
             "rotation": [
               0,
               0,
-              -0.09257265797985245,
-              0.9957059319872233
+              -0.09257265797981165,
+              0.9957059319872273
             ],
             "translationM": [
-              5.113589240392874,
-              4.300605181584923,
+              5.113589240392641,
+              4.300605181585268,
               0
             ]
           },
@@ -2405,12 +2405,12 @@
             "rotation": [
               0,
               0,
-              -0.09257265797985245,
-              0.9957059319872233
+              -0.09257265797981165,
+              0.9957059319872273
             ],
             "translationM": [
-              7.754671586710926,
-              3.8052304643002763,
+              7.754671586710733,
+              3.8052304643008377,
               0
             ]
           },
@@ -2419,12 +2419,12 @@
             "rotation": [
               0,
               0,
-              0.981411127194827,
-              0.19191716811733966
+              0.9814111271948347,
+              0.19191716811729936
             ],
             "translationM": [
-              7.754671586710927,
-              3.8052304643002763,
+              7.754671586710734,
+              3.805230464300838,
               0
             ]
           },
@@ -2447,12 +2447,12 @@
             "rotation": [
               0,
               0,
-              0.096620049553296,
-              0.9953213380734477
+              0.09662004955333686,
+              0.9953213380734438
             ],
             "translationM": [
-              7.224753855404662,
-              3.701369027533678,
+              7.224753855404479,
+              3.7013690275341964,
               0
             ]
           },
@@ -2461,12 +2461,12 @@
             "rotation": [
               0,
               0,
-              -0.2369406241190058,
-              0.9715241328150814
+              -0.23694062411896594,
+              0.9715241328150911
             ],
             "translationM": [
-              5.004159867128598,
-              5.067041879732257,
+              5.004159867128302,
+              5.067041879732593,
               0
             ]
           },
@@ -2475,12 +2475,12 @@
             "rotation": [
               0,
               0,
-              0.31483144491011056,
-              0.9491475972133165
+              0.3148314449101499,
+              0.9491475972133033
             ],
             "translationM": [
-              2.6050691979943785,
-              3.782026719793229,
+              2.6050691979941893,
+              3.782026719793366,
               0
             ]
           },
@@ -2489,12 +2489,12 @@
             "rotation": [
               0,
               0,
-              0.31483144491011056,
-              0.9491475972133165
+              0.3148314449101499,
+              0.9491475972133033
             ],
             "translationM": [
-              4.695111261490097,
-              5.339968535361382,
+              4.695111261489779,
+              5.339968535361691,
               0
             ]
           },
@@ -2524,7 +2524,7 @@
             "Força, pressão e capacidade de carga não são calculadas: a montagem não tem parâmetros hidráulicos (diâmetros e pressão são null).",
             "Colisões: caixas contra caixas (SAT) e contra o plano do chão; cilindros só contra o chão. Cada forma indica se foi verificada, com a razão."
           ],
-          "closureResidualM": 1.9959327572255808e-14,
+          "closureResidualM": 9.930136612989092e-16,
           "id": "unfold.engineering.forward-kinematics",
           "method": "Solver de cilindros: forma fechada (triângulo) e bissecção (balancé de duas barras), verificado por cinemática directa",
           "status": "solved",
@@ -2569,7 +2569,7 @@
             "forceReason": "Sem parâmetros hidráulicos: diâmetros e pressão de alimentação são desconhecidos (null) nesta montagem.",
             "forceStatus": "unknown",
             "kind": "hydraulic_cylinder",
-            "lengthM": 2.568405014555839,
+            "lengthM": 2.56840501455584,
             "unit": "m",
             "value": 0.28840501455583967,
             "withinLimits": true
@@ -2642,13 +2642,13 @@
           }
         ],
         "index": null,
-        "inputDigest": "20d889bbc63575e98fe51b7fae55cad50dd4f558c8e259f51eac58dfea06951b",
+        "inputDigest": "21a48c4c66a6fa11918dcb5c2381031acda445e04a0fd1106656cee0e25d5821",
         "joints": [
           {
             "jointId": "boom_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": 0.5597998804083497
+            "value": 0.5597998804084159
           },
           {
             "jointId": "boom_cyl_slide",
@@ -2660,7 +2660,7 @@
             "jointId": "boom_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": 0.721568824192
+            "value": 0.721568824192083
           },
           {
             "jointId": "bucket_cyl_base",
@@ -2696,7 +2696,7 @@
             "jointId": "stick_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": -0.08491053680465935
+            "value": -0.08491053680467743
           },
           {
             "jointId": "stick_cyl_slide",
@@ -2708,7 +2708,7 @@
             "jointId": "stick_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": -1.1036552448
+            "value": -1.1036552447996275
           },
           {
             "jointId": "swing",
@@ -2728,7 +2728,7 @@
               "boom"
             ],
             "unit": "m",
-            "value": 1.9959327572255808e-14
+            "value": 4.440892098500626e-16
           },
           {
             "id": "closure.bucket_cyl_closure",
@@ -2740,7 +2740,7 @@
               "idler_link"
             ],
             "unit": "m",
-            "value": 1.2560739669470201e-15
+            "value": 1.7763568394002505e-15
           },
           {
             "id": "closure.bucket_link_closure",
@@ -2752,7 +2752,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 1.2560739669470201e-15
+            "value": 8.881784197001252e-16
           },
           {
             "id": "closure.stick_cyl_closure",
@@ -2764,7 +2764,7 @@
               "stick"
             ],
             "unit": "m",
-            "value": 1.472609462299004e-13
+            "value": 0
           },
           {
             "id": "cylinder.boom_cylinder.length",
@@ -2800,7 +2800,7 @@
               "stick_cyl_rod"
             ],
             "unit": "m",
-            "value": 2.568405014555839
+            "value": 2.56840501455584
           },
           {
             "id": "tip.x",
@@ -2811,7 +2811,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 7.3956754182961095
+            "value": 7.395675418296951
           },
           {
             "id": "tip.y",
@@ -2822,7 +2822,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 2.5731379053900802
+            "value": 2.5731379053915058
           },
           {
             "id": "tip.z",
@@ -2842,8 +2842,8 @@
             "rotation": [
               0,
               0,
-              0.3530082536113319,
-              0.9356202076068462
+              0.3530082536113707,
+              0.9356202076068313
             ],
             "translationM": [
               0.95,
@@ -2856,8 +2856,8 @@
             "rotation": [
               0,
               0,
-              0.276259484169909,
-              0.9610830855894696
+              0.27625948416994073,
+              0.9610830855894605
             ],
             "translationM": [
               0.6,
@@ -2870,12 +2870,12 @@
             "rotation": [
               0,
               0,
-              0.276259484169909,
-              0.9610830855894696
+              0.27625948416994073,
+              0.9610830855894605
             ],
             "translationM": [
-              2.9980327473189554,
-              2.502777076876642,
+              2.998032747318856,
+              2.5027770768768,
               0
             ]
           },
@@ -2884,12 +2884,12 @@
             "rotation": [
               0,
               0,
-              -0.5980318708098336,
-              0.8014723211039109
+              -0.598031870809651,
+              0.8014723211040472
             ],
             "translationM": [
-              7.648642715477007,
-              4.004398729473864,
+              7.648642715477196,
+              4.004398729475405,
               0
             ]
           },
@@ -2898,12 +2898,12 @@
             "rotation": [
               0,
               0,
-              -0.04451829471681235,
-              0.9990085692502879
+              -0.04451829471658473,
+              0.9990085692502979
             ],
             "translationM": [
-              5.18680972575807,
-              4.314686226372336,
+              5.186809725758117,
+              4.314686226372755,
               0
             ]
           },
@@ -2912,12 +2912,12 @@
             "rotation": [
               0,
               0,
-              -0.04451829471681235,
-              0.9990085692502879
+              -0.04451829471658473,
+              0.9990085692502979
             ],
             "translationM": [
-              7.8632968301448685,
-              4.075669803068662,
+              7.863296830145024,
+              4.0756698030703005,
               0
             ]
           },
@@ -2926,12 +2926,12 @@
             "rotation": [
               0,
               0,
-              0.9895141579080946,
-              0.1444359072372046
+              0.9895141579081276,
+              0.14443590723697913
             ],
             "translationM": [
-              7.863296830144869,
-              4.075669803068663,
+              7.863296830145026,
+              4.0756698030703005,
               0
             ]
           },
@@ -2954,12 +2954,12 @@
             "rotation": [
               0,
               0,
-              0.14443641741123583,
-              0.9895140834396483
+              0.14443641741146127,
+              0.9895140834396154
             ],
             "translationM": [
-              7.3458276591134295,
-              3.921314184343478,
+              7.345827659113656,
+              3.9213141843448804,
               0
             ]
           },
@@ -2968,12 +2968,12 @@
             "rotation": [
               0,
               0,
-              -0.18988322896093252,
-              0.9818066812562289
+              -0.1898832289607088,
+              0.981806681256272
             ],
             "translationM": [
-              5.004159867128598,
-              5.067041879732257,
+              5.004159867128302,
+              5.067041879732593,
               0
             ]
           },
@@ -2982,12 +2982,12 @@
             "rotation": [
               0,
               0,
-              0.31298008627240154,
-              0.9497596883406455
+              0.3129800862724324,
+              0.9497596883406353
             ],
             "translationM": [
-              2.6050691979943785,
-              3.782026719793229,
+              2.6050691979941893,
+              3.782026719793366,
               0
             ]
           },
@@ -2996,12 +2996,12 @@
             "rotation": [
               0,
               0,
-              0.31298008627240154,
-              0.9497596883406455
+              0.3129800862724324,
+              0.9497596883406353
             ],
             "translationM": [
-              4.670290104211453,
-              5.308973649885924,
+              4.6702901042111655,
+              5.308973649886195,
               0
             ]
           },
@@ -3031,7 +3031,7 @@
             "Força, pressão e capacidade de carga não são calculadas: a montagem não tem parâmetros hidráulicos (diâmetros e pressão são null).",
             "Colisões: caixas contra caixas (SAT) e contra o plano do chão; cilindros só contra o chão. Cada forma indica se foi verificada, com a razão."
           ],
-          "closureResidualM": 1.472609462299004e-13,
+          "closureResidualM": 1.7763568394002505e-15,
           "id": "unfold.engineering.forward-kinematics",
           "method": "Solver de cilindros: forma fechada (triângulo) e bissecção (balancé de duas barras), verificado por cinemática directa",
           "status": "solved",
@@ -3149,13 +3149,13 @@
           }
         ],
         "index": null,
-        "inputDigest": "d75cfa845e297c66b5bc0b0d841323f63f7ce7cc126ed4e30b1a36144b4fa17c",
+        "inputDigest": "43ee31b2f88fce5457f925e6682de05cdd0fa1ab4c7a77ef2490ca9ac239312e",
         "joints": [
           {
             "jointId": "boom_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": 0.5597998804083497
+            "value": 0.5597998804084159
           },
           {
             "jointId": "boom_cyl_slide",
@@ -3167,7 +3167,7 @@
             "jointId": "boom_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": 0.721568824192
+            "value": 0.721568824192083
           },
           {
             "jointId": "bucket_cyl_base",
@@ -3203,7 +3203,7 @@
             "jointId": "stick_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": -0.09057576540005967
+            "value": -0.09057576540005889
           },
           {
             "jointId": "stick_cyl_slide",
@@ -3215,7 +3215,7 @@
             "jointId": "stick_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": -1.004100651296
+            "value": -1.0041006512960116
           },
           {
             "jointId": "swing",
@@ -3235,7 +3235,7 @@
               "boom"
             ],
             "unit": "m",
-            "value": 1.9959327572255808e-14
+            "value": 4.440892098500626e-16
           },
           {
             "id": "closure.bucket_cyl_closure",
@@ -3247,7 +3247,7 @@
               "idler_link"
             ],
             "unit": "m",
-            "value": 0
+            "value": 8.881784197001252e-16
           },
           {
             "id": "closure.bucket_link_closure",
@@ -3259,7 +3259,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 1.7763568394002505e-15
+            "value": 1.2560739669470201e-15
           },
           {
             "id": "closure.stick_cyl_closure",
@@ -3271,7 +3271,7 @@
               "stick"
             ],
             "unit": "m",
-            "value": 3.972054645195637e-15
+            "value": 0
           },
           {
             "id": "cylinder.boom_cylinder.length",
@@ -3318,7 +3318,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 7.631703586273812
+            "value": 7.631703586273675
           },
           {
             "id": "tip.y",
@@ -3329,7 +3329,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 2.8231796583166253
+            "value": 2.823179658317148
           },
           {
             "id": "tip.z",
@@ -3349,8 +3349,8 @@
             "rotation": [
               0,
               0,
-              0.3530082536113319,
-              0.9356202076068462
+              0.3530082536113707,
+              0.9356202076068313
             ],
             "translationM": [
               0.95,
@@ -3363,8 +3363,8 @@
             "rotation": [
               0,
               0,
-              0.276259484169909,
-              0.9610830855894696
+              0.27625948416994073,
+              0.9610830855894605
             ],
             "translationM": [
               0.6,
@@ -3377,12 +3377,12 @@
             "rotation": [
               0,
               0,
-              0.276259484169909,
-              0.9610830855894696
+              0.27625948416994073,
+              0.9610830855894605
             ],
             "translationM": [
-              2.9980327473189554,
-              2.502777076876642,
+              2.998032747318856,
+              2.5027770768768,
               0
             ]
           },
@@ -3391,12 +3391,12 @@
             "rotation": [
               0,
               0,
-              -0.5574124759038793,
-              0.8302357085230117
+              -0.5574124759038497,
+              0.8302357085230316
             ],
             "translationM": [
-              7.7411649882694835,
-              4.272496118401565,
+              7.741164988269244,
+              4.272496118402096,
               0
             ]
           },
@@ -3405,12 +3405,12 @@
             "rotation": [
               0,
               0,
-              0.005244259890994725,
-              0.9999862487745498
+              0.005244259891030528,
+              0.9999862487745496
             ],
             "translationM": [
-              5.260682139014585,
-              4.336565101164689,
+              5.260682139014341,
+              4.336565101165044,
               0
             ]
           },
@@ -3419,12 +3419,12 @@
             "rotation": [
               0,
               0,
-              0.005244259890994725,
-              0.9999862487745498
+              0.005244259891030528,
+              0.9999862487745496
             ],
             "translationM": [
-              7.947672602106861,
-              4.364748816478049,
+              7.947672602106615,
+              4.364748816478596,
               0
             ]
           },
@@ -3433,12 +3433,12 @@
             "rotation": [
               0,
               0,
-              0.9954751725095835,
-              0.09502200227849912
+              0.9954751725095868,
+              0.0950220022784635
             ],
             "translationM": [
-              7.947672602106861,
-              4.364748816478049,
+              7.947672602106615,
+              4.3647488164785955,
               0
             ]
           },
@@ -3461,12 +3461,12 @@
             "rotation": [
               0,
               0,
-              0.19349251162523493,
-              0.9811017520853574
+              0.19349251162527004,
+              0.9811017520853507
             ],
             "translationM": [
-              7.448107102326306,
-              4.159726106933462,
+              7.448107102326075,
+              4.159726106933972,
               0
             ]
           },
@@ -3475,12 +3475,12 @@
             "rotation": [
               0,
               0,
-              -0.1407965303469495,
-              0.9900385533110619
+              -0.1407965303469141,
+              0.9900385533110672
             ],
             "translationM": [
-              5.004159867128598,
-              5.067041879732257,
+              5.004159867128302,
+              5.067041879732593,
               0
             ]
           },
@@ -3489,12 +3489,12 @@
             "rotation": [
               0,
               0,
-              0.31028853136861817,
-              0.9506424287297017
+              0.310288531368658,
+              0.9506424287296888
             ],
             "translationM": [
-              2.6050691979943785,
-              3.782026719793229,
+              2.6050691979941893,
+              3.782026719793366,
               0
             ]
           },
@@ -3503,12 +3503,12 @@
             "rotation": [
               0,
               0,
-              0.31028853136861817,
-              0.9506424287297017
+              0.310288531368658,
+              0.9506424287296888
             ],
             "translationM": [
-              4.647897596137975,
-              5.27459234171344,
+              4.6478975961376605,
+              5.274592341713748,
               0
             ]
           },
@@ -3538,7 +3538,7 @@
             "Força, pressão e capacidade de carga não são calculadas: a montagem não tem parâmetros hidráulicos (diâmetros e pressão são null).",
             "Colisões: caixas contra caixas (SAT) e contra o plano do chão; cilindros só contra o chão. Cada forma indica se foi verificada, com a razão."
           ],
-          "closureResidualM": 1.9959327572255808e-14,
+          "closureResidualM": 1.2560739669470201e-15,
           "id": "unfold.engineering.forward-kinematics",
           "method": "Solver de cilindros: forma fechada (triângulo) e bissecção (balancé de duas barras), verificado por cinemática directa",
           "status": "solved",
@@ -3656,13 +3656,13 @@
           }
         ],
         "index": null,
-        "inputDigest": "d75cfa845e297c66b5bc0b0d841323f63f7ce7cc126ed4e30b1a36144b4fa17c",
+        "inputDigest": "43ee31b2f88fce5457f925e6682de05cdd0fa1ab4c7a77ef2490ca9ac239312e",
         "joints": [
           {
             "jointId": "boom_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": 0.5597998804083497
+            "value": 0.5597998804084159
           },
           {
             "jointId": "boom_cyl_slide",
@@ -3674,7 +3674,7 @@
             "jointId": "boom_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": 0.721568824192
+            "value": 0.721568824192083
           },
           {
             "jointId": "bucket_cyl_base",
@@ -3710,7 +3710,7 @@
             "jointId": "stick_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": -0.09057576540005967
+            "value": -0.09057576540005889
           },
           {
             "jointId": "stick_cyl_slide",
@@ -3722,7 +3722,7 @@
             "jointId": "stick_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": -1.004100651296
+            "value": -1.0041006512960116
           },
           {
             "jointId": "swing",
@@ -3742,7 +3742,7 @@
               "boom"
             ],
             "unit": "m",
-            "value": 1.9959327572255808e-14
+            "value": 4.440892098500626e-16
           },
           {
             "id": "closure.bucket_cyl_closure",
@@ -3754,7 +3754,7 @@
               "idler_link"
             ],
             "unit": "m",
-            "value": 0
+            "value": 8.881784197001252e-16
           },
           {
             "id": "closure.bucket_link_closure",
@@ -3766,7 +3766,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 1.7763568394002505e-15
+            "value": 1.2560739669470201e-15
           },
           {
             "id": "closure.stick_cyl_closure",
@@ -3778,7 +3778,7 @@
               "stick"
             ],
             "unit": "m",
-            "value": 3.972054645195637e-15
+            "value": 0
           },
           {
             "id": "cylinder.boom_cylinder.length",
@@ -3825,7 +3825,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 7.631703586273812
+            "value": 7.631703586273675
           },
           {
             "id": "tip.y",
@@ -3836,7 +3836,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 2.8231796583166253
+            "value": 2.823179658317148
           },
           {
             "id": "tip.z",
@@ -3856,8 +3856,8 @@
             "rotation": [
               0,
               0,
-              0.3530082536113319,
-              0.9356202076068462
+              0.3530082536113707,
+              0.9356202076068313
             ],
             "translationM": [
               0.95,
@@ -3870,8 +3870,8 @@
             "rotation": [
               0,
               0,
-              0.276259484169909,
-              0.9610830855894696
+              0.27625948416994073,
+              0.9610830855894605
             ],
             "translationM": [
               0.6,
@@ -3884,12 +3884,12 @@
             "rotation": [
               0,
               0,
-              0.276259484169909,
-              0.9610830855894696
+              0.27625948416994073,
+              0.9610830855894605
             ],
             "translationM": [
-              2.9980327473189554,
-              2.502777076876642,
+              2.998032747318856,
+              2.5027770768768,
               0
             ]
           },
@@ -3898,12 +3898,12 @@
             "rotation": [
               0,
               0,
-              -0.5574124759038793,
-              0.8302357085230117
+              -0.5574124759038497,
+              0.8302357085230316
             ],
             "translationM": [
-              7.7411649882694835,
-              4.272496118401565,
+              7.741164988269244,
+              4.272496118402096,
               0
             ]
           },
@@ -3912,12 +3912,12 @@
             "rotation": [
               0,
               0,
-              0.005244259890994725,
-              0.9999862487745498
+              0.005244259891030528,
+              0.9999862487745496
             ],
             "translationM": [
-              5.260682139014585,
-              4.336565101164689,
+              5.260682139014341,
+              4.336565101165044,
               0
             ]
           },
@@ -3926,12 +3926,12 @@
             "rotation": [
               0,
               0,
-              0.005244259890994725,
-              0.9999862487745498
+              0.005244259891030528,
+              0.9999862487745496
             ],
             "translationM": [
-              7.947672602106861,
-              4.364748816478049,
+              7.947672602106615,
+              4.364748816478596,
               0
             ]
           },
@@ -3940,12 +3940,12 @@
             "rotation": [
               0,
               0,
-              0.9954751725095835,
-              0.09502200227849912
+              0.9954751725095868,
+              0.0950220022784635
             ],
             "translationM": [
-              7.947672602106861,
-              4.364748816478049,
+              7.947672602106615,
+              4.3647488164785955,
               0
             ]
           },
@@ -3968,12 +3968,12 @@
             "rotation": [
               0,
               0,
-              0.19349251162523493,
-              0.9811017520853574
+              0.19349251162527004,
+              0.9811017520853507
             ],
             "translationM": [
-              7.448107102326306,
-              4.159726106933462,
+              7.448107102326075,
+              4.159726106933972,
               0
             ]
           },
@@ -3982,12 +3982,12 @@
             "rotation": [
               0,
               0,
-              -0.1407965303469495,
-              0.9900385533110619
+              -0.1407965303469141,
+              0.9900385533110672
             ],
             "translationM": [
-              5.004159867128598,
-              5.067041879732257,
+              5.004159867128302,
+              5.067041879732593,
               0
             ]
           },
@@ -3996,12 +3996,12 @@
             "rotation": [
               0,
               0,
-              0.31028853136861817,
-              0.9506424287297017
+              0.310288531368658,
+              0.9506424287296888
             ],
             "translationM": [
-              2.6050691979943785,
-              3.782026719793229,
+              2.6050691979941893,
+              3.782026719793366,
               0
             ]
           },
@@ -4010,12 +4010,12 @@
             "rotation": [
               0,
               0,
-              0.31028853136861817,
-              0.9506424287297017
+              0.310288531368658,
+              0.9506424287296888
             ],
             "translationM": [
-              4.647897596137975,
-              5.27459234171344,
+              4.6478975961376605,
+              5.274592341713748,
               0
             ]
           },
@@ -4045,7 +4045,7 @@
             "Força, pressão e capacidade de carga não são calculadas: a montagem não tem parâmetros hidráulicos (diâmetros e pressão são null).",
             "Colisões: caixas contra caixas (SAT) e contra o plano do chão; cilindros só contra o chão. Cada forma indica se foi verificada, com a razão."
           ],
-          "closureResidualM": 1.9959327572255808e-14,
+          "closureResidualM": 1.2560739669470201e-15,
           "id": "unfold.engineering.forward-kinematics",
           "method": "Solver de cilindros: forma fechada (triângulo) e bissecção (balancé de duas barras), verificado por cinemática directa",
           "status": "solved",
@@ -4101,7 +4101,7 @@
             "forceReason": "Sem parâmetros hidráulicos: diâmetros e pressão de alimentação são desconhecidos (null) nesta montagem.",
             "forceStatus": "unknown",
             "kind": "hydraulic_cylinder",
-            "lengthM": 2.698569133926286,
+            "lengthM": 2.6985691339262843,
             "unit": "m",
             "value": 0.488569133926285,
             "withinLimits": true
@@ -4163,13 +4163,13 @@
           }
         ],
         "index": null,
-        "inputDigest": "12450969c6e8c6b749599ad8e3e4fd8a564437143ff053a96b8e170f1d67648a",
+        "inputDigest": "c463810dda3316ffee3d929357875b809cf920cd9bb4147b4ff5e7f92207e0e7",
         "joints": [
           {
             "jointId": "boom_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": 0.5597998804083497
+            "value": 0.5597998804084159
           },
           {
             "jointId": "boom_cyl_slide",
@@ -4181,7 +4181,7 @@
             "jointId": "boom_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": 0.721568824192
+            "value": 0.721568824192083
           },
           {
             "jointId": "bucket_cyl_base",
@@ -4217,7 +4217,7 @@
             "jointId": "stick_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": -0.09057576540005967
+            "value": -0.09057576540005889
           },
           {
             "jointId": "stick_cyl_slide",
@@ -4229,7 +4229,7 @@
             "jointId": "stick_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": -1.004100651296
+            "value": -1.0041006512960116
           },
           {
             "jointId": "swing",
@@ -4249,7 +4249,7 @@
               "boom"
             ],
             "unit": "m",
-            "value": 1.9959327572255808e-14
+            "value": 4.440892098500626e-16
           },
           {
             "id": "closure.bucket_cyl_closure",
@@ -4261,7 +4261,7 @@
               "idler_link"
             ],
             "unit": "m",
-            "value": 8.881784197001252e-16
+            "value": 1.2560739669470201e-15
           },
           {
             "id": "closure.bucket_link_closure",
@@ -4273,7 +4273,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 8.881784197001252e-16
+            "value": 0
           },
           {
             "id": "closure.stick_cyl_closure",
@@ -4285,7 +4285,7 @@
               "stick"
             ],
             "unit": "m",
-            "value": 3.972054645195637e-15
+            "value": 0
           },
           {
             "id": "cylinder.boom_cylinder.length",
@@ -4309,7 +4309,7 @@
               "bucket_cyl_rod"
             ],
             "unit": "m",
-            "value": 2.698569133926286
+            "value": 2.6985691339262843
           },
           {
             "id": "cylinder.stick_cylinder.length",
@@ -4332,7 +4332,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 7.4189774240991495
+            "value": 7.418977424099012
           },
           {
             "id": "tip.y",
@@ -4343,7 +4343,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 2.85521168206072
+            "value": 2.8552116820612286
           },
           {
             "id": "tip.z",
@@ -4363,8 +4363,8 @@
             "rotation": [
               0,
               0,
-              0.3530082536113319,
-              0.9356202076068462
+              0.3530082536113707,
+              0.9356202076068313
             ],
             "translationM": [
               0.95,
@@ -4377,8 +4377,8 @@
             "rotation": [
               0,
               0,
-              0.276259484169909,
-              0.9610830855894696
+              0.27625948416994073,
+              0.9610830855894605
             ],
             "translationM": [
               0.6,
@@ -4391,12 +4391,12 @@
             "rotation": [
               0,
               0,
-              0.276259484169909,
-              0.9610830855894696
+              0.27625948416994073,
+              0.9610830855894605
             ],
             "translationM": [
-              2.9980327473189554,
-              2.502777076876642,
+              2.998032747318856,
+              2.5027770768768,
               0
             ]
           },
@@ -4405,12 +4405,12 @@
             "rotation": [
               0,
               0,
-              -0.6173255832154377,
-              0.7867077756751358
+              -0.6173255832154096,
+              0.7867077756751578
             ],
             "translationM": [
-              7.7411649882694835,
-              4.272496118401565,
+              7.741164988269244,
+              4.272496118402096,
               0
             ]
           },
@@ -4419,12 +4419,12 @@
             "rotation": [
               0,
               0,
-              -0.0004956886083954949,
+              -0.0004956886083596901,
               0.9999998771463943
             ],
             "translationM": [
-              5.260682139014585,
-              4.336565101164689,
+              5.260682139014341,
+              4.336565101165044,
               0
             ]
           },
@@ -4433,12 +4433,12 @@
             "rotation": [
               0,
               0,
-              -0.0004956886083954949,
+              -0.0004956886083596901,
               0.9999998771463943
             ],
             "translationM": [
-              7.959249946825158,
-              4.33388980153605,
+              7.9592499468249125,
+              4.333889801536597,
               0
             ]
           },
@@ -4447,12 +4447,12 @@
             "rotation": [
               0,
               0,
-              0.9857939359259086,
-              0.16795926854956708
+              0.9857939359259147,
+              0.16795926854953186
             ],
             "translationM": [
-              7.959249946825157,
-              4.33388980153605,
+              7.959249946824913,
+              4.333889801536596,
               0
             ]
           },
@@ -4475,12 +4475,12 @@
             "rotation": [
               0,
               0,
-              0.16346127500723198,
-              0.9865497511899793
+              0.16346127500726726,
+              0.9865497511899735
             ],
             "translationM": [
-              7.448107102326306,
-              4.159726106933462,
+              7.448107102326075,
+              4.159726106933972,
               0
             ]
           },
@@ -4489,12 +4489,12 @@
             "rotation": [
               0,
               0,
-              -0.1407965303469495,
-              0.9900385533110619
+              -0.1407965303469141,
+              0.9900385533110672
             ],
             "translationM": [
-              5.004159867128598,
-              5.067041879732257,
+              5.004159867128302,
+              5.067041879732593,
               0
             ]
           },
@@ -4503,12 +4503,12 @@
             "rotation": [
               0,
               0,
-              0.31028853136861817,
-              0.9506424287297017
+              0.310288531368658,
+              0.9506424287296888
             ],
             "translationM": [
-              2.6050691979943785,
-              3.782026719793229,
+              2.6050691979941893,
+              3.782026719793366,
               0
             ]
           },
@@ -4517,12 +4517,12 @@
             "rotation": [
               0,
               0,
-              0.31028853136861817,
-              0.9506424287297017
+              0.310288531368658,
+              0.9506424287296888
             ],
             "translationM": [
-              4.647897596137975,
-              5.27459234171344,
+              4.6478975961376605,
+              5.274592341713748,
               0
             ]
           },
@@ -4552,7 +4552,7 @@
             "Força, pressão e capacidade de carga não são calculadas: a montagem não tem parâmetros hidráulicos (diâmetros e pressão são null).",
             "Colisões: caixas contra caixas (SAT) e contra o plano do chão; cilindros só contra o chão. Cada forma indica se foi verificada, com a razão."
           ],
-          "closureResidualM": 1.9959327572255808e-14,
+          "closureResidualM": 1.2560739669470201e-15,
           "id": "unfold.engineering.forward-kinematics",
           "method": "Solver de cilindros: forma fechada (triângulo) e bissecção (balancé de duas barras), verificado por cinemática directa",
           "status": "solved",
@@ -4608,7 +4608,7 @@
             "forceReason": "Sem parâmetros hidráulicos: diâmetros e pressão de alimentação são desconhecidos (null) nesta montagem.",
             "forceStatus": "unknown",
             "kind": "hydraulic_cylinder",
-            "lengthM": 2.71,
+            "lengthM": 2.7100000000000004,
             "unit": "m",
             "value": 0.5,
             "withinLimits": true
@@ -4670,13 +4670,13 @@
           }
         ],
         "index": null,
-        "inputDigest": "6018dc9267b3f8484946b75b3b68a0f98c15ebace67dcb3ecadf6bcbb2c84437",
+        "inputDigest": "91fcbcad81773ab0db8528e659d230c38dd8754b62b1fd2e204d6268fe8a1e39",
         "joints": [
           {
             "jointId": "boom_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": 0.5597998804083497
+            "value": 0.5597998804084159
           },
           {
             "jointId": "boom_cyl_slide",
@@ -4688,7 +4688,7 @@
             "jointId": "boom_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": 0.721568824192
+            "value": 0.721568824192083
           },
           {
             "jointId": "bucket_cyl_base",
@@ -4724,7 +4724,7 @@
             "jointId": "stick_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": -0.09057576540005967
+            "value": -0.09057576540005889
           },
           {
             "jointId": "stick_cyl_slide",
@@ -4736,7 +4736,7 @@
             "jointId": "stick_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": -1.004100651296
+            "value": -1.0041006512960116
           },
           {
             "jointId": "swing",
@@ -4756,7 +4756,7 @@
               "boom"
             ],
             "unit": "m",
-            "value": 1.9959327572255808e-14
+            "value": 4.440892098500626e-16
           },
           {
             "id": "closure.bucket_cyl_closure",
@@ -4768,7 +4768,7 @@
               "idler_link"
             ],
             "unit": "m",
-            "value": 8.881784197001252e-16
+            "value": 1.2560739669470201e-15
           },
           {
             "id": "closure.bucket_link_closure",
@@ -4780,7 +4780,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 1.9860273225978185e-15
+            "value": 8.881784197001252e-16
           },
           {
             "id": "closure.stick_cyl_closure",
@@ -4792,7 +4792,7 @@
               "stick"
             ],
             "unit": "m",
-            "value": 3.972054645195637e-15
+            "value": 0
           },
           {
             "id": "cylinder.boom_cylinder.length",
@@ -4816,7 +4816,7 @@
               "bucket_cyl_rod"
             ],
             "unit": "m",
-            "value": 2.71
+            "value": 2.7100000000000004
           },
           {
             "id": "cylinder.stick_cylinder.length",
@@ -4839,7 +4839,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 7.153600577471988
+            "value": 7.1536005774718445
           },
           {
             "id": "tip.y",
@@ -4850,7 +4850,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 2.9431097700572653
+            "value": 2.943109770057754
           },
           {
             "id": "tip.z",
@@ -4870,8 +4870,8 @@
             "rotation": [
               0,
               0,
-              0.3530082536113319,
-              0.9356202076068462
+              0.3530082536113707,
+              0.9356202076068313
             ],
             "translationM": [
               0.95,
@@ -4884,8 +4884,8 @@
             "rotation": [
               0,
               0,
-              0.276259484169909,
-              0.9610830855894696
+              0.27625948416994073,
+              0.9610830855894605
             ],
             "translationM": [
               0.6,
@@ -4898,12 +4898,12 @@
             "rotation": [
               0,
               0,
-              0.276259484169909,
-              0.9610830855894696
+              0.27625948416994073,
+              0.9610830855894605
             ],
             "translationM": [
-              2.9980327473189554,
-              2.502777076876642,
+              2.998032747318856,
+              2.5027770768768,
               0
             ]
           },
@@ -4912,12 +4912,12 @@
             "rotation": [
               0,
               0,
-              -0.6901217811428636,
-              0.7236932549030712
+              -0.6901217811428375,
+              0.723693254903096
             ],
             "translationM": [
-              7.7411649882694835,
-              4.272496118401565,
+              7.741164988269244,
+              4.272496118402096,
               0
             ]
           },
@@ -4926,12 +4926,12 @@
             "rotation": [
               0,
               0,
-              -0.007317223609578566,
-              0.9999732287609742
+              -0.007317223609542815,
+              0.9999732287609744
             ],
             "translationM": [
-              5.260682139014585,
-              4.336565101164689,
+              5.260682139014341,
+              4.336565101165044,
               0
             ]
           },
@@ -4940,12 +4940,12 @@
             "rotation": [
               0,
               0,
-              -0.007317223609578566,
-              0.9999732287609742
+              -0.007317223609542815,
+              0.9999732287609744
             ],
             "translationM": [
-              7.970391942668054,
-              4.296906810930765,
+              7.970391942667813,
+              4.296906810931313,
               0
             ]
           },
@@ -4954,12 +4954,12 @@
             "rotation": [
               0,
               0,
-              0.9663377558827573,
-              0.2572767800550153
+              0.9663377558827663,
+              0.2572767800549807
             ],
             "translationM": [
-              7.970391942668053,
-              4.296906810930765,
+              7.9703919426678125,
+              4.296906810931312,
               0
             ]
           },
@@ -4982,12 +4982,12 @@
             "rotation": [
               0,
               0,
-              0.12807390682529085,
-              0.9917646265069685
+              0.12807390682532632,
+              0.991764626506964
             ],
             "translationM": [
-              7.448107102326306,
-              4.159726106933462,
+              7.448107102326075,
+              4.159726106933972,
               0
             ]
           },
@@ -4996,12 +4996,12 @@
             "rotation": [
               0,
               0,
-              -0.1407965303469495,
-              0.9900385533110619
+              -0.1407965303469141,
+              0.9900385533110672
             ],
             "translationM": [
-              5.004159867128598,
-              5.067041879732257,
+              5.004159867128302,
+              5.067041879732593,
               0
             ]
           },
@@ -5010,12 +5010,12 @@
             "rotation": [
               0,
               0,
-              0.31028853136861817,
-              0.9506424287297017
+              0.310288531368658,
+              0.9506424287296888
             ],
             "translationM": [
-              2.6050691979943785,
-              3.782026719793229,
+              2.6050691979941893,
+              3.782026719793366,
               0
             ]
           },
@@ -5024,12 +5024,12 @@
             "rotation": [
               0,
               0,
-              0.31028853136861817,
-              0.9506424287297017
+              0.310288531368658,
+              0.9506424287296888
             ],
             "translationM": [
-              4.647897596137975,
-              5.27459234171344,
+              4.6478975961376605,
+              5.274592341713748,
               0
             ]
           },
@@ -5059,7 +5059,7 @@
             "Força, pressão e capacidade de carga não são calculadas: a montagem não tem parâmetros hidráulicos (diâmetros e pressão são null).",
             "Colisões: caixas contra caixas (SAT) e contra o plano do chão; cilindros só contra o chão. Cada forma indica se foi verificada, com a razão."
           ],
-          "closureResidualM": 1.9959327572255808e-14,
+          "closureResidualM": 1.2560739669470201e-15,
           "id": "unfold.engineering.forward-kinematics",
           "method": "Solver de cilindros: forma fechada (triângulo) e bissecção (balancé de duas barras), verificado por cinemática directa",
           "status": "solved",
@@ -5115,7 +5115,7 @@
             "forceReason": "Sem parâmetros hidráulicos: diâmetros e pressão de alimentação são desconhecidos (null) nesta montagem.",
             "forceStatus": "unknown",
             "kind": "hydraulic_cylinder",
-            "lengthM": 2.71,
+            "lengthM": 2.7100000000000004,
             "unit": "m",
             "value": 0.5,
             "withinLimits": true
@@ -5177,13 +5177,13 @@
           }
         ],
         "index": null,
-        "inputDigest": "6018dc9267b3f8484946b75b3b68a0f98c15ebace67dcb3ecadf6bcbb2c84437",
+        "inputDigest": "91fcbcad81773ab0db8528e659d230c38dd8754b62b1fd2e204d6268fe8a1e39",
         "joints": [
           {
             "jointId": "boom_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": 0.5597998804083497
+            "value": 0.5597998804084159
           },
           {
             "jointId": "boom_cyl_slide",
@@ -5195,7 +5195,7 @@
             "jointId": "boom_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": 0.721568824192
+            "value": 0.721568824192083
           },
           {
             "jointId": "bucket_cyl_base",
@@ -5231,7 +5231,7 @@
             "jointId": "stick_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": -0.09057576540005967
+            "value": -0.09057576540005889
           },
           {
             "jointId": "stick_cyl_slide",
@@ -5243,7 +5243,7 @@
             "jointId": "stick_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": -1.004100651296
+            "value": -1.0041006512960116
           },
           {
             "jointId": "swing",
@@ -5263,7 +5263,7 @@
               "boom"
             ],
             "unit": "m",
-            "value": 1.9959327572255808e-14
+            "value": 4.440892098500626e-16
           },
           {
             "id": "closure.bucket_cyl_closure",
@@ -5275,7 +5275,7 @@
               "idler_link"
             ],
             "unit": "m",
-            "value": 8.881784197001252e-16
+            "value": 1.2560739669470201e-15
           },
           {
             "id": "closure.bucket_link_closure",
@@ -5287,7 +5287,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 1.9860273225978185e-15
+            "value": 8.881784197001252e-16
           },
           {
             "id": "closure.stick_cyl_closure",
@@ -5299,7 +5299,7 @@
               "stick"
             ],
             "unit": "m",
-            "value": 3.972054645195637e-15
+            "value": 0
           },
           {
             "id": "cylinder.boom_cylinder.length",
@@ -5323,7 +5323,7 @@
               "bucket_cyl_rod"
             ],
             "unit": "m",
-            "value": 2.71
+            "value": 2.7100000000000004
           },
           {
             "id": "cylinder.stick_cylinder.length",
@@ -5346,7 +5346,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 7.153600577471988
+            "value": 7.1536005774718445
           },
           {
             "id": "tip.y",
@@ -5357,7 +5357,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 2.9431097700572653
+            "value": 2.943109770057754
           },
           {
             "id": "tip.z",
@@ -5377,8 +5377,8 @@
             "rotation": [
               0,
               0,
-              0.3530082536113319,
-              0.9356202076068462
+              0.3530082536113707,
+              0.9356202076068313
             ],
             "translationM": [
               0.95,
@@ -5391,8 +5391,8 @@
             "rotation": [
               0,
               0,
-              0.276259484169909,
-              0.9610830855894696
+              0.27625948416994073,
+              0.9610830855894605
             ],
             "translationM": [
               0.6,
@@ -5405,12 +5405,12 @@
             "rotation": [
               0,
               0,
-              0.276259484169909,
-              0.9610830855894696
+              0.27625948416994073,
+              0.9610830855894605
             ],
             "translationM": [
-              2.9980327473189554,
-              2.502777076876642,
+              2.998032747318856,
+              2.5027770768768,
               0
             ]
           },
@@ -5419,12 +5419,12 @@
             "rotation": [
               0,
               0,
-              -0.6901217811428636,
-              0.7236932549030712
+              -0.6901217811428375,
+              0.723693254903096
             ],
             "translationM": [
-              7.7411649882694835,
-              4.272496118401565,
+              7.741164988269244,
+              4.272496118402096,
               0
             ]
           },
@@ -5433,12 +5433,12 @@
             "rotation": [
               0,
               0,
-              -0.007317223609578566,
-              0.9999732287609742
+              -0.007317223609542815,
+              0.9999732287609744
             ],
             "translationM": [
-              5.260682139014585,
-              4.336565101164689,
+              5.260682139014341,
+              4.336565101165044,
               0
             ]
           },
@@ -5447,12 +5447,12 @@
             "rotation": [
               0,
               0,
-              -0.007317223609578566,
-              0.9999732287609742
+              -0.007317223609542815,
+              0.9999732287609744
             ],
             "translationM": [
-              7.970391942668054,
-              4.296906810930765,
+              7.970391942667813,
+              4.296906810931313,
               0
             ]
           },
@@ -5461,12 +5461,12 @@
             "rotation": [
               0,
               0,
-              0.9663377558827573,
-              0.2572767800550153
+              0.9663377558827663,
+              0.2572767800549807
             ],
             "translationM": [
-              7.970391942668053,
-              4.296906810930765,
+              7.9703919426678125,
+              4.296906810931312,
               0
             ]
           },
@@ -5489,12 +5489,12 @@
             "rotation": [
               0,
               0,
-              0.12807390682529085,
-              0.9917646265069685
+              0.12807390682532632,
+              0.991764626506964
             ],
             "translationM": [
-              7.448107102326306,
-              4.159726106933462,
+              7.448107102326075,
+              4.159726106933972,
               0
             ]
           },
@@ -5503,12 +5503,12 @@
             "rotation": [
               0,
               0,
-              -0.1407965303469495,
-              0.9900385533110619
+              -0.1407965303469141,
+              0.9900385533110672
             ],
             "translationM": [
-              5.004159867128598,
-              5.067041879732257,
+              5.004159867128302,
+              5.067041879732593,
               0
             ]
           },
@@ -5517,12 +5517,12 @@
             "rotation": [
               0,
               0,
-              0.31028853136861817,
-              0.9506424287297017
+              0.310288531368658,
+              0.9506424287296888
             ],
             "translationM": [
-              2.6050691979943785,
-              3.782026719793229,
+              2.6050691979941893,
+              3.782026719793366,
               0
             ]
           },
@@ -5531,12 +5531,12 @@
             "rotation": [
               0,
               0,
-              0.31028853136861817,
-              0.9506424287297017
+              0.310288531368658,
+              0.9506424287296888
             ],
             "translationM": [
-              4.647897596137975,
-              5.27459234171344,
+              4.6478975961376605,
+              5.274592341713748,
               0
             ]
           },
@@ -5566,7 +5566,7 @@
             "Força, pressão e capacidade de carga não são calculadas: a montagem não tem parâmetros hidráulicos (diâmetros e pressão são null).",
             "Colisões: caixas contra caixas (SAT) e contra o plano do chão; cilindros só contra o chão. Cada forma indica se foi verificada, com a razão."
           ],
-          "closureResidualM": 1.9959327572255808e-14,
+          "closureResidualM": 1.2560739669470201e-15,
           "id": "unfold.engineering.forward-kinematics",
           "method": "Solver de cilindros: forma fechada (triângulo) e bissecção (balancé de duas barras), verificado por cinemática directa",
           "status": "solved",
@@ -5611,7 +5611,514 @@
             "forceReason": "Sem parâmetros hidráulicos: diâmetros e pressão de alimentação são desconhecidos (null) nesta montagem.",
             "forceStatus": "unknown",
             "kind": "hydraulic_cylinder",
-            "lengthM": 2.5299999999999994,
+            "lengthM": 2.5300000000000002,
+            "unit": "m",
+            "value": 0.25,
+            "withinLimits": true
+          },
+          {
+            "actuatorId": "bucket_cylinder",
+            "forceN": null,
+            "forceReason": "Sem parâmetros hidráulicos: diâmetros e pressão de alimentação são desconhecidos (null) nesta montagem.",
+            "forceStatus": "unknown",
+            "kind": "hydraulic_cylinder",
+            "lengthM": 2.7100000000000004,
+            "unit": "m",
+            "value": 0.5,
+            "withinLimits": true
+          }
+        ],
+        "assemblyDigest": "8f3d510f90c49c6a168c552390d0aa5770471a3d1b05774c387a4fc8eeecfb2d",
+        "assemblyId": "excavator-fixture-1",
+        "blocked": null,
+        "collisions": {
+          "checked": true,
+          "contacts": [],
+          "groundPlaneChecked": true,
+          "shapesChecked": [
+            "boom-box",
+            "bucket-box",
+            "chassis-body",
+            "stick-box",
+            "upper-body-box"
+          ],
+          "shapesSkipped": [
+            {
+              "reason": "Cilindro: só o contacto com o chão é calculado; a colisão entre peças não está implementada para cilindros.",
+              "shapeId": "boom-cyl-barrel"
+            },
+            {
+              "reason": "Cilindro: só o contacto com o chão é calculado; a colisão entre peças não está implementada para cilindros.",
+              "shapeId": "boom-cyl-rod"
+            },
+            {
+              "reason": "Cilindro: só o contacto com o chão é calculado; a colisão entre peças não está implementada para cilindros.",
+              "shapeId": "bucket-cyl-barrel"
+            },
+            {
+              "reason": "Cilindro: só o contacto com o chão é calculado; a colisão entre peças não está implementada para cilindros.",
+              "shapeId": "bucket-cyl-rod"
+            },
+            {
+              "reason": "Forma visual: não participa na verificação de colisões.",
+              "shapeId": "bucket-link-box"
+            },
+            {
+              "reason": "Forma visual: não participa na verificação de colisões.",
+              "shapeId": "idler-link-box"
+            },
+            {
+              "reason": "Cilindro: só o contacto com o chão é calculado; a colisão entre peças não está implementada para cilindros.",
+              "shapeId": "stick-cyl-barrel"
+            },
+            {
+              "reason": "Cilindro: só o contacto com o chão é calculado; a colisão entre peças não está implementada para cilindros.",
+              "shapeId": "stick-cyl-rod"
+            }
+          ]
+        },
+        "evidence": [
+          {
+            "locator": "assembly",
+            "sourceId": "src-excavator-fixture"
+          }
+        ],
+        "index": null,
+        "inputDigest": "421b8c594a87d2028840eec5786b4afb565350578a2afcc1653bf8f47b53b6c5",
+        "joints": [
+          {
+            "jointId": "boom_cyl_base",
+            "kind": "passive",
+            "unit": "rad",
+            "value": 0.5597998804084159
+          },
+          {
+            "jointId": "boom_cyl_slide",
+            "kind": "commanded",
+            "unit": "m",
+            "value": 0.65
+          },
+          {
+            "jointId": "boom_joint",
+            "kind": "dependent",
+            "unit": "rad",
+            "value": 0.721568824192083
+          },
+          {
+            "jointId": "bucket_cyl_base",
+            "kind": "passive",
+            "unit": "rad",
+            "value": 0.2678972492893496
+          },
+          {
+            "jointId": "bucket_cyl_slide",
+            "kind": "commanded",
+            "unit": "m",
+            "value": 0.5
+          },
+          {
+            "jointId": "bucket_joint",
+            "kind": "dependent",
+            "unit": "rad",
+            "value": -1.24078280598222
+          },
+          {
+            "jointId": "idler_pivot",
+            "kind": "passive",
+            "unit": "rad",
+            "value": 0.5393851229044835
+          },
+          {
+            "jointId": "link_pin",
+            "kind": "passive",
+            "unit": "rad",
+            "value": 2.364333241275882
+          },
+          {
+            "jointId": "stick_cyl_base",
+            "kind": "passive",
+            "unit": "rad",
+            "value": -0.09057576540005889
+          },
+          {
+            "jointId": "stick_cyl_slide",
+            "kind": "commanded",
+            "unit": "m",
+            "value": 0.25
+          },
+          {
+            "jointId": "stick_joint",
+            "kind": "dependent",
+            "unit": "rad",
+            "value": -1.0041006512960116
+          },
+          {
+            "jointId": "swing",
+            "kind": "commanded",
+            "unit": "rad",
+            "value": 0.15
+          }
+        ],
+        "measurements": [
+          {
+            "id": "closure.boom_cyl_closure",
+            "label": "Fecho do laço boom_cyl_closure",
+            "method": "Distância entre os dois pontos coincidentes da restrição, no mundo",
+            "status": "computed",
+            "subjectIds": [
+              "boom_cyl_rod",
+              "boom"
+            ],
+            "unit": "m",
+            "value": 1.3322676295501878e-15
+          },
+          {
+            "id": "closure.bucket_cyl_closure",
+            "label": "Fecho do laço bucket_cyl_closure",
+            "method": "Distância entre os dois pontos coincidentes da restrição, no mundo",
+            "status": "computed",
+            "subjectIds": [
+              "bucket_cyl_rod",
+              "idler_link"
+            ],
+            "unit": "m",
+            "value": 2.220446049250313e-16
+          },
+          {
+            "id": "closure.bucket_link_closure",
+            "label": "Fecho do laço bucket_link_closure",
+            "method": "Distância entre os dois pontos coincidentes da restrição, no mundo",
+            "status": "computed",
+            "subjectIds": [
+              "bucket_link",
+              "bucket"
+            ],
+            "unit": "m",
+            "value": 8.881784197001252e-16
+          },
+          {
+            "id": "closure.stick_cyl_closure",
+            "label": "Fecho do laço stick_cyl_closure",
+            "method": "Distância entre os dois pontos coincidentes da restrição, no mundo",
+            "status": "computed",
+            "subjectIds": [
+              "stick_cyl_rod",
+              "stick"
+            ],
+            "unit": "m",
+            "value": 1.2609709600486848e-15
+          },
+          {
+            "id": "cylinder.boom_cylinder.length",
+            "label": "Comprimento de Cilindro da lança",
+            "method": "Distância entre a origem do barril e a origem da haste (pinos de base e de haste)",
+            "status": "computed",
+            "subjectIds": [
+              "boom_cyl_barrel",
+              "boom_cyl_rod"
+            ],
+            "unit": "m",
+            "value": 2.83
+          },
+          {
+            "id": "cylinder.bucket_cylinder.length",
+            "label": "Comprimento de Cilindro da caçamba",
+            "method": "Distância entre a origem do barril e a origem da haste (pinos de base e de haste)",
+            "status": "computed",
+            "subjectIds": [
+              "bucket_cyl_barrel",
+              "bucket_cyl_rod"
+            ],
+            "unit": "m",
+            "value": 2.7100000000000004
+          },
+          {
+            "id": "cylinder.stick_cylinder.length",
+            "label": "Comprimento de Cilindro do braço",
+            "method": "Distância entre a origem do barril e a origem da haste (pinos de base e de haste)",
+            "status": "computed",
+            "subjectIds": [
+              "stick_cyl_barrel",
+              "stick_cyl_rod"
+            ],
+            "unit": "m",
+            "value": 2.5300000000000002
+          },
+          {
+            "id": "tip.x",
+            "label": "Ponta da ferramenta, x",
+            "method": "Ponto tool_tip transformado pela pose da parte (cinemática directa)",
+            "status": "computed",
+            "subjectIds": [
+              "bucket"
+            ],
+            "unit": "m",
+            "value": 7.0732733541107295
+          },
+          {
+            "id": "tip.y",
+            "label": "Ponta da ferramenta, y",
+            "method": "Ponto tool_tip transformado pela pose da parte (cinemática directa)",
+            "status": "computed",
+            "subjectIds": [
+              "bucket"
+            ],
+            "unit": "m",
+            "value": 2.943109770057755
+          },
+          {
+            "id": "tip.z",
+            "label": "Ponta da ferramenta, z",
+            "method": "Ponto tool_tip transformado pela pose da parte (cinemática directa)",
+            "status": "computed",
+            "subjectIds": [
+              "bucket"
+            ],
+            "unit": "m",
+            "value": -1.0690207107594536
+          }
+        ],
+        "parts": [
+          {
+            "partId": "boom",
+            "rotation": [
+              0.026450805107962,
+              0.0701057482744423,
+              0.3520158832025772,
+              0.9329900090253544
+            ],
+            "translationM": [
+              0.9393325240392402,
+              1.5,
+              -0.1419662258499193
+            ]
+          },
+          {
+            "partId": "boom_cyl_barrel",
+            "rotation": [
+              0.02070004228017246,
+              0.07201367426800226,
+              0.27548286851171133,
+              0.9583813062265877
+            ],
+            "translationM": [
+              0.5932626467616253,
+              1,
+              -0.08966287948415956
+            ]
+          },
+          {
+            "partId": "boom_cyl_rod",
+            "rotation": [
+              0.02070004228017246,
+              0.07201367426800226,
+              0.27548286851171133,
+              0.9583813062265877
+            ],
+            "translationM": [
+              2.9643680712540195,
+              2.5027770768768,
+              -0.4480204148540239
+            ]
+          },
+          {
+            "partId": "bucket",
+            "rotation": [
+              -0.051710623043576376,
+              0.05422612374514708,
+              -0.6881817232913178,
+              0.7216588215325946
+            ],
+            "translationM": [
+              7.6542400499317305,
+              4.272496118402097,
+              -1.1568252390169678
+            ]
+          },
+          {
+            "partId": "bucket_cyl_barrel",
+            "rotation": [
+              -0.0005482774231122411,
+              0.07492770131163884,
+              -0.007296653563062803,
+              0.9971621221320041
+            ],
+            "translationM": [
+              5.201610349272094,
+              4.336565101165045,
+              -0.7861465143915227
+            ]
+          },
+          {
+            "partId": "bucket_cyl_rod",
+            "rotation": [
+              -0.0005482774231122411,
+              0.07492770131163884,
+              -0.007296653563062803,
+              0.9971621221320041
+            ],
+            "translationM": [
+              7.8808930327244,
+              4.296906810931313,
+              -1.191080486994901
+            ]
+          },
+          {
+            "partId": "bucket_link",
+            "rotation": [
+              0.07240740517489445,
+              0.019277673817593433,
+              0.9636212046859386,
+              0.2565535282307406
+            ],
+            "translationM": [
+              7.8808930327244,
+              4.296906810931313,
+              -1.1910804869949008
+            ]
+          },
+          {
+            "partId": "chassis",
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "translationM": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "partId": "idler_link",
+            "rotation": [
+              0.009596540347698176,
+              0.07431263314762747,
+              0.1277138677781601,
+              0.9889765957519742
+            ],
+            "translationM": [
+              7.364472888150046,
+              4.159726106933973,
+              -1.1130312158349596
+            ]
+          },
+          {
+            "partId": "stick",
+            "rotation": [
+              -0.010549842803912059,
+              0.07418329898832758,
+              -0.14040072569093887,
+              0.9872553748617827
+            ],
+            "translationM": [
+              4.947968545984733,
+              5.067041879732594,
+              -0.7478123051429881
+            ]
+          },
+          {
+            "partId": "stick_cyl_barrel",
+            "rotation": [
+              0.023249828825542676,
+              0.07123135890576442,
+              0.3094162538692847,
+              0.9479699999522768
+            ],
+            "translationM": [
+              2.5758170789986954,
+              3.782026719793367,
+              -0.38929667591274864
+            ]
+          },
+          {
+            "partId": "stick_cyl_rod",
+            "rotation": [
+              0.023249828825542676,
+              0.07123135890576442,
+              0.3094162538692847,
+              0.9479699999522768
+            ],
+            "translationM": [
+              4.595706716269375,
+              5.274592341713748,
+              -0.6945731366953433
+            ]
+          },
+          {
+            "partId": "upper_body",
+            "rotation": [
+              0,
+              0.07492970727274235,
+              0,
+              0.9971888181122076
+            ],
+            "translationM": [
+              0,
+              0.95,
+              0
+            ]
+          }
+        ],
+        "poseBasis": "solved",
+        "schema": "unfold.motion-frame.v1",
+        "solver": {
+          "assumptions": [
+            "Corpos rígidos, juntas ideais: sem folga, elasticidade nem desgaste.",
+            "Ângulos em rad, comprimentos em m, aritmética de dupla precisão (IEEE 754).",
+            "Cada quadro avalia-se a partir da configuração; nunca se integra a partir do quadro anterior.",
+            "Fecho de laços aceite até 1e-9 m (ver CLOSURE_TOLERANCE_M).",
+            "Força, pressão e capacidade de carga não são calculadas: a montagem não tem parâmetros hidráulicos (diâmetros e pressão são null).",
+            "Colisões: caixas contra caixas (SAT) e contra o plano do chão; cilindros só contra o chão. Cada forma indica se foi verificada, com a razão."
+          ],
+          "closureResidualM": 1.3322676295501878e-15,
+          "id": "unfold.engineering.forward-kinematics",
+          "method": "Solver de cilindros: forma fechada (triângulo) e bissecção (balancé de duas barras), verificado por cinemática directa",
+          "status": "solved",
+          "toleranceM": 1e-9,
+          "version": "0.1.0"
+        },
+        "status": "ok",
+        "timestampS": 1.6311959528221724,
+        "warnings": [],
+        "worldFrameId": "world"
+      }
+    },
+    {
+      "label": "rodar a superstrutura · fim",
+      "frame": {
+        "actuators": [
+          {
+            "actuatorId": "swing_drive",
+            "forceN": null,
+            "forceReason": "Sem modelo de binário: o accionamento não tem parâmetros de potência nem de inércia na montagem.",
+            "forceStatus": "unknown",
+            "kind": "rotary_drive",
+            "lengthM": null,
+            "unit": "rad",
+            "value": 0.3,
+            "withinLimits": true
+          },
+          {
+            "actuatorId": "boom_cylinder",
+            "forceN": null,
+            "forceReason": "Sem parâmetros hidráulicos: diâmetros e pressão de alimentação são desconhecidos (null) nesta montagem.",
+            "forceStatus": "unknown",
+            "kind": "hydraulic_cylinder",
+            "lengthM": 2.83,
+            "unit": "m",
+            "value": 0.65,
+            "withinLimits": true
+          },
+          {
+            "actuatorId": "stick_cylinder",
+            "forceN": null,
+            "forceReason": "Sem parâmetros hidráulicos: diâmetros e pressão de alimentação são desconhecidos (null) nesta montagem.",
+            "forceStatus": "unknown",
+            "kind": "hydraulic_cylinder",
+            "lengthM": 2.5300000000000002,
             "unit": "m",
             "value": 0.25,
             "withinLimits": true
@@ -5684,13 +6191,13 @@
           }
         ],
         "index": null,
-        "inputDigest": "3ef75da110c1377211416d3213ba5d99ca90375098f548e916bc0bf22c28105b",
+        "inputDigest": "1872088f2c13cb62914c2080adaacfec02ff0470f08b8bf03ad18c2f754518f1",
         "joints": [
           {
             "jointId": "boom_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": 0.5597998804083497
+            "value": 0.5597998804084159
           },
           {
             "jointId": "boom_cyl_slide",
@@ -5702,7 +6209,7 @@
             "jointId": "boom_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": 0.721568824192
+            "value": 0.721568824192083
           },
           {
             "jointId": "bucket_cyl_base",
@@ -5738,7 +6245,7 @@
             "jointId": "stick_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": -0.09057576540005967
+            "value": -0.09057576540005889
           },
           {
             "jointId": "stick_cyl_slide",
@@ -5750,13 +6257,13 @@
             "jointId": "stick_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": -1.004100651296
+            "value": -1.0041006512960116
           },
           {
             "jointId": "swing",
             "kind": "commanded",
             "unit": "rad",
-            "value": 0.15
+            "value": 0.3
           }
         ],
         "measurements": [
@@ -5770,7 +6277,7 @@
               "boom"
             ],
             "unit": "m",
-            "value": 1.963086544582557e-14
+            "value": 1.0175362097255202e-15
           },
           {
             "id": "closure.bucket_cyl_closure",
@@ -5782,7 +6289,7 @@
               "idler_link"
             ],
             "unit": "m",
-            "value": 0
+            "value": 8.881784197001252e-16
           },
           {
             "id": "closure.bucket_link_closure",
@@ -5794,7 +6301,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 9.155133597044475e-16
+            "value": 1.3322676295501878e-15
           },
           {
             "id": "closure.stick_cyl_closure",
@@ -5806,7 +6313,7 @@
               "stick"
             ],
             "unit": "m",
-            "value": 3.985994439185401e-15
+            "value": 1.3322676295501878e-15
           },
           {
             "id": "cylinder.boom_cylinder.length",
@@ -5842,7 +6349,7 @@
               "stick_cyl_rod"
             ],
             "unit": "m",
-            "value": 2.5299999999999994
+            "value": 2.5300000000000002
           },
           {
             "id": "tip.x",
@@ -5853,7 +6360,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 7.0732733541108725
+            "value": 6.834095660288859
           },
           {
             "id": "tip.y",
@@ -5864,7 +6371,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 2.943109770057265
+            "value": 2.943109770057756
           },
           {
             "id": "tip.z",
@@ -5875,524 +6382,17 @@
               "bucket"
             ],
             "unit": "m",
-            "value": -1.0690207107594751
+            "value": -2.114033521027158
           }
         ],
         "parts": [
           {
             "partId": "boom",
             "rotation": [
-              0.026450805107959087,
-              0.0701057482744434,
-              0.35201588320253846,
-              0.932990009025369
-            ],
-            "translationM": [
-              0.9393325240392402,
-              1.5,
-              -0.1419662258499193
-            ]
-          },
-          {
-            "partId": "boom_cyl_barrel",
-            "rotation": [
-              0.02070004228017008,
-              0.07201367426800295,
-              0.27548286851167963,
-              0.9583813062265969
-            ],
-            "translationM": [
-              0.5932626467616253,
-              1,
-              -0.08966287948415956
-            ]
-          },
-          {
-            "partId": "boom_cyl_rod",
-            "rotation": [
-              0.02070004228017008,
-              0.07201367426800295,
-              0.27548286851167963,
-              0.9583813062265969
-            ],
-            "translationM": [
-              2.9643680712541176,
-              2.502777076876642,
-              -0.4480204148540389
-            ]
-          },
-          {
-            "partId": "bucket",
-            "rotation": [
-              -0.05171062304357831,
-              0.05422612374514523,
-              -0.6881817232913435,
-              0.7216588215325702
-            ],
-            "translationM": [
-              7.654240049931967,
-              4.272496118401565,
-              -1.1568252390170033
-            ]
-          },
-          {
-            "partId": "bucket_cyl_barrel",
-            "rotation": [
-              -0.0005482774231149196,
-              0.0749277013116388,
-              -0.00729665356309836,
-              0.9971621221320038
-            ],
-            "translationM": [
-              5.201610349272335,
-              4.336565101164689,
-              -0.786146514391559
-            ]
-          },
-          {
-            "partId": "bucket_cyl_rod",
-            "rotation": [
-              -0.0005482774231149196,
-              0.0749277013116388,
-              -0.00729665356309836,
-              0.9971621221320038
-            ],
-            "translationM": [
-              7.880893032724638,
-              4.296906810930765,
-              -1.1910804869949367
-            ]
-          },
-          {
-            "partId": "bucket_link",
-            "rotation": [
-              0.07240740517489375,
-              0.019277673817596014,
-              0.9636212046859295,
-              0.25655352823077504
-            ],
-            "translationM": [
-              7.880893032724638,
-              4.296906810930765,
-              -1.1910804869949367
-            ]
-          },
-          {
-            "partId": "chassis",
-            "rotation": [
-              0,
-              0,
-              0,
-              1
-            ],
-            "translationM": [
-              0,
-              0,
-              0
-            ]
-          },
-          {
-            "partId": "idler_link",
-            "rotation": [
-              0.009596540347695519,
-              0.07431263314762779,
-              0.1277138677781248,
-              0.9889765957519787
-            ],
-            "translationM": [
-              7.364472888150274,
-              4.159726106933462,
-              -1.113031215834994
-            ]
-          },
-          {
-            "partId": "stick",
-            "rotation": [
-              -0.010549842803914706,
-              0.07418329898832718,
-              -0.14040072569097406,
-              0.9872553748617775
-            ],
-            "translationM": [
-              4.947968545985026,
-              5.067041879732257,
-              -0.7478123051430323
-            ]
-          },
-          {
-            "partId": "stick_cyl_barrel",
-            "rotation": [
-              0.023249828825539682,
-              0.07123135890576537,
-              0.30941625386924493,
-              0.9479699999522896
-            ],
-            "translationM": [
-              2.575817078998883,
-              3.782026719793229,
-              -0.38929667591277695
-            ]
-          },
-          {
-            "partId": "stick_cyl_rod",
-            "rotation": [
-              0.023249828825539682,
-              0.07123135890576537,
-              0.30941625386924493,
-              0.9479699999522896
-            ],
-            "translationM": [
-              4.595706716269685,
-              5.27459234171344,
-              -0.6945731366953901
-            ]
-          },
-          {
-            "partId": "upper_body",
-            "rotation": [
-              0,
-              0.07492970727274235,
-              0,
-              0.9971888181122076
-            ],
-            "translationM": [
-              0,
-              0.95,
-              0
-            ]
-          }
-        ],
-        "poseBasis": "solved",
-        "schema": "unfold.motion-frame.v1",
-        "solver": {
-          "assumptions": [
-            "Corpos rígidos, juntas ideais: sem folga, elasticidade nem desgaste.",
-            "Ângulos em rad, comprimentos em m, aritmética de dupla precisão (IEEE 754).",
-            "Cada quadro avalia-se a partir da configuração; nunca se integra a partir do quadro anterior.",
-            "Fecho de laços aceite até 1e-9 m (ver CLOSURE_TOLERANCE_M).",
-            "Força, pressão e capacidade de carga não são calculadas: a montagem não tem parâmetros hidráulicos (diâmetros e pressão são null).",
-            "Colisões: caixas contra caixas (SAT) e contra o plano do chão; cilindros só contra o chão. Cada forma indica se foi verificada, com a razão."
-          ],
-          "closureResidualM": 1.963086544582557e-14,
-          "id": "unfold.engineering.forward-kinematics",
-          "method": "Solver de cilindros: forma fechada (triângulo) e bissecção (balancé de duas barras), verificado por cinemática directa",
-          "status": "solved",
-          "toleranceM": 1e-9,
-          "version": "0.1.0"
-        },
-        "status": "ok",
-        "timestampS": 1.6311959528221724,
-        "warnings": [],
-        "worldFrameId": "world"
-      }
-    },
-    {
-      "label": "rodar a superstrutura · fim",
-      "frame": {
-        "actuators": [
-          {
-            "actuatorId": "swing_drive",
-            "forceN": null,
-            "forceReason": "Sem modelo de binário: o accionamento não tem parâmetros de potência nem de inércia na montagem.",
-            "forceStatus": "unknown",
-            "kind": "rotary_drive",
-            "lengthM": null,
-            "unit": "rad",
-            "value": 0.3,
-            "withinLimits": true
-          },
-          {
-            "actuatorId": "boom_cylinder",
-            "forceN": null,
-            "forceReason": "Sem parâmetros hidráulicos: diâmetros e pressão de alimentação são desconhecidos (null) nesta montagem.",
-            "forceStatus": "unknown",
-            "kind": "hydraulic_cylinder",
-            "lengthM": 2.83,
-            "unit": "m",
-            "value": 0.65,
-            "withinLimits": true
-          },
-          {
-            "actuatorId": "stick_cylinder",
-            "forceN": null,
-            "forceReason": "Sem parâmetros hidráulicos: diâmetros e pressão de alimentação são desconhecidos (null) nesta montagem.",
-            "forceStatus": "unknown",
-            "kind": "hydraulic_cylinder",
-            "lengthM": 2.529999999999999,
-            "unit": "m",
-            "value": 0.25,
-            "withinLimits": true
-          },
-          {
-            "actuatorId": "bucket_cylinder",
-            "forceN": null,
-            "forceReason": "Sem parâmetros hidráulicos: diâmetros e pressão de alimentação são desconhecidos (null) nesta montagem.",
-            "forceStatus": "unknown",
-            "kind": "hydraulic_cylinder",
-            "lengthM": 2.71,
-            "unit": "m",
-            "value": 0.5,
-            "withinLimits": true
-          }
-        ],
-        "assemblyDigest": "8f3d510f90c49c6a168c552390d0aa5770471a3d1b05774c387a4fc8eeecfb2d",
-        "assemblyId": "excavator-fixture-1",
-        "blocked": null,
-        "collisions": {
-          "checked": true,
-          "contacts": [],
-          "groundPlaneChecked": true,
-          "shapesChecked": [
-            "boom-box",
-            "bucket-box",
-            "chassis-body",
-            "stick-box",
-            "upper-body-box"
-          ],
-          "shapesSkipped": [
-            {
-              "reason": "Cilindro: só o contacto com o chão é calculado; a colisão entre peças não está implementada para cilindros.",
-              "shapeId": "boom-cyl-barrel"
-            },
-            {
-              "reason": "Cilindro: só o contacto com o chão é calculado; a colisão entre peças não está implementada para cilindros.",
-              "shapeId": "boom-cyl-rod"
-            },
-            {
-              "reason": "Cilindro: só o contacto com o chão é calculado; a colisão entre peças não está implementada para cilindros.",
-              "shapeId": "bucket-cyl-barrel"
-            },
-            {
-              "reason": "Cilindro: só o contacto com o chão é calculado; a colisão entre peças não está implementada para cilindros.",
-              "shapeId": "bucket-cyl-rod"
-            },
-            {
-              "reason": "Forma visual: não participa na verificação de colisões.",
-              "shapeId": "bucket-link-box"
-            },
-            {
-              "reason": "Forma visual: não participa na verificação de colisões.",
-              "shapeId": "idler-link-box"
-            },
-            {
-              "reason": "Cilindro: só o contacto com o chão é calculado; a colisão entre peças não está implementada para cilindros.",
-              "shapeId": "stick-cyl-barrel"
-            },
-            {
-              "reason": "Cilindro: só o contacto com o chão é calculado; a colisão entre peças não está implementada para cilindros.",
-              "shapeId": "stick-cyl-rod"
-            }
-          ]
-        },
-        "evidence": [
-          {
-            "locator": "assembly",
-            "sourceId": "src-excavator-fixture"
-          }
-        ],
-        "index": null,
-        "inputDigest": "a62511dcae2530ee78cb7345fef9b573afc1ac14a29e31eb91a0ab47f406d98b",
-        "joints": [
-          {
-            "jointId": "boom_cyl_base",
-            "kind": "passive",
-            "unit": "rad",
-            "value": 0.5597998804083497
-          },
-          {
-            "jointId": "boom_cyl_slide",
-            "kind": "commanded",
-            "unit": "m",
-            "value": 0.65
-          },
-          {
-            "jointId": "boom_joint",
-            "kind": "dependent",
-            "unit": "rad",
-            "value": 0.721568824192
-          },
-          {
-            "jointId": "bucket_cyl_base",
-            "kind": "passive",
-            "unit": "rad",
-            "value": 0.2678972492893496
-          },
-          {
-            "jointId": "bucket_cyl_slide",
-            "kind": "commanded",
-            "unit": "m",
-            "value": 0.5
-          },
-          {
-            "jointId": "bucket_joint",
-            "kind": "dependent",
-            "unit": "rad",
-            "value": -1.24078280598222
-          },
-          {
-            "jointId": "idler_pivot",
-            "kind": "passive",
-            "unit": "rad",
-            "value": 0.5393851229044835
-          },
-          {
-            "jointId": "link_pin",
-            "kind": "passive",
-            "unit": "rad",
-            "value": 2.364333241275882
-          },
-          {
-            "jointId": "stick_cyl_base",
-            "kind": "passive",
-            "unit": "rad",
-            "value": -0.09057576540005967
-          },
-          {
-            "jointId": "stick_cyl_slide",
-            "kind": "commanded",
-            "unit": "m",
-            "value": 0.25
-          },
-          {
-            "jointId": "stick_joint",
-            "kind": "dependent",
-            "unit": "rad",
-            "value": -1.004100651296
-          },
-          {
-            "jointId": "swing",
-            "kind": "commanded",
-            "unit": "rad",
-            "value": 0.3
-          }
-        ],
-        "measurements": [
-          {
-            "id": "closure.boom_cyl_closure",
-            "label": "Fecho do laço boom_cyl_closure",
-            "method": "Distância entre os dois pontos coincidentes da restrição, no mundo",
-            "status": "computed",
-            "subjectIds": [
-              "boom_cyl_rod",
-              "boom"
-            ],
-            "unit": "m",
-            "value": 1.9388257974595247e-14
-          },
-          {
-            "id": "closure.bucket_cyl_closure",
-            "label": "Fecho do laço bucket_cyl_closure",
-            "method": "Distância entre os dois pontos coincidentes da restrição, no mundo",
-            "status": "computed",
-            "subjectIds": [
-              "bucket_cyl_rod",
-              "idler_link"
-            ],
-            "unit": "m",
-            "value": 1.3322676295501878e-15
-          },
-          {
-            "id": "closure.bucket_link_closure",
-            "label": "Fecho do laço bucket_link_closure",
-            "method": "Distância entre os dois pontos coincidentes da restrição, no mundo",
-            "status": "computed",
-            "subjectIds": [
-              "bucket_link",
-              "bucket"
-            ],
-            "unit": "m",
-            "value": 1.2560739669470201e-15
-          },
-          {
-            "id": "closure.stick_cyl_closure",
-            "label": "Fecho do laço stick_cyl_closure",
-            "method": "Distância entre os dois pontos coincidentes da restrição, no mundo",
-            "status": "computed",
-            "subjectIds": [
-              "stick_cyl_rod",
-              "stick"
-            ],
-            "unit": "m",
-            "value": 3.3893637946200148e-15
-          },
-          {
-            "id": "cylinder.boom_cylinder.length",
-            "label": "Comprimento de Cilindro da lança",
-            "method": "Distância entre a origem do barril e a origem da haste (pinos de base e de haste)",
-            "status": "computed",
-            "subjectIds": [
-              "boom_cyl_barrel",
-              "boom_cyl_rod"
-            ],
-            "unit": "m",
-            "value": 2.83
-          },
-          {
-            "id": "cylinder.bucket_cylinder.length",
-            "label": "Comprimento de Cilindro da caçamba",
-            "method": "Distância entre a origem do barril e a origem da haste (pinos de base e de haste)",
-            "status": "computed",
-            "subjectIds": [
-              "bucket_cyl_barrel",
-              "bucket_cyl_rod"
-            ],
-            "unit": "m",
-            "value": 2.71
-          },
-          {
-            "id": "cylinder.stick_cylinder.length",
-            "label": "Comprimento de Cilindro do braço",
-            "method": "Distância entre a origem do barril e a origem da haste (pinos de base e de haste)",
-            "status": "computed",
-            "subjectIds": [
-              "stick_cyl_barrel",
-              "stick_cyl_rod"
-            ],
-            "unit": "m",
-            "value": 2.529999999999999
-          },
-          {
-            "id": "tip.x",
-            "label": "Ponta da ferramenta, x",
-            "method": "Ponto tool_tip transformado pela pose da parte (cinemática directa)",
-            "status": "computed",
-            "subjectIds": [
-              "bucket"
-            ],
-            "unit": "m",
-            "value": 6.834095660288998
-          },
-          {
-            "id": "tip.y",
-            "label": "Ponta da ferramenta, y",
-            "method": "Ponto tool_tip transformado pela pose da parte (cinemática directa)",
-            "status": "computed",
-            "subjectIds": [
-              "bucket"
-            ],
-            "unit": "m",
-            "value": 2.9431097700572653
-          },
-          {
-            "id": "tip.z",
-            "label": "Ponta da ferramenta, z",
-            "method": "Ponto tool_tip transformado pela pose da parte (cinemática directa)",
-            "status": "computed",
-            "subjectIds": [
-              "bucket"
-            ],
-            "unit": "m",
-            "value": -2.114033521027201
-          }
-        ],
-        "parts": [
-          {
-            "partId": "boom",
-            "rotation": [
-              0.05275289416744413,
-              0.1398173365293283,
-              0.34904435144359647,
-              0.9251142012141649
+              0.05275289416744994,
+              0.1398173365293261,
+              0.3490443514436349,
+              0.9251142012141503
             ],
             "translationM": [
               0.9075696646693256,
@@ -6403,10 +6403,10 @@
           {
             "partId": "boom_cyl_barrel",
             "rotation": [
-              0.04128370139247104,
-              0.14362246146245466,
-              0.2731573879527359,
-              0.9502911585243975
+              0.04128370139247579,
+              0.1436224614624533,
+              0.2731573879527673,
+              0.9502911585243884
             ],
             "translationM": [
               0.5732018934753635,
@@ -6417,71 +6417,71 @@
           {
             "partId": "boom_cyl_rod",
             "rotation": [
-              0.04128370139247104,
-              0.14362246146245466,
-              0.2731573879527359,
-              0.9502911585243975
+              0.04128370139247579,
+              0.1436224614624533,
+              0.2731573879527673,
+              0.9502911585243884
             ],
             "translationM": [
-              2.864130079107286,
-              2.502777076876642,
-              -0.8859792570651613
+              2.864130079107191,
+              2.5027770768768,
+              -0.8859792570651319
             ]
           },
           {
             "partId": "bucket",
             "rotation": [
-              -0.10313051015334349,
-              0.10814736849645537,
-              -0.6823724574477706,
-              0.7155669597455528
+              -0.10313051015333963,
+              0.10814736849645906,
+              -0.682372457447745,
+              0.7155669597455773
             ],
             "translationM": [
-              7.395417381635431,
-              4.272496118401565,
-              -2.2876706771329247
+              7.395417381635202,
+              4.272496118402098,
+              -2.2876706771328537
             ]
           },
           {
             "partId": "bucket_cyl_barrel",
             "rotation": [
-              -0.0010934722311071626,
-              0.1494341318296352,
-              -0.007235059075942045,
-              0.988744607309173
+              -0.0010934722311018196,
+              0.14943413182963525,
+              -0.007235059075906656,
+              0.9887446073091732
             ],
             "translationM": [
-              5.025721605091976,
-              4.336565101164689,
-              -1.5546378729012085
+              5.025721605091743,
+              4.336565101165045,
+              -1.5546378729011363
             ]
           },
           {
             "partId": "bucket_cyl_rod",
             "rotation": [
-              -0.0010934722311071626,
-              0.1494341318296352,
-              -0.007235059075942045,
-              0.988744607309173
+              -0.0010934722311018196,
+              0.14943413182963525,
+              -0.007235059075906656,
+              0.9887446073091732
             ],
             "translationM": [
-              7.614406255463517,
-              4.296906810930765,
-              -2.3554118740691394
+              7.614406255463287,
+              4.296906810931314,
+              -2.355411874069068
             ]
           },
           {
             "partId": "bucket_link",
             "rotation": [
-              0.14440770957784804,
-              0.03844696154024243,
-              0.95548682453449,
-              0.2543878391429115
+              0.14440770957784943,
+              0.03844696154023729,
+              0.9554868245344991,
+              0.2543878391428773
             ],
             "translationM": [
-              7.614406255463518,
-              4.296906810930764,
-              -2.35541187406914
+              7.614406255463286,
+              4.296906810931314,
+              -2.355411874069068
             ]
           },
           {
@@ -6501,57 +6501,57 @@
           {
             "partId": "idler_link",
             "rotation": [
-              0.01913912545456921,
-              0.148207453638578,
-              0.1266357749071231,
-              0.9806281788101318
+              0.019139125454574503,
+              0.14820745363857735,
+              0.1266357749071582,
+              0.9806281788101271
             ],
             "translationM": [
-              7.115448489767905,
-              4.159726106933461,
-              -2.201066150115262
+              7.115448489767683,
+              4.159726106933974,
+              -2.201066150115193
             ]
           },
           {
             "partId": "stick",
             "rotation": [
-              -0.021040370553810587,
-              0.14794951248366903,
-              -0.13921553708080794,
-              0.9789214875556188
+              -0.021040370553805296,
+              0.14794951248366978,
+              -0.1392155370807729,
+              0.9789214875556237
             ],
             "translationM": [
-              4.780656518485894,
-              5.067041879732257,
-              -1.4788303581002253
+              4.7806565184856105,
+              5.067041879732594,
+              -1.4788303581001379
             ]
           },
           {
             "partId": "stick_cyl_barrel",
             "rotation": [
-              0.04636893865570211,
-              0.14206222919953332,
-              0.3068043256325401,
-              0.9399677389868046
+              0.04636893865570807,
+              0.14206222919953138,
+              0.3068043256325795,
+              0.9399677389867916
             ],
             "translationM": [
-              2.488717661541208,
-              3.782026719793229,
-              -0.769850587758389
+              2.4887176615410267,
+              3.7820267197933664,
+              -0.769850587758333
             ]
           },
           {
             "partId": "stick_cyl_rod",
             "rotation": [
-              0.04636893865570211,
-              0.14206222919953332,
-              0.3068043256325401,
-              0.9399677389868046
+              0.04636893865570807,
+              0.14206222919953138,
+              0.3068043256325795,
+              0.9399677389867916
             ],
             "translationM": [
-              4.440306171309796,
-              5.27459234171344,
-              -1.3735476581514383
+              4.440306171309497,
+              5.274592341713748,
+              -1.373547658151345
             ]
           },
           {
@@ -6580,7 +6580,7 @@
             "Força, pressão e capacidade de carga não são calculadas: a montagem não tem parâmetros hidráulicos (diâmetros e pressão são null).",
             "Colisões: caixas contra caixas (SAT) e contra o plano do chão; cilindros só contra o chão. Cada forma indica se foi verificada, com a razão."
           ],
-          "closureResidualM": 1.9388257974595247e-14,
+          "closureResidualM": 1.3322676295501878e-15,
           "id": "unfold.engineering.forward-kinematics",
           "method": "Solver de cilindros: forma fechada (triângulo) e bissecção (balancé de duas barras), verificado por cinemática directa",
           "status": "solved",
@@ -7065,7 +7065,7 @@
           "checked": true,
           "contacts": [
             {
-              "depthM": 0.8812134219242254,
+              "depthM": 0.8812134219231403,
               "kind": "part_ground",
               "partIds": [
                 "bucket_cyl_barrel"
@@ -7075,7 +7075,7 @@
               ]
             },
             {
-              "depthM": 2.23045156758877,
+              "depthM": 2.2304515675875614,
               "kind": "part_ground",
               "partIds": [
                 "bucket_cyl_rod"
@@ -7085,7 +7085,7 @@
               ]
             },
             {
-              "depthM": 2.0658444771295246,
+              "depthM": 2.0658444771282243,
               "kind": "part_ground",
               "partIds": [
                 "stick"
@@ -7145,13 +7145,13 @@
           }
         ],
         "index": null,
-        "inputDigest": "41525e2da0d2b6d8296d6b8af0f720750b478d31938a8697084937161a39f5af",
+        "inputDigest": "fdb9771d99be8985afc15db117b51023fcc93ec0cade52b0f55bbebeea0256fb",
         "joints": [
           {
             "jointId": "boom_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": -0.15846447772222838
+            "value": -0.15846447772197372
           },
           {
             "jointId": "boom_cyl_slide",
@@ -7163,7 +7163,7 @@
             "jointId": "boom_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": -0.135338124439
+            "value": -0.1353381244387146
           },
           {
             "jointId": "bucket_cyl_base",
@@ -7199,7 +7199,7 @@
             "jointId": "stick_cyl_base",
             "kind": "passive",
             "unit": "rad",
-            "value": -0.08130805870565884
+            "value": -0.08130805870564635
           },
           {
             "jointId": "stick_cyl_slide",
@@ -7211,7 +7211,7 @@
             "jointId": "stick_joint",
             "kind": "dependent",
             "unit": "rad",
-            "value": -1.623202967813
+            "value": -1.6232029678126079
           },
           {
             "jointId": "swing",
@@ -7231,7 +7231,7 @@
               "boom"
             ],
             "unit": "m",
-            "value": 1.5695212336414724e-13
+            "value": 8.95090418262362e-16
           },
           {
             "id": "closure.bucket_cyl_closure",
@@ -7243,7 +7243,7 @@
               "idler_link"
             ],
             "unit": "m",
-            "value": 0
+            "value": 9.930136612989092e-16
           },
           {
             "id": "closure.bucket_link_closure",
@@ -7255,7 +7255,7 @@
               "bucket"
             ],
             "unit": "m",
-            "value": 0
+            "value": 9.155133597044475e-16
           },
           {
             "id": "closure.stick_cyl_closure",
@@ -7267,7 +7267,7 @@
               "stick"
             ],
             "unit": "m",
-            "value": 1.5818554900372693e-13
+            "value": 2.220446049250313e-16
           },
           {
             "id": "cylinder.boom_cylinder.length",
@@ -7534,7 +7534,7 @@
             "Força, pressão e capacidade de carga não são calculadas: a montagem não tem parâmetros hidráulicos (diâmetros e pressão são null).",
             "Colisões: caixas contra caixas (SAT) e contra o plano do chão; cilindros só contra o chão. Cada forma indica se foi verificada, com a razão."
           ],
-          "closureResidualM": 1.5818554900372693e-13,
+          "closureResidualM": 9.930136612989092e-16,
           "id": "unfold.engineering.forward-kinematics",
           "method": "Solver de cilindros: forma fechada (triângulo) e bissecção (balancé de duas barras), verificado por cinemática directa",
           "status": "blocked",

@@ -4,7 +4,7 @@ import { validateMotionFrame, type Assembly } from '../../src/living/contracts';
 import { EXCAVATOR_ASSEMBLY_V1 } from '../../src/living/contracts/fixtures/excavator.assembly.v1';
 import { EngineInputError, referenceConfiguration, solveForwardKinematics, worldPoint } from '../../src/living/engineering/forward-kinematics';
 import { evaluateActuators, evaluateConfiguration } from '../../src/living/engineering/engine';
-import { insideWindow, planarCircleAngles, solveActuatorConfiguration } from '../../src/living/engineering/actuator-solver';
+import { deduplicateAngles, insideWindow, planarCircleAngles, solveActuatorConfiguration } from '../../src/living/engineering/actuator-solver';
 import { applyRigid, quatAngle, rotateVector } from '../../src/living/engineering/transform-math';
 
 const clone = (): Assembly => structuredClone(EXCAVATOR_ASSEMBLY_V1);
@@ -127,6 +127,19 @@ describe('recusas explícitas: cursos e geometrias que o motor não consegue pro
     expect(evaluateActuators(EXCAVATOR_ASSEMBLY_V1, { ...referenceStrokes(), boom_cylinder: atLimit + 1e-6 })).toMatchObject({ status: 'blocked' });
   });
 
+  it('preserva um limite exacto com mais de 12 casas decimais sem arredondar a solução para fora', () => {
+    const assembly = clone();
+    const maximum = 0.7214688241928;
+    assembly.joints.find((joint) => joint.id === 'boom_joint')!.limits!.max.value = maximum;
+    const strokes = { ...referenceStrokes(), boom_cylinder: 0.649976215260446 };
+    const frame = evaluateActuators(assembly, strokes);
+    expect(frame.status).toBe('ok');
+    const angle = frame.joints.find((joint) => joint.jointId === 'boom_joint')!.value;
+    expect(angle).toBeLessThanOrEqual(maximum);
+    expect(angle).toBeCloseTo(maximum, 12);
+    expect(canonicalize(evaluateActuators(assembly, strokes))).toBe(canonicalize(frame));
+  });
+
   it('uma geometria que não está no plano da junta (eixo não planar) é recusada como UNSUPPORTED_GEOMETRY', () => {
     const a = clone();
     const joint = a.joints.find((j) => j.id === 'boom_joint')!;
@@ -158,6 +171,11 @@ describe('recusas explícitas: cursos e geometrias que o motor não consegue pro
 });
 
 describe('escolha de ramo: quando dois ângulos alcançam o curso', () => {
+  it('agrupa raízes quase iguais sem alterar os valores e conserva ramos distintos', () => {
+    const boundary = 0.7214688241928;
+    expect(deduplicateAngles([boundary, boundary + 2e-13, -0.42])).toEqual([boundary, -0.42]);
+    expect(deduplicateAngles([boundary, boundary + 2e-12])).toEqual([boundary, boundary + 2e-12]);
+  });
   it('com limites largos, a lança tem dois ângulos para o mesmo curso: escolhe o mais próximo da referência e avisa', () => {
     const narrow = solveActuatorConfiguration(EXCAVATOR_ASSEMBLY_V1, { ...referenceStrokes(), boom_cylinder: 0.3 });
     const wide = clone();
