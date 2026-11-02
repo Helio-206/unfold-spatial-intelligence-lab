@@ -43,7 +43,7 @@ function opening(t: SceneTransaction, from: [number, number], to: [number, numbe
 function confirmed(scene: SpatialSceneV1): SpatialSceneV1 {
   const next = structuredClone(scene);
   next.revision.createdAt = AT; // the engine stamps wall-clock time here; a fixed value keeps the fixture byte-for-byte reproducible
-  for (const node of next.nodes) if (node.geometry) node.geometry.provenance = { ...node.geometry.provenance, source: 'user', validation: 'verified', actor: 'fixture' };
+  for (const node of next.nodes) if (node.geometry) node.geometry.provenance = { ...node.geometry.provenance, source: 'user', validation: 'verified', actor: 'fixture', evidence: 'Synthetic fixture: confirmation simulated for visual tests, not product data.' };
   return next;
 }
 

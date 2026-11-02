@@ -97,7 +97,74 @@ function openingDetail(node: Node, wallThickness: number, library: MaterialLibra
   return group;
 }
 
-function floorMesh(node: Node, library: MaterialLibrary, profile: QualityProfile): THREE.Mesh | undefined {
+export type FloorConflict = { kind: 'duplicate' | 'partial'; ids: string[]; kept?: string; overlap: number };
+type FloorEntry = { id: string; world: Array<[number, number]>; y: number; confirmed: boolean };
+
+function inside(point: [number, number], polygon: Array<[number, number]>): boolean {
+  let hit = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i, i += 1) {
+    const [xi, zi] = polygon[i]!, [xj, zj] = polygon[j]!;
+    if ((zi > point[1]) !== (zj > point[1]) && point[0] < ((xj - xi) * (point[1] - zi)) / (zj - zi) + xi) hit = !hit;
+  }
+  return hit;
+}
+
+/** Intersection over union of two floor polygons, estimated on a fixed grid (deterministic). 1 = same surface, 0 = disjoint. */
+export function floorOverlap(a: Array<[number, number]>, b: Array<[number, number]>, grid = 96): number {
+  const xs = [...a, ...b].map((p) => p[0]), zs = [...a, ...b].map((p) => p[1]);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), z0 = Math.min(...zs), z1 = Math.max(...zs);
+  let both = 0, either = 0;
+  for (let i = 0; i < grid; i += 1) for (let j = 0; j < grid; j += 1) {
+    const p: [number, number] = [x0 + ((i + 0.5) / grid) * (x1 - x0), z0 + ((j + 0.5) / grid) * (z1 - z0)];
+    const ia = inside(p, a), ib = inside(p, b);
+    if (ia && ib) both += 1; if (ia || ib) either += 1;
+  }
+  return either === 0 ? 0 : both / either;
+}
+
+const SAME_SURFACE = 0.985; // a grid estimate; a polygon pair this close is the same surface
+const ANY_OVERLAP = 0.02;
+
+/**
+ * Decides how overlapping room polygons are DRAWN. It never edits the scene and never decides which room is "right":
+ *   - identical surface at the same elevation (a room proposed twice) -> one is drawn (a confirmed one if there is one, otherwise the first by id); the others are
+ *     reported as `duplicate` and left out of the drawing only; their nodes stay canonical and selectable from the component list.
+ *   - partial overlap at the same elevation -> a real conflict: both are drawn translucent and hatched, in a fixed order, and reported as `partial`.
+ *   - different elevations, or no overlap -> nothing to do.
+ * Nothing is hidden by a depth offset.
+ */
+export function planFloors(entries: readonly FloorEntry[]): { suppressed: Map<string, string>; ambiguous: Set<string>; conflicts: FloorConflict[] } {
+  const suppressed = new Map<string, string>(), ambiguous = new Set<string>(), conflicts: FloorConflict[] = [];
+  const sorted = [...entries].sort((a, b) => a.id.localeCompare(b.id));
+  const pairs: Array<{ a: FloorEntry; b: FloorEntry; overlap: number }> = [];
+  for (let i = 0; i < sorted.length; i += 1) for (let j = i + 1; j < sorted.length; j += 1) {
+    const a = sorted[i]!, b = sorted[j]!;
+    if (Math.abs(a.y - b.y) > 1e-3) continue;
+    const overlap = floorOverlap(a.world, b.world);
+    if (overlap > ANY_OVERLAP) pairs.push({ a, b, overlap });
+  }
+  // duplicates form groups (an identical surface proposed two or more times)
+  const parent = new Map<string, string>(); const find = (id: string): string => { let r = id; while (parent.get(r) && parent.get(r) !== r) r = parent.get(r)!; return r; };
+  for (const e of sorted) parent.set(e.id, e.id);
+  for (const p of pairs) if (p.overlap >= SAME_SURFACE) parent.set(find(p.b.id), find(p.a.id));
+  const groups = new Map<string, FloorEntry[]>();
+  for (const e of sorted) { const r = find(e.id); groups.set(r, [...(groups.get(r) ?? []), e]); }
+  for (const members of groups.values()) {
+    if (members.length < 2) continue;
+    const kept = members.find((m) => m.confirmed) ?? members[0]!;
+    for (const m of members) if (m !== kept) suppressed.set(m.id, kept.id);
+    conflicts.push({ kind: 'duplicate', ids: members.map((m) => m.id), kept: kept.id, overlap: 1 });
+  }
+  for (const p of pairs) {
+    if (p.overlap >= SAME_SURFACE || find(p.a.id) === find(p.b.id)) continue;
+    const ra = find(p.a.id), rb = find(p.b.id);
+    ambiguous.add(groups.get(ra)!.find((m) => !suppressed.has(m.id))!.id); ambiguous.add(groups.get(rb)!.find((m) => !suppressed.has(m.id))!.id);
+    conflicts.push({ kind: 'partial', ids: [p.a.id, p.b.id], overlap: +p.overlap.toFixed(3) });
+  }
+  return { suppressed, ambiguous, conflicts };
+}
+
+function floorMesh(node: Node, library: MaterialLibrary, profile: QualityProfile, conflict: 'none' | 'partial', order: number): THREE.Mesh | undefined {
   if (node.geometry?.kind !== 'polygon' || node.geometry.verticesM.length < 3) return undefined;
   // (x, -z) shape + rotateX(-90 deg) puts the polygon on (x, z) with the face normal pointing UP.
   const shape = new THREE.Shape();
@@ -107,9 +174,10 @@ function floorMesh(node: Node, library: MaterialLibrary, profile: QualityProfile
   shape.closePath();
   const geometry = new THREE.ShapeGeometry(shape);
   geometry.rotateX(-Math.PI / 2);
-  const mesh = new THREE.Mesh(geometry, library.m.floor);
-  mesh.receiveShadow = profile.shadows;
+  const mesh = new THREE.Mesh(geometry, conflict === 'partial' ? library.m.floorAmbiguous : library.m.floor);
+  mesh.receiveShadow = profile.shadows && conflict === 'none';
   mesh.userData.derived = 'floor';
+  if (conflict === 'partial') { mesh.userData.conflict = 'partial'; mesh.renderOrder = 1 + order; }
   return mesh;
 }
 
@@ -169,7 +237,7 @@ function componentMesh(node: Node, assets: ArchitecturalAssets, library: Materia
     return window;
   }
   if (node.component?.kind === 'door' || node.component?.kind === 'window') return profile.openingDetail && wallThickness !== undefined ? openingDetail(node, wallThickness, library, profile) : undefined;
-  if (node.component?.kind === 'room' || node.geometry.kind === 'polygon') return floorMesh(node, library, profile);
+  if (node.geometry.kind === 'polygon') return undefined; // floors are planned and built in buildArchitecturalGroup
   let geometry: THREE.BufferGeometry;
   if (node.geometry.kind === 'box') geometry = new THREE.BoxGeometry(...node.geometry.sizeM);
   else if (node.geometry.kind === 'segment') geometry = new THREE.CylinderGeometry(node.geometry.radiusM, node.geometry.radiusM, node.geometry.lengthM, 12);
@@ -187,42 +255,73 @@ const ASSET_NOMINAL: Record<string, [number, number, number]> = {
   connector_corner_90: [0.1, 0.24, 0.16], connector_isolated_foot: [0.11, 0.28, 0.11], mechanical_frame_1000: [1, 0.6, 0.12],
 };
 
-/** Closes the outer notch where two walls of equal thickness meet at a right angle with matching endpoints. Returns presentation-only blocks. */
+type WorldWall = { id: string; origin: THREE.Vector3; x: THREE.Vector3; length: number; height: number; thickness: number; baseY: number };
+
+/**
+ * A wall's pose in world space, or undefined when it cannot be read safely. Safe means: the wall stands upright (its local Y is world up), its
+ * length axis is horizontal, and the transform chain has no shear (axes stay perpendicular). Rotations about the vertical, translations at any
+ * height and uniform or per-axis scales are all fine; anything else is left without a filler rather than guessed at.
+ */
+export function worldWall(object: THREE.Object3D, size: [number, number, number], id: string): WorldWall | undefined {
+  const m = object.matrixWorld;
+  const ax = new THREE.Vector3().setFromMatrixColumn(m, 0), ay = new THREE.Vector3().setFromMatrixColumn(m, 1), az = new THREE.Vector3().setFromMatrixColumn(m, 2);
+  const sx = ax.length(), sy = ay.length(), sz = az.length();
+  if (sx < 1e-9 || sy < 1e-9 || sz < 1e-9) return undefined;
+  ax.divideScalar(sx); ay.divideScalar(sy); az.divideScalar(sz);
+  const upright = ay.y > 1 - 1e-6 && Math.abs(ax.y) < 1e-6 && Math.abs(az.y) < 1e-6;
+  const orthogonal = Math.abs(ax.dot(az)) < 1e-6 && Math.abs(ax.dot(ay)) < 1e-6;
+  if (!upright || !orthogonal || m.determinant() <= 0) return undefined;
+  return { id, origin: new THREE.Vector3().setFromMatrixPosition(m), x: ax, length: size[0] * sx, height: size[1] * sy, thickness: size[2] * sz, baseY: m.elements[13]! };
+}
+
+/**
+ * Closes the outer notch where two walls of equal world thickness meet at a right angle with matching endpoints. Everything is computed in world
+ * space (so elevated walls, translated and rotated parents and scaled nodes land where the walls are) and then expressed in the group's own frame.
+ * Returns presentation-only blocks, tagged and not pickable. Cases that cannot be placed safely produce nothing.
+ */
 export function cornerFillers(group: THREE.Group, scene: SpatialSceneV1, library: MaterialLibrary, profile: QualityProfile, tolerance = 0.02): THREE.Mesh[] {
-  const walls = scene.nodes.filter((node) => node.component?.kind === 'wall' && node.geometry?.kind === 'box');
   group.updateMatrixWorld(true);
-  type End = { id: string; p: THREE.Vector3; toward: THREE.Vector3; t: number; h: number };
+  const walls: WorldWall[] = [];
+  for (const node of scene.nodes) {
+    if (node.component?.kind !== 'wall' || node.geometry?.kind !== 'box') continue;
+    const object = group.getObjectByName(node.id);
+    const wall = object && worldWall(object, node.geometry.sizeM, node.id);
+    if (wall) walls.push(wall);
+  }
+  type End = { wall: WorldWall; p: THREE.Vector3; toward: THREE.Vector3 };
   const ends: End[] = [];
   for (const wall of walls) {
-    const object = group.getObjectByName(wall.id);
-    if (!object || wall.geometry?.kind !== 'box') continue;
-    const [length, height, thickness] = wall.geometry.sizeM;
-    const a = new THREE.Vector3(-length / 2, 0, 0).applyMatrix4(object.matrixWorld);
-    const b = new THREE.Vector3(length / 2, 0, 0).applyMatrix4(object.matrixWorld);
-    ends.push({ id: wall.id, p: a, toward: b.clone().sub(a).setY(0).normalize(), t: thickness, h: height });
-    ends.push({ id: wall.id, p: b, toward: a.clone().sub(b).setY(0).normalize(), t: thickness, h: height });
+    const half = wall.x.clone().multiplyScalar(wall.length / 2);
+    const a = wall.origin.clone().sub(half), b = wall.origin.clone().add(half);
+    ends.push({ wall, p: a, toward: wall.x.clone() }, { wall, p: b, toward: wall.x.clone().negate() });
   }
-  const out: THREE.Mesh[] = [];
-  // a corner is a point where exactly two wall ends meet and no other wall passes through it; at a T-junction the notch is already covered
-  const segments = ends.filter((_, k) => k % 2 === 0).map((e, k) => ({ id: e.id, a: e.p, b: ends[k * 2 + 1]!.p, t: e.t }));
-  const throughPoint = (point: THREE.Vector3, except: string[]) => segments.some((seg) => {
-    if (except.includes(seg.id)) return false;
-    const ab = seg.b.clone().sub(seg.a); const u = Math.max(0, Math.min(1, point.clone().sub(seg.a).dot(ab) / ab.lengthSq()));
-    return seg.a.clone().addScaledVector(ab, u).distanceTo(point) < seg.t / 2 + tolerance;
+  const sameLevel = (p: THREE.Vector3, q: THREE.Vector3, tol: number) => Math.hypot(p.x - q.x, p.z - q.z) <= tol && Math.abs(p.y - q.y) < 1e-3;
+  // a corner is a point where exactly two wall ends meet and no other wall (at the same level) passes through it: at a T-junction the notch is already covered
+  const throughPoint = (point: THREE.Vector3, except: string[]) => walls.some((wall) => {
+    if (except.includes(wall.id) || Math.abs(wall.baseY - point.y) > 1e-3) return false;
+    const a = wall.origin.clone().sub(wall.x.clone().multiplyScalar(wall.length / 2)), ab = wall.x.clone().multiplyScalar(wall.length);
+    const u = Math.max(0, Math.min(1, new THREE.Vector3(point.x - a.x, 0, point.z - a.z).dot(ab) / ab.lengthSq()));
+    return Math.hypot(a.x + ab.x * u - point.x, a.z + ab.z * u - point.z) < wall.thickness / 2 + tolerance;
   });
+  const toGroup = group.matrixWorld.clone().invert();
+  const out: THREE.Mesh[] = [];
   for (let i = 0; i < ends.length; i += 1) for (let j = i + 1; j < ends.length; j += 1) {
     const e1 = ends[i]!, e2 = ends[j]!;
-    if (e1.id === e2.id || e1.p.distanceTo(e2.p) > tolerance || Math.abs(e1.t - e2.t) > 1e-3) continue;
-    if (ends.filter((e) => e.p.distanceTo(e1.p) <= tolerance).length !== 2 || throughPoint(e1.p, [e1.id, e2.id])) continue;
+    if (e1.wall.id === e2.wall.id) continue;
+    const pa = new THREE.Vector3(e1.p.x, e1.wall.baseY, e1.p.z), pb = new THREE.Vector3(e2.p.x, e2.wall.baseY, e2.p.z);
+    if (!sameLevel(pa, pb, tolerance) || Math.abs(e1.wall.thickness - e2.wall.thickness) > 1e-3) continue;
     if (Math.abs(e1.toward.dot(e2.toward)) > 0.02) continue; // not perpendicular
-    const side = e1.t / 2; const height = Math.min(e1.h, e2.h);
-    const centre = e1.p.clone().sub(e1.toward.clone().add(e2.toward).multiplyScalar(e1.t / 4));
+    if (ends.filter((e) => sameLevel(new THREE.Vector3(e.p.x, e.wall.baseY, e.p.z), pa, tolerance)).length !== 2 || throughPoint(pa, [e1.wall.id, e2.wall.id])) continue;
+    const side = e1.wall.thickness / 2; const height = Math.min(e1.wall.height, e2.wall.height);
+    const centre = new THREE.Vector3(pa.x, pa.y + height / 2, pa.z).sub(e1.toward.clone().add(e2.toward).multiplyScalar(e1.wall.thickness / 4).setY(0));
+    // world pose: yaw from the first wall's direction, then into the group's frame
+    const yaw = Math.atan2(-e1.toward.z, e1.toward.x);
+    const world = new THREE.Matrix4().compose(centre, new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw), new THREE.Vector3(1, 1, 1));
+    const local = toGroup.clone().multiply(world);
     const materials = [library.m.wallFace, library.m.wallFace, library.m.wallCap, library.m.wallCap, library.m.wallFace, library.m.wallFace];
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(side, height, side), materials);
-    // the box must be axis-aligned with the walls, not with the world
-    mesh.rotation.y = Math.atan2(-e1.toward.z, e1.toward.x);
-    mesh.position.set(centre.x, height / 2, centre.z);
-    mesh.name = `${e1.id}+${e2.id}:corner-filler`;
+    local.decompose(mesh.position, mesh.quaternion, mesh.scale);
+    mesh.name = `${e1.wall.id}+${e2.wall.id}:corner-filler`;
     mesh.userData.presentationOnly = true; mesh.userData.derived = 'corner-filler';
     mesh.castShadow = profile.shadows; mesh.receiveShadow = profile.shadows;
     mesh.raycast = () => undefined;
@@ -249,9 +348,26 @@ export function buildArchitecturalGroup(scene: SpatialSceneV1, assets: Architect
   }
   for (const node of scene.nodes) (node.parentId ? objects.get(node.parentId) : group)?.add(objects.get(node.id)!);
 
+  // floors: decide, from the world-space polygons, which are the same surface and which genuinely conflict
+  group.updateMatrixWorld(true);
+  const floorNodes = components.filter((node) => node.geometry?.kind === 'polygon' && node.geometry.verticesM.length >= 3);
+  const floorPlan = planFloors(floorNodes.map((node) => {
+    const matrix = objects.get(node.id)!.matrixWorld; const vertices = node.geometry!.kind === 'polygon' ? node.geometry!.verticesM : [];
+    const world = vertices.map((vtx) => new THREE.Vector3(...vtx).applyMatrix4(matrix));
+    return { id: node.id, world: world.map((p) => [p.x, p.z] as [number, number]), y: world.reduce((sum, p) => sum + p.y, 0) / Math.max(1, world.length), confirmed: provisionalOf(node) === 'confirmed' };
+  }));
+  group.userData.floorConflicts = floorPlan.conflicts;
+  let floorOrder = 0;
   for (const node of components) {
     const object = objects.get(node.id)!;
     const level = provisionalOf(node);
+    if (floorNodes.includes(node)) {
+      const keptBy = floorPlan.suppressed.get(node.id);
+      if (keptBy) { object.userData.renderSuppressed = `duplicate-of:${keptBy}`; continue; }
+      const floor = floorMesh(node, library, profile, floorPlan.ambiguous.has(node.id) ? 'partial' : 'none', floorOrder++);
+      if (floor) { floor.name = `${node.id}:mesh`; if (level !== 'confirmed') floor.userData.provisional = level; object.add(floor); }
+      continue;
+    }
     if (node.component?.kind === 'wall' && node.geometry?.kind === 'box') {
       const attached = components.filter((item) => item.component?.dependsOn.includes(node.id) && (item.component.kind === 'door' || item.component.kind === 'window'));
       const [length, height, thickness] = node.geometry.sizeM;

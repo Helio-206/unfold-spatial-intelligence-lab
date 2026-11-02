@@ -9,7 +9,7 @@ import { profileFor, type VisualQuality } from './quality';
  */
 export type MaterialKey =
   | 'wallFace' | 'wallCap' | 'wallFaceAmbiguous' | 'wallCapAmbiguous'
-  | 'floor' | 'timber' | 'metal' | 'glass' | 'concrete' | 'neutral';
+  | 'floor' | 'floorAmbiguous' | 'timber' | 'metal' | 'glass' | 'concrete' | 'neutral';
 
 export type MaterialLibrary = {
   quality: VisualQuality;
@@ -41,6 +41,9 @@ function build(quality: VisualQuality): MaterialLibrary {
   const wallFace = standard('wall-face', technical ? 0xd2cec3 : 0xdad6cc, technical ? 0.95 : 0.9);
   const wallCap = standard('wall-cap', technical ? 0xa9a59b : 0xb7b3a8, technical ? 0.95 : 0.85);
   const floor = standard('floor', technical ? 0xbab5a9 : 0xffffff, technical ? 0.95 : 0.6);
+  const floorAmbiguous = standard('floor-ambiguous', technical ? 0xbab5a9 : 0xd9c9ae, 0.85);
+  // two floor proposals that overlap without being the same surface: both stay visible, translucent and hatched, drawn in a fixed order
+  floorAmbiguous.transparent = true; floorAmbiguous.opacity = 0.6; floorAmbiguous.depthWrite = false;
   const timber = standard('timber', technical ? 0x7d6246 : 0xffffff, technical ? 0.8 : 0.55);
   const metal = standard('metal', technical ? 0x353a40 : 0x1d2227, technical ? 0.6 : 0.34, technical ? 0.2 : 0.75);
   const glass = standard('glass', technical ? 0x8fb2bf : 0xb4ccd6, technical ? 0.5 : 0.06, 0);
@@ -49,6 +52,8 @@ function build(quality: VisualQuality): MaterialLibrary {
   const neutral = standard('neutral', 0x8a8f88, 0.8);
   // floors sit exactly where the canonical data puts them; polygonOffset keeps them from fighting with the ground and the reference plane
   floor.polygonOffset = true; floor.polygonOffsetFactor = -1; floor.polygonOffsetUnits = -1;
+  // walls are pushed back a hair so their dashed outlines (lines ignore polygonOffset) win the depth test on the wall's own edges
+  for (const wall of [wallFace, wallCap]) { wall.polygonOffset = true; wall.polygonOffsetFactor = 1; wall.polygonOffsetUnits = 1; }
 
   const wallFaceAmbiguous = wallFace.clone(); wallFaceAmbiguous.name = 'wall-face-ambiguous';
   const wallCapAmbiguous = wallCap.clone(); wallCapAmbiguous.name = 'wall-cap-ambiguous';
@@ -57,6 +62,7 @@ function build(quality: VisualQuality): MaterialLibrary {
     wallFace.normalMap = repeated(textures.plasterNormal, 0.5, 0.5); wallFace.roughnessMap = textures.plasterRoughness; wallFace.normalScale.set(0.35, 0.35);
     wallCap.normalMap = repeated(textures.concreteNormal, 1, 1); wallCap.roughnessMap = textures.concreteRoughness; wallCap.normalScale.set(0.5, 0.5);
     concrete.normalMap = textures.concreteNormal; concrete.roughnessMap = textures.concreteRoughness;
+    floorAmbiguous.map = textures.hatch;
     floor.map = repeated(textures.timberColor, 0.5, 0.5); floor.normalMap = textures.timberNormal; floor.roughnessMap = textures.timberRoughness; floor.normalScale.set(0.6, 0.6);
     timber.map = textures.timberColor; timber.normalMap = textures.timberNormal; timber.roughnessMap = textures.timberRoughness;
     // ambiguous geometry: the same surface with a diagonal hatch, so it reads as "unresolved" without changing hue
@@ -65,13 +71,13 @@ function build(quality: VisualQuality): MaterialLibrary {
   } else {
     // technical: still no PBR maps, but ambiguous geometry gets the same hatch so it stays visibly unresolved
     sharedHatch ??= createHatchTexture();
-    wallFaceAmbiguous.map = repeated(sharedHatch, 1.2, 1.2); wallCapAmbiguous.map = sharedHatch;
+    wallFaceAmbiguous.map = repeated(sharedHatch, 1.2, 1.2); wallCapAmbiguous.map = sharedHatch; floorAmbiguous.map = sharedHatch;
   }
 
   const provisionalLine = new LineDashedMaterial({ color: 0x4a5057, dashSize: 0.12, gapSize: 0.09, transparent: true, opacity: 0.75 });
   provisionalLine.name = 'provisional-outline';
 
-  const m = { wallFace, wallCap, wallFaceAmbiguous, wallCapAmbiguous, floor, timber, metal, glass, concrete, neutral };
+  const m = { wallFace, wallCap, wallFaceAmbiguous, wallCapAmbiguous, floor, floorAmbiguous, timber, metal, glass, concrete, neutral };
   const byGltfName: Record<string, Material> = {
     wall_plaster_warm: wallFace, wall_concrete: concrete, door_oak: timber, window_powder_coat: metal, window_glazing: glass, connector_stainless: metal, connector_isolator: neutral,
   };
