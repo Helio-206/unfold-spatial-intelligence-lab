@@ -83,6 +83,7 @@ export class SpatialWorkspace {
   private engineProposal: { token: string; actuatorId: string; target: number; durationS: number } | null = null;
   private engineRaf = 0;
   private engineLast = 0;
+  private seekDragging = false;
   private enginePausedByPage = false;
   private handHiddenForMissingPose = false;
   private engineMessageId: string | null = null;
@@ -284,10 +285,13 @@ export class SpatialWorkspace {
     on(this.root, 'change', (e: Event) => {
       const input = e.target as HTMLInputElement;
       if (input.dataset.act !== 'engine-seek') return;
-      this.pauseEngine(); this.engineering.seek(input.valueAsNumber); this.engineProposal = null;
+      this.pauseEngine(); this.cancelPendingEngineCards(); this.engineering.seek(input.valueAsNumber); this.engineProposal = null;
       if (this.showEngineFrame() && this.engineering.state().timeS >= this.engineering.state().durationS) this.finishEngineMessage();
       this.renderInspector();
     });
+    on(this.root, 'pointerdown', (e: Event) => { if ((e.target as HTMLElement).dataset?.act === 'engine-seek') this.seekDragging = true; });
+    on(window, 'pointerup', () => { this.seekDragging = false; });
+    on(window, 'pointercancel', () => { this.seekDragging = false; });
     on(this.root, 'input', (e: Event) => {
       const input = e.target as HTMLInputElement;
       if (input.dataset.el !== 'engineSlider') return;
@@ -641,7 +645,7 @@ export class SpatialWorkspace {
     this.dispatch({ type: 'processing', value: true });
     this.setComposerState('PROCESSING', 'A interpretar com o contexto da cena.');
     this.pending?.abort(); const abort = new AbortController(); this.pending = abort;
-    const request = buildAgentRequest(text, this.registry, this.selectedId, this.history);
+    const request = buildAgentRequest(text, this.registry, this.selectedId, this.history, { engineConnected: !this.options.fixtureDemo });
     const outcome = await askAgent(request, this.agentOptions, abort.signal);
     // superseded or cancelled: the newer request owns processing state and the composer; this one touches nothing
     if (abort.signal.aborted || this.pending !== abort || this.disposed) return groundOutcome(outcome, this.registry, request.scene?.selectedId ?? null);
@@ -707,6 +711,7 @@ export class SpatialWorkspace {
     try { current = this.engineering.frame().actuators.find((item) => item.actuatorId === actuator.id)?.value; } catch { current = undefined; }
     if (current === undefined || this.playback) return { kind: 'unavailable', actuatorId: actuator.id, title: 'Sem experiência', detail: 'O estado do actuador não está disponível.' };
     const target = Math.min(actuator.stroke.max.value, current + 0.05);
+    this.cancelPendingEngineCards();
     const preview = this.engineering.preview(actuator.id, target);
     if (!preview.ok) return { kind: 'unavailable', actuatorId: actuator.id, title: 'Movimento bloqueado', detail: `${preview.code} · ${preview.message}` };
     this.notice('engine-error', null);
@@ -829,6 +834,7 @@ export class SpatialWorkspace {
     if (this.engineMessageId) { this.dispatch({ type: 'proposal_state', messageId: this.engineMessageId, state: 'cancelled' }); this.engineMessageId = null; }
     this.approvedRunning = false; this.engineCompletion?.('cancelled'); this.engineCompletion = null;
     cancelAnimationFrame(this.engineRaf); this.engineRaf = 0; this.engineLast = 0;
+    this.cancelPendingEngineCards();
     this.engineering.reset(); this.engineProposal = null; this.model.root.visible = true;
     this.poseLabel = 'reference';
     this.notice('pose', null);
@@ -837,12 +843,18 @@ export class SpatialWorkspace {
     this.renderInspector();
   }
 
+  /** A pending engine card is only actionable while its token is the session's single candidate; anything that discards the candidate must close the card. */
+  private cancelPendingEngineCards(): void {
+    for (const message of this.state.messages) if (message.proposal?.kind === 'engine_move' && message.proposal.state === 'pending') this.dispatch({ type: 'proposal_state', messageId: message.id, state: 'cancelled' });
+  }
+
   private previewEngineMove(): void {
     const actuatorId = this.selectedId;
     const input = this.el.inspector!.querySelector<HTMLInputElement>('[data-el="engineTarget"]');
     if (!actuatorId || !input || this.playback) return;
     if (!this.engineering.frame().actuators.some((item) => item.actuatorId === actuatorId)) { this.notice('engine-error', 'O estado do actuador é desconhecido.', 'critical'); return; }
     const target = input.valueAsNumber;
+    this.cancelPendingEngineCards();
     const result = this.engineering.preview(actuatorId, target);
     if (!result.ok) {
       this.engineProposal = null;
@@ -886,6 +898,8 @@ export class SpatialWorkspace {
       const state = this.engineering.state();
       status.textContent = `Motor · curso actual ${actuator ? `${fmt(actuator.value)} ${actuator.unit}` : 'desconhecido'} · ${state.timeS.toFixed(2)} / ${state.durationS.toFixed(2)} s · ${state.playing ? 'em execução' : 'pausado'}`;
     }
+    const seek = this.el.inspector!.querySelector<HTMLInputElement>('[data-act="engine-seek"]');
+    if (seek && !this.seekDragging) { const state = this.engineering.state(); seek.max = String(state.durationS); seek.value = String(state.timeS); }
     if (frame.status !== 'ok') {
       this.engineering.pause(); this.notice('engine-error', `${frame.blocked?.code ?? frame.status} · ${frame.blocked?.message ?? 'Quadro sem solução válida.'}`, 'critical');
       if (this.engineMessageId) { this.dispatch({ type: 'proposal_state', messageId: this.engineMessageId, state: 'failed' }); this.engineMessageId = null; }
@@ -929,6 +943,7 @@ export class SpatialWorkspace {
 
   private cancelEngine(): void {
     cancelAnimationFrame(this.engineRaf); this.engineRaf = 0; this.engineLast = 0;
+    this.cancelPendingEngineCards();
     this.engineering.pause(); this.engineering.cancel(); this.engineProposal = null;
     this.poseLabel = this.engineering.state().durationS === 0 ? 'reference' : 'engine';
     if (this.poseLabel === 'reference') this.notice('pose', null);
