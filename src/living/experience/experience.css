@@ -1,0 +1,85 @@
+/* UNFOLD premium spatial experience (prototype). Tokens only: no palette values, no redefined variables.
+   Void viewport; the drawing is the one Paper surface (a sheet of paper on a dark table). Motion: --dur-* / --ease-*. */
+
+.ux-root { position: fixed; inset: 0; overflow: hidden; background: var(--surface); color: var(--ink); font-family: var(--font-sans); --ux-annotations: 0; }
+.ux-root *, .ux-root *::before, .ux-root *::after { box-sizing: border-box; }
+.ux-root [hidden] { display: none !important; }
+.ux-root :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.ux-stage { position: absolute; inset: 0; }
+.ux-stage canvas { display: block; width: 100%; height: 100%; }
+.ux-root[data-phase="reconstruction"] .ux-stage { visibility: hidden; }
+
+.ux-brand { position: absolute; z-index: 5; top: var(--space-6); left: var(--space-6); display: flex; align-items: center; gap: var(--space-4); }
+.ux-brand img { height: 28px; width: auto; display: block; }
+.ux-brand .u-label { color: var(--ink-muted); }
+.ux-loading { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+
+/* ---- Reconstruction: one Paper sheet, regions by shape, review dock below */
+.ux-recon { position: absolute; inset: 0; display: grid; grid-template-rows: 1fr auto auto; padding: calc(var(--space-16) + var(--space-4)) var(--space-10) var(--space-6); gap: var(--space-6); }
+.ux-sheet { position: relative; margin: 0; align-self: center; justify-self: center; width: min(100%, calc((100dvh - 300px) * 2)); aspect-ratio: 2 / 1; border-radius: var(--radius-md); overflow: hidden; background: var(--surface); }
+.ux-sheet img, .ux-sheet svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.ux-sheet-note { margin: 0; justify-self: center; color: var(--ink-muted); text-align: center; }
+.ux-region polygon { fill: transparent; stroke-width: 3; vector-effect: non-scaling-stroke; transition: stroke-width var(--dur-fast) var(--ease-out), fill var(--dur-fast) var(--ease-out); }
+.ux-region text { font: 400 22px/1 var(--font-mono); paint-order: stroke; stroke-width: 6px; }
+/* status by shape first, colour second: solid = observed, dashed = hypothesis, dotted = unknown */
+.ux-region[data-status="observed"] polygon { stroke: var(--ink-muted); }
+.ux-region[data-status="hypothesis"] polygon { stroke: var(--fold-ink); stroke-dasharray: 14 9; }
+.ux-region[data-status="unknown"] polygon { stroke: var(--ink-muted); stroke-dasharray: 2 8; stroke-linecap: round; }
+.ux-region[data-cat="confirmed"] polygon { stroke: var(--ink); stroke-dasharray: none; }
+.ux-region[data-cat="rejected"] polygon { stroke: var(--ink-muted); stroke-dasharray: 2 4; opacity: .55; }
+.ux-region text { fill: var(--ink-muted); stroke: var(--surface); opacity: 0; transition: opacity var(--dur-fast) var(--ease-out); }
+.ux-region[data-focus="true"] text, .ux-region:hover text { opacity: 1; }
+.ux-region[data-focus="true"] polygon { stroke-width: 5; fill: color-mix(in srgb, var(--fold) 7%, transparent); }
+.ux-region { cursor: pointer; }
+
+.ux-dock { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(0, 640px) minmax(180px, 1fr); align-items: end; gap: var(--space-6); }
+.ux-counts { display: grid; gap: var(--space-1); color: var(--ink-muted); }
+.ux-counts b { color: var(--ink); font-weight: 500; }
+.ux-card { padding: var(--space-4) var(--space-6) var(--space-4); background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-lg); }
+.ux-card header { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.ux-card h2 { margin: var(--space-2) 0 var(--space-1); font-size: var(--type-title-size); line-height: var(--type-title-line); font-weight: 600; letter-spacing: var(--type-title-tracking); }
+.ux-card p { margin: 0; }
+.ux-status { font: 400 var(--type-label-size)/var(--type-label-line) var(--font-mono); padding: 3px 8px; border-radius: var(--radius-sm); border: 1px solid var(--ink-muted); }
+.ux-status[data-status="hypothesis"] { border: 1px dashed var(--fold-ink); color: var(--fold-ink); }
+.ux-status[data-status="unknown"] { border: 1px dotted var(--ink-muted); color: var(--ink-muted); }
+.ux-decision { font: 400 var(--type-label-size)/var(--type-label-line) var(--font-mono); color: var(--ink); }
+.ux-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-4); }
+.ux-next { margin-left: auto; min-height: 44px; border: 0; background: transparent; color: var(--ink-muted); font: 400 var(--type-label-size)/var(--type-label-line) var(--font-mono); cursor: pointer; }
+.ux-next:hover { color: var(--ink); }
+.ux-go { display: grid; justify-items: end; gap: var(--space-2); text-align: right; }
+.ux-go .u-label { color: var(--ink-muted); max-width: 240px; }
+
+/* ---- Lab: almost nothing on screen; marks sit on the parts that are not confirmed */
+.ux-lab { position: absolute; inset: 0; pointer-events: none; }
+.ux-lab > * { pointer-events: auto; }
+.ux-lab-state { position: absolute; top: var(--space-6); right: var(--space-6); display: flex; gap: var(--space-2); align-items: baseline; color: var(--ink-muted); }
+.ux-lab-state b { color: var(--ink); font-weight: 500; }
+.ux-lab-state span { color: var(--ink-muted); margin-right: var(--space-2); }
+.ux-lab-tools { position: absolute; left: var(--space-6); bottom: var(--space-6); display: flex; gap: var(--space-2); }
+.ux-caption { position: absolute; left: 50%; bottom: var(--space-6); transform: translateX(-50%); margin: 0; min-height: 24px; max-width: min(640px, calc(100vw - 32px)); text-align: center; }
+.ux-caption .u-label { margin-left: var(--space-2); }
+.ux-chips { position: absolute; inset: 0; pointer-events: none; z-index: 3; opacity: var(--ux-annotations); }
+.ux-chip { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; padding: 3px 8px; border-radius: var(--radius-sm); font: 400 var(--type-label-size)/var(--type-label-line) var(--font-mono); background: var(--surface-raised); color: var(--ink); border: 1px solid var(--line); }
+.ux-chip[data-cat="observed"] { border-color: var(--ink-muted); }
+.ux-chip[data-cat="unknown"] { border: 1px dotted var(--ink-muted); color: var(--ink-muted); }
+.ux-chip[data-cat="rejected"] { border: 1px dashed var(--ink-muted); color: var(--ink-muted); }
+.ux-chip[data-cat="hypothesis"] { border: 1px dashed var(--fold-ink); color: var(--fold-ink); }
+
+@media (max-width: 760px) {
+  .ux-brand { top: var(--space-4); left: var(--space-4); }
+  .ux-brand .u-label { display: none; }
+  .ux-recon { padding: 72px var(--space-4) var(--space-4); grid-template-rows: auto auto 1fr; gap: var(--space-4); }
+  .ux-sheet { width: 100%; align-self: start; }
+  .ux-dock { grid-template-columns: 1fr; align-items: stretch; gap: var(--space-3); align-self: end; }
+  .ux-counts { grid-auto-flow: column; justify-content: start; gap: var(--space-3); overflow-x: auto; white-space: nowrap; }
+  .ux-go { justify-items: stretch; text-align: left; }
+  .ux-go .u-btn { width: 100%; }
+  .ux-lab-state { top: auto; bottom: 76px; right: auto; left: var(--space-4); flex-wrap: wrap; }
+  .ux-lab-tools { left: var(--space-4); right: var(--space-4); bottom: var(--space-4); }
+  .ux-lab-tools .u-btn { flex: 1; }
+  .ux-caption { bottom: 128px; }
+  /* chips anchor to the left gutter on narrow screens (no label runs off the edge) */
+  .ux-chip { left: var(--space-4) !important; transform: translateY(-100%); max-width: calc(100vw - 32px); white-space: normal; }
+}
+@media (prefers-reduced-motion: reduce) { .ux-root *, .ux-root *::before, .ux-root *::after { transition-duration: 1ms !important; } }
+.ux-root[data-reduced-motion="true"] * { transition-duration: 1ms !important; }

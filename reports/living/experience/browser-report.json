@@ -1,0 +1,71 @@
+{
+  "generatedAt": "2026-11-03T13:20:06.632Z",
+  "renderer": "Chromium + SwiftShader (software WebGL), cinema tier \"balanced\"",
+  "checks": [
+    {
+      "name": "review opens with nothing confirmed and the lab closed",
+      "ok": true,
+      "detail": "{\"total\":10,\"confirmed\":0,\"observed\":5,\"pendingHypotheses\":3,\"rejected\":0,\"unknown\":2,\"canEnterLab\":false,\"blockingIds\":[\"e_boom_cyl\",\"e_stick_cyl\",\"e_bucket_cyl\"]}"
+    },
+    {
+      "name": "primary action disabled with a reason",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "after deciding the hypotheses the lab opens; unknowns stay unknown",
+      "ok": true,
+      "detail": "{\"total\":10,\"confirmed\":2,\"observed\":5,\"pendingHypotheses\":0,\"rejected\":1,\"unknown\":2,\"canEnterLab\":true,\"blockingIds\":[]}"
+    },
+    {
+      "name": "an unknown offers no \"confirm\"",
+      "ok": true,
+      "detail": "{\"confirmButton\":false}"
+    },
+    {
+      "name": "lab marks only uncertainty on the parts (unknown, rejected), never confirmed",
+      "ok": true,
+      "detail": "[\"unknown\",\"rejected\",\"unknown\"]"
+    },
+    {
+      "name": "lab summary keeps the four categories apart",
+      "ok": true,
+      "detail": "revisão2 confirmados · 5 observados · 2 desconhecidos · 1 rejeitados"
+    },
+    {
+      "name": "rejected component is ghosted, not drawn as solid",
+      "ok": true,
+      "detail": "5 ghost meshes"
+    },
+    {
+      "name": "back to review keeps the decisions",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no page errors (desktop)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reduced motion: the lab is reached without animation",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "mobile review: no horizontal scroll, primary action on screen",
+      "ok": true,
+      "detail": "{\"scrollW\":390,\"w\":390,\"enter\":764,\"h\":844}"
+    },
+    {
+      "name": "no page errors (mobile)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no request left localhost, no /api call",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}
