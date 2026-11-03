@@ -128,7 +128,7 @@ export function createStudioStage(renderer: THREE.WebGLRenderer, settings: Cinem
   /** positions the profile's extra lights around the machine (called on profile change and on fit) */
   function place() {
     if (kick) { kick.position.copy(center).add(new THREE.Vector3(...PREMIUM_STUDIO.lights.kick.direction).normalize().multiplyScalar(radius * 3)); kick.target.position.copy(center); }
-    if (pool) { pool.position.set(center.x, PREMIUM_STUDIO.lights.floorPool.height * (radius / 6), center.z + radius * 0.2); pool.target.position.set(center.x, 0, center.z); }
+    if (pool) { pool.position.set(center.x, PREMIUM_STUDIO.lights.floorPool.height * (radius / 6), center.z - radius * 0.2); pool.target.position.set(center.x, 0, center.z); }
     // the key and rim follow the profile's directions
     if (profile === 'presentation') {
       key.position.copy(center).add(new THREE.Vector3(...PREMIUM_STUDIO.lights.key.direction).normalize().multiplyScalar(radius * 3));

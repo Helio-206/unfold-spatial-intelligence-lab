@@ -50,7 +50,7 @@ describe('premium look: reversible, material-only', () => {
     expect(patched.length).toBe(ACCENT_ZONES.length); for (const m of h.materials.filter((x) => !x.userData.accentZone)) expect(m.onBeforeCompile.toString()).not.toContain('accentColor');
     const shader = { uniforms: {} as Record<string, { value: unknown }>, vertexShader: '#include <common>\n#include <begin_vertex>', fragmentShader: '#include <common>\n#include <color_fragment>' };
     patched[0]!.onBeforeCompile(shader as never, null as never);
-    expect(shader.vertexShader).toContain('vAccentPos = position'); expect(shader.fragmentShader).toContain('mix(diffuseColor.rgb, accentColor'); expect(Object.keys(shader.uniforms)).toEqual(expect.arrayContaining(['accentColor', 'accentMin', 'accentMax']));
+    expect(shader.vertexShader).toContain('vAccentPos = position'); expect(shader.fragmentShader).toContain('mix(diffuseColor.rgb, accentColor'); expect(Object.keys(shader.uniforms)).toEqual(expect.arrayContaining(['accentColor', 'accentMin', 'accentMax'])); const mins = shader.uniforms.accentMin!.value as unknown[]; expect(mins.length).toBe(2); expect(mins.every((v) => v instanceof THREE.Vector3)).toBe(true); // vec3[] uniforms must be Vector3 objects, not tuples
     expect(new Set(patched.map((m) => m.customProgramCacheKey())).size).toBe(patched.length); h.revert();
   });
   it('hoses and canonical parts keep their roles: displayOnly meshes get the rubber finish, part meshes keep their part id', () => {

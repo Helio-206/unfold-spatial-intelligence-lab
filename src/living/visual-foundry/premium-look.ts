@@ -13,7 +13,7 @@
  *    geometry. They mark functional and structural details only: the handrail and cab frame, the counterweight stripe and the bucket linkage.
  *  - The palette is object colour, not UI colour. No brand, logo or text of any manufacturer is represented.
  */
-import { Color, SRGBColorSpace, type Material, type Mesh, type MeshPhysicalMaterial, type Object3D, type Vector3Tuple } from 'three';
+import { Color, SRGBColorSpace, Vector3, type Material, type Mesh, type MeshPhysicalMaterial, type Object3D, type Vector3Tuple } from 'three';
 import type { MaterialKey } from './materials';
 
 export const PREMIUM_LOOK_ID = 'unfold.premium-look' as const;
@@ -42,39 +42,43 @@ export const PREMIUM_PALETTE: Record<MaterialKey, Params> = {
 const ACCENT: Params = { color: FOLD_ORANGE, metalness: 0.2, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.06, envMapIntensity: 1.3 };
 
 /** A zone of one Foundry mesh (named `<partId>:<materialKey>`) that takes the accent colour. Boxes are in the mesh's own object space (the part frame, metres). */
-export type AccentZone = { mesh: string; id: string; description: string; box?: { min: Vector3Tuple; max: Vector3Tuple }; whole?: true };
+export type AccentBox = { min: Vector3Tuple; max: Vector3Tuple };
+export type AccentZone = { mesh: string; id: string; description: string; /** up to two boxes */ boxes?: readonly AccentBox[]; whole?: true };
 export const ACCENT_ZONES: readonly AccentZone[] = [
-  { mesh: 'upper_body:paintDark', id: 'handrail-and-cab-frame', description: 'Handrail, cab pillars and frame: everything dark above the deck (deck top is y = 0.12).', box: { min: [-3, 0.25, -3], max: [3, 3, 3] } },
-  { mesh: 'upper_body:paint', id: 'counterweight-stripe', description: 'Horizontal stripe across the rear of the counterweight.', box: { min: [-3, 0.27, -3], max: [-1.43, 0.35, 3] } },
+  { mesh: 'upper_body:paintDark', id: 'handrail-and-grab-handle', description: 'The right-hand handrail (z > 0.3) and the cab door grab handle: functional details only; the cab frame stays graphite.', boxes: [{ min: [-3, 0.25, 0.3], max: [3, 3, 3] }, { min: [0.5, 0.45, -1.4], max: [0.7, 1.6, -1.1] }] },
+  { mesh: 'upper_body:paint', id: 'counterweight-stripe', description: 'Horizontal stripe across the rear of the counterweight.', boxes: [{ min: [-3, 0.27, -3], max: [-1.43, 0.35, 3] }] },
   { mesh: 'bucket_link:paint', id: 'bucket-link', description: 'Bucket linkage (functional).', whole: true },
   { mesh: 'idler_link:paint', id: 'idler-link', description: 'Idler link (functional).', whole: true },
 ];
 
-/** Studio specification, plain data so that any stage (Cinema, Workspace) can build the same set without copying numbers. */
+/**
+ * Studio specification, plain data so that any stage (Cinema, Workspace) can build the same set without copying numbers.
+ * The set is built for a camera on the machine's -Z side (the cab side: door, cab and radiator bay): key and soft boxes in front of that side, rim and pillars behind the machine.
+ */
 export const PREMIUM_STUDIO = {
   /** emissive panels baked into the environment map; `absorber` panels are black and stand in front of a panel, giving structured, architectural reflections */
   environment: [
-    { id: 'key', kind: 'panel', size: [10, 5], position: [-8, 9, 8], color: '#fff3e4', radiance: 12 },
-    { id: 'strip-left', kind: 'panel', size: [1.2, 10], position: [-13, 4.5, -1], color: '#ffffff', radiance: 16 },
-    { id: 'strip-right', kind: 'panel', size: [1.2, 10], position: [13, 4.5, 3], color: '#f0f2f5', radiance: 11 },
-    { id: 'rim-back', kind: 'panel', size: [1.1, 9], position: [9, 5, -12], color: '#d3e0f5', radiance: 12 },
-    { id: 'rim-back-left', kind: 'panel', size: [1.1, 9], position: [-9, 5, -12], color: '#d6e4ff', radiance: 9 },
+    { id: 'key', kind: 'panel', size: [10, 5], position: [-8, 9, -8], color: '#fff3e4', radiance: 12 },
+    { id: 'strip-left', kind: 'panel', size: [1.2, 10], position: [-13, 4.5, 1], color: '#ffffff', radiance: 16 },
+    { id: 'strip-right', kind: 'panel', size: [1.2, 10], position: [13, 4.5, -3], color: '#f0f2f5', radiance: 11 },
+    { id: 'rim-back', kind: 'panel', size: [1.1, 9], position: [9, 5, 12], color: '#d3e0f5', radiance: 12 },
+    { id: 'rim-back-left', kind: 'panel', size: [1.1, 9], position: [-9, 5, 12], color: '#d6e4ff', radiance: 9 },
     { id: 'top', kind: 'panel', size: [13, 8], position: [0, 13, 0], color: '#ffffff', radiance: 5 },
-    { id: 'wall-glow', kind: 'panel', size: [34, 9], position: [0, 4.6, -17], color: '#bfc3c9', radiance: 0.8 },
-    { id: 'pillar-1', kind: 'absorber', size: [1.6, 11], position: [-6, 5, -16.5], color: '#000000', radiance: 0 },
-    { id: 'pillar-2', kind: 'absorber', size: [1.6, 11], position: [5, 5, -16.5], color: '#000000', radiance: 0 },
-    { id: 'pillar-3', kind: 'absorber', size: [1.6, 11], position: [14, 5, -16.5], color: '#000000', radiance: 0 },
-    { id: 'front-soft', kind: 'panel', size: [16, 6], position: [8, 3.5, 15], color: '#f4f2ee', radiance: 3.2 },
-    { id: 'bounce', kind: 'panel', size: [14, 1.6], position: [0, 0.6, 12], color: '#ffd9b0', radiance: 1.4 },
+    { id: 'wall-glow', kind: 'panel', size: [34, 9], position: [0, 4.6, 17], color: '#bfc3c9', radiance: 0.8 },
+    { id: 'pillar-1', kind: 'absorber', size: [1.6, 11], position: [-6, 5, 16.5], color: '#000000', radiance: 0 },
+    { id: 'pillar-2', kind: 'absorber', size: [1.6, 11], position: [5, 5, 16.5], color: '#000000', radiance: 0 },
+    { id: 'pillar-3', kind: 'absorber', size: [1.6, 11], position: [14, 5, 16.5], color: '#000000', radiance: 0 },
+    { id: 'front-soft', kind: 'panel', size: [16, 6], position: [8, 3.5, -15], color: '#f4f2ee', radiance: 4.5 },
+    { id: 'bounce', kind: 'panel', size: [14, 1.6], position: [0, 0.6, -12], color: '#ffd9b0', radiance: 1.2 },
   ],
   lights: {
-    key: { color: '#fff1e0', intensity: 5.2, direction: [-0.5, 0.85, 0.55] },
-    rim: { color: '#eaf0ff', intensity: 3.4, direction: [0.55, 0.55, -0.8] },
-    kick: { color: '#c9d6f2', intensity: 0.6, direction: [-0.75, 0.5, -0.55] },
+    key: { color: '#fff1e0', intensity: 7, direction: [-0.5, 0.85, -0.55] },
+    rim: { color: '#eaf0ff', intensity: 3.4, direction: [0.55, 0.55, 0.8] },
+    kick: { color: '#c9d6f2', intensity: 0.6, direction: [-0.75, 0.5, 0.55] },
     fill: { sky: '#aab6c8', ground: '#1b1814', intensity: 0.32 },
     floorPool: { color: '#ffe9d2', intensity: 420, angle: 0.5, penumbra: 1, height: 15 },
   },
-  floor: { color: '#0C0E11', roughness: 0.5, metalness: 0.03, mirrorOpacity: 0.86 },
+  floor: { color: '#0C0E11', roughness: 0.58, metalness: 0.03, mirrorOpacity: 0.86 },
   backdrop: { horizon: '#2B3139', zenith: '#10141A' },
   grade: { contrast: 1.12, vignette: 0.44, grain: 0.01, bloomStrength: 0.16, bloomThreshold: 1.25, exposure: 1.1 },
   environmentIntensity: 1.1,
@@ -105,15 +109,16 @@ function configure(m: MeshPhysicalMaterial, p: Params): void {
 /** Patches a cloned material so that the zone (or the whole mesh) is drawn in the accent colour, from the mesh's own object-space position. */
 function accentShader(m: MeshPhysicalMaterial, zone: AccentZone): void {
   const accent = srgb(FOLD_ORANGE);
-  const min = zone.box?.min ?? [-1e4, -1e4, -1e4]; const max = zone.box?.max ?? [1e4, 1e4, 1e4];
+  const boxes: AccentBox[] = zone.whole || !zone.boxes?.length ? [{ min: [-1e4, -1e4, -1e4], max: [1e4, 1e4, 1e4] }] : [...zone.boxes];
+  while (boxes.length < 2) boxes.push({ min: [1e5, 1e5, 1e5], max: [-1e5, -1e5, -1e5] }); // an empty box matches nothing
   m.userData.accentZone = zone.id;
   m.customProgramCacheKey = () => `premium-accent:${zone.id}`;
   m.onBeforeCompile = (shader) => {
-    shader.uniforms.accentColor = { value: accent }; shader.uniforms.accentMin = { value: min }; shader.uniforms.accentMax = { value: max };
+    shader.uniforms.accentColor = { value: accent }; shader.uniforms.accentMin = { value: boxes.map((x) => new Vector3(...x.min)) }; shader.uniforms.accentMax = { value: boxes.map((x) => new Vector3(...x.max)) }; // vec3 arrays take Vector3 objects
     shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vAccentPos;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvAccentPos = position;');
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vAccentPos; uniform vec3 accentColor; uniform vec3 accentMin; uniform vec3 accentMax;')
-      .replace('#include <color_fragment>', '#include <color_fragment>\n{ vec3 a = step(accentMin, vAccentPos) * step(vAccentPos, accentMax); diffuseColor.rgb = mix(diffuseColor.rgb, accentColor, a.x * a.y * a.z); }');
+      .replace('#include <common>', '#include <common>\nvarying vec3 vAccentPos; uniform vec3 accentColor; uniform vec3 accentMin[2]; uniform vec3 accentMax[2];')
+      .replace('#include <color_fragment>', '#include <color_fragment>\n{ float a = 0.0; for (int i = 0; i < 2; i++) { vec3 t = step(accentMin[i], vAccentPos) * step(vAccentPos, accentMax[i]); a = max(a, t.x * t.y * t.z); } diffuseColor.rgb = mix(diffuseColor.rgb, accentColor, a); }');
   };
 }
 

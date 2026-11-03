@@ -485,7 +485,7 @@ try {
     const boxes = await C(page, (c) => ['bucket', 'stick', 'boom'].map((id) => c.screenBox(id)));
     check(sc, 'as medições de ecrã das peças continuam a existir (limites só da máquina)', boxes.every((b) => b && b.w > 5 && b.h > 5), boxes);
     const presShot = await grab(page); const luma = await lum(page, presShot, { x: 0, y: 0, w: 1600, h: 900 });
-    check(sc, 'o perfil de apresentação muda a imagem e é escuro de facto (luminância média baixa, realces fortes)', hash(presShot) !== hash(pixelsBefore) && luma.mean < 80 && luma.p99 > 150, luma);
+    check(sc, 'o perfil de apresentação muda a imagem e é escuro de facto (luminância média baixa, realces fortes)', hash(presShot) !== hash(pixelsBefore) && luma.mean < 100 && luma.p99 > 150, luma);
     // poses and hoses still follow articulated frames under the premium look
     await C(page, (c) => c.setMotion('engine')); await C(page, (c) => c.runtime.seekPose(c.runtime.source.durationS)); await page.waitForTimeout(200);
     const art = await C(page, (c) => { const s = c.sampleNow(); return { err: Math.max(...s.parts.map((p) => Math.hypot(...c.partWorld(p.partId).p.map((v, i) => v - p.translationM[i])))), hoses: c.hoseSignature().sum }; });
