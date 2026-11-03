@@ -1,0 +1,44 @@
+/**
+ * Pure HTML for the confirmations the server needs before the laboratory opens. Nothing here is pre-filled: every field
+ * starts empty/unchecked and only a person's action changes it. Strings are escaped; no DOM access.
+ */
+import type { HandoffExtra, HandoffHuman, ReviewHandoff } from './integration';
+import type { ReviewState } from './review';
+
+const esc = (s: string) => s.replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]!);
+const KIND: Record<string, string> = { hypothesis: 'afirmação do modelo', relation: 'relação', request: 'pedido de alteração' };
+
+export type GatewayMessage = { tone: 'alert' | 'status'; lines: string[] } | null;
+
+function extraRow(e: HandoffExtra): string {
+  const key = esc(e.key);
+  const btn = (d: 'confirm' | 'reject', text: string) => `<button class="u-btn ${e.decision === d ? 'u-btn--ink' : 'u-btn--outline'}" type="button" data-gw="extra" data-key="${key}" data-decision="${d}" aria-pressed="${e.decision === d}">${text}</button>`;
+  // a request cannot be confirmed: there is no adapter for it, so the only honest answer is to reject it
+  const choices = e.kind === 'request' ? btn('reject', 'Ignorar') : btn('confirm', 'Confirmar') + btn('reject', 'Rejeitar');
+  return `<li data-decided="${e.decision ?? 'none'}"><span class="u-label">${esc(KIND[e.kind] ?? e.kind)}</span><span class="ux-gw-label">${esc(e.label)}</span><span class="ux-gw-choices">${choices}</span></li>`;
+}
+
+export function gatewayPanel(handoff: ReviewHandoff, ui: ReviewState, message: GatewayMessage, busy: boolean): string {
+  const h: HandoffHuman = handoff.human();
+  const extras = handoff.extras();
+  const open = extras.filter((e) => e.decision === undefined).length;
+  const notes = handoff.localNotes(ui);
+  const bulk = extras.some((e) => e.kind !== 'request')
+    ? `<div class="ux-row"><button class="u-btn u-btn--outline" type="button" data-gw="extra-all" data-decision="reject">Rejeitar todas as não decididas</button><button class="u-btn u-btn--outline" type="button" data-gw="extra-all" data-decision="confirm">Confirmar todas as não decididas</button></div>`
+    : '';
+  return `<section class="ux-gw" aria-labelledby="ux-gw-title" ${busy ? 'aria-busy="true"' : ''}>
+    <header class="ux-gw-head"><h2 id="ux-gw-title" class="u-label">antes do laboratório · o que o servidor pede</h2><button class="ux-link" type="button" data-gw="back" ${busy ? 'disabled' : ''}>← voltar às entidades</button></header>
+    <p class="u-small">Nada vem preenchido por si. O servidor não consegue verificar quem é o revisor nem a medida: ambos ficam «não verificados».</p>
+    <fieldset class="ux-gw-fields" ${busy ? 'disabled' : ''}>
+      <legend class="u-label">revisor e confirmações</legend>
+      <label class="ux-field"><span class="u-label">identificação do revisor</span><input class="u-input" id="gw-reviewer" maxlength="100" autocomplete="off" value="${esc(h.reviewerId)}"></label>
+      <label class="ux-check"><input type="checkbox" id="gw-family" ${h.familyConfirmed ? 'checked' : ''}><span>Confirmo que é uma escavadora de rastos</span></label>
+      <label class="ux-check"><input type="checkbox" id="gw-bucket" ${h.bucketConfirmed ? 'checked' : ''}><span>Confirmo que a máquina tem uma caçamba</span></label>
+      <label class="ux-field"><span class="u-label">largura da caçamba (m)</span><input class="u-input" id="gw-width" type="number" inputmode="decimal" min="0.1" max="10" step="0.01" value="${h.bucketWidthM ?? ''}"></label>
+      <label class="ux-field"><span class="u-label">de onde vem esta largura</span><input class="u-input" id="gw-basis" maxlength="500" autocomplete="off" placeholder="medida no local, ficha técnica…" value="${esc(h.widthBasis)}"></label>
+    </fieldset>
+    ${extras.length ? `<details class="ux-gw-extras" ${open ? 'open' : ''}><summary class="u-label">relações e afirmações do modelo · ${open ? `${open} por decidir` : 'todas decididas'}</summary>${bulk}<ul>${extras.map(extraRow).join('')}</ul></details>` : ''}
+    ${notes.length ? `<ul class="ux-gw-notes u-label" aria-label="Decisões que ficam só neste ecrã">${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
+    <div id="ux-gw-msg" class="ux-gw-msg" ${message?.tone === 'alert' ? 'role="alert"' : 'role="status"'} aria-live="polite">${message ? message.lines.map((l) => `<p>${esc(l)}</p>`).join('') : ''}</div>
+  </section>`;
+}

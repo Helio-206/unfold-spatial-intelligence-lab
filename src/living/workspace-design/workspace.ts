@@ -53,6 +53,12 @@ export type WorkspaceOptions = {
   logoSrc?: string;
   /** Explicitly labelled historical demonstration; normal workspace uses the engine. */
   fixtureDemo?: boolean;
+  /** Replaces the whole header label (assembly id and suffix), for assemblies whose id is a long hash. */
+  brandLabel?: string;
+  /** Persistent information notices shown from the start (for example the provenance of a reconstructed assembly). */
+  initialNotices?: ReadonlyArray<{ id: string; text: string; detail?: string }>;
+  /** Extra buttons for the integrator, in their own group at the end of the tool rail. `icon` is a raw SVG string. */
+  extraTools?: ReadonlyArray<{ id: string; label: string; hint: string; icon: string; run: () => void }>;
 };
 
 const TRANSIENT_MS = 9000;
@@ -139,6 +145,7 @@ export class SpatialWorkspace {
     this.bindEvents();
     this.syncInsets(false);
     this.frameHome();
+    for (const n of options.initialNotices ?? []) this.notice(n.id, n.text, 'info', n.detail);
     this.render();
   }
 
@@ -153,7 +160,7 @@ export class SpatialWorkspace {
         <div class="uw-hand-label uw-surface" data-el="handLabel"></div>
       </div>
       <div class="uw-user-hand" data-el="userHand" hidden></div>
-      <header class="uw-brand" data-el="brand"><img src="${esc(this.options.logoSrc ?? '/design-system/logos/unfold-mark-on-dark.svg')}" alt="UNFOLD"><span class="u-label">${esc(this.options.assembly.id)}${this.options.assembly.provenance.origin === 'fixture' ? ' · montagem sintética' : ''}</span></header>
+      <header class="uw-brand" data-el="brand"><img src="${esc(this.options.logoSrc ?? '/design-system/logos/unfold-mark-on-dark.svg')}" alt="UNFOLD"><span class="u-label">${this.options.brandLabel !== undefined ? esc(this.options.brandLabel) : `${esc(this.options.assembly.id)}${this.options.assembly.provenance.origin === 'fixture' ? ' · montagem sintética' : ''}`}</span></header>
       <nav class="uw-rail uw-surface" data-el="rail" aria-label="Ferramentas da cena">
         <div class="uw-rail-group">
           ${tool('toolFrame', focusIcon, 'Enquadrar', 'componente seleccionado ou máquina inteira')}
@@ -169,6 +176,7 @@ export class SpatialWorkspace {
         </div>
         <div class="uw-rail-sep" aria-hidden="true"></div>
         ${tool('toolFocus', maximizeIcon, 'Modo foco', 'só o objecto · F, Esc para sair', 'aria-pressed="false"')}
+        ${(this.options.extraTools ?? []).length ? `<div class="uw-rail-sep" aria-hidden="true"></div>${(this.options.extraTools ?? []).map((t) => tool(`extra_${t.id}`, t.icon, t.label, t.hint)).join('')}` : ''}
       </nav>
       <div class="uw-notices" data-el="notices" role="alert" aria-live="assertive"></div>
       <section class="uw-transient uw-surface" data-el="transient" role="status" aria-live="polite" hidden></section>
@@ -235,6 +243,7 @@ export class SpatialWorkspace {
       this.enginePausedByPage = false;
     });
     // rail
+    for (const t of this.options.extraTools ?? []) on(this.el[`extra_${t.id}`]!, 'click', () => t.run());
     on(this.el.toolFrame!, 'click', () => this.frameSelection());
     on(this.el.toolIsolate!, 'click', () => this.toggleIsolate());
     on(this.el.toolExplode!, 'click', () => { const exploded = !this.scene.exploded; this.scene.setExploded(exploded); this.notice('explode', exploded ? 'Vista explodida · deslocamento só visual, não é uma pose do motor.' : null, 'info'); this.renderRail(); });
@@ -401,7 +410,7 @@ export class SpatialWorkspace {
     const pending = v.pendingApprovals.length && (this.state.mode === 'focus' || this.state.mode === 'assisted' && !this.state.transientId)
       ? `<div class="uw-notice uw-surface" data-severity="approval"><p>${v.pendingApprovals.length} proposta aguarda a sua decisão.</p><button type="button" class="u-btn u-btn--outline" data-act="review">Rever</button></div>` : '';
     this.el.notices!.innerHTML = v.critical.map((n) => `<div class="uw-notice uw-surface" data-severity="${n.severity}" data-id="${esc(n.id)}"><p>${esc(n.text)}</p>${n.id === 'pose' ? '<button type="button" class="u-btn u-btn--outline" data-act="reset-pose">Repor referência</button>' : n.id === 'agent-error' ? `<button type="button" class="uw-close" data-act="clear-notice" data-arg="${esc(n.id)}" aria-label="Fechar aviso">${icon(xIcon)}</button>` : ''}</div>`).join('') + pending
-      + this.state.notices.filter((n) => n.severity === 'info' && this.state.mode !== 'focus').map((n) => `<div class="uw-notice uw-surface" data-severity="info"><p class="u-label">${esc(n.text)}</p></div>`).join('');
+      + this.state.notices.filter((n) => n.severity === 'info' && this.state.mode !== 'focus').map((n) => `<div class="uw-notice uw-surface" data-severity="info">${n.detail ? `<details class="uw-notice-details"><summary class="u-label">${esc(n.text)}</summary><p class="u-label">${esc(n.detail)}</p></details>` : `<p class="u-label">${esc(n.text)}</p>`}</div>`).join('');
     const h = this.el.notices!.childElementCount ? this.el.notices!.offsetHeight + 8 : 0;
     this.root.style.setProperty('--uw-notices-h', `${h}px`);
   }
@@ -458,8 +467,8 @@ export class SpatialWorkspace {
     if (message !== undefined) this.el.status!.textContent = message;
   }
 
-  private notice(id: string, text: string | null, severity: 'critical' | 'approval' | 'info' = 'critical'): void {
-    if (text === null) this.dispatch({ type: 'clear_notice', id }); else this.dispatch({ type: 'notice', notice: { id, text, severity } });
+  private notice(id: string, text: string | null, severity: 'critical' | 'approval' | 'info' = 'critical', detail?: string): void {
+    if (text === null) this.dispatch({ type: 'clear_notice', id }); else this.dispatch({ type: 'notice', notice: { id, text, severity, ...(detail ? { detail } : {}) } });
   }
 
   // ----------------------------------------------------------------------------------------------- safe area / camera

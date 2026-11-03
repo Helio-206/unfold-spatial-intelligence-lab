@@ -22,6 +22,8 @@ import { renderDrawing, type DrawingResult } from './drawing';
 import { initialFlow, PHASE_HEADLINE, reduceFlow, type FlowAction, type FlowState } from './flow';
 import { checkFile, checkText, DEMO_SCENARIO_LABEL, DEMO_SCENARIOS, DemoReconstructionPort, MAX_INPUT_BYTES, TEXT_LIMITS, type DemoScenario, type InputKind, type IntakeInput, type ReconstructionPort } from './intake';
 import { DRAWING_REFERENCE, ENTITY_PARTS } from './reconstruction-fixture';
+import { gatewayPanel, type GatewayMessage } from './gateway-view';
+import type { ExperienceOptions } from './integration';
 import {
   CATEGORY_LABEL, ENGINE_GATE_LABEL, initialReview, labCategory, partCategories, PROPERTY_LABEL, propertyState, readiness, reduceReview, summarize,
   type EngineGate, type ReviewAction, type ReviewItem, type ReviewState,
@@ -36,7 +38,7 @@ const KIND_LABEL: Record<ExcavatorEntityKind, string> = { chassis: 'chassis', bo
 const INPUT_LABEL: Record<InputKind, string> = { image: 'Fotografia', drawing: 'Desenho técnico', text: 'Texto' };
 const kb = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} kB`);
 
-export async function mountExperience(app: HTMLElement, options: { port?: ReconstructionPort } = {}): Promise<void> {
+export async function mountExperience(app: HTMLElement, options: ExperienceOptions = {}): Promise<void> {
   applyMotionTokens();
   const q = new URLSearchParams(location.search);
   const reducedMotion = q.has('rm') ? q.get('rm') === '1' : matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -47,11 +49,18 @@ export async function mountExperience(app: HTMLElement, options: { port?: Recons
   let inputKind: InputKind = 'drawing';
   let editing: string | null = null;
   let abort: AbortController | null = null;
-  const engine: EngineGate = { status: 'not_run' };
+  let engine: EngineGate = { status: 'not_run' };
+  // set only when the real laboratory is plugged in (options.lab); the prototype lab is used otherwise
+  let candidate: unknown = null;
+  let gwMessage: GatewayMessage = null;
+  let gwBusy = false;
+  /** Two steps in the review column when a handoff is plugged in: 1 = decide the entities, 2 = what the server asks. */
+  let gwStep = false;
 
   app.innerHTML = `
-    <div class="ux-root u-root" data-theme="dark" data-phase="empty" data-reduced-motion="${reducedMotion}">
+    <div class="ux-root u-root" data-theme="dark" data-phase="empty" data-reduced-motion="${reducedMotion}" data-integrated="${Boolean(options.lab)}">
       <div class="ux-stage" id="ux-stage" aria-hidden="true"></div>
+      <div class="ux-workspace" id="ux-workspace" hidden></div>
       <div class="ux-chips" id="ux-chips" aria-hidden="true"></div>
       <header class="ux-brand"><img src="/design-system/logos/unfold-lockup-on-dark.svg" alt="UNFOLD"><span class="u-label" id="ux-context">laboratório vazio</span></header>
       ${port.mode === 'demo' ? `<p class="ux-demo u-label" id="ux-demo" role="note"><span class="ux-demo-long">demonstração · nenhuma chamada à Meta · os resultados não dependem do ficheiro que escolher</span><span class="ux-demo-short">demonstração · sem chamada à Meta · resultado não depende do ficheiro</span></p>` : ''}
@@ -207,20 +216,76 @@ export async function mountExperience(app: HTMLElement, options: { port?: Recons
       src.innerHTML = `<figure class="ux-sheet ux-sheet--source">${i && i.kind !== 'text' ? `<img src="${esc(i.dataUrl)}" alt="A sua fonte: ${esc(i.name)}" class="ux-contain">` : `<blockquote class="ux-quote">${esc(i?.kind === 'text' ? i.text : '')}</blockquote>`}</figure>
         <p class="ux-sheet-note u-label">a localização das regiões não está disponível para esta fonte${port.mode === 'demo' ? ' · resultado de demonstração, não do seu ficheiro' : ''}</p>`;
     }
+    options.handoff?.sync(review);
+    if (readiness(review).status !== 'ready_for_engine') gwStep = false;
+    root.dataset.step = gwStep && options.handoff ? 'server' : 'entities';
     $('ux-side').innerHTML = gates(review, engine) + counts(review) + unknownsBlock(review);
     const item = review.items.find((i) => i.id === review!.focusId);
-    $('ux-review').innerHTML = item ? reviewCard(item, review, editing === item.id) : '';
-    const r = readiness(review);
-    ($('ux-enter') as HTMLButtonElement).disabled = r.status !== 'ready_for_engine';
-    $('ux-enter-note').innerHTML = r.status === 'ready_for_engine'
-      ? 'A sua revisão está completa. O motor valida a montagem no laboratório.'
-      : r.status === 'review_pending' ? `Decida ${r.pending} hipótese${r.pending === 1 ? '' : 's'} antes de continuar.`
-        : `Dados insuficientes para uma montagem: falta ${esc(r.missing.join(', '))}.<br><button class="ux-link" type="button" data-flow="restart">Importar outra fonte</button>`;
+    $('ux-review').innerHTML = gwStep && options.handoff ? `<article class="ux-card ux-gw-card">${gatewayPanel(options.handoff, review, gwMessage, gwBusy)}</article>` : item ? reviewCard(item, review, editing === item.id) : '';
+    refreshEnter();
   }
-  const reviewDispatch = (a: ReviewAction) => { if (!review) return; review = reduceReview(review, a); renderReview(); };
+  /** The primary action and its note. With a handoff, the server's confirmations are part of "ready", never assumed. */
+  function refreshEnter() {
+    if (!review) return;
+    const r = readiness(review);
+    const blockers = options.handoff ? options.handoff.blockers() : [];
+    const stepOne = Boolean(options.handoff) && !gwStep;
+    const ready = r.status === 'ready_for_engine' && (stepOne || blockers.length === 0) && !gwBusy;
+    $('ux-enter').textContent = stepOne ? 'Continuar' : 'Abrir no laboratório';
+    ($('ux-enter') as HTMLButtonElement).disabled = !ready;
+    $('ux-enter').setAttribute('aria-busy', String(gwBusy));
+    $('ux-enter-note').innerHTML = gwBusy ? 'a enviar a revisão ao servidor e a pedir a validação ao motor…'
+      : r.status === 'ready_for_engine'
+        ? (stepOne ? 'As entidades estão decididas. Falta o que o servidor pede antes de abrir o laboratório.' : blockers.length ? `Falta responder ao servidor: ${blockers.length} ${blockers.length === 1 ? 'ponto' : 'pontos'}.` : options.handoff ? 'Tudo respondido. O servidor valida o contrato e o motor tenta resolver a pose de referência.' : 'A sua revisão está completa. O motor valida a montagem no laboratório.')
+        : r.status === 'review_pending' ? `Decida ${r.pending} hipótese${r.pending === 1 ? '' : 's'} antes de continuar.`
+          : `Dados insuficientes para uma montagem: falta ${esc(r.missing.join(', '))}.<br><button class="ux-link" type="button" data-flow="restart">Importar outra fonte</button>`;
+  }
+  const reviewDispatch = (a: ReviewAction) => { if (!review) return; review = reduceReview(review, a); gwMessage = null; renderReview(); };
+
+  /** Send the review, then open the lab only if both gates allow it. */
+  async function openLab() {
+    if (!review || !options.handoff || gwBusy) return;
+    gwBusy = true; gwMessage = { tone: 'status', lines: ['a enviar a revisão…'] }; renderReview();
+    const result = await options.handoff.submit();
+    gwBusy = false;
+    switch (result.kind) {
+      case 'ready': engine = result.engine; candidate = result.candidate; gwMessage = null; renderReview(); enterLab(true); return;
+      case 'engine_blocked': engine = result.engine; gwMessage = { tone: 'alert', lines: ['O contrato é válido, mas o motor não consegue resolver esta montagem. O laboratório fica fechado.', ...result.engine.reasons] }; break;
+      case 'blocked': gwMessage = { tone: 'alert', lines: ['O servidor bloqueou a revisão:', ...result.reasons] }; break;
+      case 'not_adoptable': gwMessage = { tone: 'alert', lines: ['A montagem devolvida não passou as verificações locais e foi descartada:', ...result.reasons] }; break;
+      case 'expired': gwMessage = { tone: 'alert', lines: ['A sessão expirou ou o servidor foi reiniciado. A revisão não foi gravada: importe a fonte de novo.'] }; break;
+      case 'failed': gwMessage = { tone: 'alert', lines: [result.message] }; break;
+      case 'ignored': gwMessage = null; break;
+    }
+    renderReview();
+  }
+
+  // inputs of the server confirmations: update the handoff and the primary action without re-rendering the form (keeps focus)
+  const onGateway = (t: HTMLElement) => {
+    const h = options.handoff; if (!h) return;
+    if (t.id === 'gw-reviewer') h.setHuman({ reviewerId: (t as HTMLInputElement).value });
+    else if (t.id === 'gw-family') h.setHuman({ familyConfirmed: (t as HTMLInputElement).checked });
+    else if (t.id === 'gw-bucket') h.setHuman({ bucketConfirmed: (t as HTMLInputElement).checked });
+    else if (t.id === 'gw-width') { const v = (t as HTMLInputElement).valueAsNumber; h.setHuman({ bucketWidthM: Number.isFinite(v) ? v : null }); }
+    else if (t.id === 'gw-basis') h.setHuman({ widthBasis: (t as HTMLInputElement).value });
+    else return;
+    gwMessage = null; refreshEnter();
+  };
 
   // ------------------------------------------------------------------------------------------ transition + lab
   let raf = 0;
+  let labMounted = false;
+  /** Hand the screen to the real workspace: the cinematic stage stops rendering and is hidden underneath it. */
+  function mountLab() {
+    if (!options.lab || labMounted || candidate === null) return;
+    runtime.suspend(); $('ux-stage').style.visibility = 'hidden'; $('ux-workspace').hidden = false;
+    options.lab.mount($('ux-workspace'), candidate, { gates: gateText(review!, engine), back: () => queueMicrotask(backToReview), restart: () => queueMicrotask(restartAll) }); labMounted = true;
+  }
+  function leaveLab() {
+    if (labMounted) { options.lab?.unmount(); labMounted = false; }
+    $('ux-workspace').hidden = true; $('ux-stage').style.visibility = '';
+  }
+  function resetIntegration() { options.handoff?.reset(); engine = { status: 'not_run' }; candidate = null; gwMessage = null; gwBusy = false; gwStep = false; }
   function enterLab(animated = true) {
     if (!review || readiness(review).status !== 'ready_for_engine') return;
     dispatch({ type: 'open_lab' });
@@ -235,6 +300,7 @@ export async function mountExperience(app: HTMLElement, options: { port?: Recons
       if (!f.done) { raf = requestAnimationFrame(step); return; }
       sheet3d.set(Math.PI / 2, 0.035);
       dispatch({ type: 'lab_ready' });
+      mountLab();
     };
     step();
   }
@@ -275,6 +341,19 @@ export async function mountExperience(app: HTMLElement, options: { port?: Recons
   // ------------------------------------------------------------------------------------------ events
   app.addEventListener('click', (e) => {
     const t = e.target as Element;
+    const gw = t.closest<HTMLElement>('[data-gw]');
+    if (gw && options.handoff && review) {
+      const h = options.handoff;
+      if (gw.dataset.gw === 'extra') {
+        const decision = gw.dataset.decision as 'confirm' | 'reject';
+        const current = h.extras().find((x) => x.key === gw.dataset.key)?.decision;
+        h.decideExtra(gw.dataset.key!, current === decision ? undefined : decision);
+      } else if (gw.dataset.gw === 'extra-all') {
+        // an explicit, bulk choice by the person, applied only to what is still undecided; a request can never be confirmed
+        for (const x of h.extras()) if (x.decision === undefined && !(x.kind === 'request' && gw.dataset.decision === 'confirm')) h.decideExtra(x.key, gw.dataset.decision as 'confirm' | 'reject');
+      } else if (gw.dataset.gw === 'back') gwStep = false;
+      gwMessage = null; renderReview(); return;
+    }
     const flowBtn = t.closest<HTMLElement>('[data-flow]');
     if (flowBtn) {
       const f = flowBtn.dataset.flow!;
@@ -282,7 +361,7 @@ export async function mountExperience(app: HTMLElement, options: { port?: Recons
       else if (f === 'cancel') { abort?.abort(); abort = null; clearInterval(tick); dispatch({ type: 'cancel' }); }
       else if (f === 'retry') { dispatch({ type: 'retry', at: Date.now() }); void submit(); }
       else if (f === 'clear') dispatch({ type: 'clear' });
-      else if (f === 'restart') { cancelAnimationFrame(raf); direction.setMachineGhost([]); views.blend(1); dispatch({ type: 'restart' }); }
+      else if (f === 'restart') { cancelAnimationFrame(raf); leaveLab(); resetIntegration(); direction.setMachineGhost([]); views.blend(1); dispatch({ type: 'restart' }); }
       return;
     }
     const kind = t.closest<HTMLElement>('[data-kind]');
@@ -305,27 +384,35 @@ export async function mountExperience(app: HTMLElement, options: { port?: Recons
   });
   app.addEventListener('change', (e) => {
     const t = e.target as HTMLElement;
+    onGateway(t);
     if (t.id === 'ux-file') { const f = (t as HTMLInputElement).files?.[0]; if (f) void takeFile(f); }
     if (t.id === 'ux-scenario' && port instanceof DemoReconstructionPort) port.scenario = (t as HTMLSelectElement).value as DemoScenario;
   });
-  app.addEventListener('input', (e) => { const t = e.target as HTMLTextAreaElement; if (t.id === 'ux-text') $('ux-count').textContent = `${t.value.length} / ${TEXT_LIMITS.max}`; });
+  app.addEventListener('input', (e) => { const t = e.target as HTMLTextAreaElement; onGateway(t); if (t.id === 'ux-text') $('ux-count').textContent = `${t.value.length} / ${TEXT_LIMITS.max}`; });
   app.addEventListener('dragover', (e) => { if ((e.target as Element).closest('#ux-drop')) { e.preventDefault(); $('ux-drop').dataset.over = 'true'; } });
   app.addEventListener('dragleave', (e) => { if ((e.target as Element).closest('#ux-drop')) delete $('ux-drop').dataset.over; });
   app.addEventListener('drop', (e) => { if (!(e.target as Element).closest('#ux-drop')) return; e.preventDefault(); const f = e.dataTransfer?.files?.[0]; if (f) void takeFile(f); });
   window.addEventListener('keydown', (e) => {
-    if (flow.phase !== 'review' || !review || (e.target as HTMLElement).closest('input, textarea, select')) return;
+    if (flow.phase !== 'review' || !review || gwStep || (e.target as HTMLElement).closest('input, textarea, select')) return;
     const idx = review.items.findIndex((i) => i.id === review!.focusId);
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { const n = review.items[(idx + (e.key === 'ArrowRight' ? 1 : review.items.length - 1)) % review.items.length]!; reviewDispatch({ type: 'focus', id: n.id }); }
     else if (e.key === 'c' && review.focusId) reviewDispatch({ type: 'decide', id: review.focusId, decision: 'confirmed' });
     else if (e.key === 'x' && review.focusId) reviewDispatch({ type: 'decide', id: review.focusId, decision: 'rejected' });
   });
-  $('ux-enter').addEventListener('click', () => enterLab(true));
-  $('ux-pip').addEventListener('click', () => {
-    cancelAnimationFrame(raf); direction.setMachineGhost([]); direction.setReveal(0); sheet3d.set(0, 1); views.blend(0);
-    dispatch({ type: 'back_to_review' });
+  $('ux-enter').addEventListener('click', () => {
+    if (!options.handoff) { enterLab(true); return; }
+    if (!gwStep) { gwStep = true; gwMessage = null; renderReview(); (app.querySelector('#gw-reviewer') as HTMLInputElement | null)?.focus(); return; }
+    void openLab();
   });
+  function backToReview() {
+    cancelAnimationFrame(raf); leaveLab(); direction.setMachineGhost([]); direction.setReveal(0); sheet3d.set(0, 1); views.blend(0);
+    options.handoff?.reopen(); engine = { status: 'not_run' }; candidate = null; gwMessage = null; gwStep = false;
+    dispatch({ type: 'back_to_review' });
+  }
+  function restartAll() { cancelAnimationFrame(raf); leaveLab(); resetIntegration(); direction.setMachineGhost([]); views.blend(1); dispatch({ type: 'restart' }); }
+  $('ux-pip').addEventListener('click', backToReview);
   $('ux-hero').addEventListener('click', () => views.blend(1));
-  $('ux-restart').addEventListener('click', () => { direction.setMachineGhost([]); views.blend(1); dispatch({ type: 'restart' }); });
+  $('ux-restart').addEventListener('click', restartAll);
   runtime.controls.addEventListener('change', () => { if (flow.phase === 'lab') requestAnimationFrame(placeChips); });
   addEventListener('resize', () => requestAnimationFrame(placeChips));
 
@@ -349,12 +436,18 @@ export async function mountExperience(app: HTMLElement, options: { port?: Recons
 }
 
 // ---------------------------------------------------------------------------------------------- view helpers (pure)
-function gateItems(review: ReviewState, engine: EngineGate): string {
+/** The two gates as plain text (also handed to the real lab, which shows them as notices). */
+export function gateText(review: ReviewState, engine: EngineGate): { review: string; engine: string } {
   const s = summarize(review); const r = readiness(review);
-  const g1 = r.status === 'ready_for_engine' ? 'done' : r.status === 'insufficient' ? 'blocked' : 'open';
   const g1text = r.status === 'insufficient' ? `faltam dados: ${r.missing.join(', ')}` : `${s.decided} de ${s.total} decididas${s.pendingHypotheses ? ` · ${s.pendingHypotheses} hipótese${s.pendingHypotheses === 1 ? '' : 's'} por decidir` : ''}`;
+  return { review: g1text, engine: `${ENGINE_GATE_LABEL[engine.status]}${engine.status === 'valid' ? ` · ${engine.solverId}` : engine.status === 'blocked' ? ` · ${engine.reasons[0] ?? ''}` : ''}` };
+}
+function gateItems(review: ReviewState, engine: EngineGate): string {
+  const r = readiness(review);
+  const g1 = r.status === 'ready_for_engine' ? 'done' : r.status === 'insufficient' ? 'blocked' : 'open';
+  const g1text = gateText(review, engine).review;
   return `<li data-gate="${g1}"><span class="u-label">1 · revisão humana</span><b>${esc(g1text)}</b></li>
-    <li data-gate="${engine.status === 'valid' ? 'done' : engine.status === 'blocked' ? 'blocked' : 'open'}"><span class="u-label">2 · validação de engenharia</span><b>${esc(ENGINE_GATE_LABEL[engine.status])}</b></li>`;
+    <li data-gate="${engine.status === 'valid' ? 'done' : engine.status === 'blocked' ? 'blocked' : 'open'}"><span class="u-label">2 · validação de engenharia</span><b>${esc(gateText(review, engine).engine)}</b></li>`;
 }
 function gates(review: ReviewState, engine: EngineGate): string {
   return `<ol class="ux-gates" aria-label="Estado da reconstrução">${gateItems(review, engine)}</ol><p class="u-label ux-gate-note">confirmar não é validar: a sua revisão diz o que é verdade na fonte; o motor diz se a montagem funciona.</p>`;

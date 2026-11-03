@@ -1,0 +1,60 @@
+/* Integration layer for /living. Additive: nothing here restyles the Design's experience or the workspace. */
+
+/* entry / exit link, owned by the shell; sits in the top bar, clear of the brand and of both layouts' controls */
+.ls-link { position: fixed; z-index: 20; top: 64px; left: var(--space-6); padding: var(--space-1) var(--space-3); color: var(--ink-muted); background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-md); text-decoration: none; white-space: nowrap; }
+.ls-link:hover { color: var(--ink); border-color: var(--ink-muted); }
+.ls-link:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+/* the real laboratory, above the cinematic stage */
+.ux-workspace { position: absolute; inset: 0; z-index: 3; }
+.ux-workspace[hidden] { display: none; }
+.ux-workspace > .uw-root { width: 100%; height: 100%; }
+
+/* server confirmations (step 2 of the review) */
+.ux-gw-card { display: block; }
+.ux-gw { display: grid; gap: var(--space-3); }
+.ux-gw-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+.ux-gw-head h2 { margin: 0; font-weight: 400; color: var(--ink-muted); }
+.ux-gw-fields { display: grid; gap: var(--space-3); margin: 0; padding: var(--space-3); border: 1px solid var(--line); border-radius: var(--radius-md); min-width: 0; }
+.ux-gw-fields legend { padding: 0 var(--space-2); color: var(--ink-muted); }
+.ux-check { display: flex; align-items: flex-start; gap: var(--space-2); font-size: var(--type-small-size); line-height: var(--type-small-line); }
+.ux-check input { margin-top: 3px; width: 18px; height: 18px; flex: none; accent-color: var(--ink); }
+.ux-gw .ux-field { display: grid; gap: var(--space-1); }
+.ux-gw .u-input { width: 100%; min-height: 44px; box-sizing: border-box; }
+.ux-gw-extras summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+.ux-gw-extras ul { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: grid; gap: var(--space-2); }
+.ux-gw-extras li { display: grid; gap: var(--space-1); padding: var(--space-2) var(--space-3); border-left: 2px dashed var(--fold-ink); }
+.ux-gw-extras li[data-decided="confirm"], .ux-gw-extras li[data-decided="reject"] { border-left: 2px solid var(--ink); }
+.ux-gw-label { overflow-wrap: anywhere; font-size: var(--type-small-size); }
+.ux-gw-choices { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.ux-gw-choices .u-btn, .ux-gw-extras .ux-row .u-btn { min-height: 44px; }
+.ux-gw-notes { margin: 0; padding-left: var(--space-4); color: var(--ink-muted); display: grid; gap: var(--space-1); }
+.ux-gw-msg:empty { display: none; }
+.ux-gw-msg p { margin: 0 0 var(--space-1); }
+.ux-gw-msg[role="alert"] { padding: var(--space-3); border-left: 2px solid var(--fold-ink); color: var(--fold-ink); }
+.ux-gw [disabled] { opacity: .6; }
+
+/* integrated lab: the workspace brings its own tools, brand, inspector and conversation */
+.ux-root[data-integrated="true"][data-phase="lab"] .ux-brand,
+.ux-root[data-integrated="true"][data-phase="lab"] .ux-ops,
+.ux-root[data-integrated="true"][data-phase="lab"] .ux-caption,
+.ux-root[data-integrated="true"][data-phase="lab"] #ux-hero { display: none; }
+.ux-root[data-integrated="true"][data-phase="lab"] .ux-lab { z-index: 6; }
+
+/* step 2 of the review: the source shrinks to a strip so the form gets the height the Design reserved for a short card */
+.ux-root[data-step="server"] .ux-sheet { width: min(100%, 280px); min-width: 0; }
+.ux-root[data-step="server"] .ux-card { max-height: min(64dvh, 600px); }
+@media (max-width: 760px) {
+  .ls-link { left: var(--space-4); top: 56px; }
+  .ux-root[data-step="server"] .ux-sheet { width: min(100%, 200px); }
+  .ux-root[data-step="server"] .ux-card { max-height: none; }
+}
+
+/* integrated lab: the workspace owns the whole screen, so the prototype's overlay (gates, thumbnail, camera tools) is gone;
+   the gates become workspace notices and the two ways out are tools in its rail */
+.ux-root[data-integrated="true"][data-phase="lab"] .ux-lab { display: none; }
+.ux-root[data-integrated="true"][data-phase="lab"] .ls-link { display: none; }
+
+.ux-gw-head h2 { font-size: var(--type-label-size); line-height: var(--type-label-line); letter-spacing: normal; margin: 0; }
+/* leaving the flow mid-way would lose the review, so the way out only shows before there is any work in progress */
+.ux-root:not([data-phase="empty"]):not([data-phase="selected"]) .ls-link { display: none; }

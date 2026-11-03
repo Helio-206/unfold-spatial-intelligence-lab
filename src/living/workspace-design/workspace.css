@@ -178,3 +178,12 @@
   .uw-root *, .uw-root *::before, .uw-root *::after { transition-duration: 1ms !important; animation: none !important; }
 }
 .uw-root[data-reduced-motion="true"] *, .uw-root[data-reduced-motion="true"] *::before, .uw-root[data-reduced-motion="true"] *::after { transition-duration: 1ms !important; animation: none !important; }
+
+/* Persistent notices are centred and up to 560 px wide, so below ~1160 px they reach over the brand label. The logo stays. */
+@media (max-width: 1160px) { .uw-root:has(.uw-notices > *) .uw-brand .u-label { display: none; } }
+
+.uw-notice-details summary { cursor: pointer; min-height: 24px; }
+.uw-notice-details summary:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.uw-notice-details p { margin: var(--space-2) 0 0; }
+/* On a phone the notices span the full width and sit on the brand; the brand yields while one is showing. */
+@media (max-width: 680px) { .uw-root:has(.uw-notices > *) .uw-brand { visibility: hidden; } }

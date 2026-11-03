@@ -26,7 +26,8 @@ export type Message = {
   /** A reference image the person attached; kept locally, never sent to the model by this route. */
   attachment?: { name: string; size: number; dataUrl: string };
 };
-export type Notice = { id: string; severity: 'critical' | 'approval' | 'info'; text: string };
+/** `detail` is optional longer text, shown collapsed under `text` (information notices only). */
+export type Notice = { id: string; severity: 'critical' | 'approval' | 'info'; text: string; detail?: string };
 
 export type WorkspaceState = {
   mode: VisibilityMode;

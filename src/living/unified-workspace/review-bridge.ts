@@ -1,6 +1,7 @@
 import type { ExcavatorObservationV1 } from '../reconstruction/contracts';
 import type { Decision, ReviewState } from '../experience/review';
-import type { EngineGate } from '../experience/review';
+import type { ReviewHandoff } from '../experience/integration';
+import type { EngineVerdict } from './engine-gate';
 import { requiredReviewItems, type ReviewItem as BackendItem } from './review-model';
 import type { ReconstructionSession } from './reconstruction-session';
 import { adoptReviewed, describeFailure, type WorkspaceCandidate } from './workspace-adapter';
@@ -44,8 +45,8 @@ export function localOnlyNotes(observation: ExcavatorObservationV1, ui: ReviewSt
 export type HumanConfirmations = { reviewerId: string; familyConfirmed: boolean; bucketConfirmed: boolean; bucketWidthM: number | null; widthBasis: string };
 
 export type GatewayResult =
-  | { kind: 'ready'; candidate: WorkspaceCandidate; engine: EngineGate }
-  | { kind: 'engine_blocked'; candidate: WorkspaceCandidate; engine: Extract<EngineGate, { status: 'blocked' }> }
+  | { kind: 'ready'; candidate: WorkspaceCandidate; engine: Extract<EngineVerdict, { status: 'valid' }> }
+  | { kind: 'engine_blocked'; candidate: WorkspaceCandidate; engine: Extract<EngineVerdict, { status: 'blocked' }> }
   | { kind: 'blocked'; reasons: string[] }
   | { kind: 'expired' }
   | { kind: 'failed'; message: string }
@@ -91,16 +92,29 @@ export class ReviewGateway {
   }
 
   reopen(): void { this.session.reopen(); }
+  reset(): void { this.session.reset(); }
+
+  /** Decisions that stay on this screen. Empty when the session has no observation. */
+  localNotes(ui: ReviewState): string[] {
+    const s = this.session.state;
+    return 'proposal' in s ? localOnlyNotes(s.proposal.observation, ui) : [];
+  }
+
+  sync(ui: ReviewState): void { this.syncFromUi(ui); }
 
   async submit(): Promise<GatewayResult> {
+    // sending again after a result (usable or not) always starts from the editable draft
+    if (this.session.state.phase === 'reviewed') this.session.reopen();
     const state = await this.session.submit();
     switch (state.phase) {
       case 'reviewed': {
         const adopted = adoptReviewed(state);
-        if (!adopted.ok) return { kind: 'not_adoptable', reasons: adopted.reasons };
+        if (!adopted.ok) { this.session.reopen(); return { kind: 'not_adoptable', reasons: adopted.reasons }; }
         // structural validity is established; whether the engine can actually pose this assembly is a separate question
         const engine = validateWithEngine(adopted.candidate.assembly);
-        return engine.status === 'blocked' ? { kind: 'engine_blocked', candidate: adopted.candidate, engine } : { kind: 'ready', candidate: adopted.candidate, engine };
+        // a result the lab cannot use leaves the review editable, so the person can correct it and send it again
+        if (engine.status === 'blocked') { this.session.reopen(); return { kind: 'engine_blocked', candidate: adopted.candidate, engine }; }
+        return { kind: 'ready', candidate: adopted.candidate, engine };
       }
       case 'review_blocked': return { kind: 'blocked', reasons: state.reasons };
       case 'expired': return { kind: 'expired' };
@@ -109,3 +123,6 @@ export class ReviewGateway {
     }
   }
 }
+
+/** Compile-time proof that the gateway satisfies the experience's seam. */
+export const asReviewHandoff = (gateway: ReviewGateway): ReviewHandoff => gateway;

@@ -7,7 +7,9 @@ import type { EngineGate } from '../experience/review';
  * This asks the Engineering Engine to solve the reference pose of exactly this assembly and checks the frame it returns.
  * `valid` means "the solver closed the reference pose"; it is not a safety, strength or collision certification.
  */
-export function validateWithEngine(assembly: Assembly): EngineGate {
+export type EngineVerdict = Extract<EngineGate, { status: 'valid' | 'blocked' }>;
+
+export function validateWithEngine(assembly: Assembly): EngineVerdict {
   let session: ReturnType<typeof createEngineeringSession> | null = null;
   try {
     session = createEngineeringSession(assembly);
