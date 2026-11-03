@@ -14,7 +14,7 @@ const errors = [];
 try {
   const page = await browser.newPage({ viewport: { width: 800, height: 600 } });
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('http://127.0.0.1:5305/living?debug-living=1&agent=fixture&rm=1');
+  await page.goto('http://127.0.0.1:5305/living?example=1&debug-living=1&agent=fixture&rm=1');
   await page.waitForFunction(() => window.__foundry?.ready, null, { timeout: 120000 });
   const point = await page.evaluate(() => {
     const ws = window.__workspace, stage = document.querySelector('.uw-stage'), rect = stage.getBoundingClientRect();
@@ -151,7 +151,7 @@ try {
   console.log('PASS untrusted model cannot fabricate physical force');
   const temporal = await browser.newPage({ viewport: { width: 800, height: 600 } });
   temporal.on('pageerror', (error) => errors.push(error.message));
-  await temporal.goto('http://127.0.0.1:5305/living?debug-living=1&agent=fixture&rm=0');
+  await temporal.goto('http://127.0.0.1:5305/living?example=1&debug-living=1&agent=fixture&rm=0');
   await temporal.waitForFunction(() => window.__foundry?.ready, null, { timeout: 120000 });
   await temporal.evaluate(() => window.__workspace.select('boom_cylinder'));
   await temporal.locator('[data-el="engineTarget"]').fill('0.65');
@@ -190,7 +190,7 @@ try {
   console.log('PASS pause, seek, resume and reset through workspace controls');
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
   mobile.on('pageerror', (error) => errors.push(error.message));
-  await mobile.goto('http://127.0.0.1:5305/living?debug-living=1&agent=fixture&rm=1');
+  await mobile.goto('http://127.0.0.1:5305/living?example=1&debug-living=1&agent=fixture&rm=1');
   await mobile.waitForFunction(() => window.__foundry?.ready, null, { timeout: 120000 });
   await mobile.evaluate(() => window.__workspace.select('boom_cylinder'));
   await mobile.locator('[data-el="engineTarget"]').fill('0.65');

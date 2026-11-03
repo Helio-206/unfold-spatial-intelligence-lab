@@ -1,0 +1,20 @@
+{
+  "note": "measured in the real workspace mesh (Chromium, SwiftShader), world Z extent of the bucket group",
+  "caseA_1_10m": {
+    "sizeZ": 1.1540000438690186,
+    "triangles": 8596,
+    "parts": 13,
+    "look": "premium",
+    "picked": "bucket",
+    "pins": 12
+  },
+  "caseB_1_40m": {
+    "sizeZ": 1.4539999961853027,
+    "triangles": 8844,
+    "parts": 13,
+    "look": "premium",
+    "picked": "bucket",
+    "pins": 12
+  },
+  "meshDifferenceM": 0.2999999523162842
+}

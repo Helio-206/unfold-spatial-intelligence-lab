@@ -1,7 +1,7 @@
 import { chromium, type Browser, type Page } from 'playwright-core';
 import { createServer } from 'vite';
 import assert from 'node:assert/strict';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createMetaServer } from '../../server/meta-server';
 import { EXCAVATOR_ASSEMBLY_V1 } from '../../src/living/contracts/fixtures/excavator.assembly.v1';
@@ -47,7 +47,7 @@ await vite.listen();
 const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH ?? '/usr/bin/google-chrome', args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--no-sandbox'] });
 const errors: string[] = [];
 
-async function open(viewport = { width: 1440, height: 900 }, query = 'flow=reconstruct&debug-living=1&rm=1&agent=fixture', using: Browser = browser): Promise<Page> {
+async function open(viewport = { width: 1440, height: 900 }, query = 'debug-living=1&rm=1&agent=fixture', using: Browser = browser): Promise<Page> {
   const page = await using.newPage({ viewport });
   page.on('pageerror', (e) => errors.push(e.message));
   await page.route('**/api/living/reconstruction', async (route) => {
@@ -72,21 +72,21 @@ async function geometry(page: Page, label: string, selectors: string[]) {
     boxes: Object.fromEntries(sel.map((q) => { const el = document.querySelector(q); const r = el && (el as HTMLElement).offsetParent !== null || el?.getClientRects().length ? el!.getBoundingClientRect() : null; return [q, r ? { x: r.x, y: r.y, width: r.width, height: r.height } : null]; })),
   }), selectors);
   assert.ok(result.scrollW <= result.innerW, `${label}: no horizontal scroll (${result.scrollW} > ${result.innerW})`);
-  const link = result.boxes['.ls-link'];
-  for (const q of selectors) { if (q === '.ls-link') continue; const b = result.boxes[q]; if (b && link && overlap(link, b)) assert.fail(`${label}: .ls-link overlaps ${q}`); }
+  const named = selectors.filter((q) => result.boxes[q]);
+  for (let i = 0; i < named.length; i++) for (let j = i + 1; j < named.length; j++) if (overlap(result.boxes[named[i]!]!, result.boxes[named[j]!]!)) assert.fail(`${label}: ${named[i]} overlaps ${named[j]}`);
   return result;
 }
 
 async function journey(viewport: { width: number; height: number }, label: string) {
   const page = await open(viewport);
-  await geometry(page, `${label} empty`, ['.ls-link', '.ux-brand', '#ux-intake']);
+  await geometry(page, `${label} empty`, ['.ux-brand', '#ux-intake']);
   await page.screenshot({ path: join(out, `${label}-01-empty.png`) });
   await page.locator('[data-kind="text"]').click();
   await page.locator('#ux-text').fill('Escavadora de rastos de 20 t com lança, braço e caçamba.');
   await page.locator('#ux-use-text').click();
   await page.locator('[data-flow="submit"]').click();
   await page.waitForFunction(() => (window as any).__experience.phase() === 'review', null, { timeout: 60000 });
-  await geometry(page, `${label} review`, ['.ls-link', '.ux-brand', '.ux-sheet']);
+  await geometry(page, `${label} review`, ['.ux-brand', '.ux-sheet']);
   await page.screenshot({ path: join(out, `${label}-02-review.png`) });
   assert.equal(await page.locator('#ux-demo').count(), 0, 'no demonstration banner with the live port');
   assert.equal(await page.evaluate(() => (window as any).__experience.readiness().status), 'review_pending', 'hypotheses pending, not insufficient');
@@ -102,7 +102,7 @@ async function journey(viewport: { width: number; height: number }, label: strin
   assert.equal(await page.locator('#ux-enter').isDisabled(), true, 'nothing is pre-filled: the server step starts blocked');
   assert.equal(await page.locator('#gw-family').isChecked(), false); assert.equal(await page.locator('#gw-bucket').isChecked(), false);
   assert.equal(await page.inputValue('#gw-reviewer'), ''); assert.equal(await page.inputValue('#gw-width'), '');
-  await geometry(page, `${label} server step`, ['.ls-link', '.ux-brand', '.ux-gw']);
+  await geometry(page, `${label} server step`, ['.ux-brand', '.ux-gw']);
   await page.screenshot({ path: join(out, `${label}-04-server-step.png`) });
   await page.fill('#gw-reviewer', 'revisor-e2e'); await page.check('#gw-family'); await page.check('#gw-bucket');
   await page.fill('#gw-width', '1.4'); await page.fill('#gw-basis', 'valor fictício do E2E');
@@ -191,6 +191,7 @@ try {
     assert.equal(await page.evaluate(() => (window as any).__workspace), null);
     assert.equal(await page.evaluate(() => (window as any).__oldWs.disposed ?? true), true);
     assert.equal(await page.evaluate(() => (window as any).__oldWs.engineRaf), 0, 'no engine loop left running');
+    assert.deepEqual(await page.evaluate(() => { const w = (window as any).__oldWs; return { premium: w.premium, look: w.look }; }), { premium: null, look: { name: 'standard', materials: 0 } }, 'the premium look and its environment were released with the workspace');
     assert.equal(await page.evaluate(() => (window as any).__experience.summary().confirmed), 14, 'review decisions are intact');
     assert.equal(await page.evaluate(() => (window as any).__unified.gateway.human().bucketWidthM), 1.4, 'server fields are intact');
     pass('back to the review: workspace disposed, decisions and server fields kept');
@@ -237,6 +238,32 @@ try {
     await page.close();
   }
 
+
+  // failures of the Meta request, as the person sees them: a clear message, the code, a way on, and never a machine
+  await restartBackend(); providerCalls.length = 0; api.length = 0;
+  for (const [status, code, phaseExpected, retry, text] of [
+    [429, 'META_CALL_BUDGET_EXHAUSTED', 'failed', false, /limite de pedidos ao modelo/],
+    [429, 'RECONSTRUCTION_RATE_LIMITED', 'failed', true, /Demasiados pedidos/],
+    [502, 'RECONSTRUCTION_SCHEMA_INVALID', 'failed', true, /RECONSTRUCTION_SCHEMA_INVALID|não foi aceite|falhou/],
+    [503, 'MODEL_API_KEY_MISSING', 'unavailable', false, /não está configurada/],
+  ] as const) {
+    const page = await open();
+    forcedResponses.push({ review: false, status, body: { error: { code, message: 'x' } } });
+    await page.locator('[data-kind="text"]').click();
+    await page.locator('#ux-text').fill('Escavadora de rastos de 20 t com lança, braço e caçamba.');
+    await page.locator('#ux-use-text').click();
+    await page.locator('[data-flow="submit"]').click();
+    await page.waitForFunction((p) => (window as any).__experience.phase() === p, phaseExpected, { timeout: 30000 });
+    assert.match(await page.locator('#ux-intake').innerText(), text);
+    if (phaseExpected === 'failed') assert.match(await page.locator('#ux-intake').innerText(), new RegExp(code === 'RECONSTRUCTION_SCHEMA_INVALID' ? 'RECONSTRUCTION_SCHEMA_INVALID' : code));
+    assert.equal(await page.locator('[data-flow="retry"]').count(), retry ? 1 : 0, `${code}: retry only when it can help`);
+    assert.equal(await page.locator('[data-flow="restart"]').count() > 0, true, 'always a way to choose another source');
+    assert.equal(await page.evaluate(() => (window as any).__experience.runtime.stage.machineVisible), false); assert.equal(await page.locator('.uw-root').count(), 0);
+    assert.equal(await page.evaluate(() => (window as any).__unified.port.session.state.phase), phaseExpected === 'failed' ? 'proposal_failed' : 'proposal_failed');
+    await page.close();
+  }
+  pass('budget exhausted, rate limit, invalid model output and a missing key are each shown clearly, with the code, and no machine appears');
+
   // server blocks the review (422) and later says the session is gone (404)
   await restartBackend(); providerCalls.length = 0; api.length = 0;
   {
@@ -256,6 +283,61 @@ try {
     await page.close();
   }
 
+
+
+  // geometry: the width comes from the contract and shows in the 3D mesh (case A 1.10 m, case B 1.40 m)
+  const measured: Record<string, { sizeZ: number; triangles: number; parts: number; look: string; picked: string | null; pins: number }> = {};
+  for (const width of ['1.1', '1.4']) {
+    await restartBackend(); providerCalls.length = 0; api.length = 0;
+    const page = await open({ width: 1440, height: 900 }, 'debug-living=1&rm=1&agent=fixture');
+    await toServerStep(page, width);
+    await page.locator('#ux-enter').click();
+    await page.waitForFunction(() => (window as any).__experience.phase() === 'lab' && (window as any).__workspace?.partPoses, null, { timeout: 60000 });
+    await page.waitForTimeout(500);
+    measured[width] = await page.evaluate(() => {
+      const ws = (window as any).__workspace; const group = ws.model.parts.get('bucket'); const V = group.position.constructor;
+      ws.renderNow(); group.updateMatrixWorld(true); let min = Infinity, max = -Infinity, triangles = 0;
+      group.traverse((m: any) => { if (!m.isMesh) return; m.geometry.computeBoundingBox(); const bb = m.geometry.boundingBox; triangles += (m.geometry.index ? m.geometry.index.count : m.geometry.attributes.position.count) / 3;
+        for (const x of [bb.min.x, bb.max.x]) for (const y of [bb.min.y, bb.max.y]) for (const z of [bb.min.z, bb.max.z]) { const v = new V(x, y, z).applyMatrix4(m.matrixWorld); min = Math.min(min, v.z); max = Math.max(max, v.z); } });
+      // picking, through the code the pointer uses: some point on the bucket's projected area resolves to the bucket
+      const pts: any[] = []; group.traverse((m: any) => { if (!m.isMesh) return; const bb = m.geometry.boundingBox; for (const x of [bb.min.x, bb.max.x]) for (const y of [bb.min.y, bb.max.y]) for (const z of [bb.min.z, bb.max.z]) pts.push(new V(x, y, z).applyMatrix4(m.matrixWorld).project(ws.foundry.camera)); });
+      const xs = pts.map((q) => q.x), ys = pts.map((q) => q.y); const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+      let picked: string | null = null;
+      for (let i = 1; i < 12 && picked !== 'bucket'; i++) for (let j = 1; j < 12 && picked !== 'bucket'; j++) { const hit = ws.scene.pick({ x: x0 + (x1 - x0) * i / 12, y: y0 + (y1 - y0) * j / 12 }, ws.foundry.camera)?.id ?? null; if (hit === 'bucket') picked = hit; }
+      const pins = ws.options.assembly.joints.length;
+      return { sizeZ: max - min, triangles, parts: ws.model.parts.size, look: ws.look.name, picked, pins };
+    });
+    const m = measured[width]!;
+    assert.equal(m.parts, 13, 'the 13 canonical parts'); assert.equal(m.look, 'premium'); assert.equal(m.pins, EXCAVATOR_ASSEMBLY_V1.joints.length, 'every joint of the contract is kept'); assert.equal(m.picked, 'bucket', 'picking at the bucket resolves to the bucket');
+    await page.evaluate(() => { const ws = (window as any).__workspace; ws.select('bucket'); ws.frameSelection(); });
+    await page.waitForTimeout(1500);
+    await page.screenshot({ path: join(out, `bucket-${width}m-lab.png`) });
+    await page.close();
+  }
+  {
+    const narrow = measured['1.1']!, wide = measured['1.4']!;
+    assert.ok(narrow.sizeZ > 1.10 && narrow.sizeZ < 1.16, `case A: mesh width ${narrow.sizeZ} follows 1.10 m`);
+    assert.ok(wide.sizeZ > 1.40 && wide.sizeZ < 1.46, `case B: mesh width ${wide.sizeZ} follows 1.40 m`);
+    assert.ok(Math.abs(wide.sizeZ - narrow.sizeZ - 0.30) < 0.02, `the difference is the 0.30 m that was asked (${wide.sizeZ - narrow.sizeZ})`);
+    assert.ok(wide.triangles > narrow.triangles, 'the wider bucket has an extra tooth');
+    assert.equal(wide.parts, narrow.parts);
+    writeFileSync(join(out, 'bucket-width-measurements.json'), JSON.stringify({ note: 'measured in the real workspace mesh (Chromium, SwiftShader), world Z extent of the bucket group', caseA_1_10m: narrow, caseB_1_40m: wide, meshDifferenceM: wide.sizeZ - narrow.sizeZ }, null, 2));
+    pass(`case A 1.10 m -> mesh ${narrow.sizeZ.toFixed(3)} m; case B 1.40 m -> mesh ${wide.sizeZ.toFixed(3)} m (+${(wide.sizeZ - narrow.sizeZ).toFixed(3)}); 13 parts, premium look, extra tooth`);
+  }
+
+  // a width the visualiser cannot draw is refused with the reason, before anything is sent or built
+  await restartBackend(); providerCalls.length = 0; api.length = 0;
+  for (const bad of ['0.5', '2.5', '3']) {
+    const page = await open({ width: 1440, height: 900 }, 'debug-living=1&rm=1&agent=fixture');
+    await toServerStep(page, bad);
+    assert.equal(await page.locator('#ux-enter').isDisabled(), true, `${bad} m: the primary action stays blocked`);
+    assert.match(await page.locator('#ux-gw-missing').innerText(), /0,60 a 2,40 m/);
+    await page.screenshot({ path: join(out, `width-${bad}m-refused.png`) });
+    assert.equal(api.filter((a) => a.body.action === 'review').length, 0, `${bad} m is never sent to the server`);
+    assert.equal(await page.evaluate(() => (window as any).__workspace ?? null), null); assert.equal(await page.locator('.uw-root').count(), 0);
+    await page.close();
+  }
+  pass('widths outside 0,60 a 2,40 m are refused with the reason; nothing is sent, adjusted or built');
 
   // gate 2: a structurally valid assembly that the Engineering Engine cannot pose keeps the lab closed, and says why
   await restartBackend(); providerCalls.length = 0; api.length = 0;
@@ -294,45 +376,77 @@ try {
     await page.close();
   }
 
-  // the reference workspace keeps working, and offers the way into the reconstruction from its own rail
-  {
-    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`http://127.0.0.1:${port}/living?debug-living=1&rm=1&agent=fixture`);
-    await page.waitForFunction(() => (window as any).__foundry?.ready, null, { timeout: 120000 });
-    assert.equal(await page.evaluate(() => (window as any).__workspace.options.assembly.id), EXCAVATOR_ASSEMBLY_V1.id, 'the reference machine, as before');
-    assert.equal(await page.locator('[data-el="extra_reconstruct"]').count(), 1);
-    assert.equal(await page.locator('[data-el="extra_review"]').count(), 0);
-    await page.locator('[data-el="extra_reconstruct"]').click();
-    await page.waitForFunction(() => location.search.includes('flow=reconstruct'));
-    await page.waitForFunction(() => (window as any).__experience?.ready, null, { timeout: 120000 });
-    assert.equal(await phase(page), 'empty');
-    pass('reference workspace opens as before and its rail leads into the reconstruction flow');
-    await page.close();
-  }
-
   // browser history: leave the lab and come back, with and without the back-forward cache
   for (const cache of [false, true]) {
     await restartBackend(); providerCalls.length = 0; api.length = 0;
     const b = await chromium.launch({ executablePath: process.env.CHROME_PATH ?? '/usr/bin/google-chrome', ignoreDefaultArgs: cache ? ['--disable-back-forward-cache'] : [], args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--no-sandbox', ...(cache ? ['--enable-features=BackForwardCache'] : [])] });
     try {
-      const page = await open({ width: 1000, height: 700 }, 'flow=reconstruct&debug-living=1&rm=0&agent=fixture', b);
+      const page = await open({ width: 1000, height: 700 }, 'debug-living=1&rm=0&agent=fixture', b);
       await page.addInitScript(() => { (window as any).__shows = []; addEventListener('pageshow', (e) => (window as any).__shows.push((e as PageTransitionEvent).persisted)); });
       await toServerStep(page);
       await page.locator('#ux-enter').click();
       await page.waitForFunction(() => (window as any).__experience.phase() === 'lab' && (window as any).__workspace?.partPoses, null, { timeout: 90000 });
-      await page.evaluate(() => { const ws = (window as any).__workspace; ws.select('boom_cylinder'); (window as any).__canvas = document.querySelector('.ux-workspace canvas'); (window as any).__ws0 = ws; (window as any).__shows = (window as any).__shows ?? []; addEventListener('pageshow', (e) => (window as any).__shows.push((e as PageTransitionEvent).persisted)); });
+      await page.evaluate(() => { const ws = (window as any).__workspace; ws.select('boom_cylinder'); (window as any).__canvas = document.querySelector('.ux-workspace canvas'); (window as any).__shows = (window as any).__shows ?? []; addEventListener('pageshow', (e) => (window as any).__shows.push((e as PageTransitionEvent).persisted)); });
       for (let cycle = 1; cycle <= 2; cycle++) {
         await page.goto(`http://127.0.0.1:${port}/landing/`, { waitUntil: 'domcontentloaded' });
         await page.goBack({ waitUntil: 'commit' });
         await page.waitForFunction(() => (window as any).__experience?.ready, null, { timeout: 120000 });
-        const r = await page.evaluate(() => ({ persisted: (window as any).__shows.at(-1), phase: (window as any).__experience.phase(), stageCanvases: document.querySelectorAll('.ux-stage canvas').length, labCanvases: document.querySelectorAll('.ux-workspace canvas').length, same: (window as any).__canvas === document.querySelector('.ux-workspace canvas'), playing: (window as any).__workspace?.engineState().playing ?? null, selection: (window as any).__workspace?.selection()?.id ?? null, lost: (window as any).__workspace?.foundry.renderer.getContext().isContextLost() ?? null }));
-        if (cache) { assert.equal(r.persisted, true); assert.equal(r.phase, 'lab'); assert.equal(r.labCanvases, 1); assert.equal(r.same, true); assert.equal(r.selection, 'boom_cylinder'); assert.equal(r.playing, false); assert.equal(r.lost, false); }
+        const r = await page.evaluate(() => ({ persisted: (window as any).__shows.at(-1), phase: (window as any).__experience.phase(), stageCanvases: document.querySelectorAll('.ux-stage canvas').length, labCanvases: document.querySelectorAll('.ux-workspace canvas').length, same: (window as any).__canvas === document.querySelector('.ux-workspace canvas'), playing: (window as any).__workspace?.engineState().playing ?? null, selection: (window as any).__workspace?.selection()?.id ?? null, lost: (window as any).__workspace?.foundry.renderer.getContext().isContextLost() ?? null, look: (window as any).__workspace?.look.name ?? null }));
+        if (cache) { assert.equal(r.persisted, true); assert.equal(r.phase, 'lab'); assert.equal(r.labCanvases, 1); assert.equal(r.same, true); assert.equal(r.selection, 'boom_cylinder'); assert.equal(r.playing, false); assert.equal(r.lost, false); assert.equal(r.look, 'premium'); }
         else { assert.equal(r.persisted, false); assert.equal(r.phase, 'empty', 'a fresh page starts from an empty lab, never from a half-restored one'); assert.equal(r.labCanvases, 0); assert.equal(r.stageCanvases, 1); }
         pass(`history cycle=${cycle} cache=${cache} persisted=${r.persisted}`);
       }
       await page.close();
     } finally { await b.close(); }
+  }
+
+  // first use: /living is an EMPTY lab; the example is a separate, openly labelled choice
+  await restartBackend(); providerCalls.length = 0; api.length = 0;
+  {
+    const page = await open({ width: 1440, height: 900 }, 'debug-living=1&rm=1&agent=fixture');
+    assert.equal(await phase(page), 'empty');
+    assert.equal(await page.evaluate(() => (window as any).__experience.runtime.stage.machineVisible), false, 'no machine on the empty stage');
+    assert.equal(await page.evaluate(() => (window as any).__workspace ?? null), null);
+    assert.equal(await page.locator('.uw-root').count(), 0, 'no workspace is mounted before a source or an example');
+    assert.equal(await page.locator('.ux-root[data-demo], #ux-demo').count(), 0);
+    const intake = await page.locator('#ux-intake').innerText();
+    assert.match(intake, /PNG, JPEG ou WebP/); assert.match(intake, /10 MB/); assert.match(intake, /16 megapixéis/);
+    assert.equal(await page.locator('[data-example="open"]').count(), 1); assert.equal(await page.locator('[data-example="open"]').textContent(), 'Abrir exemplo');
+    assert.match(await page.locator('.ux-example-note').innerText(), /sintética[\s\S]*não vem de nenhuma fonte sua/);
+    assert.equal(await page.locator('[data-flow="submit"]').isDisabled(), true, 'the primary action needs a source');
+    pass('/living opens as an empty lab with the formats, the limits and a separate "Abrir exemplo"');
+
+    // choosing a file shows a preview; still no machine, no workspace
+    const png = await page.evaluate(() => { const c = document.createElement('canvas'); c.width = 96; c.height = 48; c.getContext('2d')!.fillRect(0, 0, 96, 48); return c.toDataURL('image/png').split(',')[1]; });
+    await page.locator('[data-kind="image"]').click();
+    await page.setInputFiles('#ux-file', { name: 'minha-foto.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') });
+    await page.locator('.ux-preview img').waitFor();
+    assert.match(await page.locator('.ux-preview').innerText(), /minha-foto\.png/);
+    assert.equal(await page.evaluate(() => (window as any).__experience.runtime.stage.machineVisible), false); assert.equal(await page.locator('.uw-root').count(), 0);
+    await page.locator('[data-flow="submit"]').click();
+    await page.waitForFunction(() => (window as any).__experience.phase() === 'review', null, { timeout: 60000 });
+    assert.equal(await page.evaluate(() => (window as any).__experience.runtime.stage.machineVisible), false, 'nothing appears on stage while importing and reviewing');
+    assert.equal(await page.locator('.uw-root').count(), 0);
+    pass('importing a photo never shows a machine before the lab opens');
+
+    // explicit example, in a new page, labelled as such
+    const fresh = await open({ width: 1440, height: 900 }, 'debug-living=1&rm=1&agent=fixture');
+    await fresh.locator('[data-example="open"]').click();
+    await fresh.waitForFunction(() => (window as any).__workspace?.partPoses, null, { timeout: 120000 });
+    const example = await fresh.evaluate(() => { const ws = (window as any).__workspace; return { url: location.search, assembly: ws.options.assembly.id, brand: document.querySelector('.uw-brand')?.textContent, look: ws.look, notice: document.querySelector('.uw-notices')?.textContent }; });
+    assert.ok(example.url.includes('example=1') && example.url.includes('debug-living=1'), 'debug parameters are kept');
+    assert.equal(example.assembly, EXCAVATOR_ASSEMBLY_V1.id);
+    assert.match(example.brand ?? '', /exemplo/); assert.match(example.notice ?? '', /Exemplo[\s\S]*não foi reconstruída a partir de nenhuma fotografia/);
+    assert.equal(example.look.name, 'premium'); assert.ok(example.look.materials > 0);
+    assert.equal(await fresh.evaluate(() => { const ws = (window as any).__workspace; return ws.premium.environment !== null && ws.foundry.scene.environment === ws.premium.environment.texture; }), true, 'the premium studio environment is the one in the scene');
+    assert.equal(await fresh.locator('[data-el="extra_new"]').count(), 1);
+    pass('"Abrir exemplo" opens the synthetic reference machine, labelled as an example, with the premium look');
+    await fresh.locator('[data-el="extra_new"]').click();
+    await fresh.waitForFunction(() => (window as any).__experience?.ready, null, { timeout: 120000 });
+    assert.equal(await phase(fresh), 'empty'); assert.ok(!(await fresh.evaluate(() => location.search)).includes('example'));
+    assert.equal(await fresh.evaluate(() => (window as any).__workspace ?? null), null);
+    pass('"Novo projecto" returns to the empty lab');
+    await fresh.close(); await page.close();
   }
 } finally { await browser.close(); await vite.close(); await new Promise<void>((r, j) => backend.close((e) => e ? j(e) : r())); }
 assert.deepEqual(errors, []);

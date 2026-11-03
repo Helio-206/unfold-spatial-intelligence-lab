@@ -12,7 +12,7 @@ const errors = [];
 try {
   const page = await browser.newPage({ viewport: { width: 1000, height: 700 } });
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto(`http://127.0.0.1:${port}/living?debug-living=1&agent=fixture&rm=0`);
+  await page.goto(`http://127.0.0.1:${port}/living?example=1&debug-living=1&agent=fixture&rm=0`);
   await page.waitForFunction(() => window.__foundry?.ready, null, { timeout: 120000 });
 
   // Start a real engine move on the boom cylinder, then hold it mid-motion so every reading is deterministic.

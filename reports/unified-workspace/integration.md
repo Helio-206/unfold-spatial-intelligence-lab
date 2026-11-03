@@ -1,17 +1,17 @@
 # Unified Spatial Workspace — integração da UX com a reconstrução e o workspace
 
-Branch `feat/unified-workspace-integration-prep`. Contém, por ancestralidade, o PR #15 (workspace + motor), o PR #17 (API de reconstrução, `9a3b3e0`) e os PRs #16/#18 do Claude Design (`fd31ba1`). Não toca na Foundry, no Cinema nem no servidor.
+Branch `feat/unified-workspace-integration-prep`. Contém, por ancestralidade, o PR #15 (workspace + motor), o PR #17 (API de reconstrução, `9a3b3e0`), os PRs #16/#18 do Claude Design (`fd31ba1`) e o PR #19 do Claude Cloud (Foundry premium e caçamba parametrizada, `b8d494a4`, integrado por merge sem conflitos). Não altera a Foundry, o Cinema nem o servidor.
 
 ## O percurso (`/living`)
 
-`/living` abre como antes: o workspace com a máquina de referência. A sua barra de ferramentas ganhou «Reconstruir uma máquina», que leva (por navegação real, para o histórico do browser continuar a funcionar) a `/living?flow=reconstruct`:
+`/living` abre **vazio**: um palco limpo, sem máquina, com a ação primária (importar fotografia, desenho técnico ou descrição), os formatos e limites, e um **Abrir exemplo** secundário. O exemplo (`/living?example=1`) é a máquina sintética de referência, identificada como «exemplo · montagem sintética» e com um aviso de que não foi reconstruída a partir de nenhuma fotografia; «Novo projecto» volta ao laboratório vazio. A passagem entre os dois é por navegação real, para o histórico do browser continuar a funcionar. O percurso de reconstrução:
 
 ```
 fonte ─▶ reconstrução (porta real) ─▶ revisão das entidades ─▶ o que o servidor pede ─▶ transição ─▶ workspace
  vazio     POST /api/living/reconstruction   portão 1 (humano)    POST … action:review     (Design)     montagem aprovada
 ```
 
-O laboratório é **um só**: o `SpatialWorkspace` de `/living`, agora construído a partir da montagem aprovada. O palco cinemático do Design serve só o estado vazio e a transição; quando o workspace monta, esse palco pára de renderizar e fica escondido.
+O laboratório é **um só**: o `SpatialWorkspace` de `/living`, construído a partir da montagem aprovada e com o perfil premium da Foundry (#19: `applyPremiumLook` e o ambiente de `PREMIUM_STUDIO`, os mesmos do Cinema, sem iluminação nova). O palco cinemático do Design serve só o estado vazio e a transição; quando o workspace monta, esse palco pára de renderizar e fica escondido.
 
 ## Arquitectura
 
@@ -86,3 +86,89 @@ Defeitos encontrados e corrigidos durante a integração, cada um com teste a fa
 - **Correcções e valores introduzidos** pela pessoa na revisão não chegam à geometria: a API não tem campo para eles.
 - **Fonte sem escavadora:** ver a lacuna do servidor acima.
 - **Revisão independente** deste PR: ainda não pedida.
+
+
+---
+
+# Integração final (PR #19, demonstração)
+
+## Geometria paramétrica: a largura da caçamba
+
+A Foundry (#19) desenha a caçamba a partir de `assembly.parts[id=bucket].shapes[id=bucket-box].halfExtentsM[2]` e **lança erro** fora de 0,30 a 1,20 m de meia largura (0,60 a 2,40 m no total). A API do #17 aceita 0,10 a 10 m. Sem tratamento, o `SpatialWorkspace` rebentava ao montar uma montagem aceite pela API.
+
+Resolução: um validador partilhado (`unified-workspace/visual-capacity.ts`) derivado do próprio intervalo da Foundry (um número, não dois). Recusa, com o motivo e sem ajustar o valor, em três pontos: no formulário (antes de enviar), em `adoptReviewed` (antes de o motor ser consultado) e no `WorkspaceLabHost` (defesa em profundidade). O servidor não foi alterado: a diferença de limites fica documentada e protegida do lado do cliente.
+
+Medido na malha 3D real do workspace (`bucket-width-measurements.json`):
+
+| Caso | Contrato | Malha (extensão Z do grupo `bucket`) |
+|---|---|---|
+| A | 1,10 m | 1,154 m |
+| B | 1,40 m | 1,454 m (+0,300 m, mais um dente) |
+
+13 peças canónicas, todas as articulações do contrato e *picking* na caçamba preservados nos dois casos. Capturas: `captures/bucket-1.1m-lab.png`, `captures/bucket-1.4m-lab.png`. Larguras recusadas (0,5; 2,5; 3 m): `captures/width-*m-refused.png`.
+
+## Perfil premium no workspace
+
+`SpatialWorkspace` ganhou `look: 'premium'`. Aplica-se antes de construir o `SceneController` (isolar e fantasmar partem dos materiais premium e voltam a eles) e reverte tudo ao desmontar (materiais, ambiente, exposição). O construtor do ambiente vive em `cinema/` e uma regra de arquitetura do Cloud proíbe o workspace de importar o Cinema; por isso é **injetado** (`premiumEnvironment`) por quem integra. O `/living` de referência sem opções mantém o aspeto anterior.
+
+## Prova com a Meta (live)
+
+Os ficheiros brutos (`run.json`, `observation.json`, capturas com a fotografia de terceiros) estão em `reports/unified-workspace/live/` **apenas na máquina que fez a execução**: o `.gitignore` do repositório exclui `reports/**/live/` ("live Meta responses are not published") e essa regra foi respeitada. Aqui fica o resumo verificável. Percurso: ficheiro escolhido na interface → proxy do Vite (porta 5173) → backend → Meta Muse Spark.
+
+- Entrada: *Doosan_tracked_excavator.jpg*, Wikimedia Commons, 960×638, 245 006 bytes, SHA-256 `0e8bb9e5…159f5`, igual ao registado no PR #17.
+- **Request `27d2be4e-e6b9-4444-b577-b97828e32c43`**, modelo `muse-spark-1.3`, HTTP 200, `completed`, 27,3 s, 3 897 tokens (~0,014 USD). Uma única chamada paga. Sessão `1973f6c4-…`, `mode: live`.
+- Observação validada: `excavator`, 7 entidades (5 observadas: corpo superior, rastos, chassis, lança, braço; 1 hipótese: cilindro; 1 desconhecida: caçamba, escondida nos escombros), 5 relações, 0 dimensões, 8 desconhecidos.
+- **A revisão desta prova foi feita por um script, não por uma pessoa.** Política: confirmar as hipóteses, corrigir a entidade desconhecida para o seu tipo, deixar as observadas, rejeitar relações e afirmações, largura 1,40 m declarada fictícia (a fotografia não tem escala). Isto demonstra o canal, não a fidelidade do modelo nem uma decisão humana.
+- Resultado: `contract_valid`, largura 1,10 → 1,40 m, portão 2 `solved` (`unfold.engineering.forward-kinematics@0.1.0`, resíduo 1,8e-15 m), lab aberto (13 peças, premium, caçamba de 1,454 m).
+- O texto do aviso do laboratório foi encurtado depois desta execução; as capturas da prova mostram o texto anterior. Não se repetiu a chamada paga por isso.
+- Resumo da observação recebida (sem o texto bruto):
+
+| id | tipo | estado | confiança |
+|---|---|---|---|
+| e_house | house | observado | 0,92 |
+| e_track | track | observado | 0,90 |
+| e_chassis | chassis | observado | 0,85 |
+| e_boom | boom | observado | 0,93 |
+| e_stick | stick | observado | 0,88 |
+| e_cyl | cylinder | hipótese | 0,40 |
+| e_bucket | bucket | desconhecido | 0,20 |
+
+  Cada entidade com uma evidência. Mais: 1 afirmação do modelo (a caçamba estaria escondida nos escombros), 5 relações, nenhuma dimensão, nenhum pedido, 8 itens que a fonte não diz (massa, materiais, eixos e cursos, cilindros, caçamba oculta, comprimentos de lança e braço, cabina e contrapeso, trem de rodagem).
+- A máquina que se vê no laboratório é a **geometria sintética de referência** com a largura da caçamba indicada; não é uma forma recuperada da fotografia (que mostra uma Doosan laranja a demolir uma casa).
+
+## Testes (SwiftShader, sem GPU real)
+
+Os resultados finais estão na secção seguinte.
+
+## Resultados finais (SHA do commit deste relatório, ver o PR)
+
+Chromium (Google Chrome do sistema) com **SwiftShader**. Não se testou GPU real: nada aqui sustenta afirmações de desempenho em hardware.
+
+| Verificação | Resultado |
+|---|---|
+| `npx vitest run --testTimeout=15000` | 106 ficheiros, 1885 testes |
+| `npx tsc --noEmit`, `npm run build`, `git diff --check` | limpos |
+| `tests/e2e/unified-living.pw.ts` | 24 verificações: primeira utilização, percurso real a 1440/768/390 px, erros da Meta, 422, sessão expirada, portão 2 bloqueado, larguras 1,10/1,40 m na malha, larguras recusadas, WebP→PNG, voltar/remontar, histórico com e sem back-forward cache |
+| E2E do Design (`living-experience`) | 39/39 |
+| PR #15: motor 16, histórico 4, Digital Hand 7, revisão 8, regressões 3 e 4 | passam |
+| Foundry: regressões 25/25, principal 52/52 | passam |
+| Cinema 203/203, histórico do Cinema | passam |
+| Prova com a Meta (`live/`) | executada uma vez; ver acima |
+
+Os E2E do workspace abrem agora `/living?example=1`: o contrato mudou (`/living` abre vazio) e a cobertura é a mesma, no modo exemplo. Os E2E antigos correram com a saída redirecionada para não alterar relatórios versionados.
+
+## Limitações reais que permanecem
+
+- **GPU real:** não testada. Tudo em SwiftShader.
+- **Fidelidade:** a máquina do laboratório é geometria sintética de referência com a largura da caçamba indicada. Não é fotogrametria nem forma recuperada da fotografia; o produto di-lo em vários sítios.
+- **Largura:** é sempre uma declaração do utilizador (não verificada). Nenhuma dimensão vem da imagem.
+- **Correcções e valores introduzidos** na revisão não chegam à geometria (a API do #17 não tem campo para eles); o ecrã mostra o que é enviado e o que fica só local.
+- **Revisão da prova live:** feita por um script. Não há, nesta entrega, evidência de uma revisão feita por uma pessoa.
+- **Limites desencontrados:** a API aceita 0,10–10 m e a Foundry 0,60–2,40 m. Está protegido no cliente; o ideal é o servidor recusar fora do intervalo desenhável (`reviewReconstruction` em `server/review.ts`, validar `bucketWidthM` contra `BUCKET_HALF_WIDTH_RANGE_M*2` e devolver 422 com o mesmo motivo). Não alterado: é do PR #17.
+- **Fonte sem escavadora:** o servidor responde 502 genérico (`ASSEMBLY_UNSUPPORTED_MACHINE` não é distinguido); a interface mostra «falhou», não «não identificada». Correção no `meta-server.ts` do #17.
+- **Sessão do servidor** só em memória (30 min); reiniciar o servidor invalida-a (tratado como sessão expirada).
+- **Uma única fotografia** foi exercitada com o modelo real. Isto não mede a qualidade do modelo.
+
+## Veredicto para a demonstração: GO, com condições
+
+**GO** para demonstrar o percurso completo e verificável: laboratório vazio → fotografia real → Meta Muse Spark → revisão humana → contrato → motor → geometria paramétrica no workspace real → interação, com regressões verdes. **Condições**: apresentar como *reconstrução espacial assistida por IA sobre uma família mecânica suportada, com revisão humana e geometria paramétrica de referência*; dizer que a revisão da prova foi feita por script; correr com a chave só no backend e o Vite na porta 5173; ter o exemplo como plano B se a rede falhar (a chamada à Meta demora ~30 s). **NO-GO** para qualquer afirmação de fidelidade fotográfica, de desempenho em GPU ou de segurança mecânica.
