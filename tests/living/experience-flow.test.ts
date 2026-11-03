@@ -96,7 +96,13 @@ describe('review: correction, unknown properties, gates', () => {
     const r = initialReview(insufficientObservation());
     const rd = readiness(r);
     expect(rd.status).toBe('insufficient');
-    if (rd.status === 'insufficient') expect(rd.missing).toEqual(['material circulante', 'corpo superior', 'lança', 'braço']);
+    // The stick is a hypothesis still awaiting a decision, so it can yet become usable and is not listed as missing (a pending
+    // hypothesis is "possible" structure). Tracks, upper body and boom are unknown: no decision can supply them.
+    if (rd.status === 'insufficient') expect(rd.missing).toEqual(['material circulante', 'corpo superior', 'lança']);
+    // Rejecting that hypothesis removes the possibility, and the stick is listed again.
+    const rejected = readiness(reduceReview(r, { type: 'decide', id: 'e_stick', decision: 'rejected' }));
+    if (rejected.status === 'insufficient') expect(rejected.missing).toEqual(['material circulante', 'corpo superior', 'lança', 'braço']);
+    else throw new Error(rejected.status);
   });
   it('rejecting a required part makes the reconstruction insufficient; correcting to the right kind can satisfy it', () => {
     let r = initialReview(obs);

@@ -126,13 +126,15 @@ export type Readiness =
 
 /**
  * Gate 1, human review: can this reconstruction be handed to the engine? Never says "valid": only the engine can.
- * Usable = observed, confirmed or corrected (not hypothesis, unknown or rejected).
+ * Usable = observed, confirmed or corrected (not hypothesis, unknown or rejected); a pending hypothesis is only "possible".
  */
 export function readiness(state: ReviewState): Readiness {
   const s = summarize(state);
-  const usable = state.items.filter((i) => ['observed', 'confirmed', 'corrected'].includes(labCategory(i)));
+  // "Insufficient" means that even confirming every pending hypothesis would not give a machine. A hypothesis still
+  // awaiting a decision can yet become usable, so it counts as possible structure here (and keeps the gate at "review pending").
+  const possible = state.items.filter((i) => ['observed', 'confirmed', 'corrected', 'hypothesis'].includes(labCategory(i)));
   const kindOf = (i: ReviewItem) => i.correction?.kind ?? i.kind;
-  const missing = REQUIRED_STRUCTURE.filter((r) => !usable.some((i) => r.kinds.includes(kindOf(i)))).map((r) => r.label);
+  const missing = REQUIRED_STRUCTURE.filter((r) => !possible.some((i) => r.kinds.includes(kindOf(i)))).map((r) => r.label);
   if (missing.length) return { status: 'insufficient', missing };
   if (s.pendingHypotheses) return { status: 'review_pending', pending: s.pendingHypotheses };
   return { status: 'ready_for_engine' };
