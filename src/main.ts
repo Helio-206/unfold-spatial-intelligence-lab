@@ -23,7 +23,7 @@ switch (window.location.pathname) {
     void import('./living/cinema/cinema-page').then(({ mountCinema }) => mountCinema(app));
     break;
   case '/living':
-    void import('./living/workspace-design/page').then(({ mountLivingWorkspace }) => mountLivingWorkspace(app));
+    void import('./living/unified-workspace/shell').then(({ mountLivingShell }) => mountLivingShell(app));
     break;
   case '/workspace':
     void import('./workspace');

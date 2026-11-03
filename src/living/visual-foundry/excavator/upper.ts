@@ -7,6 +7,7 @@ import { Path, Vector3 } from 'three';
 import { chaikin, extrudeY, extrudeZ, hexBolt, latheZ, m4, merge, pipe, rbox, shapeFrom, v2, type P2, PartBuilder } from '../geometry';
 import type { CanonicalView } from './canonical';
 import { lugPair, pin } from './details';
+import { addCabDetail, addHoodDetail } from './upper-detail';
 
 const DECK = { y0: 0, y1: 0.12, xFront: 1.38, xRear: -1.42, z: 1.22 };
 const CAB = { x0: -0.3, x1: 1.28, z0: -1.2, z1: -0.36, y0: DECK.y1, yBelt: 0.5, yRoof: 1.84, yFloor: 0.38 };
@@ -106,6 +107,9 @@ export function buildUpperStructure(view: CanonicalView): PartBuilder {
   b.add(pipe([new Vector3(CAB.x1 - 0.05, CAB.yBelt - 0.05, CAB.z0 + 0.02), new Vector3(CAB.x1 + 0.05, CAB.yBelt + 0.2, CAB.z0 - 0.12), new Vector3(CAB.x1 + 0.08, CAB.yBelt + 0.45, CAB.z0 - 0.16)], 0.01, 16, 8), 'paintDark');
   b.add(rbox(0.03, 0.2, 0.13, 0.012), 'trim', m4([CAB.x1 + 0.08, CAB.yBelt + 0.53, CAB.z0 - 0.16], 0, 0.3));
   b.add(latheZ([[0, 0], [0.05, 0], [0.055, 0.05], [0, 0.05]], 20), 'machined', m4([front(CAB.yRoof), CAB.yRoof + 0.09, cabZ - 0.25], 0, Math.PI / 2));
+
+  // --- visual-only refinement of the cab and the hood/counterweight (same part builder: it moves with `upper_body`, nothing physical changes)
+  { const ctx = { DECK, CAB, hoodX0, hoodX1, cwFront, cw, front, sideGlass, cabZ, cabW }; addCabDetail(b, ctx); addHoodDetail(b, ctx); }
 
   // --- boom foot: twin plates rising from the channel around the canonical boom pivot, and the boom-cylinder base lugs
   lugPair(b, [[0.32, DECK.y1], [DECK.xFront - 0.02, DECK.y1], [DECK.xFront - 0.08, DECK.y1 + 0.18]], foot, 0.2, 0.275, 0.05, 'paint');

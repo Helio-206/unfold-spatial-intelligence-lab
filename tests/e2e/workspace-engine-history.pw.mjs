@@ -14,7 +14,7 @@ try {
       const page = await browser.newPage({ viewport: { width: 800, height: 600 } });
       const errors = []; page.on('pageerror', (error) => errors.push(error.message));
       await page.addInitScript(() => { window.__shows = []; window.addEventListener('pageshow', (event) => window.__shows.push(event.persisted)); });
-      await page.goto(`${base}/living?debug-living=1&agent=fixture&rm=0`);
+      await page.goto(`${base}/living?example=1&debug-living=1&agent=fixture&rm=0`);
       await page.waitForFunction(() => window.__foundry?.ready, null, { timeout: 120000 });
       await page.evaluate(() => {
         const ws = window.__workspace; ws.select('boom_cylinder'); ws.offerExperiment('boom_cylinder', null);

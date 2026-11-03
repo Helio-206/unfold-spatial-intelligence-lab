@@ -12,7 +12,7 @@ const errors = [];
 const open = async (rm) => {
   const page = await browser.newPage({ viewport: { width: 1000, height: 700 } });
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto(`http://127.0.0.1:${port}/living?debug-living=1&agent=fixture&rm=${rm}`);
+  await page.goto(`http://127.0.0.1:${port}/living?example=1&debug-living=1&agent=fixture&rm=${rm}`);
   await page.waitForFunction(() => window.__foundry?.ready, null, { timeout: 120000 });
   return page;
 };
@@ -74,7 +74,7 @@ try {
   agent.on('pageerror', (error) => errors.push(error.message));
   const bodies = [];
   await agent.route('**/api/spatial-agent', (route) => { bodies.push(JSON.parse(route.request().postData() ?? '{}')); return route.fulfill({ status: 404, contentType: 'application/json', body: '{"error":{"code":"NOT_FOUND"}}' }); });
-  await agent.goto(`http://127.0.0.1:${port}/living?debug-living=1&rm=1`);
+  await agent.goto(`http://127.0.0.1:${port}/living?example=1&debug-living=1&rm=1`);
   await agent.waitForFunction(() => window.__foundry?.ready, null, { timeout: 120000 });
   await agent.evaluate(async () => { const ws = window.__workspace; ws.select('boom_cylinder'); await ws.ask('O que acontece se este cilindro se estender?'); });
   assert.equal(bodies.length, 1);

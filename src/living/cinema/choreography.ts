@@ -34,11 +34,13 @@ function orbitKey(f: MachineFraming, azDeg: number, elDeg: number, distMul: numb
   return { position: [target[0] + d * Math.cos(el) * Math.cos(az), target[1] + d * Math.sin(el), target[2] + d * Math.cos(el) * Math.sin(az)], target, fov };
 }
 
-export function buildShots(f: MachineFraming): Shot[] {
+export type ShotStyle = 'interactive' | 'presentation';
+/** `presentation` frames the hero tighter and lower (the machine fills the frame, a low three-quarter view from the cab side (the machine's -Z side, where the cab, door and radiator bay are)); the other shots keep their framing. */
+export function buildShots(f: MachineFraming, style: ShotStyle = 'interactive'): Shot[] {
   const tip = f.tip ?? f.center; const lowCenter: Vec3 = [f.center[0], f.center[1] - 0.12 * f.radius, f.center[2]];
   const orbit: CameraKey[] = []; for (let i = 0; i <= 12; i += 1) orbit.push(orbitKey(f, 38 + i * 30, 15 + 3 * Math.sin((i / 12) * Math.PI * 2), 3.1, 30, [0, -0.04, 0]));
   return [
-    { id: 'hero', label: 'Plano herói', durationS: 9, ease: 'inOutSine', loop: false, keys: [orbitKey(f, 36, 13, 3.15, 30, [0, -0.04, 0]), orbitKey(f, 33, 12, 2.8, 29, [0, -0.04, 0])] },
+    { id: 'hero', label: 'Plano herói', durationS: 9, ease: 'inOutSine', loop: false, keys: style === 'presentation' ? [orbitKey(f, -41, 7, 2.55, 27, [0.03, -0.1, 0]), orbitKey(f, -36, 6, 2.3, 26, [0.03, -0.1, 0])] : [orbitKey(f, 36, 13, 3.15, 30, [0, -0.04, 0]), orbitKey(f, 33, 12, 2.8, 29, [0, -0.04, 0])] },
     { id: 'profile', label: 'Perfil', durationS: 8, ease: 'inOutSine', loop: false, keys: [orbitKey(f, 90, 4, 3.5, 24, [-0.1, 0.0, 0], lowCenter), orbitKey(f, 90, 5, 3.5, 24, [0.0, 0.0, 0], lowCenter), orbitKey(f, 90, 4, 3.5, 24, [0.1, 0.0, 0], lowCenter)] },
     { id: 'bucket', label: 'Balde', durationS: 8, ease: 'inOutSine', loop: false, keys: [orbitKey(f, 52, 14, 1.75, 30, [0, 0.16, 0], tip), orbitKey(f, 62, 16, 1.55, 28, [0, 0.17, 0], tip), orbitKey(f, 74, 15, 1.4, 27, [0, 0.18, 0], tip)] },
     { id: 'reach', label: 'Alcance', durationS: 8, ease: 'inOutSine', loop: false, keys: [orbitKey(f, 150, 14, 3.05, 32, [0.02, -0.02, 0]), orbitKey(f, 140, 20, 2.7, 30, [0.04, -0.01, 0])] },

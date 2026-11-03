@@ -1,0 +1,202 @@
+{
+  "generatedAt": "2026-11-03T15:56:20.658Z",
+  "renderer": "Chromium + SwiftShader (software WebGL), cinema tier \"light\"",
+  "reconstruction": "DemoReconstructionPort only; no Meta call",
+  "checks": [
+    {
+      "name": "starts as an empty lab (no machine)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "demo is labelled on screen",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Reconstruir is disabled without a source",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "unsupported file is refused with a reason",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "selected file is previewed with name, type and size",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "waiting state shows elapsed time and a cancel action",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "cancel returns to the selected source, nothing reviewed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "review opens with nothing confirmed and the lab closed",
+      "ok": true,
+      "detail": "{\"s\":{\"total\":10,\"confirmed\":0,\"corrected\":0,\"observed\":5,\"pendingHypotheses\":3,\"rejected\":0,\"unknown\":2,\"decided\":0,\"blockingIds\":[\"e_boom_cyl\",\"e_stick_cyl\",\"e_bucket_cyl\"]},\"r\":{\"status\":\"review_pending\",\"pending\":3}}"
+    },
+    {
+      "name": "two gates are shown separately (human review, engineering validation)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "correction is recorded as the person's and the AI interpretation is kept",
+      "ok": true,
+      "detail": "{\"kind\":\"unknown\",\"label\":\"Tubagem hidráulica sob o braço\"}"
+    },
+    {
+      "name": "an unknown entity offers no Confirmar",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "entered value is labelled \"introduzido por si · não verificado\"",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "1440: a tall review card never slides under the sheet",
+      "ok": true,
+      "detail": "{\"sheetBottom\":420,\"cardTop\":447}"
+    },
+    {
+      "name": "keyboard review: → moves, C confirms",
+      "ok": true,
+      "detail": "[\"e_boom_cyl\",\"e_stick_cyl\"]"
+    },
+    {
+      "name": "lab opens once gate 1 is ready",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "lab: engine gate still \"por executar\" after human review",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "lab: safe operations listed, unsafe ones explained",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "lab: chip labels do not overlap each other or the side column",
+      "ok": true,
+      "detail": "[\"unknown\",\"unknown\"]"
+    },
+    {
+      "name": "the drawing thumbnail returns to the review with decisions kept",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no page errors (1440)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "not_identified: plain explanation and a way forward",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "failed: plain explanation and a way forward",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "unavailable: plain explanation and a way forward",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "insufficient data: lab blocked, missing structure named",
+      "ok": true,
+      "detail": "{\"status\":\"insufficient\",\"missing\":[\"material circulante\",\"corpo superior\",\"lança\",\"braço\"]}"
+    },
+    {
+      "name": "text too short is refused with guidance",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "long text preview stays inside the card (truncated with count)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "long correction label wraps inside the card (no horizontal overflow)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reduced motion: lab reached without animation, sheet already on the floor",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "768: empty lab without horizontal scroll",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "768: review stacks source → card without overlap, banner above the sheet",
+      "ok": true,
+      "detail": "{\"sheetBottom\":472,\"cardTop\":512,\"demoBottom\":90,\"sheetTop\":112}"
+    },
+    {
+      "name": "768: review actions are at least 32 px tall (44 px for primary buttons)",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "768: portrait/tablet framing keeps bucket and house on screen",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no page errors (768)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "390: empty lab without horizontal scroll",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "390: review stacks source → card without overlap, banner above the sheet",
+      "ok": true,
+      "detail": "{\"sheetBottom\":291,\"cardTop\":347,\"demoBottom\":98,\"sheetTop\":112}"
+    },
+    {
+      "name": "390: review actions are at least 32 px tall (44 px for primary buttons)",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "390: portrait/tablet framing keeps bucket and house on screen",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no page errors (390)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no request left localhost, no /api call, no Meta",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}

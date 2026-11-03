@@ -28,6 +28,7 @@ export async function mountCinema(app: HTMLElement): Promise<CinemaRuntime> {
         <a class="cinema-logo" href="/" aria-label="UNFOLD"><img src="${lockupDark}" alt="UNFOLD" height="24"></a>
         <p class="u-label cinema-title">Cinema · estúdio</p>
         <div class="cinema-actions" role="group" aria-label="Apresentação">
+          <div class="cinema-seg" role="group" aria-label="Perfil"><button type="button" class="u-btn u-btn--outline" data-profile="interactive" aria-pressed="true" title="Interactivo: estúdio base, máxima fluidez">Interactivo</button><button type="button" class="u-btn u-btn--outline" data-profile="presentation" aria-pressed="false" title="Apresentação: materiais, luz e enquadramento premium">Apresentação</button></div>
           <div class="cinema-seg" role="group" aria-label="Qualidade">${(['studio', 'balanced', 'light'] as CinemaTier[]).map((t) => `<button type="button" class="u-btn u-btn--outline" data-tier="${t}" aria-pressed="false">${TIER_LABEL[t]}</button>`).join('')}</div>
           <button type="button" class="u-btn u-btn--outline" id="cinema-hide" aria-pressed="false" title="Esconder a interface (H)">Esconder interface</button>
           <button type="button" class="u-btn u-btn--primary" id="cinema-fullscreen" aria-pressed="false" title="Ecrã inteiro (F)">Ecrã inteiro</button>
@@ -80,7 +81,7 @@ export async function mountCinema(app: HTMLElement): Promise<CinemaRuntime> {
     runtime = await CinemaRuntime.create({
       host: $('#cinema-stage'), assembly, poseSource: debugInitial === 'articulated' ? articulatedStaticSource(assembly) : debugInitial === 'poseless' ? poselessStaticSource(assembly) : sources[motionKey](), provider: foundry,
       onInspect: (id) => inspect(id),
-      tier: (params.get('tier') as CinemaTier | null), reducedMotion, pixelRatio: params.get('dpr') ? Number(params.get('dpr')) : undefined,
+      tier: (params.get('tier') as CinemaTier | null), profile: params.get('profile') === 'presentation' ? 'presentation' : 'interactive', reducedMotion, pixelRatio: params.get('dpr') ? Number(params.get('dpr')) : undefined,
       onSample: (s) => showSample(s),
       onShot: (id) => { app.querySelectorAll<HTMLButtonElement>('[data-shot]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.shot === id))); $('#cinema-tour').setAttribute('aria-pressed', String(id === 'tour')); $('#cinema-free').setAttribute('aria-pressed', String(id === 'free')); },
       onDegrade: (level, s) => { say(level === 1 ? 'Dispositivo lento: oclusão ambiente desligada.' : 'Dispositivo lento: realce, sombras mais leves e resolução reduzida.'); markTier(s.tier); },
@@ -101,6 +102,9 @@ export async function mountCinema(app: HTMLElement): Promise<CinemaRuntime> {
   }
   const markTier = (tier: CinemaTier) => { app.querySelectorAll<HTMLButtonElement>('[data-tier]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tier === tier))); };
   markTier(runtime.tier);
+  const markProfile = () => app.querySelectorAll<HTMLButtonElement>('[data-profile]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.profile === runtime.profile)));
+  markProfile();
+  app.querySelectorAll<HTMLButtonElement>('[data-profile]').forEach((b) => b.addEventListener('click', () => { const next = b.dataset.profile as 'interactive' | 'presentation'; runtime.setProfile(next); markProfile(); if (next === 'presentation') runtime.cut('hero'); say(next === 'presentation' ? 'Perfil de apresentação: materiais, luz e enquadramento premium.' : 'Perfil interactivo.'); }));
   $('#ro-geometry').textContent = runtime.visuals.source === 'visual-foundry' ? 'Visual Foundry (excavador canónico)' : 'proxy dos shapes do contrato';
   $('#ro-note').textContent = runtime.visuals.source === 'visual-foundry' ? 'Montagem sintética: dimensões escolhidas por plausibilidade, não de um fabricante. Poses: só quadros validados do motor de engenharia; o palco não interpola nem resolve laços.' : 'Montagem sintética: dimensões escolhidas por plausibilidade, não de um fabricante. Geometria de proxy; o modelo detalhado vem da Visual Foundry.';
   const readout = () => { const s: CinemaStats = runtime.stats(); $('#ro-tier').textContent = `${TIER_LABEL[s.tier]}${s.degrade ? ` · −${s.degrade}` : ''} · ${s.pixelRatio.toFixed(2)}×`; $('#ro-frame').textContent = `${s.lastFrameMs.toFixed(0)} ms · ${s.calls} chamadas`; };
@@ -174,6 +178,8 @@ export async function mountCinema(app: HTMLElement): Promise<CinemaRuntime> {
       playTransportFrames: async (variant: 'basic' | 'poseless' = 'basic', autoplay = true) => { const [{ MotionFramePlayer }, { transportTestFrames }] = await Promise.all([import('./pose-source'), import('./test-frames')]); runtime.setPoseSource(new MotionFramePlayer(transportTestFrames({ poseless: variant === 'poseless' }), { assemblyId: assembly.id, partIds: assembly.parts.map((p) => p.id) })); play.hidden = false; if (autoplay) runtime.playPose(true, false); },
       tryBadSequence: async (kind: string) => { const [{ MotionFramePlayer }, { badSequence }] = await Promise.all([import('./pose-source'), import('./test-frames')]); try { runtime.setPoseSource(new MotionFramePlayer(badSequence(kind), { assemblyId: assembly.id, partIds: assembly.parts.map((p) => p.id) })); return 'ACEITE'; } catch (e) { return e instanceof Error ? e.message : String(e); } },
       machineVisible: () => ({ stage: runtime.stage.machineVisible, root: runtime.visuals.root.visible, mirror: runtime.stage.scene.getObjectByName('mirror')!.visible, contact: runtime.stage.contact.object.visible }),
+      placeCamera: (position: number[], target: number[], fov: number) => runtime.placeCamera({ position: position as [number, number, number], target: target as [number, number, number], fov }),
+      setProfile: (p: 'interactive' | 'presentation') => { runtime.setProfile(p); markProfile(); },
       caption: () => caption.textContent,
       geometryStats: () => { let meshes = 0; let triangles = 0; runtime.visuals.root.traverse((o) => { const m = o as import('three').Mesh; if (!m.isMesh) return; meshes += 1; const g = m.geometry; triangles += (g.index ? g.index.count : g.attributes.position!.count) / 3; }); return { meshes, triangles: Math.round(triangles), parts: [...runtime.visuals.parts.keys()], source: runtime.visuals.source }; },
       hoseSignature: () => { let x = 0; let n = 0; runtime.visuals.root.traverse((o) => { const m = o as import('three').Mesh; if (m.isMesh && m.userData.displayOnly) { m.geometry.computeBoundingSphere(); const c = m.geometry.boundingSphere!.center; x += c.x * 3 + c.y * 5 + c.z * 7; n += 1; } }); return { sum: x, hoses: n }; },

@@ -1,0 +1,109 @@
+{
+  "label": "before",
+  "at": "2026-11-03T16:07:48.304Z",
+  "note": "software rasteriser; no GPU timings",
+  "model": {
+    "meshes": 64,
+    "triangles": 253744,
+    "parts": 13
+  },
+  "views": [
+    {
+      "name": "hero",
+      "camera": {
+        "target": [
+          3.2,
+          2,
+          0
+        ],
+        "fov": 27,
+        "position": [
+          16.465812081069206,
+          4.365942716321113,
+          -10.364388302878535
+        ]
+      },
+      "sha": "fe0de631d170f9cb",
+      "renderStats": {
+        "calls": 365,
+        "triangles": 1488079,
+        "geometries": 68,
+        "textures": 37
+      },
+      "poseErrorM": 0
+    },
+    {
+      "name": "cab-close",
+      "camera": {
+        "target": [
+          0.5,
+          2.15,
+          -0.8
+        ],
+        "fov": 34,
+        "position": [
+          3.98162221857719,
+          3.1050649771681167,
+          -4.949235787045189
+        ]
+      },
+      "sha": "6e0ea5bc403a3d8c",
+      "renderStats": {
+        "calls": 236,
+        "triangles": 1260879,
+        "geometries": 68,
+        "textures": 37
+      },
+      "poseErrorM": 0
+    },
+    {
+      "name": "hood",
+      "camera": {
+        "target": [
+          -0.9,
+          1.5,
+          -0.6
+        ],
+        "fov": 34,
+        "position": [
+          -4.266254490325331,
+          2.747470144906556,
+          -5.407509640544817
+        ]
+      },
+      "sha": "80f2aff568cd5fed",
+      "renderStats": {
+        "calls": 358,
+        "triangles": 1489055,
+        "geometries": 68,
+        "textures": 37
+      },
+      "poseErrorM": 0
+    },
+    {
+      "name": "hero-articulated",
+      "camera": {
+        "target": [
+          4.5,
+          2.2,
+          -1.2
+        ],
+        "fov": 30,
+        "position": [
+          14.727859351799562,
+          5.26180822112144,
+          -20.435805766769413
+        ]
+      },
+      "sha": "57f5946a5b58dd95",
+      "renderStats": {
+        "calls": 379,
+        "triangles": 1501055,
+        "geometries": 68,
+        "textures": 37
+      },
+      "poseErrorM": 0
+    }
+  ],
+  "errors": []
+}

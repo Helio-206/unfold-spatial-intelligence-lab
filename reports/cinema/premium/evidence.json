@@ -1,0 +1,140 @@
+{
+  "at": "2026-11-03T13:14:03.749Z",
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "note": "software rasteriser; no GPU timings",
+  "views": [
+    {
+      "name": "hero",
+      "shot": "hero",
+      "pose": "reference",
+      "camera": {
+        "position": [
+          14.367657323882431,
+          3.4293350853208544,
+          9.231668644065604
+        ],
+        "target": [
+          3.2784034756318956,
+          1.713930561654981,
+          -0.021679520606994632
+        ],
+        "fov": 26.896484375
+      },
+      "poseErrorM": 0,
+      "before": {
+        "profile": "interactive",
+        "premiumMaterials": 0,
+        "lights": 3,
+        "calls": 431,
+        "sha": "09c1c7d1e2cdd06e"
+      },
+      "after": {
+        "profile": "presentation",
+        "premiumMaterials": 16,
+        "lights": 5,
+        "calls": 363,
+        "sha": "0f84f049b321458c"
+      }
+    },
+    {
+      "name": "hero-articulated",
+      "shot": "hero",
+      "pose": "engine-end",
+      "camera": {
+        "position": [
+          14.367657323882431,
+          3.4293350853208544,
+          9.231668644065604
+        ],
+        "target": [
+          3.2784034756318956,
+          1.713930561654981,
+          -0.021679520606994632
+        ],
+        "fov": 26.896484375
+      },
+      "poseErrorM": 0,
+      "before": {
+        "profile": "interactive",
+        "premiumMaterials": 0,
+        "lights": 3,
+        "calls": 341,
+        "sha": "aff3895b135318c9"
+      },
+      "after": {
+        "profile": "presentation",
+        "premiumMaterials": 16,
+        "lights": 5,
+        "calls": 409,
+        "sha": "04d27bda74f42e32"
+      }
+    },
+    {
+      "name": "profile-articulated",
+      "shot": "profile",
+      "pose": "engine-end",
+      "camera": {
+        "position": [
+          2.8596407464896187,
+          3.284189803768604,
+          20.386733961472128
+        ],
+        "target": [
+          2.8789622122794145,
+          1.596909627964337,
+          -0.02167952060699463
+        ],
+        "fov": 24
+      },
+      "poseErrorM": 0,
+      "before": {
+        "profile": "interactive",
+        "premiumMaterials": 0,
+        "lights": 3,
+        "calls": 437,
+        "sha": "dc193373ef64c4ca"
+      },
+      "after": {
+        "profile": "presentation",
+        "premiumMaterials": 16,
+        "lights": 5,
+        "calls": 437,
+        "sha": "f4f7c0359eb0765a"
+      }
+    },
+    {
+      "name": "bucket-close",
+      "shot": "bucket",
+      "pose": "reference",
+      "camera": {
+        "position": [
+          11.284065829256683,
+          4.158719290201636,
+          7.699886688592715
+        ],
+        "target": [
+          7.1469082050510435,
+          1.6563253952388954,
+          0
+        ],
+        "fov": 27.999999999999996
+      },
+      "poseErrorM": 0,
+      "before": {
+        "profile": "interactive",
+        "premiumMaterials": 0,
+        "lights": 3,
+        "calls": 419,
+        "sha": "a7559083c732cf32"
+      },
+      "after": {
+        "profile": "presentation",
+        "premiumMaterials": 16,
+        "lights": 5,
+        "calls": 419,
+        "sha": "af7fa08aaa573cd3"
+      }
+    }
+  ],
+  "errors": []
+}

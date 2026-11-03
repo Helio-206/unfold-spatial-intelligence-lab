@@ -1,0 +1,96 @@
+/* Integration layer for /living. Additive: nothing here restyles the Design's experience or the workspace. */
+
+/* the real laboratory, above the cinematic stage */
+.ux-workspace { position: absolute; inset: 0; z-index: 3; }
+.ux-workspace[hidden] { display: none; }
+.ux-workspace > .uw-root { width: 100%; height: 100%; }
+
+/* server confirmations (step 2 of the review) */
+.ux-gw-card { display: block; }
+.ux-gw { display: grid; gap: var(--space-3); }
+.ux-gw-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+.ux-gw-head h2 { margin: 0; font-weight: 400; color: var(--ink-muted); }
+.ux-gw-fields { display: grid; gap: var(--space-3); margin: 0; padding: var(--space-3); border: 1px solid var(--line); border-radius: var(--radius-md); min-width: 0; }
+.ux-gw-fields legend { padding: 0 var(--space-2); color: var(--ink-muted); }
+.ux-check { display: flex; align-items: flex-start; gap: var(--space-2); font-size: var(--type-small-size); line-height: var(--type-small-line); }
+.ux-check input { margin-top: 3px; width: 18px; height: 18px; flex: none; accent-color: var(--ink); }
+.ux-gw .ux-field { display: grid; gap: var(--space-1); }
+.ux-gw .u-input { width: 100%; min-height: 44px; box-sizing: border-box; }
+.ux-gw-extras summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+.ux-gw-extras ul { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: grid; gap: var(--space-2); }
+.ux-gw-extras li { display: grid; gap: var(--space-1); padding: var(--space-2) var(--space-3); border-left: 2px dashed var(--fold-ink); }
+.ux-gw-extras li[data-decided="confirm"], .ux-gw-extras li[data-decided="reject"] { border-left: 2px solid var(--ink); }
+.ux-gw-label { overflow-wrap: anywhere; font-size: var(--type-small-size); }
+.ux-gw-choices { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.ux-gw-choices .u-btn, .ux-gw-extras .ux-row .u-btn { min-height: 44px; }
+.ux-gw-notes { margin: 0; padding-left: var(--space-4); color: var(--ink-muted); display: grid; gap: var(--space-1); }
+.ux-gw-msg:empty { display: none; }
+.ux-gw-msg p { margin: 0 0 var(--space-1); }
+.ux-gw-msg[role="alert"] { padding: var(--space-3); border-left: 2px solid var(--fold-ink); color: var(--fold-ink); }
+.ux-gw [disabled] { opacity: .6; }
+
+/* integrated lab: the workspace brings its own tools, brand, inspector and conversation */
+.ux-root[data-integrated="true"][data-phase="lab"] .ux-brand,
+.ux-root[data-integrated="true"][data-phase="lab"] .ux-ops,
+.ux-root[data-integrated="true"][data-phase="lab"] .ux-caption,
+.ux-root[data-integrated="true"][data-phase="lab"] #ux-hero { display: none; }
+.ux-root[data-integrated="true"][data-phase="lab"] .ux-lab { z-index: 6; }
+
+/* step 2 of the review: the source shrinks to a strip so the form gets the height the Design reserved for a short card */
+.ux-root[data-step="server"] .ux-sheet { width: min(100%, 280px); min-width: 0; }
+.ux-root[data-step="server"] .ux-card { max-height: min(64dvh, 600px); }
+@media (max-width: 760px) {
+  .ux-root[data-step="server"] .ux-sheet { width: min(100%, 200px); }
+  .ux-root[data-step="server"] .ux-card { max-height: none; }
+}
+
+/* integrated lab: the workspace owns the whole screen, so the prototype's overlay (gates, thumbnail, camera tools) is gone;
+   the gates become workspace notices and the two ways out are tools in its rail */
+.ux-root[data-integrated="true"][data-phase="lab"] .ux-lab { display: none; }
+
+.ux-gw-head h2 { font-size: var(--type-label-size); line-height: var(--type-label-line); letter-spacing: normal; margin: 0; }
+
+.ux-example-note { margin: var(--space-1) 0 0; color: var(--ink-muted); }
+
+.ux-gw-missing { padding: var(--space-3); border-left: 2px solid var(--fold-ink); display: grid; gap: var(--space-1); }
+.ux-gw-missing p { margin: 0; }
+.ux-gw-missing ul { margin: 0; padding-left: var(--space-4); font-size: var(--type-small-size); }
+.ux-gw-sent { display: grid; gap: var(--space-1); color: var(--ink-muted); }
+.ux-gw-sent p { margin: 0; }
+
+/* ---- Embedded: import and review are panels of the workspace, not a second application.
+   The experience's own stage, brand, thumbnail and lab overlay are gone (the workspace has the stage, the brand, the rail and the composer);
+   the panels use the space those leave free. */
+.ux-root[data-embedded="true"] { position: absolute; inset: 0; background: transparent; pointer-events: none; }
+.ux-root[data-embedded="true"] .ux-stage,
+.ux-root[data-embedded="true"] .ux-brand,
+.ux-root[data-embedded="true"] .ux-loading,
+.ux-root[data-embedded="true"] .ux-chips,
+.ux-root[data-embedded="true"] .ux-lab,
+.ux-root[data-embedded="true"] .ux-workspace { display: none; }
+/* in the lab (and the example) the workspace's own chrome is all there is */
+.ux-root[data-embedded="true"][data-phase="lab"],
+.ux-root[data-embedded="true"][data-phase="transition"] { display: none; }
+.ux-root[data-embedded="true"] .ux-main { left: 68px; bottom: calc(var(--uw-composer-h, 76px) + var(--space-6)); }
+.ux-root[data-embedded="true"] .ux-intake,
+.ux-root[data-embedded="true"] .ux-recon { pointer-events: auto; }
+/* panels arrive over the stage instead of cutting in */
+.ux-root[data-embedded="true"] .ux-intake,
+.ux-root[data-embedded="true"] .ux-recon { transition: opacity var(--dur-base) var(--ease-out); }
+@starting-style { .ux-root[data-embedded="true"] .ux-intake, .ux-root[data-embedded="true"] .ux-recon { opacity: 0; } }
+/* the reconstruction keeps the stage visible behind it: no opaque sheet backdrop in review */
+.ux-root[data-embedded="true"][data-phase="review"] .ux-stage { visibility: visible; }
+@media (max-width: 760px) {
+  .ux-root[data-embedded="true"] .ux-main { left: 64px; }
+  /* the card fills the space the rail leaves instead of being centred on the whole screen */
+  .ux-root[data-embedded="true"] .ux-intake { left: 0; right: var(--space-2); width: auto; transform: none; top: auto; bottom: var(--space-2); max-height: calc(100dvh - 200px); }
+}
+
+/* The workspace sets `button { color: inherit }`, which outranks the design system's button variants: restore them inside the panels. */
+.uw-root .u-btn--primary { color: var(--on-fold); }
+.uw-root .u-btn--ink { color: var(--surface); }
+.uw-root .u-btn--outline { color: var(--ink); }
+/* the source sheet was sized for a full-height page; the workspace leaves less (the composer), so it yields a little more height */
+.ux-root[data-embedded="true"] .ux-sheet { width: min(100%, calc((100dvh - 580px) * 2)); }
+.ux-root[data-embedded="true"][data-step="server"] .ux-sheet { width: min(100%, 280px); }
+@media (max-width: 1100px) { .ux-root[data-embedded="true"] .ux-sheet { width: 100%; } }

@@ -8,9 +8,10 @@ import { adaptReviewedProposalToAssembly, forwardKinematicsAtReference, Reconstr
 import { EXCAVATOR_ASSEMBLY_V1 } from '../src/living/contracts/fixtures/excavator.assembly.v1';
 import { validateAssembly } from '../src/living/contracts/assembly.v1';
 import { EXCAVATOR_TEMPLATE_LIBRARY } from '../src/living/reconstruction/library';
+import { reviewReconstruction } from '../src/living/reconstruction/review';
 
 const ALLOWED_ORIGIN = 'http://127.0.0.1:5173';
-const jpegA = 'data:image/jpeg;base64,/9j/4AA=';
+const jpegA = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/aX8AAAAASUVORK5CYII=';
 function expectArrayClose(actual: readonly number[] | undefined, expected: readonly number[], precision = 8): void {
   expect(actual).toBeDefined();
   expected.forEach((value, index) => expect(actual?.[index]).toBeCloseTo(value, precision));
@@ -455,4 +456,85 @@ describe('living reconstruction API', () => {
       expect(provider).not.toHaveBeenCalled();
     });
   });
+});
+
+describe('reviewed reconstruction pipeline', () => {
+  it('requires a human review and a width, adapts only the explicitly supplied geometry, and blocks incompatible machines', async () => {
+    const server = createMetaServer({});
+    await withServer(server, async port => {
+      const post = (payload: unknown) => fetch(`http://127.0.0.1:${port}/api/living/reconstruction`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify(payload) });
+      const initial = await post({ mode: 'offline', sourceKind: 'image', imageDataUrl: jpegA });
+      expect(initial.status).toBe(200);
+      const session = await initial.json() as { sessionId: string; observation: ExcavatorObservationV1 };
+      const observation = session.observation;
+      const decisions = Object.fromEntries([
+        ...observation.hypotheses.map(h => `hypothesis:${h.id}`),
+        ...observation.entities.filter(e => e.status === 'hypothesis').map(e => `entity:${e.id}`),
+        ...observation.relations.filter(r => r.status === 'hypothesis').map(r => `relation:${r.id}`),
+        ...observation.requests.map(r => `request:${r.id}`),
+      ].map(id => [id, 'reject']));
+      const review = { reviewerId: 'test-reviewer', family: 'tracked_excavator', bucketConfirmed: true, decisions, widthBasis: 'test value only', bucketWidthM: 1.4 };
+      const incomplete = await post({ action: 'review', sessionId: session.sessionId, review: { ...review, bucketWidthM: null } });
+      expect(incomplete.status).toBe(422);
+      const missingDecision = await post({ action: 'review', sessionId: session.sessionId, review: { ...review, decisions: {} } });
+      expect(missingDecision.status).toBe(422);
+      const valid = await post({ action: 'review', sessionId: session.sessionId, review });
+      const result = await valid.json() as { geometry: { bucketWidthBeforeM: number; bucketWidthAfterM: number }; assembly: typeof EXCAVATOR_ASSEMBLY_V1; mode: string; originalObservation: ExcavatorObservationV1; review: typeof review; provenance: { observation: { source: string }; review: { source: string; humanParticipation: string; reviewerIdentity: string }; bucketWidth: { source: string; measurement: string }; remainingGeometry: { source: string } } };
+      expect(valid.status).toBe(200);
+      expect(result.geometry).toEqual({ bucketWidthBeforeM: 1.1, bucketWidthAfterM: 1.4 });
+      expect(result.mode).toBe('offline');
+      expect(result.originalObservation).toEqual(observation);
+      expect(result.review).toEqual(review);
+      expect(result.provenance).toMatchObject({ observation: { source: 'offline_fixture' }, review: { source: 'client_submitted', humanParticipation: 'unverified', reviewerIdentity: 'unverified' }, bucketWidth: { source: 'client_submitted', measurement: 'unverified' }, remainingGeometry: { source: 'synthetic_fixture' } });
+      const box = result.assembly.parts.find(part => part.role === 'bucket')!.shapes.find(shape => shape.kind === 'box')!;
+      expect(box.provenance).toMatchObject({ origin: 'unknown', actor: { kind: 'system', id: 'reconstruction-api' } });
+      expect(validateAssembly(result.assembly)).toEqual({ ok: true, issues: [] });
+      const incompatible = await post({ action: 'review', sessionId: session.sessionId, review: { ...review, family: 'wheeled_excavator' } });
+      expect(incompatible.status).toBe(422);
+      const absent = await post({ action: 'review', sessionId: 'absent', review });
+      expect(absent.status).toBe(404);
+    });
+  });
+
+  it('blocks malformed and oversized dimensions before calling the provider', async () => {
+    const provider = vi.fn<typeof fetch>();
+    const server = createMetaServer({ apiKey: 'fixture-key-not-real', fetchImpl: provider });
+    await withServer(server, async port => {
+      const bytes = Buffer.from('89504e470d0a1a0a0000000d494844520000271100000001', 'hex');
+      for (const imageDataUrl of ['data:image/jpeg;base64,/9j/4AA=', `data:image/png;base64,${bytes.toString('base64')}`]) {
+        const response = await fetch(`http://127.0.0.1:${port}/api/living/reconstruction`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: JSON.stringify({ imageDataUrl }) });
+        expect(response.status).toBe(400);
+      }
+      expect(provider).not.toHaveBeenCalled();
+    });
+  });
+});
+
+
+it('blocks a wheeled observation even when the reviewer selects the tracked family', () => {
+  const observation = createOfflineImageObservation('image', 'wheeled-fixture', 'c'.repeat(64));
+  observation.entities[0]!.label = 'chassis de rodas';
+  const ids = [...observation.hypotheses.map(h => `hypothesis:${h.id}`), ...observation.entities.filter(e => e.status === 'hypothesis').map(e => `entity:${e.id}`), ...observation.relations.filter(r => r.status === 'hypothesis').map(r => `relation:${r.id}`), ...observation.requests.map(r => `request:${r.id}`)];
+  expect(() => reviewReconstruction(observation, 'offline', { reviewerId: 'reviewer', family: 'tracked_excavator', bucketConfirmed: true, decisions: Object.fromEntries(ids.map(id => [id, 'reject'])), bucketWidthM: 1.4, widthBasis: 'test only' }, 'test')).toThrow(/rodas incompatível/);
+});
+
+
+it('preserves a rejected hypothesis in the original observation and does not use image dimensions as physical input', () => {
+  const observation = createOfflineImageObservation('image', 'photo-no-scale', 'd'.repeat(64));
+  const bucket = observation.entities.find(e => e.kind === 'bucket')!;
+  observation.dimensions = observation.dimensions.filter(d => !(d.partId === bucket.id && d.label.toLowerCase().includes('width')));
+  observation.dimensions.unshift({ id: 'invented-width', partId: bucket.id, label: 'width', value: 9, unit: 'm', status: 'observed', evidence: [{ id: 'untrusted', kind: 'image_region', detail: 'unverified model claim' }] });
+  const original = structuredClone(observation);
+  const ids = [...observation.hypotheses.map(h => `hypothesis:${h.id}`), ...observation.entities.filter(e => e.status === 'hypothesis').map(e => `entity:${e.id}`), ...observation.relations.filter(r => r.status === 'hypothesis').map(r => `relation:${r.id}`), ...observation.requests.map(r => `request:${r.id}`)];
+  const decisions = Object.fromEntries(ids.map(id => [id, 'reject']));
+  const review = { reviewerId: 'not-a-proof', family: 'tracked_excavator' as const, bucketConfirmed: true as const, decisions, bucketWidthM: 1.4, widthBasis: 'test input' };
+  expect(() => reviewReconstruction(observation, 'live', { ...review, bucketWidthM: undefined }, 'test')).toThrow(/largura da caçamba/);
+  const result = reviewReconstruction(observation, 'live', review, 'test');
+  expect(result.originalObservation).toEqual(original);
+  expect(observation).toEqual(original);
+  expect(result.originalObservation.entities.find(e => e.status === 'hypothesis')).toBeDefined();
+  expect(result.review.decisions).toEqual(decisions);
+  expect(result.geometry.bucketWidthAfterM).toBe(1.4);
+  expect(result.proposal.parts.find(part => part.id === 'part-bucket')?.dimensions.width).toMatchObject({ source: 'hypothesis', value: 9 });
+  expect(result.provenance).toMatchObject({ observation: { source: 'meta_model', statuses: 'model_reported' }, review: { humanParticipation: 'unverified' }, bucketWidth: { source: 'client_submitted', measurement: 'unverified' }, remainingGeometry: { source: 'synthetic_fixture' } });
 });

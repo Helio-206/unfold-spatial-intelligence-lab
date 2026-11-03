@@ -30,7 +30,10 @@ import { buildSpatialAgentPrompt, parseSpatialAgentResult, SPATIAL_AGENT_JSON_SC
 import { buildExcavatorAssembly, assemblyMetrics } from '../src/living/reconstruction/generator';
 import { offlineImageObservation, offlineTextObservation, observeExcavatorImage, observeExcavatorText } from '../src/living/reconstruction/muse';
 import { ASSEMBLY_PROPOSAL_SCHEMA, RECONSTRUCTION_OBSERVATION_SCHEMA, validateAssemblyProposal } from '../src/living/reconstruction/contracts';
-import { adapterBlockReason } from '../src/living/reconstruction/adapter';
+import { adapterBlockReason, ReconstructionAdapterBlockedError } from '../src/living/reconstruction/adapter';
+import { reviewReconstruction } from '../src/living/reconstruction/review';
+import { dimensionsFromHeader } from '../src/plan-image';
+import type { ExcavatorObservationV1 } from '../src/living/reconstruction/contracts';
 
 const MAX_BODY_BYTES = 64 * 1024;
 const MAX_IMAGE_BODY_BYTES = 14 * 1024 * 1024;
@@ -274,6 +277,7 @@ function conversationErrorCode(error: unknown): { code: string; category: string
 }
 
 export function createMetaServer(options: ServerOptions = {}): MetaServer {
+  const reconstructionSessions = new Map<string, { observation: ExcavatorObservationV1; mode: 'live' | 'offline'; expires: number }>();
   const upstreamEvidence = evidenceOptions(options);
   const localTokenFile = options.localTokenFile ?? process.env.UNFOLD_LOCAL_TOKEN_FILE;
   const localToken = createLocalToken(localTokenFile);
@@ -602,6 +606,28 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
       }
       if (request.url === '/api/living/reconstruction') {
         const candidate = body as Record<string, unknown>;
+        const peer = request.socket.remoteAddress ?? 'unknown';
+        for (const [key, timestamps] of imageRequests) if (!timestamps.some((time) => Date.now() - time < 60_000)) imageRequests.delete(key);
+        const recent = (imageRequests.get(`reconstruction:${peer}`) ?? []).filter((time) => Date.now() - time < 60_000);
+        if (recent.length >= 10) {
+          writeJson(response, 429, { error: { code: 'RECONSTRUCTION_RATE_LIMITED', message: 'Limite de propostas de reconstrução atingido.' } }, origin);
+          return;
+        }
+        imageRequests.set(`reconstruction:${peer}`, [...recent, Date.now()]);
+        if (candidate.action === 'review') {
+          const session = typeof candidate.sessionId === 'string' ? reconstructionSessions.get(candidate.sessionId) : undefined;
+          if (!session || session.expires < Date.now()) {
+            writeJson(response, 404, { error: { code: 'RECONSTRUCTION_SESSION_NOT_FOUND', message: 'Sessão ausente ou expirada.' } }, origin); return;
+          }
+          try {
+            const result = reviewReconstruction(session.observation, session.mode, candidate.review, candidate.sessionId as string);
+            writeJson(response, 200, { contract: 'unfold.reconstruction.review.v1', sessionId: candidate.sessionId, mode: session.mode, status: 'contract_valid', ...result }, origin);
+          } catch (error) {
+            if (!(error instanceof ReconstructionAdapterBlockedError)) throw error;
+            writeJson(response, 422, { contract: 'unfold.reconstruction.review.v1', sessionId: candidate.sessionId, status: 'blocked', reasons: error.reasons }, origin);
+          }
+          return;
+        }
         const mode = candidate.mode === undefined ? 'live' : candidate.mode;
         if (mode !== 'live' && mode !== 'offline') {
           writeJson(response, 400, { error: { code: 'INVALID_RECONSTRUCTION_MODE', message: 'mode deve ser live ou offline.' } }, origin);
@@ -621,14 +647,6 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
           writeJson(response, 400, { error: { code: 'INVALID_RECONSTRUCTION_REFERENCE', message: 'sourceReference inválido.' } }, origin);
           return;
         }
-        const peer = request.socket.remoteAddress ?? 'unknown';
-        for (const [key, timestamps] of imageRequests) if (!timestamps.some((time) => Date.now() - time < 60_000)) imageRequests.delete(key);
-        const recent = (imageRequests.get(`reconstruction:${peer}`) ?? []).filter((time) => Date.now() - time < 60_000);
-        if (recent.length >= 10) {
-          writeJson(response, 429, { error: { code: 'RECONSTRUCTION_RATE_LIMITED', message: 'Limite de propostas de reconstrução atingido.' } }, origin);
-          return;
-        }
-        imageRequests.set(`reconstruction:${peer}`, [...recent, Date.now()]);
         try {
           let observed: Awaited<ReturnType<typeof offlineImageObservation>> | Awaited<ReturnType<typeof offlineTextObservation>> | Awaited<ReturnType<typeof observeExcavatorImage>> | Awaited<ReturnType<typeof observeExcavatorText>>;
           if (sourceKind === 'text') {
@@ -640,7 +658,12 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
             else { reserveMetaCall(); observed = await observeExcavatorText(candidate.instruction, sourceReference, apiKey!, options.fetchImpl); }
           } else {
             let image;
-            try { image = validateImageDataUrl(candidate.imageDataUrl); }
+            try {
+              image = validateImageDataUrl(candidate.imageDataUrl);
+              const bytes = Buffer.from(image.dataUrl.slice(image.dataUrl.indexOf(',') + 1), 'base64');
+              const { width, height } = dimensionsFromHeader(bytes, image.mimeType);
+              if (!width || !height || width > 10_000 || height > 10_000 || width * height > 16_000_000) throw new Error('Dimensões da imagem excedem os limites.');
+            }
             catch (error) { writeJson(response, 400, { error: { code: 'INVALID_RECONSTRUCTION_IMAGE', message: error instanceof Error ? error.message : 'Imagem inválida.' } }, origin); return; }
             if (mode === 'offline') observed = offlineImageObservation(image.dataUrl, sourceKind, sourceReference);
             else { reserveMetaCall(); observed = await observeExcavatorImage(image.dataUrl, sourceKind, sourceReference, apiKey!, options.fetchImpl); }
@@ -652,7 +675,12 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
             'Geometria de template, hipóteses e valores desconhecidos não são afirmações mecânicas verificadas.',
             ...(observed.mode === 'offline' ? ['Fallback offline determinístico e baseado em template; não é interpretação visual do raster.'] : []),
           ];
-          writeJson(response, 200, { contract: 'unfold.reconstruction.v1', status: assemblyProposal.validation.status, observation: observed.observation, assemblyProposal, engineering: { status: 'blocked', reason: adapterBlockReason() }, metrics, limitations, meta: observed.meta }, origin);
+          const now = Date.now();
+          for (const [id, session] of reconstructionSessions) if (session.expires < now) reconstructionSessions.delete(id);
+          if (reconstructionSessions.size >= 100) { writeJson(response, 503, { error: { code: 'RECONSTRUCTION_SESSION_CAPACITY', message: 'Limite de sessões atingido.' } }, origin); return; }
+          const sessionId = randomUUID();
+          reconstructionSessions.set(sessionId, { observation: observed.observation, mode: observed.mode, expires: now + 30 * 60_000 });
+          writeJson(response, 200, { contract: 'unfold.reconstruction.v1', sessionId, mode: observed.mode, status: assemblyProposal.validation.status, observation: observed.observation, assemblyProposal, engineering: { status: 'blocked', reason: adapterBlockReason() }, metrics, limitations, meta: observed.meta }, origin);
           return;
         } catch (error) {
           if (error instanceof MetaCallBudgetExceeded) {
