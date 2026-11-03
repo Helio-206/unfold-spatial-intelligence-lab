@@ -1,12 +1,12 @@
 {
-  "at": "2026-11-02T22:01:49.908Z",
-  "passed": 70,
+  "at": "2026-11-03T02:40:08.822Z",
+  "passed": 101,
   "failed": 0,
   "metrics": {
     "contact": {
-      "withContact": 40.01730797241728,
-      "withoutContact": 53.75462172873826,
-      "ratio": 0.7444440437950892,
+      "withContact": 40.01755795862416,
+      "withoutContact": 53.75278068046245,
+      "ratio": 0.7444741918843533,
       "region": {
         "x": 1027.6483908920359,
         "y": 715.0951294956192,
@@ -22,16 +22,16 @@
         "h": 89.27380616763719
       },
       "withEnvironment": {
-        "mean": 66.250935677178,
-        "sd": 55.48744940875996,
-        "p50": 50.007999999999996,
-        "p99": 243.2126,
-        "bright": 0.03491603237888124,
+        "mean": 66.25521993475914,
+        "sd": 55.477548511500125,
+        "p50": 50.72319999999999,
+        "p99": 242.9278,
+        "bright": 0.03467439893681285,
         "n": 8277
       },
       "withoutEnvironment": {
-        "mean": 18.210880778059618,
-        "sd": 28.404827547531077,
+        "mean": 18.214737320285085,
+        "sd": 28.427039388939875,
         "p50": 2.4412,
         "p99": 69.3432,
         "bright": 0.002899601304820587,
@@ -40,19 +40,19 @@
     },
     "bucketReflections": {
       "with": {
-        "mean": 77.06258926194393,
-        "sd": 55.42303241782206,
-        "p50": 61.450399999999995,
+        "mean": 77.06503321737833,
+        "sd": 55.42646704533195,
+        "p50": 61.37819999999999,
         "p99": 238,
-        "bright": 0.08179572494454528,
+        "bright": 0.08187134502923976,
         "n": 39672
       },
       "without": {
-        "mean": 36.5308328846485,
-        "sd": 51.76859098600288,
+        "mean": 36.52893413490055,
+        "sd": 51.76962931957851,
         "p50": 16.8676,
         "p99": 234.0682,
-        "bright": 0.023391812865497075,
+        "bright": 0.02336660617059891,
         "n": 39672
       }
     },
@@ -97,22 +97,22 @@
     "benchmark": {
       "light": {
         "frames": 20,
-        "meanMs": 96.45,
-        "p95Ms": 317.9000000000233,
+        "meanMs": 92.35499999999884,
+        "p95Ms": 527.8000000000466,
         "calls": 17,
         "triangles": 10263
       },
       "balanced": {
         "frames": 20,
-        "meanMs": 400.1449999999953,
-        "p95Ms": 2202.8000000000466,
+        "meanMs": 345.58499999999765,
+        "p95Ms": 1631.9000000000233,
         "calls": 52,
         "triangles": 23669
       },
       "studio": {
         "frames": 20,
-        "meanMs": 644.5449999999953,
-        "p95Ms": 2219.70000000007,
+        "meanMs": 578.4950000000011,
+        "p95Ms": 1887,
         "calls": 93,
         "triangles": 47327
       }
@@ -124,16 +124,21 @@
       "pixelRatio": 1
     },
     "degradeAt1": {
-      "ms": 34867
+      "ms": 31412
     },
     "degradeAt2": {
-      "ms": 57491,
+      "ms": 51647,
       "level": 2
     },
     "poseClock": {
-      "wallS": 3.007,
-      "poseS": 2.4455,
-      "framesDrawn": 15
+      "wallS": 3.014,
+      "poseS": 2.863099999999976,
+      "framesDrawn": 17
+    },
+    "integration": {
+      "maxBucketStepM": 0.21399777577311177,
+      "totalPathM": 4.763443689865419,
+      "samples": 41
     }
   },
   "checks": [
@@ -182,7 +187,7 @@
         "lights": 3,
         "contactRenders": 1,
         "frames": 1,
-        "lastFrameMs": 6691.900000000023,
+        "lastFrameMs": 5142.800000000047,
         "caps": {
           "maxTextureSize": 8192,
           "maxSamples": 4,
@@ -198,11 +203,11 @@
       "name": "o canvas mostra a cena (não está em branco nem todo preto)",
       "ok": true,
       "observed": {
-        "mean": 65.53372051033006,
-        "sd": 48.617125602686436,
+        "mean": 65.53365168227421,
+        "sd": 48.6167231375142,
         "p50": 53.5868,
         "p99": 175.0722,
-        "bright": 0.004949305555555556,
+        "bright": 0.004950694444444444,
         "n": 1440000
       }
     },
@@ -347,7 +352,7 @@
       "scenario": "2 câmara",
       "name": "o percurso (T) move a câmara e fica indicado",
       "ok": true,
-      "observed": 5.837409634530345
+      "observed": 6.486166535981327
     },
     {
       "scenario": "2 câmara",
@@ -359,7 +364,7 @@
       "name": "o zoom está limitado (não atravessa a máquina)",
       "ok": true,
       "observed": {
-        "d": 1.4186946829608096,
+        "d": 1.4186946829608098,
         "min": 1.4186946829608098,
         "max": 34.04867239105943
       }
@@ -381,9 +386,9 @@
       "name": "a sombra de contacto escurece o chão por baixo do balde (≥ 8 % mais escuro do que sem ela)",
       "ok": true,
       "observed": {
-        "withContact": 40.01730797241728,
-        "withoutContact": 53.75462172873826,
-        "ratio": 0.7444440437950892,
+        "withContact": 40.01755795862416,
+        "withoutContact": 53.75278068046245,
+        "ratio": 0.7444741918843533,
         "region": {
           "x": 1027.6483908920359,
           "y": 715.0951294956192,
@@ -404,16 +409,16 @@
           "h": 89.27380616763719
         },
         "withEnvironment": {
-          "mean": 66.250935677178,
-          "sd": 55.48744940875996,
-          "p50": 50.007999999999996,
-          "p99": 243.2126,
-          "bright": 0.03491603237888124,
+          "mean": 66.25521993475914,
+          "sd": 55.477548511500125,
+          "p50": 50.72319999999999,
+          "p99": 242.9278,
+          "bright": 0.03467439893681285,
           "n": 8277
         },
         "withoutEnvironment": {
-          "mean": 18.210880778059618,
-          "sd": 28.404827547531077,
+          "mean": 18.214737320285085,
+          "sd": 28.427039388939875,
           "p50": 2.4412,
           "p99": 69.3432,
           "bright": 0.002899601304820587,
@@ -427,19 +432,19 @@
       "ok": true,
       "observed": {
         "with": {
-          "mean": 77.06258926194393,
-          "sd": 55.42303241782206,
-          "p50": 61.450399999999995,
+          "mean": 77.06503321737833,
+          "sd": 55.42646704533195,
+          "p50": 61.37819999999999,
           "p99": 238,
-          "bright": 0.08179572494454528,
+          "bright": 0.08187134502923976,
           "n": 39672
         },
         "without": {
-          "mean": 36.5308328846485,
-          "sd": 51.76859098600288,
+          "mean": 36.52893413490055,
+          "sd": 51.76962931957851,
           "p50": 16.8676,
           "p99": 234.0682,
-          "bright": 0.023391812865497075,
+          "bright": 0.02336660617059891,
           "n": 39672
         }
       }
@@ -706,7 +711,7 @@
           "position": [
             12.031886916764373,
             4.0405185903430505,
-            7.522849941729509
+            7.5228499417295085
           ],
           "target": [
             7.1469082050510435,
@@ -748,22 +753,22 @@
       "observed": {
         "light": {
           "frames": 20,
-          "meanMs": 96.45,
-          "p95Ms": 317.9000000000233,
+          "meanMs": 92.35499999999884,
+          "p95Ms": 527.8000000000466,
           "calls": 17,
           "triangles": 10263
         },
         "balanced": {
           "frames": 20,
-          "meanMs": 400.1449999999953,
-          "p95Ms": 2202.8000000000466,
+          "meanMs": 345.58499999999765,
+          "p95Ms": 1631.9000000000233,
           "calls": 52,
           "triangles": 23669
         },
         "studio": {
           "frames": 20,
-          "meanMs": 644.5449999999953,
-          "p95Ms": 2219.70000000007,
+          "meanMs": 578.4950000000011,
+          "p95Ms": 1887,
           "calls": 93,
           "triangles": 47327
         }
@@ -776,22 +781,22 @@
       "observed": {
         "light": {
           "frames": 20,
-          "meanMs": 96.45,
-          "p95Ms": 317.9000000000233,
+          "meanMs": 92.35499999999884,
+          "p95Ms": 527.8000000000466,
           "calls": 17,
           "triangles": 10263
         },
         "balanced": {
           "frames": 20,
-          "meanMs": 400.1449999999953,
-          "p95Ms": 2202.8000000000466,
+          "meanMs": 345.58499999999765,
+          "p95Ms": 1631.9000000000233,
           "calls": 52,
           "triangles": 23669
         },
         "studio": {
           "frames": 20,
-          "meanMs": 644.5449999999953,
-          "p95Ms": 2219.70000000007,
+          "meanMs": 578.4950000000011,
+          "p95Ms": 1887,
           "calls": 93,
           "triangles": 47327
         }
@@ -933,9 +938,9 @@
       "name": "o tempo de pose acompanha o relógio real (≥ 2,4 s em 3 s), apesar de frames lentos",
       "ok": true,
       "observed": {
-        "wallS": 3.007,
-        "poseS": 2.4455,
-        "framesDrawn": 15
+        "wallS": 3.014,
+        "poseS": 2.863099999999976,
+        "framesDrawn": 17
       }
     },
     {
@@ -950,6 +955,328 @@
     },
     {
       "scenario": "9 revisão",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "10 integração",
+      "name": "a geometria é a do Visual Foundry (detalhada), não o proxy",
+      "ok": true,
+      "observed": {
+        "meshes": 64,
+        "triangles": 253744,
+        "parts": [
+          "chassis",
+          "upper_body",
+          "boom",
+          "stick",
+          "bucket",
+          "idler_link",
+          "bucket_link",
+          "boom_cyl_barrel",
+          "boom_cyl_rod",
+          "stick_cyl_barrel",
+          "stick_cyl_rod",
+          "bucket_cyl_barrel",
+          "bucket_cyl_rod"
+        ],
+        "source": "visual-foundry"
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "os ids canónicos das peças são exactamente os da montagem",
+      "ok": true,
+      "observed": [
+        "chassis",
+        "upper_body",
+        "boom",
+        "stick",
+        "bucket",
+        "idler_link",
+        "bucket_link",
+        "boom_cyl_barrel",
+        "boom_cyl_rod",
+        "stick_cyl_barrel",
+        "stick_cyl_rod",
+        "bucket_cyl_barrel",
+        "bucket_cyl_rod"
+      ]
+    },
+    {
+      "scenario": "10 integração",
+      "name": "o readout diz que a geometria é a Visual Foundry e que as poses são do motor",
+      "ok": true,
+      "observed": "motor de engenharia"
+    },
+    {
+      "scenario": "10 integração",
+      "name": "a fonte é o motor (sessão em direto) com duração do cenário",
+      "ok": true,
+      "observed": 2.059767381393601
+    },
+    {
+      "scenario": "10 integração",
+      "name": "Reproduzir faz avançar o tempo da reprodução (relógio real)",
+      "ok": true,
+      "observed": {
+        "kind": "engine-session",
+        "duration": 2.059767381393601,
+        "time": 1.3229000000000233,
+        "playing": true
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "Pausa congela o instante",
+      "ok": true,
+      "observed": [
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.5246326186064225,
+          "playing": false
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.5246326186064225,
+          "playing": false
+        }
+      ]
+    },
+    {
+      "scenario": "10 integração",
+      "name": "Retomar continua a partir do instante em que parou",
+      "ok": true,
+      "observed": [
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.5246326186064225,
+          "playing": false
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.6306326186064225,
+          "playing": true
+        }
+      ]
+    },
+    {
+      "scenario": "10 integração",
+      "name": "instante a 0 %: todas as peças estão exactamente na pose do quadro do motor",
+      "ok": true,
+      "observed": {
+        "worst": 0,
+        "t": 0,
+        "digest": "8267c193009a4c3047fa855b793f18183186c47b5be9808bf0d9a780803595dd"
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "instante a 25 %: todas as peças estão exactamente na pose do quadro do motor",
+      "ok": true,
+      "observed": {
+        "worst": 0,
+        "t": 0.515,
+        "digest": "f7a9d38a523de20396c6cabe2310a44c6d11b40e7743629eca33773d06ff7fe9"
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "instante a 50 %: todas as peças estão exactamente na pose do quadro do motor",
+      "ok": true,
+      "observed": {
+        "worst": 0,
+        "t": 1.03,
+        "digest": "09fbe98e775579edfc6a08e52e1ee22045f28ea0d2570e7bae833a1de2200218"
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "instante a 75 %: todas as peças estão exactamente na pose do quadro do motor",
+      "ok": true,
+      "observed": {
+        "worst": 0,
+        "t": 1.545,
+        "digest": "1d6b5c9d63fcba5c7b0dfd97992ffd115614c6979cf40bd3fb91241220ce63ed"
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "instante a 100 %: todas as peças estão exactamente na pose do quadro do motor",
+      "ok": true,
+      "observed": {
+        "worst": 0,
+        "t": 2.059,
+        "digest": "e899e182b1449d880f7eee20675870a0521bdd706652e2dd857f39aca2191bbe"
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "a caçamba descreve um movimento contínuo (nenhum salto > 0,25 m entre 41 amostras) e percorre mais de 0,5 m",
+      "ok": true,
+      "observed": {
+        "maxBucketStepM": 0.21399777577311177,
+        "totalPathM": 4.763443689865419,
+        "samples": 41
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "as mangueiras flexíveis são re-encaminhadas ao longo da reprodução",
+      "ok": true,
+      "observed": [
+        59.5939459502697,
+        59.59593966603279,
+        59.59444573521614,
+        59.587302178144455,
+        59.573977559804916
+      ]
+    },
+    {
+      "scenario": "10 integração",
+      "name": "a sequência exportada (13 quadros ok) está carregada como reprodução com duração",
+      "ok": true,
+      "observed": {
+        "kind": "motion-frames",
+        "duration": 2.059767381393601,
+        "time": 0,
+        "playing": false
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "entre dois quadros ok a pose é uma mistura rotulada: sem medidas, sem digest de entrada, com origem nos dois quadros",
+      "ok": true,
+      "observed": {
+        "interpolated": true,
+        "measurements": 0,
+        "digest": null,
+        "derived": true,
+        "worst": 0,
+        "origin": "engine"
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "a interface não apresenta a mistura como cálculo directo do motor",
+      "ok": true,
+      "observed": "motor · suavizada entre quadros, sem medidas"
+    },
+    {
+      "scenario": "10 integração",
+      "name": "as mangueiras acompanham também as poses misturadas",
+      "ok": true,
+      "observed": [
+        59.44799962639809,
+        59.38389876484871
+      ]
+    },
+    {
+      "scenario": "10 integração",
+      "name": "blocked-curso: estado «blocked», razão do motor na legenda, base «reference», origem do motor",
+      "ok": true,
+      "observed": {
+        "st": "blocked",
+        "cap": "Bloqueado: O curso 0.9 m de boom_cylinder está fora de [0, 0.76] m.",
+        "pose": "reference · motor",
+        "src": "motor de engenharia"
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "blocked-curso: a pose mostrada é a que o motor declarou (nada inventado)",
+      "ok": true,
+      "observed": 2.3603665272841412e-15
+    },
+    {
+      "scenario": "10 integração",
+      "name": "blocked-colisao: estado «blocked», razão do motor na legenda, base «reference», origem do motor",
+      "ok": true,
+      "observed": {
+        "st": "blocked",
+        "cap": "Bloqueado: Colisão: bucket_cyl_barrel abaixo do chão (0.8812 m); bucket_cyl_rod abaixo do chão (2.2305 m); stick abaixo do chão (2.0658 m).",
+        "pose": "reference · motor",
+        "src": "motor de engenharia"
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "blocked-colisao: a pose mostrada é a que o motor declarou (nada inventado)",
+      "ok": true,
+      "observed": 2.3603665272841412e-15
+    },
+    {
+      "scenario": "10 integração",
+      "name": "sequência recusada (digest) com a geometria Foundry em cena",
+      "ok": true,
+      "observed": "Quadro de movimento recusado: frames[1].assemblyDigest assemblyDigest diferente: os quadros foram calculados sobre montagens efectivas diferentes."
+    },
+    {
+      "scenario": "10 integração",
+      "name": "sequência recusada (world) com a geometria Foundry em cena",
+      "ok": true,
+      "observed": "Quadro de movimento recusado: frames[1].worldFrameId worldFrameId diferente («outro-mundo» e «world»): poses em referenciais diferentes não se misturam."
+    },
+    {
+      "scenario": "10 integração",
+      "name": "sequência recusada (assembly) com a geometria Foundry em cena",
+      "ok": true,
+      "observed": "Quadro de movimento recusado: frames[0].assemblyId Os quadros são da montagem «outra-montagem», não da montagem em cena («excavator-fixture-1»)."
+    },
+    {
+      "scenario": "10 integração",
+      "name": "sequência recusada (parts) com a geometria Foundry em cena",
+      "ok": true,
+      "observed": "Quadro de movimento recusado: frames[1].parts As partes do quadro não correspondem às da montagem; em falta: bucket."
+    },
+    {
+      "scenario": "10 integração",
+      "name": "clicar numa peça mostra o id canónico e a proveniência do registo",
+      "ok": true,
+      "observed": {
+        "partText": "Braço · stick · fixture/unreviewed",
+        "viaHook": "stick"
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "clicar no vazio limpa a leitura",
+      "ok": true
+    },
+    {
+      "scenario": "10 integração",
+      "name": "depois de 24 trocas de fonte as geometrias, texturas e luzes não crescem",
+      "ok": true,
+      "observed": {
+        "base": [
+          68,
+          18,
+          3
+        ],
+        "after": [
+          68,
+          18,
+          3
+        ]
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "dispose liberta geometrias e texturas e retira o canvas, sem libertação dupla (sem erros)",
+      "ok": true,
+      "observed": {
+        "geometries": 0,
+        "textures": 0,
+        "canvasInDom": false
+      }
+    },
+    {
+      "scenario": "10 integração",
       "name": "sem erros na consola",
       "ok": true,
       "observed": []

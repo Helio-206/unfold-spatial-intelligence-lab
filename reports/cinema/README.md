@@ -56,10 +56,18 @@ Lifecycle: 20 tier switches leave geometries (17), textures (5), shader programs
 
 Each was written as a failing unit test first (missing module / wrong behaviour), then fixed; the browser scenario 9 covers the same behaviours end to end.
 
+## Integration: Visual Foundry + engine frames ([`integration/`](integration/))
+
+- [`integration/hero-engine-t0-1080p.png`](integration/hero-engine-t0-1080p.png), [`hero-engine-end-1080p.png`](integration/hero-engine-end-1080p.png): 1920 x 1080, studio tier, the Foundry excavator driven by the live engineering session at the start and at the end of the scenario.
+- [`integration/engine-sequence-sheet.png`](integration/engine-sequence-sheet.png): the exported scenario at the exact instants of its frames (9 distinct instants of the 13 `ok` frames) and its 2 blocked examples. [`evidence.json`](integration/evidence.json) lists, per frame, the input digest, origin (`engine`), status and the largest distance between the pose on stage and the pose in the frame (0 for `ok` frames, 2.4e-15 m for the blocked ones: floating-point rounding).
+- Model on stage: 64 meshes, 253 744 triangles, 13 canonical parts, the Foundry's own materials.
+- Browser E2E scenario 10 (32 checks) on this path: play / pause / resume / scrub with every part within 1e-9 m of the engine frame; 41 samples of the bucket with no jump above 0.25 m and 0.5 m or more of travel; hoses re-routed through the playback and through blended poses; the 15-frame sequence with blending labelled and measurement-free; both blocked frames with the engine's reason and `reference` pose basis; sequences with another digest, world frame, assembly or part set refused; click-to-inspect by canonical id; 24 source switches with no growth of geometries, textures or lights; dispose releases geometries and textures to 0 and removes the canvas.
+- 1080p studio frame cost in software: about 10.6 s mean (3 frames, SwiftShader). It is a CPU rasteriser; this says nothing about a GPU.
+
 ## Tests
 
-- `npm test`: 1382 passed (36 in `tests/living/cinema.test.ts`). `npm run build`: ok.
-- Browser E2E `tests/e2e/cinema.pw.mjs`: 70/70 ([`e2e/results.json`](e2e/results.json)): load and proxy labelling, six shots, determinism, keyboard, tour and hand-over, ablation measurements, 20 tier switches, motion-frame playback and blocked state, full screen / hidden interface, 44 px targets, visible focus, 390 px layout, reduced motion, benchmark per tier, adaptive step-down, idle, no console errors, no request outside localhost.
+- `npx vitest run --testTimeout=15000`: 1677 passed (88 files; 36 in `tests/living/cinema.test.ts`, 25 in `tests/living/cinema-integration.test.ts`). `npm run build`: ok.
+- Browser E2E `tests/e2e/cinema.pw.mjs`: 101/101 ([`e2e/results.json`](e2e/results.json)): load and proxy labelling, six shots, determinism, keyboard, tour and hand-over, ablation measurements, 20 tier switches, motion-frame playback and blocked state, full screen / hidden interface, 44 px targets, visible focus, 390 px layout, reduced motion, benchmark per tier, adaptive step-down, idle, no console errors, no request outside localhost.
 - Regressions, unchanged: `wall-removal-merge` 101/101, `confirmed-values-authorization` 60/60, `rendering-integration` 63/63.
 
 ## Limits
