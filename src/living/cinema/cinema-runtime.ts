@@ -43,7 +43,7 @@ export class CinemaRuntime {
   readonly caps: DeviceCaps; readonly visuals: MachineVisuals; readonly framing: MachineFraming;
   private post: StudioPost; private materials: StudioMaterials; private settings: CinemaSettings; private baseSettings: CinemaSettings; private degradeLevel: 0 | 1 | 2 = 0;
   private poseSource: PoseSource; private poseClock = new PoseClock(); private poseTimeS = 0; private poseSpeed = 1; private posePlaying = false; private poseLoop = true;
-  private raf = 0; private clock = new FrameClock(); private lastFrameAt = 0; private disposed = false; private lost = false;
+  private raf = 0; private clock = new FrameClock(); private lastFrameAt = 0; private disposed = false; private lost = false; private suspended = false;
   private monitor = new FrameMonitor({ window: 45 }); private probeTurn = false; private readonly probePixel = new Uint8Array(4);
   private frames = 0; private lastFrameMs = 0; private observer: ResizeObserver; private pixelRatioCap: number; private size: [number, number] = [1, 1];
   private shotNow: ShotId | 'free' | 'tour' | null = null;
@@ -160,9 +160,9 @@ export class CinemaRuntime {
   }
 
   // --- render loop -------------------------------------------------------------------------------------------------
-  requestFrame(): void { if (this.disposed || this.lost || this.raf) return; if (this.clock.request(performance.now())) this.raf = requestAnimationFrame((t) => this.frame(t)); }
+  requestFrame(): void { if (this.disposed || this.lost || this.suspended || this.raf) return; if (this.clock.request(performance.now())) this.raf = requestAnimationFrame((t) => this.frame(t)); }
   private frame(now: number): void {
-    const { latencyMs } = this.clock.begin(performance.now()); this.raf = 0; if (this.disposed || this.lost) return;
+    const { latencyMs } = this.clock.begin(performance.now()); this.raf = 0; if (this.disposed || this.lost || this.suspended) return;
     const dt = this.lastFrameAt ? Math.min(0.1, Math.max(0, (now - this.lastFrameAt) / 1000)) : 0; this.lastFrameAt = now;
     let moving = false;
     if (this.director.active) { const r = this.director.advance(dt); this.applyCamera(r.pose); moving = r.moving; if (!r.moving) this.setShot(this.shotNow === 'tour' ? 'free' : this.shotNow); }
@@ -215,6 +215,20 @@ export class CinemaRuntime {
   stats(): CinemaStats {
     const info = this.renderer.info; let lights = 0; this.stage.scene.traverse((o) => { if ((o as THREE.Light).isLight) lights += 1; });
     return { tier: this.settings.tier, degrade: this.degradeLevel, settings: this.settings, pixelRatio: this.renderer.getPixelRatio(), size: this.size, calls: info.render.calls, triangles: info.render.triangles, geometries: info.memory.geometries, textures: info.memory.textures, programs: info.programs?.length ?? 0, lights, contactRenders: this.stage.contact.renders, frames: this.frames, lastFrameMs: this.lastFrameMs, caps: this.caps, visuals: this.visuals.source, poseSource: this.poseSource.kind };
+  }
+
+  /** Keep the stage and playback state while a document is in the back-forward cache. */
+  suspend(): void {
+    if (this.disposed || this.suspended) return;
+    this.suspended = true; cancelAnimationFrame(this.raf); this.raf = 0;
+    this.clock = new FrameClock(); this.poseClock.pause(); this.lastFrameAt = 0;
+  }
+
+  resume(): void {
+    if (this.disposed || !this.suspended) return;
+    this.suspended = false; this.lastFrameAt = 0; this.monitor.reset();
+    if (this.posePlaying) this.poseClock.start(performance.now());
+    this.resize(true); this.requestFrame();
   }
 
   dispose(): void {

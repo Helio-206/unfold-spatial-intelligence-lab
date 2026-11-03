@@ -85,7 +85,7 @@ export async function mountCinema(app: HTMLElement): Promise<CinemaRuntime> {
   const markTier = (tier: CinemaTier) => { app.querySelectorAll<HTMLButtonElement>('[data-tier]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tier === tier))); };
   markTier(runtime.tier);
   const readout = () => { const s: CinemaStats = runtime.stats(); $('#ro-tier').textContent = `${TIER_LABEL[s.tier]}${s.degrade ? ` · −${s.degrade}` : ''} · ${s.pixelRatio.toFixed(2)}×`; $('#ro-frame').textContent = `${s.lastFrameMs.toFixed(0)} ms · ${s.calls} chamadas`; };
-  const readoutTimer = window.setInterval(readout, 800); readout();
+  let readoutTimer = window.setInterval(readout, 800); readout();
 
   // --- controls ---------------------------------------------------------------------------------------------------
   app.querySelectorAll<HTMLButtonElement>('[data-shot]').forEach((b) => b.addEventListener('click', () => { runtime.cut(b.dataset.shot as ShotId); say(`Plano: ${SHOT_LABEL[b.dataset.shot as ShotId]}`); }));
@@ -121,7 +121,14 @@ export async function mountCinema(app: HTMLElement): Promise<CinemaRuntime> {
       default: break;
     }
   });
-  window.addEventListener('pagehide', () => { clearInterval(readoutTimer); runtime.dispose(); });
+  window.addEventListener('pagehide', (event) => {
+    clearInterval(readoutTimer); clearTimeout(hideTimer);
+    if (event.persisted) runtime.suspend(); else runtime.dispose();
+  });
+  window.addEventListener('pageshow', (event) => {
+    if (!event.persisted) return;
+    runtime.resume(); readout(); clearInterval(readoutTimer); readoutTimer = window.setInterval(readout, 800);
+  });
   if (params.get('ui') === '0') { setHidden(true); root.classList.add('is-idle'); clearTimeout(hideTimer); }
 
   if (params.has('debug-cinema')) {
