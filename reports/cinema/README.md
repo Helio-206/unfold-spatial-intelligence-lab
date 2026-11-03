@@ -64,11 +64,15 @@ Each was written as a failing unit test first (missing module / wrong behaviour)
 - Browser E2E scenario 10 (32 checks) on this path: play / pause / resume / scrub with every part within 1e-9 m of the engine frame; 41 samples of the bucket with no jump above 0.25 m and 0.5 m or more of travel; hoses re-routed through the playback and through blended poses; the 15-frame sequence with blending labelled and measurement-free; both blocked frames with the engine's reason and `reference` pose basis; sequences with another digest, world frame, assembly or part set refused; click-to-inspect by canonical id; 24 source switches with no growth of geometries, textures or lights; dispose releases geometries and textures to 0 and removes the canvas.
 - 1080p studio frame cost in software: about 10.6 s mean (3 frames, SwiftShader). It is a CPU rasteriser; this says nothing about a GPU.
 
+## Responsive layout (review of 30a9cfe)
+
+At widths from 768 to about 1480 px the technical readout (left column, 340 px) and the centred motion bar (up to 720 px) shared the same bottom edge and overlapped; the readout, drawn later, intercepted the select, slider and play button. At 390 px the caption sat on the motion bar and intercepted the slider. Fix (CSS only): between 761 and 1480 px the readout stacks directly above the motion bar and scrolls inside its box on short windows; the caption no longer takes pointer events. Browser scenario 11 measures bounding rectangles and uses real pointer interactions at 768, 800, 1024, 1080, 1280, 1440, 1600 and 390 px (74 checks); before the fix it failed 10 of them on the previous HEAD. Limitation: in the stacked layout the readout covers the left part of the picture at 1024 px; "Esconder interface" (H) clears it.
+
 ## Tests
 
 - `npx vitest run --testTimeout=15000`: 1677 passed (88 files; 36 in `tests/living/cinema.test.ts`, 25 in `tests/living/cinema-integration.test.ts`). `npm run build`: ok.
-- Browser E2E `tests/e2e/cinema.pw.mjs`: 101/101 ([`e2e/results.json`](e2e/results.json)): load and proxy labelling, six shots, determinism, keyboard, tour and hand-over, ablation measurements, 20 tier switches, motion-frame playback and blocked state, full screen / hidden interface, 44 px targets, visible focus, 390 px layout, reduced motion, benchmark per tier, adaptive step-down, idle, no console errors, no request outside localhost.
-- Regressions, unchanged: `wall-removal-merge` 101/101, `confirmed-values-authorization` 60/60, `rendering-integration` 63/63.
+- Browser E2E `tests/e2e/cinema.pw.mjs`: 174/174 ([`e2e/results.json`](e2e/results.json)): load and proxy labelling, six shots, determinism, keyboard, tour and hand-over, ablation measurements, 20 tier switches, motion-frame playback and blocked state, full screen / hidden interface, 44 px targets, visible focus, 390 px layout, reduced motion, benchmark per tier, adaptive step-down, idle, no console errors, no request outside localhost.
+- Regressions, unchanged: `wall-removal-merge` 174/174, `confirmed-values-authorization` 60/60, `rendering-integration` 63/63.
 
 ## Limits
 

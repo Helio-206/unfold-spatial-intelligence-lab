@@ -1,12 +1,12 @@
 {
-  "at": "2026-11-03T02:40:08.822Z",
-  "passed": 101,
+  "at": "2026-11-03T03:18:56.614Z",
+  "passed": 174,
   "failed": 0,
   "metrics": {
     "contact": {
-      "withContact": 40.01755795862416,
-      "withoutContact": 53.75278068046245,
-      "ratio": 0.7444741918843533,
+      "withContact": 40.018934004601185,
+      "withoutContact": 53.757038363220985,
+      "ratio": 0.7444408252963017,
       "region": {
         "x": 1027.6483908920359,
         "y": 715.0951294956192,
@@ -22,37 +22,37 @@
         "h": 89.27380616763719
       },
       "withEnvironment": {
-        "mean": 66.25521993475914,
-        "sd": 55.477548511500125,
-        "p50": 50.72319999999999,
-        "p99": 242.9278,
-        "bright": 0.03467439893681285,
+        "mean": 66.16565040473617,
+        "sd": 55.522743506674686,
+        "p50": 50.45439999999999,
+        "p99": 243.2126,
+        "bright": 0.034553582215778665,
         "n": 8277
       },
       "withoutEnvironment": {
-        "mean": 18.214737320285085,
-        "sd": 28.427039388939875,
+        "mean": 18.21729534855616,
+        "sd": 28.409949759900638,
         "p50": 2.4412,
         "p99": 69.3432,
-        "bright": 0.002899601304820587,
+        "bright": 0.0027787845837863962,
         "n": 8277
       }
     },
     "bucketReflections": {
       "with": {
-        "mean": 77.06503321737833,
-        "sd": 55.42646704533195,
-        "p50": 61.37819999999999,
+        "mean": 77.06343827384138,
+        "sd": 55.42195329605995,
+        "p50": 61.450399999999995,
         "p99": 238,
         "bright": 0.08187134502923976,
         "n": 39672
       },
       "without": {
-        "mean": 36.52893413490055,
-        "sd": 51.76962931957851,
+        "mean": 36.52994342608832,
+        "sd": 51.76635136942306,
         "p50": 16.8676,
         "p99": 234.0682,
-        "bright": 0.02336660617059891,
+        "bright": 0.023391812865497075,
         "n": 39672
       }
     },
@@ -97,22 +97,22 @@
     "benchmark": {
       "light": {
         "frames": 20,
-        "meanMs": 92.35499999999884,
-        "p95Ms": 527.8000000000466,
+        "meanMs": 91.38500000000931,
+        "p95Ms": 493.69999999995343,
         "calls": 17,
         "triangles": 10263
       },
       "balanced": {
         "frames": 20,
-        "meanMs": 345.58499999999765,
-        "p95Ms": 1631.9000000000233,
+        "meanMs": 346.38000000001045,
+        "p95Ms": 1734.4000000000233,
         "calls": 52,
         "triangles": 23669
       },
       "studio": {
         "frames": 20,
-        "meanMs": 578.4950000000011,
-        "p95Ms": 1887,
+        "meanMs": 584.8849999999977,
+        "p95Ms": 2043.0999999999767,
         "calls": 93,
         "triangles": 47327
       }
@@ -124,21 +124,130 @@
       "pixelRatio": 1
     },
     "degradeAt1": {
-      "ms": 31412
+      "ms": 30665
     },
     "degradeAt2": {
-      "ms": 51647,
+      "ms": 51008,
       "level": 2
     },
     "poseClock": {
-      "wallS": 3.014,
-      "poseS": 2.863099999999976,
-      "framesDrawn": 17
+      "wallS": 3.005,
+      "poseS": 2.6248000000000467,
+      "framesDrawn": 18
     },
     "integration": {
       "maxBucketStepM": 0.21399777577311177,
       "totalPathM": 4.763443689865419,
       "samples": 41
+    },
+    "layout": {
+      "768px": {
+        "motion": [
+          24,
+          746,
+          744,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      },
+      "800px": {
+        "motion": [
+          40,
+          746,
+          760,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      },
+      "1024px": {
+        "motion": [
+          152,
+          746,
+          872,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      },
+      "1080px": {
+        "motion": [
+          180,
+          746,
+          900,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      },
+      "1280px": {
+        "motion": [
+          280,
+          746,
+          1000,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      },
+      "1440px": {
+        "motion": [
+          360,
+          746,
+          1080,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      },
+      "1600px": {
+        "motion": [
+          440,
+          746,
+          1160,
+          812
+        ],
+        "readout": [
+          24,
+          260,
+          364,
+          812
+        ]
+      },
+      "390px": {
+        "motion": [
+          8,
+          646,
+          382,
+          768
+        ],
+        "readout": null
+      }
     }
   },
   "checks": [
@@ -187,7 +296,7 @@
         "lights": 3,
         "contactRenders": 1,
         "frames": 1,
-        "lastFrameMs": 5142.800000000047,
+        "lastFrameMs": 5915.799999999988,
         "caps": {
           "maxTextureSize": 8192,
           "maxSamples": 4,
@@ -203,11 +312,11 @@
       "name": "o canvas mostra a cena (não está em branco nem todo preto)",
       "ok": true,
       "observed": {
-        "mean": 65.53365168227421,
-        "sd": 48.6167231375142,
+        "mean": 65.53397567074667,
+        "sd": 48.61678897539851,
         "p50": 53.5868,
         "p99": 175.0722,
-        "bright": 0.004950694444444444,
+        "bright": 0.0049479166666666664,
         "n": 1440000
       }
     },
@@ -226,7 +335,7 @@
       "scenario": "1 carga",
       "name": "o contador de chamadas conta todas as passagens do frame (não só a última)",
       "ok": true,
-      "observed": 93
+      "observed": 110
     },
     {
       "scenario": "1 carga",
@@ -352,7 +461,7 @@
       "scenario": "2 câmara",
       "name": "o percurso (T) move a câmara e fica indicado",
       "ok": true,
-      "observed": 6.486166535981327
+      "observed": 3.347931400131523
     },
     {
       "scenario": "2 câmara",
@@ -386,9 +495,9 @@
       "name": "a sombra de contacto escurece o chão por baixo do balde (≥ 8 % mais escuro do que sem ela)",
       "ok": true,
       "observed": {
-        "withContact": 40.01755795862416,
-        "withoutContact": 53.75278068046245,
-        "ratio": 0.7444741918843533,
+        "withContact": 40.018934004601185,
+        "withoutContact": 53.757038363220985,
+        "ratio": 0.7444408252963017,
         "region": {
           "x": 1027.6483908920359,
           "y": 715.0951294956192,
@@ -409,19 +518,19 @@
           "h": 89.27380616763719
         },
         "withEnvironment": {
-          "mean": 66.25521993475914,
-          "sd": 55.477548511500125,
-          "p50": 50.72319999999999,
-          "p99": 242.9278,
-          "bright": 0.03467439893681285,
+          "mean": 66.16565040473617,
+          "sd": 55.522743506674686,
+          "p50": 50.45439999999999,
+          "p99": 243.2126,
+          "bright": 0.034553582215778665,
           "n": 8277
         },
         "withoutEnvironment": {
-          "mean": 18.214737320285085,
-          "sd": 28.427039388939875,
+          "mean": 18.21729534855616,
+          "sd": 28.409949759900638,
           "p50": 2.4412,
           "p99": 69.3432,
-          "bright": 0.002899601304820587,
+          "bright": 0.0027787845837863962,
           "n": 8277
         }
       }
@@ -432,19 +541,19 @@
       "ok": true,
       "observed": {
         "with": {
-          "mean": 77.06503321737833,
-          "sd": 55.42646704533195,
-          "p50": 61.37819999999999,
+          "mean": 77.06343827384138,
+          "sd": 55.42195329605995,
+          "p50": 61.450399999999995,
           "p99": 238,
           "bright": 0.08187134502923976,
           "n": 39672
         },
         "without": {
-          "mean": 36.52893413490055,
-          "sd": 51.76962931957851,
+          "mean": 36.52994342608832,
+          "sd": 51.76635136942306,
           "p50": 16.8676,
           "p99": 234.0682,
-          "bright": 0.02336660617059891,
+          "bright": 0.023391812865497075,
           "n": 39672
         }
       }
@@ -711,7 +820,7 @@
           "position": [
             12.031886916764373,
             4.0405185903430505,
-            7.5228499417295085
+            7.522849941729509
           ],
           "target": [
             7.1469082050510435,
@@ -753,22 +862,22 @@
       "observed": {
         "light": {
           "frames": 20,
-          "meanMs": 92.35499999999884,
-          "p95Ms": 527.8000000000466,
+          "meanMs": 91.38500000000931,
+          "p95Ms": 493.69999999995343,
           "calls": 17,
           "triangles": 10263
         },
         "balanced": {
           "frames": 20,
-          "meanMs": 345.58499999999765,
-          "p95Ms": 1631.9000000000233,
+          "meanMs": 346.38000000001045,
+          "p95Ms": 1734.4000000000233,
           "calls": 52,
           "triangles": 23669
         },
         "studio": {
           "frames": 20,
-          "meanMs": 578.4950000000011,
-          "p95Ms": 1887,
+          "meanMs": 584.8849999999977,
+          "p95Ms": 2043.0999999999767,
           "calls": 93,
           "triangles": 47327
         }
@@ -781,22 +890,22 @@
       "observed": {
         "light": {
           "frames": 20,
-          "meanMs": 92.35499999999884,
-          "p95Ms": 527.8000000000466,
+          "meanMs": 91.38500000000931,
+          "p95Ms": 493.69999999995343,
           "calls": 17,
           "triangles": 10263
         },
         "balanced": {
           "frames": 20,
-          "meanMs": 345.58499999999765,
-          "p95Ms": 1631.9000000000233,
+          "meanMs": 346.38000000001045,
+          "p95Ms": 1734.4000000000233,
           "calls": 52,
           "triangles": 23669
         },
         "studio": {
           "frames": 20,
-          "meanMs": 578.4950000000011,
-          "p95Ms": 1887,
+          "meanMs": 584.8849999999977,
+          "p95Ms": 2043.0999999999767,
           "calls": 93,
           "triangles": 47327
         }
@@ -938,9 +1047,9 @@
       "name": "o tempo de pose acompanha o relógio real (≥ 2,4 s em 3 s), apesar de frames lentos",
       "ok": true,
       "observed": {
-        "wallS": 3.014,
-        "poseS": 2.863099999999976,
-        "framesDrawn": 17
+        "wallS": 3.005,
+        "poseS": 2.6248000000000467,
+        "framesDrawn": 18
       }
     },
     {
@@ -1023,7 +1132,7 @@
       "observed": {
         "kind": "engine-session",
         "duration": 2.059767381393601,
-        "time": 1.3229000000000233,
+        "time": 1.4102999999999302,
         "playing": true
       }
     },
@@ -1035,13 +1144,13 @@
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 0.5246326186064225,
+          "time": 0.6182326186063989,
           "playing": false
         },
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 0.5246326186064225,
+          "time": 0.6182326186063989,
           "playing": false
         }
       ]
@@ -1054,13 +1163,13 @@
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 0.5246326186064225,
+          "time": 0.6182326186063989,
           "playing": false
         },
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 0.6306326186064225,
+          "time": 0.7024326186063524,
           "playing": true
         }
       ]
@@ -1277,6 +1386,944 @@
     },
     {
       "scenario": "10 integração",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[768px] a barra de movimento e a leitura técnica não se sobrepõem (e nenhuma delas toca nos planos nem no cabeçalho)",
+      "ok": true,
+      "observed": {
+        "motion": [
+          24,
+          746,
+          744,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[768px] a leitura continua visível quando há espaço (≥ 800 px) e cabe no ecrã, com texto legível (≥ 12 px)",
+      "ok": true,
+      "observed": {
+        "readout": {
+          "left": 24,
+          "top": 182,
+          "right": 364,
+          "bottom": 734,
+          "width": 340,
+          "height": 552
+        },
+        "font": "16px"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[768px] sem scroll horizontal",
+      "ok": true,
+      "observed": [
+        768,
+        768
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[768px] seletor de movimento, linha do tempo e reprodução recebem o ponteiro",
+      "ok": true,
+      "observed": {
+        "select": "ok",
+        "slider": "ok",
+        "play": "ok"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[768px] o seletor muda mesmo de fonte (ponteiro real)",
+      "ok": true,
+      "observed": [
+        "motion-frames",
+        "engine-session"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[768px] clicar a meio da linha do tempo leva a reprodução para perto do meio",
+      "ok": true,
+      "observed": {
+        "tm": 1.03,
+        "half": 1.0298836906968005
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[768px] reproduzir e pausar funcionam com cliques reais",
+      "ok": true,
+      "observed": [
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 1.5925,
+          "playing": true
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.05293261860635212,
+          "playing": false
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.05293261860635212,
+          "playing": false
+        }
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[768px] a câmara continua a poder ser arrastada",
+      "ok": true,
+      "observed": {
+        "pt": {
+          "x": 384,
+          "y": 270
+        }
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[768px] o modo de apresentação esconde a interface",
+      "ok": true,
+      "observed": [
+        "0",
+        "0",
+        "0"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[800px] a barra de movimento e a leitura técnica não se sobrepõem (e nenhuma delas toca nos planos nem no cabeçalho)",
+      "ok": true,
+      "observed": {
+        "motion": [
+          40,
+          746,
+          760,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[800px] a leitura continua visível quando há espaço (≥ 800 px) e cabe no ecrã, com texto legível (≥ 12 px)",
+      "ok": true,
+      "observed": {
+        "readout": {
+          "left": 24,
+          "top": 182,
+          "right": 364,
+          "bottom": 734,
+          "width": 340,
+          "height": 552
+        },
+        "font": "16px"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[800px] sem scroll horizontal",
+      "ok": true,
+      "observed": [
+        800,
+        800
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[800px] seletor de movimento, linha do tempo e reprodução recebem o ponteiro",
+      "ok": true,
+      "observed": {
+        "select": "ok",
+        "slider": "ok",
+        "play": "ok"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[800px] o seletor muda mesmo de fonte (ponteiro real)",
+      "ok": true,
+      "observed": [
+        "motion-frames",
+        "engine-session"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[800px] clicar a meio da linha do tempo leva a reprodução para perto do meio",
+      "ok": true,
+      "observed": {
+        "tm": 1.03,
+        "half": 1.0298836906968005
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[800px] reproduzir e pausar funcionam com cliques reais",
+      "ok": true,
+      "observed": [
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 1.5889000000000233,
+          "playing": true
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.19143261860646898,
+          "playing": false
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.19143261860646898,
+          "playing": false
+        }
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[800px] a câmara continua a poder ser arrastada",
+      "ok": true,
+      "observed": {
+        "pt": {
+          "x": 400,
+          "y": 270
+        }
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[800px] o modo de apresentação esconde a interface",
+      "ok": true,
+      "observed": [
+        "0",
+        "0",
+        "0"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1024px] a barra de movimento e a leitura técnica não se sobrepõem (e nenhuma delas toca nos planos nem no cabeçalho)",
+      "ok": true,
+      "observed": {
+        "motion": [
+          152,
+          746,
+          872,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1024px] a leitura continua visível quando há espaço (≥ 800 px) e cabe no ecrã, com texto legível (≥ 12 px)",
+      "ok": true,
+      "observed": {
+        "readout": {
+          "left": 24,
+          "top": 182,
+          "right": 364,
+          "bottom": 734,
+          "width": 340,
+          "height": 552
+        },
+        "font": "16px"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1024px] sem scroll horizontal",
+      "ok": true,
+      "observed": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1024px] seletor de movimento, linha do tempo e reprodução recebem o ponteiro",
+      "ok": true,
+      "observed": {
+        "select": "ok",
+        "slider": "ok",
+        "play": "ok"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1024px] o seletor muda mesmo de fonte (ponteiro real)",
+      "ok": true,
+      "observed": [
+        "motion-frames",
+        "engine-session"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1024px] clicar a meio da linha do tempo leva a reprodução para perto do meio",
+      "ok": true,
+      "observed": {
+        "tm": 1.03,
+        "half": 1.0298836906968005
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1024px] reproduzir e pausar funcionam com cliques reais",
+      "ok": true,
+      "observed": [
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 1.42920000000007,
+          "playing": true
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.5380326186064455,
+          "playing": false
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.5380326186064455,
+          "playing": false
+        }
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1024px] a câmara continua a poder ser arrastada",
+      "ok": true,
+      "observed": {
+        "pt": {
+          "x": 512,
+          "y": 270
+        }
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1024px] o modo de apresentação esconde a interface",
+      "ok": true,
+      "observed": [
+        "0",
+        "0",
+        "0"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1080px] a barra de movimento e a leitura técnica não se sobrepõem (e nenhuma delas toca nos planos nem no cabeçalho)",
+      "ok": true,
+      "observed": {
+        "motion": [
+          180,
+          746,
+          900,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1080px] a leitura continua visível quando há espaço (≥ 800 px) e cabe no ecrã, com texto legível (≥ 12 px)",
+      "ok": true,
+      "observed": {
+        "readout": {
+          "left": 24,
+          "top": 182,
+          "right": 364,
+          "bottom": 734,
+          "width": 340,
+          "height": 552
+        },
+        "font": "16px"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1080px] sem scroll horizontal",
+      "ok": true,
+      "observed": [
+        1080,
+        1080
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1080px] seletor de movimento, linha do tempo e reprodução recebem o ponteiro",
+      "ok": true,
+      "observed": {
+        "select": "ok",
+        "slider": "ok",
+        "play": "ok"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1080px] o seletor muda mesmo de fonte (ponteiro real)",
+      "ok": true,
+      "observed": [
+        "motion-frames",
+        "engine-session"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1080px] clicar a meio da linha do tempo leva a reprodução para perto do meio",
+      "ok": true,
+      "observed": {
+        "tm": 1.03,
+        "half": 1.0298836906968005
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1080px] reproduzir e pausar funcionam com cliques reais",
+      "ok": true,
+      "observed": [
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 1.413399999999907,
+          "playing": true
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.15923261860639926,
+          "playing": false
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.15923261860639926,
+          "playing": false
+        }
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1080px] a câmara continua a poder ser arrastada",
+      "ok": true,
+      "observed": {
+        "pt": {
+          "x": 540,
+          "y": 270
+        }
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1080px] o modo de apresentação esconde a interface",
+      "ok": true,
+      "observed": [
+        "0",
+        "0",
+        "0"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1280px] a barra de movimento e a leitura técnica não se sobrepõem (e nenhuma delas toca nos planos nem no cabeçalho)",
+      "ok": true,
+      "observed": {
+        "motion": [
+          280,
+          746,
+          1000,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1280px] a leitura continua visível quando há espaço (≥ 800 px) e cabe no ecrã, com texto legível (≥ 12 px)",
+      "ok": true,
+      "observed": {
+        "readout": {
+          "left": 24,
+          "top": 182,
+          "right": 364,
+          "bottom": 734,
+          "width": 340,
+          "height": 552
+        },
+        "font": "16px"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1280px] sem scroll horizontal",
+      "ok": true,
+      "observed": [
+        1280,
+        1280
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1280px] seletor de movimento, linha do tempo e reprodução recebem o ponteiro",
+      "ok": true,
+      "observed": {
+        "select": "ok",
+        "slider": "ok",
+        "play": "ok"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1280px] o seletor muda mesmo de fonte (ponteiro real)",
+      "ok": true,
+      "observed": [
+        "motion-frames",
+        "engine-session"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1280px] clicar a meio da linha do tempo leva a reprodução para perto do meio",
+      "ok": true,
+      "observed": {
+        "tm": 1.03,
+        "half": 1.0298836906968005
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1280px] reproduzir e pausar funcionam com cliques reais",
+      "ok": true,
+      "observed": [
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 1.4728999999999068,
+          "playing": true
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.26033261860637547,
+          "playing": false
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.26033261860637547,
+          "playing": false
+        }
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1280px] a câmara continua a poder ser arrastada",
+      "ok": true,
+      "observed": {
+        "pt": {
+          "x": 640,
+          "y": 270
+        }
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1280px] o modo de apresentação esconde a interface",
+      "ok": true,
+      "observed": [
+        "0",
+        "0",
+        "0"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1440px] a barra de movimento e a leitura técnica não se sobrepõem (e nenhuma delas toca nos planos nem no cabeçalho)",
+      "ok": true,
+      "observed": {
+        "motion": [
+          360,
+          746,
+          1080,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1440px] a leitura continua visível quando há espaço (≥ 800 px) e cabe no ecrã, com texto legível (≥ 12 px)",
+      "ok": true,
+      "observed": {
+        "readout": {
+          "left": 24,
+          "top": 182,
+          "right": 364,
+          "bottom": 734,
+          "width": 340,
+          "height": 552
+        },
+        "font": "16px"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1440px] sem scroll horizontal",
+      "ok": true,
+      "observed": [
+        1440,
+        1440
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1440px] seletor de movimento, linha do tempo e reprodução recebem o ponteiro",
+      "ok": true,
+      "observed": {
+        "select": "ok",
+        "slider": "ok",
+        "play": "ok"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1440px] o seletor muda mesmo de fonte (ponteiro real)",
+      "ok": true,
+      "observed": [
+        "motion-frames",
+        "engine-session"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1440px] clicar a meio da linha do tempo leva a reprodução para perto do meio",
+      "ok": true,
+      "observed": {
+        "tm": 1.03,
+        "half": 1.0298836906968005
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1440px] reproduzir e pausar funcionam com cliques reais",
+      "ok": true,
+      "observed": [
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 1.4234000000000233,
+          "playing": true
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.2785326186064454,
+          "playing": false
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.2785326186064454,
+          "playing": false
+        }
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1440px] a câmara continua a poder ser arrastada",
+      "ok": true,
+      "observed": {
+        "pt": {
+          "x": 720,
+          "y": 270
+        }
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1440px] o modo de apresentação esconde a interface",
+      "ok": true,
+      "observed": [
+        "0",
+        "0",
+        "0"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1600px] a barra de movimento e a leitura técnica não se sobrepõem (e nenhuma delas toca nos planos nem no cabeçalho)",
+      "ok": true,
+      "observed": {
+        "motion": [
+          440,
+          746,
+          1160,
+          812
+        ],
+        "readout": [
+          24,
+          260,
+          364,
+          812
+        ]
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1600px] a leitura continua visível quando há espaço (≥ 800 px) e cabe no ecrã, com texto legível (≥ 12 px)",
+      "ok": true,
+      "observed": {
+        "readout": {
+          "left": 24,
+          "top": 260,
+          "right": 364,
+          "bottom": 812,
+          "width": 340,
+          "height": 552
+        },
+        "font": "16px"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1600px] sem scroll horizontal",
+      "ok": true,
+      "observed": [
+        1600,
+        1600
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1600px] seletor de movimento, linha do tempo e reprodução recebem o ponteiro",
+      "ok": true,
+      "observed": {
+        "select": "ok",
+        "slider": "ok",
+        "play": "ok"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1600px] o seletor muda mesmo de fonte (ponteiro real)",
+      "ok": true,
+      "observed": [
+        "motion-frames",
+        "engine-session"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1600px] clicar a meio da linha do tempo leva a reprodução para perto do meio",
+      "ok": true,
+      "observed": {
+        "tm": 1.03,
+        "half": 1.0298836906968005
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1600px] reproduzir e pausar funcionam com cliques reais",
+      "ok": true,
+      "observed": [
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 1.462,
+          "playing": true
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 1.9249000000000231,
+          "playing": false
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 1.9249000000000231,
+          "playing": false
+        }
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1600px] a câmara continua a poder ser arrastada",
+      "ok": true,
+      "observed": {
+        "pt": {
+          "x": 800,
+          "y": 270
+        }
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1600px] o modo de apresentação esconde a interface",
+      "ok": true,
+      "observed": [
+        "0",
+        "0",
+        "0"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[390px] a barra de movimento e a leitura técnica não se sobrepõem (e nenhuma delas toca nos planos nem no cabeçalho)",
+      "ok": true,
+      "observed": {
+        "motion": [
+          8,
+          646,
+          382,
+          768
+        ],
+        "readout": null
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[390px] a leitura continua visível quando há espaço (≥ 800 px) e cabe no ecrã, com texto legível (≥ 12 px)",
+      "ok": true,
+      "observed": {
+        "readout": null,
+        "font": "16px"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[390px] sem scroll horizontal",
+      "ok": true,
+      "observed": [
+        390,
+        390
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[390px] seletor de movimento, linha do tempo e reprodução recebem o ponteiro",
+      "ok": true,
+      "observed": {
+        "select": "ok",
+        "slider": "ok",
+        "play": "ok"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[390px] o seletor muda mesmo de fonte (ponteiro real)",
+      "ok": true,
+      "observed": [
+        "motion-frames",
+        "engine-session"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[390px] clicar a meio da linha do tempo leva a reprodução para perto do meio",
+      "ok": true,
+      "observed": {
+        "tm": 1.03,
+        "half": 1.0298836906968005
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[390px] reproduzir e pausar funcionam com cliques reais",
+      "ok": true,
+      "observed": [
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 1.6743000000000465,
+          "playing": true
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 2.0024000000000233,
+          "playing": false
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 2.0024000000000233,
+          "playing": false
+        }
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[390px] a câmara continua a poder ser arrastada",
+      "ok": true,
+      "observed": {
+        "pt": {
+          "x": 195,
+          "y": 253.2
+        }
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[390px] o modo de apresentação esconde a interface",
+      "ok": true,
+      "observed": [
+        "0",
+        "0",
+        "0"
+      ]
+    },
+    {
+      "scenario": "11 layout",
       "name": "sem erros na consola",
       "ok": true,
       "observed": []
