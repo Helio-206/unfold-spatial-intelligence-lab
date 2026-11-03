@@ -15,7 +15,7 @@ All browser evidence was captured in **Chromium (system Google Chrome) with Swif
 | `workspace-engine.pw.mjs` | 16 PASS (desktop 800x600 and mobile 390x844) |
 | `workspace-engine-history.pw.mjs` | 4 PASS (2 cycles, with and without bfcache) |
 | `workspace-engine-hand.pw.mjs` | 7 PASS |
-| `workspace-engine-review.pw.mjs` | 6 PASS (review P2-1..P2-3, new) |
+| `workspace-engine-review.pw.mjs` | 8 PASS (review P2s, new) |
 | `living-visual-foundry.pw.mjs` | 52/52 |
 | `living-visual-foundry-regressions.pw.mjs` | 25/25 |
 | `cinema.pw.mjs` | 189/189 |
@@ -31,6 +31,7 @@ Environment notes: the Visual Foundry suites default to `/opt/pw-browsers/chromi
 - P2-1: pending engine cards are now cancelled whenever the engine candidate is discarded (reset, newer proposal, seek, cancel). Red/green in `workspace-engine-review.pw.mjs`; the reset case was confirmed failing first.
 - P2-2: the timeline thumb is synchronised on every valid sample and ignores updates during an active pointer drag. Confirmed failing without the fix (thumb stayed 0 while time reached 0.12 s).
 - P2-3: the agent request says the engine is connected, computes poses and results, and that the assistant only proposes (user confirmation required, no execution). Unit test on `buildAgentRequest` plus a browser test of the real outgoing body (route intercepted, no model call). This does not establish live-model behaviour: NOT VERIFIED.
+- Second review P2: a chat engine proposal now also clears the inspector candidate (same single session token), and the inspector re-renders. Regressions: inspector A -> chat B (A's confirm button gone, B executable) and chat card -> inspector candidate. The first one was confirmed failing before the fix.
 - Foundry main and Cinema were cut by a local 290 s timeout on the first attempt and re-run to completion with a longer limit.
 
 ## Provenance

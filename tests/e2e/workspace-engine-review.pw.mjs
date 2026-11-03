@@ -84,5 +84,24 @@ try {
   assert.ok(bodies[0].scene.constraints.every((c) => c.length <= 180));
   console.log('PASS outgoing agent request describes the connected engine and its boundaries');
   await agent.close();
+
+  // P2-4: inspector candidate A -> chat proposal B. A's confirm button must disappear; B stays executable.
+  const mixed = await open(1);
+  await mixed.evaluate(() => { const ws = window.__workspace; ws.dispatch({ type: 'set_mode', mode: 'conversation' }); ws.select('boom_cylinder'); const i = ws.el.inspector.querySelector('[data-el="engineTarget"]'); i.value = '0.65'; ws.previewEngineMove(); });
+  assert.equal(await mixed.locator('[data-act="engine-approve"]').count(), 1, 'inspector candidate A is actionable');
+  await mixed.evaluate(() => window.__workspace.offerExperiment('boom_cylinder', null));
+  assert.equal(await mixed.locator('[data-act="engine-approve"]').count(), 0, 'superseded inspector candidate has no confirm button');
+  assert.equal(await mixed.locator('.uw-proposal [data-act="approve"]').count(), 1);
+  assert.deepEqual(await proposals(mixed), ['pending']);
+  await mixed.evaluate(() => { const ws = window.__workspace; return ws.approveProposal(ws.getState().messages.at(-1).id); });
+  assert.deepEqual(await proposals(mixed), ['done'], 'chat candidate B ran');
+  assert.equal(await mixed.evaluate(() => window.__workspace.poseSource), 'engine');
+  console.log('PASS chat proposal supersedes the inspector candidate and stays executable');
+  // chat card -> inspector candidate: the card is cancelled and the inspector candidate is the live one.
+  await mixed.evaluate(() => { const ws = window.__workspace; ws.resetPose(); ws.offerExperiment('boom_cylinder', null); const i = ws.el.inspector.querySelector('[data-el="engineTarget"]'); i.value = '0.6'; ws.previewEngineMove(); });
+  assert.deepEqual((await proposals(mixed)).slice(-1), ['cancelled']);
+  assert.equal(await mixed.locator('[data-act="engine-approve"]').count(), 1);
+  console.log('PASS inspector candidate supersedes the chat card');
+  await mixed.close();
   assert.deepEqual(errors, []);
 } finally { await browser.close(); await server.close(); }

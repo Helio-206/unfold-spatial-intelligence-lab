@@ -713,6 +713,7 @@ export class SpatialWorkspace {
     const target = Math.min(actuator.stroke.max.value, current + 0.05);
     this.cancelPendingEngineCards();
     const preview = this.engineering.preview(actuator.id, target);
+    this.renderInspector();
     if (!preview.ok) return { kind: 'unavailable', actuatorId: actuator.id, title: 'Movimento bloqueado', detail: `${preview.code} · ${preview.message}` };
     this.notice('engine-error', null);
     return { kind: 'engine_move', actuatorId: actuator.id, title: `Estender ${cylinder.label}`, detail: `Curso ${fmt(current)} → ${fmt(target)} m; duração ${preview.durationS.toFixed(2)} s. O motor validou a trajectória por amostragem; nada mudou.`, token: preview.token };
@@ -846,6 +847,7 @@ export class SpatialWorkspace {
   /** A pending engine card is only actionable while its token is the session's single candidate; anything that discards the candidate must close the card. */
   private cancelPendingEngineCards(): void {
     for (const message of this.state.messages) if (message.proposal?.kind === 'engine_move' && message.proposal.state === 'pending') this.dispatch({ type: 'proposal_state', messageId: message.id, state: 'cancelled' });
+    this.engineProposal = null; // the inspector candidate shares the session's single token, so it dies with the others
   }
 
   private previewEngineMove(): void {
