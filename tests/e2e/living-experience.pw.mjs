@@ -73,6 +73,8 @@ const waitPhase = (page, p) => page.waitForFunction((p) => window.__experience.p
   await page.locator('[data-review="save-property"][data-name="massa"]').click();
   check('entered value is labelled "introduzido por si · não verificado"', /introduzido por si · não verificado/.test(await page.locator('.ux-props').textContent()));
   await shot(page, '1440-06-unknown-property', 300);
+  const lay = await page.evaluate(() => { const sh = document.querySelector('.ux-sheet').getBoundingClientRect(), c = document.querySelector('.ux-card').getBoundingClientRect(); return { sheetBottom: Math.round(sh.bottom), cardTop: Math.round(c.top) }; });
+  check('1440: a tall review card never slides under the sheet', lay.cardTop >= lay.sheetBottom, lay);
   // keyboard: → to move, C to confirm
   await page.evaluate(() => { document.activeElement?.blur(); window.__experience.dispatch({ type: 'focus', id: 'e_boom_cyl' }); });
   await page.keyboard.press('c');

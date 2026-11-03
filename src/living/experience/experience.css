@@ -50,9 +50,9 @@
 .ux-tips { margin: 0; padding-left: var(--space-6); color: var(--ink-muted); display: grid; gap: var(--space-1); }
 
 /* ---- Review: source on the left/top, side state, one card, primary action */
-.ux-recon { position: absolute; inset: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: var(--space-4); padding: calc(var(--space-16) + var(--space-4)) var(--space-10) var(--space-6); overflow: auto; }
+.ux-recon { position: absolute; inset: 0; display: grid; grid-template-rows: auto auto; align-content: start; gap: var(--space-4); padding: calc(var(--space-16) + var(--space-4)) var(--space-10) var(--space-6); overflow: auto; }
 .ux-source { display: grid; justify-items: center; align-content: center; gap: var(--space-2); min-height: 0; }
-.ux-sheet { position: relative; margin: 0; width: min(100%, calc((100dvh - 420px) * 2)); min-width: min(100%, 340px); aspect-ratio: 2 / 1; border-radius: var(--radius-md); overflow: hidden; background: var(--surface); }
+.ux-sheet { position: relative; margin: 0; width: min(100%, calc((100dvh - 470px) * 2)); min-width: min(100%, 340px); aspect-ratio: 2 / 1; border-radius: var(--radius-md); overflow: hidden; background: var(--surface); }
 .ux-sheet img, .ux-sheet svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .ux-sheet--source { background: var(--surface-sunken); }
 .ux-contain { object-fit: contain; }
