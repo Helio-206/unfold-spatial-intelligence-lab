@@ -10,7 +10,7 @@ import { join, resolve } from 'node:path';
 
 const BASE = process.env.UNFOLD_E2E_URL ?? 'http://127.0.0.1:5199';
 const OUT = resolve(process.env.UNFOLD_E2E_OUT ?? 'reports/cinema/e2e'); mkdirSync(OUT, { recursive: true });
-const ONLY = process.env.UNFOLD_E2E_ONLY; // 1..9
+const ONLY = process.env.UNFOLD_E2E_ONLY; // 1..10
 const checks = []; const external = []; const metrics = {};
 function check(scenario, name, ok, observed) { checks.push({ scenario, name, ok: Boolean(ok), observed }); console.log(`${ok ? 'PASS' : 'FAIL'}  [${scenario}] ${name}${ok ? '' : `  -> ${JSON.stringify(observed)}`}`); }
 const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH ?? '/usr/bin/google-chrome', headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
@@ -21,7 +21,7 @@ async function open(query = 'tier=studio', context = {}) {
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
   page.on('console', (m) => { if (['error', 'warning'].includes(m.type()) && !/GPU stall|swiftshader|GL Driver Message|Failed to load resource/i.test(m.text())) errors.push(`${m.type()}: ${m.text()}`); });
   page.on('request', (r) => { const u = new URL(r.url()); if (!['127.0.0.1', 'localhost'].includes(u.hostname) && u.protocol.startsWith('http')) external.push(r.url()); });
-  await page.goto(`${BASE}/cinema?debug-cinema&ui=0&dpr=1&${query}`);
+  await page.goto(`${BASE}/cinema?debug-cinema&ui=0&dpr=1&${/visuals=/.test(query) ? '' : 'visuals=proxy&'}${/motion=/.test(query) ? '' : 'motion=reference&'}${query}`);
   await page.waitForFunction(() => window.__unfoldCinema?.ready, null, { timeout: 90000 });
   return { page, ctx, errors };
 }
@@ -293,6 +293,87 @@ try {
     await page.waitForTimeout(2200);
     const end = await C(page, (c) => c.pose());
     check(sc, 'chega ao fim da sequência (4 s) a tempo e para', end.timeS === 4 && !end.playing, end);
+    check(sc, 'sem erros na consola', errors.length === 0, errors);
+    await ctx.close();
+  }
+
+  // ------------------------------------------------------------------ 10. integração: Visual Foundry + motor de engenharia (15 quadros reais)
+  if (!ONLY || ONLY === '10') {
+    const sc = '10 integração';
+    const { page, ctx, errors } = await open('tier=light&visuals=foundry&motion=engine');
+    await page.evaluate(() => document.querySelector('#cinema-root').classList.remove('is-presenting', 'is-idle'));
+    const geo = await C(page, (c) => c.geometryStats());
+    const assemblyParts = await page.evaluate(async () => (await import('/src/living/contracts/fixtures/excavator.assembly.v1.ts')).EXCAVATOR_ASSEMBLY_V1.parts.map((p) => p.id));
+    check(sc, 'a geometria é a do Visual Foundry (detalhada), não o proxy', geo.source === 'visual-foundry' && geo.triangles > 100000 && geo.meshes > 60, geo);
+    check(sc, 'os ids canónicos das peças são exactamente os da montagem', JSON.stringify([...geo.parts].sort()) === JSON.stringify([...assemblyParts].sort()), geo.parts);
+    check(sc, 'o readout diz que a geometria é a Visual Foundry e que as poses são do motor', /Visual Foundry/.test(await page.textContent('#ro-geometry')) && /motor/.test(await page.textContent('#ro-source')), await page.textContent('#ro-source'));
+    const dur = await C(page, (c) => c.sourceInfo().duration);
+    check(sc, 'a fonte é o motor (sessão em direto) com duração do cenário', (await C(page, (c) => c.sourceInfo().kind)) === 'engine-session' && dur > 1.5, dur);
+    await still(page, 'hero', 3);
+
+    // -- reprodução: play, pause, resume, scrub; the pose on stage IS the engine frame at that instant
+    const samePose = async (label) => {
+      const bad = await C(page, (c) => { const s = c.sampleNow(); let worst = 0; for (const p of s.parts) { const w = c.partWorld(p.partId); const d = Math.hypot(...w.p.map((v, i) => v - p.translationM[i])); worst = Math.max(worst, d); } return { worst, t: c.sourceInfo().time, digest: s.inputDigest }; });
+      return bad;
+    };
+    await page.click('#cinema-play'); await page.waitForTimeout(1500); const t1 = await C(page, (c) => c.sourceInfo());
+    check(sc, 'Reproduzir faz avançar o tempo da reprodução (relógio real)', t1.playing && t1.time > 0.5, t1);
+    await page.click('#cinema-play'); await page.waitForTimeout(400); const p0 = await C(page, (c) => c.sourceInfo()); await page.waitForTimeout(1200); const p1 = await C(page, (c) => c.sourceInfo());
+    check(sc, 'Pausa congela o instante', !p0.playing && p0.time === p1.time, [p0, p1]);
+    await page.click('#cinema-play'); await page.waitForTimeout(500); const r1 = await C(page, (c) => c.sourceInfo());
+    check(sc, 'Retomar continua a partir do instante em que parou', r1.playing && r1.time > p1.time && r1.time - p1.time < 2.5, [p1, r1]);
+    await page.click('#cinema-play'); await page.waitForTimeout(300);
+    for (const frac of [0.0, 0.25, 0.5, 0.75, 1.0]) {
+      await page.$eval('#cinema-time', (e, v) => { e.value = String(+e.max * v); e.dispatchEvent(new Event('input', { bubbles: true })); }, frac);
+      await page.waitForTimeout(250); const d = await samePose();
+      check(sc, `instante a ${Math.round(frac * 100)} %: todas as peças estão exactamente na pose do quadro do motor`, d.worst < 1e-9 && /^[a-f0-9]{64}$/.test(d.digest ?? ''), d);
+    }
+    // -- continuity of the motion and of the hoses
+    const track = []; const hoses = [];
+    for (let i = 0; i <= 40; i += 1) { const t = (dur * i) / 40; await C(page, (c, tt) => c.runtime.seekPose(tt), t); track.push(await C(page, (c) => c.partWorld('bucket').p)); hoses.push((await C(page, (c) => c.hoseSignature())).sum); }
+    const steps = track.slice(1).map((p, i) => Math.hypot(...p.map((v, k) => v - track[i][k])));
+    metrics.integration = { maxBucketStepM: Math.max(...steps), totalPathM: steps.reduce((a, b) => a + b, 0), samples: track.length };
+    check(sc, 'a caçamba descreve um movimento contínuo (nenhum salto > 0,25 m entre 41 amostras) e percorre mais de 0,5 m', Math.max(...steps) < 0.25 && metrics.integration.totalPathM > 0.5, metrics.integration);
+    check(sc, 'as mangueiras flexíveis são re-encaminhadas ao longo da reprodução', new Set(hoses.map((h) => h.toFixed(6))).size > 10 && (await C(page, (c) => c.hoseSignature().hoses)) >= 4, hoses.slice(0, 5));
+    // -- the 15-frame sequence exported by the engine
+    await C(page, (c) => c.setMotion('sequence')); await page.waitForTimeout(500);
+    const seq = await C(page, (c) => c.sourceInfo());
+    check(sc, 'a sequência exportada (13 quadros ok) está carregada como reprodução com duração', seq.kind === 'motion-frames' && seq.duration > 1.5, seq);
+    await C(page, (c) => c.runtime.seekPose(0.4)); await page.waitForTimeout(250);
+    const blend = await C(page, (c) => { const s = c.sampleNow(); const worst = Math.max(...s.parts.map((p) => Math.hypot(...c.partWorld(p.partId).p.map((v, i) => v - p.translationM[i])))); return { interpolated: s.interpolated, measurements: s.measurements.length, digest: s.inputDigest, derived: !!s.derivedFrom, worst, origin: s.origin }; });
+    check(sc, 'entre dois quadros ok a pose é uma mistura rotulada: sem medidas, sem digest de entrada, com origem nos dois quadros', blend.interpolated && blend.measurements === 0 && blend.digest === null && blend.derived && blend.origin === 'engine' && blend.worst < 1e-9, blend);
+    check(sc, 'a interface não apresenta a mistura como cálculo directo do motor', /suavizada/.test(await page.textContent('#ro-source')) && /sem medidas/.test(await page.textContent('#ro-source')), await page.textContent('#ro-source'));
+    const hoseBlend = (await C(page, (c) => c.hoseSignature())).sum; await C(page, (c) => c.runtime.seekPose(0.46)); const hoseBlend2 = (await C(page, (c) => c.hoseSignature())).sum;
+    check(sc, 'as mangueiras acompanham também as poses misturadas', hoseBlend !== hoseBlend2, [hoseBlend, hoseBlend2]);
+    // -- blocked frames from the engine
+    for (const [key, re] of [['blocked-curso', /curso|CURSO|STROKE/i], ['blocked-colisao', /colis|COLLISION|chão/i]]) {
+      await C(page, (c, k) => c.setMotion(k), key); await page.waitForTimeout(400);
+      const st = await page.textContent('#ro-status'); const cap = await C(page, (c) => c.caption()); const pose = await page.textContent('#ro-pose'); const src = await page.textContent('#ro-source');
+      const ref = await C(page, (c) => { const s = c.sampleNow(); return Math.max(...s.parts.map((p) => Math.hypot(...c.partWorld(p.partId).p.map((v, i) => v - p.translationM[i])))); });
+      check(sc, `${key}: estado «blocked», razão do motor na legenda, base «reference», origem do motor`, st === 'blocked' && /^Bloqueado: /.test(cap) && re.test(cap) && /reference/.test(pose) && /motor/.test(src), { st, cap, pose, src });
+      check(sc, `${key}: a pose mostrada é a que o motor declarou (nada inventado)`, ref < 1e-9, ref);
+      await page.screenshot({ path: join(OUT, `integration-${key}.png`) });
+    }
+    // -- identity: other assemblies / digests are refused before they reach the stage
+    await C(page, (c) => c.setMotion('engine'));
+    for (const [kind, re] of [['digest', /assemblyDigest/], ['world', /worldFrameId/], ['assembly', /montagem/], ['parts', /bucket/]]) {
+      const msg = await C(page, (c, k) => c.tryBadSequence(k), kind); check(sc, `sequência recusada (${kind}) com a geometria Foundry em cena`, re.test(msg) && msg !== 'ACEITE', msg);
+    }
+    // -- inspection by canonical id (no second selection system: a readout from the provider registry)
+    await C(page, (c) => c.setMotion('reference')); await page.waitForTimeout(300); await C(page, (c) => c.seekShot('profile', 3));
+    const c0 = await C(page, (c) => c.partScreenCenter('stick'));
+    await page.mouse.click(c0.x, c0.y); await page.waitForTimeout(300);
+    const partText = await page.textContent('#ro-part'); const viaHook = await C(page, (c, p) => c.pickAt(p.x, p.y), c0);
+    check(sc, 'clicar numa peça mostra o id canónico e a proveniência do registo', viaHook !== null && geo.parts.includes(viaHook) && partText.includes(viaHook) && /fixture\/unreviewed|unreviewed/.test(partText), { partText, viaHook });
+    await page.mouse.click(1500, 300); await page.waitForTimeout(200);
+    check(sc, 'clicar no vazio limpa a leitura', /clique numa peça/.test(await page.textContent('#ro-part')));
+    // -- resources: switching sources repeatedly does not grow GPU resources; dispose releases all
+    await C(page, (c) => c.renderNow()); const base = await C(page, (c) => c.stats());
+    for (let i = 0; i < 6; i += 1) for (const k of ['engine', 'sequence', 'blocked-curso', 'reference']) { await C(page, (c, kk) => { c.setMotion(kk); c.renderNow(); }, k); }
+    await C(page, (c) => c.setMotion('reference')); await C(page, (c) => c.renderNow()); const after = await C(page, (c) => c.stats());
+    check(sc, 'depois de 24 trocas de fonte as geometrias, texturas e luzes não crescem', after.textures === base.textures && after.lights === base.lights && after.geometries <= base.geometries + 2, { base: [base.geometries, base.textures, base.lights], after: [after.geometries, after.textures, after.lights] });
+    const disposed = await C(page, (c) => c.disposeNow());
+    check(sc, 'dispose liberta geometrias e texturas e retira o canvas, sem libertação dupla (sem erros)', disposed.geometries === 0 && disposed.textures === 0 && !disposed.canvasInDom, disposed);
     check(sc, 'sem erros na consola', errors.length === 0, errors);
     await ctx.close();
   }
