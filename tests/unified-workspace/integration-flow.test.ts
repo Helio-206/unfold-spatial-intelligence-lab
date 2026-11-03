@@ -2,19 +2,21 @@ import { describe, expect, it, vi } from 'vitest';
 import { createMetaServer } from '../../server/meta-server';
 import { initialReview, reduceReview, readiness } from '../../src/living/experience/review';
 import { backendDecision, bridgeItems, createReconstructionClient, LiveReconstructionPort, localOnlyNotes, ReviewGateway, validateWithEngine } from '../../src/living/unified-workspace';
+import { validateAssembly } from '../../src/living/contracts';
 import { PNG_1X1, observation } from './helpers';
 
 const ORIGIN = 'http://127.0.0.1:5173';
 const input = { kind: 'drawing' as const, name: 'alcado.png', size: 100, mime: 'image/png', dataUrl: PNG_1X1 };
 
 /** Real server, live mode, with a provider double that returns a fixed observation and counts calls. No paid call is possible. */
-async function withLiveServer<T>(run: (ctx: { client: ReturnType<typeof createReconstructionClient>; provider: ReturnType<typeof vi.fn>; fetchSpy: ReturnType<typeof vi.fn> }) => Promise<T>): Promise<T> {
+async function withLiveServer<T>(run: (ctx: { baseUrl: string; client: ReturnType<typeof createReconstructionClient>; provider: ReturnType<typeof vi.fn>; fetchSpy: ReturnType<typeof vi.fn> }) => Promise<T>): Promise<T> {
   const provider = vi.fn(async () => new Response(JSON.stringify({ id: 'req-live-1', status: 'completed', output_text: JSON.stringify(observation()), usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 } }), { status: 200, headers: { 'content-type': 'application/json' } }));
   const server = createMetaServer({ apiKey: 'fixture-key-not-real', fetchImpl: provider as unknown as typeof fetch });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   const address = server.address(); if (!address || typeof address === 'string') throw new Error('port');
   const fetchSpy = vi.fn((url: RequestInfo | URL, init?: RequestInit) => fetch(url, { ...init, headers: { ...(init?.headers as Record<string, string>), origin: ORIGIN } }));
-  try { return await run({ client: createReconstructionClient({ baseUrl: `http://127.0.0.1:${address.port}`, fetchImpl: fetchSpy as unknown as typeof fetch }), provider, fetchSpy }); }
+  const baseUrl = `http://127.0.0.1:${address.port}`;
+  try { return await run({ baseUrl, client: createReconstructionClient({ baseUrl, fetchImpl: fetchSpy as unknown as typeof fetch }), provider, fetchSpy }); }
   finally { await new Promise<void>((resolve, reject) => server.close((e) => e ? reject(e) : resolve())); }
 }
 
@@ -114,6 +116,39 @@ describe('live path: port -> review gateway -> adoption -> engine (real server h
   });
 });
 
+describe('after the engine refuses an assembly, the person can fix the review and send it again', () => {
+  it('edits take effect and the next submit goes to the server again', async () => {
+    await withLiveServer(async ({ baseUrl, fetchSpy }) => {
+      // the first review answer is altered into an assembly that is structurally valid but that the engine cannot pose
+      let tamper = true;
+      const tampering = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+        const response = await (fetchSpy as unknown as typeof fetch)(url, init);
+        if (!tamper || !String(init?.body).includes('"action":"review"')) return response;
+        tamper = false;
+        const body = await response.json();
+        for (const a of body.assembly.actuators) if (a.kind === 'hydraulic_cylinder') a.stroke.max.value = 0.0001;
+        return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+      });
+      const port = new LiveReconstructionPort({ client: createReconstructionClient({ baseUrl, fetchImpl: tampering as unknown as typeof fetch }) });
+      const outcome = await port.submit(input, new AbortController().signal);
+      if (outcome.kind !== 'observation') throw new Error(outcome.kind);
+      let ui = initialReview(outcome.observation);
+      for (const item of ui.items) ui = reduceReview(ui, { type: 'decide', id: item.id, decision: 'confirmed' });
+      const gateway = new ReviewGateway(port.session);
+      gateway.syncFromUi(ui);
+      for (const extra of gateway.extras()) gateway.decideExtra(extra.key, 'reject');
+      gateway.setHuman({ reviewerId: 'r', familyConfirmed: true, bucketConfirmed: true, bucketWidthM: 1.2, widthBasis: 'x' });
+      expect((await gateway.submit()).kind).toBe('engine_blocked');
+      gateway.setHuman({ bucketWidthM: 1.6 });
+      expect(gateway.human().bucketWidthM).toBe(1.6); // not silently ignored
+      const again = await gateway.submit();
+      if (again.kind !== 'ready') throw new Error(JSON.stringify(again));
+      expect(again.candidate.bucketWidthM.after).toBe(1.6);
+      expect(tampering.mock.calls.filter((c) => String(c[1]?.body).includes('"action":"review"'))).toHaveLength(2);
+    });
+  });
+});
+
 describe('gate 2 is the engine, not the contract', () => {
   it('blocks an assembly the engine cannot pose, with a reason, even though it is structurally valid', async () => {
     await withLiveServer(async ({ client }) => {
@@ -129,10 +164,12 @@ describe('gate 2 is the engine, not the contract', () => {
       const result = await gateway.submit();
       if (result.kind !== 'ready') throw new Error(JSON.stringify(result));
       const broken = structuredClone(result.candidate.assembly);
-      broken.joints = broken.joints.slice(1); // still a plausible document, no longer a mechanism the engine can close
+      for (const actuator of broken.actuators) if (actuator.kind === 'hydraulic_cylinder') actuator.stroke.max.value = 0.0001; // the reference pose no longer fits the stroke
+      expect(validateAssembly(broken).ok).toBe(true); // structurally this is still a valid assembly document
+      expect(validateWithEngine(result.candidate.assembly).status).toBe('valid');
       const gate = validateWithEngine(broken);
       expect(gate.status).toBe('blocked');
-      if (gate.status === 'blocked') expect(gate.reasons.length).toBeGreaterThan(0);
+      if (gate.status === 'blocked') expect(gate.reasons.join()).toMatch(/STROKE_OUT_OF_RANGE/);
     });
   });
 });

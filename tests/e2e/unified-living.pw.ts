@@ -1,0 +1,338 @@
+import { chromium, type Browser, type Page } from 'playwright-core';
+import { createServer } from 'vite';
+import assert from 'node:assert/strict';
+import { mkdirSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { createMetaServer } from '../../server/meta-server';
+import { EXCAVATOR_ASSEMBLY_V1 } from '../../src/living/contracts/fixtures/excavator.assembly.v1';
+import { createOfflineImageObservation } from '../../src/living/reconstruction/observation';
+
+/**
+ * Unified /living: source -> reconstruction -> review -> server confirmations -> transition -> the real workspace.
+ * Real backend handler (live mode) with a provider double that counts calls: no paid call is possible.
+ * Run: npx tsx tests/e2e/unified-living.pw.ts   (env: CHROME_PATH, UNFOLD_UNIFIED_OUT, UNFOLD_UNIFIED_PORT)
+ */
+const out = resolve(process.env.UNFOLD_UNIFIED_OUT ?? 'reports/unified-workspace/captures');
+mkdirSync(out, { recursive: true });
+const port = Number(process.env.UNFOLD_UNIFIED_PORT ?? 5330);
+const ALLOWED_ORIGIN = 'http://127.0.0.1:5173';
+const log: string[] = [];
+const pass = (message: string) => { log.push(message); console.log(`PASS ${message}`); };
+
+const providerCalls: unknown[] = [];
+let hold: Promise<void> | null = null;
+const provider = async (_url: unknown, init?: RequestInit) => {
+  providerCalls.push(JSON.parse(String(init?.body)));
+  if (hold) await hold;
+  return new Response(JSON.stringify({ id: 'req-e2e-1', status: 'completed', output_text: JSON.stringify(createOfflineImageObservation('image', 'e2e-source', 'a'.repeat(64))), usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 } }), { status: 200, headers: { 'content-type': 'application/json' } });
+};
+/** A fresh backend per scenario: the server's per-minute limit (10 reconstruction calls) is shared by proposals and reviews. */
+let backend = createMetaServer({ apiKey: 'fixture-key-not-real', fetchImpl: provider as unknown as typeof fetch });
+await new Promise<void>((resolveListen) => backend.listen(0, '127.0.0.1', resolveListen));
+let backendPort = (backend.address() as { port: number }).port;
+async function restartBackend() {
+  await new Promise<void>((r, j) => backend.close((e) => e ? j(e) : r()));
+  backend = createMetaServer({ apiKey: 'fixture-key-not-real', fetchImpl: provider as unknown as typeof fetch });
+  await new Promise<void>((r) => backend.listen(0, '127.0.0.1', r));
+  backendPort = (backend.address() as { port: number }).port;
+}
+const api: Array<{ body: any; status: number }> = [];
+const forcedResponses: Array<{ review: boolean; status: number; body: unknown }> = [];
+/** Applied to the next real review response, to build a structurally valid assembly the engine cannot pose. */
+const reviewMutators: Array<(body: any) => void> = [];
+
+process.env.UNFOLD_API_TARGET = 'http://127.0.0.1:9';
+const vite = await createServer({ server: { host: '127.0.0.1', port, strictPort: true }, logLevel: 'error' });
+await vite.listen();
+const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH ?? '/usr/bin/google-chrome', args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--no-sandbox'] });
+const errors: string[] = [];
+
+async function open(viewport = { width: 1440, height: 900 }, query = 'flow=reconstruct&debug-living=1&rm=1&agent=fixture', using: Browser = browser): Promise<Page> {
+  const page = await using.newPage({ viewport });
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.route('**/api/living/reconstruction', async (route) => {
+    const request = route.request();
+    const forced = forcedResponses.shift();
+    if (forced && (request.postDataJSON()?.action === 'review') === forced.review) { api.push({ body: JSON.parse(request.postData() ?? '{}'), status: forced.status }); await route.fulfill({ status: forced.status, contentType: 'application/json', body: JSON.stringify(forced.body) }); return; }
+    const response = await fetch(`http://127.0.0.1:${backendPort}/api/living/reconstruction`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: request.postData() ?? '' });
+    let text = await response.text();
+    if (request.postDataJSON()?.action === 'review' && response.status === 200 && reviewMutators.length) { const body = JSON.parse(text); reviewMutators.shift()!(body); text = JSON.stringify(body); }
+    api.push({ body: JSON.parse(request.postData() ?? '{}'), status: response.status });
+    await route.fulfill({ status: response.status, contentType: 'application/json', body: text });
+  });
+  await page.goto(`http://127.0.0.1:${port}/living?${query}`);
+  await page.waitForFunction(() => (window as any).__experience?.ready, null, { timeout: 120000 });
+  return page;
+}
+
+const overlap = (a: { x: number; y: number; width: number; height: number }, b: { x: number; y: number; width: number; height: number }) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+async function geometry(page: Page, label: string, selectors: string[]) {
+  const result = await page.evaluate((sel) => ({
+    scrollW: document.documentElement.scrollWidth, innerW: innerWidth,
+    boxes: Object.fromEntries(sel.map((q) => { const el = document.querySelector(q); const r = el && (el as HTMLElement).offsetParent !== null || el?.getClientRects().length ? el!.getBoundingClientRect() : null; return [q, r ? { x: r.x, y: r.y, width: r.width, height: r.height } : null]; })),
+  }), selectors);
+  assert.ok(result.scrollW <= result.innerW, `${label}: no horizontal scroll (${result.scrollW} > ${result.innerW})`);
+  const link = result.boxes['.ls-link'];
+  for (const q of selectors) { if (q === '.ls-link') continue; const b = result.boxes[q]; if (b && link && overlap(link, b)) assert.fail(`${label}: .ls-link overlaps ${q}`); }
+  return result;
+}
+
+async function journey(viewport: { width: number; height: number }, label: string) {
+  const page = await open(viewport);
+  await geometry(page, `${label} empty`, ['.ls-link', '.ux-brand', '#ux-intake']);
+  await page.screenshot({ path: join(out, `${label}-01-empty.png`) });
+  await page.locator('[data-kind="text"]').click();
+  await page.locator('#ux-text').fill('Escavadora de rastos de 20 t com lança, braço e caçamba.');
+  await page.locator('#ux-use-text').click();
+  await page.locator('[data-flow="submit"]').click();
+  await page.waitForFunction(() => (window as any).__experience.phase() === 'review', null, { timeout: 60000 });
+  await geometry(page, `${label} review`, ['.ls-link', '.ux-brand', '.ux-sheet']);
+  await page.screenshot({ path: join(out, `${label}-02-review.png`) });
+  assert.equal(await page.locator('#ux-demo').count(), 0, 'no demonstration banner with the live port');
+  assert.equal(await page.evaluate(() => (window as any).__experience.readiness().status), 'review_pending', 'hypotheses pending, not insufficient');
+  assert.equal(await page.locator('#ux-enter').isDisabled(), true);
+  const total = await page.evaluate(() => (window as any).__experience.review().items.length);
+  await page.locator('.ux-card').focus().catch(() => {});
+  for (let i = 0; i < total; i++) { await page.keyboard.press('c'); await page.keyboard.press('ArrowRight'); }
+  assert.equal(await page.evaluate(() => (window as any).__experience.readiness().status), 'ready_for_engine');
+  assert.equal((await page.locator('#ux-enter').textContent())?.trim(), 'Continuar');
+  await page.screenshot({ path: join(out, `${label}-03-entities-decided.png`) });
+  await page.locator('#ux-enter').click();
+  await page.locator('#gw-reviewer').waitFor();
+  assert.equal(await page.locator('#ux-enter').isDisabled(), true, 'nothing is pre-filled: the server step starts blocked');
+  assert.equal(await page.locator('#gw-family').isChecked(), false); assert.equal(await page.locator('#gw-bucket').isChecked(), false);
+  assert.equal(await page.inputValue('#gw-reviewer'), ''); assert.equal(await page.inputValue('#gw-width'), '');
+  await geometry(page, `${label} server step`, ['.ls-link', '.ux-brand', '.ux-gw']);
+  await page.screenshot({ path: join(out, `${label}-04-server-step.png`) });
+  await page.fill('#gw-reviewer', 'revisor-e2e'); await page.check('#gw-family'); await page.check('#gw-bucket');
+  await page.fill('#gw-width', '1.4'); await page.fill('#gw-basis', 'valor fictício do E2E');
+  assert.equal(await page.locator('#ux-enter').isDisabled(), true, 'extras still undecided');
+  await page.locator('[data-gw="extra-all"][data-decision="reject"]').click();
+  assert.equal(await page.locator('#ux-enter').isDisabled(), false);
+  await page.screenshot({ path: join(out, `${label}-05-server-step-ready.png`) });
+  return page;
+}
+
+
+/** Same path as the journey, quicker: decisions through the page API, then the real server fields and clicks. */
+async function toServerStep(page: Page, width = '1.4') {
+  await page.locator('[data-kind="text"]').click();
+  await page.locator('#ux-text').fill('Escavadora de rastos de 20 t com lança, braço e caçamba.');
+  await page.locator('#ux-use-text').click();
+  await page.locator('[data-flow="submit"]').click();
+  await page.waitForFunction(() => (window as any).__experience.phase() === 'review', null, { timeout: 60000 });
+  await page.evaluate(() => { const x = (window as any).__experience; for (const i of x.review().items) x.dispatch({ type: 'decide', id: i.id, decision: 'confirmed' }); });
+  await page.locator('#ux-enter').click();
+  await page.fill('#gw-reviewer', 'revisor-e2e'); await page.check('#gw-family'); await page.check('#gw-bucket');
+  await page.fill('#gw-width', width); await page.fill('#gw-basis', 'valor fictício do E2E');
+  await page.locator('[data-gw="extra-all"][data-decision="reject"]').click();
+}
+const phase = (page: Page) => page.evaluate(() => (window as any).__experience.phase());
+
+try {
+  for (const [viewport, label] of [[{ width: 1440, height: 900 }, '1440'], [{ width: 768, height: 1024 }, '768'], [{ width: 390, height: 844 }, '390']] as const) {
+    await restartBackend(); providerCalls.length = 0; api.length = 0;
+    const page = await journey(viewport, label);
+    await page.locator('#ux-enter').scrollIntoViewIfNeeded();
+    await page.locator('#ux-enter').click();
+    await page.waitForFunction(() => (window as any).__experience.phase() === 'lab', null, { timeout: 60000 });
+    await page.waitForFunction(() => (window as any).__workspace?.partPoses, null, { timeout: 60000 });
+    assert.equal(providerCalls.length, 1, 'one provider call in total'); assert.equal(api.length, 2);
+    assert.equal(api[1]!.body.action, 'review'); assert.equal(api[1]!.status, 200);
+    await page.waitForTimeout(900);
+    await page.screenshot({ path: join(out, `${label}-06-lab.png`) });
+    await geometry(page, `${label} lab`, []);
+    const rects = await page.evaluate(() => Object.fromEntries(['.uw-brand', '.uw-notices', '.uw-rail', '.uw-composer'].map((q) => { const el = document.querySelector(q); const r = el?.getBoundingClientRect(); const shown = el && getComputedStyle(el).visibility !== 'hidden'; return [q, shown && r && r.width ? { x: r.x, y: r.y, width: r.width, height: r.height } : null]; })));
+    const names = Object.keys(rects) as Array<keyof typeof rects>;
+    for (let i = 0; i < names.length; i++) for (let j = i + 1; j < names.length; j++) { const A = rects[names[i]!], B = rects[names[j]!]; if (A && B && overlap(A, B)) assert.fail(`${label} lab: ${String(names[i])} overlaps ${String(names[j])}`); }
+    assert.ok(rects['.uw-notices'] && rects['.uw-rail'] && rects['.uw-composer'], `${label}: workspace chrome present`);
+    for (const id of ['extra_review', 'extra_restart']) assert.equal(await page.locator(`[data-el="${id}"]`).count(), 1, `${id} tool in the rail`);
+    assert.equal(await page.locator('.ux-lab').isVisible(), false, 'the prototype lab overlay is not shown over the real workspace');
+    const noticeHeight = await page.evaluate(() => document.querySelector('.uw-notices')!.getBoundingClientRect().height);
+    assert.ok(noticeHeight <= 96, `${label}: the provenance notice is compact when collapsed (${noticeHeight}px)`);
+    await page.locator('.uw-notice-details summary').click();
+    const detail = await page.locator('.uw-notice-details p').innerText();
+    for (const phrase of [/não foram verificadas/, /malha 3D ainda não mostra/, /forward-kinematics@/, /não certifica segurança/, /1,40 m, antes 1,10 m/]) assert.match(detail, phrase);
+    await page.screenshot({ path: join(out, `${label}-07-lab-notice-expanded.png`) });
+    await page.locator('.uw-notice-details summary').click();
+    pass(`${label}: live flow reaches the real workspace through both gates, no overflow, no overlap`);
+    await page.close();
+  }
+
+  // ---- behaviours that must survive inside the integrated lab, and the error paths
+  await restartBackend(); providerCalls.length = 0; api.length = 0;
+  {
+    const page = await open();
+    await toServerStep(page);
+    await page.locator('#ux-enter').click();
+    await page.waitForFunction(() => (window as any).__experience.phase() === 'lab' && (window as any).__workspace?.partPoses, null, { timeout: 60000 });
+    // the workspace runs on the approved assembly, with the engine, the inspector and the Digital Hand
+    const first = await page.evaluate(() => { const ws = (window as any).__workspace; ws.select('boom_cylinder'); return { id: ws.selection()?.id, assembly: ws.options.assembly.id, same: ws.options.assembly.id === 'excavator-reference' }; });
+    assert.equal(first.id, 'boom_cylinder'); assert.ok(first.assembly.startsWith('assembly-proposal-'), 'built from the reconstructed assembly, not the reference one');
+    assert.equal(await page.locator('[data-el="engineSlider"]').count(), 1, 'the engine controls are in the inspector');
+    const before = await page.evaluate(() => JSON.stringify((window as any).__workspace.partPoses()));
+    await page.locator('[data-el="engineTarget"]').fill('0.65'); await page.locator('[data-act="engine-preview"]').click();
+    assert.equal(await page.evaluate(() => JSON.stringify((window as any).__workspace.partPoses())), before, 'a proposal never changes the scene');
+    await page.locator('[data-act="engine-approve"]').click();
+    await page.waitForFunction(() => (window as any).__workspace.engineState().timeS > 0 || (window as any).__workspace.poseSource === 'engine', null, { timeout: 30000 });
+    await page.evaluate(() => { const ws = (window as any).__workspace; ws.renderNow(); });
+    assert.notEqual(await page.evaluate(() => JSON.stringify((window as any).__workspace.partPoses())), before, 'the engine moved the reconstructed machine');
+    assert.equal(await page.evaluate(() => (window as any).__workspace.handView()?.targetId), 'boom_cylinder', 'Digital Hand follows the selected part');
+    await page.evaluate(async () => { const ws = (window as any).__workspace; ws.select('boom_cylinder'); await ws.ask('O que acontece se este cilindro se estender?'); });
+    assert.deepEqual(await page.evaluate(() => (window as any).__workspace.getState().messages.at(-1)?.proposal?.kind), 'engine_move');
+    pass('inside the lab: reconstructed assembly, engine move, Digital Hand and conversation work');
+
+    // back to the review from the rail: the old workspace is disposed, the decisions and the server fields are kept
+    const old = await page.evaluate(() => { const ws = (window as any).__workspace; (window as any).__oldWs = ws; return { canvases: document.querySelectorAll('.ux-workspace canvas').length }; });
+    assert.equal(old.canvases, 1);
+    await page.locator('[data-el="extra_review"]').click();
+    await page.waitForFunction(() => (window as any).__experience.phase() === 'review', null, { timeout: 30000 });
+    assert.equal(await page.evaluate(() => document.querySelectorAll('.ux-workspace canvas').length), 0, 'the workspace canvas is gone');
+    assert.equal(await page.evaluate(() => (window as any).__workspace), null);
+    assert.equal(await page.evaluate(() => (window as any).__oldWs.disposed ?? true), true);
+    assert.equal(await page.evaluate(() => (window as any).__oldWs.engineRaf), 0, 'no engine loop left running');
+    assert.equal(await page.evaluate(() => (window as any).__experience.summary().confirmed), 14, 'review decisions are intact');
+    assert.equal(await page.evaluate(() => (window as any).__unified.gateway.human().bucketWidthM), 1.4, 'server fields are intact');
+    pass('back to the review: workspace disposed, decisions and server fields kept');
+
+    // change the width and open the lab again: a NEW workspace is built from the new assembly
+    await page.locator('#ux-enter').click();
+    await page.fill('#gw-width', '1.8');
+    await page.locator('#ux-enter').click();
+    await page.waitForFunction(() => (window as any).__experience.phase() === 'lab' && (window as any).__workspace?.partPoses, null, { timeout: 60000 });
+    assert.equal(await page.evaluate(() => (window as any).__workspace !== (window as any).__oldWs), true, 'a fresh workspace instance');
+    assert.equal(await page.evaluate(() => (window as any).__workspace.selection()), null, 'no selection carried over from the old assembly');
+    assert.equal(await page.evaluate(() => document.querySelectorAll('.ux-workspace canvas').length), 1, 'exactly one canvas');
+    const widths = await page.evaluate(() => { const ws = (window as any).__workspace; const box = ws.options.assembly.parts.find((p: any) => p.role === 'bucket').shapes.find((x: any) => x.kind === 'box'); return box.halfExtentsM[2] * 2; });
+    assert.ok(Math.abs(widths - 1.8) < 1e-9, 'the new workspace carries the new width');
+    assert.equal(providerCalls.length, 1, 'still a single provider call'); assert.equal(api.filter((a) => a.body.action === 'review').length, 2);
+    pass('opening the lab again rebuilds engine session, registry and scene from the new assembly');
+
+    // "Nova máquina" forgets everything
+    await page.locator('[data-el="extra_restart"]').click();
+    await page.waitForFunction(() => (window as any).__experience.phase() === 'empty', null, { timeout: 30000 });
+    assert.equal(await page.evaluate(() => (window as any).__unified.port.session.state.phase), 'idle');
+    assert.equal(await page.evaluate(() => document.querySelectorAll('.ux-workspace canvas').length), 0);
+    pass('new machine: session forgotten, no workspace left');
+    await page.close();
+  }
+
+  // cancel during the wait: the late answer is ignored and nothing is kept
+  await restartBackend(); providerCalls.length = 0; api.length = 0;
+  {
+    const page = await open();
+    let release!: () => void; hold = new Promise<void>((r) => { release = r; });
+    await page.locator('[data-kind="text"]').click();
+    await page.locator('#ux-text').fill('Escavadora de rastos de 20 t com lança, braço e caçamba.');
+    await page.locator('#ux-use-text').click();
+    await page.locator('[data-flow="submit"]').click();
+    await page.waitForFunction(() => (window as any).__experience.phase() === 'waiting');
+    await page.waitForFunction(() => true); await new Promise((r) => setTimeout(r, 300));
+    await page.locator('[data-flow="cancel"]').click();
+    assert.equal(await phase(page), 'selected');
+    hold = null; release(); await new Promise((r) => setTimeout(r, 600));
+    assert.equal(await phase(page), 'selected', 'the late answer is ignored');
+    assert.equal(await page.evaluate(() => (window as any).__unified.port.session.state.phase), 'idle', 'no session kept for a cancelled request');
+    pass('cancel while waiting: late answer ignored, nothing kept');
+    await page.close();
+  }
+
+  // server blocks the review (422) and later says the session is gone (404)
+  await restartBackend(); providerCalls.length = 0; api.length = 0;
+  {
+    const page = await open();
+    await toServerStep(page);
+    forcedResponses.push({ review: true, status: 422, body: { contract: 'unfold.reconstruction.review.v1', sessionId: 'x', status: 'blocked', reasons: ['família não confirmada'] } });
+    await page.locator('#ux-enter').click();
+    await page.waitForSelector('#ux-gw-msg[role="alert"] p');
+    assert.match(await page.locator('#ux-gw-msg').innerText(), /bloqueou a revisão[\s\S]*família não confirmada/);
+    assert.equal(await phase(page), 'review'); assert.equal(await page.inputValue('#gw-reviewer'), 'revisor-e2e', 'the form is kept after a 422');
+    pass('a 422 is shown with the server\'s reasons and keeps the form');
+    forcedResponses.push({ review: true, status: 404, body: { error: { code: 'RECONSTRUCTION_SESSION_NOT_FOUND', message: 'x' } } });
+    await page.locator('#ux-enter').click();
+    await page.waitForFunction(() => /expirou/.test(document.querySelector('#ux-gw-msg')?.textContent ?? ''));
+    assert.equal(await phase(page), 'review');
+    pass('an expired server session is reported and the lab stays closed');
+    await page.close();
+  }
+
+
+  // gate 2: a structurally valid assembly that the Engineering Engine cannot pose keeps the lab closed, and says why
+  await restartBackend(); providerCalls.length = 0; api.length = 0;
+  {
+    const page = await open();
+    await toServerStep(page);
+    reviewMutators.push((body) => { for (const a of body.assembly.actuators) if (a.kind === 'hydraulic_cylinder') a.stroke.max.value = 0.0001; });
+    await page.locator('#ux-enter').click();
+    await page.waitForFunction(() => /motor não consegue resolver/.test(document.querySelector('#ux-gw-msg')?.textContent ?? ''), null, { timeout: 30000 });
+    const message = await page.locator('#ux-gw-msg').innerText();
+    assert.match(message, /contrato é válido/); assert.match(message, /STROKE_OUT_OF_RANGE/);
+    assert.match(await page.locator('#ux-side .ux-gates').innerText(), /bloqueada pelo motor[\s\S]*STROKE_OUT_OF_RANGE/, 'gate 2 shows the engine blocked it');
+    assert.equal(await phase(page), 'review'); assert.equal(await page.evaluate(() => document.querySelectorAll('.ux-workspace canvas').length), 0, 'no machine is shown that the engine cannot pose');
+    assert.equal(await page.evaluate(() => (window as any).__workspace ?? null), null);
+    pass('structurally valid but unposable by the engine: gate 2 blocked, lab closed, reason shown');
+    await page.locator('#ux-enter').click();
+    await page.waitForFunction(() => (window as any).__experience.phase() === 'lab' && (window as any).__workspace?.partPoses, null, { timeout: 60000 });
+    assert.match(await page.evaluate(() => (window as any).__experience.flow().phase), /lab/);
+    pass('after a correct review the same session opens the lab');
+    await page.close();
+  }
+
+  // WebP through the real file input: converted to PNG before it leaves the page
+  await restartBackend(); providerCalls.length = 0; api.length = 0;
+  {
+    const page = await open();
+    const webp = await page.evaluate(async () => { const c = document.createElement('canvas'); c.width = 64; c.height = 32; const g = c.getContext('2d')!; g.fillStyle = '#888'; g.fillRect(0, 0, 64, 32); const blob: Blob = await new Promise((r) => c.toBlob((b) => r(b!), 'image/webp')); const buf = new Uint8Array(await blob.arrayBuffer()); let s = ''; buf.forEach((b) => { s += String.fromCharCode(b); }); return { type: blob.type, b64: btoa(s) }; });
+    assert.equal(webp.type, 'image/webp');
+    await page.locator('[data-kind="image"]').click();
+    await page.setInputFiles('#ux-file', { name: 'foto.webp', mimeType: 'image/webp', buffer: Buffer.from(webp.b64, 'base64') });
+    await page.locator('[data-flow="submit"]').click();
+    await page.waitForFunction(() => (window as any).__experience.phase() === 'review', null, { timeout: 60000 });
+    assert.match(api[0]!.body.imageDataUrl, /^data:image\/png;base64,/, 'the API received a PNG');
+    assert.equal(api[0]!.status, 200);
+    pass('a WebP chosen in the interface is sent to the API as PNG');
+    await page.close();
+  }
+
+  // the reference workspace keeps working, and offers the way into the reconstruction from its own rail
+  {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`http://127.0.0.1:${port}/living?debug-living=1&rm=1&agent=fixture`);
+    await page.waitForFunction(() => (window as any).__foundry?.ready, null, { timeout: 120000 });
+    assert.equal(await page.evaluate(() => (window as any).__workspace.options.assembly.id), EXCAVATOR_ASSEMBLY_V1.id, 'the reference machine, as before');
+    assert.equal(await page.locator('[data-el="extra_reconstruct"]').count(), 1);
+    assert.equal(await page.locator('[data-el="extra_review"]').count(), 0);
+    await page.locator('[data-el="extra_reconstruct"]').click();
+    await page.waitForFunction(() => location.search.includes('flow=reconstruct'));
+    await page.waitForFunction(() => (window as any).__experience?.ready, null, { timeout: 120000 });
+    assert.equal(await phase(page), 'empty');
+    pass('reference workspace opens as before and its rail leads into the reconstruction flow');
+    await page.close();
+  }
+
+  // browser history: leave the lab and come back, with and without the back-forward cache
+  for (const cache of [false, true]) {
+    await restartBackend(); providerCalls.length = 0; api.length = 0;
+    const b = await chromium.launch({ executablePath: process.env.CHROME_PATH ?? '/usr/bin/google-chrome', ignoreDefaultArgs: cache ? ['--disable-back-forward-cache'] : [], args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--no-sandbox', ...(cache ? ['--enable-features=BackForwardCache'] : [])] });
+    try {
+      const page = await open({ width: 1000, height: 700 }, 'flow=reconstruct&debug-living=1&rm=0&agent=fixture', b);
+      await page.addInitScript(() => { (window as any).__shows = []; addEventListener('pageshow', (e) => (window as any).__shows.push((e as PageTransitionEvent).persisted)); });
+      await toServerStep(page);
+      await page.locator('#ux-enter').click();
+      await page.waitForFunction(() => (window as any).__experience.phase() === 'lab' && (window as any).__workspace?.partPoses, null, { timeout: 90000 });
+      await page.evaluate(() => { const ws = (window as any).__workspace; ws.select('boom_cylinder'); (window as any).__canvas = document.querySelector('.ux-workspace canvas'); (window as any).__ws0 = ws; (window as any).__shows = (window as any).__shows ?? []; addEventListener('pageshow', (e) => (window as any).__shows.push((e as PageTransitionEvent).persisted)); });
+      for (let cycle = 1; cycle <= 2; cycle++) {
+        await page.goto(`http://127.0.0.1:${port}/landing/`, { waitUntil: 'domcontentloaded' });
+        await page.goBack({ waitUntil: 'commit' });
+        await page.waitForFunction(() => (window as any).__experience?.ready, null, { timeout: 120000 });
+        const r = await page.evaluate(() => ({ persisted: (window as any).__shows.at(-1), phase: (window as any).__experience.phase(), stageCanvases: document.querySelectorAll('.ux-stage canvas').length, labCanvases: document.querySelectorAll('.ux-workspace canvas').length, same: (window as any).__canvas === document.querySelector('.ux-workspace canvas'), playing: (window as any).__workspace?.engineState().playing ?? null, selection: (window as any).__workspace?.selection()?.id ?? null, lost: (window as any).__workspace?.foundry.renderer.getContext().isContextLost() ?? null }));
+        if (cache) { assert.equal(r.persisted, true); assert.equal(r.phase, 'lab'); assert.equal(r.labCanvases, 1); assert.equal(r.same, true); assert.equal(r.selection, 'boom_cylinder'); assert.equal(r.playing, false); assert.equal(r.lost, false); }
+        else { assert.equal(r.persisted, false); assert.equal(r.phase, 'empty', 'a fresh page starts from an empty lab, never from a half-restored one'); assert.equal(r.labCanvases, 0); assert.equal(r.stageCanvases, 1); }
+        pass(`history cycle=${cycle} cache=${cache} persisted=${r.persisted}`);
+      }
+      await page.close();
+    } finally { await b.close(); }
+  }
+} finally { await browser.close(); await vite.close(); await new Promise<void>((r, j) => backend.close((e) => e ? j(e) : r())); }
+assert.deepEqual(errors, []);
