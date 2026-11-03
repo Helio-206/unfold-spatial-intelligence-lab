@@ -74,7 +74,8 @@ describe.each(routes)('paid route %s: method, content type and Host', (path) => 
   ])('lets the normal request through: %s', async (_label, host) => {
     const upstream = countingFetch(upstreamText);
     await withGuardedServer({ fetchImpl: upstream }, async (port) => {
-      const reply = await rawRequest(port, { path, headers: { ...json, host: host(port) }, body });
+      const prepared = cases[path]!.prepare ? await cases[path]!.prepare!(port, json) : {};
+      const reply = await rawRequest(port, { path, headers: { ...json, host: host(port) }, body: { ...(body as Record<string, unknown>), ...prepared } });
       expect(reply.status).toBe(200);
       expect(upstream.mock.calls.length).toBeGreaterThan(0);
     });
@@ -83,7 +84,8 @@ describe.each(routes)('paid route %s: method, content type and Host', (path) => 
   it('accepts application/json with parameters and any letter case', async () => {
     const upstream = countingFetch(upstreamText);
     await withGuardedServer({ fetchImpl: upstream }, async (port) => {
-      const reply = await rawRequest(port, { path, headers: { origin: ALLOWED_ORIGIN, 'content-type': 'Application/JSON; charset=utf-8' }, body });
+      const prepared = cases[path]!.prepare ? await cases[path]!.prepare!(port, json) : {};
+      const reply = await rawRequest(port, { path, headers: { origin: ALLOWED_ORIGIN, 'content-type': 'Application/JSON; charset=utf-8' }, body: { ...(body as Record<string, unknown>), ...prepared } });
       expect(reply.status).toBe(200);
       expect(upstream.mock.calls.length).toBeGreaterThan(0);
     });

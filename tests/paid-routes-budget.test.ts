@@ -18,10 +18,22 @@ afterAll(() => { for (const key of envKeys) { if (savedEnv[key] === undefined) d
 const budget = async (port: number) => (await rawRequest(port, { path: '/api/diagnostics', method: 'GET' })).json.metaCallBudget as { limit: number | null; used: number; remaining: number | null };
 
 // Fetch que fica preso até soltarmos, para ter pedidos genuinamente em simultâneo.
-function gatedFetch(text: string) {
+function gatedFetch(text: string, allowPlanSeed = false) {
   let open!: () => void;
+  let planSeeded = false;
   const gate = new Promise<void>((resolve) => { open = resolve; });
-  const upstream = vi.fn<typeof fetch>().mockImplementation(async () => { await gate; return metaResponse(text); });
+  const upstream = vi.fn<typeof fetch>().mockImplementation(async (_url, init) => {
+    try {
+      const request = JSON.parse(String(init?.body));
+      if (allowPlanSeed && !planSeeded && request.text?.format?.name === 'unfold_spatial_plan_v2') {
+        planSeeded = true;
+        const identity = { position: [0, 0, 0], rotationRad: [0, 0, 0], scale: [1, 1, 1] };
+        const material = { profile: 'metal', color: '#777777', roughness: 0.4, metalness: 0.7, clearcoat: 0 };
+        return metaResponse(JSON.stringify({ title: 'Fan', units: 'unitless', presentationProfile: 'industrial', components: [{ id: 'hub', label: 'Hub', parentId: null, geometry: { type: 'shape', key: 'hub-shell', operator: 'cylinder', parameters: { radiusTop: 0.4, radiusBottom: 0.4, height: 0.2, radialSegments: 16 }, transform: identity, repeat: null, material }, transform: identity, provenance: { geometry: 'inferred', transform: 'inferred', material: 'inferred', evidence: 'Test fixture.' } }], relations: [], constraints: [], unknowns: [] }));
+      }
+    } catch { /* The endpoint under test handles malformed upstream data. */ }
+    await gate; return metaResponse(text);
+  });
   return { upstream, open };
 }
 const until = async (condition: () => boolean) => { for (let attempt = 0; attempt < 200 && !condition(); attempt += 1) await new Promise((resolve) => setTimeout(resolve, 5)); expect(condition()).toBe(true); };
@@ -32,6 +44,12 @@ describe.each(routes)('paid route %s: call budget', (path) => {
   it('answers 429 META_CALL_BUDGET_EXHAUSTED when the budget is spent, without reaching Meta', async () => {
     const upstream = countingFetch(upstreamText);
     await withGuardedServer({ fetchImpl: upstream, maxMetaCalls: 0 }, async (port) => {
+      if (cases[path]!.prepare) {
+        const reply = await rawRequest(port, { path, headers, body });
+        expect(reply.status).toBe(404);
+        expect(upstream).toHaveBeenCalledTimes(0);
+        return;
+      }
       const reply = await rawRequest(port, { path, headers, body });
       expect(reply.status).toBe(429);
       expect(reply.json.error.code).toBe('META_CALL_BUDGET_EXHAUSTED');
@@ -41,13 +59,14 @@ describe.each(routes)('paid route %s: call budget', (path) => {
 
   it('spends from one budget shared with every other paid route', async () => {
     const upstream = countingFetch(upstreamText);
-    await withGuardedServer({ fetchImpl: upstream, maxMetaCalls: 1 }, async (port) => {
-      expect((await rawRequest(port, { path, headers, body })).status).toBe(200);
+    await withGuardedServer({ fetchImpl: upstream, maxMetaCalls: cases[path]!.prepare ? 2 : 1 }, async (port) => {
+      const prepared = cases[path]!.prepare ? await cases[path]!.prepare!(port, headers) : {};
+      expect((await rawRequest(port, { path, headers, body: { ...(body as Record<string, unknown>), ...prepared } })).status).toBe(200);
       const other = routes.find((route) => route !== path)!;
       const reply = await rawRequest(port, { path: other, headers, body: cases[other]!.body });
       expect(reply.status).toBe(429);
       expect(reply.json.error.code).toBe('META_CALL_BUDGET_EXHAUSTED');
-      expect(upstream).toHaveBeenCalledTimes(1);
+      expect(upstream).toHaveBeenCalledTimes(cases[path]!.prepare ? 2 : 1);
     });
   });
 });
@@ -112,19 +131,23 @@ describe.each(routes)('paid route %s: concurrent Meta calls', (path) => {
 
   it('lets the default number through at once and refuses the next one with 429, without reaching Meta or spending budget', async () => {
     expect(DEFAULT_MAX_CONCURRENT_META_CALLS).toBe(2);
-    const { upstream, open } = gatedFetch(upstreamText);
+    const { upstream, open } = gatedFetch(upstreamText, Boolean(cases[path]!.prepare));
     await withGuardedServer({ fetchImpl: upstream }, async (port) => {
-      const inFlight = [rawRequest(port, { path, headers, body }), rawRequest(port, { path, headers, body })];
-      await until(() => upstream.mock.calls.length === 2);
-      const refused = await rawRequest(port, { path, headers, body });
+      const prepared = cases[path]!.prepare ? await cases[path]!.prepare!(port, headers) : {};
+      const requestBody = { ...(body as Record<string, unknown>), ...prepared };
+      const callsBeforeRequests = upstream.mock.calls.length;
+      const inFlight = [rawRequest(port, { path, headers, body: requestBody }), rawRequest(port, { path, headers, body: requestBody })];
+      await until(() => upstream.mock.calls.length === callsBeforeRequests + 2);
+      const refused = await rawRequest(port, { path, headers, body: requestBody });
       expect(refused.status).toBe(429);
       expect(refused.json.error.code).toBe('META_CONCURRENCY_LIMIT');
-      expect(upstream).toHaveBeenCalledTimes(2);
-      expect((await budget(port)).used).toBe(2);
+      expect(upstream).toHaveBeenCalledTimes(callsBeforeRequests + 2);
+      expect((await budget(port)).used).toBe(callsBeforeRequests + 2);
       open();
       expect((await Promise.all(inFlight)).map((reply) => reply.status)).toEqual([200, 200]);
-      expect((await rawRequest(port, { path, headers, body })).status).toBe(200);
-      expect((await budget(port)).used).toBe(3);
+      const nextBody = path === '/api/spatial/v2/edit' ? { ...requestBody, baseRevision: 2 } : requestBody;
+      expect((await rawRequest(port, { path, headers, body: nextBody })).status).toBe(200);
+      expect((await budget(port)).used).toBe(callsBeforeRequests + 3);
     });
   });
 });

@@ -1,5 +1,7 @@
 # Universal Spatial Engine — Terminal handoff
 
+> This document began as the V1 handoff. V2 is an additive contract; use the V2 section below when the caller opts into it. Do not silently change existing V1 consumers.
+
 This isolated prototype adds a generic, declarative spatial-plan domain. It does not replace `unfold.assembly.v1`, the excavator solver, Anatomy, the Foundry, or the Unified Workspace. It adds a browser-only technical harness at `/universal-spatial`; the Terminal should integrate the adapter into its existing workspace and must not ship this harness as another workspace.
 
 ## Stable module boundary
@@ -90,3 +92,49 @@ The implementation supports generic primitive composition and repetition, but it
 ## Local validation
 
 `npm test` covers the spatial schema, bounds, hierarchy, local edits and actual repeated-mesh counts. `npm run build` checks TypeScript and the Vite graph. Start the backend and Vite server with the project's normal environment, then `npm run test:e2e:universal-spatial` runs a real browser call through the `/universal-spatial` technical harness and saves a screenshot/report under `reports/universal-spatial/evidence/`. This route is test tooling only and must not be mounted as the common workspace.
+
+## V2 integration contract (opt-in)
+
+### Modules and renderer ownership
+
+Import from `src/universal-spatial/`: `SpatialPlanV2`, `validateSpatialPlanV2`, `spatialPlanV1ToV2`, `compileSpatialPlanV2`, `disposeCompiledSpatialPlan`, `evaluateSpatialConstraintsV2`, `createSpatialPlanV2`, `editSpatialPlanV2`, `applySpatialPlanV2Operation`, `evaluateSpatialPlanV2`, `refineSpatialPlanV2`, and `undoSpatialPlanV2`. `compileSpatialPlanV2(plan)` returns `{ root, stats }`; attach `root` to the already-mounted workspace Three.js scene, keep the returned stats for Inspector/performance display, and call `disposeCompiledSpatialPlan(root)` when replacing/unmounting. The workspace remains owner of renderer/Cinema lights/camera/picking/timeline and auth. Mesh `userData.spatialEntityId` and `spatialSubcomponentKey` are stable selection targets. No new workspace should be shipped.
+
+### `unfold.spatial-plan.v2`
+
+Plan envelope: `contract`, `source: { kind: "text"|"image", sha256 }`, `title`, `units: "m"|"unitless"`, `presentationProfile: "neutral"|"industrial"|"organic"|"educational"`, `components[]`, `relations[]`, `constraints[]`, `unknowns[]`. Component shape: `{ id, label, parentId, geometry, transform, provenance }`. Provenance is property-specific: `{ geometry, transform, material, evidence }`, and each origin is `observed | inferred | user_provided | design_approximation | unknown`. A screenshot or photograph without known reference scale must remain `unitless`, preserve unknown dimensions, and never be promoted to a measured model. Image SHA is computed over validated decoded image bytes; text SHA covers the exact submitted instruction.
+
+Geometry is a recursive `group` (`key`, transform, repeat, non-empty children) or `shape` (`key`, `operator`, exact typed parameters, transform, repeat, material). Operators: `box`, `rounded_box`, `sphere`, `ellipsoid`, `cylinder`, `cone`, `torus`, `extrude`, `tube`, `revolve`, `loft`. No booleans, scripts, or arbitrary code. Repeat may be `null`, else `{ kind: "linear"|"radial", count: 2..64, axis: "x"|"y"|"z", spacingOrRadius }`. Material is per shape (`profile`, hex `color`, `roughness`, `metalness`, `clearcoat`). The full strict schema/limits live in `contracts-v2.ts`; current compiler cap is 512 geometry nodes, depth 12, 1,000 rendered meshes and 400,000 estimated triangles. Muse Spark's endpoint schema is deliberately shallower: one group level with shape children, and nested values are JSON strings that the server hydrates before full V2 validation. Missing/invalid appearance fields or operator parameters can be replaced by explicit dimensionless fallback values with `design_approximation` provenance and an unknown recorded. Other invalid plans are rejected. The provider's schema-depth cap is narrower than the local V2 contract.
+
+### API routes
+
+Every POST uses JSON, allowed local origin/Host or the existing local token for script clients. Paid calls consume the existing Meta budget and request slots. API images are bounded to 10,000 pixels per side and 16 MP; screenshot/image routes are rate limited to four per minute per peer. Session lifetime is in-memory 30 minutes, history maximum 50 changes; clients should handle 404 expired session and 409 stale revision. Meta errors never fall back to fixture plans.
+
+`POST /api/spatial/v2/plan` (paid, live Meta):
+
+```json
+{"sourceKind":"text","instruction":"Build a small desktop wind turbine with a tower, nacelle, hub and three curved blades.","mode":"live","maxRefinements":1}
+```
+
+For an image send `{"sourceKind":"image","imageDataUrl":"data:image/png;base64,...","maxRefinements":1}`. A successful response includes `{ contract:"unfold.spatial-plan.v2", sessionId, revision:0, plan, sceneSummary:{componentCount,geometryNodeCount,operators,constraintReady}, constraintReport, constructionEvents, meta, limitations }`. `meta` reports provider model/request ID, latency, usage and estimated cost when available. Example plan fragment:
+
+```json
+{"contract":"unfold.spatial-plan.v2","source":{"kind":"text","sha256":"<sha256>"},"title":"Wind turbine concept","units":"unitless","presentationProfile":"industrial","components":[{"id":"tower","label":"Tower","parentId":null,"geometry":{"type":"shape","key":"tower-shell","operator":"loft","parameters":{"profile":[[-0.12,-0.1],[0.12,-0.1],[0.12,0.1],[-0.12,0.1]],"sections":[[0,0.75,0.75],[2,0.3,0.3]],"capEnds":[true,true]},"transform":{"position":[0,0,0],"rotationRad":[0,0,0],"scale":[1,1,1]},"repeat":null,"material":{"profile":"metal","color":"#777777","roughness":0.45,"metalness":0.65,"clearcoat":0.1}},"transform":{"position":[0,0,0],"rotationRad":[0,0,0],"scale":[1,1,1]},"provenance":{"geometry":"inferred","transform":"inferred","material":"design_approximation","evidence":"A tapered support is inferred from the text request."}}],"relations":[],"constraints":[],"unknowns":["No physical dimensions were supplied."]}
+```
+
+`POST /api/spatial/v2/edit` (paid Meta proposal): `{"sessionId":"<uuid>","baseRevision":0,"instruction":"Move the nacelle 0.1 units upward."}`. It returns the updated plan, validated operation, incremented revision, constraints, and `review:{status:"applied",actorEvidence:"client_asserted_unverified",authenticatedReviewer:false}`. This is an inferred/model-proposed change; it does not prove human review.
+
+`POST /api/spatial/v2/operation` (local typed operation): `{"sessionId":"<uuid>","baseRevision":0,"operation":{"contract":"unfold.spatial-operation.v2","operationId":"edit-001","kind":"set-transform","componentId":"nacelle","nodeKey":null,"value":{"position":[0,2.1,0],"rotationRad":[0,0,0],"scale":[1,1,1]}}}`. Allowed kinds: `set-transform`, `set-geometry`, `set-material`, `set-repeat`. The response labels actor evidence `client_asserted_unverified`; client submission is not proof of a human identity. The consumer's authenticated review UI must record identity/acknowledgement in its own audited integration, rather than deriving it from this API field.
+
+`POST /api/spatial/v2/evaluate` (paid image): `{"sessionId":"<uuid>","baseRevision":0,"imageDataUrl":"data:image/png;base64,<rendered screenshot>"}`. The plan and original prompt come from the server session. Returns `{ contract:"unfold.spatial-evaluation.v1", revision, evaluation:{recognizabilityScore,silhouetteScore,spatialIntegrityScore,confidence,discrepancies,suggestedOperation,rationale}, suggestionStatus, refinementBudget, constraintReport, meta, limitations }`. Scores and discrepancy labels are fallible visual hypotheses, not objective metrics. A proposed change is pending and never applied by this route.
+
+`POST /api/spatial/v2/refine` and `/api/spatial/v2/undo`: `{ "sessionId":"<uuid>", "baseRevision":0 }`. Refine applies one valid pending visual operation only, within the plan's 0–2 limit; undo restores the previous valid plan as a new revision. Undo returns 409 when history is empty. Both return the current plan, constraints and revision. Treat revision as an optimistic concurrency token.
+
+### Constraints and evidence limits
+
+Kinds: `coaxial`, `aligned`, `attached_at`, `centered_on`, `symmetric`, `parallel`, `perpendicular`, `distributed_around`, `connected_by_curve`, `maintains_clearance`. A result gives status, measure, tolerance, method and limitation. World-transform checks evaluate orientation/alignment; AABB-based contact/clearance/curve checks are approximations. Radial checks validate compiler repeat metadata and component origin. These do not certify mechanical validity, collision-free surfaces, structure, fluid dynamics, or any physical simulation. Keep violated checks visible; do not hide them with camera framing.
+
+### Foundry, Cinema, timeline and assets
+
+Use the common workspace renderer/selection/inspector/timeline and its existing Cinema environment. `src/living/cinema/studio-environment.ts` offers a reusable lighting lifecycle; `three` and `OrbitControls` are already available. V2 owns only its compiled Group/geometries/materials and has an explicit disposal call. Construction events can stage the same workspace timeline; they are presentation cues, not measured physical motion. The `/universal-spatial-v2` harness is development/test tooling only. No third-party GLB/GLTF is shipped, so no asset license/attribution is implied; future assets require a provenance/license manifest, source checksum, scale/orientation/anchors and geometry/texture bounds. No specialized paid mesh provider or new dependency is present.
+
+The full Foundry transfer analysis, asset strategy, checks and limitations are in [`V2-ARCHITECTURE.md`](./V2-ARCHITECTURE.md). Run `npm test`, `npm run build` and the V2 browser/live procedure documented in `reports/universal-spatial-v2/RESULTS.md`; mock API tests are not Meta evidence.

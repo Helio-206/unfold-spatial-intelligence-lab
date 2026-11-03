@@ -84,7 +84,9 @@ describe.each(routes)('paid route %s: Origin and local token', (path) => {
   it('lets an allowed browser Origin through without a token', async () => {
     const upstream = countingFetch(upstreamText);
     await withTokenServer({ fetchImpl: upstream }, async (port) => {
-      const reply = await rawRequest(port, { path, headers: { ...jsonOnly, origin: ALLOWED_ORIGIN }, body });
+      const requestHeaders = { ...jsonOnly, origin: ALLOWED_ORIGIN };
+      const prepared = cases[path]!.prepare ? await cases[path]!.prepare!(port, requestHeaders) : {};
+      const reply = await rawRequest(port, { path, headers: requestHeaders, body: { ...(body as Record<string, unknown>), ...prepared } });
       expect(reply.status).toBe(200);
       expect(upstream.mock.calls.length).toBeGreaterThan(0);
     });
@@ -93,7 +95,9 @@ describe.each(routes)('paid route %s: Origin and local token', (path) => {
   it('lets a local script through with the token and no Origin', async () => {
     const upstream = countingFetch(upstreamText);
     await withTokenServer({ fetchImpl: upstream }, async (port, token) => {
-      const reply = await rawRequest(port, { path, headers: { ...jsonOnly, [TOKEN_HEADER]: token }, body });
+      const requestHeaders = { ...jsonOnly, [TOKEN_HEADER]: token };
+      const prepared = cases[path]!.prepare ? await cases[path]!.prepare!(port, { ...requestHeaders, origin: ALLOWED_ORIGIN }) : {};
+      const reply = await rawRequest(port, { path, headers: requestHeaders, body: { ...(body as Record<string, unknown>), ...prepared } });
       expect(reply.status).toBe(200);
       expect(upstream.mock.calls.length).toBeGreaterThan(0);
     });

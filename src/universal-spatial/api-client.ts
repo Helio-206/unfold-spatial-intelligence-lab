@@ -1,4 +1,6 @@
 import { SPATIAL_PLAN_CONTRACT, validateSpatialPlan, type SpatialOperation, type SpatialPlan } from './contracts';
+import { SPATIAL_PLAN_V2_CONTRACT, validateSpatialPlanV2, type SpatialOperationV2, type SpatialPlanV2 } from './contracts-v2';
+import { parseSpatialEvaluationV2, type SpatialEvaluationV2 } from './evaluation-v2';
 
 export class SpatialApiError extends Error {
   constructor(readonly status: number, readonly code: string, message: string) { super(message); this.name = 'SpatialApiError'; }
@@ -34,4 +36,40 @@ export async function applySpatialPlanOperation(input: { sessionId: string; base
 
 export async function undoSpatialPlan(input: { sessionId: string; baseRevision: number }, fetchImpl: typeof fetch = fetch): Promise<SpatialMutationReply> {
   return validatedReply(await post<SpatialMutationReply>('/api/spatial/undo', input, fetchImpl)) as SpatialMutationReply;
+}
+
+export type SpatialPlanV2Reply = { contract: typeof SPATIAL_PLAN_V2_CONTRACT; sessionId: string; revision: number; plan: SpatialPlanV2; sceneSummary: { componentCount: number; geometryNodeCount: number; operators: string[]; constraintReady: boolean }; constraintReport: unknown; constructionEvents: unknown[]; meta: Record<string, unknown>; limitations: string[] };
+export type SpatialMutationV2Reply = { contract: 'unfold.spatial-v2-review.v1'; sessionId: string; revision: number; plan: SpatialPlanV2; operation?: SpatialOperationV2; constraintReport: unknown; review: { status: string; actorEvidence: 'client_asserted_unverified'; authenticatedReviewer: false }; meta?: Record<string, unknown>; limitation?: string };
+export type SpatialEvaluationV2Reply = { contract: 'unfold.spatial-evaluation.v1'; sessionId: string; revision: number; evaluation: SpatialEvaluationV2; suggestionStatus: 'pending' | 'rejected' | 'none'; refinementBudget: { maximum: number; used: number }; constraintReport: unknown; meta: Record<string, unknown>; limitations: string[] };
+
+function validSpatialPlanV2Reply(reply: SpatialPlanV2Reply | SpatialMutationV2Reply): SpatialPlanV2Reply | SpatialMutationV2Reply {
+  if (reply.contract !== SPATIAL_PLAN_V2_CONTRACT && reply.contract !== 'unfold.spatial-v2-review.v1') throw new SpatialApiError(502, 'INVALID_SPATIAL_V2_API_REPLY', 'Unknown spatial V2 response contract.');
+  return { ...reply, plan: validateSpatialPlanV2(reply.plan) };
+}
+
+export async function createSpatialPlanV2(input: { sourceKind: 'text'; instruction: string; maxRefinements?: number } | { sourceKind: 'image'; imageDataUrl: string; maxRefinements?: number }, fetchImpl: typeof fetch = fetch): Promise<SpatialPlanV2Reply> {
+  return validSpatialPlanV2Reply(await post<SpatialPlanV2Reply>('/api/spatial/v2/plan', { ...input, mode: 'live' }, fetchImpl)) as SpatialPlanV2Reply;
+}
+
+export async function editSpatialPlanV2(input: { sessionId: string; baseRevision: number; instruction: string }, fetchImpl: typeof fetch = fetch): Promise<SpatialMutationV2Reply> {
+  return validSpatialPlanV2Reply(await post<SpatialMutationV2Reply>('/api/spatial/v2/edit', input, fetchImpl)) as SpatialMutationV2Reply;
+}
+
+export async function applySpatialPlanV2Operation(input: { sessionId: string; baseRevision: number; operation: SpatialOperationV2 }, fetchImpl: typeof fetch = fetch): Promise<SpatialMutationV2Reply> {
+  return validSpatialPlanV2Reply(await post<SpatialMutationV2Reply>('/api/spatial/v2/operation', input, fetchImpl)) as SpatialMutationV2Reply;
+}
+
+export async function refineSpatialPlanV2(input: { sessionId: string; baseRevision: number }, fetchImpl: typeof fetch = fetch): Promise<SpatialMutationV2Reply> {
+  return validSpatialPlanV2Reply(await post<SpatialMutationV2Reply>('/api/spatial/v2/refine', input, fetchImpl)) as SpatialMutationV2Reply;
+}
+
+export async function undoSpatialPlanV2(input: { sessionId: string; baseRevision: number }, fetchImpl: typeof fetch = fetch): Promise<SpatialMutationV2Reply> {
+  return validSpatialPlanV2Reply(await post<SpatialMutationV2Reply>('/api/spatial/v2/undo', input, fetchImpl)) as SpatialMutationV2Reply;
+}
+
+export async function evaluateSpatialPlanV2(input: { sessionId: string; baseRevision: number; imageDataUrl: string; plan: SpatialPlanV2 }, fetchImpl: typeof fetch = fetch): Promise<SpatialEvaluationV2Reply> {
+  const { plan, ...request } = input;
+  const reply = await post<SpatialEvaluationV2Reply>('/api/spatial/v2/evaluate', request, fetchImpl);
+  if (reply.contract !== 'unfold.spatial-evaluation.v1' || !reply.evaluation) throw new SpatialApiError(502, 'INVALID_SPATIAL_V2_EVALUATION_REPLY', 'Unknown spatial evaluation contract.');
+  return { ...reply, evaluation: parseSpatialEvaluationV2(reply.evaluation, plan) };
 }
