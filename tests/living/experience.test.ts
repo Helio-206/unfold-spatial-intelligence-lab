@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { validateExcavatorObservation } from '../../src/living/reconstruction/contracts';
 import { EXCAVATOR_ASSEMBLY_V1 } from '../../src/living/contracts/fixtures/excavator.assembly.v1';
 import { ENTITY_PARTS, reconstructionFixture } from '../../src/living/experience/reconstruction-fixture';
-import { initialReview, labCategory, partCategories, reduceReview, summarize } from '../../src/living/experience/review';
+import { initialReview, labCategory, partCategories, readiness, reduceReview, summarize } from '../../src/living/experience/review';
 import { TIMELINE, TRANSITION_TOTAL, transitionAt } from '../../src/living/experience/transition';
 import { sheetProjectionFor, toSheet } from '../../src/living/experience/drawing';
 import { DURATION } from '../../src/motion/tokens';
@@ -28,7 +28,7 @@ describe('human review', () => {
   it('starts with nothing confirmed and the lab closed while hypotheses are undecided', () => {
     const s = summarize(initialReview(obs));
     expect(s.confirmed).toBe(0);
-    expect(s.canEnterLab).toBe(false);
+    expect(readiness(initialReview(obs))).toEqual({ status: 'review_pending', pending: 3 });
     expect(s.pendingHypotheses).toBe(3);
   });
   it('never promotes: observed stays observed until a person confirms it', () => {
@@ -45,10 +45,10 @@ describe('human review', () => {
   it('opens the lab once every hypothesis is decided; unknowns stay unknown', () => {
     let r = initialReview(obs);
     for (const id of ['e_boom_cyl', 'e_stick_cyl']) r = reduceReview(r, { type: 'decide', id, decision: 'confirmed' });
-    expect(summarize(r).canEnterLab).toBe(false);
+    expect(readiness(r).status).toBe('review_pending');
     r = reduceReview(r, { type: 'decide', id: 'e_bucket_cyl', decision: 'rejected' });
     const s = summarize(r);
-    expect(s.canEnterLab).toBe(true);
+    expect(readiness(r)).toEqual({ status: 'ready_for_engine' });
     expect(s.unknown).toBe(2);
     const cats = partCategories(r, ENTITY_PARTS);
     expect(cats.get('bucket_cyl_barrel')).toBe('rejected');

@@ -65,3 +65,36 @@ export function reconstructionFixture(): ExcavatorObservationV1 {
   };
   return validateExcavatorObservation(raw);
 }
+
+/**
+ * FIXTURE (demo scenario «dados insuficientes»): an excavator is recognised but only the bucket is legible; the
+ * structure that a valid assembly needs (tracks, house, boom, stick) is unknown.
+ */
+export function insufficientObservation(): ExcavatorObservationV1 {
+  return validateExcavatorObservation({
+    schema: RECONSTRUCTION_OBSERVATION_SCHEMA,
+    source: { kind: 'image', reference: 'fixture:partial-photo.v1' },
+    machineType: 'excavator',
+    entities: [
+      entity('e_bucket', 'bucket', 'Caçamba', 'observed', 0.81, ev('ev-p-bucket', 'Caçamba em primeiro plano, bem iluminada.', 'image_region')),
+      entity('e_stick', 'stick', 'Braço', 'hypothesis', 0.44, ev('ev-p-stick', 'Parte de um braço visível no canto; corta no limite da imagem.', 'image_region')),
+      entity('e_house', 'house', 'Corpo superior e cabina', 'unknown', 0.1, ev('ev-p-house', 'Fora do enquadramento.', 'image_region')),
+      entity('e_chassis', 'track', 'Material circulante (rastos)', 'unknown', 0.1, ev('ev-p-chassis', 'Fora do enquadramento.', 'image_region')),
+    ],
+    relations: [], dimensions: [], requests: [],
+    unknowns: ['A fotografia mostra só a caçamba e parte do braço.', 'Sem referência de escala.'],
+    hypotheses: [],
+  });
+}
+
+/** FIXTURE (demo scenario «máquina não identificada»): the source does not show a recognisable excavator. */
+export function notIdentifiedObservation(): ExcavatorObservationV1 {
+  return validateExcavatorObservation({
+    schema: RECONSTRUCTION_OBSERVATION_SCHEMA,
+    source: { kind: 'image', reference: 'fixture:unrecognised.v1' },
+    machineType: 'unknown',
+    entities: [], relations: [], dimensions: [], requests: [],
+    unknowns: ['Não foi reconhecida uma escavadora: a imagem parece mostrar uma grua ou um equipamento diferente.'],
+    hypotheses: [],
+  });
+}
