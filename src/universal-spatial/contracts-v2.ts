@@ -186,6 +186,12 @@ function validateParameters(operator: string, raw: Record<string, unknown>, path
   }
 }
 
+/** True when `parameters` satisfy the operator's exact contract. Used by repair code to prove a repaired shape is valid without throwing. */
+export function isValidShapeParametersV2(operator: string, parameters: unknown): boolean {
+  if (!parameters || typeof parameters !== 'object' || Array.isArray(parameters)) return false;
+  try { validateParameters(operator, parameters as Record<string, unknown>, 'repair'); return true; } catch { return false; }
+}
+
 function cross(a: number[], b: number[], c: number[]) { return (b[0]! - a[0]!) * (c[1]! - a[1]!) - (b[1]! - a[1]!) * (c[0]! - a[0]!); }
 function segmentsIntersect(a: number[], b: number[], c: number[], d: number[]): boolean {
   const abC = cross(a, b, c), abD = cross(a, b, d), cdA = cross(c, d, a), cdB = cross(c, d, b);

@@ -50,6 +50,21 @@ describe('universal spatial V2 HTTP pipeline', () => {
     });
   });
 
+  it('repairs invalid shape parameters field by field instead of swapping in a generic shape, with one mocked Meta call', async () => {
+    const broken = { ...plan, components: [{ ...plan.components[0]!, geometry: { ...plan.components[0]!.geometry, parameters: { radius: 0.4, height: 6, capped: true } } }] };
+    const upstream = vi.fn<typeof fetch>().mockResolvedValue(metaResponse(JSON.stringify(broken)));
+    await withGuardedServer({ fetchImpl: upstream }, async (port) => {
+      const created = await rawRequest(port, { path: '/api/spatial/v2/plan', headers, body: { sourceKind: 'text', instruction: 'Create a tall thin post.' } });
+      expect(created.status, created.text).toBe(200);
+      const component = created.json.plan.components[0];
+      expect(component.geometry.parameters).toMatchObject({ radiusTop: 0.4, radiusBottom: 0.4, height: 6 });
+      expect(component.provenance.geometry).toBe('design_approximation');
+      expect(component.provenance.evidence).toMatch(/Parameter repair/);
+      expect(created.json.plan.unknowns.join(' ')).toMatch(/hub-shell/);
+      expect(upstream).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it('rejects oversized or malformed image inputs before Meta and rejects incomplete request objects', async () => {
     const upstream = vi.fn<typeof fetch>().mockResolvedValue(metaResponse(JSON.stringify(plan)));
     await withGuardedServer({ fetchImpl: upstream }, async (port) => {

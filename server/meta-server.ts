@@ -38,6 +38,8 @@ import { applySpatialOperation, SPATIAL_PLAN_JSON_SCHEMA, spatialConstructionEve
 import { spatialPlanToThree } from '../src/universal-spatial/three-adapter';
 import { applySpatialOperationV2, SPATIAL_OPERATION_V2_JSON_SCHEMA, SPATIAL_PLAN_V2_CONTRACT, SPATIAL_PLAN_V2_META_JSON_SCHEMA, validateSpatialPlanV2, type SpatialOperationV2, type SpatialPlanV2 } from '../src/universal-spatial/contracts-v2';
 import { compileSpatialPlanV2, disposeCompiledSpatialPlan } from '../src/universal-spatial/geometry-compiler-v2';
+import { repairModelPlanShapes } from '../src/universal-spatial/geometry-repair';
+import { SPATIAL_V2_GEOMETRY_GUIDANCE } from '../src/universal-spatial/spatial-prompt-v2';
 import { evaluateSpatialConstraintsV2 } from '../src/universal-spatial/constraints-v2';
 import { buildSpatialEvaluationV2Prompt, parseSpatialEvaluationV2, SPATIAL_EVALUATION_V2_JSON_SCHEMA } from '../src/universal-spatial/evaluation-v2';
 
@@ -542,7 +544,7 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
             const maxRefinements = candidate.maxRefinements === undefined ? 1 : candidate.maxRefinements;
             if (!Number.isInteger(maxRefinements) || Number(maxRefinements) < 0 || Number(maxRefinements) > MAX_SPATIAL_REFINEMENTS) { writeJson(response, 400, { error: { code: 'INVALID_SPATIAL_V2_REFINEMENT_LIMIT', message: `maxRefinements deve estar entre 0 e ${MAX_SPATIAL_REFINEMENTS}.` } }, origin); return; }
             let source: { kind: 'text' | 'image'; sha256: string }; let instruction: string; let result: Awaited<ReturnType<typeof requestMetaStructuredText>>;
-            const rules = `Build a high-legibility conceptual 3D scene as a typed hierarchical geometry tree. A component may contain a group with multiple shape subcomponents. Use only allowed geometry operators in unfold.spatial-plan.v2. Because the structured-output channel requires shallow schemas, encode every shape's parameters, transform, repeat and material as JSON strings; encode the component transform as a JSON string too. A repeat of none is the JSON string "null". Parameters must be the exact operator-specific JSON object. Do not encode a model-specific template or use object-name rules. Every component needs distinct stable IDs, property-level provenance, and concise visual evidence. Units are unitless unless the user explicitly supplied physical units. For photos never invent scale or hidden geometry; use conceptual dimensions and retain unknown scale. Relations are hypotheses. Constraints are geometric checks, not mechanical validation; include only constraints you can express and report uncertainty. Material profiles must fit the subject (industrial, organic, glass, rubber, metal, accent or neutral). Include a small construction-ready scene; avoid environment/background props.`;
+            const rules = `Build a high-legibility conceptual 3D scene as a typed hierarchical geometry tree. A component may contain a group with multiple shape subcomponents. Use only allowed geometry operators in unfold.spatial-plan.v2. Because the structured-output channel requires shallow schemas, encode every shape's parameters, transform, repeat and material as JSON strings; encode the component transform as a JSON string too. A repeat of none is the JSON string "null". Parameters must be the exact operator-specific JSON object. Do not encode a model-specific template or use object-name rules. Every component needs distinct stable IDs, property-level provenance, and concise visual evidence. Units are unitless unless the user explicitly supplied physical units. For photos never invent scale or hidden geometry; use conceptual dimensions and retain unknown scale. Relations are hypotheses. Constraints are geometric checks, not mechanical validation; include only constraints you can express and report uncertainty. Material profiles must fit the subject (industrial, organic, glass, rubber, metal, accent or neutral). Include a small construction-ready scene; avoid environment/background props. ${SPATIAL_V2_GEOMETRY_GUIDANCE}`;
             if (candidate.sourceKind === 'text') {
               if (typeof candidate.instruction !== 'string' || !candidate.instruction.trim() || candidate.instruction.length > 8_000) { writeJson(response, 400, { error: { code: 'INVALID_SPATIAL_V2_INSTRUCTION', message: 'instruction obrigatório, máximo 8000 caracteres.' } }, origin); return; }
               instruction = candidate.instruction; source = { kind: 'text', sha256: createHash('sha256').update(instruction, 'utf8').digest('hex') };
@@ -578,16 +580,6 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
               });
               if (dropped) normalizationNotes.push('Invalid Meta constraint proposals were omitted; no unvalidated constraints were applied.');
             }
-            const safeParameters: Record<string, Record<string, unknown>> = {
-              box: { dimensions: [0.8, 0.8, 0.8] }, rounded_box: { dimensions: [0.8, 0.8, 0.8], bevelM: 0.06, segments: 3 },
-              sphere: { radius: 0.4, widthSegments: 24, heightSegments: 16 }, ellipsoid: { radii: [0.5, 0.35, 0.4], widthSegments: 24, heightSegments: 16 },
-              cylinder: { radiusTop: 0.3, radiusBottom: 0.3, height: 0.7, radialSegments: 24 }, cone: { radius: 0.35, height: 0.7, radialSegments: 24 },
-              torus: { majorRadius: 0.4, tubeRadius: 0.08, radialSegments: 16, tubularSegments: 48 },
-              extrude: { profile: [[-0.4, -0.25], [0.4, -0.25], [0.4, 0.25], [-0.4, 0.25]], depth: 0.15, bevelM: 0.02, curveSegments: 4 },
-              tube: { points: [[-0.4, 0, 0], [0.4, 0, 0]], radius: 0.06, tubularSegments: 24, radialSegments: 8 },
-              revolve: { profile: [[0.2, -0.35], [0.35, -0.2], [0.35, 0.2], [0.2, 0.35]], segments: 24 },
-              loft: { profile: [[-0.4, -0.3], [0.4, -0.3], [0.4, 0.3], [-0.4, 0.3]], sections: [[0, 0.7, 0.7], [0.5, 0.5, 0.5]], capEnds: [true, true] },
-            };
             const normalizeModelTransform = (value: unknown, path: string): unknown => {
               const parsed = parseModelJSON(value);
               if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return parsed;
@@ -645,26 +637,8 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
             });
             const modelUnknowns = modelPlan.unknowns as string[];
             for (const note of normalizationNotes) if (!modelUnknowns.includes(note)) { if (modelUnknowns.length < 100) modelUnknowns.push(note); else modelUnknowns[99] = note; }
-            let plan: SpatialPlanV2;
-            for (let attempt = 0; ; attempt++) {
-              try { plan = validateSpatialPlanV2(modelPlan, source); break; }
-              catch (error) {
-                const match = error instanceof Error ? error.message.match(/^SPATIAL_V2_PARAMETERS_INVALID:([a-z][a-z0-9-]{0,47}(?:\.children\.\d+)*)$/) : null;
-                if (!match || attempt >= 32) throw error;
-                const [componentId, ...childIndexes] = match[1]!.split('.');
-                const component = (modelPlan.components as Record<string, unknown>[]).find((entry) => entry.id === componentId);
-                let node = component?.geometry as Record<string, unknown> | undefined;
-                for (const childIndex of childIndexes.filter((part) => part !== 'children')) node = (node?.children as Record<string, unknown>[] | undefined)?.[Number(childIndex)];
-                if (!node || node.type !== 'shape' || typeof node.operator !== 'string' || !safeParameters[node.operator]) throw error;
-                node.parameters = safeParameters[node.operator];
-                const provenance = component?.provenance as Record<string, unknown> | undefined;
-                if (provenance) { provenance.geometry = 'design_approximation'; provenance.evidence = `${String(provenance.evidence ?? '')} Local safe fallback parameters substituted for invalid ${node.operator} output at ${match[1]}.`.slice(0, 500); }
-                const unknowns = modelPlan.unknowns as string[];
-                const note = `Some ${node.operator} parameters were invalid and replaced by dimensionless conceptual defaults for ${String(component?.label ?? componentId)}.`;
-                if (!unknowns.includes(note)) { if (unknowns.length < 100) unknowns.push(note); else unknowns[99] = note; }
-                normalizationNotes.push(note);
-              }
-            }
+            repairModelPlanShapes(modelPlan);
+            let plan: SpatialPlanV2 = validateSpatialPlanV2(modelPlan, source);
             if (source.kind === 'image') {
               const requiredUnknown = 'Physical dimensions and absolute scale are unknown because no known reference was supplied.';
               plan = { ...plan, units: 'unitless', unknowns: plan.unknowns.includes(requiredUnknown) ? plan.unknowns : [...plan.unknowns.slice(0, 99), requiredUnknown] };
