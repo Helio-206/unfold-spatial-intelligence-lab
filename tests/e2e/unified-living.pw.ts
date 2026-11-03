@@ -161,8 +161,10 @@ try {
     const noticeHeight = await page.evaluate(() => document.querySelector('.uw-notices')!.getBoundingClientRect().height);
     assert.ok(noticeHeight <= 96, `${label}: the provenance notice is compact when collapsed (${noticeHeight}px)`);
     await page.locator('.uw-notice-details summary').click();
-    const detail = await page.locator('.uw-notice-details p').innerText();
-    for (const phrase of [/não foram verificadas/, /malha 3D ainda não mostra/, /forward-kinematics@/, /não certifica segurança/, /1,40 m, antes 1,10 m/]) assert.match(detail, phrase);
+    const detail = (await page.locator('.uw-notice-details p').textContent()) ?? '';
+    // the Foundry draws the width the person gave; what stays true is that it is theirs, unmeasured, and the rest is synthetic
+    for (const phrase of [/malha 3D da caçamba segue a largura que indicou/, /não foi medida nem verificada pela Meta/, /forward-kinematics@/, /não certifica segurança/, /1,40 m, antes 1,10 m/, /resto da geometria é sintético/]) assert.match(detail, phrase);
+    assert.doesNotMatch(detail, /ainda não mostra|forma que vê é de demonstração/);
     await page.screenshot({ path: join(out, `${label}-07-lab-notice-expanded.png`) });
     await page.locator('.uw-notice-details summary').click();
     pass(`${label}: live flow reaches the real workspace through both gates, no overflow, no overlap`);
@@ -290,6 +292,43 @@ try {
     await page.waitForFunction(() => /expirou/.test(document.querySelector('#ux-gw-msg')?.textContent ?? ''));
     assert.equal(await phase(page), 'review');
     pass('an expired server session is reported and the lab stays closed');
+    // the way on is explicit, and it works without reloading the page
+    assert.deepEqual(await page.locator('#ux-gw-msg [data-flow="restart"]').allTextContents(), ['Importar outra fonte', 'Novo projecto']);
+    await page.evaluate(() => { (window as any).__noReload = true; });
+    await page.locator('#ux-gw-msg [data-flow="restart"]', { hasText: 'Importar outra fonte' }).click();
+    assert.equal(await phase(page), 'empty'); assert.equal(await page.evaluate(() => (window as any).__noReload === true), true, 'no page reload');
+    assert.equal(await page.evaluate(() => (window as any).__unified.port.session.state.phase), 'idle');
+    assert.deepEqual(await stageEmpty(page), EMPTY_STAGE);
+    await page.locator('[data-kind="text"]').click(); await page.locator('#ux-text').fill('Escavadora de rastos de 20 t com lança, braço e caçamba.'); await page.locator('#ux-use-text').click();
+    assert.equal(await phase(page), 'selected', 'a new source can be imported straight away');
+    pass('after an expired session the person can import another source without reloading');
+    await page.close();
+  }
+
+  // local expiry (30 minutes), with the browser clock advanced: the interface reacts by itself and offers the same two ways on
+  await restartBackend(); providerCalls.length = 0; api.length = 0;
+  {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.route('**/api/living/reconstruction', async (route) => {
+      const request = route.request();
+      const response = await fetch(`http://127.0.0.1:${backendPort}/api/living/reconstruction`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: request.postData() ?? '' });
+      await route.fulfill({ status: response.status, contentType: 'application/json', body: await response.text() });
+    });
+    await page.clock.install({ time: new Date() });
+    await page.goto(`http://127.0.0.1:${port}/living?debug-living=1&rm=1&agent=fixture`);
+    await page.waitForFunction(() => (window as any).__experience?.ready, null, { timeout: 120000 });
+    await toServerStep(page);
+    assert.equal(await page.locator('#ux-enter').isDisabled(), false);
+    await page.clock.fastForward('30:05');
+    await page.waitForFunction(() => /expirou/.test(document.querySelector('#ux-gw-msg')?.textContent ?? ''), null, { timeout: 10000 });
+    assert.equal(await page.locator('#ux-enter').isDisabled(), true, 'nothing can be sent any more');
+    assert.deepEqual(await page.locator('#ux-gw-msg [data-flow="restart"]').allTextContents(), ['Importar outra fonte', 'Novo projecto']);
+    assert.equal(api.filter((a) => a.body.action === 'review').length, 0, 'the server was never asked: the expiry is known locally');
+    await page.screenshot({ path: join(out, 'session-expired.png') });
+    await page.locator('#ux-gw-msg [data-flow="restart"]', { hasText: 'Novo projecto' }).click();
+    assert.equal(await phase(page), 'empty'); assert.deepEqual(await stageEmpty(page), EMPTY_STAGE);
+    pass('a session that expires locally is shown without a click, with both ways on, and "Novo projecto" starts over');
     await page.close();
   }
 

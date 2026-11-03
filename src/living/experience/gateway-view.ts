@@ -8,7 +8,11 @@ import type { ReviewState } from './review';
 const esc = (s: string) => s.replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]!);
 const KIND: Record<string, string> = { hypothesis: 'afirmação do modelo', relation: 'relação', request: 'pedido de alteração' };
 
-export type GatewayMessage = { tone: 'alert' | 'status'; lines: string[] } | null;
+export type GatewayMessage = { tone: 'alert' | 'status'; lines: string[]; /** offer the two ways to start again */ restart?: boolean } | null;
+
+/** The server session is gone: nothing can be sent, and the person must be able to start again without reloading the page. */
+export const EXPIRED_MESSAGE: NonNullable<GatewayMessage> = { tone: 'alert', restart: true, lines: ['A sessão do servidor expirou ou o servidor foi reiniciado. Nada foi gravado e esta revisão já não pode ser enviada.'] };
+export const restartActionsHtml = (): string => '<div class="ux-row ux-restart-actions"><button class="u-btn u-btn--ink" type="button" data-flow="restart">Importar outra fonte</button><button class="u-btn u-btn--outline" type="button" data-flow="restart">Novo projecto</button></div>';
 
 function extraRow(e: HandoffExtra): string {
   const key = esc(e.key);
@@ -66,6 +70,6 @@ export function gatewayPanel(handoff: ReviewHandoff, ui: ReviewState, message: G
     ${extras.length ? `<details class="ux-gw-extras" ${open ? 'open' : ''}><summary class="u-label">relações e afirmações do modelo · ${open ? `${open} por decidir` : 'todas decididas'}</summary>${bulk}<ul>${extras.map(extraRow).join('')}</ul></details>` : ''}
     <div class="ux-gw-sent u-label">${sentSummary(handoff, ui).map((l) => `<p>${esc(l)}</p>`).join('')}</div>
     ${notes.length ? `<ul class="ux-gw-notes u-label" aria-label="Decisões que ficam só neste ecrã">${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
-    <div id="ux-gw-msg" class="ux-gw-msg" ${message?.tone === 'alert' ? 'role="alert"' : 'role="status"'} aria-live="polite">${message ? message.lines.map((l) => `<p>${esc(l)}</p>`).join('') : ''}</div>
+    <div id="ux-gw-msg" class="ux-gw-msg" ${message?.tone === 'alert' ? 'role="alert"' : 'role="status"'} aria-live="polite">${message ? message.lines.map((l) => `<p>${esc(l)}</p>`).join('') + (message.restart ? restartActionsHtml() : '') : ''}</div>
   </section>`;
 }

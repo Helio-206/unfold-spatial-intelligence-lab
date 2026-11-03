@@ -34,6 +34,10 @@ export interface ReviewHandoff {
   /** Decisions that stay on this screen because the API has no field for them. */
   localNotes(ui: ReviewState): string[];
   submit(): Promise<HandoffResult>;
+  /** The server session is gone or timed out: nothing can be sent, so the person must start again. */
+  expired?(): boolean;
+  /** Epoch ms at which the session will expire, or null. Lets the interface react when it does, without a click. */
+  expiresAt?(): number | null;
   /** Back from the lab: the review becomes editable again with the same draft. */
   reopen(): void;
   /** Start over: forget the session. */

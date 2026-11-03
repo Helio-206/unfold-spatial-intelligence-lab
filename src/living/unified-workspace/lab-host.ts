@@ -12,10 +12,10 @@ const fmt = (m: number) => m.toFixed(2).replace('.', ',');
 export function candidateNotices(candidate: WorkspaceCandidate, gates: LabContext['gates']): Array<{ id: string; text: string; detail: string }> {
   return [{
     id: 'reconstruction',
-    text: 'Geometria sintética de referência · largura da caçamba sua, não verificada',
+    text: 'Largura da caçamba sua e não verificada · restante geometria sintética',
     detail: `Revisão humana: ${gates.review}. Validação de engenharia: ${gates.engine} (o motor resolveu a pose de referência; não certifica segurança nem movimento). `
-      + `A largura da caçamba (${fmt(candidate.bucketWidthM.after)} m, antes ${fmt(candidate.bucketWidthM.before)} m) e a revisão são suas e não foram verificadas; o resto da geometria é sintético. `
-      + 'A malha 3D ainda não mostra esta largura: a forma que vê é de demonstração.',
+      + `A malha 3D da caçamba segue a largura que indicou (${fmt(candidate.bucketWidthM.after)} m, antes ${fmt(candidate.bucketWidthM.before)} m). Essa largura é um valor seu: não foi medida nem verificada pela Meta nem por qualquer outra fonte. `
+      + 'O resto da geometria é sintético (referência), e a revisão é sua e não foi verificada.',
   }];
 }
 

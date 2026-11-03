@@ -22,7 +22,7 @@ import { renderDrawing, type DrawingResult } from './drawing';
 import { initialFlow, PHASE_HEADLINE, reduceFlow, type FlowAction, type FlowState } from './flow';
 import { checkFile, checkText, DEMO_SCENARIO_LABEL, DEMO_SCENARIOS, DemoReconstructionPort, MAX_INPUT_BYTES, TEXT_LIMITS, type DemoScenario, type InputKind, type IntakeInput, type ReconstructionPort } from './intake';
 import { DRAWING_REFERENCE, ENTITY_PARTS } from './reconstruction-fixture';
-import { gatewayPanel, missingHtml, missingLines, type GatewayMessage } from './gateway-view';
+import { EXPIRED_MESSAGE, gatewayPanel, missingHtml, missingLines, restartActionsHtml, type GatewayMessage } from './gateway-view';
 import type { ComposerMode, ExperienceApi, ExperienceOptions } from './integration';
 import {
   CATEGORY_LABEL, ENGINE_GATE_LABEL, initialReview, labCategory, partCategories, PROPERTY_LABEL, propertyState, readiness, reduceReview, summarize,
@@ -59,6 +59,7 @@ export async function mountExperience(app: HTMLElement, options: ExperienceOptio
   let gwBusy = false;
   /** Two steps in the review column when a handoff is plugged in: 1 = decide the entities, 2 = what the server asks. */
   let gwStep = false;
+  let expiryTimer = 0;
 
   app.innerHTML = `
     <div class="ux-root u-root" data-theme="dark" data-phase="empty" data-reduced-motion="${reducedMotion}" data-integrated="${Boolean(options.lab)}" data-embedded="${Boolean(embedded)}">
@@ -231,6 +232,9 @@ export async function mountExperience(app: HTMLElement, options: ExperienceOptio
         <p class="ux-sheet-note u-label">a localização das regiões não está disponível para esta fonte${port.mode === 'demo' ? ' · resultado de demonstração, não do seu ficheiro' : ''}</p>`;
     }
     options.handoff?.sync(review);
+    clearTimeout(expiryTimer);
+    if (options.handoff?.expired?.() && !gwBusy) gwMessage = EXPIRED_MESSAGE;
+    else { const at = options.handoff?.expiresAt?.(); if (at) expiryTimer = window.setTimeout(() => { if (flow.phase === 'review') renderReview(); }, Math.max(0, at - Date.now()) + 25); }
     if (readiness(review).status !== 'ready_for_engine') gwStep = false;
     root.dataset.step = gwStep && options.handoff ? 'server' : 'entities';
     $('ux-side').innerHTML = gates(review, engine) + counts(review) + unknownsBlock(review);
@@ -241,6 +245,11 @@ export async function mountExperience(app: HTMLElement, options: ExperienceOptio
   /** The primary action and its note. With a handoff, the server's confirmations are part of "ready", never assumed. */
   function refreshEnter() {
     if (!review) return;
+    if (options.handoff?.expired?.()) {
+      ($('ux-enter') as HTMLButtonElement).disabled = true;
+      $('ux-enter-note').innerHTML = `A sessão do servidor expirou: a revisão já não pode ser enviada.${restartActionsHtml()}`;
+      return;
+    }
     const r = readiness(review);
     const blockers = options.handoff ? options.handoff.blockers() : [];
     const stepOne = Boolean(options.handoff) && !gwStep;
@@ -268,7 +277,7 @@ export async function mountExperience(app: HTMLElement, options: ExperienceOptio
       case 'engine_blocked': engine = result.engine; gwMessage = { tone: 'alert', lines: ['O contrato é válido, mas o motor não consegue resolver esta montagem. O laboratório fica fechado.', ...result.engine.reasons] }; break;
       case 'blocked': gwMessage = { tone: 'alert', lines: ['O servidor bloqueou a revisão:', ...result.reasons] }; break;
       case 'not_adoptable': gwMessage = { tone: 'alert', lines: ['A montagem devolvida não passou as verificações locais e foi descartada:', ...result.reasons] }; break;
-      case 'expired': gwMessage = { tone: 'alert', lines: ['A sessão expirou ou o servidor foi reiniciado. A revisão não foi gravada: importe a fonte de novo.'] }; break;
+      case 'expired': gwMessage = EXPIRED_MESSAGE; break;
       case 'failed': gwMessage = { tone: 'alert', lines: [result.message] }; break;
       case 'ignored': gwMessage = null; break;
     }
@@ -300,7 +309,7 @@ export async function mountExperience(app: HTMLElement, options: ExperienceOptio
     if (labMounted) { options.lab?.unmount(); labMounted = false; }
     if (!embedded) { $('ux-workspace').hidden = true; $('ux-stage').style.visibility = ''; }
   }
-  function resetIntegration() { options.example?.close?.(); options.handoff?.reset(); engine = { status: 'not_run' }; candidate = null; gwMessage = null; gwBusy = false; gwStep = false; }
+  function resetIntegration() { clearTimeout(expiryTimer); options.example?.close?.(); options.handoff?.reset(); engine = { status: 'not_run' }; candidate = null; gwMessage = null; gwBusy = false; gwStep = false; }
   function enterLab(animated = true) {
     if (!review || readiness(review).status !== 'ready_for_engine') return;
     dispatch({ type: 'open_lab' });

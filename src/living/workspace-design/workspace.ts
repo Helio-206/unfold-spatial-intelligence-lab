@@ -998,9 +998,23 @@ export class SpatialWorkspace {
     if (this.voice.status === 'LISTENING') this.voice.stop(); else this.voice.start();
   }
 
+  /**
+   * Ends webcam hand control completely: the tracker stops (which also ends the capture's video tracks, even if the permission is
+   * granted only later), the tracker is forgotten BEFORE it is stopped so that every late callback finds it is no longer current,
+   * and the person's hand is cleared from the screen. Idempotent; safe on every exit from a machine.
+   */
+  private stopHandTracking(): void {
+    const tracker = this.handTracker; this.handTracker = null;
+    tracker?.stop();
+    this.arbiter.setHandTracking(false);
+    this.handModel.reset();
+    const cursor = this.el.userHand; if (cursor) { cursor.hidden = true; delete cursor.dataset.state; cursor.style.left = ''; cursor.style.top = ''; }
+    if (tracker) this.renderRail();
+  }
+
   /** Webcam hand control (existing module). Starts only on an explicit click; while active the assistant never moves the camera. */
   async toggleHandTracking(): Promise<void> {
-    if (this.handTracker) { this.handTracker.stop(); this.handTracker = null; this.arbiter.setHandTracking(false); this.el.userHand!.hidden = true; this.renderRail(); return; }
+    if (this.handTracker) { this.stopHandTracking(); return; }
     const video = this.el.video as HTMLVideoElement;
     let last: { x: number; y: number } | null = null;
     const tracker = new WebcamHandTracker({
@@ -1062,6 +1076,7 @@ export class SpatialWorkspace {
     cancelAnimationFrame(this.engineRaf); this.engineRaf = 0; this.engineLast = 0;
     this.playback?.cancel(); this.playback = null;
     this.pending?.abort(); this.pending = null;
+    this.stopHandTracking(); // the camera belongs to a person looking at a machine: leaving the machine releases it
     this.engineering.dispose();
     this.scene.dispose();
     this.releaseLook();
@@ -1191,7 +1206,7 @@ export class SpatialWorkspace {
     this.pending?.abort();
     this.playback?.cancel();
     this.insetTween?.kill();
-    this.handTracker?.stop();
+    this.stopHandTracking();
     this.voice?.stop?.();
     for (const d of this.disposers.splice(0)) d();
     this.director.dispose();
