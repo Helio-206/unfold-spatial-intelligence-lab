@@ -12,8 +12,13 @@ export type CanonicalView = {
   /** Joint origin (pin) in the parent part frame, XY plane. */
   pin(jointId: string): [number, number];
   point(partId: string, pointId: string): [number, number];
+  /** Half the bucket's width (m): `bucket-box.halfExtentsM[2]` of the canonical bucket part. Throws `FOUNDRY_BUCKET_WIDTH_*` when it is missing or incompatible; it is never clamped or defaulted. */
+  bucketHalfWidthM(): number;
   cylinder(actuatorId: string): { closedLengthM: number; barrelLengthM: number; barrelRadiusM: number; rodLengthM: number; rodRadiusM: number; strokeMaxM: number; referenceStrokeM: number; actuator: HydraulicCylinder };
 };
+
+/** The display bucket keeps its hinge ears (they straddle the stick nose, +-0.21 m) and a workable mouth: below this half width, or above the upper bound, the contract is refused. */
+export const BUCKET_HALF_WIDTH_RANGE_M = { min: 0.3, max: 1.2 } as const;
 
 export function canonicalView(assembly: Assembly): CanonicalView {
   const parts = new Map(assembly.parts.map((p) => [p.id, p]));
@@ -28,6 +33,15 @@ export function canonicalView(assembly: Assembly): CanonicalView {
       const p = need(parts, partId, 'PART').points.find((x) => x.id === pointId);
       if (!p) throw new Error(`FOUNDRY_CANONICAL_MISSING_POINT:${partId}.${pointId}`);
       return [p.positionM[0], p.positionM[1]];
+    },
+    bucketHalfWidthM() {
+      const shape = need(parts, 'bucket', 'PART').shapes.find((x) => x.id === 'bucket-box');
+      if (!shape) throw new Error('FOUNDRY_BUCKET_WIDTH_MISSING:bucket-box');
+      if (shape.kind !== 'box') throw new Error(`FOUNDRY_BUCKET_WIDTH_NOT_A_BOX:${shape.kind}`);
+      const half = shape.halfExtentsM[2];
+      if (!Number.isFinite(half)) throw new Error(`FOUNDRY_BUCKET_WIDTH_NOT_FINITE:${String(half)}`);
+      if (half < BUCKET_HALF_WIDTH_RANGE_M.min || half > BUCKET_HALF_WIDTH_RANGE_M.max) throw new Error(`FOUNDRY_BUCKET_WIDTH_OUT_OF_RANGE:${half} (accepted ${BUCKET_HALF_WIDTH_RANGE_M.min} to ${BUCKET_HALF_WIDTH_RANGE_M.max} m)`);
+      return half;
     },
     cylinder(actuatorId) {
       const a = assembly.actuators.find((x) => x.id === actuatorId);
