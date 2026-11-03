@@ -53,3 +53,6 @@
 @media (min-width: 761px) and (max-width: 1480px) {
   .cinema-readout { bottom: calc(var(--space-6) + 64px + var(--cinema-motion-h) + var(--space-3)); max-height: calc(100dvh - 300px); overflow-y: auto; }
 }
+
+/* The header gained a second segmented control (profile) and wraps to more rows between 761 and 1100 px: keep the stacked readout below it. */
+@media (min-width: 761px) and (max-width: 1100px) { .cinema-readout { max-height: calc(100dvh - 400px); } }

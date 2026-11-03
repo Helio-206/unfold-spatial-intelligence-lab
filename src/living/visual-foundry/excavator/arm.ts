@@ -120,7 +120,7 @@ export function buildBucket(view: CanonicalView): PartBuilder {
   const b = new PartBuilder('bucket');
   const tip = view.point('bucket', 'tip');
   const linkPin = view.point('bucket', 'link_pin');
-  const halfW = 0.55, plate = 0.028;
+  const halfW = view.bucketHalfWidthM(); const plate = 0.028; // the only source of the width: the contract's bucket-box (no second reference value)
   // back/bottom wrap from the top of the back to the cutting edge (cavity on the -normal side)
   // rounder heel than a box: the wrap bulges at the back and turns tightly into the cutting edge
   const wrap: P2[] = chaikin([[-0.16, 0.12], [0.34, 0.31], [0.92, 0.25], [1.3, 0.0], [1.43, -0.36], [1.4, -0.56], [tip[0] + 0.02, tip[1] + 0.02]], 2, false);
@@ -144,7 +144,7 @@ export function buildBucket(view: CanonicalView): PartBuilder {
   // adapter (welded nose) and a longer replaceable tip with a visible taper and a centre ridge, so teeth read at a distance
   const adapter: P2[] = [[-0.16, -0.05], [0.08, -0.04], [0.11, -0.028], [0.11, 0.03], [0.08, 0.04], [-0.16, 0.058]];
   const toothTip: P2[] = [[0, -0.036], [0.16, -0.016], [0.27, -0.004], [0.28, 0.004], [0.2, 0.016], [0.06, 0.03], [0, 0.034]];
-  const teeth = 5;
+  const teeth = Math.max(3, Math.round((halfW * 2 - 0.24) / 0.215) + 1); // five at the reference width, more on a wider bucket
   for (let k = 0; k < teeth; k++) {
     const z = -halfW + 0.12 + (k * (halfW * 2 - 0.24)) / (teeth - 1);
     const at = ext(0);
@@ -161,7 +161,7 @@ export function buildBucket(view: CanonicalView): PartBuilder {
   b.addMirroredZ(extrudeZ(shapeFrom(band(wrap.slice(Math.floor(wrap.length * 0.45)), 0.0, 0.03)), 0.026, halfW - 0.004, 0.004), 'castDark');
   // wear strips on the outside of the wrap
   const strip = wrap.slice(2, -5);
-  for (const z of [-0.32, 0.32]) b.add(extrudeZ(shapeFrom(band(strip, 0.002, 0.016)), 0.05, z, 0.005), 'paint');
+  for (const z of [-halfW * 0.58, halfW * 0.58]) b.add(extrudeZ(shapeFrom(band(strip, 0.002, 0.016)), 0.05, z, 0.005), 'paint');
   // ears carrying the hinge pin (0, 0) and the link pin: plates straddle the stick nose
   const earShape = shapeFrom(hullWithCircles([[0.28, 0.27], [-0.18, 0.1], [-0.36, -0.46]], [[[0, 0], 0.16], [linkPin, 0.13]]));
   b.addMirroredZ(extrudeZ(earShape, 0.035, 0.175, 0.007, 24), 'paint');

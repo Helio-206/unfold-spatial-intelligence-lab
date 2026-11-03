@@ -19,6 +19,8 @@ export type StudioPost = {
   render(deltaS: number, still?: boolean): void;
   setSize(width: number, height: number, pixelRatio: number): void;
   setSettings(settings: Partial<PostSettings>): void;
+  /** grade and bloom values of a look; `null` restores the defaults */
+  setGrade(grade: { contrast: number; vignette: number; grain: number; bloomStrength: number; bloomThreshold: number } | null): void;
   readonly settings: Readonly<PostSettings>;
   dispose(): void;
 };
@@ -56,9 +58,11 @@ export function createStudioPost(renderer: THREE.WebGLRenderer, scene: THREE.Sce
   for (const pass of [renderPass, ao, bloom, grade, output]) composer.addPass(pass);
   let frame = 0;
   return {
-    render(deltaS, still = false) { ao.enabled = settings.ao; bloom.enabled = settings.bloom; grade.enabled = settings.grade; frame += 1; GradeShader.uniforms.seed.value = still ? 0 : (frame % 97) * 0.37; composer.render(deltaS); },
+    render(deltaS, still = false) { ao.enabled = settings.ao; bloom.enabled = settings.bloom; grade.enabled = settings.grade; frame += 1; grade.uniforms.seed!.value = still ? 0 : (frame % 97) * 0.37; composer.render(deltaS); },
     setSize(w, h, pixelRatio) { composer.setPixelRatio(pixelRatio); composer.setSize(w, h); },
     setSettings(next) { Object.assign(settings, next); },
+    setGrade(g) { // ShaderPass clones the shader's uniforms: write to the pass's own
+      grade.uniforms.contrast!.value = g?.contrast ?? 1.06; grade.uniforms.vignette!.value = g?.vignette ?? 0.32; grade.uniforms.grain!.value = g?.grain ?? 0.012; bloom.strength = g?.bloomStrength ?? 0.16; bloom.threshold = g?.bloomThreshold ?? 0.94; },
     get settings() { return settings; },
     dispose() { composer.dispose(); ao.dispose(); bloom.dispose(); output.dispose(); target.dispose(); },
   };
