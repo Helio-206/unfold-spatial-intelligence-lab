@@ -18,6 +18,30 @@ function extraRow(e: HandoffExtra): string {
   return `<li data-decided="${e.decision ?? 'none'}"><span class="u-label">${esc(KIND[e.kind] ?? e.kind)}</span><span class="ux-gw-label">${esc(e.label)}</span><span class="ux-gw-choices">${choices}</span></li>`;
 }
 
+/** What still stops the review from being sent, one plain line each. Per-item "sem decisão" lines are folded into one count. */
+export function missingLines(handoff: ReviewHandoff): string[] {
+  const blockers = handoff.blockers();
+  const undecidedExtras = handoff.extras().filter((e) => e.decision === undefined).length;
+  const rest = blockers.filter((b) => !b.startsWith('item sem decisão:'));
+  const undecidedOther = blockers.filter((b) => b.startsWith('item sem decisão:') && !b.startsWith('item sem decisão: entity:')).length;
+  return [...rest, ...(undecidedExtras || undecidedOther ? [`${Math.max(undecidedExtras, undecidedOther)} relação(ões) ou afirmação(ões) do modelo por decidir (abaixo)`] : [])];
+}
+export const missingHtml = (lines: string[]): string => lines.length
+  ? `<p class="u-label">o que falta para o servidor aceitar:</p><ul>${lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>`
+  : '<p class="u-label">Nada falta: a revisão pode ser enviada.</p>';
+
+/** What this review will do at the server and what it cannot do, so a decision is never mistaken for an applied change. */
+export function sentSummary(handoff: ReviewHandoff, ui: ReviewState): string[] {
+  const hypotheses = ui.items.filter((i) => i.status === 'hypothesis' && i.decision !== 'pending');
+  const confirmed = hypotheses.filter((i) => i.decision === 'confirmed').length;
+  const rejected = hypotheses.filter((i) => i.decision === 'rejected').length;
+  const corrected = hypotheses.filter((i) => i.decision === 'corrected').length;
+  const extras = handoff.extras().filter((e) => e.decision !== undefined).length;
+  const lines = [`Vai ser enviado: ${hypotheses.length} decisões sobre entidades em hipótese (${confirmed} confirmadas, ${rejected} rejeitadas${corrected ? `, ${corrected} correcções enviadas como rejeição da interpretação original` : ''}) e ${extras} sobre relações e afirmações do modelo.`];
+  lines.push('A API só aplica à montagem a largura da caçamba; nenhuma correcção de texto nem valor introduzido altera a geometria.');
+  return lines;
+}
+
 export function gatewayPanel(handoff: ReviewHandoff, ui: ReviewState, message: GatewayMessage, busy: boolean): string {
   const h: HandoffHuman = handoff.human();
   const extras = handoff.extras();
@@ -34,10 +58,13 @@ export function gatewayPanel(handoff: ReviewHandoff, ui: ReviewState, message: G
       <label class="ux-field"><span class="u-label">identificação do revisor</span><input class="u-input" id="gw-reviewer" maxlength="100" autocomplete="off" value="${esc(h.reviewerId)}"></label>
       <label class="ux-check"><input type="checkbox" id="gw-family" ${h.familyConfirmed ? 'checked' : ''}><span>Confirmo que é uma escavadora de rastos</span></label>
       <label class="ux-check"><input type="checkbox" id="gw-bucket" ${h.bucketConfirmed ? 'checked' : ''}><span>Confirmo que a máquina tem uma caçamba</span></label>
-      <label class="ux-field"><span class="u-label">largura da caçamba (m)</span><input class="u-input" id="gw-width" type="number" inputmode="decimal" min="0.1" max="10" step="0.01" value="${h.bucketWidthM ?? ''}"></label>
+      <label class="ux-field"><span class="u-label">largura da caçamba (m) · a visualização desenha de 0,60 a 2,40 m</span><input class="u-input" id="gw-width" type="number" inputmode="decimal" min="0.6" max="2.4" step="0.01" aria-describedby="gw-width-note" value="${h.bucketWidthM ?? ''}"></label>
+      <p class="u-label" id="gw-width-note">A API aceita de 0,10 a 10 m, mas uma largura que a visualização não consegue desenhar é recusada, não ajustada.</p>
       <label class="ux-field"><span class="u-label">de onde vem esta largura</span><input class="u-input" id="gw-basis" maxlength="500" autocomplete="off" placeholder="medida no local, ficha técnica…" value="${esc(h.widthBasis)}"></label>
     </fieldset>
+    <div class="ux-gw-missing" id="ux-gw-missing" aria-live="polite">${missingHtml(missingLines(handoff))}</div>
     ${extras.length ? `<details class="ux-gw-extras" ${open ? 'open' : ''}><summary class="u-label">relações e afirmações do modelo · ${open ? `${open} por decidir` : 'todas decididas'}</summary>${bulk}<ul>${extras.map(extraRow).join('')}</ul></details>` : ''}
+    <div class="ux-gw-sent u-label">${sentSummary(handoff, ui).map((l) => `<p>${esc(l)}</p>`).join('')}</div>
     ${notes.length ? `<ul class="ux-gw-notes u-label" aria-label="Decisões que ficam só neste ecrã">${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
     <div id="ux-gw-msg" class="ux-gw-msg" ${message?.tone === 'alert' ? 'role="alert"' : 'role="status"'} aria-live="polite">${message ? message.lines.map((l) => `<p>${esc(l)}</p>`).join('') : ''}</div>
   </section>`;

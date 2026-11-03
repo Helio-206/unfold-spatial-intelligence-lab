@@ -22,7 +22,7 @@ import { renderDrawing, type DrawingResult } from './drawing';
 import { initialFlow, PHASE_HEADLINE, reduceFlow, type FlowAction, type FlowState } from './flow';
 import { checkFile, checkText, DEMO_SCENARIO_LABEL, DEMO_SCENARIOS, DemoReconstructionPort, MAX_INPUT_BYTES, TEXT_LIMITS, type DemoScenario, type InputKind, type IntakeInput, type ReconstructionPort } from './intake';
 import { DRAWING_REFERENCE, ENTITY_PARTS } from './reconstruction-fixture';
-import { gatewayPanel, type GatewayMessage } from './gateway-view';
+import { gatewayPanel, missingHtml, missingLines, type GatewayMessage } from './gateway-view';
 import type { ExperienceOptions } from './integration';
 import {
   CATEGORY_LABEL, ENGINE_GATE_LABEL, initialReview, labCategory, partCategories, PROPERTY_LABEL, propertyState, readiness, reduceReview, summarize,
@@ -46,7 +46,8 @@ export async function mountExperience(app: HTMLElement, options: ExperienceOptio
   const assembly = EXCAVATOR_ASSEMBLY_V1;
   let flow: FlowState = initialFlow();
   let review: ReviewState | null = null;
-  let inputKind: InputKind = 'drawing';
+  // with a real reconstruction the primary source is a photograph; the demonstration prototype keeps its drawing
+  let inputKind: InputKind = options.handoff ? 'image' : 'drawing';
   let editing: string | null = null;
   let abort: AbortController | null = null;
   let engine: EngineGate = { status: 'not_run' };
@@ -168,14 +169,16 @@ export async function mountExperience(app: HTMLElement, options: ExperienceOptio
     const body = inputKind === 'text'
       ? `<label class="ux-field"><span class="u-label">descrição</span><textarea id="ux-text" rows="4" maxlength="${TEXT_LIMITS.max}" placeholder="Ex.: escavadora de rastos de 20 t, lança de 5,4 m, braço de 2,85 m, caçamba de 1,1 m de largura.">${flow.input?.kind === 'text' ? esc(flow.input.text) : ''}</textarea><span class="u-label" id="ux-count">${flow.input?.kind === 'text' ? flow.input.text.length : 0} / ${TEXT_LIMITS.max}</span></label>
          <div class="ux-row"><button class="u-btn u-btn--outline" type="button" id="ux-use-text">Usar este texto</button></div>`
-      : `<label class="ux-drop" id="ux-drop"><input id="ux-file" type="file" accept="image/png,image/jpeg,image/webp"><span class="ux-drop-main">Arraste ${inputKind === 'drawing' ? 'o desenho' : 'a fotografia'} para aqui ou <u>escolha um ficheiro</u></span><span class="u-label">PNG, JPEG ou WebP · até ${MAX_INPUT_BYTES / 1e6} MB</span></label>`;
+      : `<label class="ux-drop" id="ux-drop"><input id="ux-file" type="file" accept="image/png,image/jpeg,image/webp"><span class="ux-drop-main">Arraste ${inputKind === 'drawing' ? 'o desenho' : 'a fotografia'} para aqui ou <u>escolha um ficheiro</u></span><span class="u-label">PNG, JPEG ou WebP · até ${MAX_INPUT_BYTES / 1e6} MB · até 16 megapixéis</span></label>`;
     el.innerHTML = `${head}<p class="u-small">Importe uma fotografia, um desenho técnico ou descreva a máquina. A IA observa; você confirma o que é verdade.</p>
       <div class="ux-seg" role="radiogroup" aria-label="Tipo de fonte">${kinds}</div>
       ${flow.input ? inputPreview() + `<div class="ux-row"><button class="u-btn u-btn--outline" type="button" data-flow="clear">Remover</button></div>` : body}
       ${flow.problem ? `<p class="ux-problem" role="alert">${esc(flow.problem.message)}</p>` : ''}
       ${flow.message ? `<p class="u-small" role="status">${esc(flow.message)}</p>` : ''}
       <div class="ux-row ux-row--end">${port.mode === 'demo' ? `<label class="ux-scenario u-label">cenário de demonstração <select id="ux-scenario">${DEMO_SCENARIOS.map((sc) => `<option value="${sc}" ${(port as DemoReconstructionPort).scenario === sc ? 'selected' : ''}>${esc(DEMO_SCENARIO_LABEL[sc])}</option>`).join('')}</select></label>` : ''}
-        <button class="u-btn u-btn--primary" type="button" data-flow="submit" ${flow.phase === 'selected' ? '' : 'disabled'}>Reconstruir</button></div>`;
+        ${options.example ? '<button class="u-btn u-btn--outline" type="button" data-example="open">Abrir exemplo</button>' : ''}
+        <button class="u-btn u-btn--primary" type="button" data-flow="submit" ${flow.phase === 'selected' ? '' : 'disabled'}>Reconstruir</button></div>
+      ${options.example ? '<p class="u-label ux-example-note">O exemplo é uma máquina sintética de referência: não vem de nenhuma fonte sua.</p>' : ''}`;
   }
   async function takeFile(file: File) {
     const problem = checkFile(file);
@@ -234,11 +237,12 @@ export async function mountExperience(app: HTMLElement, options: ExperienceOptio
     $('ux-enter').textContent = stepOne ? 'Continuar' : 'Abrir no laboratório';
     ($('ux-enter') as HTMLButtonElement).disabled = !ready;
     $('ux-enter').setAttribute('aria-busy', String(gwBusy));
+    const missing = app.querySelector('#ux-gw-missing'); if (missing && options.handoff) missing.innerHTML = missingHtml(missingLines(options.handoff));
     $('ux-enter-note').innerHTML = gwBusy ? 'a enviar a revisão ao servidor e a pedir a validação ao motor…'
       : r.status === 'ready_for_engine'
         ? (stepOne ? 'As entidades estão decididas. Falta o que o servidor pede antes de abrir o laboratório.' : blockers.length ? `Falta responder ao servidor: ${blockers.length} ${blockers.length === 1 ? 'ponto' : 'pontos'}.` : options.handoff ? 'Tudo respondido. O servidor valida o contrato e o motor tenta resolver a pose de referência.' : 'A sua revisão está completa. O motor valida a montagem no laboratório.')
         : r.status === 'review_pending' ? `Decida ${r.pending} hipótese${r.pending === 1 ? '' : 's'} antes de continuar.`
-          : `Dados insuficientes para uma montagem: falta ${esc(r.missing.join(', '))}.<br><button class="ux-link" type="button" data-flow="restart">Importar outra fonte</button>`;
+          : `Dados insuficientes para uma montagem: falta ${esc(r.missing.join(', '))}.${review.items.some((i) => i.status === 'unknown' && i.decision === 'pending') ? ' Se vê essa peça na fonte, pode corrigir a entidade desconhecida; senão, importe outra fonte.' : ''}<br><button class="ux-link" type="button" data-flow="restart">Importar outra fonte</button>`;
   }
   const reviewDispatch = (a: ReviewAction) => { if (!review) return; review = reduceReview(review, a); gwMessage = null; renderReview(); };
 
@@ -341,6 +345,7 @@ export async function mountExperience(app: HTMLElement, options: ExperienceOptio
   // ------------------------------------------------------------------------------------------ events
   app.addEventListener('click', (e) => {
     const t = e.target as Element;
+    if (t.closest('[data-example]') && options.example) { options.example.run(); return; }
     const gw = t.closest<HTMLElement>('[data-gw]');
     if (gw && options.handoff && review) {
       const h = options.handoff;
@@ -440,7 +445,7 @@ export async function mountExperience(app: HTMLElement, options: ExperienceOptio
 export function gateText(review: ReviewState, engine: EngineGate): { review: string; engine: string } {
   const s = summarize(review); const r = readiness(review);
   const g1text = r.status === 'insufficient' ? `faltam dados: ${r.missing.join(', ')}` : `${s.decided} de ${s.total} decididas${s.pendingHypotheses ? ` · ${s.pendingHypotheses} hipótese${s.pendingHypotheses === 1 ? '' : 's'} por decidir` : ''}`;
-  return { review: g1text, engine: `${ENGINE_GATE_LABEL[engine.status]}${engine.status === 'valid' ? ` · ${engine.solverId}` : engine.status === 'blocked' ? ` · ${engine.reasons[0] ?? ''}` : ''}` };
+  return { review: g1text, engine: `${ENGINE_GATE_LABEL[engine.status]}${engine.status === 'valid' ? ` · ${engine.solverId} · âmbito: só a pose de referência desta montagem; não certifica segurança, resistência, colisões nem outros movimentos` : engine.status === 'blocked' ? ` · ${engine.reasons[0] ?? ''}` : ''}` };
 }
 function gateItems(review: ReviewState, engine: EngineGate): string {
   const r = readiness(review);

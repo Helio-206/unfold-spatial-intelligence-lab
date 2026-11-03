@@ -55,4 +55,7 @@ export interface LabHost {
   unmount(): void;
 }
 
-export type ExperienceOptions = { port?: import('./intake').ReconstructionPort; handoff?: ReviewHandoff; lab?: LabHost };
+/** A secondary way in that does not involve the person's source: open the reference machine, labelled as an example. */
+export interface ExampleEntry { run(): void }
+
+export type ExperienceOptions = { port?: import('./intake').ReconstructionPort; handoff?: ReviewHandoff; lab?: LabHost; example?: ExampleEntry };
