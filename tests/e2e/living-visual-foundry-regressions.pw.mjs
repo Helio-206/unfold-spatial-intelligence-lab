@@ -24,7 +24,7 @@ async function open(api, agent = 'auto') {
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.route('**/api/**', api);
-  await page.goto(`${WS}?agent=${agent}&rm=0`);
+  await page.goto(`${WS}?agent=${agent}&rm=0&fixtureDemo=1`);
   await page.waitForFunction(() => window.__foundry?.ready, null, { timeout: 240_000 });
   return { page, context, errors };
 }

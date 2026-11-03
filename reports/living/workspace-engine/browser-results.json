@@ -1,0 +1,83 @@
+{
+  "viewportDesktop": [
+    800,
+    600
+  ],
+  "viewportMobile": [
+    390,
+    844
+  ],
+  "renderer": "Chromium SwiftShader",
+  "assembly": "synthetic fixture",
+  "source": "deterministic engineering engine",
+  "agent": "mock or fixture",
+  "comparison": [
+    {
+      "id": "boom",
+      "translation": 0,
+      "rotation": 0
+    },
+    {
+      "id": "boom_cyl_barrel",
+      "translation": 0,
+      "rotation": 0
+    },
+    {
+      "id": "boom_cyl_rod",
+      "translation": 0,
+      "rotation": 0
+    },
+    {
+      "id": "bucket",
+      "translation": 0,
+      "rotation": -2.220446049250313e-16
+    },
+    {
+      "id": "bucket_cyl_barrel",
+      "translation": 0,
+      "rotation": -2.220446049250313e-16
+    },
+    {
+      "id": "bucket_cyl_rod",
+      "translation": 0,
+      "rotation": -2.220446049250313e-16
+    },
+    {
+      "id": "bucket_link",
+      "translation": 0,
+      "rotation": 0
+    },
+    {
+      "id": "chassis",
+      "translation": 0,
+      "rotation": 0
+    },
+    {
+      "id": "idler_link",
+      "translation": 0,
+      "rotation": -2.220446049250313e-16
+    },
+    {
+      "id": "stick",
+      "translation": 0,
+      "rotation": 0
+    },
+    {
+      "id": "stick_cyl_barrel",
+      "translation": 0,
+      "rotation": 0
+    },
+    {
+      "id": "stick_cyl_rod",
+      "translation": 0,
+      "rotation": 0
+    },
+    {
+      "id": "upper_body",
+      "translation": 0,
+      "rotation": 0
+    }
+  ],
+  "pageErrors": [],
+  "limits": "No live model or hardware GPU validation."
+}

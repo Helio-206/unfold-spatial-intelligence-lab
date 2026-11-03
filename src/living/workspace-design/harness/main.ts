@@ -12,6 +12,7 @@ document.body.style.margin = '0';
 const ws = new SpatialWorkspace(document.querySelector<HTMLElement>('#app')!, {
   assembly: EXCAVATOR_ASSEMBLY_V1,
   agent: { mode: q.get('agent') === 'fixture' ? 'fixture' : 'auto' },
+  fixtureDemo: q.get('fixtureDemo') === '1',
   profile: q.get('profile') === 'export' ? 'export' : 'realtime',
   reducedMotion: q.has('rm') ? q.get('rm') === '1' : undefined,
   preserveDrawingBuffer: true,

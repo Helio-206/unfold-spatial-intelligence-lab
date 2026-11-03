@@ -14,7 +14,17 @@ import { fixtureAgentResult } from './fixture-agent';
 export const AGENT_CAPABILITIES: SpatialAgentRequestV1['capabilities'] = ['Select', 'Inspect', 'Focus'];
 export type HistoryItem = { role: 'user' | 'assistant'; text: string };
 
-export function buildAgentRequest(query: string, registry: ComponentRegistry, selectedId: string | null, history: HistoryItem[]): SpatialAgentRequestV1 {
+/** What the assistant may assume about the engineering engine. Strings are capped at 180 characters by the request contract. */
+function engineConstraints(connected: boolean): string[] {
+  if (!connected) return ['O motor de engenharia não está ligado: o assistente não calcula movimento.'];
+  return [
+    'O motor de engenharia está ligado e é o único que calcula poses e resultados; o assistente não calcula movimento nem forças.',
+    'O assistente só propõe: qualquer movimento exige pré-visualização do motor e confirmação do utilizador; o assistente não executa nada.',
+    'Grandezas que o motor não calcula são desconhecidas; não as estimar nem inventar valores.',
+  ];
+}
+
+export function buildAgentRequest(query: string, registry: ComponentRegistry, selectedId: string | null, history: HistoryItem[], context: { engineConnected?: boolean } = {}): SpatialAgentRequestV1 {
   const components = registry.all().filter((c) => c.kind !== 'joint').slice(0, 40).map((c) => ({
     id: c.id, label: c.label.slice(0, 120), kind: c.role, dimensionsM: null, verification: `${c.origin}/${c.validation}`.slice(0, 40),
   }));
@@ -23,7 +33,7 @@ export function buildAgentRequest(query: string, registry: ComponentRegistry, se
     scene: {
       id: registry.assemblyId, revisionId: `${registry.assemblyId}.fixture-r1`, revisionNumber: 1,
       selectedId: selectedId && components.some((c) => c.id === selectedId) ? selectedId : null, components,
-      constraints: ['Montagem sintética (fixture): nada aqui é dado de fabricante.', 'O motor de engenharia não está ligado: o assistente não calcula movimento.'],
+      constraints: ['Montagem sintética (fixture): nada aqui é dado de fabricante.', ...engineConstraints(context.engineConnected === true)],
     },
     document: null,
     history: history.slice(-6).map((h) => ({ role: h.role, text: h.text.slice(0, 300) })),

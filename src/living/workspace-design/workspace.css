@@ -114,7 +114,7 @@
 .uw-proposal[data-state="done"], .uw-proposal[data-state="rejected"], .uw-proposal[data-state="cancelled"], .uw-proposal[data-state="failed"] { border-style: solid; border-color: var(--line); }
 
 /* Inspector: compact card, top right (left of the conversation when it is open) */
-.uw-inspector { position: absolute; top: calc(var(--space-4) + var(--uw-notices-h, 0px)); right: var(--space-4); width: min(300px, calc(100vw - 32px)); padding: var(--space-3) var(--space-4) var(--space-4); z-index: 5; opacity: var(--uw-overlay); transition: right var(--dur-base) var(--ease-in-out), opacity var(--dur-base) var(--ease-in-out); }
+.uw-inspector { position: absolute; top: calc(var(--space-4) + var(--uw-notices-h, 0px)); right: var(--space-4); width: min(300px, calc(100vw - 32px)); max-height: calc(100% - var(--uw-composer-h, 76px) - var(--uw-notices-h, 0px) - 48px); overflow-y: auto; padding: var(--space-3) var(--space-4) var(--space-4); z-index: 5; opacity: var(--uw-overlay); transition: right var(--dur-base) var(--ease-in-out), opacity var(--dur-base) var(--ease-in-out); }
 .uw-root[data-mode="conversation"] .uw-inspector { right: calc(var(--uw-panel-w) + var(--space-6)); }
 .uw-inspector h2 { margin: 0; font-size: var(--type-body-size); line-height: var(--type-body-line); font-weight: 600; letter-spacing: var(--type-title-tracking); }
 .uw-inspector .u-readout { margin-top: var(--space-2); font-size: var(--type-label-size); }
@@ -168,7 +168,7 @@
   .uw-tip { display: none; }
   .uw-conversation { top: auto; left: var(--space-2); right: var(--space-2); width: auto; height: min(56vh, 460px); }
   .uw-root[data-mode="conversation"] .uw-inspector, .uw-root[data-mode="conversation"] .uw-rail, .uw-root[data-mode="conversation"] .uw-hand-label { display: none; }
-  .uw-inspector { top: auto; bottom: calc(var(--uw-composer-h, 76px) + var(--space-4)); right: var(--space-2); left: calc(var(--uw-rail-w) + var(--space-1)); width: auto; }
+  .uw-inspector { top: auto; bottom: calc(var(--uw-composer-h, 76px) + var(--space-4)); right: var(--space-2); left: calc(var(--uw-rail-w) + var(--space-1)); width: auto; max-height: min(50vh, calc(100% - var(--uw-composer-h, 76px) - var(--uw-notices-h, 0px) - 48px)); }
   .uw-composer { width: calc(100vw - 16px); bottom: max(var(--space-2), env(safe-area-inset-bottom)); }
   .uw-composer-tools .uw-ctool[data-optional="true"] { display: none; }
   .uw-transient { bottom: calc(var(--uw-composer-h, 76px) + var(--space-4)); }
