@@ -43,17 +43,19 @@ export function reviewReconstruction(observationInput: unknown, mode: Reconstruc
   if (/\b(wheel(?:ed|s)?|rodas|pneus)\b/.test(descriptions)) reasons.push('possível máquina de rodas incompatível com a família suportada');
   if (observation.machineType !== 'excavator') reasons.push('tipo de máquina não confirmado como escavadora');
   if (reasons.length) throw new ReconstructionAdapterBlockedError(reasons);
-  const reviewedObservation = structuredClone(observation);
-  for (const entity of reviewedObservation.entities) if (entity.status === 'hypothesis' && decisions[`entity:${entity.id}`] === 'reject') entity.status = 'unknown';
-  for (const relation of reviewedObservation.relations) if (relation.status === 'hypothesis' && decisions[`relation:${relation.id}`] === 'reject') relation.status = 'unknown';
-  const proposal = buildExcavatorAssembly(reviewedObservation, { mode });
+  const proposal = buildExcavatorAssembly(observation, { mode });
   // Model dimensions and requests never become engineering inputs by themselves.
   for (const part of proposal.parts) {
     for (const dimension of Object.values(part.dimensions)) if (dimension.source === 'observed') dimension.source = 'hypothesis';
     part.geometrySource = 'template';
+    part.evidenceIds = ['src-excavator-fixture'];
     part.provenance = { origin: 'synthetic', validation: 'unreviewed', recordedAt: new Date().toISOString(), actor: { kind: 'system', id: 'excavator-reference-template' }, evidence: [{ sourceId: 'src-excavator-fixture' }] };
   }
-  for (const actuator of proposal.actuators) if (actuator.stroke.source === 'observed') actuator.stroke.source = 'hypothesis';
+  for (const joint of proposal.joints) { joint.source = 'template'; joint.evidenceIds = ['src-excavator-fixture']; }
+  for (const actuator of proposal.actuators) {
+    actuator.source = 'template'; actuator.evidenceIds = ['src-excavator-fixture'];
+    if (actuator.stroke.source === 'observed') actuator.stroke.source = 'hypothesis';
+  }
   for (const modification of proposal.modifications) modification.review = 'rejected';
   const referencePoses = forwardKinematicsAtReference(EXCAVATOR_ASSEMBLY_V1);
   for (const [canonicalId, proposalId] of Object.entries(partIds)) {
@@ -67,8 +69,20 @@ export function reviewReconstruction(observationInput: unknown, mode: Reconstruc
   if (!box || box.kind !== 'box') throw new ReconstructionAdapterBlockedError(['geometria da caçamba não suportada']);
   const beforeM = box.halfExtentsM[2] * 2;
   box.halfExtentsM[2] = review.bucketWidthM / 2;
-  box.provenance = { origin: 'human_entered', validation: 'unreviewed', recordedAt: new Date().toISOString(), actor: { kind: 'human', id: review.reviewerId }, evidence: [{ sourceId: authorizationId, excerpt: review.widthBasis }] };
+  box.provenance = { origin: 'unknown', validation: 'unreviewed', recordedAt: new Date().toISOString(), actor: { kind: 'system', id: 'reconstruction-api' }, evidence: [{ sourceId: authorizationId, excerpt: review.widthBasis }] };
   const validation = validateAssembly(assembly);
   if (!validation.ok) throw new ReconstructionAdapterBlockedError(validation.issues.map(i => `${i.path}: ${i.code}`));
-  return { proposal, assembly, review, validation: 'contract_valid' as const, geometry: { bucketWidthBeforeM: beforeM, bucketWidthAfterM: review.bucketWidthM }, limitations: ['A largura é um valor fornecido pelo utilizador, não uma medição física certificada.', 'A restante geometria usa uma referência sintética; não representa dimensões recuperadas da fotografia.', 'Validação do contrato não é cálculo de engenharia nem autorização de movimento.'] };
+  return {
+    originalObservation: observation,
+    review: structuredClone(review),
+    provenance: {
+      observation: { source: mode === 'live' ? 'meta_model' as const : 'offline_fixture' as const, statuses: mode === 'live' ? 'model_reported' as const : 'fixture_generated' as const },
+      review: { source: 'client_submitted' as const, reviewerIdentity: 'unverified' as const, humanParticipation: 'unverified' as const },
+      bucketWidth: { source: 'client_submitted' as const, measurement: 'unverified' as const, basis: review.widthBasis },
+      remainingGeometry: { source: 'synthetic_fixture' as const },
+    },
+    proposal, assembly, validation: 'contract_valid' as const,
+    geometry: { bucketWidthBeforeM: beforeM, bucketWidthAfterM: review.bucketWidthM },
+    limitations: ['A largura foi submetida pelo cliente; a identidade do revisor, participação humana e medição física não são verificadas.', 'A restante geometria usa uma referência sintética; não representa dimensões recuperadas da fotografia.', 'Validação do contrato não é cálculo de engenharia nem autorização de movimento.'],
+  };
 }
