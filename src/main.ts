@@ -16,6 +16,9 @@ switch (window.location.pathname) {
   case '/spatial-editor':
     void import('./spatial-editor').then(({ mountSpatialEditor }) => mountSpatialEditor(app));
     break;
+  case '/universal-spatial':
+    void import('./universal-spatial/harness').then(({ mountUniversalSpatialHarness }) => mountUniversalSpatialHarness(app));
+    break;
   case '/phase-4a':
     void import('./phase4a');
     break;

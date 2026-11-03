@@ -1,0 +1,925 @@
+{
+  "browser": "Chromium Playwright + SwiftShader",
+  "url": "http://127.0.0.1:5193/universal-spatial",
+  "sourceImage": "Wikimedia Commons, Turbofan jet engine.jpg, author Stéphane Gallay, CC BY 2.0; 1280x960 derivative",
+  "scenarios": [
+    {
+      "input": "Build a robotic arm with three joints and a magnetic end effector.",
+      "sourceSha256": "3b79776fb573a63b958002442a1c5e9bd643852ea69434bb9a83fb5c0946a006",
+      "request": "Live muse-spark-1.3 · 47edde84-b9fc-4b99-828b-30538abd99b8 · 22474 ms · $0.01206175 · 7 entities",
+      "title": "Three-Joint Robotic Arm with Magnetic End Effector - Illustrative Plan",
+      "entities": [
+        {
+          "id": "base-pedestal",
+          "label": "Base Pedestal",
+          "parentId": null,
+          "operator": "cylinder",
+          "parameters": [
+            0.6,
+            0.3
+          ],
+          "repeat": null,
+          "transform": {
+            "position": [
+              0,
+              0.15,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "origin": "design_approximation"
+        },
+        {
+          "id": "shoulder-joint",
+          "label": "Shoulder Joint J1",
+          "parentId": "base-pedestal",
+          "operator": "cylinder",
+          "parameters": [
+            0.32,
+            0.5
+          ],
+          "repeat": null,
+          "transform": {
+            "position": [
+              0,
+              0.4,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              1.5708
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "origin": "design_approximation"
+        },
+        {
+          "id": "upper-arm",
+          "label": "Upper Arm Link",
+          "parentId": "shoulder-joint",
+          "operator": "box",
+          "parameters": [
+            0.35,
+            1,
+            0.3
+          ],
+          "repeat": null,
+          "transform": {
+            "position": [
+              0,
+              0.55,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "origin": "design_approximation"
+        },
+        {
+          "id": "elbow-joint",
+          "label": "Elbow Joint J2",
+          "parentId": "upper-arm",
+          "operator": "cylinder",
+          "parameters": [
+            0.22,
+            0.45
+          ],
+          "repeat": null,
+          "transform": {
+            "position": [
+              0,
+              0.62,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              1.5708
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "origin": "design_approximation"
+        },
+        {
+          "id": "forearm-link",
+          "label": "Forearm Link",
+          "parentId": "elbow-joint",
+          "operator": "box",
+          "parameters": [
+            0.26,
+            0.9,
+            0.22
+          ],
+          "repeat": null,
+          "transform": {
+            "position": [
+              0,
+              0.55,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "origin": "design_approximation"
+        },
+        {
+          "id": "wrist-joint",
+          "label": "Wrist Joint J3",
+          "parentId": "forearm-link",
+          "operator": "sphere",
+          "parameters": [
+            0.18
+          ],
+          "repeat": null,
+          "transform": {
+            "position": [
+              0,
+              0.58,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "origin": "design_approximation"
+        },
+        {
+          "id": "magnetic-effector",
+          "label": "Magnetic End Effector",
+          "parentId": "wrist-joint",
+          "operator": "cylinder",
+          "parameters": [
+            0.2,
+            0.28
+          ],
+          "repeat": null,
+          "transform": {
+            "position": [
+              0,
+              -0.3,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "origin": "design_approximation"
+        }
+      ],
+      "unknowns": [
+        "Real-world scale and overall height not specified",
+        "Joint ranges of motion, degrees of freedom, and actuation type unknown",
+        "Magnetic holding force, power source, and control method unknown",
+        "Materials, fasteners, wiring, and cable routing not defined"
+      ],
+      "relations": [
+        {
+          "evidence": "Assembly hierarchy: shoulder sits on base pedestal by design.",
+          "fromId": "shoulder-joint",
+          "id": "rel-base-shoulder",
+          "kind": "attached_to",
+          "origin": "design_approximation",
+          "toId": "base-pedestal"
+        },
+        {
+          "evidence": "Assembly hierarchy: upper arm driven by shoulder joint.",
+          "fromId": "upper-arm",
+          "id": "rel-shoulder-upper",
+          "kind": "attached_to",
+          "origin": "design_approximation",
+          "toId": "shoulder-joint"
+        },
+        {
+          "evidence": "Assembly hierarchy: elbow at distal end of upper arm.",
+          "fromId": "elbow-joint",
+          "id": "rel-upper-elbow",
+          "kind": "attached_to",
+          "origin": "design_approximation",
+          "toId": "upper-arm"
+        },
+        {
+          "evidence": "Assembly hierarchy: forearm driven by elbow.",
+          "fromId": "forearm-link",
+          "id": "rel-elbow-forearm",
+          "kind": "attached_to",
+          "origin": "design_approximation",
+          "toId": "elbow-joint"
+        },
+        {
+          "evidence": "Assembly hierarchy: wrist at end of forearm.",
+          "fromId": "wrist-joint",
+          "id": "rel-forearm-wrist",
+          "kind": "attached_to",
+          "origin": "design_approximation",
+          "toId": "forearm-link"
+        },
+        {
+          "evidence": "Assembly hierarchy: magnetic tool attached to wrist.",
+          "fromId": "magnetic-effector",
+          "id": "rel-wrist-magnet",
+          "kind": "attached_to",
+          "origin": "design_approximation",
+          "toId": "wrist-joint"
+        }
+      ]
+    },
+    {
+      "input": "Create an industrial fan with six blades, a central hub, electric motor, housing and stand.",
+      "sourceSha256": "f2ebb8f647ebe8b94b79ef230d5f8f479f10c34ffeed8adbbab39146536794fc",
+      "request": "Live muse-spark-1.3 · 2f4a3c72-2fd1-4a37-a16a-8a7108cce662 · 23922 ms · $0.01030425 · 6 entities",
+      "title": "Industrial fan with six blades, motor, housing and stand",
+      "entities": [
+        {
+          "id": "stand-base",
+          "label": "Stand base",
+          "parentId": null,
+          "operator": "box",
+          "parameters": [
+            1,
+            0.1,
+            0.7
+          ],
+          "repeat": null,
+          "transform": {
+            "position": [
+              0,
+              0.05,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "origin": "design_approximation"
+        },
+        {
+          "id": "stand-post",
+          "label": "Stand post",
+          "parentId": "stand-base",
+          "operator": "cylinder",
+          "parameters": [
+            0.06,
+            1.1
+          ],
+          "repeat": null,
+          "transform": {
+            "position": [
+              0,
+              0.65,
+              -0.15
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "origin": "design_approximation"
+        },
+        {
+          "id": "motor-body",
+          "label": "Electric motor",
+          "parentId": "stand-post",
+          "operator": "cylinder",
+          "parameters": [
+            0.22,
+            0.45
+          ],
+          "repeat": null,
+          "transform": {
+            "position": [
+              0,
+              0.6,
+              0.05
+            ],
+            "rotationRad": [
+              1.5708,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "origin": "design_approximation"
+        },
+        {
+          "id": "housing-ring",
+          "label": "Fan housing ring",
+          "parentId": "stand-post",
+          "operator": "torus",
+          "parameters": [
+            0.65,
+            0.05
+          ],
+          "repeat": null,
+          "transform": {
+            "position": [
+              0,
+              0.6,
+              0.3
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "origin": "design_approximation"
+        },
+        {
+          "id": "hub",
+          "label": "Central hub",
+          "parentId": "motor-body",
+          "operator": "sphere",
+          "parameters": [
+            0.14
+          ],
+          "repeat": null,
+          "transform": {
+            "position": [
+              0,
+              0,
+              0.35
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "origin": "design_approximation"
+        },
+        {
+          "id": "blade",
+          "label": "Fan blade",
+          "parentId": "hub",
+          "operator": "box",
+          "parameters": [
+            0.42,
+            0.18,
+            0.02
+          ],
+          "repeat": {
+            "axis": "z",
+            "count": 6,
+            "kind": "radial",
+            "spacingOrRadius": 0.35
+          },
+          "transform": {
+            "position": [
+              0.35,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0.35,
+              0.5
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "origin": "design_approximation"
+        }
+      ],
+      "unknowns": [
+        "Real-world scale and overall diameter not supplied",
+        "Blade airfoil shape, pitch angle, and twist unknown",
+        "Motor power, shaft details, and electrical connections unknown",
+        "Housing guard mesh density and mounting details unknown",
+        "Stand adjustment and stability details unknown"
+      ],
+      "relations": [
+        {
+          "evidence": "Post rises from base in typical pedestal fan layout.",
+          "fromId": "stand-post",
+          "id": "rel-post-on-base",
+          "kind": "attached_to",
+          "origin": "inferred",
+          "toId": "stand-base"
+        },
+        {
+          "evidence": "Motor mounted on top of stand post.",
+          "fromId": "motor-body",
+          "id": "rel-motor-on-post",
+          "kind": "attached_to",
+          "origin": "inferred",
+          "toId": "stand-post"
+        },
+        {
+          "evidence": "Housing ring surrounds motor and blade sweep area.",
+          "fromId": "housing-ring",
+          "id": "rel-housing-around-motor",
+          "kind": "adjacent_to",
+          "origin": "inferred",
+          "toId": "motor-body"
+        },
+        {
+          "evidence": "Hub on front motor shaft driving blades.",
+          "fromId": "hub",
+          "id": "rel-hub-on-motor",
+          "kind": "attached_to",
+          "origin": "inferred",
+          "toId": "motor-body"
+        },
+        {
+          "evidence": "Blades radiate from central hub inside housing.",
+          "fromId": "blade",
+          "id": "rel-blade-on-hub",
+          "kind": "attached_to",
+          "origin": "inferred",
+          "toId": "hub"
+        }
+      ]
+    },
+    {
+      "input": "Wikimedia Commons turbofan photograph (CC BY 2.0)",
+      "sourceSha256": "49d0fce4f6249476eec35248117c0df6469ebce18ba79c6c6ac721b38f858409",
+      "request": "Live muse-spark-1.3 · 95f98468-ff31-450e-96c0-e26d63813faa · 22126 ms · $0.011231 · scale unknown",
+      "title": "Turbofan engine illustrative layout",
+      "entities": [
+        {
+          "id": "intake-cowl",
+          "label": "Intake cowl",
+          "operator": "cylinder",
+          "origin": "observed"
+        },
+        {
+          "id": "intake-lip",
+          "label": "Intake lip ring",
+          "operator": "torus",
+          "origin": "inferred"
+        },
+        {
+          "id": "spinner-cone",
+          "label": "Spinner cone",
+          "operator": "sphere",
+          "origin": "observed"
+        },
+        {
+          "id": "fan-blade",
+          "label": "Fan blade",
+          "operator": "box",
+          "origin": "observed"
+        },
+        {
+          "id": "core-casing",
+          "label": "Core engine casing",
+          "operator": "cylinder",
+          "origin": "inferred"
+        },
+        {
+          "id": "exhaust-nozzle",
+          "label": "Exhaust nozzle",
+          "operator": "cone",
+          "origin": "inferred"
+        }
+      ],
+      "unknowns": [
+        "True physical diameter, length, and scale without known reference",
+        "Exact fan blade count, pitch, twist and airfoil profile",
+        "Internal compressor, turbine and shaft details not visible",
+        "True colors, materials, wall thickness and fastener details",
+        "Transport stand dimensions excluded as background support equipment"
+      ],
+      "relations": [
+        {
+          "evidence": "Lip forms front edge of cowl in image.",
+          "fromId": "intake-lip",
+          "id": "intake-lip-attached-to-cowl",
+          "kind": "attached_to",
+          "origin": "observed",
+          "toId": "intake-cowl"
+        },
+        {
+          "evidence": "Spinner centered inside inlet.",
+          "fromId": "spinner-cone",
+          "id": "spinner-in-cowl",
+          "kind": "contains",
+          "origin": "observed",
+          "toId": "intake-cowl"
+        },
+        {
+          "evidence": "Blades surround spinner inside cowl.",
+          "fromId": "fan-blade",
+          "id": "blade-in-cowl",
+          "kind": "contains",
+          "origin": "observed",
+          "toId": "intake-cowl"
+        },
+        {
+          "evidence": "Core casing extends aft from inlet section.",
+          "fromId": "core-casing",
+          "id": "core-attached-to-cowl",
+          "kind": "attached_to",
+          "origin": "inferred",
+          "toId": "intake-cowl"
+        },
+        {
+          "evidence": "Exhaust at rear end of core casing.",
+          "fromId": "exhaust-nozzle",
+          "id": "exhaust-attached-to-core",
+          "kind": "attached_to",
+          "origin": "inferred",
+          "toId": "core-casing"
+        }
+      ]
+    },
+    {
+      "input": "Create a small pedestrian suspension bridge with a deck, two towers, cables and repeating hangers.",
+      "sourceSha256": "6dd8b0efa77fef9c5d558754d563efa14e2372a504c7e1101579e9de9fab4ead",
+      "request": "Live muse-spark-1.3 · 5659343e-d684-484c-b026-42a78c4726e4 · 29240 ms · $0.01434175 · 7 entities",
+      "title": "small pedestrian suspension bridge - illustrative",
+      "entities": [
+        {
+          "id": "deck",
+          "label": "bridge deck",
+          "parentId": null,
+          "operator": "box",
+          "parameters": [
+            2,
+            0.2,
+            12
+          ],
+          "repeat": null,
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "origin": "design_approximation"
+        },
+        {
+          "id": "tower-north",
+          "label": "north tower frame",
+          "parentId": null,
+          "operator": "box",
+          "parameters": [
+            2.6,
+            3.5,
+            0.4
+          ],
+          "repeat": null,
+          "transform": {
+            "position": [
+              0,
+              1.75,
+              -4
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "origin": "design_approximation"
+        },
+        {
+          "id": "tower-south",
+          "label": "south tower frame",
+          "parentId": null,
+          "operator": "box",
+          "parameters": [
+            2.6,
+            3.5,
+            0.4
+          ],
+          "repeat": null,
+          "transform": {
+            "position": [
+              0,
+              1.75,
+              4
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "origin": "design_approximation"
+        },
+        {
+          "id": "cable-left",
+          "label": "left main cable",
+          "parentId": null,
+          "operator": "tube",
+          "parameters": [
+            0.06,
+            -1.1,
+            3.4,
+            -6,
+            -1.1,
+            3.2,
+            -4,
+            -1.1,
+            1.6,
+            0,
+            -1.1,
+            3.2,
+            4,
+            -1.1,
+            3.4,
+            6
+          ],
+          "repeat": null,
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "origin": "design_approximation"
+        },
+        {
+          "id": "cable-right",
+          "label": "right main cable",
+          "parentId": null,
+          "operator": "tube",
+          "parameters": [
+            0.06,
+            1.1,
+            3.4,
+            -6,
+            1.1,
+            3.2,
+            -4,
+            1.1,
+            1.6,
+            0,
+            1.1,
+            3.2,
+            4,
+            1.1,
+            3.4,
+            6
+          ],
+          "repeat": null,
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "origin": "design_approximation"
+        },
+        {
+          "id": "hangers-left",
+          "label": "left hangers row",
+          "parentId": null,
+          "operator": "cylinder",
+          "parameters": [
+            0.03,
+            1
+          ],
+          "repeat": {
+            "axis": "z",
+            "count": 7,
+            "kind": "linear",
+            "spacingOrRadius": 1.2
+          },
+          "transform": {
+            "position": [
+              -1.1,
+              0.7,
+              -3.6
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "origin": "design_approximation"
+        },
+        {
+          "id": "hangers-right",
+          "label": "right hangers row",
+          "parentId": null,
+          "operator": "cylinder",
+          "parameters": [
+            0.03,
+            1
+          ],
+          "repeat": {
+            "axis": "z",
+            "count": 7,
+            "kind": "linear",
+            "spacingOrRadius": 1.2
+          },
+          "transform": {
+            "position": [
+              1.1,
+              0.7,
+              -3.6
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "origin": "design_approximation"
+        }
+      ],
+      "unknowns": [
+        "Real-world scale and deck length/width/thickness not provided",
+        "True main cable sag profile and tower height not specified; uniform illustrative curve used",
+        "True hanger count, spacing, diameter and varying lengths due to sag not specified",
+        "Tower structural form and anchorage details not specified"
+      ],
+      "relations": [
+        {
+          "evidence": "Illustrative placement of towers at deck ends supporting the span.",
+          "fromId": "tower-north",
+          "id": "rel-tower-n-deck",
+          "kind": "adjacent_to",
+          "origin": "design_approximation",
+          "toId": "deck"
+        },
+        {
+          "evidence": "Illustrative placement of towers at deck ends supporting the span.",
+          "fromId": "tower-south",
+          "id": "rel-tower-s-deck",
+          "kind": "adjacent_to",
+          "origin": "design_approximation",
+          "toId": "deck"
+        },
+        {
+          "evidence": "Main cables illustratively rest on tower tops.",
+          "fromId": "cable-left",
+          "id": "rel-cable-l-towers",
+          "kind": "attached_to",
+          "origin": "design_approximation",
+          "toId": "tower-north"
+        },
+        {
+          "evidence": "Main cables illustratively rest on tower tops.",
+          "fromId": "cable-right",
+          "id": "rel-cable-r-towers",
+          "kind": "attached_to",
+          "origin": "design_approximation",
+          "toId": "tower-south"
+        },
+        {
+          "evidence": "Hangers illustratively link main cable to deck edge.",
+          "fromId": "hangers-left",
+          "id": "rel-hanger-l",
+          "kind": "connected_to",
+          "origin": "design_approximation",
+          "toId": "deck"
+        },
+        {
+          "evidence": "Hangers illustratively link main cable to deck edge.",
+          "fromId": "hangers-right",
+          "id": "rel-hanger-r",
+          "kind": "connected_to",
+          "origin": "design_approximation",
+          "toId": "deck"
+        }
+      ]
+    }
+  ],
+  "geometryDifferentiation": {
+    "roboticArmVsFan": true,
+    "fanVsUnexpected": true
+  },
+  "selectionInspector": "passed for live text and image plans",
+  "screenshots": [
+    "scenario-a-robotic-arm.png",
+    "scenario-b-turbofan-image.png",
+    "scenario-c-industrial-fan.png",
+    "scenario-d-unexpected-bridge.png"
+  ],
+  "consoleErrors": []
+}
