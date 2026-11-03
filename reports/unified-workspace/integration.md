@@ -172,3 +172,26 @@ Os E2E do workspace abrem agora `/living?example=1`: o contrato mudou (`/living`
 ## Veredicto para a demonstração: GO, com condições
 
 **GO** para demonstrar o percurso completo e verificável: laboratório vazio → fotografia real → Meta Muse Spark → revisão humana → contrato → motor → geometria paramétrica no workspace real → interação, com regressões verdes. **Condições**: apresentar como *reconstrução espacial assistida por IA sobre uma família mecânica suportada, com revisão humana e geometria paramétrica de referência*; dizer que a revisão da prova foi feita por script; correr com a chave só no backend e o Vite na porta 5173; ter o exemplo como plano B se a rede falhar (a chamada à Meta demora ~30 s). **NO-GO** para qualquer afirmação de fidelidade fotográfica, de desempenho em GPU ou de segurança mecânica.
+
+---
+
+# Unificação visual: um só workspace
+
+`experience/` e `workspace-design/` já não são dois sistemas visuais no `/living`.
+
+- **Um workspace permanente.** `mountLivingShell` cria um único `SpatialWorkspace`, vazio ao início. O palco 3D, a barra lateral, o compositor e a marca nunca são substituídos; mudar de estado nunca troca de canvas (provado no E2E: o mesmo elemento `canvas` do estado vazio ao laboratório e de volta).
+- **Painéis contextuais.** A importação e a revisão são painéis hospedados no workspace (`panelHost`), ao lado da mesma barra e acima do mesmo compositor. O compositor é a entrada: o texto descreve a máquina e o clipe anexa a fotografia. Na revisão fica desativado com a razão; no laboratório volta a ser o assistente.
+- **A máquina troca no mesmo palco.** Adotar uma montagem, voltar à revisão, «Nova máquina», «Abrir exemplo» e «Novo projecto» chamam `replaceAssembly`/`clearMachine`: o motor, o registo, a cena, a Digital Hand, a seleção e a conversa são reconstruídos, o renderer e o canvas ficam. O exemplo abre na mesma página, sem navegação.
+- **Modo embebido** (`experience.ts`, opção `embedded`): sem palco, marca nem laboratório próprios. Sem a opção, o protótipo do Design comporta-se como antes (E2E do Design 39/39).
+- **Design system:** Void, Fold e os tokens existentes; botões repostos (o CSS do workspace sobrepunha-se às variantes do design system); os painéis chegam com os tokens de movimento.
+- **Domínios:** os textos do shell e do compositor vivem num único mapa (`COMPOSER_COPY`) e as ações extra da barra são dados. O vocabulário de entidades e a estrutura obrigatória da revisão continuam presos à escavadora até ao trabalho de anatomia do Codex; não se implementou anatomia.
+
+## A captura `excavator-fixture-1 · fixture`
+
+Não corresponde ao PR #20. O cabeçalho `· fixture` foi removido do `workspace.ts` no commit `43cfb7f` (PR #15). No código final o exemplo mostra `exemplo · montagem sintética`, com o aviso de que não foi reconstruído de nenhuma fotografia, e o perfil premium (a captura mostra o aspeto antigo, sem premium). Captura atual: `captures/unified-03-example.png`.
+
+## Resultados (SwiftShader, sem GPU real)
+
+106 ficheiros / 1885 testes, `tsc`, build. E2E novo 24 verificações (1440/768/390). Design 39/39; motor 16, histórico 4, Digital Hand 7, revisão 8, regressões 3 e 4; Foundry 25/25 e 52/52; Cinema 203/203 e histórico.
+
+Limitações novas: o texto da marca durante a revisão continua «laboratório vazio» (não acompanha a fase); a transição é a subida da máquina no palco, sem a dobra da folha do protótipo.
