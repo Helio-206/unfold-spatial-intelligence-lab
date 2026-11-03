@@ -31,6 +31,8 @@ import { buildExcavatorAssembly, assemblyMetrics } from '../src/living/reconstru
 import { offlineImageObservation, offlineTextObservation, observeExcavatorImage, observeExcavatorText } from '../src/living/reconstruction/muse';
 import { ASSEMBLY_PROPOSAL_SCHEMA, RECONSTRUCTION_OBSERVATION_SCHEMA, validateAssemblyProposal } from '../src/living/reconstruction/contracts';
 import { adapterBlockReason } from '../src/living/reconstruction/adapter';
+import { observeHeartIllustration } from '../src/anatomy/muse';
+import { validateAnatomyImageDataUrl } from './anatomy-image';
 
 const MAX_BODY_BYTES = 64 * 1024;
 const MAX_IMAGE_BODY_BYTES = 14 * 1024 * 1024;
@@ -54,6 +56,7 @@ export const PAID_ROUTES = [
   '/api/conversation',
   '/api/spatial-agent',
   '/api/living/reconstruction',
+  '/api/anatomy/observe',
 ] as const;
 const PAID_ROUTE_SET: ReadonlySet<string> = new Set(PAID_ROUTES);
 
@@ -321,6 +324,7 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
       spatialAgent: { available: true, apiKeyConfigured: Boolean(apiKey), contract: 'spatial_agent_result.v1', maxOutputTokens: 1_600, reasoningEffort: 'medium' },
       imageRegionVerification: { available: true, apiKeyConfigured: Boolean(apiKey) },
       livingReconstruction: { available: true, apiKeyConfigured: Boolean(apiKey), responseContract: 'unfold.reconstruction.v1', observationSchema: RECONSTRUCTION_OBSERVATION_SCHEMA, assemblySchema: ASSEMBLY_PROPOSAL_SCHEMA, offlineFallback: true },
+      anatomyObservation: { available: true, apiKeyConfigured: Boolean(apiKey), responseContract: 'unfold.anatomy_observation.v1', reviewContract: 'unfold.anatomy_review.v1', sceneContract: 'unfold.anatomy_scene.v1', liveOnly: true },
     },
     metaCallBudget: { limit: metaCallLimit, used: metaCallsUsed, remaining: Math.max(0, metaCallLimit - metaCallsUsed) },
   });
@@ -389,7 +393,7 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
     const started = performance.now();
     try {
       const body = JSON.parse(await readBody(request,
-          request.url?.startsWith('/api/meta/image') || request.url === '/api/living/reconstruction'
+          request.url?.startsWith('/api/meta/image') || request.url === '/api/living/reconstruction' || request.url === '/api/anatomy/observe'
           ? MAX_IMAGE_BODY_BYTES
           : request.url === '/api/experiments/preview' || request.url === '/api/conversation'
             ? MAX_PREVIEW_BODY_BYTES
@@ -599,6 +603,45 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
           writeJson(response, status, { contract: IMAGE_RESPONSE_CONTRACT, error: { code, message: message.replace(/^(?:JSON_INVALID|SCHEMA_INVALID):\s*/, '') }, failedStage, completedStages: stageLogs.map((item) => item.stage), meta }, origin);
           return;
         }
+      }
+      if (request.url === '/api/anatomy/observe') {
+        const candidate = body as Record<string, unknown>;
+        if (Object.keys(candidate).length !== 2 || !Object.hasOwn(candidate, 'imageDataUrl') || !Object.hasOwn(candidate, 'sourceReference')) {
+          writeJson(response, 400, { error: { code: 'ANATOMY_REQUEST_INVALID', message: 'Esperados apenas imageDataUrl e sourceReference.' } }, origin);
+          return;
+        }
+        if (typeof candidate.sourceReference !== 'string' || !candidate.sourceReference.trim() || candidate.sourceReference.length > 500) {
+          writeJson(response, 400, { error: { code: 'ANATOMY_SOURCE_INVALID', message: 'sourceReference é obrigatório e tem limite de 500 caracteres.' } }, origin);
+          return;
+        }
+        let image;
+        try { image = validateAnatomyImageDataUrl(candidate.imageDataUrl); }
+        catch (error) { writeJson(response, 400, { error: { code: 'ANATOMY_IMAGE_INVALID', message: error instanceof Error ? error.message : 'Imagem inválida.' } }, origin); return; }
+        const peer = request.socket.remoteAddress ?? 'unknown';
+        for (const [key, timestamps] of imageRequests) if (!timestamps.some((time) => Date.now() - time < 60_000)) imageRequests.delete(key);
+        const rateKey = `anatomy:${peer}`;
+        const recent = (imageRequests.get(rateKey) ?? []).filter((time) => Date.now() - time < 60_000);
+        if (recent.length >= 4) { writeJson(response, 429, { error: { code: 'ANATOMY_RATE_LIMITED', message: 'Limite de observações anatómicas atingido.' } }, origin); return; }
+        imageRequests.set(rateKey, [...recent, Date.now()]);
+        const abort = new AbortController();
+        request.once('aborted', () => abort.abort());
+        response.once('close', () => { if (!response.writableEnded) abort.abort(); });
+        try {
+          reserveMetaCall();
+          const observed = await observeHeartIllustration(image.dataUrl, candidate.sourceReference, apiKey!, options.fetchImpl, abort.signal);
+          console.info(JSON.stringify({ event: 'anatomy.observe', status: 'success', requestId: observed.meta.requestId, httpStatus: observed.meta.httpStatus, latencyMs: observed.meta.latencyMs, sourceSha256: observed.observation.source.sha256 }));
+          writeJson(response, 200, { contract: 'unfold.anatomy_observation.v1', status: 'review_required', observation: observed.observation, meta: observed.meta }, origin);
+        } catch (error) {
+          if (abort.signal.aborted) return;
+          if (error instanceof MetaCallBudgetExceeded) { writeJson(response, 429, { error: { code: 'META_CALL_BUDGET_EXHAUSTED', message: error.message }, metaCallBudget: diagnostics().metaCallBudget }, origin); return; }
+          if (error instanceof MetaConcurrencyExceeded) { writeJson(response, 429, { error: { code: 'META_CONCURRENCY_LIMIT', message: error.message } }, origin); return; }
+          const log = error && typeof error === 'object' && 'log' in error ? (error.log as MetaCallLog) : undefined;
+          const schemaError = error instanceof Error && error.message.startsWith('ANATOMY_');
+          const code = schemaError ? 'ANATOMY_SCHEMA_INVALID' : error instanceof MetaApiError ? 'ANATOMY_META_FAILED' : 'ANATOMY_OBSERVATION_FAILED';
+          console.info(JSON.stringify({ event: 'anatomy.observe', status: 'error', code, requestId: log?.requestId, httpStatus: log?.httpStatus }));
+          writeJson(response, log?.httpStatus && log.httpStatus >= 400 ? log.httpStatus : 502, { error: { code, message: schemaError ? 'A saída anatómica não passou o contrato estrito.' : 'A observação anatómica não foi aceite.' }, meta: log }, origin);
+        }
+        return;
       }
       if (request.url === '/api/living/reconstruction') {
         const candidate = body as Record<string, unknown>;

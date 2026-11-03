@@ -22,6 +22,9 @@ switch (window.location.pathname) {
   case '/cinema':
     void import('./living/cinema/cinema-page').then(({ mountCinema }) => mountCinema(app));
     break;
+  case '/anatomy':
+    void import('./anatomy/page').then(({ mountAnatomyDomain }) => mountAnatomyDomain(app));
+    break;
   case '/living':
     void import('./living/workspace-design/page').then(({ mountLivingWorkspace }) => mountLivingWorkspace(app));
     break;
