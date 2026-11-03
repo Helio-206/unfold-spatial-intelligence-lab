@@ -70,7 +70,7 @@ const waitPhase = (page, p) => page.waitForFunction((p) => window.__experience.p
   await page.evaluate(() => window.__experience.dispatch({ type: 'focus', id: 'e_counterweight' }));
   check('an unknown entity offers no Confirmar', (await page.locator('[data-review="confirm"]').count()) === 0);
   await page.locator('[data-prop-input="massa"]').fill('3800 kg');
-  await page.locator('[data-review="save-property"]').click();
+  await page.locator('[data-review="save-property"][data-name="massa"]').click();
   check('entered value is labelled "introduzido por si · não verificado"', /introduzido por si · não verificado/.test(await page.locator('.ux-props').textContent()));
   await shot(page, '1440-06-unknown-property', 300);
   // keyboard: → to move, C to confirm

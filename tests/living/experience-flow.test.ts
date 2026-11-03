@@ -88,6 +88,7 @@ describe('review: correction, unknown properties, gates', () => {
     const p = r.items.find((i) => i.id === 'e_counterweight')!.properties.find((x) => x.name === 'massa')!;
     expect(propertyState(p)).toBe('entered');
     expect(p.status).toBe('unknown');
+    expect(r.items.find((i) => i.id === 'e_counterweight')!.properties.filter((x) => /massa/i.test(x.name))).toHaveLength(1); // not listed twice
     r = reduceReview(r, { type: 'enter_property', id: 'e_boom', name: 'comprimento entre pinos', value: '9999 mm' });
     expect(r.items.find((i) => i.id === 'e_boom')!.properties.find((x) => x.name === 'comprimento entre pinos')!.value).toBe('5400 mm');
   });

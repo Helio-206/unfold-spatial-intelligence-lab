@@ -36,7 +36,8 @@ export function initialReview(obs: ExcavatorObservationV1): ReviewState {
       id: e.id, label: e.label, kind: e.kind, status: e.status, confidence: e.confidence, decision: 'pending', evidence: e.evidence.map((x) => x.detail), correction: null,
       properties: [
         ...e.features.map((f) => ({ name: f.name, value: f.value, status: f.status, evidence: f.evidence[0]?.detail ?? null, entered: null })),
-        ...dims(e.id).filter((d) => !e.features.some((f) => f.name.toLowerCase() === d.name.toLowerCase())),
+        // a dimension that restates a feature ("Massa do contrapeso" vs "massa") is the same property: show it once
+        ...dims(e.id).filter((d) => !e.features.some((f) => d.name.toLowerCase().includes(f.name.toLowerCase()))),
       ],
     })),
     focusId: obs.entities.find((e) => e.status === 'hypothesis')?.id ?? obs.entities[0]?.id ?? null,
