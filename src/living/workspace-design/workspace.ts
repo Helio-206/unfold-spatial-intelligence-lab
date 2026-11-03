@@ -30,7 +30,7 @@ import type { Assembly } from '../contracts';
 import { buildComponentRegistry, type CanonicalComponent, type ComponentRegistry } from '../visual-foundry/component-registry';
 import { buildExcavator, type ExcavatorModel, type PartPose } from '../visual-foundry/excavator/build';
 import { createMaterialLibrary, type MaterialLibrary } from '../visual-foundry/materials';
-import { framePoses, loadFixturePreview, referencePoses, type FixturePreview } from '../visual-foundry/poses';
+import { framePoses, loadFixturePreview, type FixturePreview } from '../visual-foundry/poses';
 import { FoundryRenderer, type RenderProfileName } from '../visual-foundry/renderer';
 import { askAgent, buildAgentRequest, type AgentClientOptions, type HistoryItem } from './agent-client';
 import { CameraArbiter } from './camera-arbiter';
@@ -38,8 +38,9 @@ import { CameraDirector } from './camera-director';
 import { fitBoxDistance } from './framing';
 import { SceneController } from './scene-controller';
 import { DigitalHand, HAND_AGENCY, type HandState, type HandView, type SafeInsets } from './digital-hand';
-import { planExtendExperiment, type ExperimentPlan } from './experiments';
 import { groundOutcome, type Grounded } from './grounding';
+import { WorkspaceEngineeringSession } from './engineering-session';
+import { planExtendExperiment } from './experiments';
 import { initialWorkspaceState, reduceWorkspace, visibility, type Message, type WorkspaceAction, type WorkspaceState } from './workspace-state';
 
 export type WorkspaceOptions = {
@@ -50,6 +51,8 @@ export type WorkspaceOptions = {
   preserveDrawingBuffer?: boolean;
   pixelRatio?: number;
   logoSrc?: string;
+  /** Explicitly labelled historical demonstration; normal workspace uses the engine. */
+  fixtureDemo?: boolean;
 };
 
 const TRANSIENT_MS = 9000;
@@ -75,7 +78,16 @@ export class SpatialWorkspace {
   private selectedId: string | null = null;
   private inspectorOpen = false;
   private evidenceOpen = false;
-  private poseLabel: 'reference' | 'fixture-preview' = 'reference';
+  private poseLabel: 'reference' | 'fixture-preview' | 'engine' = 'reference';
+  private readonly engineering: WorkspaceEngineeringSession;
+  private engineProposal: { token: string; actuatorId: string; target: number; durationS: number } | null = null;
+  private engineRaf = 0;
+  private engineLast = 0;
+  private seekDragging = false;
+  private enginePausedByPage = false;
+  private handHiddenForMissingPose = false;
+  private engineMessageId: string | null = null;
+  private engineCompletion: ((status: 'completed' | 'cancelled') => void) | null = null;
   private transientTimer = 0;
   private insetTween: gsap.core.Tween | null = null;
   private currentInsets: SafeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
@@ -90,9 +102,13 @@ export class SpatialWorkspace {
   readonly reducedMotion: boolean;
   readonly agentOptions: AgentClientOptions;
   private readonly el: Record<string, HTMLElement> = {};
+  private readonly options: WorkspaceOptions;
 
-  constructor(host: HTMLElement, private readonly options: WorkspaceOptions) {
+  constructor(host: HTMLElement, options: WorkspaceOptions) {
+    this.options = { ...options, assembly: structuredClone(options.assembly) };
+    options = this.options;
     applyMotionTokens();
+    this.engineering = new WorkspaceEngineeringSession(options.assembly);
     this.reducedMotion = options.reducedMotion ?? globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     this.agentOptions = options.agent ?? { mode: 'auto' };
     this.root = document.createElement('div');
@@ -114,7 +130,7 @@ export class SpatialWorkspace {
     this.previews = [loadFixturePreview()];
     this.director = new CameraDirector(this.foundry.camera, this.el.stage!, this.arbiter, () => this.foundry.requestRender());
     this.director.reducedMotion = this.reducedMotion;
-    this.scene.setPoses(referencePoses().poses);
+    this.showEngineFrame();
 
     this.disposers.push(this.foundry.onBeforeRender(() => { if (this.director.update()) { this.foundry.markMotion(); this.foundry.requestRender(); } }));
     this.disposers.push(this.foundry.onAfterRender(() => this.updateHandOverlay()));
@@ -137,7 +153,7 @@ export class SpatialWorkspace {
         <div class="uw-hand-label uw-surface" data-el="handLabel"></div>
       </div>
       <div class="uw-user-hand" data-el="userHand" hidden></div>
-      <header class="uw-brand" data-el="brand"><img src="${esc(this.options.logoSrc ?? '/design-system/logos/unfold-mark-on-dark.svg')}" alt="UNFOLD"><span class="u-label">${esc(this.options.assembly.id)} · fixture</span></header>
+      <header class="uw-brand" data-el="brand"><img src="${esc(this.options.logoSrc ?? '/design-system/logos/unfold-mark-on-dark.svg')}" alt="UNFOLD"><span class="u-label">${esc(this.options.assembly.id)}${this.options.assembly.provenance.origin === 'fixture' ? ' · montagem sintética' : ''}</span></header>
       <nav class="uw-rail uw-surface" data-el="rail" aria-label="Ferramentas da cena">
         <div class="uw-rail-group">
           ${tool('toolFrame', focusIcon, 'Enquadrar', 'componente seleccionado ou máquina inteira')}
@@ -211,6 +227,13 @@ export class SpatialWorkspace {
       else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); this.director.reset(); }
       else if (e.key === '/') { e.preventDefault(); if (this.state.mode === 'focus') this.dispatch({ type: 'exit_focus' }); this.el.input!.focus(); }
     });
+    on(window, 'pagehide', () => { this.enginePausedByPage = this.engineering.state().playing; if (this.enginePausedByPage) this.pauseEngine(); });
+    on(window, 'pageshow', (event: Event) => {
+      if (!(event as PageTransitionEvent).persisted || this.disposed) return;
+      this.foundry.resize(); this.foundry.requestRender();
+      if (this.enginePausedByPage) this.notice('engine-restored', 'A experiência ficou pausada durante a navegação. Retome quando quiser.', 'info');
+      this.enginePausedByPage = false;
+    });
     // rail
     on(this.el.toolFrame!, 'click', () => this.frameSelection());
     on(this.el.toolIsolate!, 'click', () => this.toggleIsolate());
@@ -251,6 +274,29 @@ export class SpatialWorkspace {
       else if (act === 'evidence') { this.evidenceOpen = !this.evidenceOpen; this.renderInspector(); this.renderRail(); }
       else if (act === 'review') this.dispatch({ type: 'set_mode', mode: 'conversation' });
       else if (act === 'clear-notice') this.dispatch({ type: 'clear_notice', id: arg });
+      else if (act === 'engine-preview') this.previewEngineMove();
+      else if (act === 'engine-approve') this.approveEngineMove();
+      else if (act === 'engine-reject') { if (this.engineProposal) this.engineering.reject(this.engineProposal.token); this.engineProposal = null; this.renderInspector(); }
+      else if (act === 'engine-pause') this.pauseEngine();
+      else if (act === 'engine-resume') this.resumeEngine();
+      else if (act === 'engine-cancel') this.cancelEngine();
+      else if (act === 'engine-reset') this.resetPose();
+    });
+    on(this.root, 'change', (e: Event) => {
+      const input = e.target as HTMLInputElement;
+      if (input.dataset.act !== 'engine-seek') return;
+      this.pauseEngine(); this.cancelPendingEngineCards(); this.engineering.seek(input.valueAsNumber); this.engineProposal = null;
+      if (this.showEngineFrame() && this.engineering.state().timeS >= this.engineering.state().durationS) this.finishEngineMessage();
+      this.renderInspector();
+    });
+    on(this.root, 'pointerdown', (e: Event) => { if ((e.target as HTMLElement).dataset?.act === 'engine-seek') this.seekDragging = true; });
+    on(window, 'pointerup', () => { this.seekDragging = false; });
+    on(window, 'pointercancel', () => { this.seekDragging = false; });
+    on(this.root, 'input', (e: Event) => {
+      const input = e.target as HTMLInputElement;
+      if (input.dataset.el !== 'engineSlider') return;
+      const target = this.el.inspector!.querySelector<HTMLInputElement>('[data-el="engineTarget"]');
+      if (target) target.value = input.value;
     });
     this.voice = new BrowserVoiceInput({
       onStatus: (status, message) => { this.setComposerState(status === 'LISTENING' ? 'LISTENING' : status === 'ERROR' ? 'ERROR' : 'IDLE', message); (this.el.mic as HTMLButtonElement).setAttribute('aria-pressed', String(status === 'LISTENING')); },
@@ -321,9 +367,9 @@ export class SpatialWorkspace {
 
   private proposalHtml(m: Message): string {
     const p = m.proposal; if (!p) return '';
-    const actions = p.state === 'pending' && p.kind === 'preview_fixture'
+    const actions = p.state === 'pending' && (p.kind === 'preview_fixture' || p.kind === 'engine_move')
       ? `<div class="uw-proposal-actions"><button type="button" class="u-btn u-btn--primary" data-act="approve" data-arg="${esc(m.id)}">${esc(p.approveLabel)}</button><button type="button" class="u-btn u-btn--outline" data-act="reject" data-arg="${esc(m.id)}">Rejeitar</button></div>`
-      : `<p class="u-label">${p.state === 'running' ? 'a mostrar a pré-visualização' : p.state === 'done' ? 'pré-visualização mostrada · fixture' : p.state === 'cancelled' ? 'interrompida · nada concluído' : p.state === 'failed' ? 'sem pré-visualização · nada executado' : p.state === 'rejected' ? 'rejeitada · nada mudou' : 'sem acção disponível'}</p>`;
+      : `<p class="u-label">${p.state === 'running' ? 'movimento em execução' : p.state === 'done' ? (p.kind === 'engine_move' ? 'movimento aprovado · motor' : 'pré-visualização mostrada · fixture') : p.state === 'cancelled' ? 'interrompida · nada concluído' : p.state === 'failed' ? 'sem execução' : p.state === 'rejected' ? 'rejeitada · nada mudou' : 'sem acção disponível'}</p>`;
     return `<div class="uw-proposal" data-state="${p.state}"><h3>${esc(p.title)}</h3><p>${esc(p.detail)}</p>${actions}</div>`;
   }
 
@@ -381,7 +427,7 @@ export class SpatialWorkspace {
     const a = this.options.assembly.actuators.find((x) => x.id === c.id);
     if (a && a.kind === 'hydraulic_cylinder') {
       rows.push(['Curso', `${fmt(a.stroke.min.value)} – ${fmt(a.stroke.max.value)} m`], ['Curso de referência', `${fmt(a.referenceStroke.value)} m`], ['Velocidade máx.', a.maxRate ? `${fmt(a.maxRate.value, 2)} m/s` : 'desconhecida']);
-      rows.push(['Diâmetro interno', a.hydraulics.boreDiameter ? `${fmt(a.hydraulics.boreDiameter.value)} m` : 'desconhecido'], ['Força', 'desconhecida · motor não ligado']);
+      rows.push(['Diâmetro interno', a.hydraulics.boreDiameter ? `${fmt(a.hydraulics.boreDiameter.value)} m` : 'desconhecido'], ['Força', 'desconhecida']);
       const joint = this.options.assembly.joints.find((j) => j.id === a.drives.jointId);
       rows.push(['Acciona', joint ? joint.id : a.drives.jointId]);
     } else if (c.kind === 'part') {
@@ -394,9 +440,15 @@ export class SpatialWorkspace {
     const unc = c.validation === 'verified' || c.validation === 'corrected' ? '' : `<span class="u-chip u-chip--uncertain">${esc(c.origin)} · ${esc(c.validation === 'unreviewed' ? 'não verificado' : c.validation)}</span>`;
     const source = this.options.assembly.sources.find((s) => c.evidence.some((e) => e.sourceId === s.id));
     const evidence = this.evidenceOpen ? `<ul class="uw-evidence" aria-label="Evidência">${c.evidence.map((e) => `<li><code>${esc(e.sourceId)}</code>${e.locator ? ` · <code>${esc(e.locator)}</code>` : ''}<br>${esc(e.excerpt ?? '')}</li>`).join('') || '<li>Sem evidência registada.</li>'}${source ? `<li>${esc(source.title)}</li>` : ''}</ul>` : '';
+    const engineState = this.engineering.state();
+    let current: ReturnType<WorkspaceEngineeringSession['frame']>['actuators'][number] | undefined;
+    try { current = this.engineering.frame().actuators.find((item) => item.actuatorId === c.id); } catch { current = undefined; }
+    const proposal = this.engineProposal?.actuatorId === c.id ? this.engineProposal : null;
+    const engineControls = !this.options.fixtureDemo && a?.kind === 'hydraulic_cylinder' ? `<div class="uw-inspector-actions"><label>Curso alvo (m) <input data-el="engineTarget" ${current ? '' : 'disabled'} type="number" step="0.001" min="${a.stroke.min.value}" max="${a.stroke.max.value}" value="${current?.value ?? ''}"></label><label>Ajustar curso <input data-el="engineSlider" ${current ? '' : 'disabled'} type="range" step="0.001" min="${a.stroke.min.value}" max="${a.stroke.max.value}" value="${current?.value ?? ''}"></label><button type="button" class="uw-link" data-act="engine-preview" ${current ? '' : 'disabled'}>Pré-visualizar movimento</button></div><p class="u-label" data-el="engineStatus">Motor · curso actual ${current ? `${fmt(current.value)} m` : 'desconhecido'} · ${engineState.timeS.toFixed(2)} / ${engineState.durationS.toFixed(2)} s · ${engineState.playing ? 'em execução' : 'pausado'}</p>${proposal ? `<p>Proposta: ${fmt(proposal.target)} m, duração ${proposal.durationS.toFixed(2)} s.</p><div class="uw-inspector-actions"><button type="button" class="uw-link" data-act="engine-approve">Confirmar movimento</button><button type="button" class="uw-link" data-act="engine-reject">Rejeitar</button></div>` : ''}<label>Tempo da experiência <input type="range" data-act="engine-seek" min="0" max="${engineState.durationS}" step="0.001" value="${engineState.timeS}" ${engineState.durationS === 0 ? 'disabled' : ''}></label><div class="uw-inspector-actions"><button type="button" class="uw-link" data-act="engine-pause">Pausar</button><button type="button" class="uw-link" data-act="engine-resume">Retomar</button><button type="button" class="uw-link" data-act="engine-cancel">Cancelar movimento</button><button type="button" class="uw-link" data-act="engine-reset">Repor referência</button></div>` : '';
     el.innerHTML = `<div class="uw-transient-head"><span class="u-label">${esc(c.kind === 'actuator' ? 'actuador' : c.kind === 'joint' ? 'articulação' : 'parte')} · ${esc(c.id)}</span><button type="button" class="uw-close" data-act="close-inspector" aria-label="Fechar inspector">${icon(xIcon)}</button></div>
-      <h2>${esc(c.label)}</h2><div class="uw-chips">${unc}${this.poseLabel === 'fixture-preview' ? '<span class="u-chip u-chip--uncertain">pose · fixture</span>' : '<span class="u-label">pose de referência</span>'}</div>
+      <h2>${esc(c.label)}</h2><div class="uw-chips">${unc}${this.poseLabel === 'fixture-preview' ? '<span class="u-chip u-chip--uncertain">pose · fixture</span>' : this.poseLabel === 'engine' ? `<span class="u-label">pose calculada pelo motor${this.options.assembly.provenance.origin === 'fixture' ? ' · montagem sintética' : ''}</span>` : '<span class="u-label">pose de referência</span>'}${this.options.assembly.provenance.origin === 'fixture' ? '<span class="u-chip u-chip--uncertain">montagem sintética</span>' : ''}</div>
       ${rows.length ? `<dl class="u-readout">${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}
+      ${engineControls}
       <div class="uw-inspector-actions"><button type="button" class="uw-link" data-act="frame">enquadrar</button><button type="button" class="uw-link" data-act="isolate">${this.scene.isolatedId ? 'mostrar tudo' : 'isolar'}</button>${c.role === 'hydraulic_cylinder' ? '<button type="button" class="uw-link" data-act="simulate">simular</button>' : ''}<button type="button" class="uw-link" data-act="evidence" aria-pressed="${this.evidenceOpen}">evidência</button></div>${evidence}`;
   }
 
@@ -499,6 +551,7 @@ export class SpatialWorkspace {
 
   /** Points the Digital Hand at a canonical component; moves the camera only if the target is not usable from here. */
   pointAt(id: string, state: Exclude<HandState, 'hidden'>, by: 'assistant' | 'user_tool', note: string | null = null): { resolved: boolean; cameraMoved: boolean; cameraReason?: string } {
+    if (!this.model.root.visible) { this.handHiddenForMissingPose = true; this.hand.release(); this.updateHandOverlay(); return { resolved: false, cameraMoved: false }; }
     const r = this.hand.attend(id, state, note);
     if (r.status !== 'resolved') { this.scene.highlight(null); this.updateHandOverlay(); return { resolved: false, cameraMoved: false }; }
     this.scene.highlight(r.component);
@@ -515,6 +568,7 @@ export class SpatialWorkspace {
   }
 
   handView(): HandView | null {
+    if (!this.model.root.visible) { this.handHiddenForMissingPose = true; this.hand.release(); }
     const viewport = { width: this.root.clientWidth, height: this.root.clientHeight };
     return this.hand.view(this.foundry.camera, viewport, this.currentInsets, this.scene.canonicalMeshes());
   }
@@ -591,30 +645,35 @@ export class SpatialWorkspace {
     this.dispatch({ type: 'processing', value: true });
     this.setComposerState('PROCESSING', 'A interpretar com o contexto da cena.');
     this.pending?.abort(); const abort = new AbortController(); this.pending = abort;
-    const request = buildAgentRequest(text, this.registry, this.selectedId, this.history);
+    const request = buildAgentRequest(text, this.registry, this.selectedId, this.history, { engineConnected: !this.options.fixtureDemo });
     const outcome = await askAgent(request, this.agentOptions, abort.signal);
     // superseded or cancelled: the newer request owns processing state and the composer; this one touches nothing
     if (abort.signal.aborted || this.pending !== abort || this.disposed) return groundOutcome(outcome, this.registry, request.scene?.selectedId ?? null);
     this.pending = null;
     const g = groundOutcome(outcome, this.registry, request.scene?.selectedId ?? null);
-    this.history = [...this.history, { role: 'user' as const, text }, { role: 'assistant' as const, text: g.text }].slice(-6);
     // a supported experiment, decided locally (never by the model)
-    let plan: ExperimentPlan | null = null;
-    if (/\b(estend\w*|extend\w*)\b/i.test(text.normalize('NFD').replace(/[̀-ͯ]/g, '')) && g.primary && !g.blocked && !g.clarification) plan = planExtendExperiment(g.primary.id, this.registry, this.previews);
+    let plan: ReturnType<SpatialWorkspace['planExperiment']> | null = null;
+    if (/\b(estend\w*|extend\w*)\b/i.test(text.normalize('NFD').replace(/[̀-ͯ]/g, '')) && g.primary && !g.blocked && !g.clarification) {
+      plan = /\d/.test(text) && !this.options.fixtureDemo
+        ? { kind: 'unavailable', actuatorId: g.primary.id, title: 'Definir curso', detail: 'Para um valor numérico, indique o curso alvo no controlo do actuador e confirme a proposta.' }
+        : this.planExperiment(g.primary.id);
+    }
+    const safeText = this.options.fixtureDemo ? g.text : this.engineExplanation(g.primary, Boolean(g.clarification), Boolean(g.blocked));
+    this.history = [...this.history, { role: 'user' as const, text }, { role: 'assistant' as const, text: safeText }].slice(-6);
     const message: Message = {
-      id: newId('a'), role: 'assistant', text: g.clarification ? `${g.text} ${g.clarification}` : g.text, source: g.source === 'none' ? 'local' : g.source, sourceNote: g.source === 'none' ? 'Erro · nada executado' : g.sourceNote,
+      id: newId('a'), role: 'assistant', text: plan ? (plan.kind === 'engine_move' ? 'O motor avaliou a proposta; confirme antes de executar.' : plan.kind === 'preview_fixture' ? g.text : plan.detail) : this.options.fixtureDemo && g.clarification ? `${g.text} ${g.clarification}` : safeText, source: this.options.fixtureDemo && g.source !== 'none' ? g.source : 'local', sourceNote: this.options.fixtureDemo ? (g.source === 'none' ? 'Erro · nada executado' : g.sourceNote) : 'Interpretação do pedido · valores do motor',
       evidence: g.targets.map((t) => ({ componentId: t.id, label: t.status === 'resolved' ? t.component.label : t.id, status: t.status })),
-      proposal: plan ? { id: newId('p'), title: plan.title, detail: plan.detail, kind: plan.kind, approveLabel: 'Pré-visualizar fixture', state: plan.kind === 'preview_fixture' ? 'pending' : 'done', actuatorId: plan.actuatorId } : null,
+      proposal: plan ? { id: newId('p'), title: plan.title, detail: plan.detail, kind: plan.kind, approveLabel: plan.kind === 'preview_fixture' ? 'Pré-visualizar fixture' : 'Confirmar movimento', state: plan.kind === 'unavailable' ? 'failed' : 'pending', actuatorId: plan.actuatorId, engineToken: plan.token } : null,
       error: g.blocked ? `${g.blocked.code} · ${g.blocked.message}` : null, at: Date.now(),
     };
     this.dispatch({ type: 'processing', value: false });
     this.dispatch({ type: 'assistant_message', message });
     if (outcome.status === 'error' && !g.blocked?.code.startsWith('SPATIAL_AGENT_ACTION')) this.notice('agent-error', `Assistente: ${outcome.code}. Nada foi executado.`, 'critical');
-    this.setComposerState(g.blocked ? 'ERROR' : 'COMPLETE', g.blocked ? 'Nada foi executado.' : g.source === 'fixture' ? 'Resposta de fixture (sem modelo).' : 'Resposta do Muse Spark.');
+    this.setComposerState(g.blocked ? 'ERROR' : 'COMPLETE', g.blocked ? 'Nada foi executado.' : this.options.fixtureDemo ? (g.source === 'fixture' ? 'Resposta de fixture (sem modelo).' : 'Resposta do Muse Spark.') : 'Interpretação fundamentada; valores do motor.');
     // spatial act
     if (g.blocked) { if (g.primary) this.pointAt(g.primary.id, 'blocked', 'assistant', g.blocked.message); else this.hand.release(); }
     else if (g.primary) {
-      const state: HandState = plan?.kind === 'preview_fixture' ? 'awaiting' : g.act === 'select' ? 'select' : g.act === 'inspect' ? 'inspect' : 'point';
+      const state: HandState = plan && plan.kind !== 'unavailable' ? 'awaiting' : g.act === 'select' ? 'select' : g.act === 'inspect' ? 'inspect' : 'point';
       if (g.act === 'select' || g.act === 'inspect') this.setSelectedComponent(g.primary, g.act === 'inspect');
       const res = this.pointAt(g.primary.id, state, 'assistant', res0(plan));
       if (!res.cameraMoved && res.cameraReason === 'user_active') this.setComposerState('COMPLETE', 'Câmara mantida: está a interagir com a vista.');
@@ -623,23 +682,71 @@ export class SpatialWorkspace {
     } else this.hand.release();
     this.foundry.requestRender();
     return g;
-    function res0(p: ExperimentPlan | null): string | null { return p?.kind === 'preview_fixture' ? 'Proposta: precisa da sua aprovação.' : null; }
+    function res0(p: ReturnType<SpatialWorkspace['planExperiment']> | null): string | null { return p && p.kind !== 'unavailable' ? 'Proposta: precisa da sua aprovação.' : null; }
   }
 
   /** Offer the extend experiment for a component without going through the model (Simulate tool). */
-  offerExperiment(componentId: string | null, _text: string | null): ExperimentPlan {
-    const plan = planExtendExperiment(componentId, this.registry, this.previews);
-    const m: Message = { id: newId('a'), role: 'assistant', text: plan.kind === 'preview_fixture' ? 'Experiência suportada para o cilindro seleccionado.' : plan.detail, source: 'local', sourceNote: 'Planeador local · determinístico', evidence: plan.actuatorId ? [{ componentId: plan.actuatorId, label: this.registry.get(plan.actuatorId)?.label ?? plan.actuatorId, status: 'resolved' }] : [], proposal: { id: newId('p'), title: plan.title, detail: plan.detail, kind: plan.kind, approveLabel: 'Pré-visualizar fixture', state: plan.kind === 'preview_fixture' ? 'pending' : 'done', actuatorId: plan.actuatorId }, error: null, at: Date.now() };
+  offerExperiment(componentId: string | null, _text: string | null): ReturnType<SpatialWorkspace['planExperiment']> {
+    const plan = this.planExperiment(componentId ?? '');
+    const m: Message = { id: newId('a'), role: 'assistant', text: plan.kind === 'engine_move' ? 'O motor avaliou a proposta; confirme antes de executar.' : plan.kind === 'preview_fixture' ? 'Experiência suportada para o cilindro seleccionado.' : plan.detail, source: 'local', sourceNote: plan.kind === 'preview_fixture' ? 'Demonstração · fixture' : 'Planeador local · motor de engenharia', evidence: plan.actuatorId ? [{ componentId: plan.actuatorId, label: this.registry.get(plan.actuatorId)?.label ?? plan.actuatorId, status: 'resolved' }] : [], proposal: { id: newId('p'), title: plan.title, detail: plan.detail, kind: plan.kind, approveLabel: plan.kind === 'preview_fixture' ? 'Pré-visualizar fixture' : 'Confirmar movimento', state: plan.kind === 'unavailable' ? 'failed' : 'pending', actuatorId: plan.actuatorId, engineToken: plan.token }, error: null, at: Date.now() };
     this.dispatch({ type: 'assistant_message', message: m });
-    if (plan.actuatorId) this.pointAt(plan.actuatorId, plan.kind === 'preview_fixture' ? 'awaiting' : 'blocked', 'user_tool', plan.kind === 'preview_fixture' ? 'Proposta: precisa da sua aprovação.' : 'Sem pré-visualização disponível.');
+    if (plan.actuatorId) this.pointAt(plan.actuatorId, plan.kind !== 'unavailable' ? 'awaiting' : 'blocked', 'user_tool', plan.kind !== 'unavailable' ? 'Proposta: precisa da sua aprovação.' : plan.detail);
     return plan;
   }
 
   /** Approve a pending proposal (same path as the button). */
   approveProposal(messageId: string): Promise<void> { return this.approve(messageId); }
 
+  private planExperiment(componentId: string): { kind: 'engine_move' | 'preview_fixture' | 'unavailable'; actuatorId: string | null; title: string; detail: string; token?: string } {
+    if (this.options.fixtureDemo) return planExtendExperiment(componentId, this.registry, this.previews);
+    return this.planEngineExperiment(componentId);
+  }
+
+  private planEngineExperiment(componentId: string): { kind: 'engine_move' | 'unavailable'; actuatorId: string | null; title: string; detail: string; token?: string } {
+    const component = this.registry.get(componentId);
+    const cylinder = component?.role === 'hydraulic_cylinder' ? component : component ? this.registry.ownerOfPart(component.id) : undefined;
+    const actuator = this.options.assembly.actuators.find((item) => item.id === cylinder?.id);
+    if (!cylinder || actuator?.kind !== 'hydraulic_cylinder') return { kind: 'unavailable', actuatorId: null, title: 'Sem experiência', detail: 'Seleccione um cilindro hidráulico.' };
+    let current: number | undefined;
+    try { current = this.engineering.frame().actuators.find((item) => item.actuatorId === actuator.id)?.value; } catch { current = undefined; }
+    if (current === undefined || this.playback) return { kind: 'unavailable', actuatorId: actuator.id, title: 'Sem experiência', detail: 'O estado do actuador não está disponível.' };
+    const target = Math.min(actuator.stroke.max.value, current + 0.05);
+    this.cancelPendingEngineCards();
+    const preview = this.engineering.preview(actuator.id, target);
+    this.renderInspector();
+    if (!preview.ok) return { kind: 'unavailable', actuatorId: actuator.id, title: 'Movimento bloqueado', detail: `${preview.code} · ${preview.message}` };
+    this.notice('engine-error', null);
+    return { kind: 'engine_move', actuatorId: actuator.id, title: `Estender ${cylinder.label}`, detail: `Curso ${fmt(current)} → ${fmt(target)} m; duração ${preview.durationS.toFixed(2)} s. O motor validou a trajectória por amostragem; nada mudou.`, token: preview.token };
+  }
+
+  private engineExplanation(component: CanonicalComponent | null, clarification: boolean, blocked: boolean): string {
+    if (clarification) return 'Indique qual o componente e a operação pretendida.';
+    if (blocked) return 'Não foi possível fundamentar a acção no componente seleccionado; nada foi executado.';
+    const failure = this.state.notices.find((notice) => notice.id === 'engine-error');
+    if (failure) return `Último bloqueio do motor: ${failure.text}`;
+    if (!component) return 'Não foi possível identificar um componente canónico para esta pergunta.';
+    let actuator: ReturnType<WorkspaceEngineeringSession['frame']>['actuators'][number] | undefined;
+    try { actuator = this.engineering.frame().actuators.find((item) => item.actuatorId === component.id); } catch { return 'Quadro do motor indisponível; nenhuma propriedade física foi confirmada.'; }
+    if (!actuator) return `${component.label} está identificado na montagem. Propriedades não calculadas pelo motor permanecem desconhecidas.`;
+    const force = actuator.forceStatus === 'computed' && actuator.forceN !== null ? `${fmt(actuator.forceN)} N` : 'desconhecida';
+    return `${component.label}: valor actual ${fmt(actuator.value)} ${actuator.unit}; força ${force}. O resultado vem do quadro validado do motor.`;
+  }
+
   private async approve(messageId: string): Promise<void> {
     const m = this.state.messages.find((x) => x.id === messageId);
+    if (m?.proposal?.state === 'pending' && m.proposal.kind === 'engine_move') {
+      if (!m.proposal.engineToken || this.playback) { this.dispatch({ type: 'proposal_state', messageId, state: 'failed' }); return; }
+      const result = this.engineering.approve(m.proposal.engineToken);
+      if (!result.ok) { this.dispatch({ type: 'proposal_state', messageId, state: 'failed' }); this.notice('engine-error', result.message, 'critical'); return; }
+      this.engineProposal = null; this.engineMessageId = messageId; this.poseLabel = 'engine';
+      this.approvedRunning = true;
+      const completion = new Promise<'completed' | 'cancelled'>((resolve) => { this.engineCompletion = resolve; });
+      this.dispatch({ type: 'proposal_state', messageId, state: 'running' });
+      this.notice('pose', 'Movimento calculado pelo motor; propriedades físicas desconhecidas continuam desconhecidas.', 'critical');
+      if (this.reducedMotion) { this.engineering.advance(this.engineering.state().durationS); if (this.showEngineFrame()) this.finishEngineMessage(); }
+      else { this.engineLast = 0; this.runEngine(); }
+      this.renderInspector(); await completion; return;
+    }
     if (!m?.proposal || m.proposal.state !== 'pending' || m.proposal.kind !== 'preview_fixture') return;
     const actuatorId = m.proposal.actuatorId;
     const preview = actuatorId ? this.previews.find((p) => p.actuatorId === actuatorId) : undefined;
@@ -698,6 +805,8 @@ export class SpatialWorkspace {
   }
 
   private reject(messageId: string): void {
+    const proposal = this.state.messages.find((message) => message.id === messageId)?.proposal;
+    if (proposal?.kind === 'engine_move' && proposal.engineToken) this.engineering.reject(proposal.engineToken);
     this.dispatch({ type: 'proposal_state', messageId, state: 'rejected' });
     if (this.hand.state === 'awaiting' || this.hand.state === 'proposal') this.hand.setState('attention', 'Proposta rejeitada. Nada mudou.');
     this.foundry.requestRender();
@@ -723,10 +832,126 @@ export class SpatialWorkspace {
 
   resetPose(): void {
     this.playback?.cancel();
+    if (this.engineMessageId) { this.dispatch({ type: 'proposal_state', messageId: this.engineMessageId, state: 'cancelled' }); this.engineMessageId = null; }
+    this.approvedRunning = false; this.engineCompletion?.('cancelled'); this.engineCompletion = null;
+    cancelAnimationFrame(this.engineRaf); this.engineRaf = 0; this.engineLast = 0;
+    this.cancelPendingEngineCards();
+    this.engineering.reset(); this.engineProposal = null; this.model.root.visible = true;
     this.poseLabel = 'reference';
-    this.scene.setPoses(referencePoses().poses);
     this.notice('pose', null);
+    this.notice('engine-error', null); this.notice('engine-restored', null);
+    this.showEngineFrame();
     this.renderInspector();
+  }
+
+  /** A pending engine card is only actionable while its token is the session's single candidate; anything that discards the candidate must close the card. */
+  private cancelPendingEngineCards(): void {
+    for (const message of this.state.messages) if (message.proposal?.kind === 'engine_move' && message.proposal.state === 'pending') this.dispatch({ type: 'proposal_state', messageId: message.id, state: 'cancelled' });
+    this.engineProposal = null; // the inspector candidate shares the session's single token, so it dies with the others
+  }
+
+  private previewEngineMove(): void {
+    const actuatorId = this.selectedId;
+    const input = this.el.inspector!.querySelector<HTMLInputElement>('[data-el="engineTarget"]');
+    if (!actuatorId || !input || this.playback) return;
+    if (!this.engineering.frame().actuators.some((item) => item.actuatorId === actuatorId)) { this.notice('engine-error', 'O estado do actuador é desconhecido.', 'critical'); return; }
+    const target = input.valueAsNumber;
+    this.cancelPendingEngineCards();
+    const result = this.engineering.preview(actuatorId, target);
+    if (!result.ok) {
+      this.engineProposal = null;
+      this.notice('engine-error', `${result.code} · ${result.message}`, 'critical');
+      this.renderInspector(); return;
+    }
+    this.engineProposal = { token: result.token, actuatorId, target, durationS: result.durationS };
+    this.notice('engine-error', null);
+    this.renderInspector();
+  }
+
+  private approveEngineMove(): void {
+    const proposal = this.engineProposal;
+    if (!proposal || proposal.actuatorId !== this.selectedId || this.playback) return;
+    const result = this.engineering.approve(proposal.token); this.engineProposal = null;
+    if (!result.ok) { this.notice('engine-error', `${result.code} · ${result.message}`, 'critical'); this.renderInspector(); return; }
+    this.poseLabel = 'engine'; this.notice('pose', 'Movimento calculado pelo motor; propriedades físicas desconhecidas continuam desconhecidas.', 'critical');
+    if (this.reducedMotion) { this.engineering.advance(this.engineering.state().durationS); this.showEngineFrame(); this.renderInspector(); return; }
+    this.engineLast = 0; this.runEngine(); this.renderInspector();
+  }
+
+  private showEngineFrame(): boolean {
+    let frame: ReturnType<WorkspaceEngineeringSession['frame']>;
+    try { frame = this.engineering.frame(); }
+    catch {
+      this.engineering.pause(); this.model.root.visible = false; this.handHiddenForMissingPose = true; this.hand.release(); this.updateHandOverlay(); this.foundry.studio.updateContactShadow();
+      if (this.engineMessageId) { this.state = reduceWorkspace(this.state, { type: 'proposal_state', messageId: this.engineMessageId, state: 'failed' }); this.engineMessageId = null; }
+      this.state = reduceWorkspace(this.state, { type: 'notice', notice: { id: 'engine-error', severity: 'critical', text: 'Quadro do motor inválido ou incompatível; pose ocultada.' } });
+      this.renderNotices(visibility(this.state)); this.approvedRunning = false;
+      this.engineCompletion?.('cancelled'); this.engineCompletion = null; this.foundry.requestRender(); return false;
+    }
+    this.model.root.visible = frame.parts.length > 0;
+    if (frame.parts.length) {
+      this.scene.setPoses(frame.parts);
+      if (this.handHiddenForMissingPose && this.selectedId) this.hand.attend(this.selectedId, 'select');
+      this.handHiddenForMissingPose = false;
+    } else { this.handHiddenForMissingPose = true; this.hand.release(); this.updateHandOverlay(); this.foundry.studio.updateContactShadow(); }
+    const status = this.el.inspector!.querySelector<HTMLElement>('[data-el="engineStatus"]');
+    if (status) {
+      const actuator = frame.actuators.find((item) => item.actuatorId === this.selectedId);
+      const state = this.engineering.state();
+      status.textContent = `Motor · curso actual ${actuator ? `${fmt(actuator.value)} ${actuator.unit}` : 'desconhecido'} · ${state.timeS.toFixed(2)} / ${state.durationS.toFixed(2)} s · ${state.playing ? 'em execução' : 'pausado'}`;
+    }
+    const seek = this.el.inspector!.querySelector<HTMLInputElement>('[data-act="engine-seek"]');
+    if (seek && !this.seekDragging) { const state = this.engineering.state(); seek.max = String(state.durationS); seek.value = String(state.timeS); }
+    if (frame.status !== 'ok') {
+      this.engineering.pause(); this.notice('engine-error', `${frame.blocked?.code ?? frame.status} · ${frame.blocked?.message ?? 'Quadro sem solução válida.'}`, 'critical');
+      if (this.engineMessageId) { this.dispatch({ type: 'proposal_state', messageId: this.engineMessageId, state: 'failed' }); this.engineMessageId = null; }
+      this.approvedRunning = false; this.engineCompletion?.('cancelled'); this.engineCompletion = null;
+    }
+    this.foundry.markMotion(); this.foundry.requestRender();
+    return frame.status === 'ok';
+  }
+
+  private runEngine(): void {
+    if (this.engineRaf || this.disposed) return;
+    const tick = (now: number) => {
+      this.engineRaf = 0;
+      if (this.disposed || !this.engineering.state().playing) return;
+      if (this.engineLast) this.engineering.advance(Math.max(0, (now - this.engineLast) / 1000));
+      this.engineLast = now; this.showEngineFrame();
+      if (this.engineering.state().playing) this.engineRaf = requestAnimationFrame(tick);
+      else { this.engineLast = 0; this.finishEngineMessage(); this.renderInspector(); }
+    };
+    this.engineRaf = requestAnimationFrame(tick);
+  }
+
+  private finishEngineMessage(): void {
+    if (this.engineMessageId) {
+      const messageId = this.engineMessageId; this.engineMessageId = null;
+      const actuatorId = this.state.messages.find((message) => message.id === messageId)?.proposal?.actuatorId;
+      const actuator = this.engineering.frame().actuators.find((item) => item.actuatorId === actuatorId);
+      this.dispatch({ type: 'proposal_state', messageId, state: 'done' });
+      this.dispatch({ type: 'assistant_message', message: { id: newId('s'), role: 'system', text: `Movimento calculado concluído. Curso: ${actuator ? `${fmt(actuator.value)} ${actuator.unit}` : 'desconhecido'}. Força: ${actuator?.forceN == null ? 'desconhecida' : `${fmt(actuator.forceN)} N`}.`, source: 'local', sourceNote: 'Motor de engenharia · quadro validado', evidence: actuatorId ? [{ componentId: actuatorId, label: this.registry.get(actuatorId)?.label ?? actuatorId, status: 'resolved' }] : [], proposal: null, error: null, at: Date.now() } });
+    }
+    this.approvedRunning = false; this.engineCompletion?.('completed'); this.engineCompletion = null;
+  }
+
+  private pauseEngine(): void {
+    this.engineering.pause(); cancelAnimationFrame(this.engineRaf); this.engineRaf = 0; this.engineLast = 0; this.renderInspector();
+  }
+
+  private resumeEngine(): void {
+    this.engineering.resume(); this.engineLast = 0; this.runEngine(); this.renderInspector();
+  }
+
+  private cancelEngine(): void {
+    cancelAnimationFrame(this.engineRaf); this.engineRaf = 0; this.engineLast = 0;
+    this.cancelPendingEngineCards();
+    this.engineering.pause(); this.engineering.cancel(); this.engineProposal = null;
+    this.poseLabel = this.engineering.state().durationS === 0 ? 'reference' : 'engine';
+    if (this.poseLabel === 'reference') this.notice('pose', null);
+    if (this.engineMessageId) { this.dispatch({ type: 'proposal_state', messageId: this.engineMessageId, state: 'cancelled' }); this.engineMessageId = null; }
+    this.approvedRunning = false; this.engineCompletion?.('cancelled'); this.engineCompletion = null;
+    this.showEngineFrame(); this.renderInspector();
   }
 
   // --------------------------------------------------------------------------------------------- modes & inputs
@@ -783,6 +1008,8 @@ export class SpatialWorkspace {
   }
 
   get poseSource(): string { return this.poseLabel; }
+  engineState() { return this.engineering.state(); }
+  engineFrame() { return this.engineering.frame(); }
   get currentHand(): HandView | null { return this.lastHand; }
   get insets(): SafeInsets { return this.currentInsets; }
   renderNow(): void { this.foundry.renderNow(); }
@@ -795,7 +1022,10 @@ export class SpatialWorkspace {
   private disposed = false;
 
   dispose(): void {
+    if (this.disposed) return;
     this.disposed = true;
+    this.engineCompletion?.('cancelled'); this.engineCompletion = null; this.approvedRunning = false;
+    cancelAnimationFrame(this.engineRaf); this.engineRaf = 0; this.engineering.dispose();
     clearTimeout(this.transientTimer);
     this.pending?.abort();
     this.playback?.cancel();

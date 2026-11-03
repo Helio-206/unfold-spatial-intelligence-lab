@@ -48,7 +48,7 @@ async function open(url, { viewport = VIEW, dpr = 1, agent = 'fixture', api = nu
     }
     return route.continue();
   });
-  const q = new URLSearchParams({ agent, ...(rm === null ? {} : { rm: rm ? '1' : '0' }) });
+  const q = new URLSearchParams({ agent, fixtureDemo: '1', ...(rm === null ? {} : { rm: rm ? '1' : '0' }) });
   await page.goto(`${url}${url.includes('?') ? '&' : '?'}${q}`);
   await page.waitForFunction(() => window.__foundry?.ready, null, { timeout: 240_000 });
   await page.waitForTimeout(400);
