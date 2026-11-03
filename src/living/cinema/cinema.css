@@ -20,7 +20,7 @@
 .cinema-readout .u-label { margin: 0 0 var(--space-2); }
 .cinema-readout .u-readout > div.is-unknown dd { color: var(--fold-ink); }
 .cinema-note { margin: var(--space-3) 0 0; color: var(--ink-muted); }
-.cinema-caption { position: absolute; z-index: 2; left: 50%; top: 84px; transform: translateX(-50%); margin: 0; padding: var(--space-1) var(--space-3); color: var(--ink-muted); text-align: center; max-width: calc(100vw - 2 * var(--space-4)); }
+.cinema-caption { pointer-events: none; position: absolute; z-index: 2; left: 50%; top: 84px; transform: translateX(-50%); margin: 0; padding: var(--space-1) var(--space-3); color: var(--ink-muted); text-align: center; max-width: calc(100vw - 2 * var(--space-4)); }
 .cinema-caption:empty { display: none; }
 .cinema-fail { position: absolute; z-index: 5; inset: 0; display: grid; place-content: center; gap: var(--space-3); text-align: center; padding: var(--space-6); background: var(--surface); }
 .cinema-fail[hidden] { display: none; }
@@ -45,3 +45,11 @@
 .cinema-motion output { flex: 0 0 auto; min-width: 7ch; text-align: right; }
 .cinema-motion select:focus-visible, .cinema-motion input:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 @media (max-width: 760px) { .cinema-motion { left: var(--space-2); right: var(--space-2); transform: none; width: auto; bottom: 76px; flex-wrap: wrap; } .cinema-motion .u-label { display: none; } .cinema-readout { display: none; } }
+
+/* Layout between the readout (left column) and the centred motion bar (up to 720 px): they share the bottom edge only where there is room for both side by side,
+   that is when (viewport - 720) / 2 leaves the 340 px readout and its margins free, from about 1480 px. Below that, and above the mobile layout, the readout
+   stacks directly above the motion bar instead of under it, and scrolls inside its own box if the window is short. */
+.cinema { --cinema-motion-h: 66px; }
+@media (min-width: 761px) and (max-width: 1480px) {
+  .cinema-readout { bottom: calc(var(--space-6) + 64px + var(--cinema-motion-h) + var(--space-3)); max-height: calc(100dvh - 300px); overflow-y: auto; }
+}

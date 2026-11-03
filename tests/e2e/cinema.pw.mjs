@@ -10,7 +10,7 @@ import { join, resolve } from 'node:path';
 
 const BASE = process.env.UNFOLD_E2E_URL ?? 'http://127.0.0.1:5199';
 const OUT = resolve(process.env.UNFOLD_E2E_OUT ?? 'reports/cinema/e2e'); mkdirSync(OUT, { recursive: true });
-const ONLY = process.env.UNFOLD_E2E_ONLY; // 1..10
+const ONLY = process.env.UNFOLD_E2E_ONLY; // 1..11
 const checks = []; const external = []; const metrics = {};
 function check(scenario, name, ok, observed) { checks.push({ scenario, name, ok: Boolean(ok), observed }); console.log(`${ok ? 'PASS' : 'FAIL'}  [${scenario}] ${name}${ok ? '' : `  -> ${JSON.stringify(observed)}`}`); }
 const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH ?? '/usr/bin/google-chrome', headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
@@ -374,6 +374,51 @@ try {
     check(sc, 'depois de 24 trocas de fonte as geometrias, texturas e luzes não crescem', after.textures === base.textures && after.lights === base.lights && after.geometries <= base.geometries + 2, { base: [base.geometries, base.textures, base.lights], after: [after.geometries, after.textures, after.lights] });
     const disposed = await C(page, (c) => c.disposeNow());
     check(sc, 'dispose liberta geometrias e texturas e retira o canvas, sem libertação dupla (sem erros)', disposed.geometries === 0 && disposed.textures === 0 && !disposed.canvasInDom, disposed);
+    check(sc, 'sem erros na consola', errors.length === 0, errors);
+    await ctx.close();
+  }
+
+  // ------------------------------------------------------------------ 11. layout responsivo: barra de movimento, leitura e planos não se sobrepõem
+  if (!ONLY || ONLY === '11') {
+    const sc = '11 layout';
+    const { page, ctx, errors } = await open('tier=light&motion=engine', { viewport: { width: 1600, height: 900 } });
+    const overlap = (a, b) => a && b && a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
+    metrics.layout = {};
+    for (const width of [768, 800, 1024, 1080, 1280, 1440, 1600, 390]) {
+      const height = width === 390 ? 844 : 900; const tag = `${width}px`;
+      await page.setViewportSize({ width, height }); await page.waitForTimeout(500);
+      await page.evaluate(() => document.querySelector('#cinema-root').classList.remove('is-presenting', 'is-idle')); await page.waitForTimeout(300);
+      const geo = await page.evaluate(() => { const r = (s) => { const e = document.querySelector(s); if (!e) return null; const cs = getComputedStyle(e); if (cs.display === 'none') return null; const b = e.getBoundingClientRect(); return { left: b.left, top: b.top, right: b.right, bottom: b.bottom, width: b.width, height: b.height }; };
+        return { vw: innerWidth, vh: innerHeight, scrollW: document.documentElement.scrollWidth, motion: r('.cinema-motion'), readout: r('.cinema-readout'), shots: r('.cinema-shots'), top: r('.cinema-top'), font: getComputedStyle(document.querySelector('.cinema-readout')).fontSize, readoutDisplay: getComputedStyle(document.querySelector('.cinema-readout')).display }; });
+      metrics.layout[tag] = { motion: geo.motion && [Math.round(geo.motion.left), Math.round(geo.motion.top), Math.round(geo.motion.right), Math.round(geo.motion.bottom)], readout: geo.readout && [Math.round(geo.readout.left), Math.round(geo.readout.top), Math.round(geo.readout.right), Math.round(geo.readout.bottom)] };
+      check(sc, `[${tag}] a barra de movimento e a leitura técnica não se sobrepõem (e nenhuma delas toca nos planos nem no cabeçalho)`, !overlap(geo.motion, geo.readout) && !overlap(geo.motion, geo.shots) && !overlap(geo.readout, geo.shots) && !overlap(geo.readout, geo.top) && !overlap(geo.motion, geo.top), metrics.layout[tag]);
+      check(sc, `[${tag}] a leitura continua visível quando há espaço (≥ 800 px) e cabe no ecrã, com texto legível (≥ 12 px)`, width < 800 ? true : (geo.readout && geo.readout.left >= 0 && geo.readout.right <= geo.vw && geo.readout.top >= 0 && geo.readout.bottom <= geo.vh && parseFloat(geo.font) >= 12), { readout: geo.readout, font: geo.font });
+      check(sc, `[${tag}] sem scroll horizontal`, geo.scrollW <= geo.vw + 1, [geo.scrollW, geo.vw]);
+      // pointer hit-testing at the centre of every control: the control itself must receive the pointer
+      await page.$eval('#cinema-play', (e) => e.scrollIntoView({ inline: 'center', block: 'nearest' })); await page.waitForTimeout(150);
+      const hit = await page.evaluate(() => { const out = {}; for (const [k, sel] of [['select', '#cinema-motion'], ['slider', '#cinema-time'], ['play', '#cinema-play']]) { const e = document.querySelector(sel); if (!e || e.hidden || e.disabled) { out[k] = e ? 'indisponível' : 'ausente'; continue; } const b = e.getBoundingClientRect(); const at = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2); out[k] = at === e || e.contains(at) ? 'ok' : `intercepted:${at?.className || at?.tagName}`; } return out; });
+      check(sc, `[${tag}] seletor de movimento, linha do tempo e reprodução recebem o ponteiro`, hit.select === 'ok' && hit.slider === 'ok' && hit.play === 'ok', hit);
+      // real interactions
+      await page.selectOption('#cinema-motion', 'sequence'); await page.waitForTimeout(200); const kind = await C(page, (c) => c.sourceInfo().kind);
+      await page.selectOption('#cinema-motion', 'engine'); await page.waitForTimeout(200); const kind2 = await C(page, (c) => c.sourceInfo().kind);
+      check(sc, `[${tag}] o seletor muda mesmo de fonte (ponteiro real)`, kind === 'motion-frames' && kind2 === 'engine-session', [kind, kind2]);
+      const sl = await page.$eval('#cinema-time', (e) => { const b = e.getBoundingClientRect(); return { x: b.left, y: b.top + b.height / 2, w: b.width, max: +e.max }; });
+      await page.mouse.click(sl.x + sl.w * 0.5, sl.y); await page.waitForTimeout(250); const tm = await C(page, (c) => c.sourceInfo().time);
+      check(sc, `[${tag}] clicar a meio da linha do tempo leva a reprodução para perto do meio`, Math.abs(tm - sl.max * 0.5) < sl.max * 0.12, { tm, half: sl.max * 0.5 });
+      await page.click('#cinema-play'); await page.waitForTimeout(700); const t1 = await C(page, (c) => c.sourceInfo()); await page.click('#cinema-play'); await page.waitForTimeout(300); const t2 = await C(page, (c) => c.sourceInfo()); await page.waitForTimeout(500); const t3 = await C(page, (c) => c.sourceInfo());
+      check(sc, `[${tag}] reproduzir e pausar funcionam com cliques reais`, t1.playing && !t2.playing && t2.time === t3.time, [t1, t2, t3]);
+      // camera: a drag on empty canvas moves the camera
+      const pt = await page.evaluate(() => { const xs = [0.5, 0.62, 0.7]; for (const fx of xs) { const x = innerWidth * fx; const y = innerHeight * 0.3; const e = document.elementFromPoint(x, y); if (e && e.classList.contains('cinema-canvas')) return { x, y }; } return null; });
+      const cam0 = await C(page, (c) => c.camera());
+      if (pt) { await page.mouse.move(pt.x, pt.y); await page.mouse.down(); await page.mouse.move(pt.x + 60, pt.y + 20, { steps: 4 }); await page.mouse.up(); await page.waitForTimeout(300); }
+      const cam1 = await C(page, (c) => c.camera());
+      check(sc, `[${tag}] a câmara continua a poder ser arrastada`, !!pt && Math.hypot(...cam0.position.map((v, i) => v - cam1.position[i])) > 0.05, { pt });
+      // presentation mode hides the chrome
+      await page.keyboard.press('h'); await page.waitForTimeout(400); await page.mouse.move(2, 2); await page.mouse.move(geo.vw / 2, geo.vh / 2); await page.waitForTimeout(2800);
+      const hidden = await page.evaluate(() => ['.cinema-motion', '.cinema-readout', '.cinema-shots'].map((s) => getComputedStyle(document.querySelector(s)).opacity));
+      check(sc, `[${tag}] o modo de apresentação esconde a interface`, hidden.every((o) => Number(o) === 0), hidden);
+      await page.keyboard.press('h'); await page.waitForTimeout(300);
+    }
     check(sc, 'sem erros na consola', errors.length === 0, errors);
     await ctx.close();
   }
