@@ -1,0 +1,286 @@
+{
+  "generatedAt": "2026-11-02T22:01:24.504Z",
+  "renderer": "Chromium via playwright-core; SwiftShader software WebGL in this container",
+  "apiCalls": 3,
+  "apiCallsNote": "All /api calls were intercepted in the browser (mocked). No model was called.",
+  "checks": [
+    {
+      "name": "default mode is assisted",
+      "ok": true,
+      "detail": "assisted"
+    },
+    {
+      "name": "camera framed on load",
+      "ok": true,
+      "detail": "{\"position\":[18.227520872796354,5.595484717964615,-11.0103800932815],\"target\":[3.10287207509593,2.299035230108199,-0.02167952060699463],\"transitioning\":false,\"owner\":\"idle\"}"
+    },
+    {
+      "name": "fixture mode makes no network call",
+      "ok": true,
+      "detail": "0 calls"
+    },
+    {
+      "name": "answer grounded on canonical boom_cylinder",
+      "ok": true,
+      "detail": "{\"text\":\"A lança é accionada por um cilindro hidráulico: o cilindro da lança, entre o corpo superior e a parte de baixo da lança. Na montagem, é ele que acciona a articulação da lança.\",\"primary\":\"boom_cylinder\",\"source\":\"fixture\",\"act\":\"point\",\"targets\":[\"boom_cylinder\",\"boom_cyl_barrel\",\"boom_cyl_rod\",\"boom\"]}"
+    },
+    {
+      "name": "digital hand points at the cylinder",
+      "ok": true,
+      "detail": "aponta · observaCilindro da lançafixture · não verificado"
+    },
+    {
+      "name": "reticle drawn at the projected canonical anchor (±1 px)",
+      "ok": true,
+      "detail": "{\"css\":[888.218,542.906],\"proj\":[888.2181698971016,542.9063022732637]}"
+    },
+    {
+      "name": "hand label shows fixture uncertainty",
+      "ok": true,
+      "detail": "aponta · observaCilindro da lançafixture · não verificado"
+    },
+    {
+      "name": "assisted mode shows a transient response",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "hand tracks the target through camera motion",
+      "ok": true,
+      "detail": "{\"before\":[888.2181698971016,542.9063022732637],\"after\":[838.4175038495847,538.9787281962006]}"
+    },
+    {
+      "name": "keyboard orbit is owned by the user",
+      "ok": true,
+      "detail": "idle"
+    },
+    {
+      "name": "assistant camera move starts only when needed (occluded target from behind)",
+      "ok": true,
+      "detail": "{\"resolved\":true,\"cameraMoved\":true}"
+    },
+    {
+      "name": "user input interrupts the assistant camera move at once",
+      "ok": true,
+      "detail": "{\"position\":[-9.58624649827598,2.506834158673628,4.4354309928031945],\"target\":[2.6,1.6,0],\"transitioning\":false,\"owner\":\"user_pointer\"}"
+    },
+    {
+      "name": "assistant may not move the camera right after user input",
+      "ok": true,
+      "detail": "{\"resolved\":true,\"cameraMoved\":false,\"cameraReason\":\"user_active\"}"
+    },
+    {
+      "name": "occluded target reported, not hidden or guessed",
+      "ok": true,
+      "detail": "Oculto por upper_body."
+    },
+    {
+      "name": "target behind the camera shows an edge indicator",
+      "ok": true,
+      "detail": "Fora de vista (atrás da câmara)."
+    },
+    {
+      "name": "unknown component id never gets a location",
+      "ok": true,
+      "detail": "Não existe o componente «hydraulic_pump_9» na montagem excavator-fixture-1."
+    },
+    {
+      "name": "focus mode hides composer, rail, transient and hand label",
+      "ok": true,
+      "detail": "{\"mode\":\"focus\",\"composer\":false,\"restore\":true,\"railOpacity\":\"0\",\"railInert\":true,\"transient\":false,\"label\":\"none\"}"
+    },
+    {
+      "name": "Escape leaves focus mode and restores the composer",
+      "ok": true,
+      "detail": "{\"mode\":\"assisted\",\"composer\":true}"
+    },
+    {
+      "name": "restore control leaves focus mode",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "overlay cycles visible → dimmed → hidden",
+      "ok": true,
+      "detail": "{\"dimmed\":\"0.38\",\"hidden\":\"hidden\"}"
+    },
+    {
+      "name": "scene stays selectable with all AI overlays hidden",
+      "ok": true,
+      "detail": "boom_cylinder"
+    },
+    {
+      "name": "return to the last response keeps history",
+      "ok": true,
+      "detail": "{\"t\":\"a-4\",\"n\":4}"
+    },
+    {
+      "name": "extend question yields a proposal, not a claim",
+      "ok": true,
+      "detail": "{\"g2\":{\"text\":\"Não calculo o movimento: isso é do motor de engenharia. Posso preparar uma experiência suportada: estender o cilindro da lança e mostrar o estado que o motor devolver. O motor não está ligado aqui, por isso só há uma pré-visualização de fixture, rotulada como tal.\",\"primary\":\"boom_cylinder\"},\"proposal\":\"Estender o cilindro da lança +0.11 mO motor de engenharia não está ligado a este protótipo. Pré-visualização de fixture \"}"
+    },
+    {
+      "name": "nothing moves before approval",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "hand waits for confirmation",
+      "ok": true,
+      "detail": "awaiting"
+    },
+    {
+      "name": "approved preview is labelled fixture, never engine",
+      "ok": true,
+      "detail": "Pré-visualização de fixture: estas poses vêm de um script independente, não do motor de engenharia.Repor referência"
+    },
+    {
+      "name": "displayed pose equals the last fixture frame exactly (no renderer-side solving)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "fixture-pose notice stays visible in focus mode",
+      "ok": true,
+      "detail": "Pré-visualização de fixture: estas poses vêm de um script independente, não do m"
+    },
+    {
+      "name": "evidence panel cites the assembly provenance",
+      "ok": true,
+      "detail": "src-excavator-fixture · excavator.assembly.v1Dimensão escolhida para o fixture; não vem de nenhum fa"
+    },
+    {
+      "name": "Tab order reaches rail tools and composer input",
+      "ok": true,
+      "detail": "Fechar inspector | uw-link | uw-link | uw-link | uw-link | Anexar imagem de referência | Pergunta ou instrução | Ditado por voz | Respostas visíveis. Atenuar. | Expandir conversa |  | Escavadora em 3D. Arrastar para orbitar, roda para aproximar, clique para seleccionar. Setas orbitam, + e − aproximam. | Enquadrar | Isolar"
+    },
+    {
+      "name": "assistant never moves the camera while user hand tracking is active",
+      "ok": true,
+      "detail": "{\"resolved\":true,\"cameraMoved\":false,\"cameraReason\":\"hand_tracking_active\"}"
+    },
+    {
+      "name": "camera/microphone never requested without a click",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "performance measured at rest resolution",
+      "ok": true,
+      "detail": "{\"fps\":\"0.75\",\"p50ms\":\"2015\",\"drawCalls\":139,\"triangles\":512925,\"pixelRatio\":1,\"software\":true}"
+    },
+    {
+      "name": "frame latency distribution recorded",
+      "ok": true,
+      "detail": "{\"pixelRatio\":1,\"p50ms\":\"2015.3\",\"p95ms\":\"2163.8\",\"drawCalls\":139,\"triangles\":512925,\"software\":true}"
+    },
+    {
+      "name": "interaction responsiveness (fixture ask → grounded)",
+      "ok": true,
+      "detail": "19 ms"
+    },
+    {
+      "name": "dispose removes canvas and DOM",
+      "ok": true,
+      "detail": "{\"before\":{\"geometries\":68,\"textures\":19},\"canvas\":false,\"root\":false}"
+    },
+    {
+      "name": "no page errors in workspace session",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "missing API key falls back to a labelled fixture (one mocked call)",
+      "ok": true,
+      "detail": "{\"source\":\"fixture\",\"note\":\"Fixture · sem chamada ao modelo (MODEL_API_KEY_MISSING)\"}"
+    },
+    {
+      "name": "request uses the existing spatial_agent_request.v1 in mechanical mode",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no page errors (fallback)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "unsupported model action is blocked, not executed",
+      "ok": true,
+      "detail": "{\"code\":\"SPATIAL_AGENT_INVALID_ACTION_PARAMETERS\",\"message\":\"A resposta do assistente não passou a validação; nada foi executado.\"}"
+    },
+    {
+      "name": "evidence ids unknown to the scene are rejected by the existing parser",
+      "ok": true,
+      "detail": "{\"source\":\"none\",\"primary\":null}"
+    },
+    {
+      "name": "reduced motion: camera focus jumps to the end state",
+      "ok": true,
+      "detail": "{\"p\":{\"resolved\":true,\"cameraMoved\":true},\"transitioning\":false,\"reduced\":\"true\"}"
+    },
+    {
+      "name": "mobile: composer inside viewport, no horizontal scroll",
+      "ok": true,
+      "detail": "{\"composer\":[8,382,836],\"rail\":[4,379],\"scrollW\":390,\"w\":390,\"h\":844}"
+    },
+    {
+      "name": "mobile: conversation sheet sits above the composer",
+      "ok": true,
+      "detail": "{\"sheetBottom\":752,\"composerTop\":768}"
+    },
+    {
+      "name": "no page errors (mobile)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "golden capture 02-golden-frame",
+      "ok": true,
+      "detail": "{\"profile\":\"export\",\"size\":[3200,2000],\"triangles\":1013613,\"drawCalls\":263}"
+    },
+    {
+      "name": "golden capture 06-hydraulic-joint",
+      "ok": true,
+      "detail": "{\"profile\":\"export\",\"size\":[3200,2000],\"triangles\":929229,\"drawCalls\":193}"
+    },
+    {
+      "name": "golden capture 06b-boom-plates",
+      "ok": true,
+      "detail": "{\"profile\":\"export\",\"size\":[3200,2000],\"triangles\":963933,\"drawCalls\":217}"
+    },
+    {
+      "name": "golden capture 07-bucket",
+      "ok": true,
+      "detail": "{\"profile\":\"export\",\"size\":[3200,2000],\"triangles\":645853,\"drawCalls\":189}"
+    },
+    {
+      "name": "golden capture 07b-tracks",
+      "ok": true,
+      "detail": "{\"profile\":\"export\",\"size\":[3200,2000],\"triangles\":929229,\"drawCalls\":193}"
+    },
+    {
+      "name": "no request left localhost",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "captures": {
+    "workspace": "captures/01-workspace.png",
+    "assistedHand": "captures/03-assisted-digital-hand.png",
+    "d5_1": "captures/d5-1-question-grounded-target.png",
+    "d5_3": "captures/d5-3-user-interruption.png",
+    "focus": "captures/05-focus.png",
+    "d5_4": "captures/d5-4-focus.png",
+    "d5_5": "captures/d5-5-return-from-focus.png",
+    "conversation": "captures/04-conversation.png",
+    "preview": "captures/04b-fixture-preview-result.png",
+    "mobile": "captures/08-mobile.png",
+    "mobileConversation": "captures/08b-mobile-conversation.png",
+    "02-golden-frame": "captures/02-golden-frame.png",
+    "06-hydraulic-joint": "captures/06-hydraulic-joint.png",
+    "06b-boom-plates": "captures/06b-boom-plates.png",
+    "07-bucket": "captures/07-bucket.png",
+    "07b-tracks": "captures/07b-tracks.png"
+  }
+}

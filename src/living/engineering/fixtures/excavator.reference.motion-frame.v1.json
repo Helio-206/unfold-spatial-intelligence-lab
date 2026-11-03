@@ -1,0 +1,518 @@
+{
+  "actuators": [
+    {
+      "actuatorId": "swing_drive",
+      "forceN": null,
+      "forceReason": "Sem modelo de binário: o accionamento não tem parâmetros de potência nem de inércia na montagem.",
+      "forceStatus": "unknown",
+      "kind": "rotary_drive",
+      "lengthM": null,
+      "unit": "rad",
+      "value": 0,
+      "withinLimits": true
+    },
+    {
+      "actuatorId": "boom_cylinder",
+      "forceN": null,
+      "forceReason": "Sem parâmetros hidráulicos: diâmetros e pressão de alimentação são desconhecidos (null) nesta montagem.",
+      "forceStatus": "unknown",
+      "kind": "hydraulic_cylinder",
+      "lengthM": 2.7492780826214984,
+      "unit": "m",
+      "value": 0.5692780826214978,
+      "withinLimits": true
+    },
+    {
+      "actuatorId": "stick_cylinder",
+      "forceN": null,
+      "forceReason": "Sem parâmetros hidráulicos: diâmetros e pressão de alimentação são desconhecidos (null) nesta montagem.",
+      "forceStatus": "unknown",
+      "kind": "hydraulic_cylinder",
+      "lengthM": 2.60681002911168,
+      "unit": "m",
+      "value": 0.32681002911167933,
+      "withinLimits": true
+    },
+    {
+      "actuatorId": "bucket_cylinder",
+      "forceN": null,
+      "forceReason": "Sem parâmetros hidráulicos: diâmetros e pressão de alimentação são desconhecidos (null) nesta montagem.",
+      "forceStatus": "unknown",
+      "kind": "hydraulic_cylinder",
+      "lengthM": 2.6871382678525704,
+      "unit": "m",
+      "value": 0.47713826785256996,
+      "withinLimits": true
+    }
+  ],
+  "assemblyDigest": "8f3d510f90c49c6a168c552390d0aa5770471a3d1b05774c387a4fc8eeecfb2d",
+  "assemblyId": "excavator-fixture-1",
+  "blocked": null,
+  "collisions": {
+    "checked": false,
+    "contacts": [],
+    "groundPlaneChecked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+      {
+        "reason": "Verificação de colisões ainda não implementada neste motor (fase 5).",
+        "shapeId": "chassis-body"
+      },
+      {
+        "reason": "Verificação de colisões ainda não implementada neste motor (fase 5).",
+        "shapeId": "upper-body-box"
+      },
+      {
+        "reason": "Verificação de colisões ainda não implementada neste motor (fase 5).",
+        "shapeId": "boom-box"
+      },
+      {
+        "reason": "Verificação de colisões ainda não implementada neste motor (fase 5).",
+        "shapeId": "stick-box"
+      },
+      {
+        "reason": "Verificação de colisões ainda não implementada neste motor (fase 5).",
+        "shapeId": "bucket-box"
+      },
+      {
+        "reason": "Verificação de colisões ainda não implementada neste motor (fase 5).",
+        "shapeId": "boom-cyl-barrel"
+      },
+      {
+        "reason": "Verificação de colisões ainda não implementada neste motor (fase 5).",
+        "shapeId": "boom-cyl-rod"
+      },
+      {
+        "reason": "Verificação de colisões ainda não implementada neste motor (fase 5).",
+        "shapeId": "stick-cyl-barrel"
+      },
+      {
+        "reason": "Verificação de colisões ainda não implementada neste motor (fase 5).",
+        "shapeId": "stick-cyl-rod"
+      },
+      {
+        "reason": "Verificação de colisões ainda não implementada neste motor (fase 5).",
+        "shapeId": "bucket-cyl-barrel"
+      },
+      {
+        "reason": "Verificação de colisões ainda não implementada neste motor (fase 5).",
+        "shapeId": "bucket-cyl-rod"
+      },
+      {
+        "reason": "Verificação de colisões ainda não implementada neste motor (fase 5).",
+        "shapeId": "idler-link-box"
+      },
+      {
+        "reason": "Verificação de colisões ainda não implementada neste motor (fase 5).",
+        "shapeId": "bucket-link-box"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "locator": "assembly",
+      "sourceId": "src-excavator-fixture"
+    }
+  ],
+  "index": 0,
+  "inputDigest": "6830e0e4ec596e308a492f7ff8cbe64bdaa13ccf60a482ebca6dbe710df19446",
+  "joints": [
+    {
+      "jointId": "boom_cyl_base",
+      "kind": "passive",
+      "unit": "rad",
+      "value": 0.33992559995337435
+    },
+    {
+      "jointId": "boom_cyl_slide",
+      "kind": "commanded",
+      "unit": "m",
+      "value": 0.5692780826214978
+    },
+    {
+      "jointId": "boom_joint",
+      "kind": "dependent",
+      "unit": "rad",
+      "value": 0.45
+    },
+    {
+      "jointId": "bucket_cyl_base",
+      "kind": "passive",
+      "unit": "rad",
+      "value": 0.2930203949629214
+    },
+    {
+      "jointId": "bucket_cyl_slide",
+      "kind": "commanded",
+      "unit": "m",
+      "value": 0.47713826785256996
+    },
+    {
+      "jointId": "bucket_joint",
+      "kind": "dependent",
+      "unit": "rad",
+      "value": -0.9
+    },
+    {
+      "jointId": "idler_pivot",
+      "kind": "passive",
+      "unit": "rad",
+      "value": 0.6719732084129209
+    },
+    {
+      "jointId": "link_pin",
+      "kind": "passive",
+      "unit": "rad",
+      "value": 2.5618201091406494
+    },
+    {
+      "jointId": "stick_cyl_base",
+      "kind": "passive",
+      "unit": "rad",
+      "value": -0.08101069806015089
+    },
+    {
+      "jointId": "stick_cyl_slide",
+      "kind": "commanded",
+      "unit": "m",
+      "value": 0.32681002911167933
+    },
+    {
+      "jointId": "stick_joint",
+      "kind": "dependent",
+      "unit": "rad",
+      "value": -1.2
+    },
+    {
+      "jointId": "swing",
+      "kind": "commanded",
+      "unit": "rad",
+      "value": 0
+    }
+  ],
+  "measurements": [
+    {
+      "id": "closure.boom_cyl_closure",
+      "label": "Fecho do laço boom_cyl_closure",
+      "method": "Distância entre os dois pontos coincidentes da restrição, no mundo",
+      "status": "computed",
+      "subjectIds": [
+        "boom_cyl_rod",
+        "boom"
+      ],
+      "unit": "m",
+      "value": 4.440892098500626e-16
+    },
+    {
+      "id": "closure.bucket_cyl_closure",
+      "label": "Fecho do laço bucket_cyl_closure",
+      "method": "Distância entre os dois pontos coincidentes da restrição, no mundo",
+      "status": "computed",
+      "subjectIds": [
+        "bucket_cyl_rod",
+        "idler_link"
+      ],
+      "unit": "m",
+      "value": 1.7763568394002505e-15
+    },
+    {
+      "id": "closure.bucket_link_closure",
+      "label": "Fecho do laço bucket_link_closure",
+      "method": "Distância entre os dois pontos coincidentes da restrição, no mundo",
+      "status": "computed",
+      "subjectIds": [
+        "bucket_link",
+        "bucket"
+      ],
+      "unit": "m",
+      "value": 8.881784197001252e-16
+    },
+    {
+      "id": "closure.stick_cyl_closure",
+      "label": "Fecho do laço stick_cyl_closure",
+      "method": "Distância entre os dois pontos coincidentes da restrição, no mundo",
+      "status": "computed",
+      "subjectIds": [
+        "stick_cyl_rod",
+        "stick"
+      ],
+      "unit": "m",
+      "value": 0
+    },
+    {
+      "id": "cylinder.boom_cylinder.length",
+      "label": "Comprimento de Cilindro da lança",
+      "method": "Distância entre a origem do barril e a origem da haste (pinos de base e de haste)",
+      "status": "computed",
+      "subjectIds": [
+        "boom_cyl_barrel",
+        "boom_cyl_rod"
+      ],
+      "unit": "m",
+      "value": 2.7492780826214984
+    },
+    {
+      "id": "cylinder.bucket_cylinder.length",
+      "label": "Comprimento de Cilindro da caçamba",
+      "method": "Distância entre a origem do barril e a origem da haste (pinos de base e de haste)",
+      "status": "computed",
+      "subjectIds": [
+        "bucket_cyl_barrel",
+        "bucket_cyl_rod"
+      ],
+      "unit": "m",
+      "value": 2.6871382678525704
+    },
+    {
+      "id": "cylinder.stick_cylinder.length",
+      "label": "Comprimento de Cilindro do braço",
+      "method": "Distância entre a origem do barril e a origem da haste (pinos de base e de haste)",
+      "status": "computed",
+      "subjectIds": [
+        "stick_cyl_barrel",
+        "stick_cyl_rod"
+      ],
+      "unit": "m",
+      "value": 2.60681002911168
+    },
+    {
+      "id": "tip.x",
+      "label": "Ponta da ferramenta, x",
+      "method": "Ponto tool_tip transformado pela pose da parte (cinemática directa)",
+      "status": "computed",
+      "subjectIds": [
+        "bucket"
+      ],
+      "unit": "m",
+      "value": 7.146908205051043
+    },
+    {
+      "id": "tip.y",
+      "label": "Ponta da ferramenta, y",
+      "method": "Ponto tool_tip transformado pela pose da parte (cinemática directa)",
+      "status": "computed",
+      "subjectIds": [
+        "bucket"
+      ],
+      "unit": "m",
+      "value": 0.6616474588684227
+    },
+    {
+      "id": "tip.z",
+      "label": "Ponta da ferramenta, z",
+      "method": "Ponto tool_tip transformado pela pose da parte (cinemática directa)",
+      "status": "computed",
+      "subjectIds": [
+        "bucket"
+      ],
+      "unit": "m",
+      "value": 0
+    }
+  ],
+  "parts": [
+    {
+      "partId": "boom",
+      "rotation": [
+        0,
+        0,
+        0.22310636213174545,
+        0.9747941070689433
+      ],
+      "translationM": [
+        0.95,
+        1.5,
+        0
+      ]
+    },
+    {
+      "partId": "boom_cyl_barrel",
+      "rotation": [
+        0,
+        0,
+        0.16914568517363787,
+        0.9855910598149419
+      ],
+      "translationM": [
+        0.6,
+        1,
+        0
+      ]
+    },
+    {
+      "partId": "boom_cyl_rod",
+      "rotation": [
+        0,
+        0,
+        0.16914568517363787,
+        0.9855910598149419
+      ],
+      "translationM": [
+        3.1919629456426275,
+        1.9166559136331007,
+        0
+      ]
+    },
+    {
+      "partId": "bucket",
+      "rotation": [
+        0,
+        0,
+        -0.7345477822465787,
+        0.6785569656238399
+      ],
+      "translationM": [
+        7.897727628994845,
+        1.9061434181341403,
+        0
+      ]
+    },
+    {
+      "partId": "bucket_cyl_barrel",
+      "rotation": [
+        0,
+        0,
+        -0.2265068355828889,
+        0.9740095756378507
+      ],
+      "translationM": [
+        5.712241924882975,
+        3.0811124547996354,
+        0
+      ]
+    },
+    {
+      "partId": "bucket_cyl_rod",
+      "rotation": [
+        0,
+        0,
+        -0.2265068355828889,
+        0.9740095756378507
+      ],
+      "translationM": [
+        8.123651072530887,
+        1.8954404962893212,
+        0
+      ]
+    },
+    {
+      "partId": "bucket_link",
+      "rotation": [
+        0,
+        0,
+        0.9463983256630012,
+        0.32300187179375284
+      ],
+      "translationM": [
+        8.123651072530885,
+        1.8954404962893212,
+        0
+      ]
+    },
+    {
+      "partId": "chassis",
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "translationM": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "partId": "idler_link",
+      "rotation": [
+        0,
+        0,
+        -0.039003499855672204,
+        0.999239073995312
+      ],
+      "translationM": [
+        7.585294047371956,
+        1.937532223053948,
+        0
+      ]
+    },
+    {
+      "partId": "stick",
+      "rotation": [
+        0,
+        0,
+        -0.3662725290860476,
+        0.9305076219123143
+      ],
+      "translationM": [
+        5.812414352704456,
+        3.848813884200643,
+        0
+      ]
+    },
+    {
+      "partId": "stick_cyl_barrel",
+      "rotation": [
+        0,
+        0,
+        0.18344978418038582,
+        0.9830290823186106
+      ],
+      "translationM": [
+        3.156550900320899,
+        3.254432422264543,
+        0
+      ]
+    },
+    {
+      "partId": "stick_cyl_rod",
+      "rotation": [
+        0,
+        0,
+        0.18344978418038582,
+        0.9830290823186106
+      ],
+      "translationM": [
+        5.587902681157262,
+        4.194638275097359,
+        0
+      ]
+    },
+    {
+      "partId": "upper_body",
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "translationM": [
+        0,
+        0.95,
+        0
+      ]
+    }
+  ],
+  "poseBasis": "solved",
+  "schema": "unfold.motion-frame.v1",
+  "solver": {
+    "assumptions": [
+      "Corpos rígidos, juntas ideais: sem folga, elasticidade nem desgaste.",
+      "Ângulos em rad, comprimentos em m, aritmética de dupla precisão (IEEE 754).",
+      "Cada quadro avalia-se a partir da configuração; nunca se integra a partir do quadro anterior.",
+      "Fecho de laços aceite até 1e-9 m (ver CLOSURE_TOLERANCE_M).",
+      "Força, pressão e capacidade de carga não são calculadas: a montagem não tem parâmetros hidráulicos (diâmetros e pressão são null).",
+      "Colisões não são verificadas nesta versão do motor; cada forma aparece como não verificada, com a razão."
+    ],
+    "closureResidualM": 1.7763568394002505e-15,
+    "id": "unfold.engineering.forward-kinematics",
+    "method": "Cinemática directa sobre a árvore de juntas (rígidos e quaterniões)",
+    "status": "solved",
+    "toleranceM": 1e-9,
+    "version": "0.1.0"
+  },
+  "status": "ok",
+  "timestampS": 0,
+  "warnings": [],
+  "worldFrameId": "world"
+}

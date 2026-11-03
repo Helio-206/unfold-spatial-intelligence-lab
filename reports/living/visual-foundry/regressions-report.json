@@ -1,0 +1,131 @@
+{
+  "generatedAt": "2026-11-02T21:41:07.340Z",
+  "apiNote": "All /api calls mocked in the browser.",
+  "checks": [
+    {
+      "name": "live evidence [boom, boom_cylinder] grounds on boom_cylinder",
+      "ok": true,
+      "detail": "{\"primary\":\"boom_cylinder\",\"source\":\"live\"}"
+    },
+    {
+      "name": "proposal stores the planned canonical actuator id",
+      "ok": true,
+      "detail": "{\"state\":\"pending\",\"actuatorId\":\"boom_cylinder\"}"
+    },
+    {
+      "name": "approval plays the boom-cylinder preview to its last frame",
+      "ok": true,
+      "detail": "Pré-visualização de fixture concluída. Ângulo da lança 0.450 → 0.888 rad; altura"
+    },
+    {
+      "name": "completion message reports fixture measurements",
+      "ok": true,
+      "detail": "Pré-visualização de fixture concluída. Ângulo da lança 0.450 → 0.888 rad; altura da ponta 0.66 → 3.37 m. Força: desconhe"
+    },
+    {
+      "name": "no page errors (1)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reset mid-playback: proposal marked cancelled, not done",
+      "ok": true,
+      "detail": "{\"state\":\"cancelled\",\"actuatorId\":\"boom_cylinder\"}"
+    },
+    {
+      "name": "reset mid-playback: no completion message or final measurements",
+      "ok": true,
+      "detail": "Experiência suportada para o cilindro seleccionado."
+    },
+    {
+      "name": "reset mid-playback: scene back on the reference pose",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "superseded playback is cancelled; only the newest completes",
+      "ok": true,
+      "detail": "{\"states\":[\"cancelled\",\"cancelled\",\"done\"],\"ids\":[\"a-1\",\"a-3\",\"a-5\"]}"
+    },
+    {
+      "name": "disposal mid-playback publishes no completion",
+      "ok": true,
+      "detail": "{\"messages\":1}"
+    },
+    {
+      "name": "no page errors (2)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "newer request keeps processing while the older one is aborted",
+      "ok": true,
+      "detail": "{\"whileSecond\":true,\"composerWhile\":\"PROCESSING\",\"after\":false,\"assistant\":[\"resposta 2\"]}"
+    },
+    {
+      "name": "processing ends when the newer request resolves; aborted reply not shown",
+      "ok": true,
+      "detail": "[\"resposta 2\"]"
+    },
+    {
+      "name": "no page errors (3)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "unresolvable actuator id fails closed (not done, no completion, no pose change)",
+      "ok": true,
+      "detail": "{\"state\":\"failed\",\"completed\":false,\"pose\":\"reference\"}"
+    },
+    {
+      "name": "no page errors (4)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "superseded playback does not clear the newer playback's approved agency",
+      "ok": true,
+      "detail": "{\"during\":\"performing_approved\",\"after\":\"observing\"}"
+    },
+    {
+      "name": "no page errors (5)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "joint presentation isolates boom_cyl_base and the pin is no longer occluded",
+      "ok": true,
+      "detail": "{\"occluded\":false,\"onScreen\":true}"
+    },
+    {
+      "name": "isolation is presentation only: poses and geometry unchanged, natural view restored",
+      "ok": true,
+      "detail": "{\"tris\":[253744,253744]}"
+    },
+    {
+      "name": "no page errors (6)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "presentThenPoint: no highlight on ghosted parent, reticle and pin kept",
+      "ok": true,
+      "detail": "{\"overlays\":8,\"onGhosted\":0,\"occluded\":false}"
+    },
+    {
+      "name": "pointThenPresent: no highlight on ghosted parent, reticle and pin kept",
+      "ok": true,
+      "detail": "{\"overlays\":8,\"onGhosted\":0,\"occluded\":false}"
+    },
+    {
+      "name": "natural view restores the full highlight",
+      "ok": true,
+      "detail": "{\"overlays\":13,\"onGhosted\":0}"
+    },
+    {
+      "name": "no page errors (7)",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}

@@ -1,0 +1,7664 @@
+{
+ "kind": "unfold.visual-foundry.fixture-preview",
+ "id": "boom-extension-preview",
+ "label": "Extensão do cilindro da lança (fixture)",
+ "origin": "fixture",
+ "validation": "unreviewed",
+ "producedBy": "src/living/visual-foundry/fixtures/generate_boom_extension_preview.py",
+ "notEngineOutput": true,
+ "actuatorId": "boom_cylinder",
+ "strokeFromM": 0.5692780826214978,
+ "strokeToM": 0.6832040573075209,
+ "frames": [
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "fec592bacb8130a34100b6f4883991de9d9fa2c99ee6ed5ce149363fd0b30ba9",
+   "index": 0,
+   "timestampS": 0.0,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.22310636213174542,
+      0.9747941070689433
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      5.812414352704455,
+      3.8488138842006427,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.36627252908604757,
+      0.9305076219123144
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.897727628994845,
+      1.9061434181341406,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.7345477822465787,
+      0.6785569656238399
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.16914568517363773,
+      0.985591059814942
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      3.1919629456426275,
+      1.9166559136330998,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.16914568517363773,
+      0.985591059814942
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      3.156550900320899,
+      3.2544324222645424,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.18344978418038574,
+      0.9830290823186107
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      5.587902681157263,
+      4.1946382750973585,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.18344978418038574,
+      0.9830290823186107
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      5.712241924882974,
+      3.0811124547996354,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.22650683558288887,
+      0.9740095756378508
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      8.123651072530885,
+      1.8954404962893214,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.22650683558288887,
+      0.9740095756378508
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      7.585294047371956,
+      1.937532223053948,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.03900349985567222,
+      0.9992390739953121
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      8.123651072530885,
+      1.895440496289321,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9463983256630013,
+      0.3230018717937529
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.44999999999999984,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.5692780826214978,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.33992559995337407,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.5692780826214978,
+     "unit": "m",
+     "lengthM": 2.749278082621498,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.44999999999999984,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 0.6616474588684231,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 4.440892098500626e-16,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "e2dd027585268da8aed3e6049dcd7e608e3724f4de1e2f0ab463435ed3771aa2",
+   "index": 1,
+   "timestampS": 0.08333333333333333,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.2237764900076759,
+      0.974640488857222
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      5.809180091214321,
+      3.855497578251012,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.36563270931647346,
+      0.9307592179924382
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.897162605918323,
+      1.9156962950546252,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.7340810940124091,
+      0.6790618141329585
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.16970080855321976,
+      0.9854956294050135
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      3.1913879162263177,
+      1.919738262485858,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.16970080855321976,
+      0.9854956294050135
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      3.15413643561551,
+      3.2574648142116964,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.18412558305560214,
+      0.9829027264508094
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      5.584193116631178,
+      4.201012934303277,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.18412558305560214,
+      0.9829027264508094
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      5.7100633625136465,
+      3.0876591355485927,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.22583714082076967,
+      0.9741650711383056
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      8.123100552606033,
+      1.905304032464608,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.22583714082076967,
+      0.9741650711383056
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      7.58468615943295,
+      1.9466554680389538,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.038316503877132604,
+      0.9992656531326561
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      8.123100552606033,
+      1.9053040324646076,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9466201689821201,
+      0.322351137234325
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.4513750199179496,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.5697654088747791,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.34105213257711114,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.5697654088747791,
+     "unit": "m",
+     "lengthM": 2.7497654088747794,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.4513750199179496,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 0.6701691209230063,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 0.0,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "1d61545166bad2d00e861c1254043cd980b2f5978aeee92c70524cf477c54a28",
+   "index": 2,
+   "timestampS": 0.16666666666666666,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.22578110131799806,
+      0.9741780608736947
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      5.799447258306425,
+      3.875470751010061,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.363717125727628,
+      0.9315094483967584
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.895393417285292,
+      1.9442768978037777,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.7326825366890403,
+      0.6805705697654822
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.1713611423185426,
+      0.9852082819908105
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      3.1896419294222538,
+      1.9289569068959775,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.1713611423185426,
+      0.9852082819908105
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      3.1468866842067467,
+      3.2665188639680833,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.18614727581000654,
+      0.9825218530437444
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      5.573040564176279,
+      4.220057472827746,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.18614727581000654,
+      0.9825218530437444
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      5.7034906421732785,
+      3.1072309916768983,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.22383255611506858,
+      0.9746276144369165
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      8.121372210493613,
+      1.9348143455418731,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.22383255611506858,
+      0.9746276144369165
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      7.582792234178657,
+      1.9739501234513517,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.03626067767444402,
+      0.9993423653856521
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      8.121372210493613,
+      1.9348143455418727,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9472813245545089,
+      0.3204030152015663
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.4554895345372566,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.5712190493473172,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.3444221636870635,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.5712190493473172,
+     "unit": "m",
+     "lengthM": 2.751219049347317,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.4554895345372566,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 0.6956780614692253,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 0.0,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "0e64b4a1b9da087f4e9dcf2d63f8a1f5ecbb1274b727febcb58d73a5d2043b0c",
+   "index": 3,
+   "timestampS": 0.25,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.22910287935032644,
+      0.9734022142328369
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      5.78312820327261,
+      3.9084999005046437,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.3605374680464536,
+      0.9327447314965936
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.892200787840129,
+      1.991650184688173,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.7303567287168519,
+      0.6830659183548972
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.17411160323517644,
+      0.9847259261433491
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      3.1866633310189867,
+      1.9442264553975277,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.17411160323517644,
+      0.9847259261433491
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      3.134783818645703,
+      3.2814655948919977,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.18949774656836452,
+      0.9818811557645416
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      5.5543759007303795,
+      4.251533986393535,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.18949774656836452,
+      0.9818811557645416
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      5.692414989971208,
+      3.139623374050276,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.2205066286915836,
+      0.975385475954544
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      8.118238878482574,
+      1.983729549996653,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.2205066286915836,
+      0.975385475954544
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      7.57940443971837,
+      2.0191900576307305,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.03285153522255565,
+      0.999460242647761
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      8.118238878482574,
+      1.9837295499966525,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9483687638904768,
+      0.31716980889871776
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.46231189735069134,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.5736141318476015,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.3500070387920338,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.5736141318476015,
+     "unit": "m",
+     "lengthM": 2.7536141318476015,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.46231189735069134,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 0.7380047681928454,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 4.440892098500626e-16,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "6fed1171f230133b38178d96ebf7ed0385e7fcffb3459d2a37312b8cde233873",
+   "index": 4,
+   "timestampS": 0.3333333333333333,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.23371296025048072,
+      0.9723056372411698
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      5.760085123878339,
+      3.954196630476929,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.35611343014709845,
+      0.9344427349328945
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.887229505630883,
+      2.0574212670828924,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.7271116895812724,
+      0.6865191846367206
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.17792713405901875,
+      0.9840436651722037
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      3.1823528242256485,
+      1.9654039838374522,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.17792713405901875,
+      0.9840436651722037
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      3.1178022555129132,
+      3.3020913908548377,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.19414845123319832,
+      0.9809721600961724
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      5.5280920655058425,
+      4.295047361541094,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.19414845123319832,
+      0.9809721600961724
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      5.676662840667953,
+      3.184494920290466,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.21588210166090502,
+      0.9764194376304022
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      8.113332510863955,
+      2.0516432137972433,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.21588210166090502,
+      0.9764194376304022
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      7.5741862023035145,
+      2.081995445439217,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.028115032218143952,
+      0.9996046943484074
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      8.113332510863955,
+      2.0516432137972425,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9498610859301777,
+      0.3126722204410614
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.47178931662492185,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.57690967585001,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.357759141554488,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.57690967585001,
+     "unit": "m",
+     "lengthM": 2.75690967585001,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.47178931662492185,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 0.7968621758413201,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 0.0,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "a6373e5ad938e13cb4063000b4483a189e6637954686ced034b9700d462f5df2",
+   "index": 5,
+   "timestampS": 0.4166666666666667,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.23957091671254538,
+      0.9708788677613241
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      5.730142379347515,
+      4.01201887595732,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.35047303540030156,
+      0.9365728222926925
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.880003692654119,
+      2.141030812513942,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.7229593270615519,
+      0.6908905929412472
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.1827728089198018,
+      0.983155176113906
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      3.1765786222479493,
+      1.9922881665736285,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.1827728089198018,
+      0.983155176113906
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      3.0959147852059496,
+      3.3281000340885347,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.20005937882064323,
+      0.9797837745879947
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      5.494056162162146,
+      4.3500474221706575,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.20005937882064323,
+      0.9797837745879947
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      5.656007330582127,
+      3.241367207209011,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.20999117067340925,
+      0.9777032823097256
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      8.10615993231308,
+      2.1379795605549687,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.20999117067340925,
+      0.9777032823097256
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      7.5666868293625775,
+      2.1618284849113416,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.02208772596767655,
+      0.9997560364216748
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      8.10615993231308,
+      2.1379795605549683,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9517289782389001,
+      0.3069396552750053
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.48384774690068066,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.5810492936829638,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.36761206533360713,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.5810492936829638,
+     "unit": "m",
+     "lengthM": 2.761049293682964,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.48384774690068066,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 0.8718389824953239,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 4.440892098500626e-16,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "28dc5c16c49c7c65376b1bef1f6ef4b2835f618a79507f330539dc1d0bbb8f48",
+   "index": 6,
+   "timestampS": 0.5,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.24662470987002696,
+      0.9691110630271048
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      5.6931035268004715,
+      4.081272735309645,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.3436531110496167,
+      0.9390966613005927
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.869948000616213,
+      2.241748846685782,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.7179161289237953,
+      0.6961296085005094
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.18860394709705916,
+      0.9820532323348922
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      3.169183592619782,
+      2.0246181299260995,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.18860394709705916,
+      0.9820532323348922
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      3.06910103755728,
+      3.359115594207003,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.20717897221796278,
+      0.9783030580912587
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      5.452126193234188,
+      4.415832034548636,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.20717897221796278,
+      0.9783030580912587
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      5.630184215707155,
+      3.3096243955255558,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.20287586442546782,
+      0.979204464672021
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      8.096124697379793,
+      2.241986998556989,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.20287586442546782,
+      0.979204464672021
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      7.556361805074996,
+      2.257987626380861,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.014817022717916278,
+      0.9998902218932721
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      8.096124697379793,
+      2.2419869985569885,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9539358464135544,
+      0.30001066802241483
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.49839166171382654,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.5859621553376224,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.3794807730787222,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.5859621553376224,
+     "unit": "m",
+     "lengthM": 2.765962155337623,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.49839166171382654,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 0.962390533519188,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 0.0,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "ac318c08a5132a5e8987f2447eccd19d42a7c7fcf54c87665d147482de27055b",
+   "index": 7,
+   "timestampS": 0.5833333333333334,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.25481058249707134,
+      0.9669909860218466
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      5.648772924113034,
+      4.161114993310557,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.3356999333073658,
+      0.941968977608833
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.856414586344387,
+      2.3586671324334674,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.71200407166844,
+      0.7021753356018446
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.195366201098961,
+      0.9807303643041548
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      3.159994338710187,
+      2.0620720797806302,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.195366201098961,
+      0.9807303643041548
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      3.0373581936033887,
+      3.3946861934359465,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.21544398152969035,
+      0.9765162010036671
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      5.402172264883271,
+      4.491551242634757,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.21544398152969035,
+      0.9765162010036671
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      5.5989120804819965,
+      3.3885129636261913,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.1945885728009485,
+      0.9808849511208183
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      8.082554911529398,
+      2.3627301609118163,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.1945885728009485,
+      0.9808849511208183
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      7.5425986182305325,
+      2.3696004830984903,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.006361538156485484,
+      0.9999797652114185
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      8.082554911529398,
+      2.3627301609118163,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9564385968004843,
+      0.2919335721535309
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.5153036294571605,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.591564200388972,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.39326166519227523,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.591564200388972,
+     "unit": "m",
+     "lengthM": 2.771564200388972,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.5153036294571605,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 1.0678274551961022,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 4.440892098500626e-16,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "86f94a01e9a4c1af2893e07a49333cf0da8236194b3ba3356b96245f43117e20",
+   "index": 8,
+   "timestampS": 0.6666666666666666,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.26405285643468723,
+      0.9645082109597007
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      5.596981761293771,
+      4.2505564001130836,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.32667007521192637,
+      0.9451384353421644
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.838715734471666,
+      2.490690270687313,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.7052517669875671,
+      0.7089569416832835
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.20299557445231195,
+      0.9791796549932887
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      3.1488321694285455,
+      2.104265745087504,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.20299557445231195,
+      0.9791796549932887
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      3.0007138658310657,
+      3.4342886652431694,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.22477921285492017,
+      0.9744097215588126
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      5.344102120476726,
+      4.576212487512416,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.22477921285492017,
+      0.9744097215588126
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      5.561916717922479,
+      3.4771416066591643,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.18519275709727495,
+      0.9827022146707057
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      8.06473687757805,
+      2.499080607038297,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.18519275709727495,
+      0.9827022146707057
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      7.524747994862765,
+      2.495615561021573,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0032083924546995254,
+      0.9999948530956831
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      8.06473687757805,
+      2.4990806070382963,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9591885551774878,
+      0.2827672463644323
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.5344435875053601,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.5977595762930036,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.40883245107940247,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.5977595762930036,
+     "unit": "m",
+     "lengthM": 2.7777595762930036,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.5344435875053601,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 1.1873021887935076,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 4.440892098500626e-16,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "acfdda460aa684cf5ebb67892862591966c39c6f45919f21b41fc0b12c49d9f2",
+   "index": 9,
+   "timestampS": 0.75,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.27426358479031504,
+      0.9616545565107908
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      5.53761844942603,
+      4.348465720784773,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.3166315029396113,
+      0.94854862360672
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.816162050099385,
+      2.636525575852569,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.6976958780331153,
+      0.7163940687747214
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.21141831309838569,
+      0.9773956705892619
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      3.1355259298533573,
+      2.1507506511242376,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.21141831309838569,
+      0.9773956705892619
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      2.9592411090805593,
+      3.4773341057041227,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.2350971227347407,
+      0.971971883791834
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      5.277890931609847,
+      4.66868692009713,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.2350971227347407,
+      0.971971883791834
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      5.518959617494704,
+      3.5744813230150516,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.1747638905749514,
+      0.9846103709341611
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      8.041954487907972,
+      2.6497062398591322,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.1747638905749514,
+      0.9846103709341611
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      7.502160461430804,
+      2.6347928572929593,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.013810004520028694,
+      0.99990463734056
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      8.041954487907972,
+      2.649706239859132,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9621325027370311,
+      0.2725821842618791
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.5556476786331335,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.6044422784503165,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.42605169433063356,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.6044422784503165,
+     "unit": "m",
+     "lengthM": 2.7844422784503164,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.5556476786331335,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 1.3197934845824006,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 0.0,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "c2125caee38b1dbe41e66f9c09b6221562d98267894ed383cacbe914a3ca79c8",
+   "index": 10,
+   "timestampS": 0.8333333333333334,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.2853419942846876,
+      0.9584257646253243
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      5.470663420014484,
+      4.453574485761779,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.30566498399106456,
+      0.9521391272086986
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.788106250116415,
+      2.794671616631355,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.6893828531399636,
+      0.7243971851109056
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.22055060122669193,
+      0.9753755339860359
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      3.1199267065720244,
+      2.201012188271708,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.22055060122669193,
+      0.9753755339860359
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      2.9130755970125053,
+      3.523174288195161,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.2462971929737352,
+      0.969194352404748
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      5.203615404180193,
+      4.767716742134538,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.2462971929737352,
+      0.969194352404748
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      5.469870601064905,
+      3.679365617666022,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.1633906952468503,
+      0.9865614429455223
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      8.013534391694765,
+      2.813059326106141,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.1633906952468503,
+      0.9865614429455223
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      7.474228266726848,
+      2.7856932234956493,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.02534712767863507,
+      0.9996787099455721
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      8.013534391694765,
+      2.813059326106141,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9652138105622318,
+      0.26146185171060105
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.5787264768288705,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.6114979639742041,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.44475787257050525,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.6114979639742041,
+     "unit": "m",
+     "lengthM": 2.791497963974204,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.5787264768288705,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 1.4640887547721533,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 4.440892098500626e-16,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "0e47c66fb91ccfd31ada7e17d472ea6edf05d150f9ff1bed8f1e8c7ec2bbd60c",
+   "index": 11,
+   "timestampS": 0.9166666666666666,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.29717363476177266,
+      0.9548234553059934
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      5.396228572666747,
+      4.564482253106032,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.29386589287851833,
+      0.9558466597748361
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.7539927435822005,
+      2.963405079966847,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.680371044620141,
+      0.7328678200347579
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.23029797737881058,
+      0.9731201578506268
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      3.1019244836537894,
+      2.254467372820967,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.23029797737881058,
+      0.9731201578506268
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      2.8624351070199654,
+      3.5711088724249946,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.25826500169043265,
+      0.9660741114955109
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      5.121492449490515,
+      4.87192340621032,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.25826500169043265,
+      0.9660741114955109
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      5.414584803485788,
+      3.7904906195659027,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.15117676279993753,
+      0.9885067457480153
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      7.978897132533241,
+      2.9873627657014428,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.15117676279993753,
+      0.9885067457480153
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      7.440432846871566,
+      2.946666167970658,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.03770885467195513,
+      0.9992887682143382
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      7.978897132533241,
+      2.987362765701442,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9683736547567686,
+      0.24950443838340575
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.6034623858432491,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.618805908129147,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.46476775996076636,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.618805908129147,
+     "unit": "m",
+     "lengthM": 2.798805908129147,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.6034623858432491,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 1.6187639506892122,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 4.440892098500626e-16,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "ab0439880d2911638eb695f77db404d28b52baab622663e5fef398fe6fa5b526",
+   "index": 12,
+   "timestampS": 1.0,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3096291318448151,
+      0.9508574029332821
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      5.314601847700682,
+      4.679662043527236,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.2813465259131378,
+      0.9596062381813742
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.713413402133348,
+      3.1407653197928793,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.6707333039425071,
+      0.741698614655824
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.2405543700234937,
+      0.9706356654598058
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      3.0814669057514523,
+      2.310462108729539,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.2405543700234937,
+      0.9706356654598058
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      2.8076415952203684,
+      3.620393289865615,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.27087088481831756,
+      0.962615688505928
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      5.031922918086778,
+      4.979816375084081,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.27087088481831756,
+      0.962615688505928
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      5.353184396311929,
+      3.906414743536695,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.13824267313238553,
+      0.9903983861685218
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      7.937614668190187,
+      3.1705939498939903,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.13824267313238553,
+      0.9903983861685218
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      7.40039822103942,
+      3.1158354901758205,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.050767743196730525,
+      0.998710486703084
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      7.937614668190187,
+      3.17059394989399,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9715522963007697,
+      0.23682511596682848
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.62960594429129,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.6262410699645093,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.48587390371796624,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.6262410699645093,
+     "unit": "m",
+     "lengthM": 2.8062410699645097,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.62960594429129,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 1.7821603322378292,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 0.0,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "676f8be41babe882ee407bceed7d825b0a00c31caf794e741fdfdaed07ffe8b8",
+   "index": 13,
+   "timestampS": 1.0833333333333333,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.32256241778243816,
+      0.9465481956215162
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      5.226297655650957,
+      4.797465444894629,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.26823906293611943,
+      0.9633523784758892
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.666170144807326,
+      3.324535631000599,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.6605601687997152,
+      0.7507731104636686
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.2512006357330785,
+      0.9679350394563145
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      3.0585803906238676,
+      2.3682676639588163,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.2512006357330785,
+      0.9679350394563145
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      2.7491462920750855,
+      3.6702471333266335,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.28396806071435127,
+      0.9588337397558195
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      4.9355411594147665,
+      5.089801997341382,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.28396806071435127,
+      0.9588337397558195
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      5.2859456687622295,
+      4.025557345097848,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.12472874976578209,
+      0.9921908783000704
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      7.889474913765195,
+      3.360465215410543,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.12472874976578209,
+      0.9921908783000704
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      7.353950921323482,
+      3.291081834696668,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.06437741407401334,
+      0.9979256227581008
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      7.889474913765195,
+      3.360465215410543,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9746904121904841,
+      0.22355894163272533
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.6568707223675776,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.6336762317998716,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.5078409305673288,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.6336762317998716,
+     "unit": "m",
+     "lengthM": 2.813676231799872,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.6568707223675776,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 1.9523571758834826,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 0.0,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "e30733572845f9b07001246d894944bae2d9abd594b42886eeff0d1f43b20325",
+   "index": 14,
+   "timestampS": 1.1666666666666667,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.33580830256217087,
+      0.9419303498297067
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      5.132114066447386,
+      4.91612674460754,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.2546993306067719,
+      0.9670202950240819
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.612345097081621,
+      3.512220040200499,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.6499637733375834,
+      0.7599651921955178
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.26210247410933285,
+      0.9650400473896233
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      3.033393887583106,
+      2.427075999679288,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.26210247410933285,
+      0.9650400473896233
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      2.687558352050673,
+      3.7198628275681695,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.2973900771408398,
+      0.9547560641431744
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      4.833271350021777,
+      5.20019193226587,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.2973900771408398,
+      0.9547560641431744
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      5.213392220836498,
+      4.14619566871886,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.11079860775609078,
+      0.9938428791913297
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      7.8345540884678675,
+      3.5543996445408172,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.11079860775609078,
+      0.9938428791913297
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      7.301187191293587,
+      3.4700210157377818,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.07836939374313245,
+      0.9969243893717988
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      7.8345540884678675,
+      3.554399644540817,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9777304667384472,
+      0.20986456206662973
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.6849264661814058,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.6409841759548146,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.5304003993597978,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.6409841759548146,
+     "unit": "m",
+     "lengthM": 2.820984175954815,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.6849264661814058,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 2.127139224643084,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 8.881784197001252e-16,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "9907d80f83b88136096b80f768aa42b67ec9c425e5b98826a2f81b26f823f122",
+   "index": 15,
+   "timestampS": 1.25,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.34917926093687024,
+      0.9370559448248441
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      5.033197512301076,
+      5.033765424520748,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.2409115063563829,
+      0.9705470859804272
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.552378895100137,
+      3.701014449822696,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.6390825994555981,
+      0.7691381092320649
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.2731076073660352,
+      0.9619834898784905
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      3.0061655151434845,
+      2.485993597512037,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.2731076073660352,
+      0.9619834898784905
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      2.6236775177083507,
+      3.768414328714578,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3109474537522788,
+      0.950427104519318
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      4.726391387511667,
+      5.309210522120442,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3109474537522788,
+      0.950427104519318
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      5.136354883599253,
+      4.266459386002316,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.09664363418917138,
+      0.9953190483310915
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      7.773297451445133,
+      3.749501008141895,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.09664363418917138,
+      0.9953190483310915
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      7.242548007067718,
+      3.6499770045394295,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.09254906417770939,
+      0.9957081252655471
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      7.773297451445133,
+      3.7495010081418947,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9806181125616777,
+      0.1959288577927528
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.7133901813794419,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.6480398614787022,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.5532439472507131,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.6480398614787022,
+     "unit": "m",
+     "lengthM": 2.828039861478702,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.7133901813794419,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 2.303957755737879,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 4.440892098500626e-16,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "1f1d0998a34401db843deca4964b3a562f7684ba12852eb24bd4cb65e9420c65",
+   "index": 16,
+   "timestampS": 1.3333333333333333,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.36246139038420255,
+      0.9319987878107733
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      4.931114797192108,
+      5.14838662583587,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.22709380623688694,
+      0.973872888609619
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.487156695254515,
+      3.8877717697638294,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.6280871009387746,
+      0.778143041885183
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.28404218234794626,
+      0.9588117847873044
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      2.977311949874845,
+      2.5440336478747496,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.28404218234794626,
+      0.9588117847873044
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      2.5585307378259365,
+      3.815065628760694,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3244234747063671,
+      0.9459119457219299
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      4.616604174870089,
+      5.415000707321855,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3244234747063671,
+      0.9459119457219299
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      5.056038128701827,
+      4.384322386884384,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.08248844643158657,
+      0.9965920209420219
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      7.706607971357687,
+      3.942517475457409,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.08248844643158657,
+      0.9965920209420219
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      7.1789015032652905,
+      3.8279492270923043,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.10669067398066029,
+      0.9942922608999593
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      7.706607971357687,
+      3.9425174754574086,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9833036067945191,
+      0.18197257173785863
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.7418150437222686,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.6547225636360151,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.5760146339735185,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.6547225636360151,
+     "unit": "m",
+     "lengthM": 2.8347225636360154,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.7418150437222686,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 2.479885019076512,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 0.0,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "6eb8cac5c50c2c407479d67141c1a0b228d8bdbc71c637f5ebefb9e0fde0ce2a",
+   "index": 17,
+   "timestampS": 1.4166666666666667,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.37540971571872905,
+      0.9268589673429195
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      4.827929489715017,
+      5.25788010356885,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.2135049312430896,
+      0.9769419861664682
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.418098662423854,
+      4.068963093534583,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.6171859894844315,
+      0.7868172941567332
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.29470654317283235,
+      0.9555878051812505
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      2.9474394332433977,
+      2.6001071359300854,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.29470654317283235,
+      0.9555878051812505
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      2.4934111912043724,
+      3.8589789941551196,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3375693127401648,
+      0.9413006741186012
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      4.506113360564103,
+      5.515628777703794,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3375693127401648,
+      0.9413006741186012
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      4.974090335819364,
+      4.497592653280433,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.0685971078009279,
+      0.9976444440788251
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      7.635939605786139,
+      4.129801225246758,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.0685971078009279,
+      0.9976444440788251
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      7.111629706254127,
+      4.000576114479807,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.12053161744410454,
+      0.9927094888215323
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      7.635939605786139,
+      4.129801225246757,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9857432138648934,
+      0.1682566976952506
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.7696775649514365,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.6609179395400467,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.5982968170078565,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.6609179395400467,
+     "unit": "m",
+     "lengthM": 2.840917939540047,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.7696775649514365,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 2.6515644162174983,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 0.0,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "08e83915b6b0ff3bfbb8eb58c7eb5d0fe05a18dd2136c9306f2ae1a1aabf9362",
+   "index": 18,
+   "timestampS": 1.5,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3877435063700202,
+      0.921767309719694
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      4.726273711293127,
+      5.360020318262125,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.20045044839768017,
+      0.9797038418507754
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.3472455323949895,
+      4.240642494205393,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.6066324302664325,
+      0.7949824492081833
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3048709433014656,
+      0.952393672769026
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      2.917373028852251,
+      2.6530149024816296,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3048709433014656,
+      0.952393672769026
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      2.4299148349506634,
+      3.8993232548560335,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3500991698307804,
+      0.9367126407195531
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      4.397694431982576,
+      5.609089901326294,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3500991698307804,
+      0.9367126407195531
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      4.892669953517722,
+      4.603903732956966,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.05527928934392107,
+      0.9984709310589024
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      7.563385508044128,
+      4.307271810587812,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.05527928934392107,
+      0.9984709310589024
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      7.0427105352559565,
+      4.164102076663228,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.13376675115534312,
+      0.9910128436530703
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      7.563385508044128,
+      4.307271810587812,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9879005324166218,
+      0.15508880698153352
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.7963646412981291,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.6665199845913963,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.6196058372303033,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.6665199845913963,
+     "unit": "m",
+     "lengthM": 2.8465199845913967,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.7963646412981291,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 2.815164719817604,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 0.0,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "7d2d336221e5faca4d90ca28ab0bf84a206b75794c4cc43edd19787210c33756",
+   "index": 19,
+   "timestampS": 1.5833333333333333,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3991432063234426,
+      0.9168885978382771
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      4.629394769135092,
+      5.4524744316518134,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.18828714208313155,
+      0.9821140219578206
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.277318096254241,
+      4.398433610004828,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.5967283616180346,
+      0.8024433079293867
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3142725658636905,
+      0.9493327943063234
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      2.8881765094607945,
+      2.701445720028321,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3142725658636905,
+      0.9493327943063234
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      2.3699632347217365,
+      3.935283230353008,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3616870793090825,
+      0.9322995530734023
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      4.294740295913002,
+      5.693319575992414,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3616870793090825,
+      0.9322995530734023
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      4.81448942863194,
+      4.700716513818056,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.04289443978300242,
+      0.9990796099589374
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      7.491739387927214,
+      4.470402106949621,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.04289443978300242,
+      0.9990796099589374
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      6.974774732081359,
+      4.3143651093939885,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.14604459033099723,
+      0.9892780082641336
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      7.491739387927214,
+      4.470402106949621,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9897476180059263,
+      0.1428273526030465
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.8211643960340158,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.6714328462460549,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.6393805969189645,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.6714328462460549,
+     "unit": "m",
+     "lengthM": 2.851432846246055,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.8211643960340158,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 2.966357999708622,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 0.0,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "1e6e9cd16546d4dda56900896f55149499502a1f66441c58cdd16f229c4adff5",
+   "index": 20,
+   "timestampS": 1.6666666666666667,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.40925207164993826,
+      0.9124213620089316
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      4.541137611982525,
+      5.532831592293986,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.1774215444149286,
+      0.9841349478488312
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.211710706773828,
+      4.53757316084173,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.5878234987919537,
+      0.8089892052852041
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3226165017338086,
+      0.9465297632980378
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      2.861148463284805,
+      2.7439901733068988,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3226165017338086,
+      0.9465297632980378
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      2.3157912677277173,
+      3.966072629303264,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3719685505171527,
+      0.9282453325636324
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      4.201241683992599,
+      5.766221305297506,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3719685505171527,
+      0.9282453325636324
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      4.742802552628548,
+      4.785348313742395,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.031850221856675326,
+      0.9994926529833427
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      7.424488957491083,
+      4.614263257313852,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.031850221856675326,
+      0.9994926529833427
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      6.9110993468883,
+      4.446838325702332,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.1569689441955537,
+      0.9876035391583676
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      7.424488957491083,
+      4.614263257313851,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9912656665466948,
+      0.13188016653666004
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.8432683863936854,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.6755724640790088,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.6569849996504565,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.6755724640790088,
+     "unit": "m",
+     "lengthM": 2.855572464079009,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.8432683863936854,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 3.1003591169406044,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 0.0,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "13a47d7f81073c1eb48248e8ce2f06859f270d8c2862ccb2f54acdead0dcf3eb",
+   "index": 21,
+   "timestampS": 1.75,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.41768739260092597,
+      0.9085908001197459
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      4.465802214272192,
+      5.598674760226622,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.16829667567128206,
+      0.9857363891822172
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.154356719332766,
+      4.653066663117414,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.5803036089573127,
+      0.8144002219002142
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3295848639712876,
+      0.9441259542248734
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      2.837772171765703,
+      2.7791857673954175,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3295848639712876,
+      0.9441259542248734
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      2.2698662477607447,
+      3.990954252494809,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.38055206839128,
+      0.9247594948110123
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      4.121640462583313,
+      5.825726931928285,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.38055206839128,
+      0.9247594948110123
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      4.681281662026036,
+      4.855056170090726,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.02258932279960449,
+      0.9997448286915294
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      7.365677557459233,
+      4.733685880731614,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.02258932279960449,
+      0.9997448286915294
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      6.855478065046487,
+      4.556777774807166,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.16611159676792658,
+      0.9861069604354337
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      7.365677557459233,
+      4.733685880731614,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9924448959635919,
+      0.12269119151681265
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.8617971162808971,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.6788680080814171,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.6717276746277454,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.6788680080814171,
+     "unit": "m",
+     "lengthM": 2.8588680080814175,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.8617971162808971,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 3.2120862167057007,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 0.0,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "9150d22a1f52d0d3b4b6f116f06173ef8219092879872bbdce0f0ae21a737bb4",
+   "index": 22,
+   "timestampS": 1.8333333333333333,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.4240669524997255,
+      0.9056308407941923
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      4.407805973814033,
+      5.647719596049857,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.16136007892462395,
+      0.9868955998125837
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.109394645911836,
+      4.7400199503559595,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.5745617871875802,
+      0.8184612102621688
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.33485889123893187,
+      0.9422682860832329
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      2.8195935000038492,
+      2.8056110235224567,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.33485889123893187,
+      0.9422682860832329
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      2.234700051562533,
+      4.009271961648483,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3870462569904329,
+      0.9220602989770766
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      4.0604847442457075,
+      5.869908622536643,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3870462569904329,
+      0.9220602989770766
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      4.633723210886613,
+      4.907205313950254,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.015557811593557375,
+      0.9998789699250702
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      7.319560659279465,
+      4.823603451720499,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.015557811593557375,
+      0.9998789699250702
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      6.811899873734189,
+      4.639536814820833,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.17304252970789408,
+      0.9849143530847202
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      7.319560659279465,
+      4.823603451720498,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9932832088544977,
+      0.11570854336526987
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.8758627264804533,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.6812630905817015,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.6829109435612476,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.6812630905817015,
+     "unit": "m",
+     "lengthM": 2.861263090581702,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.8758627264804533,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 3.2965105789899534,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 0.0,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "8d70df9f73a954701f574f07373224fe92ac9c52ded98351376e9da24ee8b30f",
+   "index": 23,
+   "timestampS": 1.9166666666666667,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.4280534656813369,
+      0.9037534124517576
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      4.3711184895965225,
+      5.678031627470142,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.15700979183363883,
+      0.9875970460002185
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.08060166362616,
+      4.79417590980448,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.5709496886977553,
+      0.8209850503973483
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3381564233525818,
+      0.9410899177790556
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      2.8080147506656363,
+      2.822036756791926,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3381564233525818,
+      0.9410899177790556
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      2.212536340251657,
+      4.020496377609765,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3911055254138043,
+      0.9203458415132826
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      4.021852630703441,
+      5.897151137810224,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.3911055254138043,
+      0.9203458415132826
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      4.60355299001195,
+      4.939537075684802,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.01115172926488059,
+      0.9999378175338719
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      7.290022907107725,
+      4.879608325513234,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.01115172926488059,
+      0.9999378175338719
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      6.784003986480937,
+      4.69107490150651,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.17738083995348156,
+      0.984142285250155
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      7.290022907107726,
+      4.879608325513233,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9937834311525641,
+      0.11133055270965439
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.8846756842011334,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.6827167310542396,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.6899144519480875,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.6827167310542396,
+     "unit": "m",
+     "lengthM": 2.8627167310542396,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.8846756842011334,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 3.3492275076660825,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 0.0,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  },
+  {
+   "schema": "unfold.motion-frame.v1",
+   "assemblyId": "excavator-fixture-1",
+   "assemblyDigest": "4399fe81a1f3fc790c186e890640faca3a3c64df7247ca7e7c71f6f2794a87b6",
+   "inputDigest": "abed839eb2d1fe8f836213141d3d34471f03e0f25513efedf0bd3ac8837794dc",
+   "index": 24,
+   "timestampS": 2.0,
+   "worldFrameId": "world",
+   "status": "ok",
+   "poseBasis": "solved",
+   "parts": [
+    {
+     "partId": "chassis",
+     "translationM": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "upper_body",
+     "translationM": [
+      0.0,
+      0.95,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "partId": "boom",
+     "translationM": [
+      0.95,
+      1.5,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.4294107772643389,
+      0.9031092870573508
+     ]
+    },
+    {
+     "partId": "stick",
+     "translationM": [
+      4.358548951187753,
+      5.6882924978273515,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.15552585368778346,
+      0.9878318221411407
+     ]
+    },
+    {
+     "partId": "bucket",
+     "translationM": [
+      7.070675691545465,
+      4.812582189428132,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.5697156004237819,
+      0.8218419158413433
+     ]
+    },
+    {
+     "partId": "boom_cyl_barrel",
+     "translationM": [
+      0.6,
+      1.0,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.33927949450259887,
+      0.9406856141187985
+     ]
+    },
+    {
+     "partId": "boom_cyl_rod",
+     "translationM": [
+      2.8040339243165677,
+      2.827613726760652,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.33927949450259887,
+      0.9406856141187985
+     ]
+    },
+    {
+     "partId": "stick_cyl_barrel",
+     "translationM": [
+      2.204957086502475,
+      4.024278651622523,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.39248780707993414,
+      0.919757207796484
+     ]
+    },
+    {
+     "partId": "stick_cyl_rod",
+     "translationM": [
+      4.008626261607697,
+      5.906361549545057,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.39248780707993414,
+      0.919757207796484
+     ]
+    },
+    {
+     "partId": "bucket_cyl_barrel",
+     "translationM": [
+      4.593201420966511,
+      4.9504996960010335,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.009649415019405916,
+      0.999953443311129
+     ]
+    },
+    {
+     "partId": "bucket_cyl_rod",
+     "translationM": [
+      7.279839283426801,
+      4.898643485644816,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      -0.009649415019405916,
+      0.999953443311129
+     ]
+    },
+    {
+     "partId": "idler_link",
+     "translationM": [
+      6.7743891499015065,
+      4.708590433790181,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.17885921029180304,
+      0.9838746784493403
+     ]
+    },
+    {
+     "partId": "bucket_link",
+     "translationM": [
+      7.279839283426801,
+      4.898643485644815,
+      0.0
+     ],
+     "rotation": [
+      0.0,
+      0.0,
+      0.9939495720473327,
+      0.10983737172258137
+     ]
+    }
+   ],
+   "joints": [
+    {
+     "jointId": "boom_joint",
+     "value": 0.8876804754961471,
+     "unit": "rad",
+     "kind": "dependent"
+    },
+    {
+     "jointId": "boom_cyl_slide",
+     "value": 0.6832040573075209,
+     "unit": "m",
+     "kind": "commanded"
+    },
+    {
+     "jointId": "boom_cyl_base",
+     "value": 0.6923017101468231,
+     "unit": "rad",
+     "kind": "dependent"
+    }
+   ],
+   "actuators": [
+    {
+     "actuatorId": "boom_cylinder",
+     "kind": "hydraulic_cylinder",
+     "value": 0.6832040573075209,
+     "unit": "m",
+     "lengthM": 2.863204057307521,
+     "withinLimits": true,
+     "forceN": null,
+     "forceStatus": "unknown",
+     "forceReason": "Bore, rod and supply pressure are unknown (null) in the fixture."
+    }
+   ],
+   "measurements": [
+    {
+     "id": "boom_angle",
+     "label": "Ângulo da lança",
+     "status": "computed",
+     "value": 0.8876804754961471,
+     "unit": "rad",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "boom_joint"
+     ]
+    },
+    {
+     "id": "tip_height",
+     "label": "Altura da ponta da caçamba",
+     "status": "computed",
+     "value": 3.3671687970080777,
+     "unit": "m",
+     "method": "Fixture FK (direct triangle), not the engine.",
+     "subjectIds": [
+      "bucket"
+     ]
+    },
+    {
+     "id": "boom_cylinder_force",
+     "label": "Força no cilindro da lança",
+     "status": "unknown",
+     "value": null,
+     "unit": "N",
+     "method": "Unknown: no hydraulic data in the fixture.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "solver": {
+    "id": "visual-foundry-fixture-fk",
+    "version": "1",
+    "method": "Independent Python FK for a labelled preview. Not the engineering engine.",
+    "status": "solved",
+    "closureResidualM": 4.440892098500626e-16,
+    "toleranceM": 1e-09,
+    "assumptions": [
+     "Fixture geometry (synthetic, unreviewed).",
+     "Only the boom cylinder moves; other strokes held at reference.",
+     "No collision, load or hydraulic checks."
+    ]
+   },
+   "collisions": {
+    "checked": false,
+    "shapesChecked": [],
+    "shapesSkipped": [
+     {
+      "shapeId": "*",
+      "reason": "Fixture preview: collisions are not checked."
+     }
+    ],
+    "groundPlaneChecked": false,
+    "contacts": []
+   },
+   "warnings": [
+    {
+     "code": "FIXTURE_NOT_ENGINE",
+     "severity": "warning",
+     "message": "Pré-visualização de fixture: não é resultado do motor de engenharia.",
+     "subjectIds": [
+      "boom_cylinder"
+     ]
+    }
+   ],
+   "blocked": null,
+   "evidence": [
+    {
+     "sourceId": "src-excavator-fixture",
+     "locator": "excavator.assembly.v1",
+     "excerpt": "Dimensões sintéticas; não são de nenhum fabricante."
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,159 @@
+# Visual Foundry + espaço de trabalho espacial — relatório
+
+Protótipo isolado em `src/living/visual-foundry/` (renderer, materiais, modelo de exibição da escavadora) e
+`src/living/workspace-design/` (espaço de trabalho, Digital Hand, compositor). Não toca no editor arquitectónico, no
+renderer da aplicação, no solver, na API de reconstrução nem nos tokens globais.
+
+- D0 — auditoria do design system: [`D0-design-system-audit.md`](D0-design-system-audit.md)
+- Capturas reais (Chromium + Three.js, nada gerado por IA): [`captures/`](captures/)
+- Verificações no browser: [`browser-report.json`](browser-report.json) · desempenho: [`performance.json`](performance.json)
+- Como reproduzir: `node tests/e2e/living-visual-foundry.pw.mjs` (arranca o próprio Vite; `/api` é interceptado no browser)
+
+## Capturas pedidas
+
+| # | Captura | Ficheiro |
+|---|---|---|
+| 1 | Espaço de trabalho completo, modo assistido | `captures/01-workspace.png` |
+| 2 | Golden Frame, sem UI, perfil export (3200×2000, GTAO) | `captures/02-golden-frame.png` |
+| 3 | Modo assistido, Digital Hand no cilindro da lança | `captures/03-assisted-digital-hand.png` |
+| 4 | Conversa expandida com o objecto visível + proposta | `captures/04-conversation.png`, `04b-fixture-preview-result.png` |
+| 5 | Modo foco | `captures/05-focus.png` |
+| 6 | Grande plano da articulação `boom_cyl_base` (pino real, olhal do barril, orelhas) | `captures/06-hydraulic-joint.png`, `06b-boom-plates.png` |
+| 7 | Caçamba (boca e dentes, vista do lado da máquina) e rastos | `captures/07-bucket.png`, `07b-tracks.png` |
+| 8 | Ecrã estreito (390×844) | `captures/08-mobile.png`, `08b-mobile-conversation.png` |
+| D5 | Pergunta → alvo → explicação → interrupção → foco → regresso | `captures/d5-*.png` |
+
+Mesma resolução (1600×1000 CSS) e as mesmas posições de câmara em todas as rondas.
+
+## Rondas de crítica visual (4)
+
+1. **Primeiro render.** Câmara do lado errado (cabina escondida pela lança); pintura plana; caçamba lida como caixa.
+   → câmara frontal-esquerda, luz principal e softbox do lado da câmara.
+2. **Grande plano.** Extrusões curvas facetadas (normais por segmento); linha de cintura da cabina muito alta (bloco cego);
+   metais escuros esmagados a preto. → normais suavizadas com ângulo de vinco, cabina com vidro até 0,5 m, metais mais claros.
+3. **Golden Frame export.** Silhueta, proporções e pinos credíveis; GTAO dá profundidade. Ainda: pintura uniforme
+   (lê-se como maquete de estúdio, não como aço industrial gasto), placas de reforço da lança com sombreamento «almofada»,
+   caçamba domina o enquadramento. → ângulo de vinco 34° → 20°.
+4. **Interface.** Chips de evidência em branco (cor herdada do botão), etiqueta da mão por cima do inspector, avisos por
+   cima do inspector, rail por cima da folha de conversa no telemóvel. → corrigidos (referências com contorno, colocação
+   da etiqueta que evita sobreposições abertas, inspector desce com os avisos, rail escondido com a conversa no telemóvel).
+
+**Avaliação honesta face ao turbofan da Airsup:** ainda não está ao nível. O que falta: variação de material (desgaste,
+sujidade contida, chapa com ondulação), geometria da caçamba e do capô menos «caixa», mais densidade de detalhe na
+estrutura superior (grelhas, dobradiças, degraus), e uma luz de recorte mais forte para separar a silhueta do fundo Void.
+Não passei nenhuma captura só por estar melhor do que a anterior.
+
+## Verificações funcionais
+
+Vitest (`tests/living/visual-foundry/`, 67 testes; suite completa 1346): modos e restauro, Esc, nível das sobreposições, avisos críticos e
+aprovações nunca escondidos, árbitro da câmara (utilizador ganha, período de silêncio, gestos bloqueiam o assistente),
+resolução por id canónico, projecção mundo→ecrã, alvo atrás da câmara, ocluído e desconhecido, rótulos de incerteza,
+pedido `spatial_agent_request.v1` em modo `mechanical`, `fetch` simulado que conta chamadas (fixture = 0 chamadas),
+fallback rotulado só para indisponibilidade, acções não suportadas recusadas pelo parser do produto, evidência desconhecida
+recusada, experiências suportadas, orçamento de desempenho (triângulos, meshes, materiais, texturas, tempo de build),
+libertação de recursos, quadros de fixture válidos e rotulados, fronteiras de módulos e conformidade do CSS com os tokens.
+
+Browser (`tests/e2e/living-visual-foundry.pw.mjs`, 51 verificações, todas a passar): as mesmas regras no Chromium real,
+mais retículo desenhado na projecção do âncora (±1 px), seguimento durante a órbita, interrupção de um movimento do
+assistente por pointerdown, pose final igual ao último quadro do fixture (o renderer não resolve nada), aviso de fixture
+visível em modo foco, ordem de Tab, câmara/microfone nunca pedidos sem clique, reduced-motion, layout móvel, `dispose`.
+
+## Desempenho
+
+Medido no contentor com **SwiftShader (WebGL por software)**: cerca de 0,5–1 fps a 1600×1000, ~1,9 s por quadro,
+139 draw calls, ~510 mil triângulos no ecrã (o modelo tem ~250 mil; a contagem inclui a passagem de sombras).
+Isto não é desempenho de GPU e não deve ser lido como tal. O renderer só desenha a pedido (sem loop perpétuo).
+Tentei uma resolução reduzida durante o movimento; sob SwiftShader piorou (o custo está nos vértices e nas sombras,
+e redimensionar os alvos custa um quadro), por isso ficou desligada até ser medida numa GPU.
+Perfis: `realtime` (pixel ratio ≤ 1,5, MSAA 4×, sombras 2048, sem AO) e `export` (pixel ratio 2, MSAA 4×, sombras 4096, GTAO).
+
+## Limitações
+
+- O motor de engenharia não está ligado. A única «simulação» é uma pré-visualização de fixture (FK independente em Python,
+  `fixtures/generate_boom_extension_preview.py`), rotulada em todos os quadros (`FIXTURE_NOT_ENGINE`) e na interface.
+  Só existe para o cilindro da lança; os outros dizem que não há nada para mostrar.
+- Sem Muse Spark real nesta sessão: todas as respostas foram de fixture ou de um `/api` simulado no browser.
+- A montagem é sintética (`fixture`/`unreviewed`). Geometria de exibição é ilustrativa; a cabina passa acima do envelope
+  de colisão canónico e o barril de exibição segue o comprimento fechado (o cilindro de colisão do fixture é mais curto).
+- A montagem tem um só cilindro da lança, ao centro; a resposta diz «um cilindro», não «estes cilindros».
+- Mangueiras flexíveis são só de exibição: não têm id canónico e nunca são alvo nem bloqueiam a mão.
+- Imagens anexadas ficam na conversa como referência; a rota `spatial_agent_request.v1` não as aceita, e a interface diz isso.
+- O compositor replica a estrutura do compositor do produto em classes `uw-` (o original está preso a `style.css` global).
+- O harness corre no Vite dev; não foi adicionado a `vite.config.ts` (ficheiro partilhado).
+- Sem cutaway nem medição interactiva: não estão no rail porque não funcionam.
+
+## Licenças
+
+Técnicas adaptadas do Airsup machine-skill (MIT) — aviso completo em `src/living/visual-foundry/NOTICE.md`. Sem activos 3D,
+HDRIs ou texturas externas.
+
+## Revisão do PR #13 (review `5742598032`)
+
+### Defeitos corrigidos (teste de browser a falhar primeiro)
+
+`tests/e2e/living-visual-foundry-regressions.pw.mjs` — 8/14 a falhar antes, 14/14 depois (`regressions-report.json`).
+
+1. **Aprovação dependia da ordem da evidência.** Resposta ao vivo (simulada) com `evidenceIds: ['boom', 'boom_cylinder']`:
+   a grounding escolhia `boom_cylinder`, mas a aprovação procurava a pré-visualização por `evidence[0]` (`boom`), não
+   encontrava nada e marcava a proposta como concluída sem mostrar nada. Agora a proposta guarda o `actuatorId` canónico
+   do plano e a aprovação usa só esse.
+2. **Cancelamento lido como conclusão.** `resetPose()`, uma nova pré-visualização ou `dispose()` a meio resolviam a mesma
+   promessa que o fim normal; aparecia «Pré-visualização de fixture concluída» com as medidas do último quadro, que nunca
+   tinha sido mostrado. Agora `play()` devolve `completed` ou `cancelled`; cancelado → proposta `cancelled`
+   («interrompida · nada concluído»), sem mensagem de conclusão nem medidas; após `dispose()` nada é publicado.
+3. **Pedidos sobrepostos.** Um pedido mais antigo, abortado por um novo, punha `processing = false` enquanto o novo ainda
+   estava em curso. Agora só o pedido corrente mexe no estado de processamento e no compositor; a resposta abortada não aparece.
+
+### Passagem visual dirigida (antes/depois em [`before-after/`](before-after/))
+
+| Pedido | O que mudou |
+|---|---|
+| Rastos e cilindros legíveis | Metais escuros e pintura grafite mais claros (`castDark` #6E7075, `shoe` #64666B, `paintDark` #4B4F57); luz de recorte por trás-esquerda e luz baixa frontal para o material circulante, sem sombra |
+| Silhueta da caçamba e dentes | Envolvente com calcanhar mais redondo; dentes mais longos (ponta 0,28 m com nervura) em aço maquinado sobre adaptadores fundidos; reforço de aresta na boca e no calcanhar das chapas laterais |
+| Placas de reforço «almofada» | Placas planas com arestas vivas (sem chanfro, 16 mm), ângulo de vinco 20° nas extrusões |
+| Variação de material contida | Mapa de albedo de baixa frequência (±5–12 % entre painéis) em pintura, grafite, fundidos e sapatas; sem sujidade, riscos nem efeitos |
+| Pino hidráulico real no grande plano | `06-hydraulic-joint.png` enquadra a articulação canónica `boom_cyl_base`. A direcção da câmara saiu de um varrimento por raycast contra as malhas reais: o pino só é visível quase de frente (az ≈ 0°, el 10–25°), porque o canal do convés, a cabina e o compartimento o tapam dos lados |
+
+Ids canónicos, renderer, contratos, os três modos, tipografia, tokens e layout da interface ficam iguais. O orçamento de
+texturas subiu de 10 para 14 (quatro mapas de variação de 128²).
+
+Browser: 52/52 (`browser-report.json`) e 14/14 regressões. O grande plano mostra o pino real, a orelha e o olhal do barril,
+mas fica apertado: o canal do convés ocupa metade do quadro, e não há ângulo mais aberto sem atravessar a cabina ou o compartimento.
+
+Avaliação: os rastos e os cilindros já se lêem contra o Void, a caçamba lê-se como caçamba e os dentes vêem-se.
+Continua abaixo do turbofan da Airsup: a estrutura superior ainda é muito em caixa, e as luzes extra aclaram um pouco o
+chão perto da máquina.
+
+### Ronda final (após as correcções)
+
+`06-hydraulic-joint.png` mostra bem o barril, a cabeça com parafusos, o porto e o tubo de retorno, mas o enquadramento
+apanha o corpo do cilindro e não o pino da base; e os metais escuros (rastos, barris) continuam demasiado próximos do
+preto no fundo Void. Ficam como trabalho em aberto: reposicionar essa câmara sobre o pino `boom_cyl_base` e subir o
+albedo/recorte dos metais escuros.
+
+## Revisão do PR #13 (review `5743045223`)
+
+Regressões novas em `tests/e2e/living-visual-foundry-regressions.pw.mjs` (21 verificações; as duas primeiras falhavam antes da correcção):
+
+1. **Falha fechada na aprovação.** Antes, quando o `actuatorId` guardado não tinha pré-visualização disponível, a proposta
+   ficava `done` sem nada ter corrido. Agora fica `failed` («sem pré-visualização · nada executado»), aparece um aviso
+   crítico e a pose não muda.
+2. **Agência da mão com reproduções sobrepostas.** Antes, quando B substituía A, a continuação cancelada de A punha
+   `approvedRunning = false` e a mão de B passava de «acção aprovada» para «observa». Agora cada reprodução aprovada tem um
+   número de geração, e só a mais recente pode limpar a agência.
+3. **Pino hidráulico visível.** `presentJoint('boom_cyl_base')` usa o isolamento existente: a parte filha (barril)
+   fica sólida, a parte-mãe só mantém sólido o hardware do pino (maquinado, bossas, chapas de retenção), e o resto
+   fica em fantasma. É só troca de material: poses e geometria ficam iguais (verificado), e `presentJoint(null)` repõe
+   tudo. Capturas: `captures/06c-hydraulic-joint-isolated.png` (apresentação) e `captures/06c-hydraulic-joint-natural.png`
+   (a mesma câmara, sem alterações). O `06-hydraulic-joint.png` natural mantém-se.
+
+## Revisão do PR #13 (review `5743457040`)
+
+Quando a Digital Hand apontava para uma junta isolada, o destaque laranja voltava a cobrir a estrutura-mãe em fantasma.
+Agora o destaque só se aplica a malhas sólidas, e a isolação volta a aplicar o destaque corrente, por isso a ordem não
+importa (`presentJoint → pointAt` e `pointAt → presentJoint`). A regressão (secção 7) falhava antes (5 sobreposições em
+malhas fantasma) e passa agora. O teste não chama `clearSelection()`. Ficam intactos o retículo, a visibilidade do pino,
+o fantasma e a reposição da vista natural.
+
+Depois disto o desenvolvimento visual parou. Provider para o palco cinemático: `src/living/visual-foundry/provider.ts`
+e `INTEGRATION.md`.
