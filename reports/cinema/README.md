@@ -68,11 +68,15 @@ Each was written as a failing unit test first (missing module / wrong behaviour)
 
 At widths from 768 to about 1480 px the technical readout (left column, 340 px) and the centred motion bar (up to 720 px) shared the same bottom edge and overlapped; the readout, drawn later, intercepted the select, slider and play button. At 390 px the caption sat on the motion bar and intercepted the slider. Fix (CSS only): between 761 and 1480 px the readout stacks directly above the motion bar and scrolls inside its box on short windows; the caption no longer takes pointer events. Browser scenario 11 measures bounding rectangles and uses real pointer interactions at 768, 800, 1024, 1080, 1280, 1440, 1600 and 390 px (74 checks); before the fix it failed 10 of them on the previous HEAD. Limitation: in the stacked layout the readout covers the left part of the picture at 1024 px; "Esconder interface" (H) clears it.
 
+## First pose (review of 5501a2e)
+
+The runtime constructor applied the first sample straight onto the part objects, bypassing the provider's `applyPose`; with the Visual Foundry the hoses stayed on the reference routing whenever the first source was not the reference pose, and a pose-less first frame left the machine visible. The first pose now goes through the same `showPose` path as every later one (provider ownership, pose-less hiding, stage refresh) and only then are bounds and framing computed; `onSample` is still announced once. Browser scenario 12 (16 checks): with an articulated static frame as the first source the hose routing at boot was 59.59 before the fix (the reference's) against 49.60 after re-applying the same sample, and 49.60 = 49.60 after the fix; a pose-less first frame left the machine, root and contact shadow visible before the fix, hidden after; the first pose is applied exactly once; reference and proxy first poses unchanged.
+
 ## Tests
 
 - `npx vitest run --testTimeout=15000`: 1677 passed (88 files; 36 in `tests/living/cinema.test.ts`, 25 in `tests/living/cinema-integration.test.ts`). `npm run build`: ok.
-- Browser E2E `tests/e2e/cinema.pw.mjs`: 174/174 ([`e2e/results.json`](e2e/results.json)): load and proxy labelling, six shots, determinism, keyboard, tour and hand-over, ablation measurements, 20 tier switches, motion-frame playback and blocked state, full screen / hidden interface, 44 px targets, visible focus, 390 px layout, reduced motion, benchmark per tier, adaptive step-down, idle, no console errors, no request outside localhost.
-- Regressions, unchanged: `wall-removal-merge` 174/174, `confirmed-values-authorization` 60/60, `rendering-integration` 63/63.
+- Browser E2E `tests/e2e/cinema.pw.mjs`: 189/189 ([`e2e/results.json`](e2e/results.json)): load and proxy labelling, six shots, determinism, keyboard, tour and hand-over, ablation measurements, 20 tier switches, motion-frame playback and blocked state, full screen / hidden interface, 44 px targets, visible focus, 390 px layout, reduced motion, benchmark per tier, adaptive step-down, idle, no console errors, no request outside localhost.
+- Regressions, unchanged: `wall-removal-merge` 189/189, `confirmed-values-authorization` 60/60, `rendering-integration` 63/63.
 
 ## Limits
 

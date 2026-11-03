@@ -1,12 +1,12 @@
 {
-  "at": "2026-11-03T03:18:56.614Z",
-  "passed": 174,
+  "at": "2026-11-03T03:49:52.543Z",
+  "passed": 189,
   "failed": 0,
   "metrics": {
     "contact": {
-      "withContact": 40.018934004601185,
-      "withoutContact": 53.757038363220985,
-      "ratio": 0.7444408252963017,
+      "withContact": 40.01839189885405,
+      "withoutContact": 53.75329862988767,
+      "ratio": 0.7444825325864411,
       "region": {
         "x": 1027.6483908920359,
         "y": 715.0951294956192,
@@ -22,34 +22,34 @@
         "h": 89.27380616763719
       },
       "withEnvironment": {
-        "mean": 66.16565040473617,
-        "sd": 55.522743506674686,
-        "p50": 50.45439999999999,
-        "p99": 243.2126,
-        "bright": 0.034553582215778665,
+        "mean": 66.12185105714669,
+        "sd": 55.51576179145631,
+        "p50": 49.96099999999999,
+        "p99": 242.9278,
+        "bright": 0.03467439893681285,
         "n": 8277
       },
       "withoutEnvironment": {
-        "mean": 18.21729534855616,
-        "sd": 28.409949759900638,
+        "mean": 18.211591422012727,
+        "sd": 28.39729619741957,
         "p50": 2.4412,
         "p99": 69.3432,
-        "bright": 0.0027787845837863962,
+        "bright": 0.002899601304820587,
         "n": 8277
       }
     },
     "bucketReflections": {
       "with": {
-        "mean": 77.06343827384138,
-        "sd": 55.42195329605995,
+        "mean": 77.05921642467837,
+        "sd": 55.421711991744765,
         "p50": 61.450399999999995,
         "p99": 238,
-        "bright": 0.08187134502923976,
+        "bright": 0.0818461383343416,
         "n": 39672
       },
       "without": {
-        "mean": 36.52994342608832,
-        "sd": 51.76635136942306,
+        "mean": 36.5315922060843,
+        "sd": 51.768958695200475,
         "p50": 16.8676,
         "p99": 234.0682,
         "bright": 0.023391812865497075,
@@ -97,22 +97,22 @@
     "benchmark": {
       "light": {
         "frames": 20,
-        "meanMs": 91.38500000000931,
-        "p95Ms": 493.69999999995343,
+        "meanMs": 93.00000000000291,
+        "p95Ms": 526.4000000000233,
         "calls": 17,
         "triangles": 10263
       },
       "balanced": {
         "frames": 20,
-        "meanMs": 346.38000000001045,
-        "p95Ms": 1734.4000000000233,
+        "meanMs": 342.275,
+        "p95Ms": 1694.2999999999884,
         "calls": 52,
         "triangles": 23669
       },
       "studio": {
         "frames": 20,
-        "meanMs": 584.8849999999977,
-        "p95Ms": 2043.0999999999767,
+        "meanMs": 548.95,
+        "p95Ms": 1870.9000000000233,
         "calls": 93,
         "triangles": 47327
       }
@@ -124,16 +124,16 @@
       "pixelRatio": 1
     },
     "degradeAt1": {
-      "ms": 30665
+      "ms": 31119
     },
     "degradeAt2": {
-      "ms": 51008,
+      "ms": 50436,
       "level": 2
     },
     "poseClock": {
-      "wallS": 3.005,
-      "poseS": 2.6248000000000467,
-      "framesDrawn": 18
+      "wallS": 3.003,
+      "poseS": 2.8435,
+      "framesDrawn": 17
     },
     "integration": {
       "maxBucketStepM": 0.21399777577311177,
@@ -296,7 +296,7 @@
         "lights": 3,
         "contactRenders": 1,
         "frames": 1,
-        "lastFrameMs": 5915.799999999988,
+        "lastFrameMs": 5100.900000000023,
         "caps": {
           "maxTextureSize": 8192,
           "maxSamples": 4,
@@ -312,11 +312,11 @@
       "name": "o canvas mostra a cena (não está em branco nem todo preto)",
       "ok": true,
       "observed": {
-        "mean": 65.53397567074667,
-        "sd": 48.61678897539851,
+        "mean": 65.53455187741329,
+        "sd": 48.61627783591956,
         "p50": 53.5868,
         "p99": 175.0722,
-        "bright": 0.0049479166666666664,
+        "bright": 0.004945138888888889,
         "n": 1440000
       }
     },
@@ -461,7 +461,7 @@
       "scenario": "2 câmara",
       "name": "o percurso (T) move a câmara e fica indicado",
       "ok": true,
-      "observed": 3.347931400131523
+      "observed": 3.5828963685605273
     },
     {
       "scenario": "2 câmara",
@@ -495,9 +495,9 @@
       "name": "a sombra de contacto escurece o chão por baixo do balde (≥ 8 % mais escuro do que sem ela)",
       "ok": true,
       "observed": {
-        "withContact": 40.018934004601185,
-        "withoutContact": 53.757038363220985,
-        "ratio": 0.7444408252963017,
+        "withContact": 40.01839189885405,
+        "withoutContact": 53.75329862988767,
+        "ratio": 0.7444825325864411,
         "region": {
           "x": 1027.6483908920359,
           "y": 715.0951294956192,
@@ -518,19 +518,19 @@
           "h": 89.27380616763719
         },
         "withEnvironment": {
-          "mean": 66.16565040473617,
-          "sd": 55.522743506674686,
-          "p50": 50.45439999999999,
-          "p99": 243.2126,
-          "bright": 0.034553582215778665,
+          "mean": 66.12185105714669,
+          "sd": 55.51576179145631,
+          "p50": 49.96099999999999,
+          "p99": 242.9278,
+          "bright": 0.03467439893681285,
           "n": 8277
         },
         "withoutEnvironment": {
-          "mean": 18.21729534855616,
-          "sd": 28.409949759900638,
+          "mean": 18.211591422012727,
+          "sd": 28.39729619741957,
           "p50": 2.4412,
           "p99": 69.3432,
-          "bright": 0.0027787845837863962,
+          "bright": 0.002899601304820587,
           "n": 8277
         }
       }
@@ -541,16 +541,16 @@
       "ok": true,
       "observed": {
         "with": {
-          "mean": 77.06343827384138,
-          "sd": 55.42195329605995,
+          "mean": 77.05921642467837,
+          "sd": 55.421711991744765,
           "p50": 61.450399999999995,
           "p99": 238,
-          "bright": 0.08187134502923976,
+          "bright": 0.0818461383343416,
           "n": 39672
         },
         "without": {
-          "mean": 36.52994342608832,
-          "sd": 51.76635136942306,
+          "mean": 36.5315922060843,
+          "sd": 51.768958695200475,
           "p50": 16.8676,
           "p99": 234.0682,
           "bright": 0.023391812865497075,
@@ -820,7 +820,7 @@
           "position": [
             12.031886916764373,
             4.0405185903430505,
-            7.522849941729509
+            7.5228499417295085
           ],
           "target": [
             7.1469082050510435,
@@ -862,22 +862,22 @@
       "observed": {
         "light": {
           "frames": 20,
-          "meanMs": 91.38500000000931,
-          "p95Ms": 493.69999999995343,
+          "meanMs": 93.00000000000291,
+          "p95Ms": 526.4000000000233,
           "calls": 17,
           "triangles": 10263
         },
         "balanced": {
           "frames": 20,
-          "meanMs": 346.38000000001045,
-          "p95Ms": 1734.4000000000233,
+          "meanMs": 342.275,
+          "p95Ms": 1694.2999999999884,
           "calls": 52,
           "triangles": 23669
         },
         "studio": {
           "frames": 20,
-          "meanMs": 584.8849999999977,
-          "p95Ms": 2043.0999999999767,
+          "meanMs": 548.95,
+          "p95Ms": 1870.9000000000233,
           "calls": 93,
           "triangles": 47327
         }
@@ -890,22 +890,22 @@
       "observed": {
         "light": {
           "frames": 20,
-          "meanMs": 91.38500000000931,
-          "p95Ms": 493.69999999995343,
+          "meanMs": 93.00000000000291,
+          "p95Ms": 526.4000000000233,
           "calls": 17,
           "triangles": 10263
         },
         "balanced": {
           "frames": 20,
-          "meanMs": 346.38000000001045,
-          "p95Ms": 1734.4000000000233,
+          "meanMs": 342.275,
+          "p95Ms": 1694.2999999999884,
           "calls": 52,
           "triangles": 23669
         },
         "studio": {
           "frames": 20,
-          "meanMs": 584.8849999999977,
-          "p95Ms": 2043.0999999999767,
+          "meanMs": 548.95,
+          "p95Ms": 1870.9000000000233,
           "calls": 93,
           "triangles": 47327
         }
@@ -1047,9 +1047,9 @@
       "name": "o tempo de pose acompanha o relógio real (≥ 2,4 s em 3 s), apesar de frames lentos",
       "ok": true,
       "observed": {
-        "wallS": 3.005,
-        "poseS": 2.6248000000000467,
-        "framesDrawn": 18
+        "wallS": 3.003,
+        "poseS": 2.8435,
+        "framesDrawn": 17
       }
     },
     {
@@ -1132,7 +1132,7 @@
       "observed": {
         "kind": "engine-session",
         "duration": 2.059767381393601,
-        "time": 1.4102999999999302,
+        "time": 1.266,
         "playing": true
       }
     },
@@ -1144,13 +1144,13 @@
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 0.6182326186063989,
+          "time": 0.4227326186063989,
           "playing": false
         },
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 0.6182326186063989,
+          "time": 0.4227326186063989,
           "playing": false
         }
       ]
@@ -1163,13 +1163,13 @@
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 0.6182326186063989,
+          "time": 0.4227326186063989,
           "playing": false
         },
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 0.7024326186063524,
+          "time": 0.5054326186063524,
           "playing": true
         }
       ]
@@ -1470,19 +1470,19 @@
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 1.5925,
+          "time": 1.548400000000023,
           "playing": true
         },
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 0.05293261860635212,
+          "time": 2.0309999999999997,
           "playing": false
         },
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 0.05293261860635212,
+          "time": 2.0309999999999997,
           "playing": false
         }
       ]
@@ -1588,19 +1588,19 @@
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 1.5889000000000233,
+          "time": 1.53079999999993,
           "playing": true
         },
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 0.19143261860646898,
+          "time": 2.03379999999993,
           "playing": false
         },
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 0.19143261860646898,
+          "time": 2.03379999999993,
           "playing": false
         }
       ]
@@ -1706,19 +1706,19 @@
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 1.42920000000007,
+          "time": 1.5824000000000233,
           "playing": true
         },
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 0.5380326186064455,
+          "time": 0.1638326186063761,
           "playing": false
         },
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 0.5380326186064455,
+          "time": 0.1638326186063761,
           "playing": false
         }
       ]
@@ -1824,19 +1824,19 @@
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 1.413399999999907,
+          "time": 1.727899999999907,
           "playing": true
         },
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 0.15923261860639926,
+          "time": 0.40263261860630584,
           "playing": false
         },
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 0.15923261860639926,
+          "time": 0.40263261860630584,
           "playing": false
         }
       ]
@@ -1942,19 +1942,19 @@
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 1.4728999999999068,
+          "time": 1.6068999999999067,
           "playing": true
         },
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 0.26033261860637547,
+          "time": 0.2615326186063287,
           "playing": false
         },
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 0.26033261860637547,
+          "time": 0.2615326186063287,
           "playing": false
         }
       ]
@@ -2060,19 +2060,19 @@
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 1.4234000000000233,
+          "time": 1.4471999999999534,
           "playing": true
         },
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 0.2785326186064454,
+          "time": 0.22103261860632895,
           "playing": false
         },
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 0.2785326186064454,
+          "time": 0.22103261860632895,
           "playing": false
         }
       ]
@@ -2178,19 +2178,19 @@
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 1.462,
+          "time": 1.439,
           "playing": true
         },
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 1.9249000000000231,
+          "time": 1.9155,
           "playing": false
         },
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 1.9249000000000231,
+          "time": 1.9155,
           "playing": false
         }
       ]
@@ -2284,19 +2284,19 @@
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 1.6743000000000465,
+          "time": 1.6407999999999303,
           "playing": true
         },
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 2.0024000000000233,
+          "time": 1.9757999999999303,
           "playing": false
         },
         {
           "kind": "engine-session",
           "duration": 2.059767381393601,
-          "time": 2.0024000000000233,
+          "time": 1.9757999999999303,
           "playing": false
         }
       ]
@@ -2324,6 +2324,111 @@
     },
     {
       "scenario": "11 layout",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "a primeira pose é aplicada exactamente uma vez (sem aplicações duplicadas)",
+      "ok": true,
+      "observed": 1
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "pose articulada inicial: as peças estão na pose do quadro",
+      "ok": true,
+      "observed": 0
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "pose articulada inicial: as mangueiras já estão encaminhadas para essa pose (iguais às de a aplicar de novo)",
+      "ok": true,
+      "observed": {
+        "boot": 49.604682844132185,
+        "again": 49.604682844132185
+      }
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "as mangueiras da pose articulada diferem das da referência (o teste distingue os dois casos)",
+      "ok": true,
+      "observed": {
+        "boot": 49.604682844132185,
+        "ref": 59.5939459502697
+      }
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "sem recusa nem partes desconhecidas na primeira aplicação",
+      "ok": true,
+      "observed": {
+        "refused": null,
+        "unknown": []
+      }
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "pose de referência inicial: mangueiras iguais às de aplicar de novo",
+      "ok": true,
+      "observed": {
+        "boot": 59.5939459502697,
+        "again": 59.5939459502697
+      }
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "pose de referência inicial: máquina visível",
+      "ok": true
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "frame inicial sem poses: a máquina, o espelho e a sombra de contacto estão escondidos desde o primeiro frame",
+      "ok": true,
+      "observed": {
+        "stage": false,
+        "root": false,
+        "mirror": false,
+        "contact": false
+      }
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "frame inicial sem poses: o enquadramento continua válido (câmara finita e a olhar para uma cena com geometria)",
+      "ok": true,
+      "observed": 253744
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "o primeiro quadro com poses repõe a máquina",
+      "ok": true
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "com o proxy a primeira pose articulada também é a do quadro",
+      "ok": true,
+      "observed": 0
+    },
+    {
+      "scenario": "12 pose inicial",
       "name": "sem erros na consola",
       "ok": true,
       "observed": []
