@@ -11,6 +11,8 @@ import { createStudioStage, type StudioStage } from './studio-stage';
 import { applyPose, machineBounds, proxyVisualProvider, type MachineVisualProvider, type MachineVisuals } from './visual-provider';
 import type { PoseSample, PoseSource } from './pose-source';
 import { PoseClock } from './pose-clock';
+import { applyPremiumLook, PREMIUM_STUDIO, type PremiumLookHandle } from '../visual-foundry/premium-look';
+import type { StageProfile } from './studio-stage';
 
 /**
  * The cinematic runtime: a studio stage, a camera director, a post chain and an on-demand render loop around one machine.
@@ -24,6 +26,8 @@ export type CinemaOptions = {
   poseSource: PoseSource;
   provider?: MachineVisualProvider;
   tier?: CinemaTier | null;
+  /** `interactive` (default): the original studio and the Foundry's own materials. `presentation`: premium look + premium studio set + tighter hero. Reversible at any time. */
+  profile?: StageProfile;
   reducedMotion?: boolean;
   /** upper bound for the device pixel ratio (evidence runs raise it to render 4K from a 1080p viewport) */
   pixelRatio?: number;
@@ -37,7 +41,7 @@ export type CinemaOptions = {
 export type CinemaStats = {
   tier: CinemaTier; degrade: 0 | 1 | 2; settings: CinemaSettings; pixelRatio: number; size: [number, number];
   calls: number; triangles: number; geometries: number; textures: number; programs: number; lights: number; contactRenders: number;
-  frames: number; lastFrameMs: number; caps: DeviceCaps; visuals: 'proxy' | 'visual-foundry'; poseSource: PoseSource['kind'];
+  profile: StageProfile; premiumMaterials: number; frames: number; lastFrameMs: number; caps: DeviceCaps; visuals: 'proxy' | 'visual-foundry'; poseSource: PoseSource['kind'];
 };
 
 export class CinemaRuntime {
@@ -51,6 +55,7 @@ export class CinemaRuntime {
   /** how many times a pose sample has been applied to the machine (diagnostics: the first pose must be applied exactly once) */
   poseApplications = 0;
   lastApply: { refused: string | null; unknown: string[] } = { refused: null, unknown: [] };
+  private profileNow: StageProfile = 'interactive'; private lookHandle: PremiumLookHandle | undefined;
   private shotNow: ShotId | 'free' | 'tour' | null = null;
   private constructor(private readonly options: CinemaOptions, visuals: MachineVisuals, materials: StudioMaterials) {
     this.visuals = visuals; this.materials = materials; this.poseSource = options.poseSource;
@@ -78,7 +83,8 @@ export class CinemaRuntime {
     let tip: [number, number, number] | null = null;
     if (tipPart) { const point = tipPart.points.find((pt) => pt.role === 'tool_tip')!; const object = visuals.parts.get(tipPart.id); if (object) { const v = new THREE.Vector3(...point.positionM).applyMatrix4(object.matrixWorld); tip = [v.x, v.y, v.z]; } }
     this.framing = framingOf(bounds, tip);
-    const shots = buildShots(this.framing);
+    this.profileNow = 'interactive';
+    const shots = buildShots(this.framing, 'interactive');
     const first = shots[0]!.keys[0]!;
     this.camera = new THREE.PerspectiveCamera(first.fov, 1, 0.1, 400);
     this.director = new CameraDirector(shots, this.framing.center, first);
@@ -90,6 +96,7 @@ export class CinemaRuntime {
     this.controls.addEventListener('change', () => this.requestFrame());
     this.post = createStudioPost(this.renderer, this.stage.scene, this.camera, 2, 2, this.settings.msaa);
     this.applySettings();
+    if ((options.profile ?? 'interactive') !== 'interactive') this.setProfile(options.profile!);
     this.observer = new ResizeObserver(() => this.resize()); this.observer.observe(options.host); this.resize();
     options.onSample?.(this.poseSource.sample(this.poseTimeS));
     this.requestFrame();
@@ -107,8 +114,22 @@ export class CinemaRuntime {
   get degrade(): 0 | 1 | 2 { return this.degradeLevel; }
   get currentSettings(): CinemaSettings { return this.settings; }
   private applySettings(): void {
-    const s = this.settings; this.renderer.toneMappingExposure = s.exposure;
-    this.stage.apply(s); this.post.setSettings({ ao: s.ao, bloom: s.bloom, grade: s.grade }); this.materials.setEnvIntensity(1);
+    const s = this.settings; const premium = this.profileNow === 'presentation'; this.renderer.toneMappingExposure = premium ? PREMIUM_STUDIO.grade.exposure : s.exposure;
+    this.stage.apply(s); this.post.setGrade(premium ? PREMIUM_STUDIO.grade : null); this.post.setSettings({ ao: s.ao, bloom: s.bloom, grade: s.grade }); this.materials.setEnvIntensity(1);
+  }
+  get profile(): StageProfile { return this.profileNow; }
+  /**
+   * `presentation` swaps in the premium set (environment, lights, floor, grade, tighter hero) and, for a Foundry machine, the premium material look; `interactive`
+   * puts everything back. Materials are cloned for the look and disposed on revert; the premium environment is built once and kept until the runtime is disposed,
+   * so any number of switches leaves resource counts unchanged. Poses, canonical ids and picking are not touched.
+   */
+  setProfile(profile: StageProfile): void {
+    if (this.disposed || profile === this.profileNow) return;
+    this.profileNow = profile; this.stage.applyProfile(profile);
+    if (profile === 'presentation') { if (this.visuals.source === 'visual-foundry') this.lookHandle = applyPremiumLook(this.visuals.root); }
+    else { this.lookHandle?.revert(); this.lookHandle = undefined; }
+    this.stage.materialsChanged(); this.stage.fit(machineBounds(this.visuals)); this.director.reframe(buildShots(this.framing, profile), this.framing.center);
+    this.applySettings(); this.stage.contact.markDirty(); this.requestFrame();
   }
   /** user-chosen tier; resets any automatic degradation */
   setTier(tier: CinemaTier): void {
@@ -146,6 +167,8 @@ export class CinemaRuntime {
   seekShot(id: ShotId, timeS: number): CameraPose {
     this.director.cut(id, this.currentPose(), 0); const pose = this.director.seek(timeS); this.director.release(); this.applyCamera(pose); this.setShot(id); this.renderNow(); return pose;
   }
+  /** puts the camera exactly at `pose` (evidence and tests: identical framing across profiles); hands control to the user afterwards */
+  placeCamera(pose: CameraPose): void { this.director.release(); this.applyCamera(pose); this.setShot('free'); this.renderNow(); }
   free(): void { this.director.release(); this.setShot('free'); }
 
   // --- pose playback -----------------------------------------------------------------------------------------------
@@ -233,7 +256,7 @@ export class CinemaRuntime {
 
   stats(): CinemaStats {
     const info = this.renderer.info; let lights = 0; this.stage.scene.traverse((o) => { if ((o as THREE.Light).isLight) lights += 1; });
-    return { tier: this.settings.tier, degrade: this.degradeLevel, settings: this.settings, pixelRatio: this.renderer.getPixelRatio(), size: this.size, calls: info.render.calls, triangles: info.render.triangles, geometries: info.memory.geometries, textures: info.memory.textures, programs: info.programs?.length ?? 0, lights, contactRenders: this.stage.contact.renders, frames: this.frames, lastFrameMs: this.lastFrameMs, caps: this.caps, visuals: this.visuals.source, poseSource: this.poseSource.kind };
+    return { tier: this.settings.tier, degrade: this.degradeLevel, settings: this.settings, pixelRatio: this.renderer.getPixelRatio(), size: this.size, calls: info.render.calls, triangles: info.render.triangles, geometries: info.memory.geometries, textures: info.memory.textures, programs: info.programs?.length ?? 0, lights, contactRenders: this.stage.contact.renders, profile: this.profileNow, premiumMaterials: this.lookHandle?.materials.length ?? 0, frames: this.frames, lastFrameMs: this.lastFrameMs, caps: this.caps, visuals: this.visuals.source, poseSource: this.poseSource.kind };
   }
 
   /** Keep the stage and playback state while a document is in the back-forward cache. */
@@ -252,7 +275,7 @@ export class CinemaRuntime {
 
   dispose(): void {
     if (this.disposed) return; this.disposed = true; cancelAnimationFrame(this.raf); this.observer.disconnect(); this.controls.dispose();
-    this.post.dispose(); this.stage.dispose(); this.visuals.dispose(); this.materials.dispose();
+    this.lookHandle?.revert(); this.post.dispose(); this.stage.dispose(); this.visuals.dispose(); this.materials.dispose();
     this.renderer.dispose(); this.renderer.forceContextLoss(); this.renderer.domElement.remove();
   }
 }

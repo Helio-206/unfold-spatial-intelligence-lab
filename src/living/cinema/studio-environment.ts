@@ -26,7 +26,10 @@ export const STUDIO_PANELS: ReadonlyArray<Panel> = [
   { id: 'bounce', size: [14, 1.6], position: [0, 0.6, 12], color: '#ffd9b0', radiance: 1.6 },
 ];
 
-export function createStudioEnvironment(renderer: THREE.WebGLRenderer): StudioEnvironment {
+/** Any list of panels in the shape of `PREMIUM_STUDIO.environment` (an `absorber` is a black plane in front of a panel: architecture in the reflections). */
+export type EnvironmentPanel = { id: string; size: readonly [number, number]; position: readonly [number, number, number]; color: string; radiance: number; kind?: 'panel' | 'absorber' };
+
+export function createStudioEnvironment(renderer: THREE.WebGLRenderer, panelSpec: ReadonlyArray<EnvironmentPanel> = STUDIO_PANELS): StudioEnvironment {
   const room = new THREE.Scene();
   const shell = new THREE.Mesh(
     new THREE.SphereGeometry(40, 32, 16),
@@ -38,8 +41,8 @@ export function createStudioEnvironment(renderer: THREE.WebGLRenderer): StudioEn
   );
   room.add(shell);
   const geometry = new THREE.PlaneGeometry(1, 1); const materials: THREE.Material[] = [];
-  for (const p of STUDIO_PANELS) {
-    const material = new THREE.MeshBasicMaterial({ color: new THREE.Color(p.color).multiplyScalar(p.radiance), side: THREE.DoubleSide, toneMapped: false });
+  for (const p of panelSpec) {
+    const material = new THREE.MeshBasicMaterial({ color: p.kind === 'absorber' ? new THREE.Color(0x000000) : new THREE.Color(p.color).multiplyScalar(p.radiance), side: THREE.DoubleSide, toneMapped: false });
     materials.push(material);
     const mesh = new THREE.Mesh(geometry, material);
     mesh.scale.set(p.size[0], p.size[1], 1); mesh.position.set(...p.position); mesh.lookAt(0, 1.8, 0);
@@ -50,5 +53,5 @@ export function createStudioEnvironment(renderer: THREE.WebGLRenderer): StudioEn
   const target = pmrem.fromScene(room, 0.025, 0.1, 100);
   pmrem.dispose();
   shell.geometry.dispose(); (shell.material as THREE.Material).dispose(); geometry.dispose(); for (const m of materials) m.dispose();
-  return { texture: target.texture, panels: STUDIO_PANELS.map((p) => ({ id: p.id, radiance: p.radiance })), dispose() { target.dispose(); } };
+  return { texture: target.texture, panels: panelSpec.map((p) => ({ id: p.id, radiance: p.radiance })), dispose() { target.dispose(); } };
 }

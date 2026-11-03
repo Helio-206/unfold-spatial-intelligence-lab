@@ -10,7 +10,7 @@ import { join, resolve } from 'node:path';
 
 const BASE = process.env.UNFOLD_E2E_URL ?? 'http://127.0.0.1:5199';
 const OUT = resolve(process.env.UNFOLD_E2E_OUT ?? 'reports/cinema/e2e'); mkdirSync(OUT, { recursive: true });
-const ONLY = process.env.UNFOLD_E2E_ONLY; // 1..12
+const ONLY = process.env.UNFOLD_E2E_ONLY; // 1..13
 const checks = []; const external = []; const metrics = {};
 function check(scenario, name, ok, observed) { checks.push({ scenario, name, ok: Boolean(ok), observed }); console.log(`${ok ? 'PASS' : 'FAIL'}  [${scenario}] ${name}${ok ? '' : `  -> ${JSON.stringify(observed)}`}`); }
 const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH ?? '/usr/bin/google-chrome', headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
@@ -320,7 +320,7 @@ try {
     check(sc, 'Reproduzir faz avançar o tempo da reprodução (relógio real)', t1.playing && t1.time > 0.5, t1);
     await page.click('#cinema-play'); await page.waitForTimeout(400); const p0 = await C(page, (c) => c.sourceInfo()); await page.waitForTimeout(1200); const p1 = await C(page, (c) => c.sourceInfo());
     check(sc, 'Pausa congela o instante', !p0.playing && p0.time === p1.time, [p0, p1]);
-    await page.click('#cinema-play'); await page.waitForTimeout(500); const r1 = await C(page, (c) => c.sourceInfo());
+    await page.click('#cinema-play'); await page.waitForFunction((t) => window.__unfoldCinema.sourceInfo().time > t, p1.time, { timeout: 15000 }).catch(() => {}); const r1 = await C(page, (c) => c.sourceInfo()); // a software frame can take over a second: wait for the first frame after resuming
     check(sc, 'Retomar continua a partir do instante em que parou', r1.playing && r1.time > p1.time && r1.time - p1.time < 2.5, [p1, r1]);
     await page.click('#cinema-play'); await page.waitForTimeout(300);
     for (const frac of [0.0, 0.25, 0.5, 0.75, 1.0]) {
@@ -463,6 +463,54 @@ try {
       const parts0 = await C(page, (c) => { const s = c.sampleNow(); return Math.max(...s.parts.map((p) => Math.hypot(...c.partWorld(p.partId).p.map((v, i) => v - p.translationM[i])))); });
       check(sc, 'com o proxy a primeira pose articulada também é a do quadro', parts0 < 1e-9, parts0); check(sc, 'sem erros na consola', errors.length === 0, errors); await ctx.close();
     }
+  }
+
+  // ------------------------------------------------------------------ 13. perfis interactivo / apresentação (aspecto premium reversível)
+  if (!ONLY || ONLY === '13') {
+    const sc = '13 perfis';
+    const { page, ctx, errors } = await open('tier=light&visuals=foundry&motion=reference');
+    await page.evaluate(() => document.querySelector('#cinema-root').classList.remove('is-presenting', 'is-idle'));
+    const parts = async () => C(page, (c) => c.geometryStats().parts.slice().sort().map((id) => [id, c.partWorld(id).p.map((v) => +v.toFixed(9))]));
+    const base = { stats: await C(page, (c) => c.stats()), parts: await parts(), hoses: await C(page, (c) => c.hoseSignature().sum) };
+    check(sc, 'o perfil por omissão é interactivo, sem materiais premium e com 3 luzes', base.stats.profile === 'interactive' && base.stats.premiumMaterials === 0 && base.stats.lights === 3, [base.stats.profile, base.stats.premiumMaterials, base.stats.lights]);
+    await C(page, (c) => c.seekShot('hero', 3)); const pixelsBefore = await grab(page);
+    const pick = await C(page, (c) => c.partScreenCenter('stick')); await C(page, (c) => c.seekShot('profile', 3)); const pick2 = await C(page, (c) => c.partScreenCenter('stick'));
+    const idBefore = await C(page, (c, p) => c.pickAt(p.x, p.y), pick2);
+    await C(page, (c) => c.setProfile('presentation')); await C(page, (c) => c.seekShot('profile', 3));
+    const pres = await C(page, (c) => c.stats());
+    check(sc, 'o perfil de apresentação aplica o aspecto premium (16 materiais clonados) e acrescenta as luzes do set (5)', pres.profile === 'presentation' && pres.premiumMaterials >= 10 && pres.lights === 5, [pres.profile, pres.premiumMaterials, pres.lights]);
+    check(sc, 'os 13 ids canónicos, as poses e as mangueiras não mudam com o perfil', JSON.stringify(await parts()) === JSON.stringify(base.parts) && Math.abs((await C(page, (c) => c.hoseSignature().sum)) - base.hoses) < 1e-9 && (await C(page, (c) => c.geometryStats().parts.length)) === 13, null);
+    const idAfter = await C(page, (c, p) => c.pickAt(p.x, p.y), pick2);
+    check(sc, 'a selecção por clique devolve o mesmo id canónico nos dois perfis (o set do estúdio não contamina a selecção)', idBefore !== null && idBefore === idAfter, [idBefore, idAfter]);
+    const boxes = await C(page, (c) => ['bucket', 'stick', 'boom'].map((id) => c.screenBox(id)));
+    check(sc, 'as medições de ecrã das peças continuam a existir (limites só da máquina)', boxes.every((b) => b && b.w > 5 && b.h > 5), boxes);
+    const presShot = await grab(page); const luma = await lum(page, presShot, { x: 0, y: 0, w: 1600, h: 900 });
+    check(sc, 'o perfil de apresentação muda a imagem e é escuro de facto (luminância média baixa, realces fortes)', hash(presShot) !== hash(pixelsBefore) && luma.mean < 80 && luma.p99 > 150, luma);
+    // poses and hoses still follow articulated frames under the premium look
+    await C(page, (c) => c.setMotion('engine')); await C(page, (c) => c.runtime.seekPose(c.runtime.source.durationS)); await page.waitForTimeout(200);
+    const art = await C(page, (c) => { const s = c.sampleNow(); return { err: Math.max(...s.parts.map((p) => Math.hypot(...c.partWorld(p.partId).p.map((v, i) => v - p.translationM[i])))), hoses: c.hoseSignature().sum }; });
+    check(sc, 'com o aspecto premium, uma pose articulada do motor é aplicada exactamente e as mangueiras são re-encaminhadas', art.err < 1e-9 && Math.abs(art.hoses - base.hoses) > 1e-3, art);
+    // reversibility and no accumulation
+    await C(page, (c) => c.setMotion('reference')); await page.waitForTimeout(150);
+    for (let i = 0; i < 5; i += 1) { await C(page, (c) => { c.setProfile('interactive'); c.renderNow(); c.setProfile('presentation'); c.renderNow(); }); }
+    const mid = await C(page, (c) => c.stats());
+    for (let i = 0; i < 20; i += 1) { await C(page, (c) => { c.setProfile('interactive'); c.renderNow(); c.setProfile('presentation'); c.renderNow(); }); }
+    const after20 = await C(page, (c) => c.stats());
+    check(sc, 'depois de 20 trocas de perfil (a seguir a um aquecimento de 5) as geometrias, texturas, luzes e programas não crescem', after20.geometries === mid.geometries && after20.textures === mid.textures && after20.lights === mid.lights && after20.premiumMaterials === mid.premiumMaterials && after20.programs <= mid.programs + 2, { mid: [mid.geometries, mid.textures, mid.lights, mid.premiumMaterials, mid.programs], after20: [after20.geometries, after20.textures, after20.lights, after20.premiumMaterials, after20.programs] });
+    await C(page, (c) => c.setProfile('interactive')); await C(page, (c) => c.seekShot('hero', 3)); await C(page, (c) => c.seekShot('profile', 3));
+    const back = await C(page, (c) => c.stats());
+    check(sc, 'voltar a interactivo repõe luzes (3) e materiais originais (0 clones)', back.profile === 'interactive' && back.lights === 3 && back.premiumMaterials === 0, [back.profile, back.lights, back.premiumMaterials]);
+    await C(page, (c) => c.seekShot('hero', 3)); const pixelsAfter = await grab(page);
+    check(sc, 'a imagem interactiva depois das trocas é idêntica à do arranque (reversível pixel a pixel)', hash(pixelsAfter) === hash(pixelsBefore), [hash(pixelsAfter), hash(pixelsBefore)]);
+    // buttons
+    await page.click('[data-profile="presentation"]'); await page.waitForTimeout(400);
+    check(sc, 'o botão Apresentação activa o perfil, corta para o plano herói e fica premido', (await C(page, (c) => c.stats().profile)) === 'presentation' && (await page.getAttribute('[data-profile="presentation"]', 'aria-pressed')) === 'true' && (await page.getAttribute('[data-shot="hero"]', 'aria-pressed')) === 'true');
+    await page.click('[data-profile="interactive"]'); await page.waitForTimeout(300);
+    check(sc, 'o botão Interactivo repõe o perfil base', (await C(page, (c) => c.stats().profile)) === 'interactive');
+    const disposed = await C(page, (c) => { c.setProfile('presentation'); return c.disposeNow(); });
+    check(sc, 'dispose com o perfil de apresentação activo liberta tudo (geometrias, texturas) e não dá erros', disposed.geometries === 0 && disposed.textures === 0, disposed);
+    check(sc, 'sem erros na consola', errors.length === 0, errors);
+    await ctx.close();
   }
   check('rede', 'nenhum pedido para fora de localhost', external.length === 0, external);
 } finally {

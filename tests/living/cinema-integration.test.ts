@@ -155,8 +155,8 @@ describe('boundaries between Cinema, Foundry and workspace', () => {
   };
   it('the cinema does not import the workspace (no second selection system, no duplicated pose owner)', () => { expect(imports('src/living/cinema').filter((i) => /workspace-design/.test(i.spec))).toEqual([]); });
   it('neither the Foundry nor the workspace import the cinema', () => { expect([...imports('src/living/visual-foundry'), ...imports('src/living/workspace-design')].filter((i) => /cinema/.test(i.spec))).toEqual([]); });
-  it('the cinema reaches the Foundry only through its provider and registry (no renderer/studio/workspace files)', () => {
-    const f = imports('src/living/cinema').filter((i) => /visual-foundry/.test(i.spec)); expect(f.every((i) => /visual-foundry\/(provider|poses)$/.test(i.spec))).toBe(true);
+  it('the cinema reaches the Foundry only through its provider and registry (plus the shared premium-look profile; no renderer/studio/workspace files)', () => {
+    const f = imports('src/living/cinema').filter((i) => /visual-foundry/.test(i.spec)); expect(f.every((i) => /visual-foundry\/(provider|poses|premium-look)$/.test(i.spec))).toBe(true); // premium-look: the shared, reusable look profile (materials + studio data), not renderer/studio/workspace code
   });
   it('the engine does not import the cinema or the Foundry', () => { expect(imports('src/living/engineering').filter((i) => /cinema|visual-foundry|workspace/.test(i.spec))).toEqual([]); });
 });
