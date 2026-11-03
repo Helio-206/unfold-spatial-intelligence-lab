@@ -57,3 +57,40 @@
 .ux-gw-missing ul { margin: 0; padding-left: var(--space-4); font-size: var(--type-small-size); }
 .ux-gw-sent { display: grid; gap: var(--space-1); color: var(--ink-muted); }
 .ux-gw-sent p { margin: 0; }
+
+/* ---- Embedded: import and review are panels of the workspace, not a second application.
+   The experience's own stage, brand, thumbnail and lab overlay are gone (the workspace has the stage, the brand, the rail and the composer);
+   the panels use the space those leave free. */
+.ux-root[data-embedded="true"] { position: absolute; inset: 0; background: transparent; pointer-events: none; }
+.ux-root[data-embedded="true"] .ux-stage,
+.ux-root[data-embedded="true"] .ux-brand,
+.ux-root[data-embedded="true"] .ux-loading,
+.ux-root[data-embedded="true"] .ux-chips,
+.ux-root[data-embedded="true"] .ux-lab,
+.ux-root[data-embedded="true"] .ux-workspace { display: none; }
+/* in the lab (and the example) the workspace's own chrome is all there is */
+.ux-root[data-embedded="true"][data-phase="lab"],
+.ux-root[data-embedded="true"][data-phase="transition"] { display: none; }
+.ux-root[data-embedded="true"] .ux-main { left: 68px; bottom: calc(var(--uw-composer-h, 76px) + var(--space-6)); }
+.ux-root[data-embedded="true"] .ux-intake,
+.ux-root[data-embedded="true"] .ux-recon { pointer-events: auto; }
+/* panels arrive over the stage instead of cutting in */
+.ux-root[data-embedded="true"] .ux-intake,
+.ux-root[data-embedded="true"] .ux-recon { transition: opacity var(--dur-base) var(--ease-out); }
+@starting-style { .ux-root[data-embedded="true"] .ux-intake, .ux-root[data-embedded="true"] .ux-recon { opacity: 0; } }
+/* the reconstruction keeps the stage visible behind it: no opaque sheet backdrop in review */
+.ux-root[data-embedded="true"][data-phase="review"] .ux-stage { visibility: visible; }
+@media (max-width: 760px) {
+  .ux-root[data-embedded="true"] .ux-main { left: 64px; }
+  /* the card fills the space the rail leaves instead of being centred on the whole screen */
+  .ux-root[data-embedded="true"] .ux-intake { left: 0; right: var(--space-2); width: auto; transform: none; top: auto; bottom: var(--space-2); max-height: calc(100dvh - 200px); }
+}
+
+/* The workspace sets `button { color: inherit }`, which outranks the design system's button variants: restore them inside the panels. */
+.uw-root .u-btn--primary { color: var(--on-fold); }
+.uw-root .u-btn--ink { color: var(--surface); }
+.uw-root .u-btn--outline { color: var(--ink); }
+/* the source sheet was sized for a full-height page; the workspace leaves less (the composer), so it yields a little more height */
+.ux-root[data-embedded="true"] .ux-sheet { width: min(100%, calc((100dvh - 580px) * 2)); }
+.ux-root[data-embedded="true"][data-step="server"] .ux-sheet { width: min(100%, 280px); }
+@media (max-width: 1100px) { .ux-root[data-embedded="true"] .ux-sheet { width: 100%; } }

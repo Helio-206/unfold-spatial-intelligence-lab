@@ -121,7 +121,7 @@ export class SpatialWorkspace {
   private empty = false;
   private placeholder: Assembly;
   private contextNotices = new Set<string>();
-  private intake: { onText(text: string): void; onFile(file: File): void; placeholder: string; status: string } | null = null;
+  private intake: { onText(text: string): void; onFile(file: File): void; placeholder: string; status: string; disabled?: boolean } | null = null;
   private extraTools: ReadonlyArray<NonNullable<WorkspaceOptions['extraTools']>[number]> = [];
   private revealTween: gsap.core.Tween | null = null;
   private defaultPlaceholder = '';
@@ -1128,12 +1128,13 @@ export class SpatialWorkspace {
    * The composer as the way in: while an intake is set, the text and the paperclip describe or attach a SOURCE (a description,
    * a photograph) instead of asking the assistant about a machine. Setting null returns the composer to the assistant.
    */
-  setComposerIntake(intake: { onText(text: string): void; onFile(file: File): void; placeholder: string; status: string } | null): void {
+  setComposerIntake(intake: { onText(text: string): void; onFile(file: File): void; placeholder: string; status: string; disabled?: boolean } | null): void {
     this.intake = intake;
     const input = this.el.input as HTMLTextAreaElement | undefined; if (!input) return;
     input.placeholder = intake?.placeholder ?? this.defaultPlaceholder;
     (this.el.file as HTMLInputElement).accept = intake ? 'image/png,image/jpeg,image/webp' : 'image/png,image/jpeg';
     this.el.attach!.setAttribute('aria-label', intake ? 'Anexar fotografia ou desenho' : 'Anexar imagem de referência');
+    const off = intake?.disabled === true; input.disabled = off; (this.el.attach as HTMLButtonElement).disabled = off; if (off) (this.el.send as HTMLButtonElement).disabled = true;
     this.setComposerState('IDLE', intake?.status ?? 'Modo assistido.');
   }
 

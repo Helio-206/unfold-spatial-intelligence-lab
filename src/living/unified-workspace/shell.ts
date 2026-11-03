@@ -1,66 +1,74 @@
 import './unified.css';
-import plusIcon from 'lucide-static/icons/plus.svg?raw';
+import mark from '../../../design-system/logos/unfold-mark-on-dark.svg';
 import { mountExperience } from '../experience/experience';
 import { DemoReconstructionPort, type DemoScenario } from '../experience/intake';
-import { mountLivingWorkspace } from '../workspace-design/page';
+import type { ComposerMode, EmbeddedHost, ExperienceApi } from '../experience/integration';
+import { EXCAVATOR_ASSEMBLY_V1 } from '../contracts/fixtures/excavator.assembly.v1';
+import { SpatialWorkspace } from '../workspace-design/workspace';
+import { createStudioEnvironment } from '../cinema/studio-environment';
 import { createReconstructionClient } from './reconstruction-client';
 import { LiveReconstructionPort } from './live-port';
 import { asReviewHandoff, ReviewGateway } from './review-bridge';
-import { WorkspaceLabHost } from './lab-host';
-import { createStudioEnvironment } from '../cinema/studio-environment';
+import { EMPTY_BRAND, newProjectIcon, WorkspaceStageHost } from './lab-host';
 
-/** Same page, other mode; every query parameter the person or a test set (debug, motion, agent) is kept. */
-function livingUrl(change: { example?: boolean }): string {
-  const params = new URLSearchParams(location.search);
-  params.delete('flow'); params.delete('demo'); params.delete('scenario'); params.delete('delay');
-  if (change.example) params.set('example', '1'); else params.delete('example');
-  const query = params.toString();
-  return `/living${query ? `?${query}` : ''}`;
-}
+const EXAMPLE_NOTICE = {
+  id: 'example',
+  text: 'Exemplo: máquina sintética de referência · não foi reconstruída a partir de nenhuma fotografia',
+  detail: 'A geometria e as dimensões são de uma montagem de demonstração, escolhida por plausibilidade, não de um fabricante nem de uma fonte sua. Para reconstruir a sua máquina, comece um novo projecto.',
+};
+
+/** What the composer says in each phase of the flow. The composer is the same one, whatever the machine or the domain. */
+const COMPOSER_COPY: Record<ComposerMode, { placeholder: string; status: string; disabled?: boolean } | null> = {
+  intake: { placeholder: 'Descreva a máquina ou anexe uma fotografia', status: 'PNG, JPEG ou WebP · até 10 MB' },
+  busy: { placeholder: 'A aguardar o modelo…', status: 'A reconstruir; pode cancelar no painel.', disabled: true },
+  review: { placeholder: 'Termine a revisão para falar com o assistente', status: 'A revisão é sua; o assistente abre no laboratório.', disabled: true },
+  lab: null,
+};
 
 /**
- * `/living`: one laboratory, the workspace, and it opens EMPTY.
+ * `/living`: ONE workspace, from the empty stage to the machine.
  *
- *   /living            empty lab -> source -> reconstruction -> review -> transition -> the workspace, built from the approved assembly
- *   /living?example=1  the synthetic reference machine, openly labelled as an example, never as something reconstructed
- *
- * Moving between the two is a real navigation, so the browser history, the back-forward cache and disposal keep working.
- * `?flow=reconstruct` is the old name for the default and is still accepted. `?demo` is the Design's labelled demonstration
- * port; it never reaches the real lab.
+ * The workspace (stage, rail, composer, brand) is created once and never replaced. Import and review are panels hosted inside it
+ * (`panelHost`); adopting an assembly replaces the machine on the same stage; the example is another machine on that stage, openly
+ * labelled. `?example=1` opens the example at once. `?demo` is the Design's labelled prototype (its own page, never the real lab).
  */
 export function mountLivingShell(app: HTMLElement): void {
   const params = new URLSearchParams(location.search);
   const debug = params.has('debug-living');
 
-  if (params.has('example')) {
-    mountLivingWorkspace(app, {
-      look: 'premium', premiumEnvironment: createStudioEnvironment,
-      brandLabel: 'exemplo · montagem sintética',
-      initialNotices: [{
-        id: 'example',
-        text: 'Exemplo: máquina sintética de referência · não foi reconstruída a partir de nenhuma fotografia',
-        detail: 'A geometria e as dimensões são de uma montagem de demonstração, escolhida por plausibilidade, não de um fabricante nem de uma fonte sua. Para reconstruir a sua máquina, comece um novo projecto.',
-      }],
-      extraTools: [{ id: 'new', label: 'Novo projecto', hint: 'volta ao laboratório vazio', icon: plusIcon, run: () => location.assign(livingUrl({ example: false })) }],
-    });
+  if (params.has('demo')) {
+    void mountExperience(app, { port: new DemoReconstructionPort((params.get('scenario') as DemoScenario | null) ?? 'observation', Number(params.get('delay') ?? 1200)) });
     return;
   }
 
-  const base = { agent: { mode: (debug && params.get('agent') === 'fixture' ? 'fixture' : 'auto') as 'fixture' | 'auto' }, reducedMotion: debug && params.has('rm') ? params.get('rm') === '1' : undefined };
-  const example = { run: () => location.assign(livingUrl({ example: true })) };
-  // The demonstration port exists only on request and is labelled on every screen; it never reaches the real lab.
-  if (params.has('demo')) {
-    void mountExperience(app, { port: new DemoReconstructionPort((params.get('scenario') as DemoScenario | null) ?? 'observation', Number(params.get('delay') ?? 1200)), example });
-    return;
-  }
+  const workspace = new SpatialWorkspace(app, {
+    assembly: EXCAVATOR_ASSEMBLY_V1, // the hidden placeholder behind the empty stage; replaced by the first machine
+    startEmpty: true, look: 'premium', premiumEnvironment: createStudioEnvironment, logoSrc: mark, brandLabel: EMPTY_BRAND,
+    agent: { mode: debug && params.get('agent') === 'fixture' ? 'fixture' : 'auto' },
+    reducedMotion: debug && params.has('rm') ? params.get('rm') === '1' : undefined,
+  });
+  let api: ExperienceApi | null = null;
+  const embedded: EmbeddedHost = {
+    host: workspace.panelHost,
+    setComposer(mode, intake) {
+      const copy = COMPOSER_COPY[mode];
+      workspace.setComposerIntake(copy ? { onText: intake.text, onFile: intake.file, ...copy } : null);
+    },
+  };
   const port = new LiveReconstructionPort({ client: createReconstructionClient({ timeoutMs: 90_000 }) });
   const gateway = new ReviewGateway(port.session);
-  const lab = new WorkspaceLabHost({
-    base,
-    onMount: (workspace) => { if (debug) Object.assign(window, { __workspace: workspace, __foundry: { ready: true } }); },
-    onUnmount: () => { if (debug) Object.assign(window, { __workspace: null }); },
+  const lab = new WorkspaceStageHost(workspace);
+  const example = {
+    run: () => workspace.replaceAssembly(EXCAVATOR_ASSEMBLY_V1, {
+      reveal: true, brandLabel: 'exemplo · montagem sintética', notices: [EXAMPLE_NOTICE],
+      extraTools: [{ id: 'new', label: 'Novo projecto', hint: 'volta ao laboratório vazio', icon: newProjectIcon, run: () => api?.restart() }],
+    }),
+    close: () => { if (!workspace.isEmpty) workspace.clearMachine({ brandLabel: EMPTY_BRAND, notices: [], extraTools: [] }); },
+  };
+  if (debug) Object.assign(window, { __workspace: workspace, __foundry: { ready: !params.has('example') }, __unified: { port, gateway, lab } });
+  addEventListener('pagehide', (event) => { if (!(event as PageTransitionEvent).persisted) { workspace.dispose(); port.session.dispose(); } });
+  void mountExperience(app, { port, handoff: asReviewHandoff(gateway), lab, example, embedded }).then((experience) => {
+    api = experience;
+    if (params.has('example')) { experience.openExample(); if (debug) (window as unknown as { __foundry: { ready: boolean } }).__foundry.ready = true; }
   });
-  if (debug) Object.assign(window, { __unified: { port, gateway, lab } });
-  addEventListener('pagehide', (event) => { if (!(event as PageTransitionEvent).persisted) { lab.unmount(); port.session.dispose(); } });
-  void mountExperience(app, { port, handoff: asReviewHandoff(gateway), lab, example });
 }

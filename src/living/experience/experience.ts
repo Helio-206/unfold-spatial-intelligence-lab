@@ -23,7 +23,7 @@ import { initialFlow, PHASE_HEADLINE, reduceFlow, type FlowAction, type FlowStat
 import { checkFile, checkText, DEMO_SCENARIO_LABEL, DEMO_SCENARIOS, DemoReconstructionPort, MAX_INPUT_BYTES, TEXT_LIMITS, type DemoScenario, type InputKind, type IntakeInput, type ReconstructionPort } from './intake';
 import { DRAWING_REFERENCE, ENTITY_PARTS } from './reconstruction-fixture';
 import { gatewayPanel, missingHtml, missingLines, type GatewayMessage } from './gateway-view';
-import type { ExperienceOptions } from './integration';
+import type { ComposerMode, ExperienceApi, ExperienceOptions } from './integration';
 import {
   CATEGORY_LABEL, ENGINE_GATE_LABEL, initialReview, labCategory, partCategories, PROPERTY_LABEL, propertyState, readiness, reduceReview, summarize,
   type EngineGate, type ReviewAction, type ReviewItem, type ReviewState,
@@ -38,8 +38,10 @@ const KIND_LABEL: Record<ExcavatorEntityKind, string> = { chassis: 'chassis', bo
 const INPUT_LABEL: Record<InputKind, string> = { image: 'Fotografia', drawing: 'Desenho técnico', text: 'Texto' };
 const kb = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} kB`);
 
-export async function mountExperience(app: HTMLElement, options: ExperienceOptions = {}): Promise<void> {
+export async function mountExperience(app: HTMLElement, options: ExperienceOptions = {}): Promise<ExperienceApi> {
   applyMotionTokens();
+  const embedded = options.embedded;
+  if (embedded) app = embedded.host;
   const q = new URLSearchParams(location.search);
   const reducedMotion = q.has('rm') ? q.get('rm') === '1' : matchMedia('(prefers-reduced-motion: reduce)').matches;
   const port: ReconstructionPort = options.port ?? new DemoReconstructionPort((q.get('scenario') as DemoScenario | null) ?? 'observation', Number(q.get('delay') ?? 1200));
@@ -59,7 +61,7 @@ export async function mountExperience(app: HTMLElement, options: ExperienceOptio
   let gwStep = false;
 
   app.innerHTML = `
-    <div class="ux-root u-root" data-theme="dark" data-phase="empty" data-reduced-motion="${reducedMotion}" data-integrated="${Boolean(options.lab)}">
+    <div class="ux-root u-root" data-theme="dark" data-phase="empty" data-reduced-motion="${reducedMotion}" data-integrated="${Boolean(options.lab)}" data-embedded="${Boolean(embedded)}">
       <div class="ux-stage" id="ux-stage" aria-hidden="true"></div>
       <div class="ux-workspace" id="ux-workspace" hidden></div>
       <div class="ux-chips" id="ux-chips" aria-hidden="true"></div>
@@ -89,16 +91,18 @@ export async function mountExperience(app: HTMLElement, options: ExperienceOptio
   const root = app.querySelector<HTMLElement>('.ux-root')!;
 
   // ------------------------------------------------------------------------------------------ stage (empty lab first)
-  const drawing: DrawingResult = renderDrawing(assembly);
+  // Embedded: the host owns the stage. These stand-ins keep every call below valid without a second renderer.
+  const inertRuntime = { suspend() {}, resume() {}, screenBox: () => null, controls: { addEventListener() {}, dispatchEvent() {} }, stage: { setMachineVisible() {}, machineVisible: false }, visuals: { registry: undefined }, director: { release() {} } } as unknown as CinemaRuntime;
+  const drawing: DrawingResult = embedded ? ({ dataUrl: '', regions: new Map(), projection: { px: [1, 1] } } as unknown as DrawingResult) : renderDrawing(assembly);
   ($('ux-pip-img') as HTMLImageElement).src = drawing.dataUrl;
-  const runtime = await CinemaRuntime.create({
+  const runtime = embedded ? inertRuntime : await CinemaRuntime.create({
     host: $('ux-stage'), assembly, provider: foundryVisualProvider(), reducedMotion, tier: (q.get('tier') as CinemaTier | null),
     poseSource: new ReferencePoseSource(assembly.id, referencePoses().poses), onInspect: (id) => inspect(id),
   });
-  const direction = applyDirection(runtime, (q.get('livery') as LiveryName | null) ?? 'graphite');
+  const direction = embedded ? ({ setMachineGhost() {}, setReveal() {} } as unknown as ReturnType<typeof applyDirection>) : applyDirection(runtime, (q.get('livery') as LiveryName | null) ?? 'graphite');
   runtime.director.release();
-  const sheet3d = buildSheet3d(runtime, drawing);
-  const views = cameraViews(runtime, drawing);
+  const sheet3d = embedded ? ({ set() {} } as unknown as ReturnType<typeof buildSheet3d>) : buildSheet3d(runtime, drawing);
+  const views = embedded ? ({ blend() {} } as unknown as ReturnType<typeof cameraViews>) : cameraViews(runtime, drawing);
   $('ux-loading').hidden = true;
   const showMachine = (on: boolean) => { runtime.stage.setMachineVisible(on); runtime.controls.dispatchEvent({ type: 'change' }); };
   // the empty lab: stage, light and floor, no machine
@@ -137,7 +141,14 @@ export async function mountExperience(app: HTMLElement, options: ExperienceOptio
     if (flow.phase === 'review') { renderReview(); runtime.suspend(); }
     if (flow.phase === 'lab') renderLab();
     placeChips();
+    if (embedded) {
+      const mode: ComposerMode = intake ? (flow.phase === 'waiting' ? 'busy' : 'intake') : flow.phase === 'review' ? 'review' : 'lab';
+      embedded.setComposer(mode, { text: (t) => takeText(t), file: (f) => void takeFile(f) });
+    }
   }
+  /** The reference machine, openly an example. Embedded, the host puts it on its own stage and the flow goes straight to the lab state. */
+  function openExample() { if (!options.example) return; options.example.run(); if (embedded) { cancelAnimationFrame(raf); dispatch({ type: 'enter_example' }); } }
+  function takeText(text: string) { const p = checkText(text); if (p) dispatch({ type: 'reject_input', problem: p }); else selectInput({ kind: 'text', text: text.trim() }); }
 
   // ------------------------------------------------------------------------------------------ intake
   function renderIntake() {
@@ -282,17 +293,19 @@ export async function mountExperience(app: HTMLElement, options: ExperienceOptio
   /** Hand the screen to the real workspace: the cinematic stage stops rendering and is hidden underneath it. */
   function mountLab() {
     if (!options.lab || labMounted || candidate === null) return;
-    runtime.suspend(); $('ux-stage').style.visibility = 'hidden'; $('ux-workspace').hidden = false;
+    if (!embedded) { runtime.suspend(); $('ux-stage').style.visibility = 'hidden'; $('ux-workspace').hidden = false; }
     options.lab.mount($('ux-workspace'), candidate, { gates: gateText(review!, engine), back: () => queueMicrotask(backToReview), restart: () => queueMicrotask(restartAll) }); labMounted = true;
   }
   function leaveLab() {
     if (labMounted) { options.lab?.unmount(); labMounted = false; }
-    $('ux-workspace').hidden = true; $('ux-stage').style.visibility = '';
+    if (!embedded) { $('ux-workspace').hidden = true; $('ux-stage').style.visibility = ''; }
   }
-  function resetIntegration() { options.handoff?.reset(); engine = { status: 'not_run' }; candidate = null; gwMessage = null; gwBusy = false; gwStep = false; }
+  function resetIntegration() { options.example?.close?.(); options.handoff?.reset(); engine = { status: 'not_run' }; candidate = null; gwMessage = null; gwBusy = false; gwStep = false; }
   function enterLab(animated = true) {
     if (!review || readiness(review).status !== 'ready_for_engine') return;
     dispatch({ type: 'open_lab' });
+    // embedded: the machine rises on the workspace's own stage, so there is no second stage to animate
+    if (embedded) { dispatch({ type: 'lab_ready' }); mountLab(); return; }
     $('ux-recon').hidden = true; runtime.resume(); showMachine(true);
     const cats = partCategories(review, ENTITY_PARTS);
     direction.setMachineGhost([...cats].filter(([, c]) => c === 'rejected' || c === 'unknown').map(([p]) => p));
@@ -345,7 +358,7 @@ export async function mountExperience(app: HTMLElement, options: ExperienceOptio
   // ------------------------------------------------------------------------------------------ events
   app.addEventListener('click', (e) => {
     const t = e.target as Element;
-    if (t.closest('[data-example]') && options.example) { options.example.run(); return; }
+    if (t.closest('[data-example]') && options.example) { openExample(); return; }
     const gw = t.closest<HTMLElement>('[data-gw]');
     if (gw && options.handoff && review) {
       const h = options.handoff;
@@ -438,6 +451,7 @@ export async function mountExperience(app: HTMLElement, options: ExperienceOptio
     dispatch: reviewDispatch, flowDispatch: dispatch, submit, selectInput, enterLab, setScenario: (s: DemoScenario) => { if (port instanceof DemoReconstructionPort) port.scenario = s; },
     runtime, transitionAt, TRANSITION_TOTAL,
   } });
+  return { takeText, takeFile: (f) => void takeFile(f), openExample, restart: () => restartAll(), phase: () => flow.phase };
 }
 
 // ---------------------------------------------------------------------------------------------- view helpers (pure)
