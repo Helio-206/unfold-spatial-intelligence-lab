@@ -10,7 +10,7 @@ import { join, resolve } from 'node:path';
 
 const BASE = process.env.UNFOLD_E2E_URL ?? 'http://127.0.0.1:5199';
 const OUT = resolve(process.env.UNFOLD_E2E_OUT ?? 'reports/cinema/e2e'); mkdirSync(OUT, { recursive: true });
-const ONLY = process.env.UNFOLD_E2E_ONLY; // 1..11
+const ONLY = process.env.UNFOLD_E2E_ONLY; // 1..12
 const checks = []; const external = []; const metrics = {};
 function check(scenario, name, ok, observed) { checks.push({ scenario, name, ok: Boolean(ok), observed }); console.log(`${ok ? 'PASS' : 'FAIL'}  [${scenario}] ${name}${ok ? '' : `  -> ${JSON.stringify(observed)}`}`); }
 const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH ?? '/usr/bin/google-chrome', headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
@@ -421,6 +421,48 @@ try {
     }
     check(sc, 'sem erros na consola', errors.length === 0, errors);
     await ctx.close();
+  }
+
+  // ------------------------------------------------------------------ 12. a primeira pose passa pelo mesmo percurso que as seguintes (Foundry: mangueiras)
+  if (!ONLY || ONLY === '12') {
+    const sc = '12 pose inicial';
+    // articulated static frame as the FIRST source: the hoses must already be routed for that pose; re-applying the same sample must change nothing
+    {
+      const { page, ctx, errors } = await open('tier=light&visuals=foundry&initial=articulated');
+      const applicationsAtBoot = await C(page, (c) => c.poseApplications());
+      check(sc, 'a primeira pose é aplicada exactamente uma vez (sem aplicações duplicadas)', applicationsAtBoot === 1, applicationsAtBoot);
+      const boot = await C(page, (c) => c.hoseSignature().sum); const parts0 = await C(page, (c) => { const s = c.sampleNow(); return Math.max(...s.parts.map((p) => Math.hypot(...c.partWorld(p.partId).p.map((v, i) => v - p.translationM[i])))); });
+      await C(page, (c) => c.reapply()); const again = await C(page, (c) => c.hoseSignature().sum);
+      const ref = await (async () => { await C(page, (c) => c.setMotion('reference')); return C(page, (c) => c.hoseSignature().sum); })();
+      check(sc, 'pose articulada inicial: as peças estão na pose do quadro', parts0 < 1e-9, parts0);
+      check(sc, 'pose articulada inicial: as mangueiras já estão encaminhadas para essa pose (iguais às de a aplicar de novo)', Math.abs(boot - again) < 1e-9, { boot, again });
+      check(sc, 'as mangueiras da pose articulada diferem das da referência (o teste distingue os dois casos)', Math.abs(boot - ref) > 1e-3, { boot, ref });
+      const nApplied = await C(page, (c) => c.lastApply());
+      check(sc, 'sem recusa nem partes desconhecidas na primeira aplicação', nApplied.refused === null && nApplied.unknown.length === 0, nApplied);
+      check(sc, 'sem erros na consola', errors.length === 0, errors); await ctx.close();
+    }
+    // reference as the first source, and a pose-less frame as the first source
+    {
+      const { page, ctx, errors } = await open('tier=light&visuals=foundry&motion=reference');
+      const boot = await C(page, (c) => c.hoseSignature().sum); await C(page, (c) => c.reapply()); const again = await C(page, (c) => c.hoseSignature().sum);
+      check(sc, 'pose de referência inicial: mangueiras iguais às de aplicar de novo', Math.abs(boot - again) < 1e-9, { boot, again });
+      check(sc, 'pose de referência inicial: máquina visível', (await C(page, (c) => c.machineVisible())).root === true);
+      check(sc, 'sem erros na consola', errors.length === 0, errors); await ctx.close();
+    }
+    {
+      const { page, ctx, errors } = await open('tier=light&visuals=foundry&initial=poseless');
+      const vis = await C(page, (c) => c.machineVisible()); const bounds = await C(page, (c) => c.geometryStats().triangles);
+      check(sc, 'frame inicial sem poses: a máquina, o espelho e a sombra de contacto estão escondidos desde o primeiro frame', !vis.root && !vis.mirror && !vis.contact, vis);
+      check(sc, 'frame inicial sem poses: o enquadramento continua válido (câmara finita e a olhar para uma cena com geometria)', bounds > 100000 && (await C(page, (c) => c.camera())).position.every(Number.isFinite), bounds);
+      await C(page, (c) => c.setMotion('reference')); await page.waitForTimeout(300);
+      check(sc, 'o primeiro quadro com poses repõe a máquina', (await C(page, (c) => c.machineVisible())).root === true);
+      check(sc, 'sem erros na consola', errors.length === 0, errors); await ctx.close();
+    }
+    {
+      const { page, ctx, errors } = await open('tier=light&visuals=proxy&initial=articulated');
+      const parts0 = await C(page, (c) => { const s = c.sampleNow(); return Math.max(...s.parts.map((p) => Math.hypot(...c.partWorld(p.partId).p.map((v, i) => v - p.translationM[i])))); });
+      check(sc, 'com o proxy a primeira pose articulada também é a do quadro', parts0 < 1e-9, parts0); check(sc, 'sem erros na consola', errors.length === 0, errors); await ctx.close();
+    }
   }
   check('rede', 'nenhum pedido para fora de localhost', external.length === 0, external);
 } finally {

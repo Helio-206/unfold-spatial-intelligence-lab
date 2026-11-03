@@ -48,6 +48,8 @@ export class CinemaRuntime {
   private raf = 0; private clock = new FrameClock(); private lastFrameAt = 0; private disposed = false; private lost = false; private suspended = false;
   private monitor = new FrameMonitor({ window: 45 }); private probeTurn = false; private readonly probePixel = new Uint8Array(4);
   private frames = 0; private lastFrameMs = 0; private observer: ResizeObserver; private pixelRatioCap: number; private size: [number, number] = [1, 1];
+  /** how many times a pose sample has been applied to the machine (diagnostics: the first pose must be applied exactly once) */
+  poseApplications = 0;
   lastApply: { refused: string | null; unknown: string[] } = { refused: null, unknown: [] };
   private shotNow: ShotId | 'free' | 'tour' | null = null;
   private constructor(private readonly options: CinemaOptions, visuals: MachineVisuals, materials: StudioMaterials) {
@@ -65,8 +67,12 @@ export class CinemaRuntime {
 
     this.stage = createStudioStage(this.renderer, this.settings);
     this.stage.attach(visuals);
-    applyPose(visuals, this.poseSource.sample(0)); visuals.root.updateWorldMatrix(true, true); this.stage.poseChanged();
-    const bounds = machineBounds(visuals);
+    // The first pose goes through the SAME path as every later one (provider ownership: Foundry hose routing, pose-less hiding, stage refresh), and only
+    // then are bounds and framing computed. `onSample` is announced once, at the end of construction.
+    this.showPose(false);
+    let bounds = machineBounds(visuals);
+    // a first sample without poses leaves the parts where the provider put them; if that is degenerate (the proxy at the origin), frame a neutral volume instead
+    if (bounds.isEmpty() || bounds.getSize(new THREE.Vector3()).length() < 0.5) bounds = new THREE.Box3(new THREE.Vector3(-4, 0, -4), new THREE.Vector3(4, 3, 4));
     this.stage.fit(bounds);
     const tipPart = options.assembly.parts.find((p) => p.points.some((pt) => pt.role === 'tool_tip'));
     let tip: [number, number, number] | null = null;
@@ -153,15 +159,16 @@ export class CinemaRuntime {
   }
   playPose(playing = !this.posePlaying, loop = true): void { if (this.poseSource.durationS <= 0) return; this.posePlaying = playing; this.poseLoop = loop; if (playing) this.poseClock.start(performance.now()); else this.poseClock.pause(); this.requestFrame(); }
   seekPose(timeS: number): void { this.poseTimeS = Math.min(Math.max(0, timeS), this.poseSource.durationS); this.showPose(); this.requestFrame(); }
-  private showPose(): void {
+  private showPose(notify = true): void {
     const sample = this.poseSource.sample(this.poseTimeS);
     // A sample without poses (invalid assembly, blocked with poseBasis none) shows NO machine: nothing is drawn from an older pose.
     this.stage.setMachineVisible(sample.parts.length > 0);
+    this.poseApplications += 1;
     const r = this.visuals.applyPose ? this.visuals.applyPose(sample) : applyPose(this.visuals, sample);
     this.lastApply = { refused: (r as { refused?: string | null }).refused ?? null, unknown: r.unknown };
     if (this.lastApply.refused) console.warn(`cinema: o fornecedor de geometria recusou o quadro: ${this.lastApply.refused}`);
     if (r.unknown.length) console.warn(`cinema: partes sem objecto visual: ${r.unknown.join(', ')}`);
-    this.visuals.root.updateWorldMatrix(true, true); this.stage.poseChanged(); this.options.onSample?.(sample);
+    this.visuals.root.updateWorldMatrix(true, true); this.stage.poseChanged(); if (notify) this.options.onSample?.(sample);
   }
 
   // --- render loop -------------------------------------------------------------------------------------------------

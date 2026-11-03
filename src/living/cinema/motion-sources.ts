@@ -42,3 +42,15 @@ function dedupeInstants(frames: MotionFrame[]): MotionFrame[] {
   const byTime = new Map<number, MotionFrame>(); for (const f of frames) byTime.set(f.timestampS, f);
   return [...byTime.values()];
 }
+
+/** Debug/test only: the LAST ok frame of the exported scenario shown on its own (an articulated pose that is not the reference), validated like every other source. */
+export function articulatedStaticSource(assembly: Assembly = EXCAVATOR_ASSEMBLY_V1): PoseSource {
+  const frames = exportedScenario().frames.map((f) => f.frame).filter((f) => f.status === 'ok'); const last = frames.reduce((a, b) => (b.timestampS >= a.timestampS ? b : a));
+  return new StaticFrameSource(last, { assemblyId: assembly.id, assemblyDigest: assemblyDigest(assembly), worldFrameId: assembly.root.frameId, partIds: assembly.parts.map((p) => p.id) });
+}
+/** Debug/test only: a valid pose-less frame (invalid assembly) for the same assembly. */
+export function poselessStaticSource(assembly: Assembly = EXCAVATOR_ASSEMBLY_V1): PoseSource {
+  const base = exportedScenario().frames.map((f) => f.frame)[0]!;
+  const frame = { ...structuredClone(base), status: 'invalid_assembly', poseBasis: 'none', parts: [], solver: { ...base.solver, status: 'invalid_assembly' }, blocked: { code: 'INVALID_ASSEMBLY', message: 'Montagem inválida (quadro de teste): sem pose.', subjectIds: [], firstInvalidTimeS: null } };
+  return new StaticFrameSource(frame, { assemblyId: assembly.id, assemblyDigest: assemblyDigest(assembly), worldFrameId: assembly.root.frameId, partIds: assembly.parts.map((p) => p.id) });
+}

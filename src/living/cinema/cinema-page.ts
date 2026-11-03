@@ -4,7 +4,7 @@ import { CinemaRuntime, type CinemaStats } from './cinema-runtime';
 import { SHOT_IDS, type ShotId } from './choreography';
 import { CINEMA_TIERS, type CinemaTier } from './quality';
 import { type PoseSample } from './pose-source';
-import { createMotionSources, MOTION_LABEL, type MotionKey } from './motion-sources';
+import { articulatedStaticSource, createMotionSources, MOTION_LABEL, poselessStaticSource, type MotionKey } from './motion-sources';
 import { CaptionState } from './caption';
 import { Quaternion, Vector3 } from 'three';
 import './cinema.css';
@@ -73,11 +73,12 @@ export async function mountCinema(app: HTMLElement): Promise<CinemaRuntime> {
   const wantFoundry = params.get('visuals') !== 'proxy';
   const motionKey = (params.get('motion') === 'reference' ? 'reference' : (params.get('motion') as MotionKey | null) && (params.get('motion') as string) in MOTION_LABEL ? params.get('motion') : 'engine') as MotionKey;
   const sources = createMotionSources(assembly);
+  const debugInitial = params.has('debug-cinema') ? params.get('initial') : null; // tests only: start from a static articulated or pose-less frame
   const foundry = wantFoundry ? await import('./foundry-provider').then((m) => m.foundryVisualProvider()) : undefined;
   let runtime: CinemaRuntime;
   try {
     runtime = await CinemaRuntime.create({
-      host: $('#cinema-stage'), assembly, poseSource: sources[motionKey](), provider: foundry,
+      host: $('#cinema-stage'), assembly, poseSource: debugInitial === 'articulated' ? articulatedStaticSource(assembly) : debugInitial === 'poseless' ? poselessStaticSource(assembly) : sources[motionKey](), provider: foundry,
       onInspect: (id) => inspect(id),
       tier: (params.get('tier') as CinemaTier | null), reducedMotion, pixelRatio: params.get('dpr') ? Number(params.get('dpr')) : undefined,
       onSample: (s) => showSample(s),
@@ -177,6 +178,8 @@ export async function mountCinema(app: HTMLElement): Promise<CinemaRuntime> {
       geometryStats: () => { let meshes = 0; let triangles = 0; runtime.visuals.root.traverse((o) => { const m = o as import('three').Mesh; if (!m.isMesh) return; meshes += 1; const g = m.geometry; triangles += (g.index ? g.index.count : g.attributes.position!.count) / 3; }); return { meshes, triangles: Math.round(triangles), parts: [...runtime.visuals.parts.keys()], source: runtime.visuals.source }; },
       hoseSignature: () => { let x = 0; let n = 0; runtime.visuals.root.traverse((o) => { const m = o as import('three').Mesh; if (m.isMesh && m.userData.displayOnly) { m.geometry.computeBoundingSphere(); const c = m.geometry.boundingSphere!.center; x += c.x * 3 + c.y * 5 + c.z * 7; n += 1; } }); return { sum: x, hoses: n }; },
       disposeNow: () => { runtime.dispose(); const i = runtime.renderer.info.memory; return { geometries: i.geometries, textures: i.textures, canvasInDom: document.contains(runtime.renderer.domElement) }; },
+      poseApplications: () => runtime.poseApplications,
+      reapply: () => { runtime.seekPose(0); },
       sourceInfo: () => ({ kind: runtime.source.kind, duration: runtime.source.durationS, time: runtime.timeS, playing: runtime.playing }),
       partWorld: (id: string) => { runtime.visuals.root.updateWorldMatrix(true, true); const o = runtime.visuals.parts.get(id); if (!o) return null; return { p: o.getWorldPosition(new Vector3()).toArray(), q: o.getWorldQuaternion(new Quaternion()).toArray() }; },
       sampleNow: () => runtime.source.sample(runtime.timeS), lastApply: () => runtime.lastApply, playPose: (on?: boolean, loop = false) => runtime.playPose(on, loop),
