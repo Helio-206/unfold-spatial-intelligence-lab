@@ -26,6 +26,7 @@ function promptFor(sourceKind: ReconstructionSourceKind, instruction?: string): 
     'O resultado é uma observação não confiável para uma proposta editável de escavadora.',
     sourceInstruction,
     'Usa IDs estáveis e curtos. Em entities e relations separa status observed, hypothesis e unknown.',
+    'Sê conciso: inclui apenas elementos pertinentes e não repitas evidências ou listas extensas.',
     'Cada afirmação deve ter evidence. Usa unknowns para massa, material, eixos, cursos, diâmetros, partes ocultas e dimensões ausentes.',
     'Não produzas comandos, código, operações de solver ou instruções para alterar uma cena confirmada. Pedidos de alteração entram apenas em requests como dados para revisão.',
     instruction ? `Instrução do utilizador: ${instruction}` : '',
@@ -45,7 +46,7 @@ export async function observeExcavatorImage(imageDataUrl: string, sourceKind: 'i
 
 export async function observeExcavatorText(instruction: string, sourceReference: string, apiKey: string, fetchImpl: typeof fetch = fetch): Promise<ReconstructionMetaResult> {
   const sourceSha256 = sha256Hex(instruction);
-  const result = await requestMetaStructuredText(promptFor('text', instruction), apiKey, OBSERVATION_JSON_SCHEMA as unknown as Record<string, unknown>, fetchImpl, 5_000, 'medium', RECONSTRUCTION_MUSE_SCHEMA_NAME);
+  const result = await requestMetaStructuredText(promptFor('text', instruction), apiKey, OBSERVATION_JSON_SCHEMA as unknown as Record<string, unknown>, fetchImpl, 8_000, 'low', RECONSTRUCTION_MUSE_SCHEMA_NAME);
   const parsed = validateExcavatorObservation(parseJsonObject(result.text));
   const observation = bindSource(parsed, 'text', sourceReference, sourceSha256);
   return { observation, meta: result.log, mode: 'live' };

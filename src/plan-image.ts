@@ -6,7 +6,7 @@ const MAX_FILE_BYTES = 20 * 1024 * 1024;
 const MAX_DIMENSION_PX = 10_000;
 const MAX_PIXELS = 16_000_000;
 
-function dimensionsFromHeader(bytes: Uint8Array, mimeType: string): { width: number; height: number } {
+export function dimensionsFromHeader(bytes: Uint8Array, mimeType: string): { width: number; height: number } {
   const ascii = (start: number, length: number) => String.fromCharCode(...bytes.subarray(start, start + length));
   if (mimeType === 'image/png' && bytes.length >= 24 && ascii(0, 8) === '\x89PNG\r\n\x1a\n') {
     const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
