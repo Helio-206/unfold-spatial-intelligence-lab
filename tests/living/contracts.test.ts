@@ -77,6 +77,8 @@ describe('unfold.assembly.v1: o validador recusa o que não é uma montagem', ()
       a.frames.push({ id: 'fa', parentFrameId: 'fb', kind: 'static', pose, description: 'a' }, { id: 'fb', parentFrameId: 'fa', kind: 'static', pose, description: 'b' });
       a.root.frameId = 'fa';
     }, 'INVALID_FRAME'],
+    ['velocidade máxima nula', (a) => { (a.actuators[1] as unknown as { maxRate: { value: number } }).maxRate.value = 0; }, 'INVALID_NUMBER'],
+    ['velocidade máxima negativa', (a) => { (a.actuators[1] as unknown as { maxRate: { value: number } }).maxRate.value = -0.1; }, 'INVALID_NUMBER'],
     ['sem referencial do mundo', (a) => { a.frames = []; }, 'INVALID_FRAME'],
     ['massa em falta (tem de ser null, não omitida)', (a) => { delete (a.parts[0] as Partial<Assembly['parts'][number]>).massKg; }, 'MISSING_FIELD'],
     ['política de colisão inválida', (a) => { (a.collision as { onContact: string }).onContact = 'ignore'; }, 'INVALID_ENUM'],
