@@ -1,0 +1,81 @@
+{
+  "at": "2026-11-02T20:48:39.088Z",
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "frames": {
+    "golden1080": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha": "ef7f86cdad8ed922",
+      "camera": {
+        "position": [
+          16.868430215785274,
+          5.713278232445736,
+          9.739865354577447
+        ],
+        "target": [
+          3.074053047017967,
+          1.8936453035030694,
+          0
+        ],
+        "fov": 29.861357403773685
+      },
+      "stats": {
+        "tier": "studio",
+        "calls": 110,
+        "triangles": 55291,
+        "geometries": 17,
+        "textures": 23,
+        "lights": 3,
+        "pixelRatio": 1,
+        "size": [
+          1920,
+          1080
+        ]
+      }
+    },
+    "tier_studio": {
+      "frames": 10,
+      "meanMs": 5586.689999999944,
+      "p95Ms": 16839.100000000093,
+      "calls": 93,
+      "triangles": 47327
+    },
+    "tier_balanced": {
+      "frames": 10,
+      "meanMs": 2803.789999999991,
+      "p95Ms": 8656.099999999627,
+      "calls": 52,
+      "triangles": 23669
+    },
+    "tier_light": {
+      "frames": 10,
+      "meanMs": 850.8600000000093,
+      "p95Ms": 2432.899999999907,
+      "calls": 17,
+      "triangles": 10263
+    },
+    "golden4k": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha": "987f417761c66df4",
+      "bytes": 13049366,
+      "stats": {
+        "tier": "studio",
+        "pixelRatio": 2,
+        "size": [
+          1920,
+          1080
+        ],
+        "maxTexture": 8192
+      },
+      "note": "native 3840x2160 drawing buffer (no upscaling); software rasteriser"
+    }
+  },
+  "notes": [],
+  "errors": [],
+  "errors4k": []
+}

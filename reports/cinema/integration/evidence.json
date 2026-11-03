@@ -1,0 +1,217 @@
+{
+  "at": "2026-11-03T02:52:55.715Z",
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "note": "software rasteriser; not GPU timings",
+  "frames": [
+    {
+      "name": "hero-engine-t0-1080p.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "sha": "23aea85b9aa5e91d",
+      "t": 0,
+      "digest": "8267c193009a4c3047fa855b793f18183186c47b5be9808bf0d9a780803595dd",
+      "origin": "engine",
+      "worstPoseErrorM": 0
+    },
+    {
+      "name": "hero-engine-end-1080p.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "sha": "4fcf0f51a824dc79",
+      "t": 2.059767381393601,
+      "digest": "1e8a4403eec286c4031dd3d8028728e71cd3a92d269c39e07e5d2f80773d8986",
+      "origin": "engine",
+      "worstPoseErrorM": 0
+    },
+    {
+      "name": "frames/seq-0.png",
+      "size": [
+        1280,
+        720
+      ],
+      "sha": "3a58e3651a83e28b",
+      "t": 0,
+      "interpolated": false,
+      "digest": "6ff7786a9799c2bbfa09259f0f0fa875545a9999a350e9d0faf6ecf8e7dcb3ce",
+      "origin": "engine",
+      "status": "ok",
+      "worstPoseErrorM": 0
+    },
+    {
+      "name": "frames/seq-1.png",
+      "size": [
+        1280,
+        720
+      ],
+      "sha": "edda1950e62e69d0",
+      "t": 0.2690730579283407,
+      "interpolated": false,
+      "digest": "5078cdd8c362d228297c00ea65529a74476cc5b8149c0ec37f62c66281ffa865",
+      "origin": "engine",
+      "status": "ok",
+      "worstPoseErrorM": 0
+    },
+    {
+      "name": "frames/seq-2.png",
+      "size": [
+        1280,
+        720
+      ],
+      "sha": "f7161da0b2e5d11b",
+      "t": 0.5381461158566814,
+      "interpolated": false,
+      "digest": "9a06023eae9902c2b6828235f460a583b0c40442e5f83570bf098766b23ed202",
+      "origin": "engine",
+      "status": "ok",
+      "worstPoseErrorM": 0
+    },
+    {
+      "name": "frames/seq-3.png",
+      "size": [
+        1280,
+        720
+      ],
+      "sha": "e620790db00fea57",
+      "t": 0.7941795462289458,
+      "interpolated": false,
+      "digest": "21a48c4c66a6fa11918dcb5c2381031acda445e04a0fd1106656cee0e25d5821",
+      "origin": "engine",
+      "status": "ok",
+      "worstPoseErrorM": 0
+    },
+    {
+      "name": "frames/seq-4.png",
+      "size": [
+        1280,
+        720
+      ],
+      "sha": "3511c645fb6f769d",
+      "t": 1.0502129766012103,
+      "interpolated": false,
+      "digest": "43ee31b2f88fce5457f925e6682de05cdd0fa1ab4c7a77ef2490ca9ac239312e",
+      "origin": "engine",
+      "status": "ok",
+      "worstPoseErrorM": 0
+    },
+    {
+      "name": "frames/seq-5.png",
+      "size": [
+        1280,
+        720
+      ],
+      "sha": "a6db9fb8497a569c",
+      "t": 1.126418750425977,
+      "interpolated": false,
+      "digest": "c463810dda3316ffee3d929357875b809cf920cd9bb4147b4ff5e7f92207e0e7",
+      "origin": "engine",
+      "status": "ok",
+      "worstPoseErrorM": 0
+    },
+    {
+      "name": "frames/seq-6.png",
+      "size": [
+        1280,
+        720
+      ],
+      "sha": "bdcc979c2b79d989",
+      "t": 1.2026245242507438,
+      "interpolated": false,
+      "digest": "91fcbcad81773ab0db8528e659d230c38dd8754b62b1fd2e204d6268fe8a1e39",
+      "origin": "engine",
+      "status": "ok",
+      "worstPoseErrorM": 0
+    },
+    {
+      "name": "frames/seq-7.png",
+      "size": [
+        1280,
+        720
+      ],
+      "sha": "03e3255f1f9c766e",
+      "t": 1.6311959528221724,
+      "interpolated": false,
+      "digest": "421b8c594a87d2028840eec5786b4afb565350578a2afcc1653bf8f47b53b6c5",
+      "origin": "engine",
+      "status": "ok",
+      "worstPoseErrorM": 0
+    },
+    {
+      "name": "frames/seq-8.png",
+      "size": [
+        1280,
+        720
+      ],
+      "sha": "b055d237374747cd",
+      "t": 2.059767381393601,
+      "interpolated": false,
+      "digest": "1872088f2c13cb62914c2080adaacfec02ff0470f08b8bf03ad18c2f754518f1",
+      "origin": "engine",
+      "status": "ok",
+      "worstPoseErrorM": 0
+    },
+    {
+      "name": "frames/blocked-curso.png",
+      "size": [
+        1280,
+        720
+      ],
+      "sha": "3a58e3651a83e28b",
+      "status": "blocked",
+      "poseBasis": "reference",
+      "blocked": {
+        "code": "STROKE_OUT_OF_RANGE",
+        "firstInvalidTimeS": null,
+        "message": "O curso 0.9 m de boom_cylinder está fora de [0, 0.76] m.",
+        "subjectIds": [
+          "boom_cylinder"
+        ]
+      },
+      "digest": "44faa4b77945996fa066a200a824a902090fda00991ed141630dae466a353136",
+      "origin": "engine",
+      "caption": "Bloqueado: O curso 0.9 m de boom_cylinder está fora de [0, 0.76] m.",
+      "worstPoseErrorM": 2.3603665272841412e-15
+    },
+    {
+      "name": "frames/blocked-colisao.png",
+      "size": [
+        1280,
+        720
+      ],
+      "sha": "3a58e3651a83e28b",
+      "status": "blocked",
+      "poseBasis": "reference",
+      "blocked": {
+        "code": "COLLISION",
+        "firstInvalidTimeS": null,
+        "message": "Colisão: bucket_cyl_barrel abaixo do chão (0.8812 m); bucket_cyl_rod abaixo do chão (2.2305 m); stick abaixo do chão (2.0658 m).",
+        "subjectIds": [
+          "bucket_cyl_barrel",
+          "bucket_cyl_rod",
+          "stick"
+        ]
+      },
+      "digest": "fdb9771d99be8985afc15db117b51023fcc93ec0cade52b0f55bbebeea0256fb",
+      "origin": "engine",
+      "caption": "Bloqueado: Colisão: bucket_cyl_barrel abaixo do chão (0.8812 m); bucket_cyl_rod abaixo do chão (2.2305 m); stick abaixo do chão (2.0658 m).",
+      "worstPoseErrorM": 2.3603665272841412e-15
+    }
+  ],
+  "errors": [],
+  "geometry": {
+    "source": "visual-foundry",
+    "meshes": 64,
+    "triangles": 253744,
+    "parts": 13
+  },
+  "benchmarkStudio1080": {
+    "frames": 3,
+    "meanMs": 10557.600000000015,
+    "p95Ms": 21341.800000000047,
+    "calls": 355,
+    "triangles": 1460207
+  }
+}

@@ -19,6 +19,9 @@ switch (window.location.pathname) {
   case '/phase-4a':
     void import('./phase4a');
     break;
+  case '/cinema':
+    void import('./living/cinema/cinema-page').then(({ mountCinema }) => mountCinema(app));
+    break;
   case '/workspace':
     void import('./workspace');
     break;

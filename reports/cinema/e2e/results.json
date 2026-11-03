@@ -1,0 +1,2443 @@
+{
+  "at": "2026-11-03T03:49:52.543Z",
+  "passed": 189,
+  "failed": 0,
+  "metrics": {
+    "contact": {
+      "withContact": 40.01839189885405,
+      "withoutContact": 53.75329862988767,
+      "ratio": 0.7444825325864411,
+      "region": {
+        "x": 1027.6483908920359,
+        "y": 715.0951294956192,
+        "w": 174.23920962483407,
+        "h": 125.81337797596345
+      }
+    },
+    "reflections": {
+      "rodRect": {
+        "x": 722.5047944763736,
+        "y": 417.4537967922938,
+        "w": 93.06281727909288,
+        "h": 89.27380616763719
+      },
+      "withEnvironment": {
+        "mean": 66.12185105714669,
+        "sd": 55.51576179145631,
+        "p50": 49.96099999999999,
+        "p99": 242.9278,
+        "bright": 0.03467439893681285,
+        "n": 8277
+      },
+      "withoutEnvironment": {
+        "mean": 18.211591422012727,
+        "sd": 28.39729619741957,
+        "p50": 2.4412,
+        "p99": 69.3432,
+        "bright": 0.002899601304820587,
+        "n": 8277
+      }
+    },
+    "bucketReflections": {
+      "with": {
+        "mean": 77.05921642467837,
+        "sd": 55.421711991744765,
+        "p50": 61.450399999999995,
+        "p99": 238,
+        "bright": 0.0818461383343416,
+        "n": 39672
+      },
+      "without": {
+        "mean": 36.5315922060843,
+        "sd": 51.768958695200475,
+        "p50": 16.8676,
+        "p99": 234.0682,
+        "bright": 0.023391812865497075,
+        "n": 39672
+      }
+    },
+    "cycles": [
+      {
+        "geometries": 17,
+        "textures": 5,
+        "programs": 17,
+        "lights": 3
+      },
+      {
+        "geometries": 17,
+        "textures": 5,
+        "programs": 17,
+        "lights": 3
+      },
+      {
+        "geometries": 17,
+        "textures": 5,
+        "programs": 17,
+        "lights": 3
+      },
+      {
+        "geometries": 17,
+        "textures": 5,
+        "programs": 17,
+        "lights": 3
+      },
+      {
+        "geometries": 17,
+        "textures": 5,
+        "programs": 17,
+        "lights": 3
+      },
+      {
+        "geometries": 17,
+        "textures": 5,
+        "programs": 17,
+        "lights": 3
+      }
+    ],
+    "benchmark": {
+      "light": {
+        "frames": 20,
+        "meanMs": 93.00000000000291,
+        "p95Ms": 526.4000000000233,
+        "calls": 17,
+        "triangles": 10263
+      },
+      "balanced": {
+        "frames": 20,
+        "meanMs": 342.275,
+        "p95Ms": 1694.2999999999884,
+        "calls": 52,
+        "triangles": 23669
+      },
+      "studio": {
+        "frames": 20,
+        "meanMs": 548.95,
+        "p95Ms": 1870.9000000000233,
+        "calls": 93,
+        "triangles": 47327
+      }
+    },
+    "caps": {
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "software": true,
+      "maxTexture": 8192,
+      "pixelRatio": 1
+    },
+    "degradeAt1": {
+      "ms": 31119
+    },
+    "degradeAt2": {
+      "ms": 50436,
+      "level": 2
+    },
+    "poseClock": {
+      "wallS": 3.003,
+      "poseS": 2.8435,
+      "framesDrawn": 17
+    },
+    "integration": {
+      "maxBucketStepM": 0.21399777577311177,
+      "totalPathM": 4.763443689865419,
+      "samples": 41
+    },
+    "layout": {
+      "768px": {
+        "motion": [
+          24,
+          746,
+          744,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      },
+      "800px": {
+        "motion": [
+          40,
+          746,
+          760,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      },
+      "1024px": {
+        "motion": [
+          152,
+          746,
+          872,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      },
+      "1080px": {
+        "motion": [
+          180,
+          746,
+          900,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      },
+      "1280px": {
+        "motion": [
+          280,
+          746,
+          1000,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      },
+      "1440px": {
+        "motion": [
+          360,
+          746,
+          1080,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      },
+      "1600px": {
+        "motion": [
+          440,
+          746,
+          1160,
+          812
+        ],
+        "readout": [
+          24,
+          260,
+          364,
+          812
+        ]
+      },
+      "390px": {
+        "motion": [
+          8,
+          646,
+          382,
+          768
+        ],
+        "readout": null
+      }
+    }
+  },
+  "checks": [
+    {
+      "scenario": "1 carga",
+      "name": "o estúdio arranca no nível pedido (studio) e a cena tem 3 luzes",
+      "ok": true,
+      "observed": {
+        "tier": "studio",
+        "lights": 3
+      }
+    },
+    {
+      "scenario": "1 carga",
+      "name": "a geometria é o proxy dos shapes do contrato e a pose é a de referência",
+      "ok": true,
+      "observed": {
+        "tier": "studio",
+        "degrade": 0,
+        "settings": {
+          "tier": "studio",
+          "maxPixelRatio": 2,
+          "msaa": 4,
+          "ao": true,
+          "bloom": true,
+          "grade": true,
+          "shadows": true,
+          "shadowMapSize": 2048,
+          "softShadowRadius": 5,
+          "mirror": true,
+          "contact": true,
+          "contactResolution": 512,
+          "environmentIntensity": 1,
+          "exposure": 1.15
+        },
+        "pixelRatio": 1,
+        "size": [
+          1600,
+          900
+        ],
+        "calls": 112,
+        "triangles": 55675,
+        "geometries": 17,
+        "textures": 23,
+        "programs": 23,
+        "lights": 3,
+        "contactRenders": 1,
+        "frames": 1,
+        "lastFrameMs": 5100.900000000023,
+        "caps": {
+          "maxTextureSize": 8192,
+          "maxSamples": 4,
+          "software": true,
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "visuals": "proxy",
+        "poseSource": "reference-fixture"
+      }
+    },
+    {
+      "scenario": "1 carga",
+      "name": "o canvas mostra a cena (não está em branco nem todo preto)",
+      "ok": true,
+      "observed": {
+        "mean": 65.53455187741329,
+        "sd": 48.61627783591956,
+        "p50": 53.5868,
+        "p99": 175.0722,
+        "bright": 0.004945138888888889,
+        "n": 1440000
+      }
+    },
+    {
+      "scenario": "1 carga",
+      "name": "a interface diz que a geometria é proxy e a montagem sintética (nada é apresentado como real)",
+      "ok": true,
+      "observed": "proxy dos shapes do contrato"
+    },
+    {
+      "scenario": "1 carga",
+      "name": "o botão de reprodução está escondido enquanto a fonte de pose não tem movimento (e escondido de facto, não só marcado)",
+      "ok": true
+    },
+    {
+      "scenario": "1 carga",
+      "name": "o contador de chamadas conta todas as passagens do frame (não só a última)",
+      "ok": true,
+      "observed": 110
+    },
+    {
+      "scenario": "1 carga",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "2 câmara",
+      "name": "os seis planos são câmaras distintas (mais de 1 m entre quaisquer duas)",
+      "ok": true,
+      "observed": [
+        [
+          "hero",
+          "profile",
+          17.545238308109475
+        ],
+        [
+          "hero",
+          "bucket",
+          5.598429923589862
+        ],
+        [
+          "hero",
+          "reach",
+          27.566674858436947
+        ],
+        [
+          "hero",
+          "top",
+          17.48069007264052
+        ],
+        [
+          "hero",
+          "orbit",
+          11.731200743443484
+        ],
+        [
+          "profile",
+          "bucket",
+          15.53475535424857
+        ],
+        [
+          "profile",
+          "reach",
+          17.72757804899154
+        ],
+        [
+          "profile",
+          "top",
+          25.144542088700202
+        ],
+        [
+          "profile",
+          "orbit",
+          6.927334977023316
+        ],
+        [
+          "bucket",
+          "reach",
+          22.928624711847203
+        ],
+        [
+          "bucket",
+          "top",
+          16.765565303244443
+        ],
+        [
+          "bucket",
+          "orbit",
+          10.529074513159163
+        ],
+        [
+          "reach",
+          "top",
+          25.016808862253985
+        ],
+        [
+          "reach",
+          "orbit",
+          19.371202800184946
+        ],
+        [
+          "top",
+          "orbit",
+          19.05486692717104
+        ]
+      ]
+    },
+    {
+      "scenario": "2 câmara",
+      "name": "os seis planos dão imagens diferentes",
+      "ok": true,
+      "observed": {
+        "hero": "487a30d2e34f9cd8",
+        "profile": "b52adc2019f6db9e",
+        "bucket": "c4e5177b40ec404f",
+        "reach": "2e269a82c094de7a",
+        "top": "679bdadbc8afea47",
+        "orbit": "33502ae7c9e961fa"
+      }
+    },
+    {
+      "scenario": "2 câmara",
+      "name": "o mesmo plano ao mesmo instante dá exactamente a mesma câmara e a mesma imagem (determinístico)",
+      "ok": true,
+      "observed": [
+        "b52adc2019f6db9e",
+        "b52adc2019f6db9e"
+      ]
+    },
+    {
+      "scenario": "2 câmara",
+      "name": "o botão do plano fica premido e a câmara começa a mover-se",
+      "ok": true
+    },
+    {
+      "scenario": "2 câmara",
+      "name": "a tecla 1 passa ao plano herói",
+      "ok": true
+    },
+    {
+      "scenario": "2 câmara",
+      "name": "o percurso (T) move a câmara e fica indicado",
+      "ok": true,
+      "observed": 3.5828963685605273
+    },
+    {
+      "scenario": "2 câmara",
+      "name": "agarrar a câmara devolve o controlo ao utilizador (percurso para, «Livre» fica indicado)",
+      "ok": true
+    },
+    {
+      "scenario": "2 câmara",
+      "name": "o zoom está limitado (não atravessa a máquina)",
+      "ok": true,
+      "observed": {
+        "d": 1.4186946829608098,
+        "min": 1.4186946829608098,
+        "max": 34.04867239105943
+      }
+    },
+    {
+      "scenario": "2 câmara",
+      "name": "a câmara nunca fica abaixo do chão",
+      "ok": true,
+      "observed": null
+    },
+    {
+      "scenario": "2 câmara",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "3 qualidade visual",
+      "name": "a sombra de contacto escurece o chão por baixo do balde (≥ 8 % mais escuro do que sem ela)",
+      "ok": true,
+      "observed": {
+        "withContact": 40.01839189885405,
+        "withoutContact": 53.75329862988767,
+        "ratio": 0.7444825325864411,
+        "region": {
+          "x": 1027.6483908920359,
+          "y": 715.0951294956192,
+          "w": 174.23920962483407,
+          "h": 125.81337797596345
+        }
+      }
+    },
+    {
+      "scenario": "3 qualidade visual",
+      "name": "a haste cromada reflecte o estúdio: realces e contraste muito acima de sem ambiente",
+      "ok": true,
+      "observed": {
+        "rodRect": {
+          "x": 722.5047944763736,
+          "y": 417.4537967922938,
+          "w": 93.06281727909288,
+          "h": 89.27380616763719
+        },
+        "withEnvironment": {
+          "mean": 66.12185105714669,
+          "sd": 55.51576179145631,
+          "p50": 49.96099999999999,
+          "p99": 242.9278,
+          "bright": 0.03467439893681285,
+          "n": 8277
+        },
+        "withoutEnvironment": {
+          "mean": 18.211591422012727,
+          "sd": 28.39729619741957,
+          "p50": 2.4412,
+          "p99": 69.3432,
+          "bright": 0.002899601304820587,
+          "n": 8277
+        }
+      }
+    },
+    {
+      "scenario": "3 qualidade visual",
+      "name": "o balde em aço também depende do estúdio: sem ambiente fica escuro, com ele recebe os reflexos (luminância média ≥ 1,5×)",
+      "ok": true,
+      "observed": {
+        "with": {
+          "mean": 77.05921642467837,
+          "sd": 55.421711991744765,
+          "p50": 61.450399999999995,
+          "p99": 238,
+          "bright": 0.0818461383343416,
+          "n": 39672
+        },
+        "without": {
+          "mean": 36.5315922060843,
+          "sd": 51.768958695200475,
+          "p50": 16.8676,
+          "p99": 234.0682,
+          "bright": 0.023391812865497075,
+          "n": 39672
+        }
+      }
+    },
+    {
+      "scenario": "3 qualidade visual",
+      "name": "a cadeia de pós-processamento altera de facto a imagem (AO, realce, grading)",
+      "ok": true,
+      "observed": null
+    },
+    {
+      "scenario": "3 qualidade visual",
+      "name": "a cena tem luz chave, luz de recorte e preenchimento",
+      "ok": true,
+      "observed": 3
+    },
+    {
+      "scenario": "3 qualidade visual",
+      "name": "o chão espelhado altera a imagem abaixo da máquina",
+      "ok": true,
+      "observed": null
+    },
+    {
+      "scenario": "3 qualidade visual",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "4 ciclo de vida",
+      "name": "depois de 20 trocas geometrias, texturas e luzes não crescem (comparado com o 2.º ciclo completo)",
+      "ok": true,
+      "observed": [
+        {
+          "geometries": 17,
+          "textures": 5,
+          "programs": 17,
+          "lights": 3
+        },
+        {
+          "geometries": 17,
+          "textures": 5,
+          "programs": 17,
+          "lights": 3
+        },
+        {
+          "geometries": 17,
+          "textures": 5,
+          "programs": 17,
+          "lights": 3
+        },
+        {
+          "geometries": 17,
+          "textures": 5,
+          "programs": 17,
+          "lights": 3
+        },
+        {
+          "geometries": 17,
+          "textures": 5,
+          "programs": 17,
+          "lights": 3
+        },
+        {
+          "geometries": 17,
+          "textures": 5,
+          "programs": 17,
+          "lights": 3
+        }
+      ]
+    },
+    {
+      "scenario": "4 ciclo de vida",
+      "name": "os programas de shader estabilizam",
+      "ok": true,
+      "observed": [
+        17,
+        17,
+        17,
+        17,
+        17,
+        17
+      ]
+    },
+    {
+      "scenario": "4 ciclo de vida",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "5 quadros de movimento",
+      "name": "a fonte de pose passa a ser a de quadros validados e o botão de reprodução aparece",
+      "ok": true
+    },
+    {
+      "scenario": "5 quadros de movimento",
+      "name": "entre dois quadros ok a pose aparece como suavizada e o estado é ok",
+      "ok": true,
+      "observed": "solved · suavizada entre dois quadros (sem medidas)"
+    },
+    {
+      "scenario": "5 quadros de movimento",
+      "name": "um quadro bloqueado mostra «blocked», a base «held_last_valid» e a mensagem do motor, sem inventar pose",
+      "ok": true,
+      "observed": {
+        "status": "blocked",
+        "basis": "held_last_valid",
+        "caption": "Bloqueado: Quadro bloqueado de teste: a pose mostrada é a última válida."
+      }
+    },
+    {
+      "scenario": "5 quadros de movimento",
+      "name": "a linha de estado fica marcada como desconhecida/bloqueada",
+      "ok": true
+    },
+    {
+      "scenario": "5 quadros de movimento",
+      "name": "os quadros de transporte (pose de referência repetida) dão exactamente a mesma imagem que a pose de referência",
+      "ok": true,
+      "observed": [
+        "0334c6055db216a3",
+        "0334c6055db216a3"
+      ]
+    },
+    {
+      "scenario": "5 quadros de movimento",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "6 apresentação",
+      "name": "o foco por teclado é visível nos botões",
+      "ok": true,
+      "observed": {
+        "firstFocus": "cinema-logo|",
+        "focus": {
+          "outline": "solid",
+          "w": "2px",
+          "shadow": "none"
+        }
+      }
+    },
+    {
+      "scenario": "6 apresentação",
+      "name": "todos os alvos têm pelo menos 44 px de altura",
+      "ok": true,
+      "observed": [
+        44,
+        44,
+        44,
+        44,
+        44,
+        44,
+        44,
+        44,
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "scenario": "6 apresentação",
+      "name": "o botão põe o palco em ecrã inteiro (ou, se o navegador não deixar, esconde a interface e avisa)",
+      "ok": true,
+      "observed": {
+        "el": "cinema-root",
+        "presenting": true,
+        "pressed": "true"
+      }
+    },
+    {
+      "scenario": "6 apresentação",
+      "name": "em apresentação a interface desaparece e o canvas ocupa o ecrã todo",
+      "ok": true,
+      "observed": {
+        "shots": "0",
+        "readout": "0",
+        "top": "0"
+      }
+    },
+    {
+      "scenario": "6 apresentação",
+      "name": "o canvas tem o tamanho da janela",
+      "ok": true,
+      "observed": [
+        1600,
+        900,
+        1600,
+        900
+      ]
+    },
+    {
+      "scenario": "6 apresentação",
+      "name": "mexer o rato volta a mostrar a barra de topo (para sair)",
+      "ok": true
+    },
+    {
+      "scenario": "6 apresentação",
+      "name": "H alterna a interface",
+      "ok": true
+    },
+    {
+      "scenario": "6 apresentação",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "7 telemóvel e acessibilidade",
+      "name": "sem scroll horizontal e a barra de planos cabe no ecrã de 390 px",
+      "ok": true,
+      "observed": {
+        "scrollW": 390,
+        "vw": 390,
+        "shots": {
+          "l": 8,
+          "r": 382
+        },
+        "top": 190,
+        "canvas": [
+          390,
+          844
+        ]
+      }
+    },
+    {
+      "scenario": "7 telemóvel e acessibilidade",
+      "name": "o canvas acompanha o ecrã",
+      "ok": true,
+      "observed": [
+        390,
+        844
+      ]
+    },
+    {
+      "scenario": "7 telemóvel e acessibilidade",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "7 telemóvel e acessibilidade",
+      "name": "movimento reduzido: o plano é um corte directo (a câmara chega logo e fica quieta)",
+      "ok": true,
+      "observed": {
+        "c0": {
+          "position": [
+            17.165028670448088,
+            5.914769799026345,
+            10.237693051508838
+          ],
+          "target": [
+            3.074053047017967,
+            1.8936453035030694,
+            0
+          ],
+          "fov": 30
+        },
+        "c1": {
+          "position": [
+            12.031886916764373,
+            4.0405185903430505,
+            7.5228499417295085
+          ],
+          "target": [
+            7.1469082050510435,
+            1.6005968869579659,
+            0
+          ],
+          "fov": 28.82843586311541
+        },
+        "c2": {
+          "position": [
+            12.031886916764373,
+            4.0405185903430505,
+            7.522849941729509
+          ],
+          "target": [
+            7.1469082050510435,
+            1.6005968869579659,
+            0
+          ],
+          "fov": 28.82843586311541
+        }
+      }
+    },
+    {
+      "scenario": "7 telemóvel e acessibilidade",
+      "name": "movimento reduzido: o percurso não anima (corta para o primeiro plano e o realizador fica inactivo)",
+      "ok": true
+    },
+    {
+      "scenario": "7 telemóvel e acessibilidade",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "8 desempenho",
+      "name": "medido em cada nível (Chrome + SwiftShader: software, não GPU)",
+      "ok": true,
+      "observed": {
+        "light": {
+          "frames": 20,
+          "meanMs": 93.00000000000291,
+          "p95Ms": 526.4000000000233,
+          "calls": 17,
+          "triangles": 10263
+        },
+        "balanced": {
+          "frames": 20,
+          "meanMs": 342.275,
+          "p95Ms": 1694.2999999999884,
+          "calls": 52,
+          "triangles": 23669
+        },
+        "studio": {
+          "frames": 20,
+          "meanMs": 548.95,
+          "p95Ms": 1870.9000000000233,
+          "calls": 93,
+          "triangles": 47327
+        }
+      }
+    },
+    {
+      "scenario": "8 desempenho",
+      "name": "o nível leve é mais barato do que o de estúdio",
+      "ok": true,
+      "observed": {
+        "light": {
+          "frames": 20,
+          "meanMs": 93.00000000000291,
+          "p95Ms": 526.4000000000233,
+          "calls": 17,
+          "triangles": 10263
+        },
+        "balanced": {
+          "frames": 20,
+          "meanMs": 342.275,
+          "p95Ms": 1694.2999999999884,
+          "calls": 52,
+          "triangles": 23669
+        },
+        "studio": {
+          "frames": 20,
+          "meanMs": 548.95,
+          "p95Ms": 1870.9000000000233,
+          "calls": 93,
+          "triangles": 47327
+        }
+      }
+    },
+    {
+      "scenario": "8 desempenho",
+      "name": "em repouso não há ciclo de desenho (nenhum frame em 3 s sem input)",
+      "ok": true,
+      "observed": [
+        5,
+        5
+      ]
+    },
+    {
+      "scenario": "8 desempenho",
+      "name": "a degradação adaptativa desce sozinha em frames lentos e avisa o utilizador",
+      "ok": true,
+      "observed": {
+        "level": 2,
+        "caption": "Dispositivo lento: realce, sombras mais leves e resolução reduzida."
+      }
+    },
+    {
+      "scenario": "8 desempenho",
+      "name": "a degradação nunca sobe sozinha e o nível fica reflectido no estado",
+      "ok": true
+    },
+    {
+      "scenario": "8 desempenho",
+      "name": "depois de degradar e parar a câmara não há ciclo de desenho",
+      "ok": true,
+      "observed": [
+        129,
+        129
+      ]
+    },
+    {
+      "scenario": "8 desempenho",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "ponto de partida: a máquina (laranja) vê-se",
+      "ok": true,
+      "observed": 0.02509375
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "um quadro sem pose esconde a máquina, a cópia espelhada e a sombra de contacto",
+      "ok": true,
+      "observed": {
+        "vis": {
+          "stage": false,
+          "root": false,
+          "mirror": false,
+          "contact": false
+        },
+        "orange": 0
+      }
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "o estado diz «sem pose» e a legenda diz porquê",
+      "ok": true,
+      "observed": "sem pose"
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "o quadro seguinte com pose repõe tudo, igual à pose de referência",
+      "ok": true,
+      "observed": {
+        "vis2": {
+          "stage": true,
+          "root": true,
+          "mirror": false,
+          "contact": true
+        },
+        "wantMirror": false,
+        "same": true
+      }
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "a imagem depende do quadro escolhido e não do histórico (esconder, mostrar, esconder)",
+      "ok": true
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "a legenda de bloqueio desaparece quando o quadro recupera",
+      "ok": true,
+      "observed": {
+        "blocked": "Bloqueado: Quadro bloqueado de teste: a pose mostrada é a última válida.",
+        "cleared": ""
+      }
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "um quadro limpo não apaga uma notificação que não é do quadro",
+      "ok": true,
+      "observed": {
+        "notice": "Qualidade: Leve",
+        "after": "Qualidade: Leve"
+      }
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "sequência recusada: digest",
+      "ok": true,
+      "observed": "Quadro de movimento recusado: frames[1].assemblyDigest assemblyDigest diferente: os quadros foram calculados sobre montagens efectivas diferentes."
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "sequência recusada: world",
+      "ok": true,
+      "observed": "Quadro de movimento recusado: frames[1].worldFrameId worldFrameId diferente («outro-mundo» e «world»): poses em referenciais diferentes não se misturam."
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "sequência recusada: assembly",
+      "ok": true,
+      "observed": "Quadro de movimento recusado: frames[0].assemblyId Os quadros são da montagem «outra-montagem», não da montagem em cena («excavator-fixture-1»)."
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "sequência recusada: parts",
+      "ok": true,
+      "observed": "Quadro de movimento recusado: frames[1].parts As partes do quadro não correspondem às da montagem; em falta: bucket."
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "a recusa não troca a fonte de pose",
+      "ok": true
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "o tempo de pose acompanha o relógio real (≥ 2,4 s em 3 s), apesar de frames lentos",
+      "ok": true,
+      "observed": {
+        "wallS": 3.003,
+        "poseS": 2.8435,
+        "framesDrawn": 17
+      }
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "chega ao fim da sequência (4 s) a tempo e para",
+      "ok": true,
+      "observed": {
+        "timeS": 4,
+        "playing": false,
+        "kind": "motion-frames"
+      }
+    },
+    {
+      "scenario": "9 revisão",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "10 integração",
+      "name": "a geometria é a do Visual Foundry (detalhada), não o proxy",
+      "ok": true,
+      "observed": {
+        "meshes": 64,
+        "triangles": 253744,
+        "parts": [
+          "chassis",
+          "upper_body",
+          "boom",
+          "stick",
+          "bucket",
+          "idler_link",
+          "bucket_link",
+          "boom_cyl_barrel",
+          "boom_cyl_rod",
+          "stick_cyl_barrel",
+          "stick_cyl_rod",
+          "bucket_cyl_barrel",
+          "bucket_cyl_rod"
+        ],
+        "source": "visual-foundry"
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "os ids canónicos das peças são exactamente os da montagem",
+      "ok": true,
+      "observed": [
+        "chassis",
+        "upper_body",
+        "boom",
+        "stick",
+        "bucket",
+        "idler_link",
+        "bucket_link",
+        "boom_cyl_barrel",
+        "boom_cyl_rod",
+        "stick_cyl_barrel",
+        "stick_cyl_rod",
+        "bucket_cyl_barrel",
+        "bucket_cyl_rod"
+      ]
+    },
+    {
+      "scenario": "10 integração",
+      "name": "o readout diz que a geometria é a Visual Foundry e que as poses são do motor",
+      "ok": true,
+      "observed": "motor de engenharia"
+    },
+    {
+      "scenario": "10 integração",
+      "name": "a fonte é o motor (sessão em direto) com duração do cenário",
+      "ok": true,
+      "observed": 2.059767381393601
+    },
+    {
+      "scenario": "10 integração",
+      "name": "Reproduzir faz avançar o tempo da reprodução (relógio real)",
+      "ok": true,
+      "observed": {
+        "kind": "engine-session",
+        "duration": 2.059767381393601,
+        "time": 1.266,
+        "playing": true
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "Pausa congela o instante",
+      "ok": true,
+      "observed": [
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.4227326186063989,
+          "playing": false
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.4227326186063989,
+          "playing": false
+        }
+      ]
+    },
+    {
+      "scenario": "10 integração",
+      "name": "Retomar continua a partir do instante em que parou",
+      "ok": true,
+      "observed": [
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.4227326186063989,
+          "playing": false
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.5054326186063524,
+          "playing": true
+        }
+      ]
+    },
+    {
+      "scenario": "10 integração",
+      "name": "instante a 0 %: todas as peças estão exactamente na pose do quadro do motor",
+      "ok": true,
+      "observed": {
+        "worst": 0,
+        "t": 0,
+        "digest": "8267c193009a4c3047fa855b793f18183186c47b5be9808bf0d9a780803595dd"
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "instante a 25 %: todas as peças estão exactamente na pose do quadro do motor",
+      "ok": true,
+      "observed": {
+        "worst": 0,
+        "t": 0.515,
+        "digest": "f7a9d38a523de20396c6cabe2310a44c6d11b40e7743629eca33773d06ff7fe9"
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "instante a 50 %: todas as peças estão exactamente na pose do quadro do motor",
+      "ok": true,
+      "observed": {
+        "worst": 0,
+        "t": 1.03,
+        "digest": "09fbe98e775579edfc6a08e52e1ee22045f28ea0d2570e7bae833a1de2200218"
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "instante a 75 %: todas as peças estão exactamente na pose do quadro do motor",
+      "ok": true,
+      "observed": {
+        "worst": 0,
+        "t": 1.545,
+        "digest": "1d6b5c9d63fcba5c7b0dfd97992ffd115614c6979cf40bd3fb91241220ce63ed"
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "instante a 100 %: todas as peças estão exactamente na pose do quadro do motor",
+      "ok": true,
+      "observed": {
+        "worst": 0,
+        "t": 2.059,
+        "digest": "e899e182b1449d880f7eee20675870a0521bdd706652e2dd857f39aca2191bbe"
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "a caçamba descreve um movimento contínuo (nenhum salto > 0,25 m entre 41 amostras) e percorre mais de 0,5 m",
+      "ok": true,
+      "observed": {
+        "maxBucketStepM": 0.21399777577311177,
+        "totalPathM": 4.763443689865419,
+        "samples": 41
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "as mangueiras flexíveis são re-encaminhadas ao longo da reprodução",
+      "ok": true,
+      "observed": [
+        59.5939459502697,
+        59.59593966603279,
+        59.59444573521614,
+        59.587302178144455,
+        59.573977559804916
+      ]
+    },
+    {
+      "scenario": "10 integração",
+      "name": "a sequência exportada (13 quadros ok) está carregada como reprodução com duração",
+      "ok": true,
+      "observed": {
+        "kind": "motion-frames",
+        "duration": 2.059767381393601,
+        "time": 0,
+        "playing": false
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "entre dois quadros ok a pose é uma mistura rotulada: sem medidas, sem digest de entrada, com origem nos dois quadros",
+      "ok": true,
+      "observed": {
+        "interpolated": true,
+        "measurements": 0,
+        "digest": null,
+        "derived": true,
+        "worst": 0,
+        "origin": "engine"
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "a interface não apresenta a mistura como cálculo directo do motor",
+      "ok": true,
+      "observed": "motor · suavizada entre quadros, sem medidas"
+    },
+    {
+      "scenario": "10 integração",
+      "name": "as mangueiras acompanham também as poses misturadas",
+      "ok": true,
+      "observed": [
+        59.44799962639809,
+        59.38389876484871
+      ]
+    },
+    {
+      "scenario": "10 integração",
+      "name": "blocked-curso: estado «blocked», razão do motor na legenda, base «reference», origem do motor",
+      "ok": true,
+      "observed": {
+        "st": "blocked",
+        "cap": "Bloqueado: O curso 0.9 m de boom_cylinder está fora de [0, 0.76] m.",
+        "pose": "reference · motor",
+        "src": "motor de engenharia"
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "blocked-curso: a pose mostrada é a que o motor declarou (nada inventado)",
+      "ok": true,
+      "observed": 2.3603665272841412e-15
+    },
+    {
+      "scenario": "10 integração",
+      "name": "blocked-colisao: estado «blocked», razão do motor na legenda, base «reference», origem do motor",
+      "ok": true,
+      "observed": {
+        "st": "blocked",
+        "cap": "Bloqueado: Colisão: bucket_cyl_barrel abaixo do chão (0.8812 m); bucket_cyl_rod abaixo do chão (2.2305 m); stick abaixo do chão (2.0658 m).",
+        "pose": "reference · motor",
+        "src": "motor de engenharia"
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "blocked-colisao: a pose mostrada é a que o motor declarou (nada inventado)",
+      "ok": true,
+      "observed": 2.3603665272841412e-15
+    },
+    {
+      "scenario": "10 integração",
+      "name": "sequência recusada (digest) com a geometria Foundry em cena",
+      "ok": true,
+      "observed": "Quadro de movimento recusado: frames[1].assemblyDigest assemblyDigest diferente: os quadros foram calculados sobre montagens efectivas diferentes."
+    },
+    {
+      "scenario": "10 integração",
+      "name": "sequência recusada (world) com a geometria Foundry em cena",
+      "ok": true,
+      "observed": "Quadro de movimento recusado: frames[1].worldFrameId worldFrameId diferente («outro-mundo» e «world»): poses em referenciais diferentes não se misturam."
+    },
+    {
+      "scenario": "10 integração",
+      "name": "sequência recusada (assembly) com a geometria Foundry em cena",
+      "ok": true,
+      "observed": "Quadro de movimento recusado: frames[0].assemblyId Os quadros são da montagem «outra-montagem», não da montagem em cena («excavator-fixture-1»)."
+    },
+    {
+      "scenario": "10 integração",
+      "name": "sequência recusada (parts) com a geometria Foundry em cena",
+      "ok": true,
+      "observed": "Quadro de movimento recusado: frames[1].parts As partes do quadro não correspondem às da montagem; em falta: bucket."
+    },
+    {
+      "scenario": "10 integração",
+      "name": "clicar numa peça mostra o id canónico e a proveniência do registo",
+      "ok": true,
+      "observed": {
+        "partText": "Braço · stick · fixture/unreviewed",
+        "viaHook": "stick"
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "clicar no vazio limpa a leitura",
+      "ok": true
+    },
+    {
+      "scenario": "10 integração",
+      "name": "depois de 24 trocas de fonte as geometrias, texturas e luzes não crescem",
+      "ok": true,
+      "observed": {
+        "base": [
+          68,
+          18,
+          3
+        ],
+        "after": [
+          68,
+          18,
+          3
+        ]
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "dispose liberta geometrias e texturas e retira o canvas, sem libertação dupla (sem erros)",
+      "ok": true,
+      "observed": {
+        "geometries": 0,
+        "textures": 0,
+        "canvasInDom": false
+      }
+    },
+    {
+      "scenario": "10 integração",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[768px] a barra de movimento e a leitura técnica não se sobrepõem (e nenhuma delas toca nos planos nem no cabeçalho)",
+      "ok": true,
+      "observed": {
+        "motion": [
+          24,
+          746,
+          744,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[768px] a leitura continua visível quando há espaço (≥ 800 px) e cabe no ecrã, com texto legível (≥ 12 px)",
+      "ok": true,
+      "observed": {
+        "readout": {
+          "left": 24,
+          "top": 182,
+          "right": 364,
+          "bottom": 734,
+          "width": 340,
+          "height": 552
+        },
+        "font": "16px"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[768px] sem scroll horizontal",
+      "ok": true,
+      "observed": [
+        768,
+        768
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[768px] seletor de movimento, linha do tempo e reprodução recebem o ponteiro",
+      "ok": true,
+      "observed": {
+        "select": "ok",
+        "slider": "ok",
+        "play": "ok"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[768px] o seletor muda mesmo de fonte (ponteiro real)",
+      "ok": true,
+      "observed": [
+        "motion-frames",
+        "engine-session"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[768px] clicar a meio da linha do tempo leva a reprodução para perto do meio",
+      "ok": true,
+      "observed": {
+        "tm": 1.03,
+        "half": 1.0298836906968005
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[768px] reproduzir e pausar funcionam com cliques reais",
+      "ok": true,
+      "observed": [
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 1.548400000000023,
+          "playing": true
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 2.0309999999999997,
+          "playing": false
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 2.0309999999999997,
+          "playing": false
+        }
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[768px] a câmara continua a poder ser arrastada",
+      "ok": true,
+      "observed": {
+        "pt": {
+          "x": 384,
+          "y": 270
+        }
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[768px] o modo de apresentação esconde a interface",
+      "ok": true,
+      "observed": [
+        "0",
+        "0",
+        "0"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[800px] a barra de movimento e a leitura técnica não se sobrepõem (e nenhuma delas toca nos planos nem no cabeçalho)",
+      "ok": true,
+      "observed": {
+        "motion": [
+          40,
+          746,
+          760,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[800px] a leitura continua visível quando há espaço (≥ 800 px) e cabe no ecrã, com texto legível (≥ 12 px)",
+      "ok": true,
+      "observed": {
+        "readout": {
+          "left": 24,
+          "top": 182,
+          "right": 364,
+          "bottom": 734,
+          "width": 340,
+          "height": 552
+        },
+        "font": "16px"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[800px] sem scroll horizontal",
+      "ok": true,
+      "observed": [
+        800,
+        800
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[800px] seletor de movimento, linha do tempo e reprodução recebem o ponteiro",
+      "ok": true,
+      "observed": {
+        "select": "ok",
+        "slider": "ok",
+        "play": "ok"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[800px] o seletor muda mesmo de fonte (ponteiro real)",
+      "ok": true,
+      "observed": [
+        "motion-frames",
+        "engine-session"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[800px] clicar a meio da linha do tempo leva a reprodução para perto do meio",
+      "ok": true,
+      "observed": {
+        "tm": 1.03,
+        "half": 1.0298836906968005
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[800px] reproduzir e pausar funcionam com cliques reais",
+      "ok": true,
+      "observed": [
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 1.53079999999993,
+          "playing": true
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 2.03379999999993,
+          "playing": false
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 2.03379999999993,
+          "playing": false
+        }
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[800px] a câmara continua a poder ser arrastada",
+      "ok": true,
+      "observed": {
+        "pt": {
+          "x": 400,
+          "y": 270
+        }
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[800px] o modo de apresentação esconde a interface",
+      "ok": true,
+      "observed": [
+        "0",
+        "0",
+        "0"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1024px] a barra de movimento e a leitura técnica não se sobrepõem (e nenhuma delas toca nos planos nem no cabeçalho)",
+      "ok": true,
+      "observed": {
+        "motion": [
+          152,
+          746,
+          872,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1024px] a leitura continua visível quando há espaço (≥ 800 px) e cabe no ecrã, com texto legível (≥ 12 px)",
+      "ok": true,
+      "observed": {
+        "readout": {
+          "left": 24,
+          "top": 182,
+          "right": 364,
+          "bottom": 734,
+          "width": 340,
+          "height": 552
+        },
+        "font": "16px"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1024px] sem scroll horizontal",
+      "ok": true,
+      "observed": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1024px] seletor de movimento, linha do tempo e reprodução recebem o ponteiro",
+      "ok": true,
+      "observed": {
+        "select": "ok",
+        "slider": "ok",
+        "play": "ok"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1024px] o seletor muda mesmo de fonte (ponteiro real)",
+      "ok": true,
+      "observed": [
+        "motion-frames",
+        "engine-session"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1024px] clicar a meio da linha do tempo leva a reprodução para perto do meio",
+      "ok": true,
+      "observed": {
+        "tm": 1.03,
+        "half": 1.0298836906968005
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1024px] reproduzir e pausar funcionam com cliques reais",
+      "ok": true,
+      "observed": [
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 1.5824000000000233,
+          "playing": true
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.1638326186063761,
+          "playing": false
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.1638326186063761,
+          "playing": false
+        }
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1024px] a câmara continua a poder ser arrastada",
+      "ok": true,
+      "observed": {
+        "pt": {
+          "x": 512,
+          "y": 270
+        }
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1024px] o modo de apresentação esconde a interface",
+      "ok": true,
+      "observed": [
+        "0",
+        "0",
+        "0"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1080px] a barra de movimento e a leitura técnica não se sobrepõem (e nenhuma delas toca nos planos nem no cabeçalho)",
+      "ok": true,
+      "observed": {
+        "motion": [
+          180,
+          746,
+          900,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1080px] a leitura continua visível quando há espaço (≥ 800 px) e cabe no ecrã, com texto legível (≥ 12 px)",
+      "ok": true,
+      "observed": {
+        "readout": {
+          "left": 24,
+          "top": 182,
+          "right": 364,
+          "bottom": 734,
+          "width": 340,
+          "height": 552
+        },
+        "font": "16px"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1080px] sem scroll horizontal",
+      "ok": true,
+      "observed": [
+        1080,
+        1080
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1080px] seletor de movimento, linha do tempo e reprodução recebem o ponteiro",
+      "ok": true,
+      "observed": {
+        "select": "ok",
+        "slider": "ok",
+        "play": "ok"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1080px] o seletor muda mesmo de fonte (ponteiro real)",
+      "ok": true,
+      "observed": [
+        "motion-frames",
+        "engine-session"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1080px] clicar a meio da linha do tempo leva a reprodução para perto do meio",
+      "ok": true,
+      "observed": {
+        "tm": 1.03,
+        "half": 1.0298836906968005
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1080px] reproduzir e pausar funcionam com cliques reais",
+      "ok": true,
+      "observed": [
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 1.727899999999907,
+          "playing": true
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.40263261860630584,
+          "playing": false
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.40263261860630584,
+          "playing": false
+        }
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1080px] a câmara continua a poder ser arrastada",
+      "ok": true,
+      "observed": {
+        "pt": {
+          "x": 540,
+          "y": 270
+        }
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1080px] o modo de apresentação esconde a interface",
+      "ok": true,
+      "observed": [
+        "0",
+        "0",
+        "0"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1280px] a barra de movimento e a leitura técnica não se sobrepõem (e nenhuma delas toca nos planos nem no cabeçalho)",
+      "ok": true,
+      "observed": {
+        "motion": [
+          280,
+          746,
+          1000,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1280px] a leitura continua visível quando há espaço (≥ 800 px) e cabe no ecrã, com texto legível (≥ 12 px)",
+      "ok": true,
+      "observed": {
+        "readout": {
+          "left": 24,
+          "top": 182,
+          "right": 364,
+          "bottom": 734,
+          "width": 340,
+          "height": 552
+        },
+        "font": "16px"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1280px] sem scroll horizontal",
+      "ok": true,
+      "observed": [
+        1280,
+        1280
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1280px] seletor de movimento, linha do tempo e reprodução recebem o ponteiro",
+      "ok": true,
+      "observed": {
+        "select": "ok",
+        "slider": "ok",
+        "play": "ok"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1280px] o seletor muda mesmo de fonte (ponteiro real)",
+      "ok": true,
+      "observed": [
+        "motion-frames",
+        "engine-session"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1280px] clicar a meio da linha do tempo leva a reprodução para perto do meio",
+      "ok": true,
+      "observed": {
+        "tm": 1.03,
+        "half": 1.0298836906968005
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1280px] reproduzir e pausar funcionam com cliques reais",
+      "ok": true,
+      "observed": [
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 1.6068999999999067,
+          "playing": true
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.2615326186063287,
+          "playing": false
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.2615326186063287,
+          "playing": false
+        }
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1280px] a câmara continua a poder ser arrastada",
+      "ok": true,
+      "observed": {
+        "pt": {
+          "x": 640,
+          "y": 270
+        }
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1280px] o modo de apresentação esconde a interface",
+      "ok": true,
+      "observed": [
+        "0",
+        "0",
+        "0"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1440px] a barra de movimento e a leitura técnica não se sobrepõem (e nenhuma delas toca nos planos nem no cabeçalho)",
+      "ok": true,
+      "observed": {
+        "motion": [
+          360,
+          746,
+          1080,
+          812
+        ],
+        "readout": [
+          24,
+          182,
+          364,
+          734
+        ]
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1440px] a leitura continua visível quando há espaço (≥ 800 px) e cabe no ecrã, com texto legível (≥ 12 px)",
+      "ok": true,
+      "observed": {
+        "readout": {
+          "left": 24,
+          "top": 182,
+          "right": 364,
+          "bottom": 734,
+          "width": 340,
+          "height": 552
+        },
+        "font": "16px"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1440px] sem scroll horizontal",
+      "ok": true,
+      "observed": [
+        1440,
+        1440
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1440px] seletor de movimento, linha do tempo e reprodução recebem o ponteiro",
+      "ok": true,
+      "observed": {
+        "select": "ok",
+        "slider": "ok",
+        "play": "ok"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1440px] o seletor muda mesmo de fonte (ponteiro real)",
+      "ok": true,
+      "observed": [
+        "motion-frames",
+        "engine-session"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1440px] clicar a meio da linha do tempo leva a reprodução para perto do meio",
+      "ok": true,
+      "observed": {
+        "tm": 1.03,
+        "half": 1.0298836906968005
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1440px] reproduzir e pausar funcionam com cliques reais",
+      "ok": true,
+      "observed": [
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 1.4471999999999534,
+          "playing": true
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.22103261860632895,
+          "playing": false
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 0.22103261860632895,
+          "playing": false
+        }
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1440px] a câmara continua a poder ser arrastada",
+      "ok": true,
+      "observed": {
+        "pt": {
+          "x": 720,
+          "y": 270
+        }
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1440px] o modo de apresentação esconde a interface",
+      "ok": true,
+      "observed": [
+        "0",
+        "0",
+        "0"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1600px] a barra de movimento e a leitura técnica não se sobrepõem (e nenhuma delas toca nos planos nem no cabeçalho)",
+      "ok": true,
+      "observed": {
+        "motion": [
+          440,
+          746,
+          1160,
+          812
+        ],
+        "readout": [
+          24,
+          260,
+          364,
+          812
+        ]
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1600px] a leitura continua visível quando há espaço (≥ 800 px) e cabe no ecrã, com texto legível (≥ 12 px)",
+      "ok": true,
+      "observed": {
+        "readout": {
+          "left": 24,
+          "top": 260,
+          "right": 364,
+          "bottom": 812,
+          "width": 340,
+          "height": 552
+        },
+        "font": "16px"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1600px] sem scroll horizontal",
+      "ok": true,
+      "observed": [
+        1600,
+        1600
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1600px] seletor de movimento, linha do tempo e reprodução recebem o ponteiro",
+      "ok": true,
+      "observed": {
+        "select": "ok",
+        "slider": "ok",
+        "play": "ok"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1600px] o seletor muda mesmo de fonte (ponteiro real)",
+      "ok": true,
+      "observed": [
+        "motion-frames",
+        "engine-session"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1600px] clicar a meio da linha do tempo leva a reprodução para perto do meio",
+      "ok": true,
+      "observed": {
+        "tm": 1.03,
+        "half": 1.0298836906968005
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1600px] reproduzir e pausar funcionam com cliques reais",
+      "ok": true,
+      "observed": [
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 1.439,
+          "playing": true
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 1.9155,
+          "playing": false
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 1.9155,
+          "playing": false
+        }
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1600px] a câmara continua a poder ser arrastada",
+      "ok": true,
+      "observed": {
+        "pt": {
+          "x": 800,
+          "y": 270
+        }
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[1600px] o modo de apresentação esconde a interface",
+      "ok": true,
+      "observed": [
+        "0",
+        "0",
+        "0"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[390px] a barra de movimento e a leitura técnica não se sobrepõem (e nenhuma delas toca nos planos nem no cabeçalho)",
+      "ok": true,
+      "observed": {
+        "motion": [
+          8,
+          646,
+          382,
+          768
+        ],
+        "readout": null
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[390px] a leitura continua visível quando há espaço (≥ 800 px) e cabe no ecrã, com texto legível (≥ 12 px)",
+      "ok": true,
+      "observed": {
+        "readout": null,
+        "font": "16px"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[390px] sem scroll horizontal",
+      "ok": true,
+      "observed": [
+        390,
+        390
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[390px] seletor de movimento, linha do tempo e reprodução recebem o ponteiro",
+      "ok": true,
+      "observed": {
+        "select": "ok",
+        "slider": "ok",
+        "play": "ok"
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[390px] o seletor muda mesmo de fonte (ponteiro real)",
+      "ok": true,
+      "observed": [
+        "motion-frames",
+        "engine-session"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[390px] clicar a meio da linha do tempo leva a reprodução para perto do meio",
+      "ok": true,
+      "observed": {
+        "tm": 1.03,
+        "half": 1.0298836906968005
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[390px] reproduzir e pausar funcionam com cliques reais",
+      "ok": true,
+      "observed": [
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 1.6407999999999303,
+          "playing": true
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 1.9757999999999303,
+          "playing": false
+        },
+        {
+          "kind": "engine-session",
+          "duration": 2.059767381393601,
+          "time": 1.9757999999999303,
+          "playing": false
+        }
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[390px] a câmara continua a poder ser arrastada",
+      "ok": true,
+      "observed": {
+        "pt": {
+          "x": 195,
+          "y": 253.2
+        }
+      }
+    },
+    {
+      "scenario": "11 layout",
+      "name": "[390px] o modo de apresentação esconde a interface",
+      "ok": true,
+      "observed": [
+        "0",
+        "0",
+        "0"
+      ]
+    },
+    {
+      "scenario": "11 layout",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "a primeira pose é aplicada exactamente uma vez (sem aplicações duplicadas)",
+      "ok": true,
+      "observed": 1
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "pose articulada inicial: as peças estão na pose do quadro",
+      "ok": true,
+      "observed": 0
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "pose articulada inicial: as mangueiras já estão encaminhadas para essa pose (iguais às de a aplicar de novo)",
+      "ok": true,
+      "observed": {
+        "boot": 49.604682844132185,
+        "again": 49.604682844132185
+      }
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "as mangueiras da pose articulada diferem das da referência (o teste distingue os dois casos)",
+      "ok": true,
+      "observed": {
+        "boot": 49.604682844132185,
+        "ref": 59.5939459502697
+      }
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "sem recusa nem partes desconhecidas na primeira aplicação",
+      "ok": true,
+      "observed": {
+        "refused": null,
+        "unknown": []
+      }
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "pose de referência inicial: mangueiras iguais às de aplicar de novo",
+      "ok": true,
+      "observed": {
+        "boot": 59.5939459502697,
+        "again": 59.5939459502697
+      }
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "pose de referência inicial: máquina visível",
+      "ok": true
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "frame inicial sem poses: a máquina, o espelho e a sombra de contacto estão escondidos desde o primeiro frame",
+      "ok": true,
+      "observed": {
+        "stage": false,
+        "root": false,
+        "mirror": false,
+        "contact": false
+      }
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "frame inicial sem poses: o enquadramento continua válido (câmara finita e a olhar para uma cena com geometria)",
+      "ok": true,
+      "observed": 253744
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "o primeiro quadro com poses repõe a máquina",
+      "ok": true
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "com o proxy a primeira pose articulada também é a do quadro",
+      "ok": true,
+      "observed": 0
+    },
+    {
+      "scenario": "12 pose inicial",
+      "name": "sem erros na consola",
+      "ok": true,
+      "observed": []
+    },
+    {
+      "scenario": "rede",
+      "name": "nenhum pedido para fora de localhost",
+      "ok": true,
+      "observed": []
+    }
+  ]
+}
