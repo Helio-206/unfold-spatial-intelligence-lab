@@ -23,6 +23,15 @@ workspace). This module owns the stage, cameras, post-processing, interaction, p
 | `cinema-page.ts`, `cinema.css` | `/cinema`: UNFOLD tokens and components, dark viewport, shot rail, readout, full-screen and hidden-interface presentation mode. |
 | `test-frames.ts` | Debug only (`?debug-cinema`): three valid motion frames that repeat the reference pose, to test the playback path. They are not engine output. |
 
+## Integration with the Visual Foundry and the engineering engine (default path of `/cinema`)
+
+- **Geometry**: `foundry-provider.ts` adapts `createExcavatorProvider(assembly)` (src/living/visual-foundry) to `MachineVisualProvider`. The Foundry's canonical part groups, materials library and registry are used as they are (about 254 k triangles, 64 meshes, 13 canonical parts); the cinema adds its stage, materials of the environment, shadows, mirror and post. `?visuals=proxy` still gives the old proxy.
+- **One owner of poses**: the runtime calls `visuals.applyPose(sample)` and nothing else writes part transforms. The adapter applies an `ok` engine frame with `provider.applyFrame` (validated again by the Foundry), the reference pose with `applyReferencePose`, and anything that is not one engine frame (a blend of two valid frames, a held pose) with the additive `provider.applyDisplayPoses`, which re-routes the flexible hoses too and carries no engine provenance. The mirrored floor copy also follows the hoses.
+- **Frames from the engine**: `engine-pose-source.ts` samples a live `EngineeringSession` (`sampleEngineeringMotion`, a pure function of the instant); `motion-sources.ts` also offers the exported 15-frame scenario (13 `ok` frames replayed with blending only between valid `ok` frames of the same origin, plus the 2 blocked examples shown one by one) and the reference pose. Every source is checked against the effective assembly before it can be shown: `assemblyId`, `assemblyDigest` (of the assembly on stage), `worldFrameId`, full part coverage, and each frame is re-validated with `validateMotionFrame`.
+- **Provenance**: a sample says who produced it (`reference`, `engine` = solver id of the engine and no fixture label, `fixture`, `unverified`). A blended sample is shown as "suavizada entre quadros, sem medidas": no measurement and no input digest are carried over, only `derivedFrom`.
+- **Inspection**: clicking a part reads its canonical id from the mesh `userData.partId` and shows the registry entry (label, owning actuator, origin, validation). The cinema keeps no selection state; the workspace and the Digital Hand are untouched and never imported (a test checks the import graph).
+- **Playback controls**: motion select, play/pause (Space), a time slider, and the pose clock follows real time.
+
 ## Where the machine's pose comes from
 
 - Today: `ReferencePoseSource`, the reference configuration of `unfold.assembly.v1`'s synthetic excavator (`contracts/fixtures/excavator.reference-pose.json`, computed by an independent script).

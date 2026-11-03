@@ -1,4 +1,5 @@
 import { Quaternion, Vector3 } from 'three';
+import { ENGINE_ID } from '../engineering/engine';
 import { validateMotionFrame, type BlockedInfo, type FrameWarning, type Measurement, type MotionFrame, type MotionFrameStatus, type PartTransform, type PoseBasis } from '../contracts';
 
 /**
@@ -24,10 +25,14 @@ export type PoseSample = {
   inputDigest: string | null;
   /** for a blended sample only: the two engine frames it was blended from and the weight of the second; measurements are NOT carried over */
   derivedFrom: { fromInputDigest: string; toInputDigest: string; blend: number } | null;
+  /** who produced the pose: the reference fixture, the engineering engine (solver id matches and no fixture label), a frame labelled as fixture, or a valid frame of unknown producer */
+  origin: 'reference' | 'engine' | 'fixture' | 'unverified';
+  /** the engine frame exactly as produced, when the sample IS one (null for the reference pose and for blended samples) */
+  frame: MotionFrame | null;
 };
 
 export interface PoseSource {
-  readonly kind: 'reference-fixture' | 'motion-frames';
+  readonly kind: 'reference-fixture' | 'motion-frames' | 'engine-session' | 'static-frame';
   readonly assemblyId: string;
   readonly durationS: number;
   sample(timeS: number): PoseSample;
@@ -38,7 +43,7 @@ export class ReferencePoseSource implements PoseSource {
   readonly durationS = 0;
   constructor(readonly assemblyId: string, private readonly parts: PartTransform[]) {}
   sample(): PoseSample {
-    return { parts: this.parts.map((p) => ({ partId: p.partId, translationM: [...p.translationM], rotation: [...p.rotation] })), status: 'reference', poseBasis: 'reference', timestampS: 0, warnings: [], measurements: [], blocked: null, interpolated: false, inputDigest: null, derivedFrom: null };
+    return { parts: this.parts.map((p) => ({ partId: p.partId, translationM: [...p.translationM], rotation: [...p.rotation] })), status: 'reference', poseBasis: 'reference', timestampS: 0, warnings: [], measurements: [], blocked: null, interpolated: false, inputDigest: null, derivedFrom: null, frame: null, origin: 'reference' };
   }
 }
 
@@ -57,8 +62,11 @@ export class MotionFramePlayer implements PoseSource {
    * `frames` are validated one by one; one invalid frame rejects the whole sequence (no partial playback of untrusted data). The sequence must also
    * be ONE sequence: same assembly (and `expect.assemblyId` if given), same effective-assembly digest, same world frame, and every frame that has poses
    * covers exactly the same parts (exactly `expect.partIds` if given). Pose-less frames (`poseBasis: none`) are allowed and carry no parts.
+   * `interpolation: 'none'` (what the Visual Foundry requires for engine frames) shows the frame at or before `t` exactly as produced, never a blend.
    */
-  constructor(frames: readonly unknown[], expect: { assemblyId?: string; partIds?: readonly string[] } = {}) {
+    private readonly interpolation: 'blend' | 'none';
+  constructor(frames: readonly unknown[], expect: { assemblyId?: string; partIds?: readonly string[]; interpolation?: 'blend' | 'none'; assemblyDigest?: string; worldFrameId?: string } = {}) {
+    this.interpolation = expect.interpolation ?? 'blend';
     const reject = (path: string, message: string): never => { throw new MotionFrameRejected([{ path, message }]); };
     if (!frames.length) reject('$', 'Sequência vazia.');
     const accepted: MotionFrame[] = [];
@@ -66,6 +74,8 @@ export class MotionFramePlayer implements PoseSource {
     accepted.sort((a, b) => a.timestampS - b.timestampS);
     const first = accepted[0]!;
     if (expect.assemblyId !== undefined && first.assemblyId !== expect.assemblyId) reject('frames[0].assemblyId', `Os quadros são da montagem «${first.assemblyId}», não da montagem em cena («${expect.assemblyId}»).`);
+    if (expect.assemblyDigest !== undefined && first.assemblyDigest !== expect.assemblyDigest) reject('frames[0].assemblyDigest', 'assemblyDigest diferente do da montagem efectiva em cena: os quadros foram calculados sobre outra montagem.');
+    if (expect.worldFrameId !== undefined && first.worldFrameId !== expect.worldFrameId) reject('frames[0].worldFrameId', `worldFrameId «${first.worldFrameId}» não é o referencial esperado («${expect.worldFrameId}»).`);
     const expected = expect.partIds ? new Set(expect.partIds) : null; let reference: Set<string> | null = expected;
     accepted.forEach((f, i) => {
       if (f.assemblyId !== first.assemblyId) reject(`frames[${i}].assemblyId`, 'Os quadros pertencem a montagens diferentes.');
@@ -86,7 +96,8 @@ export class MotionFramePlayer implements PoseSource {
     const b = this.frames[hi]!; const a = this.frames[Math.max(0, hi - 1)]!;
     const span = b.timestampS - a.timestampS;
     const blend = span > 0 ? (t - a.timestampS) / span : 1;
-    if (a === b || blend >= 1 || blend <= 0 || a.status !== 'ok' || b.status !== 'ok') {
+    if (this.interpolation === 'none') return asSample(this.frames[hi]!.timestampS <= t ? this.frames[hi]! : this.frames[Math.max(0, hi - 1)]!, false);
+    if (a === b || blend >= 1 || blend <= 0 || a.status !== 'ok' || b.status !== 'ok' || originOf(a) !== originOf(b)) {
       const shown = blend >= 0.5 || a === b ? b : a; // no blend across a frame that is not ok: show the nearest frame as the engine produced it
       return asSample(shown, false);
     }
@@ -99,12 +110,35 @@ export class MotionFramePlayer implements PoseSource {
     // Measurements and the input digest belong to the instants the engine computed. A blend is not one of them: nothing is carried over as if computed at `t`.
     // Warnings describe the two bounding frames, so both sets are kept (deduplicated).
     const seen = new Set<string>(); const warnings = [...a.warnings, ...b.warnings].filter((w) => { const k = `${w.code}|${w.message}`; if (seen.has(k)) return false; seen.add(k); return true; });
-    return { ...asSample(a, true), parts, timestampS: t, measurements: [], warnings, inputDigest: null, derivedFrom: { fromInputDigest: a.inputDigest, toInputDigest: b.inputDigest, blend } };
+    return { ...asSample(a, true), parts, timestampS: t, measurements: [], warnings, inputDigest: null, derivedFrom: { fromInputDigest: a.inputDigest, toInputDigest: b.inputDigest, blend }, frame: null, origin: originOf(a) };
   }
 }
 
+/** Producer of a valid frame: the engine only when its solver id is the engine's and nothing labels it as a fixture. */
+export function originOf(frame: MotionFrame): 'engine' | 'fixture' | 'unverified' {
+  if (frame.warnings.some((w) => w.code === 'FIXTURE_NOT_ENGINE')) return 'fixture';
+  return frame.solver.id === ENGINE_ID ? 'engine' : 'unverified';
+}
+
+/** One engine frame shown on its own (no timeline): the blocked examples of the engine scenario, for instance. */
+export class StaticFrameSource implements PoseSource {
+  readonly kind = 'static-frame' as const; readonly durationS = 0; readonly assemblyId: string; private readonly frame: MotionFrame;
+  constructor(frame: unknown, expect: { assemblyId?: string; assemblyDigest?: string; worldFrameId?: string; partIds?: readonly string[] } = {}) {
+    const v = validateMotionFrame(frame); if (!v.ok) throw new MotionFrameRejected(v.issues);
+    const f = frame as MotionFrame;
+    if (expect.assemblyId !== undefined && f.assemblyId !== expect.assemblyId) throw new MotionFrameRejected([{ path: '$.assemblyId', message: `O quadro é da montagem «${f.assemblyId}», não de «${expect.assemblyId}».` }]);
+    if (expect.assemblyDigest !== undefined && f.assemblyDigest !== expect.assemblyDigest) throw new MotionFrameRejected([{ path: '$.assemblyDigest', message: 'assemblyDigest diferente do da montagem efectiva em cena.' }]);
+    if (expect.worldFrameId !== undefined && f.worldFrameId !== expect.worldFrameId) throw new MotionFrameRejected([{ path: '$.worldFrameId', message: `worldFrameId «${f.worldFrameId}» inesperado.` }]);
+    if (expect.partIds && f.parts.length) { const ids = new Set(f.parts.map((p) => p.partId)); const miss = expect.partIds.filter((i) => !ids.has(i)); const extra = [...ids].filter((i) => !expect.partIds!.includes(i)); if (miss.length || extra.length) throw new MotionFrameRejected([{ path: '$.parts', message: `Partes não correspondem à montagem (em falta: ${miss.join(', ') || '—'}; desconhecidas: ${extra.join(', ') || '—'}).` }]); }
+    this.frame = f; this.assemblyId = f.assemblyId;
+  }
+  sample(): PoseSample { return asSample(this.frame, false); }
+}
+
+/** The sample for an engine frame shown exactly as produced. */
+export function poseSampleFromFrame(frame: MotionFrame): PoseSample { return asSample(frame, false); }
 function asSample(frame: MotionFrame, interpolated: boolean): PoseSample {
-  return { parts: frame.parts.map((p) => ({ partId: p.partId, translationM: [...p.translationM], rotation: [...p.rotation] })), status: frame.status, poseBasis: frame.poseBasis, timestampS: frame.timestampS, warnings: frame.warnings, measurements: frame.measurements, blocked: frame.blocked, interpolated, inputDigest: frame.inputDigest, derivedFrom: null };
+  return { parts: frame.parts.map((p) => ({ partId: p.partId, translationM: [...p.translationM], rotation: [...p.rotation] })), status: frame.status, poseBasis: frame.poseBasis, timestampS: frame.timestampS, warnings: frame.warnings, measurements: frame.measurements, blocked: frame.blocked, interpolated, inputDigest: frame.inputDigest, derivedFrom: null, frame: interpolated ? null : frame, origin: originOf(frame) };
 }
 
 /** Reads `excavator.reference-pose.json`-shaped data with a real check (3 and 4 finite numbers, unit quaternion) instead of a cast. */

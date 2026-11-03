@@ -37,3 +37,11 @@
   .cinema-caption { top: auto; bottom: 76px; }
 }
 @media (prefers-reduced-motion: reduce) { .cinema-chrome { transition: none; } }
+
+.cinema-motion { left: 50%; bottom: calc(var(--space-6) + 64px); transform: translateX(-50%); display: flex; align-items: center; gap: var(--space-3); width: min(720px, calc(100vw - 2 * var(--space-4))); padding: var(--space-2) var(--space-3); border: 1px solid var(--line); border-radius: var(--radius-lg); background: color-mix(in srgb, var(--surface-raised) 82%, transparent); backdrop-filter: blur(10px); }
+.cinema-motion .u-label { margin: 0; flex: 0 0 auto; }
+.cinema-motion select { flex: 0 1 280px; min-height: 44px; min-width: 0; }
+.cinema-motion input[type="range"] { flex: 1 1 auto; min-width: 80px; min-height: 44px; accent-color: var(--fold); }
+.cinema-motion output { flex: 0 0 auto; min-width: 7ch; text-align: right; }
+.cinema-motion select:focus-visible, .cinema-motion input:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+@media (max-width: 760px) { .cinema-motion { left: var(--space-2); right: var(--space-2); transform: none; width: auto; bottom: 76px; flex-wrap: wrap; } .cinema-motion .u-label { display: none; } .cinema-readout { display: none; } }

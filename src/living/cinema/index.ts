@@ -10,3 +10,6 @@ export * from './studio-stage';
 export * from './visual-provider';
 export * from './pose-clock';
 export * from './caption';
+export * from './engine-pose-source';
+export * from './foundry-provider';
+export * from './motion-sources';

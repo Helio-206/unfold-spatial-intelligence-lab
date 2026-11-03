@@ -1,11 +1,12 @@
 import lockupDark from '../../../design-system/logos/unfold-lockup-on-dark.svg';
 import { EXCAVATOR_ASSEMBLY_V1 } from '../contracts/fixtures/excavator.assembly.v1';
-import referencePose from '../contracts/fixtures/excavator.reference-pose.json';
 import { CinemaRuntime, type CinemaStats } from './cinema-runtime';
 import { SHOT_IDS, type ShotId } from './choreography';
 import { CINEMA_TIERS, type CinemaTier } from './quality';
-import { ReferencePoseSource, referencePartsFrom, type PoseSample } from './pose-source';
+import { type PoseSample } from './pose-source';
+import { createMotionSources, MOTION_LABEL, type MotionKey } from './motion-sources';
 import { CaptionState } from './caption';
+import { Quaternion, Vector3 } from 'three';
 import './cinema.css';
 
 /**
@@ -32,6 +33,12 @@ export async function mountCinema(app: HTMLElement): Promise<CinemaRuntime> {
           <button type="button" class="u-btn u-btn--primary" id="cinema-fullscreen" aria-pressed="false" title="Ecrã inteiro (F)">Ecrã inteiro</button>
         </div>
       </header>
+      <section class="cinema-motion cinema-chrome" aria-label="Movimento">
+        <label class="u-label" for="cinema-motion">movimento</label>
+        <select id="cinema-motion" class="u-input">${(Object.keys(MOTION_LABEL) as MotionKey[]).map((k) => `<option value="${k}">${MOTION_LABEL[k]}</option>`).join('')}</select>
+        <input id="cinema-time" type="range" min="0" max="1" step="0.001" value="0" aria-label="Instante da reprodução" disabled>
+        <output id="cinema-time-readout" class="u-data" for="cinema-time">0,00 s</output>
+      </section>
       <nav class="cinema-shots cinema-chrome" aria-label="Planos de câmara">
         ${SHOT_IDS.map((id, i) => `<button type="button" class="u-btn u-btn--outline" data-shot="${id}" aria-pressed="false" title="${SHOT_LABEL[id]} (${i + 1})"><span class="u-data">${i + 1}</span> ${SHOT_LABEL[id]}</button>`).join('')}
         <i aria-hidden="true"></i>
@@ -45,7 +52,9 @@ export async function mountCinema(app: HTMLElement): Promise<CinemaRuntime> {
           <div><dt>origem</dt><dd id="ro-origin">fixture · sem revisão</dd></div>
           <div><dt>geometria</dt><dd id="ro-geometry">proxy dos shapes do contrato</dd></div>
           <div><dt>pose</dt><dd id="ro-pose">referência</dd></div>
+          <div><dt>origem</dt><dd id="ro-source">—</dd></div>
           <div><dt>estado</dt><dd id="ro-status">—</dd></div>
+          <div><dt>componente</dt><dd id="ro-part">clique numa peça</dd></div>
           <div><dt>qualidade</dt><dd id="ro-tier">—</dd></div>
           <div><dt>frame</dt><dd id="ro-frame">—</dd></div>
         </dl>
@@ -59,11 +68,17 @@ export async function mountCinema(app: HTMLElement): Promise<CinemaRuntime> {
   const captions = new CaptionState();
   const say = (text: string) => { caption.textContent = captions.notify(text); };
 
-  const refParts = referencePartsFrom(referencePose);
+  // Geometry: the Visual Foundry excavator (default) or the proxy of the contract's shapes. Motion: the engine's scenario (default), the exported 15-frame sequence,
+  // its two blocked examples, or the reference pose. Every source is checked against the effective assembly before it can be shown.
+  const wantFoundry = params.get('visuals') !== 'proxy';
+  const motionKey = (params.get('motion') === 'reference' ? 'reference' : (params.get('motion') as MotionKey | null) && (params.get('motion') as string) in MOTION_LABEL ? params.get('motion') : 'engine') as MotionKey;
+  const sources = createMotionSources(assembly);
+  const foundry = wantFoundry ? await import('./foundry-provider').then((m) => m.foundryVisualProvider()) : undefined;
   let runtime: CinemaRuntime;
   try {
     runtime = await CinemaRuntime.create({
-      host: $('#cinema-stage'), assembly, poseSource: new ReferencePoseSource(assembly.id, refParts),
+      host: $('#cinema-stage'), assembly, poseSource: sources[motionKey](), provider: foundry,
+      onInspect: (id) => inspect(id),
       tier: (params.get('tier') as CinemaTier | null), reducedMotion, pixelRatio: params.get('dpr') ? Number(params.get('dpr')) : undefined,
       onSample: (s) => showSample(s),
       onShot: (id) => { app.querySelectorAll<HTMLButtonElement>('[data-shot]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.shot === id))); $('#cinema-tour').setAttribute('aria-pressed', String(id === 'tour')); $('#cinema-free').setAttribute('aria-pressed', String(id === 'free')); },
@@ -77,13 +92,16 @@ export async function mountCinema(app: HTMLElement): Promise<CinemaRuntime> {
   $('#cinema-retry').addEventListener('click', () => location.reload());
 
   function showSample(s: PoseSample): void {
-    $('#ro-pose').textContent = s.status === 'reference' ? 'referência (fixture)' : s.poseBasis === 'none' ? 'sem pose' : `${s.poseBasis}${s.interpolated ? ' · suavizada entre dois quadros (sem medidas)' : ''}`;
+    $('#ro-pose').textContent = s.status === 'reference' ? 'referência (fixture)' : s.poseBasis === 'none' ? 'sem pose' : `${s.poseBasis}${s.interpolated ? ' · suavizada entre dois quadros (sem medidas)' : ''}${s.origin === 'engine' ? ' · motor' : ''}`;
+    $('#ro-source').textContent = ({ reference: 'pose de referência (fixture)', engine: s.interpolated ? 'motor · suavizada entre quadros, sem medidas' : 'motor de engenharia', fixture: 'fixture (não é do motor)', unverified: 'quadro válido, produtor desconhecido' })[s.origin];
     $('#ro-status').textContent = s.status === 'reference' ? 'sem movimento' : s.status;
     $('#ro-status').parentElement!.classList.toggle('is-unknown', s.status === 'blocked' || s.status === 'invalid_assembly');
     caption.textContent = captions.frame(s);
   }
   const markTier = (tier: CinemaTier) => { app.querySelectorAll<HTMLButtonElement>('[data-tier]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tier === tier))); };
   markTier(runtime.tier);
+  $('#ro-geometry').textContent = runtime.visuals.source === 'visual-foundry' ? 'Visual Foundry (excavador canónico)' : 'proxy dos shapes do contrato';
+  $('#ro-note').textContent = runtime.visuals.source === 'visual-foundry' ? 'Montagem sintética: dimensões escolhidas por plausibilidade, não de um fabricante. Poses: só quadros validados do motor de engenharia; o palco não interpola nem resolve laços.' : 'Montagem sintética: dimensões escolhidas por plausibilidade, não de um fabricante. Geometria de proxy; o modelo detalhado vem da Visual Foundry.';
   const readout = () => { const s: CinemaStats = runtime.stats(); $('#ro-tier').textContent = `${TIER_LABEL[s.tier]}${s.degrade ? ` · −${s.degrade}` : ''} · ${s.pixelRatio.toFixed(2)}×`; $('#ro-frame').textContent = `${s.lastFrameMs.toFixed(0)} ms · ${s.calls} chamadas`; };
   let readoutTimer = window.setInterval(readout, 800); readout();
 
@@ -95,6 +113,21 @@ export async function mountCinema(app: HTMLElement): Promise<CinemaRuntime> {
   const play = $<HTMLButtonElement>('#cinema-play'); play.hidden = runtime.source.durationS <= 0;
   const togglePlay = () => { if (runtime.source.durationS <= 0) return; runtime.playPose(); play.textContent = runtime.playing ? 'Pausa' : 'Reproduzir'; };
   play.addEventListener('click', togglePlay);
+  // motion source, timeline and canonical inspection
+  const motionSel = $<HTMLSelectElement>('#cinema-motion'); const time = $<HTMLInputElement>('#cinema-time'); const timeOut = $('#cinema-time-readout');
+  motionSel.value = motionKey;
+  const syncTime = () => { const d = runtime.source.durationS; time.disabled = d <= 0; time.max = String(Math.max(d, 0)); time.value = String(runtime.timeS); timeOut.textContent = `${runtime.timeS.toFixed(2).replace('.', ',')} s${d > 0 ? ` / ${d.toFixed(2).replace('.', ',')} s` : ''}`; play.hidden = d <= 0; play.textContent = runtime.playing ? 'Pausa' : 'Reproduzir'; };
+  let timeTimer = window.setInterval(syncTime, 150); syncTime();
+  motionSel.addEventListener('change', () => { try { say(`Movimento: ${MOTION_LABEL[motionSel.value as MotionKey]}`); runtime.setPoseSource(sources[motionSel.value as MotionKey]()); /* the frame's own message (blocked reason, warning) is set by the sample and must win */ } catch (e) { say(`Fonte recusada: ${e instanceof Error ? e.message : String(e)}`); motionSel.value = 'reference'; } syncTime(); });
+  time.addEventListener('input', () => { runtime.playPose(false); runtime.seekPose(Number(time.value)); syncTime(); });
+  const inspect = (id: string | null) => {
+    const el = $('#ro-part'); if (!id) { el.textContent = 'clique numa peça'; return; }
+    const reg = runtime.visuals.registry; const owner = reg?.ownerOfPart(id); const own = reg?.get(id);
+    el.textContent = `${own?.label ?? id} · ${id}${owner && owner.id !== id ? ` · ${owner.kind} ${owner.id}` : ''}${own ? ` · ${own.origin}/${own.validation}` : ''}`;
+  };
+  let down: { x: number; y: number; t: number } | null = null; const cv = runtime.renderer.domElement;
+  cv.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+  cv.addEventListener('pointerup', (e) => { if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 5 && performance.now() - down.t < 500) runtime.pickPart(e.clientX, e.clientY); down = null; });
 
   const hideBtn = $('#cinema-hide'); const fsBtn = $('#cinema-fullscreen');
   let hideTimer = 0;
@@ -122,12 +155,12 @@ export async function mountCinema(app: HTMLElement): Promise<CinemaRuntime> {
     }
   });
   window.addEventListener('pagehide', (event) => {
-    clearInterval(readoutTimer); clearTimeout(hideTimer);
+    clearInterval(readoutTimer); clearInterval(timeTimer); clearTimeout(hideTimer);
     if (event.persisted) runtime.suspend(); else runtime.dispose();
   });
   window.addEventListener('pageshow', (event) => {
     if (!event.persisted) return;
-    runtime.resume(); readout(); clearInterval(readoutTimer); readoutTimer = window.setInterval(readout, 800);
+    runtime.resume(); readout(); clearInterval(readoutTimer); readoutTimer = window.setInterval(readout, 800); clearInterval(timeTimer); timeTimer = window.setInterval(syncTime, 150);
   });
   if (params.get('ui') === '0') { setHidden(true); root.classList.add('is-idle'); clearTimeout(hideTimer); }
 
@@ -136,10 +169,17 @@ export async function mountCinema(app: HTMLElement): Promise<CinemaRuntime> {
       runtime, stats: () => runtime.stats(), seekShot: (id: ShotId, t: number) => runtime.seekShot(id, t), renderNow: () => runtime.renderNow(), setTier: (t: CinemaTier) => { runtime.setTier(t); markTier(t); },
       camera: () => ({ position: runtime.camera.position.toArray(), target: runtime.controls.target.toArray(), fov: runtime.camera.fov }), canvas: () => runtime.renderer.domElement,
       ablate: (f: Parameters<CinemaRuntime['ablate']>[0]) => runtime.ablate(f), screenBox: (id: string) => runtime.screenBox(id), benchmark: (n?: number) => runtime.benchmark(n),
+      pickAt: (x: number, y: number) => runtime.pickPart(x, y), setMotion: (k: string) => { motionSel.value = k; motionSel.dispatchEvent(new Event('change')); }, partScreenCenter: (id: string) => { const b = runtime.screenBox(id); return b ? { x: b.x + b.w / 2, y: b.y + b.h / 2 } : null; },
       playTransportFrames: async (variant: 'basic' | 'poseless' = 'basic', autoplay = true) => { const [{ MotionFramePlayer }, { transportTestFrames }] = await Promise.all([import('./pose-source'), import('./test-frames')]); runtime.setPoseSource(new MotionFramePlayer(transportTestFrames({ poseless: variant === 'poseless' }), { assemblyId: assembly.id, partIds: assembly.parts.map((p) => p.id) })); play.hidden = false; if (autoplay) runtime.playPose(true, false); },
       tryBadSequence: async (kind: string) => { const [{ MotionFramePlayer }, { badSequence }] = await Promise.all([import('./pose-source'), import('./test-frames')]); try { runtime.setPoseSource(new MotionFramePlayer(badSequence(kind), { assemblyId: assembly.id, partIds: assembly.parts.map((p) => p.id) })); return 'ACEITE'; } catch (e) { return e instanceof Error ? e.message : String(e); } },
       machineVisible: () => ({ stage: runtime.stage.machineVisible, root: runtime.visuals.root.visible, mirror: runtime.stage.scene.getObjectByName('mirror')!.visible, contact: runtime.stage.contact.object.visible }),
       caption: () => caption.textContent,
+      geometryStats: () => { let meshes = 0; let triangles = 0; runtime.visuals.root.traverse((o) => { const m = o as import('three').Mesh; if (!m.isMesh) return; meshes += 1; const g = m.geometry; triangles += (g.index ? g.index.count : g.attributes.position!.count) / 3; }); return { meshes, triangles: Math.round(triangles), parts: [...runtime.visuals.parts.keys()], source: runtime.visuals.source }; },
+      hoseSignature: () => { let x = 0; let n = 0; runtime.visuals.root.traverse((o) => { const m = o as import('three').Mesh; if (m.isMesh && m.userData.displayOnly) { m.geometry.computeBoundingSphere(); const c = m.geometry.boundingSphere!.center; x += c.x * 3 + c.y * 5 + c.z * 7; n += 1; } }); return { sum: x, hoses: n }; },
+      disposeNow: () => { runtime.dispose(); const i = runtime.renderer.info.memory; return { geometries: i.geometries, textures: i.textures, canvasInDom: document.contains(runtime.renderer.domElement) }; },
+      sourceInfo: () => ({ kind: runtime.source.kind, duration: runtime.source.durationS, time: runtime.timeS, playing: runtime.playing }),
+      partWorld: (id: string) => { runtime.visuals.root.updateWorldMatrix(true, true); const o = runtime.visuals.parts.get(id); if (!o) return null; return { p: o.getWorldPosition(new Vector3()).toArray(), q: o.getWorldQuaternion(new Quaternion()).toArray() }; },
+      sampleNow: () => runtime.source.sample(runtime.timeS), lastApply: () => runtime.lastApply, playPose: (on?: boolean, loop = false) => runtime.playPose(on, loop),
       pose: () => ({ timeS: runtime.timeS, playing: runtime.playing, kind: runtime.source.kind }), seekPose: (t: number) => runtime.seekPose(t),
       tiers: CINEMA_TIERS, ready: true,
     };

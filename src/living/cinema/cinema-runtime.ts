@@ -31,6 +31,8 @@ export type CinemaOptions = {
   onDegrade?: (level: 1 | 2, settings: CinemaSettings) => void;
   onShot?: (shot: ShotId | 'free' | 'tour' | null) => void;
   onContextLost?: () => void;
+  /** a canonical part was picked on the canvas (`null` = nothing hit) */
+  onInspect?: (partId: string | null) => void;
 };
 export type CinemaStats = {
   tier: CinemaTier; degrade: 0 | 1 | 2; settings: CinemaSettings; pixelRatio: number; size: [number, number];
@@ -46,6 +48,7 @@ export class CinemaRuntime {
   private raf = 0; private clock = new FrameClock(); private lastFrameAt = 0; private disposed = false; private lost = false; private suspended = false;
   private monitor = new FrameMonitor({ window: 45 }); private probeTurn = false; private readonly probePixel = new Uint8Array(4);
   private frames = 0; private lastFrameMs = 0; private observer: ResizeObserver; private pixelRatioCap: number; private size: [number, number] = [1, 1];
+  lastApply: { refused: string | null; unknown: string[] } = { refused: null, unknown: [] };
   private shotNow: ShotId | 'free' | 'tour' | null = null;
   private constructor(private readonly options: CinemaOptions, visuals: MachineVisuals, materials: StudioMaterials) {
     this.visuals = visuals; this.materials = materials; this.poseSource = options.poseSource;
@@ -154,7 +157,9 @@ export class CinemaRuntime {
     const sample = this.poseSource.sample(this.poseTimeS);
     // A sample without poses (invalid assembly, blocked with poseBasis none) shows NO machine: nothing is drawn from an older pose.
     this.stage.setMachineVisible(sample.parts.length > 0);
-    const r = applyPose(this.visuals, sample);
+    const r = this.visuals.applyPose ? this.visuals.applyPose(sample) : applyPose(this.visuals, sample);
+    this.lastApply = { refused: (r as { refused?: string | null }).refused ?? null, unknown: r.unknown };
+    if (this.lastApply.refused) console.warn(`cinema: o fornecedor de geometria recusou o quadro: ${this.lastApply.refused}`);
     if (r.unknown.length) console.warn(`cinema: partes sem objecto visual: ${r.unknown.join(', ')}`);
     this.visuals.root.updateWorldMatrix(true, true); this.stage.poseChanged(); this.options.onSample?.(sample);
   }
@@ -179,6 +184,13 @@ export class CinemaRuntime {
     if (moving) this.requestFrame();
   }
   private renderScene(dt: number, still = false): void { this.renderer.info.reset(); this.stage.prepare(this.renderer); this.post.render(dt, still); }
+  /** Canonical id of the part under a canvas position (CSS px), through the `userData.partId` the provider puts on its meshes. No selection state is kept here. */
+  pickPart(clientX: number, clientY: number): string | null {
+    const rect = this.renderer.domElement.getBoundingClientRect(); const ndc = new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -(((clientY - rect.top) / rect.height) * 2 - 1));
+    const ray = new THREE.Raycaster(); ray.setFromCamera(ndc, this.camera); this.visuals.root.updateWorldMatrix(true, true);
+    for (const hit of ray.intersectObject(this.visuals.root, true)) { for (let o: THREE.Object3D | null = hit.object; o; o = o.parent) { const id = o.userData?.partId as string | undefined; if (id && this.visuals.parts.has(id)) { this.options.onInspect?.(id); return id; } } }
+    this.options.onInspect?.(null); return null;
+  }
   /** synchronous render for evidence: the stage is fully up to date when this returns */
   renderNow(): void { if (this.disposed || this.lost) return; this.resize(); this.controls.update(); this.camera.updateMatrixWorld(); this.stage.contact.markDirty(); this.renderScene(0, true); }
   private degradeTo(level: 1 | 2): void {

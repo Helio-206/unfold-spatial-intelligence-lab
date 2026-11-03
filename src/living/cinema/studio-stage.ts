@@ -65,14 +65,21 @@ export function createStudioStage(renderer: THREE.WebGLRenderer, settings: Cinem
   let machineVisible = true; let radius = 6; let center = new THREE.Vector3(4, 1.5, 0); let poseDirty = true;
 
   const enableLayers = (root: THREE.Object3D) => root.traverse((o) => { if ((o as THREE.Mesh).isMesh) { o.layers.enable(CONTACT_LAYER); o.castShadow = true; o.receiveShadow = true; } });
+  // Everything under the machine root that is not a canonical part group (the Foundry's flexible hoses) is mirrored too; their geometry is replaced in
+  // place when the hoses are re-routed, so the copy follows the original's geometry on every sync.
+  const extras: Array<{ original: THREE.Object3D; copy: THREE.Object3D }> = [];
   function buildMirror() {
-    mirrorRoot.clear(); mirrorParts.clear(); if (!visuals) return;
-    for (const [id, part] of visuals.parts) {
-      const copy = part.clone(true); copy.traverse((o) => { o.layers.disableAll(); o.layers.enable(0); o.castShadow = false; o.receiveShadow = false; o.userData = { ...o.userData, mirror: true }; });
-      mirrorRoot.add(copy); mirrorParts.set(id, copy);
-    }
+    mirrorRoot.clear(); mirrorParts.clear(); extras.length = 0; if (!visuals) return;
+    const strip = (copy: THREE.Object3D) => copy.traverse((o) => { o.layers.disableAll(); o.layers.enable(0); o.castShadow = false; o.receiveShadow = false; o.userData = { ...o.userData, mirror: true }; });
+    const owned = new Set<THREE.Object3D>(visuals.parts.values());
+    for (const [id, part] of visuals.parts) { const copy = part.clone(true); strip(copy); mirrorRoot.add(copy); mirrorParts.set(id, copy); }
+    for (const child of visuals.root.children) { if (owned.has(child)) continue; const copy = child.clone(true); strip(copy); mirrorRoot.add(copy); extras.push({ original: child, copy }); }
   }
-  function syncMirror() { if (!visuals) return; for (const [id, part] of visuals.parts) { const copy = mirrorParts.get(id); if (copy) { copy.position.copy(part.position); copy.quaternion.copy(part.quaternion); copy.scale.copy(part.scale); } } }
+  function syncMirror() {
+    if (!visuals) return;
+    for (const [id, part] of visuals.parts) { const copy = mirrorParts.get(id); if (copy) { copy.position.copy(part.position); copy.quaternion.copy(part.quaternion); copy.scale.copy(part.scale); } }
+    for (const { original, copy } of extras) { const a: THREE.Object3D[] = []; const b: THREE.Object3D[] = []; original.traverse((o) => a.push(o)); copy.traverse((o) => b.push(o)); a.forEach((o, i) => { const m = o as THREE.Mesh; const c = b[i] as THREE.Mesh | undefined; if (m.isMesh && c && c.geometry !== m.geometry) c.geometry = m.geometry; }); }
+  }
 
   return {
     scene, lights: { key, rim, fill }, floor, contact, environment,

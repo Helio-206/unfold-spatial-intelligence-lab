@@ -19,6 +19,10 @@ export type MachineVisuals = {
   readonly source: 'proxy' | 'visual-foundry';
   readonly root: THREE.Group;
   readonly parts: ReadonlyMap<string, THREE.Object3D>;
+  /** canonical component registry (labels, roles, provenance) when the provider has one; read-only, used to inspect parts by their canonical id */
+  readonly registry?: { get(id: string): { id: string; kind: string; label: string; role: string; partIds: string[]; origin: string; validation: string } | undefined; ownerOfPart(partId: string): { id: string; kind: string; label: string; role: string; partIds: string[]; origin: string; validation: string } | undefined };
+  /** a provider that must apply poses itself (the Foundry routes its hoses); without it the cinema places the part objects directly */
+  applyPose?(sample: PoseSample): { applied: number; unknown: string[]; refused?: string | null };
   dispose(): void;
 };
 export interface MachineVisualProvider { readonly id: string; load(assembly: Assembly): Promise<MachineVisuals> | MachineVisuals }
