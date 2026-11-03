@@ -1,5 +1,6 @@
 import { validateAssembly, type Assembly } from '../contracts';
 import type { SessionState } from './reconstruction-session';
+import { visualCapacityIssues } from './visual-capacity';
 import type { ReconstructionFailure, ReviewedReconstruction } from './types';
 
 export type ProvenanceTone = 'model' | 'unverified' | 'synthetic';
@@ -57,6 +58,8 @@ export function adoptReviewed(state: SessionState): AdoptionResult {
   if (!box || box.kind !== 'box') reasons.push('geometria da caçamba ausente');
   else if (Math.abs(box.halfExtentsM[2] * 2 - result.geometry.bucketWidthAfterM) > 1e-9) reasons.push('largura reportada não corresponde à forma canónica da caçamba');
   if (result.geometry.bucketWidthAfterM !== result.review.bucketWidthM) reasons.push('largura aplicada difere da submetida');
+  // the lab must not take what the Foundry cannot build; this runs before the engine is ever asked
+  reasons.push(...visualCapacityIssues(result.assembly));
   const promoted = promotedPaths(result.assembly);
   if (promoted.length) reasons.push(`proveniência promovida sem evidência: ${promoted.join(', ')}`);
   if (reasons.length) return { ok: false, reasons };

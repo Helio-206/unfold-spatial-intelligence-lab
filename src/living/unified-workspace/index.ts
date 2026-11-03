@@ -7,3 +7,4 @@ export * from './image-transcode';
 export * from './engine-gate';
 export * from './live-port';
 export * from './review-bridge';
+export * from './visual-capacity';

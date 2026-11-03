@@ -1,5 +1,6 @@
 import type { ExcavatorObservationV1 } from '../reconstruction/contracts';
 import type { ReviewDecision, ReviewSubmission } from './types';
+import { bucketWidthVisualIssue } from './visual-capacity';
 
 export const MIN_BUCKET_WIDTH_M = 0.1;
 export const MAX_BUCKET_WIDTH_M = 10;
@@ -42,6 +43,8 @@ export function reviewBlockers(observation: ExcavatorObservationV1, draft: Revie
   if (!draft.widthBasis.trim() || draft.widthBasis.length > 500) reasons.push('origem humana da largura obrigatória');
   const w = draft.bucketWidthM;
   if (w === null || !Number.isFinite(w) || w < MIN_BUCKET_WIDTH_M || w > MAX_BUCKET_WIDTH_M) reasons.push('largura da caçamba deve estar entre 0,1 e 10 m');
+  // the API accepts 0.1 to 10 m, the visualiser draws 0.6 to 2.4 m: refuse here, with the reason, instead of failing at mount
+  if (w !== null && Number.isFinite(w) && w >= MIN_BUCKET_WIDTH_M && w <= MAX_BUCKET_WIDTH_M) { const issue = bucketWidthVisualIssue(w); if (issue) reasons.push(issue); }
   for (const item of requiredReviewItems(observation)) {
     const decision = draft.decisions[item.key];
     if (decision !== 'confirm' && decision !== 'reject') reasons.push(`item sem decisão: ${item.key}`);
