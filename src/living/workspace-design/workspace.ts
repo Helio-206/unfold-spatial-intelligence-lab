@@ -214,7 +214,7 @@ export class SpatialWorkspace {
     // rail
     on(this.el.toolFrame!, 'click', () => this.frameSelection());
     on(this.el.toolIsolate!, 'click', () => this.toggleIsolate());
-    on(this.el.toolExplode!, 'click', () => { this.scene.setExploded(!this.scene.exploded); this.notice('explode', this.scene.exploded ? null : 'Vista explodida · deslocamento só visual, não é uma pose do motor.', 'info'); this.renderRail(); });
+    on(this.el.toolExplode!, 'click', () => { const exploded = !this.scene.exploded; this.scene.setExploded(exploded); this.notice('explode', exploded ? 'Vista explodida · deslocamento só visual, não é uma pose do motor.' : null, 'info'); this.renderRail(); });
     on(this.el.toolSimulate!, 'click', () => this.offerExperiment(this.selectedId, null));
     on(this.el.toolMore!, 'click', () => this.dispatch({ type: 'toggle_rail' }));
     on(this.el.toolEvidence!, 'click', () => { if (!this.selectedId) return; this.inspectorOpen = true; this.evidenceOpen = !this.evidenceOpen; this.renderInspector(); this.renderRail(); });
@@ -266,9 +266,9 @@ export class SpatialWorkspace {
   dispatch(action: WorkspaceAction): void {
     const before = this.state;
     this.state = reduceWorkspace(this.state, action);
-    if (before.mode !== this.state.mode || before.railOpen !== this.state.railOpen) this.syncInsets(true);
     if (this.state.transientId && this.state.transientId !== before.transientId) this.armTransientTimer();
     this.render();
+    if (before.mode !== this.state.mode || before.railOpen !== this.state.railOpen) this.syncInsets(true);
   }
 
   getState(): WorkspaceState { return this.state; }
