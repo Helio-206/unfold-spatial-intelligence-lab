@@ -32,6 +32,8 @@ import { buildExcavator, type ExcavatorModel, type PartPose } from '../visual-fo
 import { createMaterialLibrary, type MaterialLibrary } from '../visual-foundry/materials';
 import { framePoses, loadFixturePreview, type FixturePreview } from '../visual-foundry/poses';
 import { FoundryRenderer, type RenderProfileName } from '../visual-foundry/renderer';
+import { applyPremiumLook, PREMIUM_STUDIO, type PremiumLookHandle } from '../visual-foundry/premium-look';
+import type { Texture, WebGLRenderer } from 'three';
 import { askAgent, buildAgentRequest, type AgentClientOptions, type HistoryItem } from './agent-client';
 import { CameraArbiter } from './camera-arbiter';
 import { CameraDirector } from './camera-director';
@@ -57,6 +59,10 @@ export type WorkspaceOptions = {
   brandLabel?: string;
   /** Persistent information notices shown from the start (for example the provenance of a reconstructed assembly). */
   initialNotices?: ReadonlyArray<{ id: string; text: string; detail?: string }>;
+  /** `premium` applies the Foundry's premium material profile and its studio environment (the same ones as the Cinema); `standard` (default) is the Foundry's own look. */
+  look?: 'standard' | 'premium';
+  /** Builds the premium studio environment (PREMIUM_STUDIO.environment). Injected, because the workspace must not import the cinema; without it `premium` changes materials only. */
+  premiumEnvironment?: (renderer: WebGLRenderer, panels: typeof PREMIUM_STUDIO.environment) => { texture: Texture; dispose(): void };
   /** Extra buttons for the integrator, in their own group at the end of the tool rail. `icon` is a raw SVG string. */
   extraTools?: ReadonlyArray<{ id: string; label: string; hint: string; icon: string; run: () => void }>;
 };
@@ -109,6 +115,7 @@ export class SpatialWorkspace {
   readonly agentOptions: AgentClientOptions;
   private readonly el: Record<string, HTMLElement> = {};
   private readonly options: WorkspaceOptions;
+  private premium: { handle: PremiumLookHandle; environment: { texture: Texture; dispose(): void } | null; previous: { environment: Texture | null; intensity: number; exposure: number } } | null = null;
 
   constructor(host: HTMLElement, options: WorkspaceOptions) {
     this.options = { ...options, assembly: structuredClone(options.assembly) };
@@ -130,6 +137,8 @@ export class SpatialWorkspace {
     this.lib = createMaterialLibrary();
     this.model = buildExcavator(options.assembly, this.lib);
     this.foundry.scene.add(this.model.root);
+    // before the SceneController, so that isolating or ghosting parts starts from (and returns to) the premium materials
+    if (options.look === 'premium') this.premium = this.applyPremium();
     this.scene = new SceneController(this.model, this.registry, () => this.foundry.requestRender(), () => this.foundry.studio.updateContactShadow(), '#FF5A1F', '#9AA0A8');
     this.scene.reducedMotion = this.reducedMotion;
     this.hand = new DigitalHand(this.registry, this.model.parts);
@@ -1017,6 +1026,26 @@ export class SpatialWorkspace {
   }
 
   get poseSource(): string { return this.poseLabel; }
+  /** Which material profile is applied, and how many premium materials it owns (0 for the standard look). */
+  get look(): { name: 'standard' | 'premium'; materials: number } { return { name: this.premium ? 'premium' : 'standard', materials: this.premium?.handle.materials.length ?? 0 }; }
+
+  private applyPremium(): NonNullable<SpatialWorkspace['premium']> {
+    const renderer = this.foundry.renderer; const scene = this.foundry.scene;
+    const previous = { environment: scene.environment, intensity: scene.environmentIntensity, exposure: renderer.toneMappingExposure };
+    const handle = applyPremiumLook(this.model.root);
+    const environment = this.options.premiumEnvironment?.(renderer, PREMIUM_STUDIO.environment) ?? null;
+    if (environment) { scene.environment = environment.texture; scene.environmentIntensity = PREMIUM_STUDIO.environmentIntensity; }
+    renderer.toneMappingExposure = PREMIUM_STUDIO.grade.exposure;
+    return { handle, environment, previous };
+  }
+
+  /** Puts the Foundry's own materials, environment and exposure back and releases what the premium look created. Idempotent. */
+  private releasePremium(): void {
+    const premium = this.premium; if (!premium) return; this.premium = null;
+    premium.handle.revert();
+    this.foundry.scene.environment = premium.previous.environment; this.foundry.scene.environmentIntensity = premium.previous.intensity; this.foundry.renderer.toneMappingExposure = premium.previous.exposure;
+    premium.environment?.dispose();
+  }
   engineState() { return this.engineering.state(); }
   engineFrame() { return this.engineering.frame(); }
   get currentHand(): HandView | null { return this.lastHand; }
@@ -1044,6 +1073,7 @@ export class SpatialWorkspace {
     for (const d of this.disposers.splice(0)) d();
     this.director.dispose();
     this.scene.dispose();
+    this.releasePremium();
     this.model.dispose();
     this.lib.dispose();
     this.foundry.dispose();
