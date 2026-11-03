@@ -5,23 +5,17 @@ import {
 } from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { toCreasedNormals } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { materialValues } from './materials-v2';
 import { MAX_V2_RENDERED_MESHES, MAX_V2_TRIANGLES, type GeometryNodeV2, type MaterialV2, type RepeatPatternV2, type SpatialPlanV2, validateSpatialPlanV2 } from './contracts-v2';
 
 export type GeometryCompilerStats = { meshCount: number; triangleCount: number; geometryBytes: number; componentCount: number; nodeCount: number };
 export type CompiledSpatialPlanV2 = { root: Group; stats: GeometryCompilerStats };
 
 function createMaterial(spec: MaterialV2): MeshPhysicalMaterial {
-  const profile = spec.profile;
-  const values = profile === 'industrial' || profile === 'metal'
-    ? { metalness: Math.max(spec.metalness, profile === 'metal' ? 0.82 : 0.48), roughness: Math.min(spec.roughness, 0.4), clearcoat: Math.max(spec.clearcoat, 0.22) }
-    : profile === 'organic'
-      ? { metalness: Math.min(spec.metalness, 0.08), roughness: Math.max(spec.roughness, 0.52), clearcoat: Math.min(spec.clearcoat, 0.12) }
-      : profile === 'rubber' ? { metalness: 0, roughness: Math.max(spec.roughness, 0.56), clearcoat: Math.min(spec.clearcoat, 0.18) }
-        : profile === 'glass' ? { metalness: 0, roughness: Math.min(spec.roughness, 0.18), clearcoat: Math.max(spec.clearcoat, 0.7) }
-          : profile === 'accent' ? { metalness: Math.min(spec.metalness, 0.3), roughness: Math.max(spec.roughness, 0.28), clearcoat: Math.max(spec.clearcoat, 0.2) }
-            : { metalness: spec.metalness, roughness: spec.roughness, clearcoat: spec.clearcoat };
-  const material = new MeshPhysicalMaterial({ color: spec.color as ColorRepresentation, ...values, ior: 1.46 });
-  if (profile === 'glass') { material.transparent = true; material.opacity = 0.38; material.depthWrite = false; material.side = DoubleSide; }
+  const profile = spec.profile, values = materialValues(spec);
+  const material = new MeshPhysicalMaterial({ color: spec.color as ColorRepresentation, metalness: values.metalness, roughness: values.roughness, clearcoat: values.clearcoat, ior: values.ior, transparent: values.transparent, opacity: values.opacity, depthWrite: values.depthWrite });
+  if (values.sheen > 0) { material.sheen = values.sheen; material.sheenRoughness = 0.6; material.sheenColor.set(spec.color as ColorRepresentation); }
+  if (profile === 'glass') material.side = DoubleSide;
   material.name = `spatial-v2:${profile}`;
   material.userData.materialProfile = profile;
   return material;
