@@ -1184,6 +1184,7 @@ export class SpatialWorkspace {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.revealTween?.kill(); this.revealTween = null; // no animation may keep running on released objects
     this.engineCompletion?.('cancelled'); this.engineCompletion = null; this.approvedRunning = false;
     cancelAnimationFrame(this.engineRaf); this.engineRaf = 0; this.engineering.dispose();
     clearTimeout(this.transientTimer);
