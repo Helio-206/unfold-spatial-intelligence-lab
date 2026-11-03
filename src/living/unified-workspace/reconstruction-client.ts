@@ -119,6 +119,7 @@ export function parseProposal(body: unknown): Outcome<ReconstructionProposal> {
     contract: RECONSTRUCTION_CONTRACT, sessionId: body.sessionId as string, mode: body.mode as 'live' | 'offline', status: body.status as 'review_required' | 'blocked',
     observation, assemblyProposal, engineering: { status: 'blocked', reason: typeof engineering.reason === 'string' ? engineering.reason : '' },
     limitations: Array.isArray(body.limitations) ? body.limitations.filter((l): l is string => typeof l === 'string') : [],
+    meta: { model: isObject(body.meta) && typeof body.meta.model === 'string' ? body.meta.model : null, requestId: isObject(body.meta) && typeof body.meta.requestId === 'string' ? body.meta.requestId : null },
   } };
 }
 

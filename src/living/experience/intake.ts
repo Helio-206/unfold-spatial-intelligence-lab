@@ -39,7 +39,8 @@ export function checkText(text: string): InputProblem | null {
 export type ResultProvenance = { mode: 'live'; model: string; requestId: string | null } | { mode: 'demo'; scenario: DemoScenario };
 
 export type ReconstructionOutcome =
-  | { kind: 'observation'; observation: ExcavatorObservationV1; provenance: ResultProvenance }
+  /** `sessionId` is set by the live port: it ties the later review to the server session that produced this observation. */
+  | { kind: 'observation'; observation: ExcavatorObservationV1; provenance: ResultProvenance; sessionId?: string }
   /** The model answered but did not recognise an excavator (machineType unknown, or no entities). */
   | { kind: 'not_identified'; reason: string; provenance: ResultProvenance }
   /** The request failed: network, budget, contract violation, timeout. */

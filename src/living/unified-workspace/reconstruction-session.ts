@@ -28,6 +28,7 @@ export class ReconstructionSession {
   private generation = 0;
   private abort: AbortController | null = null;
   private sentAt = 0;
+  private lastDraft: ReviewDraft | null = null;
   private readonly listeners = new Set<(state: SessionState) => void>();
   private readonly now: () => number;
   private disposed = false;
@@ -35,6 +36,12 @@ export class ReconstructionSession {
   constructor(private readonly options: SessionOptions) { this.now = options.now ?? Date.now; }
 
   get state(): SessionState { this.expireIfNeeded(); return this.current; }
+  /** The person's current draft; after a successful review, the draft that was submitted. */
+  get draft(): ReviewDraft | null {
+    const s = this.state;
+    if ('draft' in s) return s.draft;
+    return s.phase === 'reviewed' ? this.lastDraft : null;
+  }
   subscribe(listener: (state: SessionState) => void): () => void { this.listeners.add(listener); return () => this.listeners.delete(listener); }
 
   private set(next: SessionState): void { this.current = next; for (const listener of [...this.listeners]) listener(next); }
@@ -101,12 +108,22 @@ export class ReconstructionSession {
     if (this.stale(generation)) return this.current;
     this.abort = null;
     const blockers = reviewBlockers(s.proposal.observation, s.draft);
-    if (outcome.ok) { this.set({ phase: 'reviewed', proposal: s.proposal, result: outcome.value }); return this.current; }
+    if (outcome.ok) { this.lastDraft = s.draft; this.set({ phase: 'reviewed', proposal: s.proposal, result: outcome.value }); return this.current; }
     const failure = outcome.failure;
     if (failure.kind === 'session_expired') this.set({ phase: 'expired', proposal: s.proposal });
     else if (failure.kind === 'blocked') this.set({ phase: 'review_blocked', proposal: s.proposal, draft: s.draft, blockers, reasons: failure.reasons, expiresAt: s.expiresAt });
     else this.set({ phase: 'review_failed', proposal: s.proposal, draft: s.draft, blockers, failure, expiresAt: s.expiresAt });
     return this.current;
+  }
+
+  /**
+   * Goes back from `reviewed` to editing, keeping the person's draft. The previous result is dropped from the state:
+   * whatever was adopted from it is stale as soon as the draft changes. The server session is still valid until it expires.
+   */
+  reopen(): void {
+    const s = this.current;
+    if (s.phase !== 'reviewed' || !this.lastDraft) return;
+    this.set({ phase: 'awaiting_review', proposal: s.proposal, draft: this.lastDraft, blockers: reviewBlockers(s.proposal.observation, this.lastDraft), expiresAt: this.sentAt + SESSION_TTL_MS });
   }
 
   /** Cancels whatever is in flight. Returns to the last stable phase, or idle if there is none. */

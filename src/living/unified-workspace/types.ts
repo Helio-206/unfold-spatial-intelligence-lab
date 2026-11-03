@@ -25,6 +25,8 @@ export type ReconstructionProposal = {
   assemblyProposal: AssemblyProposalV1;
   engineering: { status: 'blocked'; reason: string };
   limitations: string[];
+  /** Who answered, when the server says so. Null when the server did not report it; never inferred. */
+  meta: { model: string | null; requestId: string | null };
 };
 
 export type ReviewDecision = 'confirm' | 'reject';

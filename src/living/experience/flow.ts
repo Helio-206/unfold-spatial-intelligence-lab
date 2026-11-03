@@ -21,6 +21,8 @@ export type FlowState = {
   startedAt: number | null;
   observation: ExcavatorObservationV1 | null;
   provenance: ResultProvenance | null;
+  /** Server session of a live reconstruction; null for the demo port. Kept across review <-> lab. */
+  sessionId: string | null;
   message: string | null;
   failure: { code: string; retryable: boolean } | null;
 };
@@ -38,7 +40,7 @@ export type FlowAction =
   | { type: 'back_to_review' }
   | { type: 'restart' };
 
-export const initialFlow = (): FlowState => ({ phase: 'empty', input: null, problem: null, startedAt: null, observation: null, provenance: null, message: null, failure: null });
+export const initialFlow = (): FlowState => ({ phase: 'empty', input: null, problem: null, startedAt: null, observation: null, provenance: null, sessionId: null, message: null, failure: null });
 
 export function reduceFlow(s: FlowState, a: FlowAction): FlowState {
   switch (a.type) {
@@ -50,7 +52,7 @@ export function reduceFlow(s: FlowState, a: FlowAction): FlowState {
     case 'outcome': {
       if (s.phase !== 'waiting') return s; // a late answer after cancel or restart is ignored
       const o = a.outcome;
-      if (o.kind === 'observation') return { ...s, phase: 'review', observation: o.observation, provenance: o.provenance, startedAt: null };
+      if (o.kind === 'observation') return { ...s, phase: 'review', observation: o.observation, provenance: o.provenance, sessionId: o.sessionId ?? null, startedAt: null };
       if (o.kind === 'not_identified') return { ...s, phase: 'not_identified', provenance: o.provenance, message: o.reason, startedAt: null };
       if (o.kind === 'failed') return { ...s, phase: 'failed', message: o.message, failure: { code: o.code, retryable: o.retryable }, startedAt: null };
       return { ...s, phase: 'unavailable', message: o.reason, startedAt: null };
