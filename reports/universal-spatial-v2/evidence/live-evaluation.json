@@ -1,0 +1,172 @@
+{
+  "contract": "unfold.spatial-evaluation.v1",
+  "sessionId": "bcd017bc-79f4-459f-954f-c261b011751a",
+  "revision": 0,
+  "evaluation": {
+    "contract": "unfold.spatial-evaluation.v1",
+    "recognizabilityScore": 4,
+    "silhouetteScore": 5,
+    "spatialIntegrityScore": 8,
+    "confidence": 0.88,
+    "discrepancies": [
+      {
+        "componentId": "undercarriage",
+        "kind": "silhouette",
+        "observation": "Central frame renders as tiny dark pixels, no box form discernible in viewport.",
+        "severity": "high"
+      },
+      {
+        "componentId": "track-left",
+        "kind": "missing",
+        "observation": "Left crawler track not resolvable; no elongated track silhouette visible.",
+        "severity": "high"
+      },
+      {
+        "componentId": "track-right",
+        "kind": "missing",
+        "observation": "Right crawler track not resolvable; no flanking track form visible.",
+        "severity": "high"
+      },
+      {
+        "componentId": "upper-structure",
+        "kind": "proportion",
+        "observation": "Entire assembly occupies <2% of canvas, cannot assess rotating structure proportions.",
+        "severity": "high"
+      },
+      {
+        "componentId": "operator-cab",
+        "kind": "missing",
+        "observation": "Cab shell and glass not distinguishable at this render distance.",
+        "severity": "high"
+      },
+      {
+        "componentId": "boom",
+        "kind": "missing",
+        "observation": "Boom arm not discernible as extended arm form.",
+        "severity": "high"
+      },
+      {
+        "componentId": "stick",
+        "kind": "missing",
+        "observation": "Stick arm not visible as separate linked element.",
+        "severity": "high"
+      },
+      {
+        "componentId": "bucket",
+        "kind": "missing",
+        "observation": "Bucket shell/link/pin group shows no excavator bucket silhouette.",
+        "severity": "high"
+      },
+      {
+        "componentId": "boom-cylinder",
+        "kind": "missing",
+        "observation": "Hydraulic cylinder not visible.",
+        "severity": "medium"
+      },
+      {
+        "componentId": "counterweight",
+        "kind": "missing",
+        "observation": "Rear counterweight not identifiable.",
+        "severity": "medium"
+      }
+    ],
+    "suggestedOperation": null,
+    "rationale": "Canvas shows only a tiny orange/dark cluster near top-center against black background. No excavator tracks, cab, boom, stick, or bucket forms are visibly evidenced. Failure appears to be framing/scale, not proven geometry absence. Conceptual plan only, not validated reconstruction."
+  },
+  "suggestionStatus": "none",
+  "refinementBudget": {
+    "maximum": 1,
+    "used": 0
+  },
+  "constraintReport": {
+    "ready": true,
+    "results": [
+      {
+        "id": "tracks-symmetric",
+        "kind": "symmetric",
+        "status": "satisfied",
+        "measured": 0,
+        "tolerance": 0.1,
+        "method": "axis-aligned-bounds",
+        "limitation": "AABB approximation; does not prove contact of actual surfaces or physical validity."
+      },
+      {
+        "id": "cab-on-deck",
+        "kind": "attached_at",
+        "status": "satisfied",
+        "measured": 0,
+        "tolerance": 0.2,
+        "method": "axis-aligned-bounds",
+        "limitation": "AABB approximation; does not prove contact of actual surfaces or physical validity."
+      },
+      {
+        "id": "bucket-attached",
+        "kind": "attached_at",
+        "status": "satisfied",
+        "measured": 0,
+        "tolerance": 0.15,
+        "method": "axis-aligned-bounds",
+        "limitation": "AABB approximation; does not prove contact of actual surfaces or physical validity."
+      }
+    ],
+    "violatedIds": []
+  },
+  "meta": {
+    "model": "muse-spark-1.3",
+    "endpoint": "https://api.meta.ai/v1/responses",
+    "requestId": "35011ed1-9056-45ba-ac0d-a94ec4e4c3bd",
+    "httpStatus": 200,
+    "latencyMs": 14229,
+    "maxOutputTokens": 2000,
+    "responseStatus": "completed",
+    "usage": {
+      "inputTokens": 3670,
+      "outputTokens": 1113,
+      "totalTokens": 4783,
+      "cachedInputTokens": 0,
+      "reasoningTokens": 639
+    },
+    "estimatedCostUsd": 0.00931775,
+    "upstreamEnvelope": {
+      "fields": [
+        "background",
+        "completed_at",
+        "created_at",
+        "error",
+        "id",
+        "incomplete_details",
+        "instructions",
+        "max_output_tokens",
+        "model",
+        "object",
+        "output",
+        "parallel_tool_calls",
+        "reasoning",
+        "service_tier",
+        "status",
+        "store",
+        "temperature",
+        "text",
+        "tool_choice",
+        "tools",
+        "top_logprobs",
+        "top_p",
+        "truncation",
+        "usage"
+      ],
+      "outputItemTypes": [
+        "reasoning",
+        "message"
+      ],
+      "contentTypes": [
+        "output_text"
+      ],
+      "outputTextLength": 1942
+    },
+    "status": "success"
+  },
+  "limitations": [
+    "Model scores and discrepancy descriptions are subjective hypotheses, not objective quality or engineering measurements.",
+    "Only one local model-proposed operation can be applied per explicit refinement iteration."
+  ]
+}

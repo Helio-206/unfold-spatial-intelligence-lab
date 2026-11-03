@@ -36,7 +36,7 @@ V2 currently ships no third-party geometry asset, GLTF loader path, asset manife
 
 ## V1 regression and blind-evaluation record
 
-V1 PR #22 provided four scenarios (robotic arm text, turbofan image, fan repetition/edit, suspension bridge) with prior live/browser evidence. V2 API, geometry and browser checks are separate evidence; they must not be inferred from V1. For this branch, live results, blind-object response, rendered screenshots, geometry statistics, measured constraint outcomes, and Meta costs are recorded in `reports/universal-spatial-v2/RESULTS.md` after execution. The blind input is selected only after the compiler SHA is frozen; no object-specific code is allowed after selection. If live credentials/budget or browser WebGL is unavailable, the relevant criterion remains unverified rather than replaced by mocked output.
+V1 PR #22 provided four scenarios (robotic arm text, turbofan image, fan repetition/edit, suspension bridge) with prior live/browser evidence. V2 API, geometry and browser checks are separate evidence; they must not be inferred from V1. Live results, the blind-object response, rendered screenshots, geometry statistics, measured constraint outcomes and Meta cost accounting are in `reports/universal-spatial-v2/RESULTS.md`. The blind input was submitted after freezing `ed05db4482768de2cae6b585397e8af3588b5fdd`; no object-specific code was added after selection. The evaluation scores remain model hypotheses and the scene quality is NO-GO.
 
 ## Consumer integration boundary
 
