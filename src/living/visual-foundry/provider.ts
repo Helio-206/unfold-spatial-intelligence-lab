@@ -34,6 +34,12 @@ export type GeometryProvider = {
   /** Material keys in use (for stage-side overrides such as ghosting); never redefine the library itself. */
   materialKeys: readonly MaterialKey[];
   applyReferencePose(): FrameApplication;
+  /**
+   * Display-only placement of poses that are not a single engine frame (a blend of two valid frames made by the stage). It validates shape only,
+   * re-routes the flexible hoses like any other application, and carries no provenance: the caller owns the label and must never present the result as
+   * an engine frame.
+   */
+  applyDisplayPoses(poses: Array<{ partId: string; translationM: [number, number, number]; rotation: [number, number, number, number] }>): { status: 'applied'; unknownPartIds: string[] } | { status: 'refused'; reason: string };
   /** Validated frames only. Frames carrying FIXTURE_NOT_ENGINE are applied but reported as `source: 'fixture'`. */
   applyFrame(frame: unknown): FrameApplication;
   stats(): { meshes: number; triangles: number; materials: number; textures: number };
@@ -52,6 +58,12 @@ export function createExcavatorProvider(assembly: Assembly): GeometryProvider {
     applyReferencePose() {
       if (disposed) return { status: 'refused', reason: 'PROVIDER_DISPOSED' };
       return { status: 'applied', poseBasis: 'reference', source: 'reference', unknownPartIds: apply(referencePoses().poses) };
+    },
+    applyDisplayPoses(poses) {
+      if (disposed) return { status: 'refused', reason: 'PROVIDER_DISPOSED' };
+      const bad = poses.find((p) => ![...p.translationM, ...p.rotation].every(Number.isFinite) || Math.abs(Math.hypot(...p.rotation) - 1) > 1e-6);
+      if (bad) return { status: 'refused', reason: `INVALID_DISPLAY_POSE:${bad.partId}` };
+      return { status: 'applied', unknownPartIds: apply(poses) };
     },
     applyFrame(frame) {
       if (disposed) return { status: 'refused', reason: 'PROVIDER_DISPOSED' };
