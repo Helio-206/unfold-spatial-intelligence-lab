@@ -50,8 +50,10 @@ export function buildSpatialEvaluationV2Prompt(instruction: string, plan: Spatia
 }
 
 export function parseSpatialEvaluationV2(value: unknown, plan: SpatialPlanV2): SpatialEvaluationV2 {
-  if (!value || typeof value !== 'object' || Array.isArray(value) || !exactKeys(value, ['recognizabilityScore', 'silhouetteScore', 'spatialIntegrityScore', 'confidence', 'discrepancies', 'suggestedOperation', 'rationale'])) throw new Error('SPATIAL_V2_EVALUATION_INVALID');
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('SPATIAL_V2_EVALUATION_INVALID');
   const raw = value as Record<string, unknown>;
+  const evaluationKeys = ['recognizabilityScore', 'silhouetteScore', 'spatialIntegrityScore', 'confidence', 'discrepancies', 'suggestedOperation', 'rationale'];
+  if (!exactKeys(value, Object.hasOwn(raw, 'contract') ? ['contract', ...evaluationKeys] : evaluationKeys) || raw.contract !== undefined && raw.contract !== 'unfold.spatial-evaluation.v1') throw new Error('SPATIAL_V2_EVALUATION_INVALID');
   if (!['recognizabilityScore', 'silhouetteScore', 'spatialIntegrityScore'].every((key) => Number.isInteger(raw[key]) && Number(raw[key]) >= 0 && Number(raw[key]) <= 100) || typeof raw.confidence !== 'number' || !Number.isFinite(raw.confidence) || raw.confidence < 0 || raw.confidence > 1 || !Array.isArray(raw.discrepancies) || raw.discrepancies.length > 12 || typeof raw.rationale !== 'string' || !raw.rationale.trim() || raw.rationale.length > 600) throw new Error('SPATIAL_V2_EVALUATION_INVALID');
   const ids = new Set(plan.components.map((component) => component.id));
   for (const issue of raw.discrepancies as Record<string, unknown>[]) if (!issue || typeof issue !== 'object' || Array.isArray(issue) || !exactKeys(issue, ['componentId', 'kind', 'severity', 'observation']) || issue.componentId !== null && (typeof issue.componentId !== 'string' || !ids.has(issue.componentId)) || !['missing', 'misplaced', 'overlap', 'proportion', 'silhouette', 'surface', 'other'].includes(String(issue.kind)) || !['low', 'medium', 'high'].includes(String(issue.severity)) || typeof issue.observation !== 'string' || !issue.observation.trim() || issue.observation.length > 300) throw new Error('SPATIAL_V2_EVALUATION_INVALID');

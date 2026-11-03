@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { rawRequest, withGuardedServer, ALLOWED_ORIGIN, metaResponse } from './helpers/paid-routes';
-import { buildSpatialEvaluationV2Prompt } from '../src/universal-spatial/evaluation-v2';
+import { buildSpatialEvaluationV2Prompt, parseSpatialEvaluationV2 } from '../src/universal-spatial/evaluation-v2';
 import { validateSpatialPlanV2 } from '../src/universal-spatial/contracts-v2';
 
 const identity = { position: [0, 0, 0], rotationRad: [0, 0, 0], scale: [1, 1, 1] };
@@ -76,6 +76,7 @@ describe('universal spatial V2 HTTP pipeline', () => {
       const evaluated = await rawRequest(port, { path: '/api/spatial/v2/evaluate', headers, body: { sessionId: created.json.sessionId, baseRevision: 0, imageDataUrl: png } });
       expect(evaluated.status).toBe(200);
       expect(evaluated.json.evaluation.contract).toBe('unfold.spatial-evaluation.v1');
+      expect(parseSpatialEvaluationV2(evaluated.json.evaluation, created.json.plan).contract).toBe('unfold.spatial-evaluation.v1');
       expect(evaluated.json.evaluation.discrepancies[0].componentId).toBeNull();
       expect(evaluated.json.suggestionStatus).toBe('none');
       expect(evaluated.json.revision).toBe(0);
