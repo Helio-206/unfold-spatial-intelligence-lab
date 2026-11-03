@@ -231,6 +231,7 @@ export class WebcamHandTracker {
   private landmarker: HandLandmarker | undefined;
   private animationFrame = 0;
   private running = false;
+  private generation = 0;
   private lastInferenceAt = 0;
   private lastTimestamp = 0;
   private inferenceCount = 0;
@@ -246,23 +247,30 @@ export class WebcamHandTracker {
     if (this.running) return;
     if (!navigator.mediaDevices?.getUserMedia) throw new Error('Este browser não disponibiliza acesso à webcam.');
     this.running = true;
+    const generation = ++this.generation;
+    const current = () => this.running && this.generation === generation;
     this.options.onState('INITIALIZING', 'A preparar a câmara e o modelo local.');
     try {
-      this.stream = await navigator.mediaDevices.getUserMedia({
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
         video: { facingMode: 'user', width: { ideal: 640, max: 960 }, height: { ideal: 480, max: 720 } },
       });
-      this.options.video.srcObject = this.stream;
+      if (!current()) { stream.getTracks().forEach((track) => track.stop()); return; }
+      this.stream = stream;
+      this.options.video.srcObject = stream;
       this.options.video.muted = true;
       this.options.video.playsInline = true;
       await this.options.video.play();
-      const created = await this.createLandmarker();
+      if (!current()) return;
+      const created = await this.createLandmarker(current);
+      if (!created) return;
+      if (!current()) { created.landmarker.close(); return; }
       this.landmarker = created.landmarker;
       this.delegate = created.delegate;
-      if (!this.running) return;
       this.options.onState('ACTIVE', `Hand Control activo · ${this.delegate}`);
       this.loop();
     } catch (error) {
+      if (!current()) return;
       this.running = false;
       this.stopResources();
       this.options.onState('ERROR', error instanceof Error ? error.message : 'Não foi possível iniciar a câmara.');
@@ -273,14 +281,17 @@ export class WebcamHandTracker {
 
   stop(): void {
     this.running = false;
+    this.generation += 1;
     cancelAnimationFrame(this.animationFrame);
     this.stopResources();
     this.options.onState('OFF', 'Hand Control desligado.');
   }
 
-  private async createLandmarker(): Promise<{ landmarker: HandLandmarker; delegate: 'GPU' | 'CPU' }> {
+  private async createLandmarker(current: () => boolean): Promise<{ landmarker: HandLandmarker; delegate: 'GPU' | 'CPU' } | null> {
     const { FilesetResolver, HandLandmarker } = await import('@mediapipe/tasks-vision');
+    if (!current()) return null;
     const wasmFileset = await FilesetResolver.forVisionTasks(this.options.wasmRoot ?? '/mediapipe/wasm');
+    if (!current()) return null;
     const baseOptions = {
       modelAssetPath: this.options.modelAssetPath ?? '/models/hand_landmarker.task',
       delegate: 'GPU' as const,
@@ -298,6 +309,7 @@ export class WebcamHandTracker {
         delegate: 'GPU',
       };
     } catch {
+      if (!current()) return null;
       return {
         landmarker: await HandLandmarker.createFromOptions(wasmFileset, {
           baseOptions: { ...baseOptions, delegate: 'CPU' },
@@ -348,9 +360,12 @@ export class WebcamHandTracker {
   private stopResources(): void {
     this.landmarker?.close();
     this.landmarker = undefined;
-    this.stream?.getTracks().forEach((track) => track.stop());
+    const stream = this.stream;
+    stream?.getTracks().forEach((track) => track.stop());
     this.stream = undefined;
-    this.options.video.pause();
-    this.options.video.srcObject = null;
+    if (stream && this.options.video.srcObject === stream) {
+      this.options.video.pause();
+      this.options.video.srcObject = null;
+    }
   }
 }

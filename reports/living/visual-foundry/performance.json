@@ -1,0 +1,39 @@
+{
+  "measuredAt": "2026-11-02T21:54:25.523Z",
+  "viewport": {
+    "width": 1600,
+    "height": 1000
+  },
+  "profile": "realtime",
+  "orbit4s": {
+    "frames": 3,
+    "fps": 0.75,
+    "p50": 2015.2999999998137,
+    "p95": 2163.7999999998137,
+    "stats": {
+      "profile": "realtime",
+      "drawCalls": 139,
+      "triangles": 512925,
+      "geometries": 68,
+      "textures": 19,
+      "programs": 15,
+      "lastFrameMs": 1.7999999998137355,
+      "frames": 64,
+      "pixelRatio": 1,
+      "motion": false,
+      "size": [
+        1600,
+        1000
+      ],
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "softwareRendering": true,
+      "modelMeshes": 64,
+      "modelTriangles": 253744,
+      "modelMaterials": 12,
+      "libraryMaterials": 12,
+      "libraryTextures": 13
+    }
+  },
+  "responsivenessMs": 18.5,
+  "note": "Software rendering (SwiftShader): figures are a lower bound, not GPU performance."
+}
