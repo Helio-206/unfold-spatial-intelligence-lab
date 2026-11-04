@@ -298,6 +298,11 @@ export class PlanSpaceLayer implements SpaceLayer {
   /** Applies operations in order, through the server session when there is one, so both sides keep the same revision. */
   private async commit(operations: SpatialOperationV2[], provenance: { origin: 'user_provided' | 'inferred'; evidence: string }, localPlan?: SpatialPlanV2, reviewPrecondition?: SpatialReviewPrecondition): Promise<void> {
     if (this.unresolvedTx) throw new Error('SPATIAL_V2_TRANSACTION_UNRESOLVED');
+    // Fail closed (E1.3): a review-bound proposal may only become authoritative through a server
+    // transaction that verifies the fence. Without a sync there is no such path, so it must never
+    // fall through to local application. Local-only edits that never claimed review authority are
+    // unaffected.
+    if (reviewPrecondition && !this.sync) throw new Error('REVIEW_FENCED_REQUIRES_SERVER_SESSION');
     const before = this.plan; let next = before;
     if (this.sync && (operations.length > 1 || reviewPrecondition)) {
       // Grouped edits only ever commit through the atomic transaction endpoint. Without it, fail
@@ -475,7 +480,12 @@ export class PlanSpaceLayer implements SpaceLayer {
         const evidence = `${baseEvidence.slice(0, Math.max(0, 500 - authorisationNote.length))}${authorisationNote}`.slice(0, 500);
         await this.commit(pending.operations, { origin: inferred ? 'inferred' : 'user_provided', evidence }, undefined, pending.reviewBinding);
         this.host.notify(`Aplicado: ${pending.label}.${this.sync ? '' : ' Edição só local: a sessão do servidor não a conhece.'}`);
-      } catch (error) { if (this.pending === pending) this.pending = null; if (!this.disposed) this.host.notify(`Edição bloqueada: ${error instanceof Error ? error.message : 'erro desconhecido'}`); }
+      } catch (error) {
+        // A review-bound proposal is not silently discarded: it stays pending (the plan, history
+        // and revision are untouched) so it can be committed once an authoritative path exists.
+        if (this.pending === pending && !pending.reviewBinding) this.pending = null;
+        if (!this.disposed) this.host.notify(pending.reviewBinding ? `Proposta não cometida: ${error instanceof Error ? error.message : 'erro desconhecido'}. A proposta fica pendente e nada foi aplicado.` : `Edição bloqueada: ${error instanceof Error ? error.message : 'erro desconhecido'}`);
+      }
       finally { this.busy = false; }
       this.director?.resumeExploring(); if (!this.disposed) this.host.changed();
     } finally { this.applying = false; }

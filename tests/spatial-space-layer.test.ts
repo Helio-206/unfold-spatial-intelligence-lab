@@ -364,6 +364,20 @@ describe('PlanSpaceLayer', () => {
       layer.highlight('base'); layer.proposeEdit('x+'); await layer.applyEdit();
       expect(layer.currentPlan.components.find((c) => c.id === 'base')!.transform.position[0]).toBeGreaterThan(0); layer.dispose();
     });
+    it('a review-bound proposal with no server session fails closed: never applied locally (E1.3 milestone A)', async () => {
+      const h = host(), layer = new PlanSpaceLayer(plan(), h), before = layer.currentPlan;
+      // No attachSync: there is no authoritative commit path for a review-bound proposal.
+      expect(layer.proposeSolverEdit(ops(), 'fenced', 'solver evidence', { reviewBinding: { reviewId: 'r1', reviewRevision: 2, planFingerprint: 'a'.repeat(64), sourceSha256: 'b'.repeat(64) } })).toBe(true);
+      layer.authorise(true); await layer.applyEdit();
+      expect(layer.currentPlan).toBe(before); expect(layer.editCount).toBe(0);
+      expect(layer.pendingEdit).not.toBeNull(); // not silently discarded
+      expect(h.notify).toHaveBeenCalledWith(expect.stringContaining('REVIEW_FENCED'));
+      // A session that appears later can still commit the same pending proposal.
+      let server = before;
+      layer.attachSync({ apply: async () => server, undo: async () => server, applyTransaction: async (operations: SpatialOperationV2[], provenance) => { for (const operation of operations) server = applySpatialOperationV2(server, operation, provenance); return server; } });
+      await layer.applyEdit();
+      expect(layer.editCount).toBe(1); layer.dispose();
+    });
     it('a cancelled or replaced proposal never commits when its guard resolves late, and duplicate applies submit once (E1.2 milestone C)', async () => {
       // Cancelled while the guard is in flight.
       const layerA = new PlanSpaceLayer(plan(), host()), beforeA = layerA.currentPlan;
