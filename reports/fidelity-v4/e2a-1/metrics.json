@@ -1,0 +1,87 @@
+{
+  "protocol": "synthetic only; no fitting; known supplied joints; width intentionally perturbed",
+  "results": [
+    {
+      "name": "long-arm",
+      "baselineResiduals": [
+        {
+          "id": "boom-stick",
+          "residual": 0.5999999999999999
+        },
+        {
+          "id": "stick-bucket",
+          "residual": 0.5
+        }
+      ],
+      "finalResiduals": [
+        {
+          "id": "boom-stick",
+          "residual": 0
+        },
+        {
+          "id": "stick-bucket",
+          "residual": 2.220446049250313e-16
+        }
+      ],
+      "baselineFitIoU": 0.734249533578295,
+      "finalFitIoU": 0.9694374597034172,
+      "baselineHeldIoU": 0.7730472196886137,
+      "finalHeldIoU": 0.9647855529904035,
+      "widthErrorBefore": 0.2,
+      "widthErrorAfter": 0.2,
+      "rigidRotationsPreserved": true,
+      "inputUnchanged": true,
+      "meshes": 7,
+      "vertices": 4524,
+      "triangles": 1540,
+      "solverMs": {
+        "n": 20,
+        "min": 0.06229700000005778,
+        "median": 0.06968099999994593,
+        "max": 0.15495999999996002
+      },
+      "heapDeltaBytes": 701960
+    },
+    {
+      "name": "compact",
+      "baselineResiduals": [
+        {
+          "id": "boom-stick",
+          "residual": 0.6
+        },
+        {
+          "id": "stick-bucket",
+          "residual": 0.49999999999999994
+        }
+      ],
+      "finalResiduals": [
+        {
+          "id": "boom-stick",
+          "residual": 0
+        },
+        {
+          "id": "stick-bucket",
+          "residual": 4.440892098500626e-16
+        }
+      ],
+      "baselineFitIoU": 0.6113936305434211,
+      "finalFitIoU": 0.9545043514411037,
+      "baselineHeldIoU": 0.5996821147783921,
+      "finalHeldIoU": 0.9664000666370007,
+      "widthErrorBefore": 0.2,
+      "widthErrorAfter": 0.2,
+      "rigidRotationsPreserved": true,
+      "inputUnchanged": true,
+      "meshes": 7,
+      "vertices": 4524,
+      "triangles": 1540,
+      "solverMs": {
+        "n": 20,
+        "min": 0.05192699999997785,
+        "median": 0.07709500000009939,
+        "max": 0.21443200000010165
+      },
+      "heapDeltaBytes": 655648
+    }
+  ]
+}
