@@ -1,0 +1,71 @@
+{
+  "warning": "independent primitives; no mechanical inference; only one width parameter fitted",
+  "results": [
+    {
+      "name": "long",
+      "status": "proposal",
+      "reason": null,
+      "fitBefore": 0.9318475452196383,
+      "fitAfter": 0.9864341085271318,
+      "heldBefore": 0.8591964850934155,
+      "heldAfter": 0.9252391064654113,
+      "selectedWidth": {
+        "baseline": 0.5,
+        "recovered": 0.7,
+        "groundTruth": 0.75,
+        "baselineError": 0.25,
+        "finalError": 0.050000000000000044
+      },
+      "ms": 70.31750299999999,
+      "evaluations": 9,
+      "uncertainty": [
+        1.3,
+        1.4
+      ]
+    },
+    {
+      "name": "compact",
+      "status": "proposal",
+      "reason": null,
+      "fitBefore": 0.6923437556348949,
+      "fitAfter": 0.7362256121749792,
+      "heldBefore": 0.6915688716819798,
+      "heldAfter": 0.7457963417725242,
+      "selectedWidth": {
+        "baseline": 0.5,
+        "recovered": 0.7,
+        "groundTruth": 1.05,
+        "baselineError": 0.55,
+        "finalError": 0.3500000000000001
+      },
+      "ms": 27.094048999999984,
+      "evaluations": 9,
+      "uncertainty": [
+        1.3,
+        1.4
+      ]
+    },
+    {
+      "name": "articulated",
+      "status": "proposal",
+      "reason": null,
+      "fitBefore": 0.6559046626712361,
+      "fitAfter": 0.7072419392560374,
+      "heldBefore": 0.7655271035398877,
+      "heldAfter": 0.8307800959242349,
+      "selectedWidth": {
+        "baseline": 0.5,
+        "recovered": 0.7,
+        "groundTruth": 0.65,
+        "baselineError": 0.15000000000000002,
+        "finalError": 0.04999999999999993
+      },
+      "ms": 32.73558200000002,
+      "evaluations": 9,
+      "uncertainty": [
+        1.3,
+        1.4
+      ]
+    }
+  ]
+}
