@@ -1,0 +1,36 @@
+{
+  "label": "before-jet-engine",
+  "plan": "reports/visual-recovery/fixtures/jet-engine.json",
+  "viewport": "1440x1000",
+  "shot": null,
+  "stage": {
+    "width": 1010,
+    "height": 680,
+    "objectHeightPx": 43,
+    "objectWidthPx": 58,
+    "objectHeightOfStage": 0.063,
+    "objectBoxAreaOfStage": 0.0036
+  },
+  "canvas": [
+    1008,
+    151
+  ],
+  "objectPixelFraction": 0.0105,
+  "bboxFraction": 0.0164,
+  "bbox": [
+    475,
+    55,
+    532,
+    97
+  ],
+  "meanObjectLuma": 136,
+  "touchesEdge": false,
+  "consoleErrors": [],
+  "compiler": {
+    "meshCount": 8,
+    "triangleCount": 8732,
+    "geometryBytes": 186408,
+    "componentCount": 8,
+    "nodeCount": 8
+  }
+}

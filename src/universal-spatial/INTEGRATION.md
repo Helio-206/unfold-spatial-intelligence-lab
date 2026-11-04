@@ -138,3 +138,7 @@ Kinds: `coaxial`, `aligned`, `attached_at`, `centered_on`, `symmetric`, `paralle
 Use the common workspace renderer/selection/inspector/timeline and its existing Cinema environment. `src/living/cinema/studio-environment.ts` offers a reusable lighting lifecycle; `three` and `OrbitControls` are already available. V2 owns only its compiled Group/geometries/materials and has an explicit disposal call. Construction events can stage the same workspace timeline; they are presentation cues, not measured physical motion. The `/universal-spatial-v2` harness is development/test tooling only. No third-party GLB/GLTF is shipped, so no asset license/attribution is implied; future assets require a provenance/license manifest, source checksum, scale/orientation/anchors and geometry/texture bounds. No specialized paid mesh provider or new dependency is present.
 
 The full Foundry transfer analysis, asset strategy, checks and limitations are in [`V2-ARCHITECTURE.md`](./V2-ARCHITECTURE.md). Run `npm test`, `npm run build` and the V2 browser/live procedure documented in `reports/universal-spatial-v2/RESULTS.md`; mock API tests are not Meta evidence.
+
+## Visual recovery additions
+
+Presentation (framing, verified captures, stage, assembly solver, material profiles, field-level parameter repair) is documented with measurements and limits in `reports/visual-recovery/RESULTS.md`. The compiled geometry and the plan contract are unchanged; presentation scale is applied by a wrapper and never written back to a plan. Solver and human edits go through `applySpatialOperationV2`.

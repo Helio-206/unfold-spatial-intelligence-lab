@@ -1,0 +1,43 @@
+{
+  "browser": "Chromium + SwiftShader",
+  "viewport": "1440x1000",
+  "url": "http://127.0.0.1:5192/universal-spatial-v2",
+  "fixture": "hand-authored jet-engine (not Meta output)",
+  "layout": {
+    "stageHeight": 680,
+    "canvasHeight": 678
+  },
+  "framing": {
+    "extentFraction": 0.9,
+    "verdict": {
+      "ok": true,
+      "problems": []
+    }
+  },
+  "selection": {
+    "components": 8,
+    "cameraDistanceBefore": 5.9,
+    "cameraDistanceAfter": 2.8
+  },
+  "modification": {
+    "previewDidNotChangePlan": true,
+    "provenanceAfterEdit": "user_provided",
+    "authorisationRequiredForConfirmedValue": true,
+    "undo": true
+  },
+  "solver": {
+    "found": "pylon",
+    "corrected": true
+  },
+  "paidCallGuard": {
+    "blankRejectedBeforeSend": true,
+    "sentCaptures": 1,
+    "sentImage": {
+      "width": 1007,
+      "height": 678,
+      "meanLuma": 127.7,
+      "stdLuma": 62.7
+    }
+  },
+  "consoleErrors": []
+}

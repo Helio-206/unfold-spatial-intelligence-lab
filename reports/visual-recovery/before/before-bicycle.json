@@ -1,0 +1,36 @@
+{
+  "label": "before-bicycle",
+  "plan": "reports/visual-recovery/fixtures/bicycle.json",
+  "viewport": "1440x1000",
+  "shot": null,
+  "stage": {
+    "width": 1010,
+    "height": 680,
+    "objectHeightPx": 33,
+    "objectWidthPx": 38,
+    "objectHeightOfStage": 0.049,
+    "objectBoxAreaOfStage": 0.0018
+  },
+  "canvas": [
+    1008,
+    151
+  ],
+  "objectPixelFraction": 0.0034,
+  "bboxFraction": 0.0082,
+  "bbox": [
+    487,
+    60,
+    524,
+    92
+  ],
+  "meanObjectLuma": 44.1,
+  "touchesEdge": false,
+  "consoleErrors": [],
+  "compiler": {
+    "meshCount": 27,
+    "triangleCount": 20808,
+    "geometryBytes": 385840,
+    "componentCount": 6,
+    "nodeCount": 33
+  }
+}

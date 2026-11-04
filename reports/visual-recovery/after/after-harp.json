@@ -1,0 +1,63 @@
+{
+  "label": "after-harp",
+  "plan": "reports/universal-spatial-v2/evidence/blind-harp-plan.json",
+  "viewport": "1440x1000",
+  "shot": null,
+  "appCapture": {
+    "verdict": {
+      "ok": true,
+      "problems": []
+    },
+    "analysis": {
+      "width": 1007,
+      "height": 678,
+      "coverage": 0.05878613715788888,
+      "bbox": [
+        380,
+        34,
+        626,
+        643
+      ],
+      "bboxFraction": 0.2206823621083097,
+      "extentFraction": 0.8997050147492626,
+      "centerOffset": [
+        0,
+        0
+      ],
+      "touchesEdge": false,
+      "meanLuma": 88.03267637849828,
+      "uniformBlack": false
+    },
+    "dataUrlBytes": 304218
+  },
+  "stage": {
+    "width": 1010,
+    "height": 680,
+    "objectHeightPx": 609,
+    "objectWidthPx": 248,
+    "objectHeightOfStage": 0.896,
+    "objectBoxAreaOfStage": 0.22
+  },
+  "canvas": [
+    1008,
+    679
+  ],
+  "objectPixelFraction": 0.0591,
+  "bboxFraction": 0.2207,
+  "bbox": [
+    380,
+    34,
+    627,
+    642
+  ],
+  "meanObjectLuma": 100.4,
+  "touchesEdge": false,
+  "consoleErrors": [],
+  "compiler": {
+    "meshCount": 15,
+    "triangleCount": 2084,
+    "geometryBytes": 129448,
+    "componentCount": 7,
+    "nodeCount": 18
+  }
+}

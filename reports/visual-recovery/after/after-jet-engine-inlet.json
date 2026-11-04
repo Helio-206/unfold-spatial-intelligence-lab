@@ -1,0 +1,63 @@
+{
+  "label": "after-jet-engine-inlet",
+  "plan": "reports/visual-recovery/fixtures/jet-engine.json",
+  "viewport": "1440x1000",
+  "shot": "nx",
+  "appCapture": {
+    "verdict": {
+      "ok": true,
+      "problems": []
+    },
+    "analysis": {
+      "width": 1007,
+      "height": 678,
+      "coverage": 0.23158832127907011,
+      "bbox": [
+        283,
+        33,
+        723,
+        643
+      ],
+      "bboxFraction": 0.39465774973416173,
+      "extentFraction": 0.9011799410029498,
+      "centerOffset": [
+        0,
+        -0.0014749262536873156
+      ],
+      "touchesEdge": false,
+      "meanLuma": 79.69742041719702,
+      "uniformBlack": false
+    },
+    "dataUrlBytes": 428658
+  },
+  "stage": {
+    "width": 1010,
+    "height": 680,
+    "objectHeightPx": 610,
+    "objectWidthPx": 442,
+    "objectHeightOfStage": 0.897,
+    "objectBoxAreaOfStage": 0.3927
+  },
+  "canvas": [
+    1008,
+    679
+  ],
+  "objectPixelFraction": 0.2312,
+  "bboxFraction": 0.3939,
+  "bbox": [
+    283,
+    34,
+    724,
+    643
+  ],
+  "meanObjectLuma": 141.9,
+  "touchesEdge": false,
+  "consoleErrors": [],
+  "compiler": {
+    "meshCount": 25,
+    "triangleCount": 8732,
+    "geometryBytes": 186408,
+    "componentCount": 8,
+    "nodeCount": 9
+  }
+}

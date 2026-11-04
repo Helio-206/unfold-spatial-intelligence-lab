@@ -1,0 +1,63 @@
+{
+  "label": "after-jet-engine",
+  "plan": "reports/visual-recovery/fixtures/jet-engine.json",
+  "viewport": "1440x1000",
+  "shot": null,
+  "appCapture": {
+    "verdict": {
+      "ok": true,
+      "problems": []
+    },
+    "analysis": {
+      "width": 1007,
+      "height": 678,
+      "coverage": 0.42105995494664195,
+      "bbox": [
+        119,
+        34,
+        894,
+        643
+      ],
+      "bboxFraction": 0.6933178663807624,
+      "extentFraction": 0.8997050147492626,
+      "centerOffset": [
+        0.006951340615690168,
+        0
+      ],
+      "touchesEdge": false,
+      "meanLuma": 127.6815448206791,
+      "uniformBlack": false
+    },
+    "dataUrlBytes": 605206
+  },
+  "stage": {
+    "width": 1010,
+    "height": 680,
+    "objectHeightPx": 610,
+    "objectWidthPx": 777,
+    "objectHeightOfStage": 0.897,
+    "objectBoxAreaOfStage": 0.6904
+  },
+  "canvas": [
+    1008,
+    679
+  ],
+  "objectPixelFraction": 0.4207,
+  "bboxFraction": 0.6925,
+  "bbox": [
+    119,
+    34,
+    895,
+    643
+  ],
+  "meanObjectLuma": 187,
+  "touchesEdge": false,
+  "consoleErrors": [],
+  "compiler": {
+    "meshCount": 25,
+    "triangleCount": 8732,
+    "geometryBytes": 186408,
+    "componentCount": 8,
+    "nodeCount": 9
+  }
+}

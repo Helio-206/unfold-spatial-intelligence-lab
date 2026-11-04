@@ -1,0 +1,63 @@
+{
+  "label": "after-excavator",
+  "plan": "reports/universal-spatial-v2/evidence/live-image-plan.json",
+  "viewport": "1440x1000",
+  "shot": null,
+  "appCapture": {
+    "verdict": {
+      "ok": true,
+      "problems": []
+    },
+    "analysis": {
+      "width": 1007,
+      "height": 678,
+      "coverage": 0.19902716383545271,
+      "bbox": [
+        267,
+        34,
+        739,
+        643
+      ],
+      "bboxFraction": 0.42260225618311936,
+      "extentFraction": 0.8997050147492626,
+      "centerOffset": [
+        0,
+        0
+      ],
+      "touchesEdge": false,
+      "meanLuma": 77.41304477332618,
+      "uniformBlack": false
+    },
+    "dataUrlBytes": 260446
+  },
+  "stage": {
+    "width": 1010,
+    "height": 680,
+    "objectHeightPx": 610,
+    "objectWidthPx": 474,
+    "objectHeightOfStage": 0.897,
+    "objectBoxAreaOfStage": 0.4212
+  },
+  "canvas": [
+    1008,
+    679
+  ],
+  "objectPixelFraction": 0.1992,
+  "bboxFraction": 0.4225,
+  "bbox": [
+    267,
+    34,
+    740,
+    643
+  ],
+  "meanObjectLuma": 48.6,
+  "touchesEdge": false,
+  "consoleErrors": [],
+  "compiler": {
+    "meshCount": 17,
+    "triangleCount": 2268,
+    "geometryBytes": 198992,
+    "componentCount": 11,
+    "nodeCount": 20
+  }
+}

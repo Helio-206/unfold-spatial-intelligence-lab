@@ -1,0 +1,63 @@
+{
+  "label": "after-bicycle",
+  "plan": "reports/visual-recovery/fixtures/bicycle.json",
+  "viewport": "1440x1000",
+  "shot": null,
+  "appCapture": {
+    "verdict": {
+      "ok": true,
+      "problems": []
+    },
+    "analysis": {
+      "width": 1007,
+      "height": 678,
+      "coverage": 0.21322424444815494,
+      "bbox": [
+        128,
+        33,
+        878,
+        643
+      ],
+      "bboxFraction": 0.6720815647400351,
+      "extentFraction": 0.9011799410029498,
+      "centerOffset": [
+        0,
+        -0.0014749262536873156
+      ],
+      "touchesEdge": false,
+      "meanLuma": 86.70699986998699,
+      "uniformBlack": false
+    },
+    "dataUrlBytes": 672402
+  },
+  "stage": {
+    "width": 1010,
+    "height": 680,
+    "objectHeightPx": 610,
+    "objectWidthPx": 752,
+    "objectHeightOfStage": 0.897,
+    "objectBoxAreaOfStage": 0.6682
+  },
+  "canvas": [
+    1008,
+    679
+  ],
+  "objectPixelFraction": 0.2152,
+  "bboxFraction": 0.6702,
+  "bbox": [
+    128,
+    34,
+    879,
+    643
+  ],
+  "meanObjectLuma": 59.7,
+  "touchesEdge": false,
+  "consoleErrors": [],
+  "compiler": {
+    "meshCount": 27,
+    "triangleCount": 20808,
+    "geometryBytes": 385840,
+    "componentCount": 6,
+    "nodeCount": 33
+  }
+}

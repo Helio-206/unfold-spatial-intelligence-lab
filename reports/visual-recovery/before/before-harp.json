@@ -1,0 +1,36 @@
+{
+  "label": "before-harp",
+  "plan": "reports/universal-spatial-v2/evidence/blind-harp-plan.json",
+  "viewport": "1440x1000",
+  "shot": null,
+  "stage": {
+    "width": 1010,
+    "height": 680,
+    "objectHeightPx": 59,
+    "objectWidthPx": 25,
+    "objectHeightOfStage": 0.087,
+    "objectBoxAreaOfStage": 0.0021
+  },
+  "canvas": [
+    1008,
+    151
+  ],
+  "objectPixelFraction": 0.0027,
+  "bboxFraction": 0.0097,
+  "bbox": [
+    492,
+    45,
+    516,
+    103
+  ],
+  "meanObjectLuma": 72.5,
+  "touchesEdge": false,
+  "consoleErrors": [],
+  "compiler": {
+    "meshCount": 15,
+    "triangleCount": 2084,
+    "geometryBytes": 129448,
+    "componentCount": 7,
+    "nodeCount": 18
+  }
+}
