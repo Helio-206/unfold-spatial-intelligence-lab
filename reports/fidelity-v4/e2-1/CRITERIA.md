@@ -1,0 +1,3 @@
+# Frozen acceptance criteria
+
+Acceptance A–G are those in the mission; no reduction of requirements. For the boundary experiment alone, compare fixed initial search [0.6,1.4] to expanded [0.5,2.5], with the same initial plan, fitting masks and held-out masks. Report all three original fixtures, fitted scale and boundary/ambiguity, widths and held-out IoU. A better score alone cannot establish a uniquely identifiable width or articulated reconstruction. For any later articulated experiment, held-out views are never passed to the fitter and all refusal and regression cases must remain in the output.
