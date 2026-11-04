@@ -83,14 +83,14 @@ export class PlanSpaceLayer implements SpaceLayer {
   private compiled: Group | null = null;
   private fixed: { scale: number; position: [number, number, number] } | null = null;
   private plan: SpatialPlanV2;
-  private readonly history: Array<{ plan: SpatialPlanV2; ops: number }> = [];
+  private readonly history: Array<{ plan: SpatialPlanV2; ops: number; fenced?: boolean }> = [];
   private sync: LayerSync | null = null;
   /**
    * A grouped transaction whose outcome is unknown (the server may or may not have committed it).
    * While set, every dependent edit and undo is blocked: the local plan is the pre-transaction plan
    * and must not diverge further from a possibly-committed remote state.
    */
-  private unresolvedTx: { key: string; before: SpatialPlanV2; ops: number } | null = null;
+  private unresolvedTx: { key: string; before: SpatialPlanV2; ops: number; fenced?: boolean } | null = null;
   /** A grouped undo whose remote outcome is unknown. The history entry is held here, not restored, so no second undo can consume another entry until this is reconciled. */
   private unresolvedUndoState: { key: string; entry: { plan: SpatialPlanV2; ops: number } } | null = null;
   /** While set, no edit is applied (the server session is being prepared and would not know it). */
@@ -325,7 +325,7 @@ export class PlanSpaceLayer implements SpaceLayer {
       catch (error) {
         // Outcome unknown: keep the stable key and the pre-transaction plan, and block dependent
         // edits until reconcileTransaction() settles this against the authoritative server result.
-        if (error instanceof SpatialTransactionUnresolvedError) { this.unresolvedTx = { key: idempotencyKey, before, ops: operations.length }; }
+        if (error instanceof SpatialTransactionUnresolvedError) { this.unresolvedTx = { key: idempotencyKey, before, ops: operations.length, ...(reviewPrecondition ? { fenced: true } : {}) }; }
         throw error;
       }
     } else if (this.sync) {
@@ -333,7 +333,7 @@ export class PlanSpaceLayer implements SpaceLayer {
       catch (error) { if (this.disposed) throw new Error('SPACE_DISPOSED'); this.sync = null; this.host.syncLost?.(error instanceof Error ? error.message : 'sessão do servidor indisponível'); next = localPlan ?? this.applyLocal(before, operations, provenance); }
     } else next = localPlan ?? this.applyLocal(before, operations, provenance);
     if (this.disposed) throw new Error('SPACE_DISPOSED');
-    this.history.push({ plan: before, ops: operations.length }); this.plan = next; this.pending = null; this.authorised = false; this.stats = this.build();
+    this.history.push({ plan: before, ops: operations.length, ...(reviewPrecondition ? { fenced: true } : {}) }); this.plan = next; this.pending = null; this.authorised = false; this.stats = this.build();
   }
   private applyLocal(plan: SpatialPlanV2, operations: SpatialOperationV2[], provenance: { origin: 'user_provided' | 'inferred'; evidence: string }): SpatialPlanV2 {
     let next = plan; for (const operation of operations) next = applySpatialOperationV2(next, operation, provenance); return next;
@@ -360,10 +360,10 @@ export class PlanSpaceLayer implements SpaceLayer {
     if (this.unresolvedUndoState) { this.host.notify('Undo bloqueado: há um undo por reconciliar (SPATIAL_V2_UNDO_UNRESOLVED).'); return false; }
     if (this.lockReason) { this.host.notify(`Edição indisponível: ${this.lockReason}.`); return false; }
     const previous = this.history.pop(); if (!previous || this.busy) { if (previous) this.history.push(previous); return false; }
-    if (this.sync && previous.ops > 1 && !this.sync.undoTransaction) { this.history.push(previous); this.host.notify('Undo agrupado indisponível: o servidor não oferece transacção atómica.'); return false; }
+    if (this.sync && (previous.ops > 1 || previous.fenced) && !this.sync.undoTransaction) { this.history.push(previous); this.host.notify('Undo agrupado indisponível: o servidor não oferece transacção atómica.'); return false; }
     this.busy = true; this.director?.enterEditing();
     try {
-      if (this.sync && previous.ops > 1) {
+      if (this.sync && (previous.ops > 1 || previous.fenced)) {
         // One grouped undo for the whole transaction; on failure nothing changes locally.
         try { const restored = await this.sync.undoTransaction!(); if (this.disposed) { this.history.push(previous); return false; } this.plan = restored; }
         catch (error) {
@@ -429,7 +429,7 @@ export class PlanSpaceLayer implements SpaceLayer {
     try {
       const authoritative = await this.sync.reconcileTransaction(pendingTx.key);
       if (this.disposed) return 'still-unresolved';
-      this.history.push({ plan: pendingTx.before, ops: pendingTx.ops });
+      this.history.push({ plan: pendingTx.before, ops: pendingTx.ops, ...(pendingTx.fenced ? { fenced: true } : {}) });
       this.plan = authoritative; this.unresolvedTx = null; this.pending = null; this.authorised = false; this.stats = this.build();
       this.host.notify('Transacção reconciliada: o plano do servidor foi adoptado.');
       return 'committed';

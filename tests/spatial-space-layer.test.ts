@@ -461,6 +461,28 @@ describe('PlanSpaceLayer', () => {
       expect(layer.currentPlan.components.find((c) => c.id === 'base')!.transform.scale[0]).toBe(1);
       layer.dispose();
     });
+    it('a single-operation fenced transaction undoes through the idempotent grouped path, never the legacy one (E1.4 finding 2)', async () => {
+      const layer = new PlanSpaceLayer(plan(), host());
+      let server = plan(); const stack: SpatialPlanV2[] = [];
+      const legacyUndo = vi.fn(async () => server);
+      layer.attachSync({
+        apply: async (op: SpatialOperationV2, provenance) => applySpatialOperationV2(server, op, provenance),
+        undo: legacyUndo,
+        applyTransaction: async (operations: SpatialOperationV2[], provenance) => { stack.push(server); for (const operation of operations) server = applySpatialOperationV2(server, operation, provenance); return server; },
+        undoTransaction: async () => { throw new SpatialTransactionUnresolvedError('s', 'undo-single-fenced', 'response-and-recovery-failed'); },
+        reconcileUndo: async () => { server = stack.pop()!; return server; },
+      });
+      const oneOp = [ops()[0]!];
+      expect(layer.proposeSolverEdit(oneOp, 'single fenced', 'evidence', { reviewBinding: { reviewId: 'r1', reviewRevision: 1, planFingerprint: 'a'.repeat(64), sourceSha256: 'b'.repeat(64) } })).toBe(true);
+      layer.authorise(true); await layer.applyEdit();
+      expect(layer.editCount).toBe(1);
+      expect(await layer.undo()).toBe(false); // unresolved, not a legacy local rollback
+      expect(legacyUndo).not.toHaveBeenCalled();
+      expect(layer.undoUnresolved).toBe(true);
+      expect(await layer.reconcileUnresolved()).toBe('committed');
+      expect(layer.currentPlan).toEqual(plan());
+      layer.dispose();
+    });
     it('a proposal whose authorisation guard fails at apply time is never applied (review changed after preview, E1.1 test 7)', async () => {
       const h = host(), layer = new PlanSpaceLayer(plan(), h), before = layer.currentPlan;
       let guardOk = true;
