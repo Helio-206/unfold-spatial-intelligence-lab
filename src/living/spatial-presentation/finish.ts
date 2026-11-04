@@ -18,7 +18,7 @@ const RECIPES: Partial<Record<string, Recipe>> = {
 };
 const MARK = 'presentationFinish';
 
-/** Fibre field as an albedo multiplier in [~165, 255] (so it darkens, never brightens): smooth along v, varying across u, slightly wavy. Deterministic. */
+/** Fibre field as an albedo multiplier in [~190, 255] (so it darkens, never brightens): smooth along v, varying across u, slightly wavy. Deterministic. */
 export function grainPixels(size = 128, seed = 4417): Uint8Array {
   const R = rng(seed), stripes = new Float32Array(size);
   for (let x = 0; x < size; x++) stripes[x] = R();
@@ -28,7 +28,7 @@ export function grainPixels(size = 128, seed = 4417): Uint8Array {
   const out = new Uint8Array(size * size * 4);
   for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
     const wave = Math.round(3 * Math.sin(y * 0.09 + x * 0.05)), sx = (((x + wave) % size) + size) % size;
-    const v = Math.min(1, smooth[sx]! * 0.7 + lines[sx]! * 0.5 + (R() - 0.5) * 0.04), px = Math.round(255 - 90 * v);
+    const v = Math.min(1, smooth[sx]! * 0.7 + lines[sx]! * 0.5 + (R() - 0.5) * 0.04), px = Math.round(255 - 64 * v);
     out.set([px, px, px, 255], (y * size + x) * 4);
   }
   return out;
