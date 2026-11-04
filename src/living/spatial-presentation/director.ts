@@ -13,6 +13,8 @@ import type { CueKind, CueView, PointOfInterest, PresentationDirector, Presentat
  * host for camera moves through cues. There is no clock, timer, loop, renderer, scene or camera in here: the host calls `update(dtMs)` from its own
  * frame loop (the pattern of the Cinema's `CameraDirector`). Everything it touches is saved first and put back exactly.
  */
+/** Meshes drawn by one component group itself (not by its child components). */
+const ownMeshes = (group: Object3D): Mesh[] => { const out: Mesh[] = []; const walk = (o: Object3D) => { for (const child of o.children) { if (child.userData.spatialComponentRoot) continue; if (child instanceof Mesh) out.push(child); walk(child); } }; walk(group); return out; };
 const DEFAULTS: PresentationTuning = { entranceMs: 5200, explodeMs: 900, explodeSpread: 0.45, dim: 0.32, maxPois: 8 };
 const DEFAULT_VIEW: ViewContext = { viewport: { width: 1280, height: 800 }, insets: { top: 0, right: 0, bottom: 0, left: 0 }, baseFovDeg: 30 };
 const EXPLODE_NOTICE = 'Vista explodida · visualização. As peças foram afastadas só para as mostrar; o objecto não se move assim.';
@@ -34,7 +36,8 @@ function controller(onCancel: () => void): Controller {
 export function createPresentationDirector(options: PresentationOptions): PresentationDirector {
   const tuning: PresentationTuning = { ...DEFAULTS, ...options.tuning };
   let view: ViewContext = options.view ?? DEFAULT_VIEW, disposed = false, editing = false, engaged = false, reduced = false, auto = false;
-  let bound: Bound; let finishHandle: FinishHandle | null = null;
+  let bound: Bound; let finishHandle: FinishHandle | null = null; const lateFinish: FinishHandle[] = [];
+  const restoreFinish = () => { finishHandle?.restore(); for (const h of lateFinish.splice(0)) h.restore(); };
   let mediaQuery: { matches: boolean; addEventListener(type: string, fn: (e: { matches: boolean }) => void): void; removeEventListener(type: string, fn: (e: { matches: boolean }) => void): void } | null = null;
   let cueCounter = 0, lastPublished = '';
 
@@ -54,7 +57,6 @@ export function createPresentationDirector(options: PresentationOptions): Presen
     const nodes = new Map<string, Node>(); const chain = new Map<string, string[]>(); const worldExplode = new Map<string, Vector3>();
     const parentMatrix = (parentId: string | null) => (parentId && groups.get(parentId) ? groups.get(parentId)!.matrixWorld : root.matrixWorld);
     const toLocal = (world: Vector3, parentId: string | null) => world.clone().applyMatrix3(new Matrix3().setFromMatrix4(parentMatrix(parentId)).invert());
-    const ownMeshes = (group: Object3D) => { const out: Mesh[] = []; const walk = (o: Object3D) => { for (const child of o.children) { if (child.userData.spatialComponentRoot) continue; if (child instanceof Mesh) out.push(child); walk(child); } }; walk(group); return out; };
     const firstStep = steps[0]?.componentId;
     for (const component of plan.components) {
       const group = groups.get(component.id); if (!group) continue;
@@ -264,15 +266,21 @@ export function createPresentationDirector(options: PresentationOptions): Presen
     resumeExploring() { if (disposed) return; editing = false; engaged = true; publish(); },
     rebind(next) {
       if (disposed) return;
-      cancelEverything(true); finishHandle?.restore(); savedMaterials.clear();
+      cancelEverything(true); restoreFinish(); savedMaterials.clear();
       bound = bind(next.plan, next.root);
       finishHandle = options.finish !== false ? applyPresentationFinish(next.root) : null;
       options.requestRender(); publish();
     },
+    refreshComponents(ids) {
+      if (disposed) return;
+      // The groups, their transforms and every running sequence stay as they are: only the meshes inside the named groups were swapped.
+      for (const id of ids) { const n = bound.nodes.get(id); if (!n) continue; n.meshes = ownMeshes(n.group); if (options.finish !== false) lateFinish.push(applyPresentationFinish(n.group)); }
+      applyDim(); options.requestRender(); publish();
+    },
     cancel() { if (disposed) return; cancelEverything(true); options.requestRender(); publish(); },
     dispose() {
       if (disposed) return;
-      cancelEverything(true); finishHandle?.restore(); finishHandle = null; detachMedia(); savedMaterials.clear();
+      cancelEverything(true); restoreFinish(); finishHandle = null; detachMedia(); savedMaterials.clear();
       disposed = true; publish();
     },
   };

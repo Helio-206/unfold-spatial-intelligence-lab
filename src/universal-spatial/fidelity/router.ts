@@ -27,7 +27,14 @@ export type RouterOptions = {
   /** Off-main-thread computation with a cache. Without it the continuous surfaces are computed inline, synchronously. With it a cache miss draws V2 now and `service.onReady` tells the host to rebuild. */
   service?: ContinuousService;
 };
-export type RoutedPlan = CompiledSpatialPlanV2 & { report: RouterReport };
+/**
+ * `upgrade()` is the only thing that happens after `compileWithRouter` returns. It looks in the service's cache for the components that were drawn by V2
+ * while they were computed off the main thread, and swaps ONLY their meshes inside the component groups that already exist: same groups, same ids, same
+ * transforms, same hierarchy, nothing recreated. It returns the ids whose meshes changed. A result can only be used by the compile that asked for it
+ * (the key is a hash of that component's geometry and of its partners' placement), and `retire()` ends that right: after it, `upgrade()` does nothing.
+ */
+export type RoutedPlan = CompiledSpatialPlanV2 & { report: RouterReport; upgrade(): string[]; retire(): void };
+export const upgradeOnReady = (service: ContinuousService, layer: { upgradeGeometry(): unknown }): (() => void) => service.onReady(() => { layer.upgradeGeometry(); });
 
 const CURVED = new Set(['sphere', 'ellipsoid', 'cylinder', 'cone', 'torus', 'tube']);
 type Pending = { componentId: string; group: Object3D; old: Object3D; next: Object3D; family: GeometryFamily; triangles: number; bytes: number; meshes: number; oldTriangles: number; oldBytes: number; oldMeshes: number; ms: number; decision: RoutingDecision };
@@ -58,7 +65,7 @@ export function compileWithRouter(plan: SpatialPlanV2, options: RouterOptions = 
   const whole = new Box3(); for (const b of worldBox.values()) whole.union(b); const span = Math.max(...whole.getSize(new Vector3()).toArray(), 1e-12);
 
   // ---- continuous surface
-  const neededKeys = new Set<string>(), pendingIds: string[] = [];
+  const neededKeys = new Set<string>(), pendingIds: string[] = [], waiting: Array<{ componentId: string; group: Object3D; job: ContinuousJob; decision: RoutingDecision; curved: boolean; ms: number }> = [];
   if (policy !== 'v2_only') for (const c of plan.components) {
     const decision = decisions.get(c.id)!, requested = options.requests?.[c.id] ?? null;
     if (requested === 'procedural_v2' || requested === 'mesh_asset') { if (requested === 'procedural_v2') decision.reason = 'Requested: V2.'; continue; }
@@ -78,11 +85,11 @@ export function compileWithRouter(plan: SpatialPlanV2, options: RouterOptions = 
     if (!result) { // worker path, miss: V2 now, the host rebuilds when the service says ready
       const state = options.service!.request(job);
       if (state === 'rejected') { decision.reason = 'Stays on V2: the computation queue is full.'; decision.fallback = { from: 'continuous_surface', code: 'QUEUE_FULL' }; }
-      else { decision.reason = 'Stays on V2 for now: continuous surface is being computed off the main thread.'; decision.pending = true; pendingIds.push(c.id); }
+      else { decision.reason = 'Stays on V2 for now: continuous surface is being computed off the main thread.'; decision.pending = true; pendingIds.push(c.id); waiting.push({ componentId: c.id, group: groups.get(c.id)!, job, decision, curved, ms: 0 }); }
       continue;
     }
     if (!result.ok) { decision.reason = `Stays on V2: ${result.code.toLowerCase().replace(/_/g, ' ')}.`; decision.fallback = { from: 'continuous_surface', code: result.code }; continue; }
-    const curvedNote = own.some((x) => CURVED.has(x.operator)), g = groups.get(c.id)!, old = g.children[0]!, oldM = measure(old), next = assembleContinuous(result, c.id, c.geometry.key);
+    const curvedNote = curved, g = groups.get(c.id)!, old = g.children[0]!, oldM = measure(old), next = assembleContinuous(result, c.id, c.geometry.key);
     decision.used = 'continuous_surface'; decision.triangles = result.triangles; decision.deviation = result.deviation; decision.computed = origin;
     decision.reason = `Continuous surface: ${[...(curvedNote ? ['curved primitives'] : []), ...(result.blendedWith.length ? [`joins to ${result.blendedWith.join(', ')} (blend ${result.blendRadius.toFixed(3)})`] : [])].join('; ') || 'smooth surface'}.`;
     pending.push({ componentId: c.id, group: g, old, next, family: 'continuous_surface', triangles: result.triangles, bytes: result.bytes, meshes: next.children.length, oldTriangles: oldM.triangles, oldBytes: oldM.bytes, oldMeshes: oldM.meshes, ms: origin === 'computed' ? performance.now() - t0 : 0, decision });
@@ -123,12 +130,39 @@ export function compileWithRouter(plan: SpatialPlanV2, options: RouterOptions = 
   for (const p of pending) { if (p.family === 'procedural_v2') continue; p.group.remove(p.old); p.group.add(p.next); p.group.children.splice(0, 0, p.group.children.pop()!); disposeObject(p.old); }
   root.updateMatrixWorld(true);
 
-  const total = measure(root), perFamily: RouterReport['perFamily'] = { procedural_v2: { components: 0, triangles: 0, ms: 0 }, continuous_surface: { components: 0, triangles: 0, ms: 0 }, mesh_asset: { components: 0, triangles: 0, ms: 0 } };
   const msOf = new Map(pending.map((p) => [p.componentId, p.ms]));
-  for (const d of decisions.values()) { const f = perFamily[d.used]; f.components++; f.triangles += d.triangles; f.ms += d.used === 'procedural_v2' ? 0 : msOf.get(d.componentId) ?? 0; }
-  const report: RouterReport = { planSource: { kind: plan.source.kind, sha256: plan.source.sha256 }, decisions: plan.components.map((c) => decisions.get(c.id)!), proposalsNotApproved: notApproved, pending: pendingIds, service: options.service?.stats() ?? null, limits, totals: { triangles: total.triangles, meshes: total.meshes, geometryBytes: total.bytes, ms: performance.now() - started }, perFamily, fallbacks: [...decisions.values()].filter((d) => d.fallback).length };
+  const summarise = (): Pick<RouterReport, 'totals' | 'perFamily' | 'fallbacks'> => {
+    const total = measure(root), perFamily: RouterReport['perFamily'] = { procedural_v2: { components: 0, triangles: 0, ms: 0 }, continuous_surface: { components: 0, triangles: 0, ms: 0 }, mesh_asset: { components: 0, triangles: 0, ms: 0 } };
+    for (const d of decisions.values()) { const f = perFamily[d.used]; f.components++; f.triangles += d.triangles; f.ms += d.used === 'procedural_v2' ? 0 : msOf.get(d.componentId) ?? 0; }
+    return { totals: { triangles: total.triangles, meshes: total.meshes, geometryBytes: total.bytes, ms: performance.now() - started }, perFamily, fallbacks: [...decisions.values()].filter((d) => d.fallback).length };
+  };
+  const report: RouterReport = { planSource: { kind: plan.source.kind, sha256: plan.source.sha256 }, decisions: plan.components.map((c) => decisions.get(c.id)!), proposalsNotApproved: notApproved, pending: pendingIds, service: options.service?.stats() ?? null, limits, ...summarise() };
   void approvedIds;
-  return { root, stats: { ...compiled.stats, meshCount: total.meshes, triangleCount: total.triangles, geometryBytes: total.bytes }, report };
+
+  let retired = false;
+  const upgrade = (): string[] => {
+    if (retired || !options.service || !waiting.length) return [];
+    const changed: string[] = [];
+    for (const w of [...waiting]) {
+      const result = options.service.get(w.job.key); if (!result) continue;
+      waiting.splice(waiting.indexOf(w), 1); pendingIds.splice(pendingIds.indexOf(w.componentId), 1); delete w.decision.pending;
+      const c = byId.get(w.componentId)!;
+      if (!result.ok) { w.decision.reason = `Stays on V2: ${result.code.toLowerCase().replace(/_/g, ' ')}.`; w.decision.fallback = { from: 'continuous_surface', code: result.code }; continue; }
+      const old = w.group.children[0]!, oldM = measure(old), next = assembleContinuous(result, c.id, c.geometry.key), now = measure(root);
+      if (now.triangles + result.triangles - oldM.triangles > limits.maxTriangles || now.meshes + next.children.length - oldM.meshes > limits.maxMeshes || now.bytes + result.bytes - oldM.bytes > limits.maxGeometryBytes) {
+        disposeObject(next); w.decision.fallback = { from: 'continuous_surface', code: 'SCENE_BUDGET' }; w.decision.reason = 'Stays on V2: the scene would exceed its triangle, mesh or memory budget.'; continue;
+      }
+      w.group.remove(old); w.group.add(next); w.group.children.splice(0, 0, w.group.children.pop()!); disposeObject(old);
+      const own = implicitShapesOf(c.geometry), blended = result.blendedWith.length ? `; joins to ${result.blendedWith.join(', ')} (blend ${result.blendRadius.toFixed(3)})` : '';
+      w.decision.used = 'continuous_surface'; w.decision.triangles = result.triangles; w.decision.deviation = result.deviation; w.decision.computed = 'computed'; w.decision.fallback = null;
+      w.decision.reason = `Continuous surface: ${[...(w.curved ? ['curved primitives'] : [])].concat(blended ? [blended.slice(2)] : []).join('; ') || 'smooth surface'}.`; void own;
+      msOf.set(c.id, result.ms); changed.push(c.id);
+    }
+    root.updateMatrixWorld(true);
+    Object.assign(report, summarise(), { service: options.service.stats() });
+    return changed;
+  };
+  return { root, stats: { ...compiled.stats, meshCount: report.totals.meshes, triangleCount: report.totals.triangles, geometryBytes: report.totals.geometryBytes }, report, upgrade, retire: () => { retired = true; } };
 }
 
 export const createAdaptiveGeometryRouter = (options: RouterOptions = {}) => ({ compile: (plan: SpatialPlanV2) => compileWithRouter(plan, options) });

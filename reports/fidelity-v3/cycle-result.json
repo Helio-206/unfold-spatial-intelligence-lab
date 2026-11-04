@@ -1,0 +1,541 @@
+{
+  "browser": "Chromium (system) + SwiftShader",
+  "worker": "real module Worker",
+  "checks": [
+    {
+      "name": "1. V2 is what the very first frame shows (every component procedural_v2, V3 pending for all of them)",
+      "pass": true,
+      "value": {
+        "atMs": 5113.800000000279,
+        "families": {
+          "trachea": "procedural_v2",
+          "trachea-ring": "procedural_v2",
+          "carina": "procedural_v2",
+          "lung-left": "procedural_v2",
+          "lung-right": "procedural_v2",
+          "branches-left": "procedural_v2",
+          "branches-right": "procedural_v2"
+        },
+        "pending": [
+          "trachea",
+          "trachea-ring",
+          "carina",
+          "lung-left",
+          "lung-right",
+          "branches-left",
+          "branches-right"
+        ]
+      }
+    },
+    {
+      "name": "2a. the result arrives from a real Worker and the components are updated",
+      "pass": true,
+      "value": {
+        "arrivalMs": 33,
+        "workers": 2,
+        "jobs": 7,
+        "families": {
+          "trachea": "continuous_surface",
+          "trachea-ring": "continuous_surface",
+          "carina": "continuous_surface",
+          "lung-left": "continuous_surface",
+          "lung-right": "continuous_surface",
+          "branches-left": "continuous_surface",
+          "branches-right": "continuous_surface"
+        }
+      }
+    },
+    {
+      "name": "2b. the reviewed plan is untouched (same object, same JSON)",
+      "pass": true
+    },
+    {
+      "name": "2c. no recreation: same component groups, same canvas/workspace",
+      "pass": true
+    },
+    {
+      "name": "2d. selection kept (layer and workspace)",
+      "pass": true,
+      "value": {
+        "selected": "carina",
+        "ws": "carina"
+      }
+    },
+    {
+      "name": "2e. Cinema state kept: still exploded, same phase, same group offsets",
+      "pass": true,
+      "value": {
+        "phase": "exploded"
+      }
+    },
+    {
+      "name": "2f. the swap itself is small on the main thread (each upgrade < 100 ms)",
+      "pass": true,
+      "value": [
+        {
+          "ids": 1,
+          "ms": 7.8
+        },
+        {
+          "ids": 1,
+          "ms": 12.2
+        },
+        {
+          "ids": 1,
+          "ms": 15.6
+        },
+        {
+          "ids": 1,
+          "ms": 16
+        },
+        {
+          "ids": 1,
+          "ms": 9.2
+        },
+        {
+          "ids": 1,
+          "ms": 6.2
+        },
+        {
+          "ids": 1,
+          "ms": 8
+        }
+      ]
+    },
+    {
+      "name": "3a. an edit recomputes only the tasks whose key changed (not every component)",
+      "pass": true,
+      "value": {
+        "changedByEdit": [
+          "trachea",
+          "carina",
+          "branches-left"
+        ],
+        "flashed": [
+          "trachea",
+          "trachea-ring",
+          "carina",
+          "lung-left",
+          "branches-left"
+        ],
+        "jobsAfterEdit": 5,
+        "pendingAfterUndo": 0,
+        "jobsAfterUndo": 0,
+        "undoRestoresExactly": true,
+        "components": 7
+      }
+    },
+    {
+      "name": "3b. undo recomputes nothing (cache) and restores the exact geometry",
+      "pass": true,
+      "value": {
+        "changedByEdit": [
+          "trachea",
+          "carina",
+          "branches-left"
+        ],
+        "flashed": [
+          "trachea",
+          "trachea-ring",
+          "carina",
+          "lung-left",
+          "branches-left"
+        ],
+        "jobsAfterEdit": 5,
+        "pendingAfterUndo": 0,
+        "jobsAfterUndo": 0,
+        "undoRestoresExactly": true,
+        "components": 7
+      }
+    },
+    {
+      "name": "4. after 5 quick plan versions (3 edits kept), what is drawn equals a fresh compile of the CURRENT plan, vertex for vertex",
+      "pass": true,
+      "value": {
+        "editCount": 3,
+        "cancelled": 7,
+        "completed": 17
+      }
+    },
+    {
+      "name": "6. the same task gives bit-identical vertices in the Worker and inline on the main thread",
+      "pass": true,
+      "value": {
+        "compared": 7,
+        "identical": 7
+      }
+    },
+    {
+      "name": "no console errors in the cycle",
+      "pass": true,
+      "value": []
+    },
+    {
+      "name": "5a. a task over its time limit is killed, remembered as TIMEOUT, and the component stays on V2",
+      "pass": true,
+      "value": {
+        "stats": {
+          "hits": 9,
+          "misses": 9,
+          "completed": 0,
+          "failed": 9,
+          "timeouts": 9,
+          "cancelled": 0,
+          "evicted": 0,
+          "rejected": 0,
+          "workersCreated": 9,
+          "queued": 0,
+          "running": 0,
+          "cacheEntries": 9,
+          "cacheBytes": 2304
+        },
+        "fallbacks": [
+          "TIMEOUT"
+        ],
+        "used": [
+          "procedural_v2"
+        ],
+        "counters": {
+          "created": 9,
+          "terminated": 9,
+          "messages": 9
+        },
+        "selectable": true,
+        "selected": "base"
+      }
+    },
+    {
+      "name": "5a. every worker started was terminated, the Space still works (selection)",
+      "pass": true,
+      "value": {
+        "created": 9,
+        "terminated": 9,
+        "messages": 9
+      }
+    },
+    {
+      "name": "5b. after 5 Space changes with jobs running, every worker created was terminated",
+      "pass": true,
+      "value": {
+        "created": 8,
+        "terminated": 8,
+        "messages": 13
+      }
+    },
+    {
+      "name": "5b. a disposed service keeps nothing: no running, no queued, empty cache",
+      "pass": true,
+      "value": [
+        {
+          "running": 0,
+          "queued": 0,
+          "cacheEntries": 0
+        },
+        {
+          "running": 0,
+          "queued": 0,
+          "cacheEntries": 0
+        },
+        {
+          "running": 0,
+          "queued": 0,
+          "cacheEntries": 0
+        }
+      ]
+    },
+    {
+      "name": "5b. no result is written after dispose",
+      "pass": true,
+      "value": 0
+    },
+    {
+      "name": "5b. GPU resources do not grow across Space changes (geometries/textures bounded by the one Space shown)",
+      "pass": true,
+      "value": {
+        "before": {
+          "g": 16,
+          "t": 8
+        },
+        "after": {
+          "g": 4,
+          "t": 7
+        }
+      }
+    }
+  ],
+  "data": {
+    "cycle": {
+      "arrivalMs": 33,
+      "longTasksMs": [
+        3323,
+        1322
+      ],
+      "gpuBefore": {
+        "profile": "realtime",
+        "drawCalls": 41,
+        "triangles": 193559,
+        "geometries": 11,
+        "textures": 15,
+        "programs": 8,
+        "lastFrameMs": 18.399999999906868,
+        "frames": 6,
+        "pixelRatio": 1,
+        "motion": false,
+        "size": [
+          1440,
+          900
+        ],
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "softwareRendering": true,
+        "modelMeshes": 59,
+        "modelTriangles": 266212,
+        "modelMaterials": 16,
+        "libraryMaterials": 12,
+        "libraryTextures": 13
+      },
+      "gpuAfter": {
+        "profile": "realtime",
+        "drawCalls": 17,
+        "triangles": 97649,
+        "geometries": 11,
+        "textures": 15,
+        "programs": 8,
+        "lastFrameMs": 3.2999999998137355,
+        "frames": 10,
+        "pixelRatio": 1,
+        "motion": false,
+        "size": [
+          1440,
+          900
+        ],
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "softwareRendering": true,
+        "modelMeshes": 59,
+        "modelTriangles": 266212,
+        "modelMaterials": 16,
+        "libraryMaterials": 12,
+        "libraryTextures": 13
+      },
+      "service": {
+        "hits": 7,
+        "misses": 7,
+        "completed": 7,
+        "failed": 0,
+        "timeouts": 0,
+        "cancelled": 0,
+        "evicted": 0,
+        "rejected": 0,
+        "workersCreated": 2,
+        "queued": 0,
+        "running": 0,
+        "cacheEntries": 7,
+        "cacheBytes": 1393576
+      },
+      "report": {
+        "totals": {
+          "triangles": 48822,
+          "meshes": 7,
+          "geometryBytes": 1393576,
+          "ms": 2759.2000000001863
+        },
+        "perFamily": {
+          "procedural_v2": {
+            "components": 0,
+            "triangles": 0,
+            "ms": 0
+          },
+          "continuous_surface": {
+            "components": 7,
+            "triangles": 48822,
+            "ms": 2587.399999999907
+          },
+          "mesh_asset": {
+            "components": 0,
+            "triangles": 0,
+            "ms": 0
+          }
+        },
+        "pending": [],
+        "decisions": [
+          {
+            "id": "trachea",
+            "used": "continuous_surface",
+            "computed": "computed",
+            "deviation": {
+              "freeMax": 0.02321426868438725,
+              "blendMax": 0,
+              "cell": 0.04642857142857143
+            },
+            "fallback": null
+          },
+          {
+            "id": "trachea-ring",
+            "used": "continuous_surface",
+            "computed": "computed",
+            "deviation": {
+              "freeMax": 0.0014529951639152688,
+              "blendMax": 0.0011716687968938017,
+              "cell": 0.016785714285714286
+            },
+            "fallback": null
+          },
+          {
+            "id": "carina",
+            "used": "continuous_surface",
+            "computed": "computed",
+            "deviation": {
+              "freeMax": 0.004564585483404618,
+              "blendMax": 0.06247683116556779,
+              "cell": 0.04592857142857143
+            },
+            "fallback": null
+          },
+          {
+            "id": "lung-left",
+            "used": "continuous_surface",
+            "computed": "computed",
+            "deviation": {
+              "freeMax": 0.003005097924011963,
+              "blendMax": 0,
+              "cell": 0.08214285714285714
+            },
+            "fallback": null
+          },
+          {
+            "id": "lung-right",
+            "used": "continuous_surface",
+            "computed": "computed",
+            "deviation": {
+              "freeMax": 0.0029266069363628336,
+              "blendMax": 0,
+              "cell": 0.08750000000000001
+            },
+            "fallback": null
+          },
+          {
+            "id": "branches-left",
+            "used": "continuous_surface",
+            "computed": "computed",
+            "deviation": {
+              "freeMax": 0.010104900299640764,
+              "blendMax": 0.024087563746103755,
+              "cell": 0.04166666666666667
+            },
+            "fallback": null
+          },
+          {
+            "id": "branches-right",
+            "used": "continuous_surface",
+            "computed": "computed",
+            "deviation": {
+              "freeMax": 0.011668911259531296,
+              "blendMax": 0.02410635593527527,
+              "cell": 0.04166666666666667
+            },
+            "fallback": null
+          }
+        ]
+      }
+    },
+    "editUndo": {
+      "changedByEdit": [
+        "trachea",
+        "carina",
+        "branches-left"
+      ],
+      "flashed": [
+        "trachea",
+        "trachea-ring",
+        "carina",
+        "lung-left",
+        "branches-left"
+      ],
+      "jobsAfterEdit": 5,
+      "pendingAfterUndo": 0,
+      "jobsAfterUndo": 0,
+      "undoRestoresExactly": true,
+      "components": 7
+    },
+    "stale": {
+      "equal": true,
+      "cancelled": 7,
+      "completed": 17
+    },
+    "workerInline": {
+      "compared": 7,
+      "identical": 7
+    },
+    "lifecycle": {
+      "counters": {
+        "created": 8,
+        "terminated": 8,
+        "messages": 13
+      },
+      "disposedStats": [
+        {
+          "running": 0,
+          "queued": 0,
+          "cacheEntries": 0
+        },
+        {
+          "running": 0,
+          "queued": 0,
+          "cacheEntries": 0
+        },
+        {
+          "running": 0,
+          "queued": 0,
+          "cacheEntries": 0
+        }
+      ],
+      "lateEventsAfterDispose": 0,
+      "gpu0": {
+        "profile": "realtime",
+        "drawCalls": 27,
+        "triangles": 19589,
+        "geometries": 16,
+        "textures": 8,
+        "programs": 8,
+        "lastFrameMs": 1.2000000001862645,
+        "frames": 5,
+        "pixelRatio": 1,
+        "motion": false,
+        "size": [
+          1440,
+          900
+        ],
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "softwareRendering": true,
+        "modelMeshes": 59,
+        "modelTriangles": 266212,
+        "modelMaterials": 16,
+        "libraryMaterials": 12,
+        "libraryTextures": 13
+      },
+      "gpu1": {
+        "profile": "realtime",
+        "drawCalls": 3,
+        "triangles": 5,
+        "geometries": 4,
+        "textures": 7,
+        "programs": 7,
+        "lastFrameMs": 6.5,
+        "frames": 8,
+        "pixelRatio": 1,
+        "motion": false,
+        "size": [
+          1440,
+          900
+        ],
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "softwareRendering": true,
+        "modelMeshes": 59,
+        "modelTriangles": 266212,
+        "modelMaterials": 16,
+        "libraryMaterials": 12,
+        "libraryTextures": 13
+      },
+      "lastEvents": 0
+    }
+  }
+}
