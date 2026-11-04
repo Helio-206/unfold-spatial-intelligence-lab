@@ -1,0 +1,267 @@
+{
+  "contract": "unfold.visual-quality.reference-candidates.v1",
+  "status": "INCOMPLETE CANDIDATES: no frozen benchmark, no confidential holdout, annotations not independently reviewed",
+  "cases": [
+    {
+      "id": "excavator",
+      "category": "construction",
+      "split": "candidate; no confidential holdout",
+      "file": "reports/product-integration/visual-quality/references/excavator.jpg",
+      "sha256": "f9edf6e466a8ba2a2f59a3db22274ed1efa0603befe7d494a0917b419c8de112",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Excavator_on_Drain_Side_-_geograph.org.uk_-_655881.jpg",
+      "downloadUrl": "https://upload.wikimedia.org/wikipedia/commons/e/e6/Excavator_on_Drain_Side_-_geograph.org.uk_-_655881.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "Ian Simons",
+      "license": "CC BY-SA 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "title": "File:Excavator on Drain Side - geograph.org.uk - 655881.jpg",
+      "expectedVisibleComponents": [
+        "cab",
+        "track",
+        "boom",
+        "stick"
+      ],
+      "annotationStatus": "preliminary visual triage only; independent human review required",
+      "cameraCalibration": "unknown"
+    },
+    {
+      "id": "car",
+      "category": "vehicles",
+      "split": "candidate; no confidential holdout",
+      "file": "reports/product-integration/visual-quality/references/car.jpg",
+      "sha256": "a4705cecb298ba521a46baeb4ba1acd7cf75bdf3500d1c927d45788aa55ac3ec",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:2015_Vauxhall_Astra_SRi_hatchback_in_Sovereign_Silver,_side_view_in_ALDI_Duncan_Road_car_park,_Gillingham.jpg",
+      "downloadUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/42/2015_Vauxhall_Astra_SRi_hatchback_in_Sovereign_Silver%2C_side_view_in_ALDI_Duncan_Road_car_park%2C_Gillingham.jpg/960px-2015_Vauxhall_Astra_SRi_hatchback_in_Sovereign_Silver%2C_side_view_in_ALDI_Duncan_Road_car_park%2C_Gillingham.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "OathOn",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "title": "File:2015 Vauxhall Astra SRi hatchback in Sovereign Silver, side view in ALDI Duncan Road car park, Gillingham.jpg",
+      "expectedVisibleComponents": [
+        "body",
+        "wheels",
+        "windows"
+      ],
+      "annotationStatus": "preliminary visual triage only; independent human review required",
+      "cameraCalibration": "unknown"
+    },
+    {
+      "id": "bus",
+      "category": "vehicles",
+      "split": "candidate; no confidential holdout",
+      "file": "reports/product-integration/visual-quality/references/bus.jpg",
+      "sha256": "b98059c978b56795f3c6419b41e0b8bc276c3e65aaee1e57b7ad2e7cc47d86df",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Novabus_LFS_in_MTA_New_York_City_Bus_livery_-_side_view.jpg",
+      "downloadUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/46/Novabus_LFS_in_MTA_New_York_City_Bus_livery_-_side_view.jpg/960px-Novabus_LFS_in_MTA_New_York_City_Bus_livery_-_side_view.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "GK tramrunner RU",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "title": "File:Novabus LFS in MTA New York City Bus livery - side view.jpg",
+      "expectedVisibleComponents": [
+        "body",
+        "wheels",
+        "windows",
+        "doors"
+      ],
+      "annotationStatus": "preliminary visual triage only; independent human review required",
+      "cameraCalibration": "unknown"
+    },
+    {
+      "id": "chair",
+      "category": "furniture",
+      "split": "candidate; no confidential holdout",
+      "file": "reports/product-integration/visual-quality/references/chair.jpg",
+      "sha256": "21f1ba12e44829e4639353f5f642ef58fc296f1bb9d9733e129c18651db5eca9",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Santorin_(GR),_Fira_--_2017_--_2598.jpg",
+      "downloadUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d9/Santorin_%28GR%29%2C_Fira_--_2017_--_2598.jpg/960px-Santorin_%28GR%29%2C_Fira_--_2017_--_2598.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Dietmar Rabich",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "title": "File:Santorin (GR), Fira -- 2017 -- 2598.jpg",
+      "expectedVisibleComponents": [
+        "seat",
+        "back",
+        "legs"
+      ],
+      "annotationStatus": "preliminary visual triage only; independent human review required",
+      "cameraCalibration": "unknown"
+    },
+    {
+      "id": "camera",
+      "category": "electronics",
+      "split": "candidate; no confidential holdout",
+      "file": "reports/product-integration/visual-quality/references/camera.jpg",
+      "sha256": "f88357a412bddf601c0b66c49ab147586a90391f77ce054326dc003b82226409",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Sony_Alpha_7R_IV_elevated_front_view_of_camera_body_with_exposed_sensor.jpg",
+      "downloadUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a7/Sony_Alpha_7R_IV_elevated_front_view_of_camera_body_with_exposed_sensor.jpg/960px-Sony_Alpha_7R_IV_elevated_front_view_of_camera_body_with_exposed_sensor.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Franz van Duns",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "title": "File:Sony Alpha 7R IV elevated front view of camera body with exposed sensor.jpg",
+      "expectedVisibleComponents": [
+        "body",
+        "lens mount",
+        "controls"
+      ],
+      "annotationStatus": "preliminary visual triage only; independent human review required",
+      "cameraCalibration": "unknown"
+    },
+    {
+      "id": "laptop",
+      "category": "electronics",
+      "split": "candidate; no confidential holdout",
+      "file": "reports/product-integration/visual-quality/references/laptop.jpg",
+      "sha256": "870dcec47000f34916ff58af33c8980629fd11ff8f393d440f0b39cc8edb8a12",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:A_One_Laptop_per_Child_computer_(1273754008).jpg",
+      "downloadUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/33/A_One_Laptop_per_Child_computer_%281273754008%29.jpg/960px-A_One_Laptop_per_Child_computer_%281273754008%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Simon Law from Montréal, QC, Canada",
+      "license": "CC BY-SA 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "title": "File:A One Laptop per Child computer (1273754008).jpg",
+      "expectedVisibleComponents": [
+        "screen",
+        "keyboard",
+        "base"
+      ],
+      "annotationStatus": "preliminary visual triage only; independent human review required",
+      "cameraCalibration": "unknown"
+    },
+    {
+      "id": "toaster",
+      "category": "appliances",
+      "split": "candidate; no confidential holdout",
+      "file": "reports/product-integration/visual-quality/references/toaster.jpg",
+      "sha256": "90d2c4a3d279b8e4e601dd988470891f16c9d387acfe970130625a5c8daa969a",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Hoteltoaster_01_(sk).jpg",
+      "downloadUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/47/Hoteltoaster_01_%28sk%29.jpg/960px-Hoteltoaster_01_%28sk%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Photograph:  SusKauz, Frankfurt am Main",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "title": "File:Hoteltoaster 01 (sk).jpg",
+      "expectedVisibleComponents": [
+        "body",
+        "controls"
+      ],
+      "annotationStatus": "preliminary visual triage only; independent human review required",
+      "cameraCalibration": "unknown"
+    },
+    {
+      "id": "house",
+      "category": "architecture",
+      "split": "candidate; no confidential holdout",
+      "file": "reports/product-integration/visual-quality/references/house.jpg",
+      "sha256": "e19a1ab1403a4311fc6e8d2a7985dcc004272a83e677e18481c55bc540710466",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Facade_of_the_Conjunto_Nacional_cropped_version.jpg",
+      "downloadUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c1/Facade_of_the_Conjunto_Nacional_cropped_version.jpg/960px-Facade_of_the_Conjunto_Nacional_cropped_version.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Wilfredor",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "title": "File:Facade of the Conjunto Nacional cropped version.jpg",
+      "expectedVisibleComponents": [
+        "facade",
+        "windows"
+      ],
+      "annotationStatus": "preliminary visual triage only; independent human review required",
+      "cameraCalibration": "unknown"
+    },
+    {
+      "id": "church",
+      "category": "architecture",
+      "split": "candidate; no confidential holdout",
+      "file": "reports/product-integration/visual-quality/references/church.jpg",
+      "sha256": "9babab5e0f83d003bb2efdebc4cc1800df744125a95413be585d8411c33665a4",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Pa%C5%BEaislis_Monastery_exterior,_Kaunas,_Lithuania_-_Diliff.jpg",
+      "downloadUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/51/Pa%C5%BEaislis_Monastery_exterior%2C_Kaunas%2C_Lithuania_-_Diliff.jpg/960px-Pa%C5%BEaislis_Monastery_exterior%2C_Kaunas%2C_Lithuania_-_Diliff.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Diliff",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "title": "File:Pažaislis Monastery exterior, Kaunas, Lithuania - Diliff.jpg",
+      "expectedVisibleComponents": [
+        "walls",
+        "roof",
+        "windows",
+        "entrance",
+        "towers"
+      ],
+      "annotationStatus": "preliminary visual triage only; independent human review required",
+      "cameraCalibration": "unknown"
+    },
+    {
+      "id": "wrench",
+      "category": "tools",
+      "split": "candidate; no confidential holdout",
+      "file": "reports/product-integration/visual-quality/references/wrench.jpg",
+      "sha256": "48e4ab2811aeed39218f44ab9a2675505eefc475d3b13f9ba76f3db48c3ad4d2",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:2023_Klucz_nastawny.jpg",
+      "downloadUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/50/2023_Klucz_nastawny.jpg/960px-2023_Klucz_nastawny.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Jacek Halicki",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "title": "File:2023 Klucz nastawny.jpg",
+      "expectedVisibleComponents": [
+        "handle",
+        "jaws"
+      ],
+      "annotationStatus": "preliminary visual triage only; independent human review required",
+      "cameraCalibration": "unknown"
+    },
+    {
+      "id": "drill",
+      "category": "tools",
+      "split": "candidate; no confidential holdout",
+      "file": "reports/product-integration/visual-quality/references/drill.jpg",
+      "sha256": "08888de009f7caeff87faddbb15e90c2e6c1548a94b5a952b0c6df290876e0c9",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Cordless_electric_(screw)_drill.jpg",
+      "downloadUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0c/Cordless_electric_%28screw%29_drill.jpg/960px-Cordless_electric_%28screw%29_drill.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Fructibus",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "title": "File:Cordless electric (screw) drill.jpg",
+      "expectedVisibleComponents": [
+        "body",
+        "handle",
+        "chuck",
+        "trigger"
+      ],
+      "annotationStatus": "preliminary visual triage only; independent human review required",
+      "cameraCalibration": "unknown"
+    },
+    {
+      "id": "teapot",
+      "category": "organic",
+      "split": "candidate; no confidential holdout",
+      "file": "reports/product-integration/visual-quality/references/teapot.jpg",
+      "sha256": "e3bd035b5965b608e386966b904ee0ec5a3981620c374a6c03c2b7a4b1ae9afc",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:BLW_Teapot_with_Chinese_Flowers.jpg",
+      "downloadUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c7/BLW_Teapot_with_Chinese_Flowers.jpg/960px-BLW_Teapot_with_Chinese_Flowers.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Valerie McGlinchey",
+      "license": "CC BY-SA 2.0 uk",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/uk/deed.en",
+      "title": "File:BLW Teapot with Chinese Flowers.jpg",
+      "expectedVisibleComponents": [
+        "body",
+        "spout",
+        "handle",
+        "lid"
+      ],
+      "annotationStatus": "preliminary visual triage only; independent human review required",
+      "cameraCalibration": "unknown"
+    }
+  ],
+  "excluded": [
+    {
+      "id": "bulldozer",
+      "reason": "search returned a different object or a poor isolated reference; excluded"
+    },
+    {
+      "id": "table",
+      "reason": "search returned a different object or a poor isolated reference; excluded"
+    },
+    {
+      "id": "blender",
+      "reason": "search returned a different object or a poor isolated reference; excluded"
+    },
+    {
+      "id": "violin",
+      "reason": "search returned a different object or a poor isolated reference; excluded"
+    }
+  ]
+}

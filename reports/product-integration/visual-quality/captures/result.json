@@ -1,0 +1,533 @@
+{
+  "contract": "unfold.visual-quality.capture.v1",
+  "fixture": "reports/universal-spatial-v2/evidence/live-image-plan.json",
+  "source": "saved Meta plan replayed locally; no photo correspondence asserted",
+  "provider": "SpatialPlanV2 fallback (Worker unavailable)",
+  "loadingMs": 1543,
+  "point": {
+    "id": "bucket-linkage",
+    "x": 810,
+    "y": 242
+  },
+  "lifecycle": {
+    "saved": true,
+    "opened": true,
+    "samePlan": true
+  },
+  "diagnostics": {
+    "bounds": {
+      "min": [
+        -1.93258114606834,
+        -5.551115123125783e-17,
+        -1.5654701712583907
+      ],
+      "max": [
+        1.93258114606834,
+        5.023854779877061,
+        1.5654701712583907
+      ],
+      "center": [
+        0,
+        2.5119273899385304,
+        0
+      ],
+      "size": [
+        3.86516229213668,
+        5.023854779877061,
+        3.1309403425167814
+      ]
+    },
+    "meshes": [
+      {
+        "id": "undercarriage",
+        "instances": 1,
+        "minimum": [
+          -0.8122442489258304,
+          0.14564379576042152,
+          -0.44813476286364073
+        ],
+        "maximum": [
+          0.08402527680145105,
+          1.041913321487703,
+          0.44813476286364073
+        ]
+      },
+      {
+        "id": "track-left",
+        "instances": 1,
+        "minimum": [
+          -0.8122442489258304,
+          0.31369432933013874,
+          0.6161852830779013
+        ],
+        "maximum": [
+          0.08402527680145105,
+          1.20996385505742,
+          1.5124548088051828
+        ]
+      },
+      {
+        "id": "track-left",
+        "instances": 1,
+        "minimum": [
+          -0.8122442489258304,
+          -5.551115123125783e-17,
+          0.6161852830779013
+        ],
+        "maximum": [
+          0.08402527680145105,
+          0.8962695257272815,
+          1.5124548088051828
+        ]
+      },
+      {
+        "id": "track-left",
+        "instances": 1,
+        "minimum": [
+          0.5321600129541789,
+          0.3416750044864447,
+          0.5631699206246934
+        ],
+        "maximum": [
+          1.2043621739439607,
+          1.2940168689475924,
+          1.5654701712583907
+        ]
+      },
+      {
+        "id": "track-right",
+        "instances": 1,
+        "minimum": [
+          -0.8122442489258304,
+          0.31369432933013874,
+          -1.5124548088051828
+        ],
+        "maximum": [
+          0.08402527680145105,
+          1.20996385505742,
+          -0.6161852830779013
+        ]
+      },
+      {
+        "id": "track-right",
+        "instances": 1,
+        "minimum": [
+          -0.8122442489258304,
+          -5.551115123125783e-17,
+          -1.5124548088051828
+        ],
+        "maximum": [
+          0.08402527680145105,
+          0.8962695257272815,
+          -0.6161852830779013
+        ]
+      },
+      {
+        "id": "track-right",
+        "instances": 1,
+        "minimum": [
+          -1.93258114606834,
+          0.3416750044864447,
+          -1.5654701712583907
+        ],
+        "maximum": [
+          -1.260378985078558,
+          1.2940168689475924,
+          -0.5631699206246934
+        ]
+      },
+      {
+        "id": "upper-frame",
+        "instances": 1,
+        "minimum": [
+          -0.3641094927399179,
+          1.2659806862252028,
+          -0.44813476286364073
+        ],
+        "maximum": [
+          0.5321600329873636,
+          2.1622502119524842,
+          0.44813476286364073
+        ]
+      },
+      {
+        "id": "cab",
+        "instances": 1,
+        "minimum": [
+          0.19605895249247274,
+          3.0585197109688527,
+          0.16805052689198896
+        ],
+        "maximum": [
+          1.0923284782197542,
+          3.954789236696134,
+          1.0643200526192704
+        ]
+      },
+      {
+        "id": "cab",
+        "instances": 1,
+        "minimum": [
+          0.14004210796923366,
+          3.22657024453857,
+          0.16805052689198896
+        ],
+        "maximum": [
+          1.0363116336965152,
+          4.122839770265852,
+          1.0643200526192704
+        ]
+      },
+      {
+        "id": "cab",
+        "instances": 1,
+        "minimum": [
+          -0.19605895917020066,
+          3.0025028664456137,
+          0.5601684385546624
+        ],
+        "maximum": [
+          0.7002105665570808,
+          3.898772392172895,
+          1.4564379642819438
+        ]
+      },
+      {
+        "id": "engine-hood",
+        "instances": 1,
+        "minimum": [
+          1.0363116203410585,
+          2.8904691773991353,
+          -0.728218985479836
+        ],
+        "maximum": [
+          1.93258114606834,
+          3.786738703126417,
+          0.16805054024744542
+        ]
+      },
+      {
+        "id": "boom",
+        "instances": 1,
+        "minimum": [
+          -1.8801908906635456,
+          3.3349773377888754,
+          -0.672202140956597
+        ],
+        "maximum": [
+          -0.640567106204484,
+          4.574601122247937,
+          0.22406738477068447
+        ]
+      },
+      {
+        "id": "stick",
+        "instances": 1,
+        "minimum": [
+          -0.024496034191270222,
+          0.34607559159929047,
+          -0.8962695190495533
+        ],
+        "maximum": [
+          1.1595004886926557,
+          1.5300721144832163,
+          6.677728203730027e-9
+        ]
+      },
+      {
+        "id": "bucket",
+        "instances": 1,
+        "minimum": [
+          -1.023304252889278,
+          3.7011442306888833,
+          -1.1382970497162592
+        ],
+        "maximum": [
+          0.0396988709898789,
+          4.8364347559857945,
+          -0.2061072188414782
+        ]
+      },
+      {
+        "id": "bucket-linkage",
+        "instances": 1,
+        "minimum": [
+          -0.24999462486164203,
+          3.790385791731415,
+          -1.1203368971425096
+        ],
+        "maximum": [
+          0.983474363284004,
+          5.023854779877061,
+          -0.22406737141522803
+        ]
+      },
+      {
+        "id": "hydraulic-boom",
+        "instances": 1,
+        "minimum": [
+          -1.1014325408679362,
+          3.1202419245199575,
+          -0.5601684585878471
+        ],
+        "maximum": [
+          -0.07492118744235554,
+          4.117134401237985,
+          0.11203370240193458
+        ]
+      }
+    ],
+    "triangles": 5148,
+    "degenerate": 0,
+    "invalidNormals": 0,
+    "materialCount": 17,
+    "texturedMaterials": 2,
+    "geometryReport": {
+      "planSource": {
+        "kind": "image",
+        "sha256": "2ba5cfac62edea6be1e8ab34590ffb2d74c0d70320970d9db1f1b2a59ab31327"
+      },
+      "decisions": [
+        {
+          "componentId": "undercarriage",
+          "requested": null,
+          "used": "procedural_v2",
+          "reason": "Stays on V2: WORKER_UNAVAILABLE.",
+          "fallback": {
+            "from": "continuous_surface",
+            "code": "WORKER_UNAVAILABLE"
+          },
+          "planGeometryOrigin": "design_approximation",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 300
+        },
+        {
+          "componentId": "track-left",
+          "requested": null,
+          "used": "procedural_v2",
+          "reason": "Stays on V2: WORKER_UNAVAILABLE.",
+          "fallback": {
+            "from": "continuous_surface",
+            "code": "WORKER_UNAVAILABLE"
+          },
+          "planGeometryOrigin": "design_approximation",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 696
+        },
+        {
+          "componentId": "track-right",
+          "requested": null,
+          "used": "procedural_v2",
+          "reason": "Stays on V2: WORKER_UNAVAILABLE.",
+          "fallback": {
+            "from": "continuous_surface",
+            "code": "WORKER_UNAVAILABLE"
+          },
+          "planGeometryOrigin": "design_approximation",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 696
+        },
+        {
+          "componentId": "upper-frame",
+          "requested": null,
+          "used": "procedural_v2",
+          "reason": "Stays on V2: WORKER_UNAVAILABLE.",
+          "fallback": {
+            "from": "continuous_surface",
+            "code": "WORKER_UNAVAILABLE"
+          },
+          "planGeometryOrigin": "design_approximation",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 588
+        },
+        {
+          "componentId": "cab",
+          "requested": null,
+          "used": "procedural_v2",
+          "reason": "Stays on V2: WORKER_UNAVAILABLE.",
+          "fallback": {
+            "from": "continuous_surface",
+            "code": "WORKER_UNAVAILABLE"
+          },
+          "planGeometryOrigin": "design_approximation",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 1188
+        },
+        {
+          "componentId": "engine-hood",
+          "requested": null,
+          "used": "procedural_v2",
+          "reason": "Stays on V2: WORKER_UNAVAILABLE.",
+          "fallback": {
+            "from": "continuous_surface",
+            "code": "WORKER_UNAVAILABLE"
+          },
+          "planGeometryOrigin": "design_approximation",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 588
+        },
+        {
+          "componentId": "boom",
+          "requested": null,
+          "used": "procedural_v2",
+          "reason": "Stays on V2: WORKER_UNAVAILABLE.",
+          "fallback": {
+            "from": "continuous_surface",
+            "code": "WORKER_UNAVAILABLE"
+          },
+          "planGeometryOrigin": "design_approximation",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 300
+        },
+        {
+          "componentId": "stick",
+          "requested": null,
+          "used": "procedural_v2",
+          "reason": "Stays on V2: WORKER_UNAVAILABLE.",
+          "fallback": {
+            "from": "continuous_surface",
+            "code": "WORKER_UNAVAILABLE"
+          },
+          "planGeometryOrigin": "design_approximation",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 300
+        },
+        {
+          "componentId": "bucket",
+          "requested": null,
+          "used": "procedural_v2",
+          "reason": "Stays on V2: WORKER_UNAVAILABLE.",
+          "fallback": {
+            "from": "continuous_surface",
+            "code": "WORKER_UNAVAILABLE"
+          },
+          "planGeometryOrigin": "design_approximation",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 96
+        },
+        {
+          "componentId": "hydraulic-boom",
+          "requested": null,
+          "used": "procedural_v2",
+          "reason": "Stays on V2: WORKER_UNAVAILABLE.",
+          "fallback": {
+            "from": "continuous_surface",
+            "code": "WORKER_UNAVAILABLE"
+          },
+          "planGeometryOrigin": "design_approximation",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 96
+        },
+        {
+          "componentId": "bucket-linkage",
+          "requested": null,
+          "used": "procedural_v2",
+          "reason": "Stays on V2: WORKER_UNAVAILABLE.",
+          "fallback": {
+            "from": "continuous_surface",
+            "code": "WORKER_UNAVAILABLE"
+          },
+          "planGeometryOrigin": "design_approximation",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 300
+        }
+      ],
+      "proposalsNotApproved": [],
+      "pending": [],
+      "service": null,
+      "limits": {
+        "maxTriangles": 160000,
+        "maxMeshes": 1000,
+        "maxGeometryBytes": 16777216,
+        "maxGridCells": 64,
+        "maxAssetBytes": 20971520,
+        "maxTextureSide": 2048,
+        "maxTextureBytes": 67108864,
+        "maxAssetTriangles": 300000,
+        "maxAssetNodes": 512
+      },
+      "totals": {
+        "triangles": 5148,
+        "meshes": 17,
+        "geometryBytes": 478592,
+        "ms": 0
+      },
+      "perFamily": {
+        "procedural_v2": {
+          "components": 11,
+          "triangles": 5148,
+          "ms": 0
+        },
+        "continuous_surface": {
+          "components": 0,
+          "triangles": 0,
+          "ms": 0
+        },
+        "mesh_asset": {
+          "components": 0,
+          "triangles": 0,
+          "ms": 0
+        }
+      },
+      "fallbacks": 11
+    },
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "resources": {
+      "geometries": 21,
+      "textures": 11,
+      "programs": 12
+    },
+    "jsHeap": {
+      "used": 80167224,
+      "total": 111352868
+    },
+    "boundsDiagnostics": {
+      "status": "measured",
+      "threshold": 0.1413950265352328,
+      "possibleIsolated": [
+        {
+          "meshIndex": 6,
+          "id": "track-right"
+        }
+      ],
+      "badMeshIndices": [],
+      "outsideSceneBounds": [],
+      "caveat": "World-space AABB proximity is a heuristic; overlaps, semantic joints, occlusion and unitless scale need human review."
+    }
+  },
+  "camera": {
+    "center": [
+      0,
+      2.5119273899385304,
+      0
+    ],
+    "size": [
+      3.86516229213668,
+      5.023854779877061,
+      3.1309403425167814
+    ]
+  },
+  "reference": null,
+  "errors": [],
+  "captures": {
+    "front": "front.png",
+    "side": "side.png",
+    "threeQuarter": "threeQuarter.png",
+    "selection": "selection.png",
+    "closeup": "closeup.png",
+    "isolation": "isolation.png",
+    "reopened": "reopened.png"
+  },
+  "review": null
+}

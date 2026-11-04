@@ -1,0 +1,50 @@
+{
+  "provider": "SpatialPlanV2 fallback (Worker unavailable)",
+  "fixture": "reports/universal-spatial-v2/evidence/live-image-plan.json",
+  "classification": {
+    "status": "NOT_EVALUATED",
+    "improvement": "NOT_EVALUATED"
+  },
+  "captures": {
+    "front": {
+      "verified": true,
+      "path": "front.png",
+      "sha256": "91f4cb7118d2da15142dc884ac90f993fa343f06ba6c4ed63382ae6eaea31902"
+    },
+    "side": {
+      "verified": true,
+      "path": "side.png",
+      "sha256": "a7d489bfc9cf73d48e37596e91ebe7d9bdfb2aaeed07e1d6275c3a85f3628434"
+    },
+    "threeQuarter": {
+      "verified": true,
+      "path": "threeQuarter.png",
+      "sha256": "95819b627d7d11cdd18b9b71be6e5472761a39231336e1ee3d63594c6feacae2"
+    },
+    "selection": {
+      "verified": true,
+      "path": "selection.png",
+      "sha256": "2a1db919fea272854ae169616bf35f950a4cb25fd34053ddff251fec79ac3b00"
+    },
+    "closeup": {
+      "verified": true,
+      "path": "closeup.png",
+      "sha256": "c22e544e421d59436b826300b386ea81b35a3d7bdec2772093bd5019a9391199"
+    },
+    "isolation": {
+      "verified": true,
+      "path": "isolation.png",
+      "sha256": "5e4757beb47e7cf594cf17f790074960e41dbfaeb89c74ec36a76f4f9670c5fa"
+    },
+    "reopened": {
+      "verified": true,
+      "path": "reopened.png",
+      "sha256": "5cd27aafa4e07341d238b96f9c224177017d3c06415a897146e9802d340ac4a4"
+    }
+  },
+  "review": null,
+  "limitations": [
+    "No classification without complete independently reviewed evidence.",
+    "Counts and timing do not establish visual quality or GPU presentation time."
+  ]
+}
