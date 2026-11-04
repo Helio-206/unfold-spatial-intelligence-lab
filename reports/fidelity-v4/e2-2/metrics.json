@@ -1,0 +1,264 @@
+{
+  "notice": "known synthetic hinge priors and independent boxes; no physical or photographic claim",
+  "results": [
+    {
+      "name": "two-body",
+      "status": "proposal",
+      "reason": null,
+      "fitBefore": 0.5413203173623057,
+      "fitAfter": 0.7908469473845683,
+      "heldBefore": 0.612081998267293,
+      "heldAfter": 0.8280296150894477,
+      "maxGapFraction": 5.561946577567963e-17,
+      "fitComponentMasksUsed": 0,
+      "landmarkLocationErrors": [
+        2.3055512673781017e-16
+      ],
+      "estimatedAngles": {
+        "joint-0": 0.30000000000000004
+      },
+      "angleRanges": {
+        "joint-0": [
+          0.30000000000000004,
+          0.30000000000000004
+        ]
+      },
+      "truthAngles": [
+        0.4
+      ],
+      "perPart": [
+        {
+          "id": "boom",
+          "heldBefore": 0.6548799400835199,
+          "heldAfter": 0.8921767537734835,
+          "truthWidth": 0.7,
+          "initialWidth": 0.5,
+          "finalWidth": 0.65,
+          "truthLength": 2.4,
+          "initialLength": 2,
+          "finalLength": 2.6
+        },
+        {
+          "id": "stick",
+          "heldBefore": 0.4522826264641219,
+          "heldAfter": 0.5470632928118393,
+          "truthWidth": 0.45,
+          "initialWidth": 0.35,
+          "finalWidth": 0.27999999999999997,
+          "truthLength": 1.4,
+          "initialLength": 1,
+          "finalLength": 1
+        }
+      ],
+      "inferredLandmarks": [
+        {
+          "status": "hypothesis",
+          "point": [
+            -5.551115123125783e-17,
+            2.7755575615628914e-17,
+            1.2000000000000002
+          ],
+          "axis": null,
+          "maxErrorPx": 0,
+          "requiresHumanReview": true
+        }
+      ],
+      "evaluations": 21,
+      "vertices": 1800,
+      "triangles": 600,
+      "ms": 79.10858000000002
+    },
+    {
+      "name": "three-body",
+      "status": "proposal",
+      "reason": null,
+      "fitBefore": 0.480802988536325,
+      "fitAfter": 0.89888777874915,
+      "heldBefore": 0.5181701106086185,
+      "heldAfter": 0.8178165049409759,
+      "maxGapFraction": 1.1188630228279524e-16,
+      "fitComponentMasksUsed": 1,
+      "landmarkLocationErrors": [
+        2.3055512673781017e-16,
+        4.611102534756203e-16
+      ],
+      "estimatedAngles": {
+        "joint-0": 0.30000000000000004,
+        "joint-1": 0.2
+      },
+      "angleRanges": {
+        "joint-0": [
+          0.30000000000000004,
+          0.30000000000000004
+        ],
+        "joint-1": [
+          0.2,
+          0.2
+        ]
+      },
+      "truthAngles": [
+        0.4,
+        -0.3
+      ],
+      "perPart": [
+        {
+          "id": "boom",
+          "heldBefore": 0.6001182462362057,
+          "heldAfter": 0.8362510184836031,
+          "truthWidth": 0.75,
+          "initialWidth": 0.5,
+          "finalWidth": 0.65,
+          "truthLength": 2.4,
+          "initialLength": 2,
+          "finalLength": 2.6
+        },
+        {
+          "id": "stick",
+          "heldBefore": 0.4522826264641219,
+          "heldAfter": 0.6548689535102578,
+          "truthWidth": 0.45,
+          "initialWidth": 0.35,
+          "finalWidth": 0.385,
+          "truthLength": 1.4,
+          "initialLength": 1,
+          "finalLength": 1.2
+        },
+        {
+          "id": "bucket",
+          "heldBefore": 0.2507916962522882,
+          "heldAfter": 0.7574584773425499,
+          "truthWidth": 0.85,
+          "initialWidth": 0.7,
+          "finalWidth": 0.7,
+          "truthLength": 0.8,
+          "initialLength": 0.7,
+          "finalLength": 0.9099999999999999
+        }
+      ],
+      "inferredLandmarks": [
+        {
+          "status": "hypothesis",
+          "point": [
+            -5.551115123125783e-17,
+            2.7755575615628914e-17,
+            1.2000000000000002
+          ],
+          "axis": null,
+          "maxErrorPx": 0,
+          "requiresHumanReview": true
+        },
+        {
+          "status": "hypothesis",
+          "point": [
+            -5.551115123125783e-17,
+            -0.5451856792321108,
+            2.4894853916040396
+          ],
+          "axis": null,
+          "maxErrorPx": 7.105427357601002e-15,
+          "requiresHumanReview": true
+        }
+      ],
+      "evaluations": 33,
+      "vertices": 2700,
+      "triangles": 900,
+      "ms": 99.31545599999998
+    },
+    {
+      "name": "unseen-folded",
+      "status": "proposal",
+      "reason": null,
+      "fitBefore": 0.4172355596010164,
+      "fitAfter": 0.7473874604189501,
+      "heldBefore": 0.44210283112958393,
+      "heldAfter": 0.735080262342091,
+      "maxGapFraction": 1.1123893155135927e-16,
+      "fitComponentMasksUsed": 0,
+      "landmarkLocationErrors": [
+        2.7755575615628914e-17,
+        1.5700924586837752e-16
+      ],
+      "estimatedAngles": {
+        "joint-0": -0.30000000000000004,
+        "joint-1": -0.30000000000000004
+      },
+      "angleRanges": {
+        "joint-0": [
+          -0.30000000000000004,
+          -0.30000000000000004
+        ],
+        "joint-1": [
+          -0.30000000000000004,
+          -0.2
+        ]
+      },
+      "truthAngles": [
+        -0.5,
+        0.6
+      ],
+      "perPart": [
+        {
+          "id": "boom",
+          "heldBefore": 0.7869691542393387,
+          "heldAfter": 0.9062163701347159,
+          "truthWidth": 0.6,
+          "initialWidth": 0.5,
+          "finalWidth": 0.6,
+          "truthLength": 2.1,
+          "initialLength": 2,
+          "finalLength": 2.1999999999999997
+        },
+        {
+          "id": "stick",
+          "heldBefore": 0.29712374719264206,
+          "heldAfter": 0.48516138847887225,
+          "truthWidth": 0.55,
+          "initialWidth": 0.35,
+          "finalWidth": 0.42,
+          "truthLength": 1.7,
+          "initialLength": 1,
+          "finalLength": 1.3
+        },
+        {
+          "id": "bucket",
+          "heldBefore": 0.03725490196078431,
+          "heldAfter": 0.4922643618851049,
+          "truthWidth": 1,
+          "initialWidth": 0.7,
+          "finalWidth": 0.77,
+          "truthLength": 0.9,
+          "initialLength": 0.7,
+          "finalLength": 0.9099999999999999
+        }
+      ],
+      "inferredLandmarks": [
+        {
+          "status": "hypothesis",
+          "point": [
+            0,
+            -2.7755575615628914e-17,
+            1.05
+          ],
+          "axis": null,
+          "maxErrorPx": 0,
+          "requiresHumanReview": true
+        },
+        {
+          "status": "hypothesis",
+          "point": [
+            -1.1102230246251565e-16,
+            0.8150234156271452,
+            2.5418903552136336
+          ],
+          "axis": null,
+          "maxErrorPx": 0,
+          "requiresHumanReview": true
+        }
+      ],
+      "evaluations": 33,
+      "vertices": 2700,
+      "triangles": 900,
+      "ms": 72.5106649999999
+    }
+  ]
+}

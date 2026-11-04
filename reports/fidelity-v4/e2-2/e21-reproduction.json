@@ -1,0 +1,157 @@
+[
+  {
+    "name": "two-link",
+    "status": "refused",
+    "reason": "JOINT_GAP_EXCEEDED",
+    "fitBefore": 0.7371828445403455,
+    "fitAfter": 0.7371828445403455,
+    "heldBefore": 0.6641657417805795,
+    "heldAfter": 0.6641657417805795,
+    "jointResidualsBefore": [
+      0
+    ],
+    "jointResidualsAfter": [
+      0
+    ],
+    "evaluations": 33,
+    "vertices": 1800,
+    "triangles": 600,
+    "ms": 137.658459,
+    "errors": [
+      {
+        "id": "boom",
+        "referenceWidth": 0.8,
+        "widthBefore": 0.5,
+        "widthAfter": 0.5,
+        "referenceLength": 2.4,
+        "lengthBefore": 2,
+        "lengthAfter": 2,
+        "referenceRotationX": 0,
+        "rotationAfter": 0
+      },
+      {
+        "id": "stick",
+        "referenceWidth": 0.55,
+        "widthBefore": 0.4,
+        "widthAfter": 0.4,
+        "referenceLength": 1.2,
+        "lengthBefore": 1,
+        "lengthAfter": 1,
+        "referenceRotationX": 0,
+        "rotationAfter": 0
+      }
+    ]
+  },
+  {
+    "name": "three-link",
+    "status": "proposal",
+    "reason": null,
+    "fitBefore": 0.7909310727047024,
+    "fitAfter": 0.9356161514618413,
+    "heldBefore": 0.7059176650391555,
+    "heldAfter": 0.8887097665042312,
+    "jointResidualsBefore": [
+      0,
+      0
+    ],
+    "jointResidualsAfter": [
+      0.04999999999999997,
+      0.003333333333333336
+    ],
+    "evaluations": 49,
+    "vertices": 2700,
+    "triangles": 900,
+    "ms": 165.21336599999995,
+    "errors": [
+      {
+        "id": "boom",
+        "referenceWidth": 0.8,
+        "widthBefore": 0.5,
+        "widthAfter": 0.65,
+        "referenceLength": 2.4,
+        "lengthBefore": 2,
+        "lengthAfter": 2.4,
+        "referenceRotationX": 0,
+        "rotationAfter": 0
+      },
+      {
+        "id": "stick",
+        "referenceWidth": 0.55,
+        "widthBefore": 0.4,
+        "widthAfter": 0.52,
+        "referenceLength": 1.2,
+        "lengthBefore": 1,
+        "lengthAfter": 0.9,
+        "referenceRotationX": 0,
+        "rotationAfter": 0
+      },
+      {
+        "id": "bucket",
+        "referenceWidth": 0.9,
+        "widthBefore": 0.7,
+        "widthAfter": 0.9099999999999999,
+        "referenceLength": 0.8,
+        "lengthBefore": 0.8,
+        "lengthAfter": 0.8800000000000001,
+        "referenceRotationX": 0,
+        "rotationAfter": 0
+      }
+    ]
+  },
+  {
+    "name": "unseen-tilted",
+    "status": "proposal",
+    "reason": null,
+    "fitBefore": 0.6107190634056314,
+    "fitAfter": 0.774690298115574,
+    "heldBefore": 0.6090633375480762,
+    "heldAfter": 0.7664567103383175,
+    "jointResidualsBefore": [
+      0,
+      0
+    ],
+    "jointResidualsAfter": [
+      0.02662224443915417,
+      0.0492595001775846
+    ],
+    "evaluations": 49,
+    "vertices": 2700,
+    "triangles": 900,
+    "ms": 149.1131160000001,
+    "errors": [
+      {
+        "id": "boom",
+        "referenceWidth": 0.7,
+        "widthBefore": 0.5,
+        "widthAfter": 0.65,
+        "referenceLength": 2.2,
+        "lengthBefore": 2,
+        "lengthAfter": 2.1999999999999997,
+        "referenceRotationX": 0,
+        "rotationAfter": -0.2
+      },
+      {
+        "id": "stick",
+        "referenceWidth": 0.6,
+        "widthBefore": 0.4,
+        "widthAfter": 0.48,
+        "referenceLength": 1.1,
+        "lengthBefore": 1,
+        "lengthAfter": 0.8,
+        "referenceRotationX": 0.25,
+        "rotationAfter": 0.2
+      },
+      {
+        "id": "bucket",
+        "referenceWidth": 1,
+        "widthBefore": 0.7,
+        "widthAfter": 0.9099999999999999,
+        "referenceLength": 0.8,
+        "lengthBefore": 0.8,
+        "lengthAfter": 0.96,
+        "referenceRotationX": 0.2,
+        "rotationAfter": -0.30000000000000004
+      }
+    ]
+  }
+]
