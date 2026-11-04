@@ -1,0 +1,6 @@
+import {it,expect} from 'vitest';
+import {ArticulatedWorkerClient} from '../src/universal-spatial/visual-reconstruction/worker-client';
+import type {FitRequest} from '../src/universal-spatial/visual-reconstruction/worker-protocol';
+class Fake {onmessage:((e:MessageEvent)=>void)|null=null;onerror:(()=>void)|null=null;terminated=false;postMessage(_x:unknown){}terminate(){this.terminated=true;}emit(data:unknown){this.onmessage?.({data} as MessageEvent);}}
+const req={plan:{components:[]},views:[],priors:[],options:{maxEvaluations:3,maxMs:1000,span:1,maxJointFraction:.1}} as unknown as Omit<FitRequest,'id'>;
+it('rejects cancellation, stale queued results, invalid results and new jobs after dispose',async()=>{const workers:Fake[]=[],client=new ArticulatedWorkerClient(()=>{const w=new Fake();workers.push(w);return w as unknown as Worker;},1000);const first=client.start(req);client.cancel();await expect(first).rejects.toThrow('CANCELLED');expect(workers[0]!.terminated).toBe(true);const second=client.start(req);workers[0]!.emit({id:2,type:'result',result:{status:'refused',reason:'OLD',evaluations:0}});workers[1]!.emit({id:5,type:'result',result:{status:'proposal',evaluations:0}});await expect(second).rejects.toThrow('INVALID_WORKER_RESULT');client.dispose();await expect(client.start(req)).rejects.toThrow('DISPOSED');});

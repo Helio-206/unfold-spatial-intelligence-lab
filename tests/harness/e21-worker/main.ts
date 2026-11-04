@@ -1,0 +1,11 @@
+import {Vector3} from 'three';
+import {validateSpatialPlanV2} from '../../../src/universal-spatial/contracts-v2';
+import {makeView} from '../../../src/universal-spatial/reconstruction/silhouette';
+import {encodeViews} from '../../../src/universal-spatial/visual-reconstruction/worker-protocol';
+import {ArticulatedWorkerClient} from '../../../src/universal-spatial/visual-reconstruction/worker-client';
+const t=(position:number[])=>({position,rotationRad:[0,0,0],scale:[1,1,1]}),material={profile:'neutral',color:'#aaaaaa',roughness:.5,metalness:0,clearcoat:0};
+const plan=validateSpatialPlanV2({contract:'unfold.spatial-plan.v2',source:{kind:'text',sha256:'a'.repeat(64)},title:'fixture',units:'unitless',presentationProfile:'neutral',unknowns:[],constraints:[],relations:[],components:[{id:'boom',p:[0,0,0],parent:null,d:[.5,.5,2]},{id:'stick',p:[0,0,1.5],parent:'boom',d:[.4,.4,1]}].map(c=>({id:c.id,label:c.id,parentId:c.parent,geometry:{type:'shape',key:`${c.id}-shape`,operator:'box',parameters:{dimensions:c.d},transform:t([0,0,0]),repeat:null,material},transform:t(c.p),provenance:{geometry:'inferred',transform:'inferred',material:'inferred',evidence:'synthetic'}}))});
+const views=encodeViews([new Vector3(1,0,0),new Vector3(0,1,0),new Vector3(0,0,1)].map(d=>({view:makeView(d,new Vector3(0,0,0),3,32),mask:new Uint8Array(1024).fill(1),calibrated:true})));
+const req={plan,views,priors:[{parent:'boom',child:'stick',anchorParent:[0,0,1] as [number,number,number],anchorChild:[0,0,-.5] as [number,number,number]}],options:{maxEvaluations:2,maxMs:10000,span:3,maxJointFraction:.1}};
+async function run(){const client=new ArticulatedWorkerClient(()=>new Worker(new URL('../../../src/universal-spatial/visual-reconstruction/articulated.worker.ts',import.meta.url),{type:'module'}));let progress=0;let cancelled='';try{await client.start(req,()=>{progress++;client.cancel();});}catch(e){cancelled=(e as Error).message;}let disposed='';try{await client.start(req,()=>client.dispose());}catch(e){disposed=(e as Error).message;}let afterDispose='';try{await client.start(req);}catch(e){afterDispose=(e as Error).message;}return {progress,cancelled,disposed,afterDispose};}
+Object.assign(window,{runE21WorkerTest:run});
