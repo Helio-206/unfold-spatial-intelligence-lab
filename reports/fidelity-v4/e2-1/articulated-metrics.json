@@ -3,28 +3,31 @@
   "results": [
     {
       "name": "two-link",
-      "status": "proposal",
-      "reason": null,
+      "status": "refused",
+      "reason": "JOINT_GAP_EXCEEDED",
       "fitBefore": 0.7371828445403455,
-      "fitAfter": 0.8547720049940413,
+      "fitAfter": 0.7371828445403455,
       "heldBefore": 0.6641657417805795,
-      "heldAfter": 0.8557285581116197,
-      "jointResiduals": [
+      "heldAfter": 0.6641657417805795,
+      "jointResidualsBefore": [
+        0
+      ],
+      "jointResidualsAfter": [
         0
       ],
       "evaluations": 33,
       "vertices": 1800,
       "triangles": 600,
-      "ms": 103.14178900000002,
+      "ms": 438.52100799999994,
       "errors": [
         {
           "id": "boom",
           "referenceWidth": 0.8,
           "widthBefore": 0.5,
-          "widthAfter": 0.65,
+          "widthAfter": 0.5,
           "referenceLength": 2.4,
           "lengthBefore": 2,
-          "lengthAfter": 2.4,
+          "lengthAfter": 2,
           "referenceRotationX": 0,
           "rotationAfter": 0
         },
@@ -32,10 +35,10 @@
           "id": "stick",
           "referenceWidth": 0.55,
           "widthBefore": 0.4,
-          "widthAfter": 0.52,
+          "widthAfter": 0.4,
           "referenceLength": 1.2,
           "lengthBefore": 1,
-          "lengthAfter": 1.3,
+          "lengthAfter": 1,
           "referenceRotationX": 0,
           "rotationAfter": 0
         }
@@ -49,14 +52,18 @@
       "fitAfter": 0.9356161514618413,
       "heldBefore": 0.7059176650391555,
       "heldAfter": 0.8887097665042312,
-      "jointResiduals": [
+      "jointResidualsBefore": [
         0,
         0
+      ],
+      "jointResidualsAfter": [
+        0.04999999999999997,
+        0.003333333333333336
       ],
       "evaluations": 49,
       "vertices": 2700,
       "triangles": 900,
-      "ms": 126.43226299999998,
+      "ms": 416.4591519999999,
       "errors": [
         {
           "id": "boom",
@@ -76,7 +83,7 @@
           "widthAfter": 0.52,
           "referenceLength": 1.2,
           "lengthBefore": 1,
-          "lengthAfter": 1,
+          "lengthAfter": 0.9,
           "referenceRotationX": 0,
           "rotationAfter": 0
         },
@@ -98,17 +105,21 @@
       "status": "proposal",
       "reason": null,
       "fitBefore": 0.6107190634056314,
-      "fitAfter": 0.7678458084468982,
+      "fitAfter": 0.774690298115574,
       "heldBefore": 0.6090633375480762,
-      "heldAfter": 0.7760112404655969,
-      "jointResiduals": [
-        0.054526977765781436,
-        0.04578341107087431
+      "heldAfter": 0.7664567103383175,
+      "jointResidualsBefore": [
+        0,
+        0
+      ],
+      "jointResidualsAfter": [
+        0.02662224443915417,
+        0.0492595001775846
       ],
       "evaluations": 49,
       "vertices": 2700,
       "triangles": 900,
-      "ms": 106.402983,
+      "ms": 271.8500869999998,
       "errors": [
         {
           "id": "boom",
@@ -128,7 +139,7 @@
           "widthAfter": 0.48,
           "referenceLength": 1.1,
           "lengthBefore": 1,
-          "lengthAfter": 0.9,
+          "lengthAfter": 0.8,
           "referenceRotationX": 0.25,
           "rotationAfter": 0.2
         },
@@ -141,7 +152,7 @@
           "lengthBefore": 0.8,
           "lengthAfter": 0.96,
           "referenceRotationX": 0.2,
-          "rotationAfter": -0.2
+          "rotationAfter": -0.30000000000000004
         }
       ]
     }

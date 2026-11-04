@@ -19,9 +19,11 @@ export function* fitArticulated(plan:SpatialPlanV2, views:FitView[], priors:Join
  if(plan.components.length<2||plan.components.length>3||views.length<3||views.length>8||priors.length!==plan.components.length-1)return refuse('INSUFFICIENT_STRUCTURE');
  if(views.some(({view:v,mask,calibrated})=>!calibrated||!Number.isInteger(v.res)||v.res<16||v.res>128||!Number.isFinite(v.half)||v.half<=0||mask.length!==v.res*v.res||!mask.some(x=>x===1)||mask.some(x=>x!==0&&x!==1)||[v.direction,v.right,v.up,v.centre].some(a=>!a.toArray().every(Number.isFinite))||[v.direction,v.right,v.up].some(a=>Math.abs(a.length()-1)>1e-5)||Math.abs(v.direction.dot(v.right))>1e-5||Math.abs(v.direction.dot(v.up))>1e-5||Math.abs(v.right.dot(v.up))>1e-5))return refuse('INVALID_EVIDENCE');
  const directions=views.map(v=>v.view.direction);if(!directions.some((a,i)=>directions.some((b,j)=>j>i&&directions.some((c,k)=>k>j&&Math.abs(a.clone().cross(b).dot(c))>.15))))return refuse('INSUFFICIENT_VIEWS');
- if(plan.components.some(c=>c.geometry.type!=='shape'||c.geometry.operator!=='box'||c.geometry.repeat!==null||c.transform.scale.some(n=>n!==1)))return refuse('UNSUPPORTED_GEOMETRY');
+ if(plan.components.some(c=>c.geometry.type!=='shape'||c.geometry.operator!=='box'||c.geometry.repeat!==null||c.transform.scale.some(n=>n!==1)||c.geometry.transform.position.some(n=>n!==0)||c.geometry.transform.rotationRad.some(n=>n!==0)||c.geometry.transform.scale.some(n=>n!==1)))return refuse('UNSUPPORTED_GEOMETRY');
  const ids=new Set(plan.components.map(c=>c.id)), children=new Set<string>();
  for(const j of priors){if(!ids.has(j.parent)||!ids.has(j.child)||j.parent===j.child||children.has(j.child)||!Array.isArray(j.anchorParent)||!Array.isArray(j.anchorChild)||j.anchorParent.length!==3||j.anchorChild.length!==3||![...j.anchorParent,...j.anchorChild].every(n=>Number.isFinite(n)&&Math.abs(n)<=1000)||plan.components.find(c=>c.id===j.child)?.parentId!==j.parent)return refuse('INVALID_JOINT_PRIOR');children.add(j.child);}
+ const onSurface=(id:string, anchor:[number,number,number])=>{const g=plan.components.find(c=>c.id===id)!.geometry;if(g.type!=='shape')return false;const d=g.parameters.dimensions as number[],v=anchor.map((n,i)=>Math.abs(n)/(d[i]!/2));return v.every(n=>n<=1+1e-6)&&v.some(n=>Math.abs(n-1)<1e-6);};
+ if(priors.some(j=>!onSurface(j.parent,j.anchorParent)||!onSurface(j.child,j.anchorChild)))return refuse('ANCHOR_OFF_SURFACE');
  if(plan.components.filter(c=>c.parentId===null).length!==1||plan.components.filter(c=>c.parentId!==null).some(c=>!children.has(c.id)))return refuse('INSUFFICIENT_STRUCTURE');
  const state:State[]=plan.components.map(c=>({id:c.id,width:1,length:1,dz:0,rx:0}));
  function operations(s:State[]):SpatialOperationV2[]{return s.flatMap(v=>{const c=plan.components.find(x=>x.id===v.id)!;if(c.geometry.type!=='shape')throw Error('UNSUPPORTED_GEOMETRY');const dimensions=[...(c.geometry.parameters.dimensions as number[])];dimensions[0]!*=v.width;dimensions[2]!*=v.length;return [{contract:'unfold.spatial-operation.v2' as const,operationId:`fit-g-${v.id}`,kind:'set-geometry' as const,componentId:v.id,nodeKey:c.geometry.key,value:{...c.geometry,parameters:{dimensions}}},{contract:'unfold.spatial-operation.v2' as const,operationId:`fit-t-${v.id}`,kind:'set-transform' as const,componentId:v.id,nodeKey:null,value:{...c.transform,position:[c.transform.position[0],c.transform.position[1],c.transform.position[2]+v.dz],rotationRad:[c.transform.rotationRad[0]+v.rx,c.transform.rotationRad[1],c.transform.rotationRad[2]]}}];});}
@@ -30,7 +32,8 @@ export function* fitArticulated(plan:SpatialPlanV2, views:FitView[], priors:Join
   const c=compileSpatialPlanV2(next),tris:Tri[]=[],world=new Map<string,Matrix4>();
   try {c.root.updateMatrixWorld(true);c.root.traverse(o=>{if(o.userData.spatialComponentRoot)world.set(o.userData.spatialEntityId,o.matrixWorld.clone());if(o instanceof Mesh)tris.push(...meshWorldTriangles(o));});
    const visual=views.reduce((sum,v)=>sum+maskIoU(rasterise(tris,v.view),v.mask),0)/views.length;
-   const residuals=priors.map(j=>new Vector3(...j.anchorParent).applyMatrix4(world.get(j.parent)!).distanceTo(new Vector3(...j.anchorChild).applyMatrix4(world.get(j.child)!))/options.span);
+   const anchor=(id:string,p:[number,number,number])=>{const entry=s.find(x=>x.id===id)!;return new Vector3(p[0]*entry.width,p[1],p[2]*entry.length).applyMatrix4(world.get(id)!);};
+   const residuals=priors.map(j=>anchor(j.parent,j.anchorParent).distanceTo(anchor(j.child,j.anchorChild))/options.span);
    const deviation=s.reduce((sum,x)=>sum+(x.width-1)**2+(x.length-1)**2+(x.dz/options.span)**2+x.rx**2,0)/s.length;
    // Unitless objective: visual IoU minus joint gap squared and a small normalised deviation prior.
    return {visual,residuals,score:visual-.5*residuals.reduce((a,b)=>a+b*b,0)-.01*deviation};
@@ -45,6 +48,6 @@ export function* fitArticulated(plan:SpatialPlanV2, views:FitView[], priors:Join
   }
   if(best.visual-initial.visual<.02)return refuse('NO_SIGNIFICANT_IMPROVEMENT');
   if(best.residuals.some(x=>x>options.maxJointFraction))return refuse('JOINT_GAP_EXCEEDED');
-  return {status:'proposal',operations:operations(state),provenance,before:initial.visual,after:best.visual,jointResiduals:best.residuals,evaluations,unresolved:['attachment priors are hypotheses, not verified joints','hinge axes and occlusion not inferred','physical scale and uncertainty unverified']};
+  return {status:'proposal',operations:operations(state),provenance,before:initial.visual,after:best.visual,jointResiduals:best.residuals,evaluations,unresolved:['attachment priors are hypotheses; anchors scale with box width and length, not verified joints','hinge axes and occlusion not inferred','physical scale and uncertainty unverified']};
  }catch(e){return refuse(e instanceof Error?e.message:'FIT_FAILED');}
 }

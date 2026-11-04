@@ -1,5 +1,5 @@
 import {it,expect} from 'vitest';
-import {BoxGeometry,Matrix4,Vector3} from 'three';
+import {BoxGeometry,Euler,Matrix4,Quaternion,Vector3} from 'three';
 import {validateSpatialPlanV2} from '../src/universal-spatial/contracts-v2';
 import {makeView,rasterise,type Tri} from '../src/universal-spatial/reconstruction/silhouette';
 import {jointCandidates} from '../src/universal-spatial/visual-reconstruction/joints';
@@ -13,3 +13,6 @@ it('fits several dimensions from independently generated masks without mutating 
 it('refuses missing priors and exhausted evaluation budgets',()=>{expect(run(fitArticulated(plan(),independentEvidence(),[],{maxEvaluations:100,maxMs:30000,span:3,maxJointFraction:.1}))).toMatchObject({status:'refused',reason:'INSUFFICIENT_STRUCTURE'});expect(run(fitArticulated(plan(),independentEvidence(),joints,{maxEvaluations:2,maxMs:30000,span:3,maxJointFraction:.1}))).toMatchObject({status:'refused',reason:'BUDGET_EXHAUSTED'});});
 
 it('reports geometrical contacts only as ambiguous hypotheses, never verified hinge axes',()=>{const r=jointCandidates(plan());expect(r.status).toBe('hypotheses');expect(r.candidates.length).toBeGreaterThan(0);expect(r.candidates.every(c=>c.verified===false&&c.axis===null&&c.status==='ambiguous')).toBe(true);});
+
+it('keeps rescaled anchor priors on the changed box surfaces and reports their world-space gap',()=>{const r=run(fitArticulated(plan(),independentEvidence(),joints,{maxEvaluations:100,maxMs:30000,span:3,maxJointFraction:.1}));expect(r.status).toBe('proposal');if(r.status!=='proposal')return;const shape=(id:string)=>(r.operations.find(o=>o.operationId===`fit-g-${id}`)!.value as {parameters:{dimensions:number[]}}).parameters.dimensions;const transform=(id:string)=>r.operations.find(o=>o.operationId===`fit-t-${id}`)!.value as {position:[number,number,number];rotationRad:[number,number,number]};const matrix=(id:string)=>{const x=transform(id);return new Matrix4().compose(new Vector3(...x.position),new Quaternion().setFromEuler(new Euler(...x.rotationRad)),new Vector3(1,1,1));};const a=matrix('boom'),b=a.clone().multiply(matrix('stick'));const parent=new Vector3(0,0,shape('boom')[2]!/2).applyMatrix4(a),child=new Vector3(0,0,-shape('stick')[2]!/2).applyMatrix4(b);expect(parent.distanceTo(child)/3).toBeCloseTo(r.jointResiduals[0]!,10);});
+it('rejects a supplied anchor that is not on its component surface',()=>{const bad=structuredClone(joints);bad[0]!.anchorParent=[0,0,0];expect(run(fitArticulated(plan(),independentEvidence(),bad,{maxEvaluations:100,maxMs:30000,span:3,maxJointFraction:.1}))).toMatchObject({status:'refused',reason:'ANCHOR_OFF_SURFACE'});});
