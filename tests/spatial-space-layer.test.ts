@@ -216,6 +216,10 @@ describe('PlanSpaceLayer', () => {
       const base = layer.currentPlan.components.find((c) => c.id === 'base')!; expect(base.transform.scale[0]).toBeCloseTo(1.2); expect(base.provenance.evidence).toMatch(/Solver fitted 6 silhouettes/); expect(layer.currentPlan.components.map((c) => c.id)).toEqual(ids);
       expect(await layer.undo()).toBe(true); expect(layer.currentPlan.components.find((c) => c.id === 'base')!.transform.scale[0]).toBe(1);
     });
+    it('keeps the provenance evidence inside the contract limit however long the solver text is', async () => {
+      const layer = new PlanSpaceLayer(plan(), host()); layer.proposeSolverEdit(ops(), 'x', 'e'.repeat(900)); layer.authorise(true); await layer.applyEdit();
+      expect(layer.editCount).toBe(1); expect(layer.currentPlan.components.find((c) => c.id === 'base')!.provenance.evidence.length).toBeLessThanOrEqual(500);
+    });
     it('after dispose it offers nothing, and a pending proposal is dropped with the layer', () => {
       const layer = new PlanSpaceLayer(plan(), host()); expect(layer.proposeSolverEdit(ops(), 'x', 'y')).toBe(true); layer.dispose();
       expect(layer.proposeSolverEdit(ops(), 'x', 'y')).toBe(false); expect(layer.pendingEdit).toBeNull();

@@ -5,6 +5,9 @@ import { compileSpatialPlanV2 } from '../src/universal-spatial/geometry-compiler
 import { maxDepth, validateHierarchy } from '../src/universal-spatial/reconstruction/hierarchy';
 import { classifyRelations } from '../src/universal-spatial/reconstruction/relations';
 import { reconstructStructure, type EvidenceView } from '../src/universal-spatial/reconstruction/engine';
+import { proposeShapeAlternatives } from '../src/universal-spatial/reconstruction/shapes';
+import { diagnoseContradictions } from '../src/universal-spatial/reconstruction/diagnose';
+import { evidenceFromJSON, evidenceToJSON } from '../src/universal-spatial/reconstruction/evidence';
 import { makeView, rasterise, viewDirections, type Tri } from '../src/universal-spatial/reconstruction/silhouette';
 
 const T = (position: number[] = [0, 0, 0], rotationRad: number[] = [0, 0, 0], scale: number[] = [1, 1, 1]) => ({ position, rotationRad, scale });
@@ -117,5 +120,57 @@ describe('structural reconstruction engine', () => {
     const confirmed = reconstructStructure(input, ev, { confirmed: new Set(['hyp-base-column']), limits: { minImprovement: 0.005 } });
     expect(confirmed.status, JSON.stringify(confirmed.refusals)).toBe('proposal'); expect(confirmed.relationSummary.human_confirmed).toBe(1); expect(confirmed.checks.jointResidualMax!).toBeLessThan(1e-6); expect(confirmed.checks.worldConsistencyAfterMax!).toBeLessThan(1e-5);
     expect(JSON.stringify(input)).toBe(copy);
+  });
+
+  it('corrects a ROTATION in the local frame, keeps the joints and the hierarchy, and gains what translation and scale alone cannot', () => {
+    const arm = (z: number) => mk([
+      comp('base', null, T([0, 0.5, 0]), box('base-s', [3, 1, 2])),
+      comp('arm', 'base', T([0, 0.5, 0], [0, 0, z]), box('arm-s', [0.5, 2.4, 0.5], [0, 1.2, 0])),
+      comp('tool', 'arm', T([0, 2.4, 0], [0, 0, 0]), box('tool-s', [1.2, 0.5, 1.2], [0, 0.25, 0])),
+    ], [{ id: 'arm-on-base', fromId: 'arm', toId: 'base', kind: 'attached_to', origin: 'inferred', evidence: 'x' }, { id: 'tool-on-arm', fromId: 'tool', toId: 'arm', kind: 'attached_to', origin: 'inferred', evidence: 'x' }]);
+    const truth = arm(0.55), input = arm(0.1), ev = evidenceFor(truth, six()), copy = JSON.stringify(input);
+    const withRotation = reconstructStructure(input, ev, { limits: { minImprovement: 0.005 } }), without = reconstructStructure(input, ev, { rotation: false, limits: { minImprovement: 0.005 } });
+    expect(withRotation.status, JSON.stringify(withRotation.refusals)).toBe('proposal'); const p = withRotation.proposal!;
+    expect(p.changed).toContain('arm'); expect(JSON.stringify(input)).toBe(copy);
+    let next = input; for (const op of p.operations) next = applySpatialOperationV2(next, op, { origin: 'inferred', evidence: p.evidence });
+    const rz = (plan: SpatialPlanV2) => plan.components.find((c) => c.id === 'arm')!.transform.rotationRad[2]!;
+    expect(Math.abs(rz(next) - 0.55)).toBeLessThan(Math.abs(rz(input) - 0.55) - 0.15); // the rotation moved toward the truth, in the arm's own (local) frame
+    expect(withRotation.checks.jointResidualMax!).toBeLessThan(1e-6); expect(withRotation.checks.worldConsistencyAfterMax!).toBeLessThan(1e-5); expect(next.components.map((c) => c.parentId)).toEqual([null, 'base', 'arm']);
+    // without rotation the same evidence cannot be explained: either refused or clearly worse
+    const gain = (o: ReturnType<typeof reconstructStructure>) => (o.proposal ? o.proposal.fitIouAfter - o.proposal.fitIouBefore : 0);
+    expect(gain(withRotation)).toBeGreaterThan(gain(without) + 0.03);
+  });
+
+  it('flags where a part is missing from the plan without adding, joining or naming it', () => {
+    const full = mk([comp('base', null, T([0, 0.5, 0]), box('base-s', [3, 1, 2])), comp('post', null, T([-1, 1.5, 0]), box('post-s', [0.6, 1, 0.6])), comp('knob', null, T([1.1, 2.6, 0.4]), box('knob-s', [0.9, 0.9, 0.9]))]);
+    const missing = mk([comp('base', null, T([0, 0.5, 0]), box('base-s', [3, 1, 2])), comp('post', null, T([-1, 1.5, 0]), box('post-s', [0.6, 1, 0.6]))]);
+    const out = reconstructStructure(missing, evidenceFor(full, six()), { limits: { minImprovement: 9 } }), copy = JSON.stringify(missing);
+    const c = out.unexplained!.candidates; expect(c.length).toBeGreaterThan(0); expect(c[0]!.centre.distanceTo(new Vector3(1.1, 2.6, 0.4))).toBeLessThan(0.9); expect(c[0]!.supportViews.length).toBeGreaterThanOrEqual(3);
+    expect(JSON.stringify(missing)).toBe(copy); expect(out.proposal).toBeNull(); expect(c[0]!.note).toMatch(/not added/i);
+    expect(reconstructStructure(full, evidenceFor(full, six()), { limits: { minImprovement: 9 } }).unexplained!.candidates).toEqual([]); // a complete plan: nothing to flag
+  });
+
+  it('proposes a better primitive for a part only where the silhouettes support it, as one set-geometry on the same node', () => {
+    const cyl = (key: string, r: number, h: number, at: number[]) => ({ type: 'shape', key, operator: 'cylinder', parameters: { radiusTop: r, radiusBottom: r, height: h, radialSegments: 24 }, transform: T(at), repeat: null, material: mat });
+    const truth = mk([comp('base', null, T([0, 0.5, 0]), box('base-s', [3, 1, 2])), comp('pole', null, T([0, 2.5, 0]), cyl('pole-s', 0.5, 3, [0, 0, 0]))]);
+    const wrong = mk([comp('base', null, T([0, 0.5, 0]), box('base-s', [3, 1, 2])), comp('pole', null, T([0, 2.5, 0]), box('pole-s', [1, 3, 1]))]), ev = evidenceFor(truth, six()), copy = JSON.stringify(wrong);
+    const found = proposeShapeAlternatives(wrong, ev); const pole = found.find((f) => f.componentId === 'pole')!, base = found.find((f) => f.componentId === 'base')!;
+    expect(pole.proposal, pole.reason).not.toBeNull(); expect(pole.proposal!.to).toBe('cylinder'); expect(pole.proposal!.axis).toBe('y'); expect(pole.proposal!.operation.kind).toBe('set-geometry'); expect(pole.proposal!.operation.nodeKey).toBe('pole-s');
+    expect(base.proposal).toBeNull(); expect(JSON.stringify(wrong)).toBe(copy);
+    const next = applySpatialOperationV2(wrong, pole.proposal!.operation, { origin: 'inferred', evidence: pole.proposal!.evidence }), c = next.components.find((k) => k.id === 'pole')!;
+    expect(next.components.map((k) => k.id)).toEqual(['base', 'pole']); expect(c.provenance.geometry).toBe('inferred'); expect(c.transform).toEqual(wrong.components[1]!.transform);
+  });
+
+  it('tells which declared relations transforms could close and which they cannot, without applying anything', () => {
+    const rel = [{ id: 'ab', fromId: 'b', toId: 'a', kind: 'attached_to', origin: 'inferred', evidence: 'x' }];
+    const near = mk([comp('a', null, T([0, 0.5, 0]), box('a-s', [1, 1, 1])), comp('b', 'a', T([1.25, 0.2, 0]), box('b-s', [1, 1, 1]))], rel); // a gap a small move closes
+    const far = mk([comp('a', null, T([0, 0.5, 0]), box('a-s', [1, 1, 1])), comp('b', 'a', T([6, 0.2, 0]), box('b-s', [1, 1, 1]))], rel); // far beyond any allowed placement
+    const copy = JSON.stringify(far), n = diagnoseContradictions(near), f = diagnoseContradictions(far);
+    expect(n!.diagnoses[0]!.verdict).toBe('closable_by_transform'); expect(f!.diagnoses[0]!.verdict).toBe('not_closable_by_transform'); expect(f!.notCorrectableByTransforms).toEqual(['b']); expect(JSON.stringify(far)).toBe(copy);
+  });
+
+  it('evidence round-trips through plain data', () => {
+    const ev = evidenceFor(chain(), six().slice(0, 3)), back = evidenceFromJSON(JSON.parse(JSON.stringify(evidenceToJSON(ev, 'test'))));
+    expect(back.map((e) => Array.from(e.mask))).toEqual(ev.map((e) => Array.from(e.mask))); expect(back[0]!.view.half).toBe(ev[0]!.view.half);
   });
 });

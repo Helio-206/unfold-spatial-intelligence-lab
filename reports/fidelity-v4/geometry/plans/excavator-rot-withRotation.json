@@ -1,0 +1,1546 @@
+{
+ "contract": "unfold.spatial-plan.v2",
+ "sessionId": "b09efbc4-a321-4ff4-ac15-502846d98546",
+ "revision": 0,
+ "plan": {
+  "components": [
+   {
+    "geometry": {
+     "key": "under-frame",
+     "material": {
+      "profile": "metal",
+      "color": "#2a2e35",
+      "roughness": 0.65,
+      "metalness": 0,
+      "clearcoat": 0
+     },
+     "operator": "box",
+     "parameters": {
+      "dimensions": [
+       0.8,
+       0.8,
+       0.8
+      ]
+     },
+     "repeat": null,
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "type": "shape"
+    },
+    "id": "undercarriage",
+    "label": "Tracked undercarriage frame",
+    "parentId": null,
+    "provenance": {
+     "evidence": "Low dark platform connecting both tracks below upper body Local normalization: under-frame: neutral design material fallback for metalness, clearcoat. Local safe fallback parameters substituted for invalid box output at undercarriage.",
+     "geometry": "design_approximation",
+     "material": "design_approximation",
+     "transform": "inferred"
+    },
+    "transform": {
+     "position": [
+      0,
+      0.55,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    }
+   },
+   {
+    "geometry": {
+     "children": [
+      {
+       "key": "left-frame",
+       "material": {
+        "profile": "metal",
+        "color": "#1e2228",
+        "roughness": 0.7,
+        "metalness": 0,
+        "clearcoat": 0
+       },
+       "operator": "box",
+       "parameters": {
+        "dimensions": [
+         0.8,
+         0.8,
+         0.8
+        ]
+       },
+       "repeat": null,
+       "transform": {
+        "position": [
+         0,
+         0,
+         0
+        ],
+        "rotationRad": [
+         0,
+         0,
+         0
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "type": "shape"
+      },
+      {
+       "key": "left-pads",
+       "material": {
+        "profile": "rubber",
+        "color": "#15181c",
+        "roughness": 0.9,
+        "metalness": 0,
+        "clearcoat": 0
+       },
+       "operator": "box",
+       "parameters": {
+        "dimensions": [
+         0.8,
+         0.8,
+         0.8
+        ]
+       },
+       "repeat": null,
+       "transform": {
+        "position": [
+         0,
+         -0.28,
+         0
+        ],
+        "rotationRad": [
+         0,
+         0,
+         0
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "type": "shape"
+      },
+      {
+       "key": "left-roller",
+       "material": {
+        "profile": "metal",
+        "color": "#3a4048",
+        "roughness": 0.5,
+        "metalness": 0,
+        "clearcoat": 0
+       },
+       "operator": "cylinder",
+       "parameters": {
+        "radiusTop": 0.3,
+        "radiusBottom": 0.3,
+        "height": 0.7,
+        "radialSegments": 24
+       },
+       "repeat": null,
+       "transform": {
+        "position": [
+         1.1,
+         0.05,
+         0
+        ],
+        "rotationRad": [
+         90,
+         0,
+         0
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "type": "shape"
+      }
+     ],
+     "key": "track-left-group",
+     "repeat": null,
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "type": "group"
+    },
+    "id": "track-left",
+    "label": "Left crawler track",
+    "parentId": "undercarriage",
+    "provenance": {
+     "evidence": "Right-side visible ribbed track with grousers in photo Local normalization: left-frame: neutral design material fallback for metalness, clearcoat; left-pads: neutral design material fallback for metalness, clearcoat; left-roller: neutral design material fallback for metalness, clearcoat. Local safe fallback parameters substituted for invalid box output at track-left.children.0. Local safe fallback parameters substituted for invalid box output at track-left.children.1. Local safe fallback paramet",
+     "geometry": "design_approximation",
+     "material": "design_approximation",
+     "transform": "observed"
+    },
+    "transform": {
+     "position": [
+      0,
+      0.15,
+      0.95
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    }
+   },
+   {
+    "geometry": {
+     "children": [
+      {
+       "key": "right-frame",
+       "material": {
+        "profile": "metal",
+        "color": "#1e2228",
+        "roughness": 0.7,
+        "metalness": 0,
+        "clearcoat": 0
+       },
+       "operator": "box",
+       "parameters": {
+        "dimensions": [
+         0.8,
+         0.8,
+         0.8
+        ]
+       },
+       "repeat": null,
+       "transform": {
+        "position": [
+         0,
+         0,
+         0
+        ],
+        "rotationRad": [
+         0,
+         0,
+         0
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "type": "shape"
+      },
+      {
+       "key": "right-pads",
+       "material": {
+        "profile": "rubber",
+        "color": "#15181c",
+        "roughness": 0.9,
+        "metalness": 0,
+        "clearcoat": 0
+       },
+       "operator": "box",
+       "parameters": {
+        "dimensions": [
+         0.8,
+         0.8,
+         0.8
+        ]
+       },
+       "repeat": null,
+       "transform": {
+        "position": [
+         0,
+         -0.28,
+         0
+        ],
+        "rotationRad": [
+         0,
+         0,
+         0
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "type": "shape"
+      },
+      {
+       "key": "right-roller",
+       "material": {
+        "profile": "metal",
+        "color": "#3a4048",
+        "roughness": 0.5,
+        "metalness": 0,
+        "clearcoat": 0
+       },
+       "operator": "cylinder",
+       "parameters": {
+        "radiusTop": 0.3,
+        "radiusBottom": 0.3,
+        "height": 0.7,
+        "radialSegments": 24
+       },
+       "repeat": null,
+       "transform": {
+        "position": [
+         -1.1,
+         0.05,
+         0
+        ],
+        "rotationRad": [
+         90,
+         0,
+         0
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "type": "shape"
+      }
+     ],
+     "key": "track-right-group",
+     "repeat": null,
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "type": "group"
+    },
+    "id": "track-right",
+    "label": "Right crawler track",
+    "parentId": "undercarriage",
+    "provenance": {
+     "evidence": "Left-side track partially visible behind frame Local normalization: right-frame: neutral design material fallback for metalness, clearcoat; right-pads: neutral design material fallback for metalness, clearcoat; right-roller: neutral design material fallback for metalness, clearcoat. Local safe fallback parameters substituted for invalid box output at track-right.children.0. Local safe fallback parameters substituted for invalid box output at track-right.children.1. Local safe fallback parameters",
+     "geometry": "design_approximation",
+     "material": "design_approximation",
+     "transform": "inferred"
+    },
+    "transform": {
+     "position": [
+      0,
+      0.15,
+      -0.95
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    }
+   },
+   {
+    "geometry": {
+     "key": "upper-deck",
+     "material": {
+      "profile": "metal",
+      "color": "#2e333b",
+      "roughness": 0.6,
+      "metalness": 0,
+      "clearcoat": 0
+     },
+     "operator": "rounded_box",
+     "parameters": {
+      "dimensions": [
+       0.8,
+       0.8,
+       0.8
+      ],
+      "bevelM": 0.06,
+      "segments": 3
+     },
+     "repeat": null,
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "type": "shape"
+    },
+    "id": "upper-frame",
+    "label": "Upper rotating frame",
+    "parentId": "undercarriage",
+    "provenance": {
+     "evidence": "Dark deck above tracks supporting cab and boom Local normalization: upper-deck: neutral design material fallback for metalness, clearcoat. Local safe fallback parameters substituted for invalid rounded_box output at upper-frame.",
+     "geometry": "design_approximation",
+     "material": "design_approximation",
+     "transform": "inferred"
+    },
+    "transform": {
+     "position": [
+      0.4,
+      1,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    }
+   },
+   {
+    "geometry": {
+     "children": [
+      {
+       "key": "cab-shell",
+       "material": {
+        "profile": "metal",
+        "color": "#22262d",
+        "roughness": 0.55,
+        "metalness": 0,
+        "clearcoat": 0
+       },
+       "operator": "rounded_box",
+       "parameters": {
+        "dimensions": [
+         0.8,
+         0.8,
+         0.8
+        ],
+        "bevelM": 0.06,
+        "segments": 3
+       },
+       "repeat": null,
+       "transform": {
+        "position": [
+         0,
+         0,
+         0
+        ],
+        "rotationRad": [
+         0,
+         0,
+         0
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "type": "shape"
+      },
+      {
+       "key": "cab-glass",
+       "material": {
+        "profile": "glass",
+        "color": "#0b0e14",
+        "roughness": 0.15,
+        "metalness": 0,
+        "clearcoat": 0
+       },
+       "operator": "box",
+       "parameters": {
+        "dimensions": [
+         0.8,
+         0.8,
+         0.8
+        ]
+       },
+       "repeat": null,
+       "transform": {
+        "position": [
+         -0.05,
+         0.15,
+         0
+        ],
+        "rotationRad": [
+         0,
+         0,
+         0
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "type": "shape"
+      },
+      {
+       "key": "cab-accent",
+       "material": {
+        "profile": "accent",
+        "color": "#ff5a1a",
+        "roughness": 0.5,
+        "metalness": 0,
+        "clearcoat": 0
+       },
+       "operator": "box",
+       "parameters": {
+        "dimensions": [
+         0.8,
+         0.8,
+         0.8
+        ]
+       },
+       "repeat": null,
+       "transform": {
+        "position": [
+         -0.35,
+         -0.05,
+         0.35
+        ],
+        "rotationRad": [
+         0,
+         0,
+         0
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "type": "shape"
+      }
+     ],
+     "key": "cab-group",
+     "repeat": null,
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "type": "group"
+    },
+    "id": "cab",
+    "label": "Operator cab",
+    "parentId": "upper-frame",
+    "provenance": {
+     "evidence": "Boxy cab with dark glazing and orange interior post on right side Local normalization: cab-shell: neutral design material fallback for metalness, clearcoat; cab-glass: neutral design material fallback for metalness, clearcoat; cab-accent: neutral design material fallback for metalness, clearcoat. Local safe fallback parameters substituted for invalid rounded_box output at cab.children.0. Local safe fallback parameters substituted for invalid box output at cab.children.1. Local safe fallback para",
+     "geometry": "design_approximation",
+     "material": "design_approximation",
+     "transform": "observed"
+    },
+    "transform": {
+     "position": [
+      0.5,
+      1.6,
+      0.55
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    }
+   },
+   {
+    "geometry": {
+     "key": "hood-body",
+     "material": {
+      "profile": "metal",
+      "color": "#32373f",
+      "roughness": 0.6,
+      "metalness": 0,
+      "clearcoat": 0
+     },
+     "operator": "rounded_box",
+     "parameters": {
+      "dimensions": [
+       0.8,
+       0.8,
+       0.8
+      ],
+      "bevelM": 0.06,
+      "segments": 3
+     },
+     "repeat": null,
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "type": "shape"
+    },
+    "id": "engine-hood",
+    "label": "Engine counterweight hood",
+    "parentId": "upper-frame",
+    "provenance": {
+     "evidence": "Rear box behind cab with vents and small orange reflector Local normalization: hood-body: neutral design material fallback for metalness, clearcoat. Local safe fallback parameters substituted for invalid rounded_box output at engine-hood.",
+     "geometry": "design_approximation",
+     "material": "design_approximation",
+     "transform": "inferred"
+    },
+    "transform": {
+     "position": [
+      1.25,
+      1.45,
+      -0.25
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    }
+   },
+   {
+    "geometry": {
+     "key": "boom-body",
+     "material": {
+      "profile": "metal",
+      "color": "#363c45",
+      "roughness": 0.55,
+      "metalness": 0,
+      "clearcoat": 0
+     },
+     "operator": "box",
+     "parameters": {
+      "dimensions": [
+       0.8,
+       0.8,
+       0.8
+      ]
+     },
+     "repeat": null,
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       -18
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "type": "shape"
+    },
+    "id": "boom",
+    "label": "Main boom arm",
+    "parentId": "upper-frame",
+    "provenance": {
+     "evidence": "Hierarchical structural solver fitted to 6 independent calibrated silhouette view(s) (rendered); fit IoU 0.830 -> 0.984, left-out views 0.933 -> 0.986. 2 enforced relation(s), 5 unconfirmed contact hypothesis(es) not enforced. Basis: inferred.",
+     "geometry": "design_approximation",
+     "material": "design_approximation",
+     "transform": "inferred"
+    },
+    "transform": {
+     "position": [
+      -1.2,
+      2,
+      -0.2
+     ],
+     "rotationRad": [
+      0,
+      0,
+      2.878925
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    }
+   },
+   {
+    "geometry": {
+     "key": "stick-body",
+     "material": {
+      "profile": "metal",
+      "color": "#363c45",
+      "roughness": 0.55,
+      "metalness": 0,
+      "clearcoat": 0
+     },
+     "operator": "box",
+     "parameters": {
+      "dimensions": [
+       0.8,
+       0.8,
+       0.8
+      ]
+     },
+     "repeat": null,
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "type": "shape"
+    },
+    "id": "stick",
+    "label": "Stick arm",
+    "parentId": "boom",
+    "provenance": {
+     "evidence": "Hierarchical structural solver fitted to 6 independent calibrated silhouette view(s) (rendered); fit IoU 0.830 -> 0.984, left-out views 0.933 -> 0.986. 2 enforced relation(s), 5 unconfirmed contact hypothesis(es) not enforced. Basis: inferred.",
+     "geometry": "design_approximation",
+     "material": "design_approximation",
+     "transform": "inferred"
+    },
+    "transform": {
+     "position": [
+      -2.3,
+      2.15,
+      -0.2
+     ],
+     "rotationRad": [
+      0,
+      -0.12,
+      2.265482
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    }
+   },
+   {
+    "geometry": {
+     "key": "bucket-shell",
+     "material": {
+      "profile": "metal",
+      "color": "#23272e",
+      "roughness": 0.55,
+      "metalness": 0,
+      "clearcoat": 0
+     },
+     "operator": "cylinder",
+     "parameters": {
+      "radiusTop": 0.3,
+      "radiusBottom": 0.3,
+      "height": 0.7,
+      "radialSegments": 24
+     },
+     "repeat": null,
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       90,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       0.9,
+       1
+      ]
+     },
+     "type": "shape"
+    },
+    "id": "bucket",
+    "label": "Excavator bucket",
+    "parentId": "stick",
+    "provenance": {
+     "evidence": "Hierarchical structural solver fitted to 6 independent calibrated silhouette view(s) (rendered); fit IoU 0.830 -> 0.984, left-out views 0.933 -> 0.986. 2 enforced relation(s), 5 unconfirmed contact hypothesis(es) not enforced. Basis: inferred.",
+     "geometry": "design_approximation",
+     "material": "design_approximation",
+     "transform": "inferred"
+    },
+    "transform": {
+     "position": [
+      -3.1,
+      0.35,
+      -0.37019
+     ],
+     "rotationRad": [
+      0.183759,
+      -0.175544,
+      -3.066911
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    }
+   },
+   {
+    "geometry": {
+     "key": "boom-cyl",
+     "material": {
+      "profile": "metal",
+      "color": "#9aa2ad",
+      "roughness": 0.3,
+      "metalness": 0,
+      "clearcoat": 0
+     },
+     "operator": "cylinder",
+     "parameters": {
+      "radiusTop": 0.3,
+      "radiusBottom": 0.3,
+      "height": 0.7,
+      "radialSegments": 24
+     },
+     "repeat": null,
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "type": "shape"
+    },
+    "id": "hydraulic-boom",
+    "label": "Boom hydraulic cylinder",
+    "parentId": "upper-frame",
+    "provenance": {
+     "evidence": "Silver cylinder from upper frame to boom underside Local normalization: boom-cyl: neutral design material fallback for metalness, clearcoat. Local safe fallback parameters substituted for invalid cylinder output at hydraulic-boom.",
+     "geometry": "design_approximation",
+     "material": "design_approximation",
+     "transform": "inferred"
+    },
+    "transform": {
+     "position": [
+      -0.6,
+      1.7,
+      -0.2
+     ],
+     "rotationRad": [
+      0,
+      0,
+      65
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    }
+   },
+   {
+    "geometry": {
+     "key": "link-accent",
+     "material": {
+      "profile": "accent",
+      "color": "#ff6a1f",
+      "roughness": 0.5,
+      "metalness": 0,
+      "clearcoat": 0
+     },
+     "operator": "box",
+     "parameters": {
+      "dimensions": [
+       0.8,
+       0.8,
+       0.8
+      ]
+     },
+     "repeat": null,
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       -25
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "type": "shape"
+    },
+    "id": "bucket-linkage",
+    "label": "Orange bucket linkage",
+    "parentId": "stick",
+    "provenance": {
+     "evidence": "Hierarchical structural solver fitted to 6 independent calibrated silhouette view(s) (rendered); fit IoU 0.830 -> 0.984, left-out views 0.933 -> 0.986. 2 enforced relation(s), 5 unconfirmed contact hypothesis(es) not enforced. Basis: inferred.",
+     "geometry": "design_approximation",
+     "material": "design_approximation",
+     "transform": "inferred"
+    },
+    "transform": {
+     "position": [
+      -2.9,
+      1.1,
+      -0.327642
+     ],
+     "rotationRad": [
+      0.074826,
+      -0.048564,
+      -0.39011
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    }
+   }
+  ],
+  "constraints": [
+   {
+    "axis": "z",
+    "componentIds": [
+     "track-left",
+     "track-right"
+    ],
+    "id": "tracks-symmetric",
+    "kind": "symmetric",
+    "tolerance": 0.1
+   },
+   {
+    "axis": "z",
+    "componentIds": [
+     "cab",
+     "engine-hood"
+    ],
+    "id": "cab-hood-adjacent",
+    "kind": "aligned",
+    "tolerance": 0.2
+   },
+   {
+    "axis": null,
+    "componentIds": [
+     "stick",
+     "bucket"
+    ],
+    "id": "stick-bucket-attached",
+    "kind": "attached_at",
+    "tolerance": 0.2
+   },
+   {
+    "axis": null,
+    "componentIds": [
+     "upper-frame",
+     "undercarriage"
+    ],
+    "id": "upper-centered",
+    "kind": "centered_on",
+    "tolerance": 0.3
+   }
+  ],
+  "presentationProfile": "industrial",
+  "relations": [
+   {
+    "evidence": "Both tracks support central frame in image",
+    "fromId": "track-left",
+    "id": "rel-left-to-frame",
+    "kind": "connected_to",
+    "origin": "inferred",
+    "toId": "undercarriage"
+   },
+   {
+    "evidence": "Both tracks flank undercarriage",
+    "fromId": "track-right",
+    "id": "rel-right-to-frame",
+    "kind": "connected_to",
+    "origin": "inferred",
+    "toId": "undercarriage"
+   },
+   {
+    "evidence": "Upper deck sits on tracks",
+    "fromId": "upper-frame",
+    "id": "rel-upper-on-lower",
+    "kind": "attached_to",
+    "origin": "inferred",
+    "toId": "undercarriage"
+   },
+   {
+    "evidence": "Cab sits on front-right of deck",
+    "fromId": "cab",
+    "id": "rel-cab-on-upper",
+    "kind": "attached_to",
+    "origin": "observed",
+    "toId": "upper-frame"
+   },
+   {
+    "evidence": "Hood behind cab",
+    "fromId": "engine-hood",
+    "id": "rel-hood-on-upper",
+    "kind": "adjacent_to",
+    "origin": "observed",
+    "toId": "cab"
+   },
+   {
+    "evidence": "Boom pivots at front of upper",
+    "fromId": "boom",
+    "id": "rel-boom-to-upper",
+    "kind": "connected_to",
+    "origin": "observed",
+    "toId": "upper-frame"
+   },
+   {
+    "evidence": "Stick pinned to boom tip",
+    "fromId": "stick",
+    "id": "rel-stick-to-boom",
+    "kind": "connected_to",
+    "origin": "observed",
+    "toId": "boom"
+   },
+   {
+    "evidence": "Bucket pinned to stick tip",
+    "fromId": "bucket",
+    "id": "rel-bucket-to-stick",
+    "kind": "connected_to",
+    "origin": "observed",
+    "toId": "stick"
+   }
+  ],
+  "title": "Compact tracked excavator - conceptual",
+  "units": "unitless",
+  "unknowns": [
+   "Absolute physical scale not visible - all dimensions conceptual",
+   "Track tread detail and roller count simplified",
+   "Rear and underside geometry occluded",
+   "Hydraulic hose routing not modeled",
+   "Cab interior not visible through dark glazing",
+   "Invalid Meta constraint proposals were omitted; no unvalidated constraints were applied.",
+   "under-frame: neutral design material fallback for metalness, clearcoat",
+   "left-frame: neutral design material fallback for metalness, clearcoat",
+   "left-pads: neutral design material fallback for metalness, clearcoat",
+   "left-roller: neutral design material fallback for metalness, clearcoat",
+   "right-frame: neutral design material fallback for metalness, clearcoat",
+   "right-pads: neutral design material fallback for metalness, clearcoat",
+   "right-roller: neutral design material fallback for metalness, clearcoat",
+   "upper-deck: neutral design material fallback for metalness, clearcoat",
+   "cab-shell: neutral design material fallback for metalness, clearcoat",
+   "cab-glass: neutral design material fallback for metalness, clearcoat",
+   "cab-accent: neutral design material fallback for metalness, clearcoat",
+   "hood-body: neutral design material fallback for metalness, clearcoat",
+   "boom-body: neutral design material fallback for metalness, clearcoat",
+   "stick-body: neutral design material fallback for metalness, clearcoat",
+   "bucket-shell: neutral design material fallback for metalness, clearcoat",
+   "boom-cyl: neutral design material fallback for metalness, clearcoat",
+   "link-accent: neutral design material fallback for metalness, clearcoat",
+   "Some box parameters were invalid and replaced by dimensionless conceptual defaults for Tracked undercarriage frame.",
+   "Some box parameters were invalid and replaced by dimensionless conceptual defaults for Left crawler track.",
+   "Some cylinder parameters were invalid and replaced by dimensionless conceptual defaults for Left crawler track.",
+   "Some box parameters were invalid and replaced by dimensionless conceptual defaults for Right crawler track.",
+   "Some cylinder parameters were invalid and replaced by dimensionless conceptual defaults for Right crawler track.",
+   "Some rounded_box parameters were invalid and replaced by dimensionless conceptual defaults for Upper rotating frame.",
+   "Some rounded_box parameters were invalid and replaced by dimensionless conceptual defaults for Operator cab.",
+   "Some box parameters were invalid and replaced by dimensionless conceptual defaults for Operator cab.",
+   "Some rounded_box parameters were invalid and replaced by dimensionless conceptual defaults for Engine counterweight hood.",
+   "Some box parameters were invalid and replaced by dimensionless conceptual defaults for Main boom arm.",
+   "Some box parameters were invalid and replaced by dimensionless conceptual defaults for Stick arm.",
+   "Some cylinder parameters were invalid and replaced by dimensionless conceptual defaults for Excavator bucket.",
+   "Some cylinder parameters were invalid and replaced by dimensionless conceptual defaults for Boom hydraulic cylinder.",
+   "Some box parameters were invalid and replaced by dimensionless conceptual defaults for Orange bucket linkage.",
+   "Physical dimensions and absolute scale are unknown because no known reference was supplied."
+  ],
+  "contract": "unfold.spatial-plan.v2",
+  "source": {
+   "kind": "image",
+   "sha256": "2ba5cfac62edea6be1e8ab34590ffb2d74c0d70320970d9db1f1b2a59ab31327"
+  }
+ },
+ "sceneSummary": {
+  "componentCount": 11,
+  "geometryNodeCount": 20,
+  "operators": [
+   "box",
+   "cylinder",
+   "rounded_box"
+  ],
+  "constraintReady": false
+ },
+ "constraintReport": {
+  "ready": false,
+  "results": [
+   {
+    "id": "tracks-symmetric",
+    "kind": "symmetric",
+    "status": "violated",
+    "measured": 1.0000000059604646,
+    "tolerance": 0.1,
+    "method": "axis-aligned-bounds",
+    "limitation": "AABB approximation; does not prove contact of actual surfaces or physical validity."
+   },
+   {
+    "id": "cab-hood-adjacent",
+    "kind": "aligned",
+    "status": "violated",
+    "measured": 0.9463746615373849,
+    "tolerance": 0.2,
+    "method": "world-transform",
+    "limitation": "Transform relation only; does not prove mechanical validity."
+   },
+   {
+    "id": "stick-bucket-attached",
+    "kind": "attached_at",
+    "status": "satisfied",
+    "measured": 0,
+    "tolerance": 0.2,
+    "method": "axis-aligned-bounds",
+    "limitation": "AABB approximation; does not prove contact of actual surfaces or physical validity."
+   },
+   {
+    "id": "upper-centered",
+    "kind": "centered_on",
+    "status": "satisfied",
+    "measured": 0.21109613008140768,
+    "tolerance": 0.3,
+    "method": "axis-aligned-bounds",
+    "limitation": "AABB approximation; does not prove contact of actual surfaces or physical validity."
+   }
+  ],
+  "violatedIds": [
+   "tracks-symmetric",
+   "cab-hood-adjacent"
+  ]
+ },
+ "constructionEvents": [
+  {
+   "type": "scene_created",
+   "at": 0
+  },
+  {
+   "type": "component_placed",
+   "at": 1,
+   "entityId": "undercarriage",
+   "transform": {
+    "position": [
+     0,
+     0.55,
+     0
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 2,
+   "entityId": "track-left",
+   "transform": {
+    "position": [
+     0,
+     0.15,
+     0.95
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 3,
+   "entityId": "track-right",
+   "transform": {
+    "position": [
+     0,
+     0.15,
+     -0.95
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 4,
+   "entityId": "upper-frame",
+   "transform": {
+    "position": [
+     0.4,
+     1,
+     0
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 5,
+   "entityId": "cab",
+   "transform": {
+    "position": [
+     0.5,
+     1.6,
+     0.55
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 6,
+   "entityId": "engine-hood",
+   "transform": {
+    "position": [
+     1.25,
+     1.45,
+     -0.25
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 7,
+   "entityId": "boom",
+   "transform": {
+    "position": [
+     -1.2,
+     2,
+     -0.2
+    ],
+    "rotationRad": [
+     0,
+     0,
+     28
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 8,
+   "entityId": "stick",
+   "transform": {
+    "position": [
+     -2.3,
+     2.15,
+     -0.2
+    ],
+    "rotationRad": [
+     0,
+     0,
+     -48
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 9,
+   "entityId": "bucket",
+   "transform": {
+    "position": [
+     -3.1,
+     0.35,
+     -0.2
+    ],
+    "rotationRad": [
+     0,
+     0,
+     10
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 10,
+   "entityId": "hydraulic-boom",
+   "transform": {
+    "position": [
+     -0.6,
+     1.7,
+     -0.2
+    ],
+    "rotationRad": [
+     0,
+     0,
+     65
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 11,
+   "entityId": "bucket-linkage",
+   "transform": {
+    "position": [
+     -2.9,
+     1.1,
+     -0.2
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "assembly_ready",
+   "at": 12
+  },
+  {
+   "type": "scene_revealed",
+   "at": 13
+  }
+ ],
+ "meta": {
+  "model": "muse-spark-1.3",
+  "endpoint": "https://api.meta.ai/v1/responses",
+  "requestId": "57e57273-6f7a-44f4-af8a-4737f03435ff",
+  "httpStatus": 200,
+  "latencyMs": 45305,
+  "maxOutputTokens": 6000,
+  "responseStatus": "completed",
+  "usage": {
+   "inputTokens": 2071,
+   "outputTokens": 5074,
+   "totalTokens": 7145,
+   "cachedInputTokens": 0,
+   "reasoningTokens": 1208
+  },
+  "estimatedCostUsd": 0.02415325,
+  "upstreamEnvelope": {
+   "fields": [
+    "background",
+    "completed_at",
+    "created_at",
+    "error",
+    "id",
+    "incomplete_details",
+    "instructions",
+    "max_output_tokens",
+    "model",
+    "object",
+    "output",
+    "parallel_tool_calls",
+    "reasoning",
+    "service_tier",
+    "status",
+    "store",
+    "temperature",
+    "text",
+    "tool_choice",
+    "tools",
+    "top_logprobs",
+    "top_p",
+    "truncation",
+    "usage"
+   ],
+   "outputItemTypes": [
+    "reasoning",
+    "message"
+   ],
+   "contentTypes": [
+    "output_text"
+   ],
+   "outputTextLength": 11767
+  },
+  "status": "success"
+ },
+ "limitations": [
+  "Composição conceptual gerada por operadores geométricos; não constitui reconstrução métrica ou validada.",
+  "A fotografia não fornece escala física; dimensões e escala permanecem desconhecidas.",
+  "Perfis de apresentação não alteram a proveniência nem validam materiais reais."
+ ]
+}

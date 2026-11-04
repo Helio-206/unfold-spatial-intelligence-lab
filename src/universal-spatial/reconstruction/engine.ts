@@ -5,6 +5,7 @@ import { fitHierarchical, type HPart, type HResult, type Unresolved } from './hi
 import { validateHierarchy, type HierarchyIssue } from './hierarchy';
 import { classifyRelations, enforced, summary, type RelationFinding } from './relations';
 import { makeView, maskIoU, rasterise, type Tri, type View } from './silhouette';
+import { findUnexplained, type UnexplainedReport } from './unexplained';
 
 /**
  * Structural Reconstruction engine (hierarchical). It PROPOSES; it never modifies the plan it is given and never touches a Space.
@@ -19,11 +20,11 @@ export type Limits = { minIndependentViews: number; minSeparationDeg: number; ma
 export const DEFAULT_LIMITS: Limits = { minIndependentViews: 3, minSeparationDeg: 20, maxComponents: 48, maxEvaluations: 40_000, maxMs: 60_000, minImprovement: 0.01, maxJointResidual: 0.005 };
 export type RefusalCode = 'HIERARCHY_INVALID' | 'TRANSFORM_INCONSISTENT' | 'NO_VIEWS' | 'VIEWS_NOT_CALIBRATED' | 'TOO_FEW_INDEPENDENT_VIEWS' | 'VIEWS_NOT_DISTINCT' | 'VIEW_MISMATCH' | 'EMPTY_EVIDENCE' | 'TOO_MANY_COMPONENTS' | 'NO_STRUCTURAL_SUPPORT' | 'CONTRADICTORY_RELATIONS' | 'CONTRADICTORY_CONSTRAINTS' | 'NO_IMPROVEMENT' | 'NO_GENERALISATION' | 'COST_EXCEEDED' | 'RESULT_INVALID';
 export type Refusal = { code: RefusalCode; detail: string };
-export type EngineOptions = { limits?: Partial<Limits>; /** ids of hypotheses (`hyp-a-b`) or relations (`rel-...`) a person confirmed in review */ confirmed?: ReadonlySet<string>; /** explicit human override: declared relations that the geometry contradicts do not block the fit (they are still never enforced) */ allowContradicted?: boolean; now?: () => number };
+export type EngineOptions = { /** rotation corrections in the local frame (default on); `false` reproduces the translation-and-scale-only engine of Phase C */ rotation?: boolean; limits?: Partial<Limits>; /** ids of hypotheses (`hyp-a-b`) or relations (`rel-...`) a person confirmed in review */ confirmed?: ReadonlySet<string>; /** explicit human override: declared relations that the geometry contradicts do not block the fit (they are still never enforced) */ allowContradicted?: boolean; now?: () => number };
 export type Proposal = { operations: SpatialOperationV2[]; changed: string[]; evidence: string; fitIouBefore: number; fitIouAfter: number; heldOut: { before: number; after: number } | null };
 export type Outcome = {
   status: 'proposal' | 'refused'; refusals: Refusal[]; proposal: Proposal | null;
-  hierarchyIssues: HierarchyIssue[]; relations: RelationFinding[]; relationSummary: ReturnType<typeof summary>; hypotheses: RelationFinding[]; unresolved: Unresolved[];
+  hierarchyIssues: HierarchyIssue[]; relations: RelationFinding[]; relationSummary: ReturnType<typeof summary>; hypotheses: RelationFinding[]; unresolved: Unresolved[]; /** what the evidence shows and the plan does not draw (after the fit when there is a proposal); candidates are flags, never components */ unexplained: UnexplainedReport | null;
   checks: { transformConsistencyMax: number | null; worldConsistencyAfterMax: number | null; idsPreserved: boolean | null; sourcePreserved: boolean | null; hierarchyPreserved: boolean | null; jointResidualMax: number | null };
   metrics: { components: number; independentViews: number; ms: number; evaluations: number; aborted: string | null };
 };
@@ -42,9 +43,18 @@ const spread = (views: EvidenceView[]) => { // three directions that are almost 
   if (views.length < 3) return 0; let best = 0; for (let i = 0; i < views.length; i++) for (let j = i + 1; j < views.length; j++) for (let k = j + 1; k < views.length; k++) best = Math.max(best, Math.abs(new Vector3().crossVectors(views[i]!.view.direction, views[j]!.view.direction).dot(views[k]!.view.direction))); return best;
 };
 
+/** Parts (local and world frames, world-space triangles) and span of a valid plan, as the engine reads it. Returns null when the hierarchy is invalid. */
+export function readParts(plan: SpatialPlanV2): { parts: HPart[]; span: number } | null {
+  const hierarchy = validateHierarchy(plan); if (!hierarchy.ok) return null;
+  const compiled = compileSpatialPlanV2(plan), { map: tris } = worldTris(compiled.root); disposeCompiledSpatialPlan(compiled.root);
+  const box = new Box3(); for (const t of tris.values()) for (const x of t) for (const p of x) box.expandByPoint(p);
+  const parts = hierarchy.order.map((id) => { const f = hierarchy.frames.get(id)!, tt = tris.get(id) ?? [], b = new Box3(); for (const t of tt) for (const p of t) b.expandByPoint(p); return { id, parentId: f.parentId, position: f.position, rotation: f.rotation, scale: f.scale, local: f.local, world: f.world, tris: tt, pivot: b.isEmpty() ? new Vector3() : b.getCenter(new Vector3()) }; });
+  return { parts, span: Math.max(...box.getSize(new Vector3()).toArray(), 1e-9) };
+}
+
 export function reconstructStructure(plan: SpatialPlanV2, evidence: EvidenceView[], options: EngineOptions = {}): Outcome {
   const limits: Limits = { ...DEFAULT_LIMITS, ...options.limits }, now = options.now ?? (() => performance.now()), t0 = now();
-  const refused = (refusals: Refusal[], partial: Partial<Outcome> = {}): Outcome => ({ status: 'refused', refusals, proposal: null, hierarchyIssues: [], relations: [], relationSummary: summary([]), hypotheses: [], unresolved: [], checks: empty(), metrics: { components: plan.components.length, independentViews: 0, ms: now() - t0, evaluations: 0, aborted: null }, ...partial });
+  const refused = (refusals: Refusal[], partial: Partial<Outcome> = {}): Outcome => ({ status: 'refused', refusals, proposal: null, hierarchyIssues: [], relations: [], relationSummary: summary([]), hypotheses: [], unresolved: [], unexplained: null, checks: empty(), metrics: { components: plan.components.length, independentViews: 0, ms: now() - t0, evaluations: 0, aborted: null }, ...partial });
 
   // ---- eligibility that needs no geometry
   const hierarchy = validateHierarchy(plan);
@@ -68,7 +78,8 @@ export function reconstructStructure(plan: SpatialPlanV2, evidence: EvidenceView
   const parts: HPart[] = hierarchy.order.map((id) => { const f = hierarchy.frames.get(id)!, tt = tris.get(id) ?? [], b = new Box3(); for (const t of tt) for (const p of t) b.expandByPoint(p); return { id, parentId: f.parentId, position: f.position, rotation: f.rotation, scale: f.scale, local: f.local, world: f.world, tris: tt, pivot: b.isEmpty() ? new Vector3() : b.getCenter(new Vector3()) }; });
   const relations = classifyRelations(plan, parts.map((p) => ({ id: p.id, tris: p.tris })), { span, ...(options.confirmed ? { confirmed: options.confirmed } : {}) });
   const relationSummary = summary(relations), hypotheses = relations.filter((r) => r.status === 'detected_hypothesis'), enf = enforced(relations);
-  const base = { hierarchyIssues: hierarchy.issues, relations, relationSummary, hypotheses, checks, metrics: { components: plan.components.length, independentViews: views.length, ms: 0, evaluations: 0, aborted: null as string | null } };
+  const unexplainedAsGiven = findUnexplained(views, parts.map((p) => ({ id: p.id, tris: p.tris })));
+  const base = { unexplained: unexplainedAsGiven as UnexplainedReport | null, hierarchyIssues: hierarchy.issues, relations, relationSummary, hypotheses, checks, metrics: { components: plan.components.length, independentViews: views.length, ms: 0, evaluations: 0, aborted: null as string | null } };
   const edges = plan.components.filter((c) => c.parentId !== null).length;
   if (plan.components.length > 1 && edges === 0 && enf.length === 0) return refused([{ code: 'NO_STRUCTURAL_SUPPORT', detail: `no parent link and no enforced relation between ${plan.components.length} parts (${hypotheses.length} contact hypothesis(es) await review): nothing says how they hold together, so fitting would move them freely` }], base);
   const contradicted = relations.filter((r) => r.status === 'declared_contradicted');
@@ -76,7 +87,7 @@ export function reconstructStructure(plan: SpatialPlanV2, evidence: EvidenceView
 
   // ---- fit
   const fitViews = views.map((e) => e.view), targets = views.map((e) => e.mask), hold = views.length >= 4 ? Math.max(1, Math.floor(views.length / 4)) : 0, maxShift = 0.3 * span;
-  const common = { span, maxShift, maxEvaluations: limits.maxEvaluations, maxMs: limits.maxMs, now };
+  const common = { span, maxShift, maxEvaluations: limits.maxEvaluations, maxMs: limits.maxMs, now, ...(options.rotation === false ? { rotation: false as const } : {}) };
   let heldOut: Proposal['heldOut'] = null;
   if (hold) { // does the result generalise? fit without some views and look at them
     const keep = views.length - hold, partial = fitHierarchical(parts, enf, fitViews.slice(0, keep), targets.slice(0, keep), common), held = (matrices: Map<string, Matrix4> | null) => fitViews.slice(keep).reduce((s, v, i) => { const t = parts.flatMap((p) => { const m = matrices ? matrices.get(p.id)!.clone().multiply(p.world.clone().invert()) : null; return m ? p.tris.map((x) => x.map((q) => q.clone().applyMatrix4(m)) as Tri) : p.tris; }); return s + maskIoU(rasterise(t, v), targets[keep + i]!); }, 0) / hold;
@@ -93,14 +104,15 @@ export function reconstructStructure(plan: SpatialPlanV2, evidence: EvidenceView
 
   // ---- typed operations, in LOCAL frames, applied to a COPY to prove they are valid before anything is offered
   const evidenceText = `Hierarchical structural solver fitted to ${views.length} independent calibrated silhouette view(s) (${[...new Set(views.map((v) => v.source))].join(', ')}); fit IoU ${fit.iouBefore.toFixed(3)} -> ${fit.iouAfter.toFixed(3)}${heldOut ? `, left-out views ${heldOut.before.toFixed(3)} -> ${heldOut.after.toFixed(3)}` : ''}. ${enf.length} enforced relation(s), ${hypotheses.length} unconfirmed contact hypothesis(es) not enforced. Basis: inferred.`;
-  const operations: SpatialOperationV2[] = fit.changed.map((id) => { const c = plan.components.find((k) => k.id === id)!, l = fit.local.get(id)!, r = (n: number) => Math.round(n * 1e6) / 1e6; return { contract: 'unfold.spatial-operation.v2', operationId: `v4h-${id}`.slice(0, 80), kind: 'set-transform', componentId: id, nodeKey: null, value: { ...c.transform, position: l.position.toArray().map(r) as [number, number, number], scale: l.scale.toArray().map(r) as [number, number, number] } } as SpatialOperationV2; });
+  const operations: SpatialOperationV2[] = fit.changed.map((id) => { const c = plan.components.find((k) => k.id === id)!, l = fit.local.get(id)!, r = (n: number) => Math.round(n * 1e6) / 1e6; return { contract: 'unfold.spatial-operation.v2', operationId: `v4h-${id}`.slice(0, 80), kind: 'set-transform', componentId: id, nodeKey: null, value: { ...c.transform, position: l.position.toArray().map(r) as [number, number, number], rotationRad: l.rotationRad.toArray().map(r) as [number, number, number], scale: l.scale.toArray().map(r) as [number, number, number] } } as SpatialOperationV2; });
   let next = plan; try { for (const op of operations) next = applySpatialOperationV2(next, op, { origin: 'inferred', evidence: evidenceText }); } catch (error) { return refused([{ code: 'RESULT_INVALID', detail: error instanceof Error ? error.message : 'the operations do not apply' }], { ...base, unresolved: fit.unresolved, metrics }); }
   const after = validateHierarchy(next), nextCompiled = compileSpatialPlanV2(next), nw = worldTris(nextCompiled.root).worlds; disposeCompiledSpatialPlan(nextCompiled.root);
   let worldDiff = 0; for (const p of parts) worldDiff = Math.max(worldDiff, matrixDiff(fit.worlds.get(p.id)!, nw.get(p.id)!));
   checks.worldConsistencyAfterMax = worldDiff; checks.idsPreserved = JSON.stringify(next.components.map((c) => c.id)) === JSON.stringify(plan.components.map((c) => c.id)); checks.sourcePreserved = JSON.stringify(next.source) === JSON.stringify(plan.source);
   checks.hierarchyPreserved = after.ok && next.components.every((c, i) => c.parentId === plan.components[i]!.parentId);
   if (!after.ok || worldDiff > 1e-5 || !checks.idsPreserved || !checks.sourcePreserved || !checks.hierarchyPreserved) return refused([{ code: 'RESULT_INVALID', detail: `the proposed operations would not reproduce the fitted placement (hierarchy ok ${after.ok}, world mismatch ${worldDiff.toExponential(2)}, ids ${checks.idsPreserved}, source ${checks.sourcePreserved}, parents ${checks.hierarchyPreserved})` }], { ...base, unresolved: fit.unresolved, checks, metrics });
-  return { status: 'proposal', refusals: [], proposal: { operations, changed: fit.changed, evidence: evidenceText, fitIouBefore: fit.iouBefore, fitIouAfter: fit.iouAfter, heldOut }, ...base, unresolved: fit.unresolved, checks, metrics };
+  const fitted = findUnexplained(views, parts.map((p) => { const m = fit.worlds.get(p.id)!.clone().multiply(p.world.clone().invert()); return { id: p.id, tris: p.tris.map((t) => t.map((q) => q.clone().applyMatrix4(m)) as Tri) }; }));
+  return { status: 'proposal', refusals: [], proposal: { operations, changed: fit.changed, evidence: evidenceText, fitIouBefore: fit.iouBefore, fitIouAfter: fit.iouAfter, heldOut }, ...base, unexplained: fitted, unresolved: fit.unresolved, checks, metrics };
 }
 
 export { makeView };

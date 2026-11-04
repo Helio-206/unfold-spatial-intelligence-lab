@@ -1,0 +1,1051 @@
+{
+ "contract": "unfold.spatial-plan.v2",
+ "sessionId": "00000000-0000-4000-8000-000000000000",
+ "revision": 0,
+ "plan": {
+  "contract": "unfold.spatial-plan.v2",
+  "source": {
+   "kind": "text",
+   "sha256": "9504848b354945916d6fb4145c8fd35577e6a85ea4caa42ac519563b0ebf19f0"
+  },
+  "title": "Human lungs and trachea - conceptual (hand-authored reproduction)",
+  "units": "unitless",
+  "presentationProfile": "neutral",
+  "components": [
+   {
+    "id": "trachea",
+    "label": "Trachea",
+    "parentId": null,
+    "geometry": {
+     "type": "shape",
+     "key": "trachea-shell",
+     "operator": "cylinder",
+     "parameters": {
+      "radiusTop": 0.34,
+      "radiusBottom": 0.34,
+      "height": 2.6,
+      "radialSegments": 32
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "organic",
+      "color": "#e58c9a",
+      "roughness": 0.55,
+      "metalness": 0,
+      "clearcoat": 0
+     }
+    },
+    "transform": {
+     "position": [
+      0,
+      3.7,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0.5
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-authored reproduction of the structure and flaws recorded in reports/acceptance/REPORT.md for the real Meta lungs run (its plan was not kept). Not Meta output."
+    }
+   },
+   {
+    "id": "trachea-ring",
+    "label": "Tracheal ring",
+    "parentId": null,
+    "geometry": {
+     "type": "shape",
+     "key": "ring-shape",
+     "operator": "torus",
+     "parameters": {
+      "majorRadius": 0.36,
+      "tubeRadius": 0.05,
+      "radialSegments": 12,
+      "tubularSegments": 40
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       1.5707963267948966,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "organic",
+      "color": "#e58c9a",
+      "roughness": 0.55,
+      "metalness": 0,
+      "clearcoat": 0
+     }
+    },
+    "transform": {
+     "position": [
+      0,
+      2.32,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-authored reproduction of the structure and flaws recorded in reports/acceptance/REPORT.md for the real Meta lungs run (its plan was not kept). Not Meta output."
+    }
+   },
+   {
+    "id": "carina",
+    "label": "Carina",
+    "parentId": null,
+    "geometry": {
+     "type": "group",
+     "key": "carina-tubes",
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "children": [
+      {
+       "type": "shape",
+       "key": "carina-left",
+       "operator": "tube",
+       "parameters": {
+        "points": [
+         [
+          0,
+          2.2,
+          0
+         ],
+         [
+          -0.45,
+          1.9,
+          0
+         ],
+         [
+          -1,
+          1.5,
+          0
+         ]
+        ],
+        "radius": 0.13,
+        "tubularSegments": 36,
+        "radialSegments": 10
+       },
+       "transform": {
+        "position": [
+         0,
+         0,
+         0
+        ],
+        "rotationRad": [
+         0,
+         0,
+         0
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "repeat": null,
+       "material": {
+        "profile": "organic",
+        "color": "#e58c9a",
+        "roughness": 0.55,
+        "metalness": 0,
+        "clearcoat": 0
+       }
+      },
+      {
+       "type": "shape",
+       "key": "carina-right",
+       "operator": "tube",
+       "parameters": {
+        "points": [
+         [
+          0,
+          2.2,
+          0
+         ],
+         [
+          0.45,
+          1.9,
+          0
+         ],
+         [
+          1,
+          1.5,
+          0
+         ]
+        ],
+        "radius": 0.13,
+        "tubularSegments": 36,
+        "radialSegments": 10
+       },
+       "transform": {
+        "position": [
+         0,
+         0,
+         0
+        ],
+        "rotationRad": [
+         0,
+         0,
+         0
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "repeat": null,
+       "material": {
+        "profile": "organic",
+        "color": "#e58c9a",
+        "roughness": 0.55,
+        "metalness": 0,
+        "clearcoat": 0
+       }
+      }
+     ]
+    },
+    "transform": {
+     "position": [
+      0,
+      0,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-authored reproduction of the structure and flaws recorded in reports/acceptance/REPORT.md for the real Meta lungs run (its plan was not kept). Not Meta output."
+    }
+   },
+   {
+    "id": "lung-left",
+    "label": "Left lung",
+    "parentId": null,
+    "geometry": {
+     "type": "shape",
+     "key": "lung-left-shape",
+     "operator": "ellipsoid",
+     "parameters": {
+      "radii": [
+       1.35,
+       2.3,
+       1
+      ],
+      "widthSegments": 32,
+      "heightSegments": 24
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "organic",
+      "color": "#7a1f2b",
+      "roughness": 0.62,
+      "metalness": 0,
+      "clearcoat": 0
+     }
+    },
+    "transform": {
+     "position": [
+      -2.1,
+      0.9,
+      -0.1
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0.45
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-authored reproduction of the structure and flaws recorded in reports/acceptance/REPORT.md for the real Meta lungs run (its plan was not kept). Not Meta output."
+    }
+   },
+   {
+    "id": "lung-right",
+    "label": "Right lung",
+    "parentId": null,
+    "geometry": {
+     "type": "shape",
+     "key": "lung-right-shape",
+     "operator": "ellipsoid",
+     "parameters": {
+      "radii": [
+       1.55,
+       2.45,
+       1.1
+      ],
+      "widthSegments": 32,
+      "heightSegments": 24
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "organic",
+      "color": "#7a1f2b",
+      "roughness": 0.62,
+      "metalness": 0,
+      "clearcoat": 0
+     }
+    },
+    "transform": {
+     "position": [
+      2.2,
+      0.8,
+      -0.1
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-authored reproduction of the structure and flaws recorded in reports/acceptance/REPORT.md for the real Meta lungs run (its plan was not kept). Not Meta output."
+    }
+   },
+   {
+    "id": "branches-left",
+    "label": "Left bronchial branches",
+    "parentId": null,
+    "geometry": {
+     "type": "group",
+     "key": "bl-tree",
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "children": [
+      {
+       "type": "shape",
+       "key": "bl-main",
+       "operator": "tube",
+       "parameters": {
+        "points": [
+         [
+          -1,
+          1.5,
+          0.4377102350751704
+         ],
+         [
+          -1.7,
+          0.9,
+          0.8750960709798242
+         ],
+         [
+          -2.3,
+          0.1,
+          0.8457802868028615
+         ],
+         [
+          -2.6,
+          -0.9,
+          0.42034929623345896
+         ]
+        ],
+        "radius": 0.07,
+        "tubularSegments": 48,
+        "radialSegments": 10
+       },
+       "transform": {
+        "position": [
+         0,
+         0,
+         0
+        ],
+        "rotationRad": [
+         0,
+         0,
+         0
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "repeat": null,
+       "material": {
+        "profile": "organic",
+        "color": "#b23a48",
+        "roughness": 0.5,
+        "metalness": 0,
+        "clearcoat": 0
+       }
+      },
+      {
+       "type": "shape",
+       "key": "bl-upper",
+       "operator": "tube",
+       "parameters": {
+        "points": [
+         [
+          -1.7,
+          0.9,
+          0.8750960709798242
+         ],
+         [
+          -1.9,
+          1.9,
+          0.808265843864368
+         ],
+         [
+          -2.1,
+          2.6,
+          0.5935623210795506
+         ]
+        ],
+        "radius": 0.055,
+        "tubularSegments": 36,
+        "radialSegments": 10
+       },
+       "transform": {
+        "position": [
+         0,
+         0,
+         0
+        ],
+        "rotationRad": [
+         0,
+         0,
+         0
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "repeat": null,
+       "material": {
+        "profile": "organic",
+        "color": "#b23a48",
+        "roughness": 0.5,
+        "metalness": 0,
+        "clearcoat": 0
+       }
+      },
+      {
+       "type": "shape",
+       "key": "bl-side",
+       "operator": "tube",
+       "parameters": {
+        "points": [
+         [
+          -2.3,
+          0.1,
+          0.8457802868028615
+         ],
+         [
+          -2.9,
+          0.7,
+          0.7207949690972227
+         ]
+        ],
+        "radius": 0.05,
+        "tubularSegments": 24,
+        "radialSegments": 10
+       },
+       "transform": {
+        "position": [
+         0,
+         0,
+         0
+        ],
+        "rotationRad": [
+         0,
+         0,
+         0
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "repeat": null,
+       "material": {
+        "profile": "organic",
+        "color": "#b23a48",
+        "roughness": 0.5,
+        "metalness": 0,
+        "clearcoat": 0
+       }
+      }
+     ]
+    },
+    "transform": {
+     "position": [
+      0,
+      0,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-authored reproduction of the structure and flaws recorded in reports/acceptance/REPORT.md for the real Meta lungs run (its plan was not kept). Not Meta output."
+    }
+   },
+   {
+    "id": "branches-right",
+    "label": "Right bronchial branches",
+    "parentId": null,
+    "geometry": {
+     "type": "group",
+     "key": "br-tree",
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "children": [
+      {
+       "type": "shape",
+       "key": "br-main",
+       "operator": "tube",
+       "parameters": {
+        "points": [
+         [
+          1,
+          1.5,
+          0.541272848960287
+         ],
+         [
+          1.7,
+          0.9,
+          0.9602276978506222
+         ],
+         [
+          2.3,
+          0.1,
+          0.9717547572511841
+         ],
+         [
+          2.6,
+          -0.9,
+          0.659488570664254
+         ]
+        ],
+        "radius": 0.07,
+        "tubularSegments": 48,
+        "radialSegments": 10
+       },
+       "transform": {
+        "position": [
+         0,
+         0,
+         0
+        ],
+        "rotationRad": [
+         0,
+         0,
+         0
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "repeat": null,
+       "material": {
+        "profile": "organic",
+        "color": "#b23a48",
+        "roughness": 0.5,
+        "metalness": 0,
+        "clearcoat": 0
+       }
+      },
+      {
+       "type": "shape",
+       "key": "br-upper",
+       "operator": "tube",
+       "parameters": {
+        "points": [
+         [
+          1.7,
+          0.9,
+          0.9602276978506222
+         ],
+         [
+          1.9,
+          1.9,
+          0.8795609313843971
+         ],
+         [
+          2.1,
+          2.6,
+          0.6628564573417429
+         ]
+        ],
+        "radius": 0.055,
+        "tubularSegments": 36,
+        "radialSegments": 10
+       },
+       "transform": {
+        "position": [
+         0,
+         0,
+         0
+        ],
+        "rotationRad": [
+         0,
+         0,
+         0
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "repeat": null,
+       "material": {
+        "profile": "organic",
+        "color": "#b23a48",
+        "roughness": 0.5,
+        "metalness": 0,
+        "clearcoat": 0
+       }
+      },
+      {
+       "type": "shape",
+       "key": "br-side",
+       "operator": "tube",
+       "parameters": {
+        "points": [
+         [
+          2.3,
+          0.1,
+          0.9717547572511841
+         ],
+         [
+          2.9,
+          0.7,
+          0.900407860987197
+         ]
+        ],
+        "radius": 0.05,
+        "tubularSegments": 24,
+        "radialSegments": 10
+       },
+       "transform": {
+        "position": [
+         0,
+         0,
+         0
+        ],
+        "rotationRad": [
+         0,
+         0,
+         0
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "repeat": null,
+       "material": {
+        "profile": "organic",
+        "color": "#b23a48",
+        "roughness": 0.5,
+        "metalness": 0,
+        "clearcoat": 0
+       }
+      }
+     ]
+    },
+    "transform": {
+     "position": [
+      0,
+      0,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-authored reproduction of the structure and flaws recorded in reports/acceptance/REPORT.md for the real Meta lungs run (its plan was not kept). Not Meta output."
+    }
+   }
+  ],
+  "relations": [],
+  "constraints": [],
+  "unknowns": [
+   "Hand-authored fixture, not a Meta response.",
+   "Physical dimensions are unknown; proportions are conceptual.",
+   "Posterior shape, lobe fissures and depth are unknown."
+  ]
+ },
+ "sceneSummary": {
+  "componentCount": 7,
+  "geometryNodeCount": 15,
+  "operators": [
+   "cylinder",
+   "torus",
+   "tube",
+   "ellipsoid"
+  ],
+  "constraintReady": true
+ },
+ "constraintReport": {
+  "ready": true,
+  "results": [],
+  "violatedIds": []
+ },
+ "constructionEvents": [
+  {
+   "type": "scene_created",
+   "at": 0
+  },
+  {
+   "type": "component_placed",
+   "at": 1,
+   "entityId": "trachea",
+   "transform": {
+    "position": [
+     0,
+     3.7,
+     0
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 2,
+   "entityId": "trachea-ring",
+   "transform": {
+    "position": [
+     0,
+     2.32,
+     0
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 3,
+   "entityId": "carina",
+   "transform": {
+    "position": [
+     0,
+     0,
+     0
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 4,
+   "entityId": "lung-left",
+   "transform": {
+    "position": [
+     -2.1,
+     0.9,
+     -0.1
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 5,
+   "entityId": "lung-right",
+   "transform": {
+    "position": [
+     2.2,
+     0.8,
+     -0.1
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 6,
+   "entityId": "branches-left",
+   "transform": {
+    "position": [
+     0,
+     0,
+     0
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 7,
+   "entityId": "branches-right",
+   "transform": {
+    "position": [
+     0,
+     0,
+     0
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "assembly_ready",
+   "at": 8
+  },
+  {
+   "type": "scene_revealed",
+   "at": 9
+  }
+ ],
+ "meta": {
+  "model": "hand-authored-fixture",
+  "requestId": "none",
+  "latencyMs": 0,
+  "estimatedCostUsd": 0
+ },
+ "limitations": [
+  "Hand-authored fixture standing in for a model plan; not Meta output."
+ ]
+}

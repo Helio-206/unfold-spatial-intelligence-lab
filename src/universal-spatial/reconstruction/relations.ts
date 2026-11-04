@@ -16,8 +16,8 @@ export type RelationStatus = 'declared_supported' | 'declared_contradicted' | 'd
 export type RelationFinding = { id: string; a: string; b: string; status: RelationStatus; enforced: boolean; gap: number; anchor: Vector3; evidence: string; declaredKind: string | null; origin: string | null };
 export type PartTris = { id: string; tris: Tri[] };
 
-type Sampled = { points: Vector3[]; spacing: number };
-function sample(tris: Tri[], h: number, max: number): Sampled {
+export type Sampled = { points: Vector3[]; spacing: number };
+export function sample(tris: Tri[], h: number, max: number): Sampled {
   const all: Vector3[] = []; let area = 0;
   for (const [a, b, c] of tris) {
     const longest = Math.max(a.distanceTo(b), b.distanceTo(c), c.distanceTo(a)), n = Math.min(10, Math.max(1, Math.ceil(longest / h)));
@@ -27,7 +27,7 @@ function sample(tris: Tri[], h: number, max: number): Sampled {
   const step = Math.max(1, Math.ceil(all.length / max)), points = all.filter((_, i) => i % step === 0);
   return { points, spacing: Math.sqrt(area / Math.max(1, points.length)) };
 }
-const closest = (a: Sampled, b: Sampled) => { let best = Infinity, pa = a.points[0]!, pb = b.points[0]!; for (const p of a.points) for (const q of b.points) { const d = p.distanceToSquared(q); if (d < best) { best = d; pa = p; pb = q; } } return { gap: Math.sqrt(best), anchor: pa.clone().add(pb).multiplyScalar(0.5) }; };
+export const closest = (a: Sampled, b: Sampled) => { let best = Infinity, pa = a.points[0]!, pb = b.points[0]!; for (const p of a.points) for (const q of b.points) { const d = p.distanceToSquared(q); if (d < best) { best = d; pa = p; pb = q; } } return { gap: Math.sqrt(best), anchor: pa.clone().add(pb).multiplyScalar(0.5) }; };
 
 export type ClassifyOptions = { span: number; /** hypothesis ids a person confirmed in review */ confirmed?: ReadonlySet<string>; maxSamples?: number };
 

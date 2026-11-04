@@ -318,7 +318,7 @@ export class PlanSpaceLayer implements SpaceLayer {
     try { let probe = this.plan; for (const operation of operations) probe = applySpatialOperationV2(probe, operation, { origin: 'inferred', evidence: 'preview' }); } catch { return false; }
     const first = this.plan.components.find((item) => item.id === operations[0]!.componentId); if (!first) return false;
     this.selected = this.selected && operations.some((op) => op.componentId === this.selected) ? this.selected : first.id;
-    this.pending = { label, before: 'colocação actual', after: `${new Set(operations.map((op) => op.componentId)).size} componentes: posição e escala`, operations, needsAuthorization: true, source: 'solver', evidence }; this.authorised = false;
+    this.pending = { label, before: 'colocação actual', after: `${new Set(operations.map((op) => op.componentId)).size} componentes: ${[...new Set(operations.map((op) => op.kind === 'set-geometry' ? 'geometria' : op.kind === 'set-transform' ? 'posição, rotação e escala' : op.kind === 'set-material' ? 'material' : 'padrão'))].join(', ')}`, operations, needsAuthorization: true, source: 'solver', evidence }; this.authorised = false;
     this.applyPaint(); this.host.changed(); return true;
   }
   cancelPending(): void { this.pending = null; this.authorised = false; this.host.changed(); }
@@ -330,7 +330,7 @@ export class PlanSpaceLayer implements SpaceLayer {
     if (pending.needsAuthorization && !this.authorised) { this.host.notify(pending.source === 'person' ? 'Esta edição toca num valor observado ou confirmado: marque a autorização primeiro.' : pending.source === 'solver' ? 'Uma proposta do solver só se aplica depois de a autorizar: marque a autorização.' : 'Uma alteração proposta pela IA só se aplica depois de a autorizar: marque a autorização.'); return; }
     this.busy = true; this.director?.enterEditing();
     try {
-      const evidence = pending.source === 'solver' ? `${pending.evidence ?? 'Proposta do solver estrutural.'} Resultado de optimização (hipótese), autorizado por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).` : pending.source === 'person' ? 'Editado por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).' : 'Proposta por Muse Spark (hipótese) e autorizada por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).';
+      const evidence = pending.source === 'solver' ? ((suffix) => `${(pending.evidence ?? 'Proposta do solver estrutural.').slice(0, 500 - suffix.length - 1)} ${suffix}`)('Resultado de optimização (hipótese), autorizado por uma pessoa (afirmado pelo cliente, sem identidade verificada).') : pending.source === 'person' ? 'Editado por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).' : 'Proposta por Muse Spark (hipótese) e autorizada por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).';
       await this.commit(pending.operations, { origin: 'user_provided', evidence });
       this.host.notify(`Aplicado: ${pending.label}.${this.sync ? '' : ' Edição só local: a sessão do servidor não a conhece.'}`);
     } catch (error) { this.pending = null; this.host.notify(`Edição bloqueada: ${error instanceof Error ? error.message : 'erro desconhecido'}`); }
