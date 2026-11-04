@@ -48,6 +48,9 @@ export class ContinuousService {
     return undefined;
   }
 
+  /** Whether a result (or a recorded failure) exists, without counting a hit or touching the recency. */
+  has(key: string): boolean { return this.cache.has(key); }
+
   request(job: ContinuousJob): 'cached' | 'queued' | 'running' | 'rejected' {
     if (this.disposed) return 'rejected';
     if (this.cache.has(job.key)) return 'cached';

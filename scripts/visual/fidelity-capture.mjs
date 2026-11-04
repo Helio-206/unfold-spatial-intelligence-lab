@@ -15,11 +15,13 @@ const results = { browser: 'Chromium (system) + SwiftShader', viewport: '1440x90
 async function run(label, query) {
   const page = await context.newPage(); const errors = []; page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); }); page.on('pageerror', (e) => errors.push(e.message));
   if (glb) await page.route('**/__assets/AntiqueCamera.glb', (route) => route.fulfill({ status: 200, contentType: 'model/gltf-binary', body: glb }));
-  await page.goto(`${args.host}/tests/harness/fidelity/index.html?${query}`, { waitUntil: 'networkidle' }); await page.evaluate(() => window.__fid.ready); await settle(page, 1800);
+  await page.goto(`${args.host}/tests/harness/fidelity/index.html?${query}`, { waitUntil: 'networkidle' }); await page.evaluate(() => window.__fid.ready);
+  if (query.includes('route=live')) await page.waitForFunction(() => window.__fid.report && window.__fid.report.pending.length === 0, null, { timeout: 60_000, polling: 25 });
+  await settle(page, 1800);
   const info = await page.evaluate(() => {
     const f = window.__fid, s = f.ws.stats(), plan = f.layer.currentPlan, ids = new Set(), families = {};
     f.layer.root.traverse((o) => { if (o.isMesh && o.userData.spatialEntityId) { ids.add(o.userData.spatialEntityId); const k = o.userData.geometryFamily ?? 'procedural_v2'; families[k] = (families[k] ?? 0) + 1; } });
-    return { metrics: f.metrics, gpu: { geometries: s.geometries, textures: s.textures, programs: s.programs }, components: plan.components.length, selectableComponents: [...ids].filter((id) => plan.components.some((c) => c.id === id)).length, meshesByFamily: families, assetNote: f.assetNote,
+    return { metrics: { ...f.metrics, firstFrameTriangles: f.metrics.triangles, triangles: f.layer.stats.triangleCount, meshes: f.layer.stats.meshCount, geometryBytes: f.layer.stats.geometryBytes }, gpu: { geometries: s.geometries, textures: s.textures, programs: s.programs }, components: plan.components.length, selectableComponents: [...ids].filter((id) => plan.components.some((c) => c.id === id)).length, meshesByFamily: families, worker: f.service ? { stats: f.service.stats(), counters: f.counters, longTasksMs: f.longTasks.map((n) => Math.round(n.duration)) } : null, assetNote: f.assetNote,
       decisions: f.report ? f.report.decisions.map((d) => ({ id: d.componentId, used: d.used, reason: d.reason, fallback: d.fallback, representation: d.representation, planGeometryOrigin: d.planGeometryOrigin, triangles: d.triangles })) : null,
       report: f.report ? { planSource: f.report.planSource, totals: f.report.totals, perFamily: f.report.perFamily, fallbacks: f.report.fallbacks, proposalsNotApproved: f.report.proposalsNotApproved } : null };
   });
@@ -27,7 +29,8 @@ async function run(label, query) {
 }
 
 try {
-  for (const fixture of ['lungs-like', 'microscope-like']) for (const route of ['v2', 'router']) await run(`${fixture}-${route}`, `fixture=${fixture}&route=${route}`);
+  for (const fixture of ['lungs-like', 'microscope-like']) { await run(`${fixture}-v2`, `fixture=${fixture}&route=v2`); await run(`${fixture}-v3`, `fixture=${fixture}&route=live`); await run(`${fixture}-v3-earlier-rim`, `fixture=${fixture}&route=live&rim=discard`); }
+  for (const [name, file] of [['excavator-saved-meta-plan', 'live-image-plan'], ['harp-saved-meta-plan', 'blind-harp-plan']]) { const src = encodeURIComponent(`/reports/universal-spatial-v2/evidence/${file}.json`); await run(`${name}-v2`, `src=${src}&route=v2`); await run(`${name}-v3`, `src=${src}&route=live`); }
   if (glb) { await run('camera-asset-offered-not-approved', 'fixture=camera-standin&route=router&asset=camera'); await run('camera-asset-approved', 'fixture=camera-standin&route=router&asset=camera&approve=1'); await run('camera-standin-v2', 'fixture=camera-standin&route=v2'); }
   await writeFile(resolve(out, 'capture-result.json'), `${JSON.stringify(results, null, 2)}\n`);
   console.log(JSON.stringify(Object.fromEntries(Object.entries(results.cases).map(([k, v]) => [k, { tri: v.metrics.triangles, ms: v.metrics.buildMs, meshes: v.metrics.meshes, bytes: v.metrics.geometryBytes, gpu: v.gpu, selectable: `${v.selectableComponents}/${v.components}`, errors: v.consoleErrors.length, families: v.meshesByFamily }])), null, 1));

@@ -81,6 +81,17 @@ describe('V3 geometry arrives later without rebuilding the Space', () => {
     expect(service.stats().running).toBe(0); expect(service.stats().queued).toBe(0); expect(terminated()).toBe(made.length);
   });
 
+  it('spreads the arrival over frames: a triangle budget per call, one component at a time, the rest follow by themselves', async () => {
+    const s2 = new ContinuousService({ poolSize: 2, createWorker: () => createInlineWorker() }); let routed: ReturnType<typeof compileWithRouter> | null = null;
+    const l2 = new PlanSpaceLayer(plan(), host(), (p) => { routed?.retire(); routed = compileWithRouter(p, { service: s2, limits: { maxGridCells: 40 } }); return routed; });
+    for (let i = 0; i < 400 && s2.stats().completed < 3; i++) await new Promise((r) => setTimeout(r, 2));
+    expect(family(l2.root, 'body')).toBe('procedural_v2'); // arrived in the cache, nobody swapped yet
+    const first = l2.upgradeGeometry(1); expect(first.length).toBe(1); // budget 1 triangle: exactly one component this call
+    for (let i = 0; i < 100 && routed!.report.pending.length; i++) await new Promise((r) => setTimeout(r, 20));
+    expect(routed!.report.pending).toEqual([]); expect(['body', 'duct', 'far'].map((id) => family(l2.root, id))).toEqual(['continuous_surface', 'continuous_surface', 'continuous_surface']);
+    l2.dispose(); s2.dispose();
+  });
+
   it('upgradeGeometry after dispose does nothing', async () => {
     const { service, layer } = live(); layer.dispose(); expect(layer.upgradeGeometry()).toEqual([]); service.dispose();
   });

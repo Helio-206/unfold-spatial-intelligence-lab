@@ -1,4 +1,4 @@
-import { Mesh, type Object3D, type Texture } from 'three';
+import { ImageBitmapLoader, Mesh, type LoadingManager, type Object3D, type Texture } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { RouterLimits } from './types';
 
@@ -26,7 +26,28 @@ function imageSide(bytes: Uint8Array): [number, number] | null {
 
 /** Hard decode-safety cap: a texture larger than this is never decoded, even if it would be downscaled afterwards. */
 const HARD_TEXTURE_SIDE = 4096;
-export type GlbIntakeOptions = { /** textures are reduced to this side (never enlarged) before they reach the GPU; memory is then judged on the reduced size */ downscaleTo?: number };
+export type GlbIntakeOptions = {
+  /** textures are reduced to this side (never enlarged) before they reach the GPU; memory is then judged on the reduced size */
+  downscaleTo?: number;
+  /** How images are decoded. `post`: all at once at full size, then redrawn smaller. `pre`: all at once, asked at the reduced size. `seq`: one at a time, asked at the reduced size, so at most one full-size image is in flight. */
+  decode?: 'seq' | 'pre' | 'post';
+};
+
+/** Reads the size from the compressed header, then asks the browser to decode at the target size (`resizeWidth/Height`). The full-size pixel buffer is never allocated. */
+class ReducingBitmapLoader extends ImageBitmapLoader {
+  private static chain: Promise<unknown> = Promise.resolve();
+  constructor(manager: LoadingManager | undefined, private readonly side: number, private readonly sequential: boolean) { super(manager); }
+  override load(url: string, onLoad?: (bitmap: ImageBitmap) => void, _onProgress?: unknown, onError?: (error: unknown) => void): ImageBitmap | undefined {
+    const decode = async () => { const blob = await (await fetch(url)).blob();
+      const size = imageSide(new Uint8Array(await blob.arrayBuffer())), longest = size ? Math.max(size[0], size[1]) : 0;
+      const k = longest > this.side ? this.side / longest : 1, options: ImageBitmapOptions = { premultiplyAlpha: 'none', colorSpaceConversion: 'none' };
+      if (size && k < 1) { options.resizeWidth = Math.max(1, Math.round(size[0] * k)); options.resizeHeight = Math.max(1, Math.round(size[1] * k)); options.resizeQuality = 'high'; }
+      return createImageBitmap(blob, options); };
+    const run = this.sequential ? ReducingBitmapLoader.chain.then(decode, decode) : decode(); if (this.sequential) ReducingBitmapLoader.chain = run.catch(() => undefined);
+    run.then((bitmap) => onLoad?.(bitmap)).catch((error) => onError?.(error));
+    return undefined;
+  }
+}
 
 export function validateGlb(input: Uint8Array, limits: Pick<RouterLimits, 'maxAssetBytes' | 'maxTextureSide' | 'maxTextureBytes' | 'maxAssetTriangles' | 'maxAssetNodes'>, intake: GlbIntakeOptions = {}): GlbVerdict {
   if (input.byteLength > limits.maxAssetBytes) return refuse('TOO_LARGE', `${input.byteLength} bytes`);
@@ -79,11 +100,13 @@ export function validateGlb(input: Uint8Array, limits: Pick<RouterLimits, 'maxAs
 export async function loadValidatedGlb(bytes: Uint8Array, limits: Parameters<typeof validateGlb>[1], intake: GlbIntakeOptions = {}): Promise<{ scene: Object3D; info: GlbInfo } | { refused: GlbRefusal; detail: string }> {
   const verdict = validateGlb(bytes, limits, intake); if (!verdict.ok) return { refused: verdict.code, detail: verdict.detail };
   try {
-    const copy = bytes.slice().buffer, gltf = await new GLTFLoader().parseAsync(copy, '');
+    const loader = new GLTFLoader(), pre = intake.downscaleTo && (intake.decode ?? 'seq') !== 'post' && typeof createImageBitmap !== 'undefined' && typeof document !== 'undefined';
+    if (pre) loader.register((parser) => { (parser as unknown as { textureLoader: unknown }).textureLoader = new ReducingBitmapLoader(parser.options.manager, intake.downscaleTo!, intake.decode === 'seq'); return { name: 'UNFOLD_reduce_on_decode' }; });
+    const copy = bytes.slice().buffer, gltf = await loader.parseAsync(copy, '');
     let triangles = 0; gltf.scene.traverse((o) => { if (o instanceof Mesh) { const g = o.geometry; triangles += (g.index ? g.index.count : g.getAttribute('position').count) / 3; } });
     if (triangles > limits.maxAssetTriangles) return { refused: 'TOO_MANY_TRIANGLES', detail: `${Math.round(triangles)} after decoding` };
     const doomed: Object3D[] = []; gltf.scene.traverse((o) => { if ((o as { isCamera?: boolean }).isCamera || (o as { isLight?: boolean }).isLight) doomed.push(o); }); for (const o of doomed) o.parent?.remove(o);
-    if (intake.downscaleTo) downscaleTextures(gltf.scene, intake.downscaleTo);
+    if (intake.downscaleTo) downscaleTextures(gltf.scene, intake.downscaleTo); // no-op for what was already decoded small
     return { scene: gltf.scene, info: verdict.info };
   } catch (error) { return { refused: 'BAD_CONTAINER', detail: error instanceof Error ? error.message.slice(0, 160) : 'decode failed' }; }
 }

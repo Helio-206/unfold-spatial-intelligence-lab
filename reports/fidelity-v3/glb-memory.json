@@ -1,0 +1,286 @@
+{
+  "file": "KhronosGroup/glTF-Sample-Assets AntiqueCamera.glb (CC0), 17.5 MB, 6 textures of 2048x2048",
+  "method": "fresh Chromium per run; VmRSS of renderer+gpu+browser sampled every 4 ms; median of runs",
+  "side": 1024,
+  "modes": {
+    "validate": "header checks only (no decode)",
+    "full": "decode at native size, no reduction",
+    "post": "decode at native size, then redraw at the reduced size (previous behaviour)",
+    "pre": "all images at once, each asked of the browser already at the reduced size (resizeWidth/Height)",
+    "seq": "one image at a time, asked at the reduced size"
+  },
+  "table": {
+    "validate": {
+      "runs": [
+        {
+          "mode": "validate",
+          "baselineMB": 610,
+          "peakMB": 659,
+          "afterMB": 659,
+          "peakAboveBaselineMB": 49,
+          "rendererPeakAboveBaselineMB": 16,
+          "jsHeapPeakAboveBaselineMB": 0,
+          "decodeMs": 2.099999999627471,
+          "textureSizes": null,
+          "refused": null
+        },
+        {
+          "mode": "validate",
+          "baselineMB": 605,
+          "peakMB": 605,
+          "afterMB": 655,
+          "peakAboveBaselineMB": 0,
+          "rendererPeakAboveBaselineMB": 0,
+          "jsHeapPeakAboveBaselineMB": 0,
+          "decodeMs": 0.900000000372529,
+          "textureSizes": null,
+          "refused": null
+        },
+        {
+          "mode": "validate",
+          "baselineMB": 611,
+          "peakMB": 611,
+          "afterMB": 662,
+          "peakAboveBaselineMB": 0,
+          "rendererPeakAboveBaselineMB": 0,
+          "jsHeapPeakAboveBaselineMB": 0,
+          "decodeMs": 0.900000000372529,
+          "textureSizes": null,
+          "refused": null
+        }
+      ],
+      "median": {
+        "peakAboveBaselineMB": 0,
+        "rendererPeakAboveBaselineMB": 0,
+        "afterMinusBaselineMB": 50,
+        "jsHeapPeakAboveBaselineMB": 0,
+        "decodeMs": 0.900000000372529
+      },
+      "textureSizes": null
+    },
+    "full": {
+      "runs": [
+        {
+          "mode": "full",
+          "baselineMB": 607,
+          "peakMB": 836,
+          "afterMB": 791,
+          "peakAboveBaselineMB": 229,
+          "rendererPeakAboveBaselineMB": 172,
+          "jsHeapPeakAboveBaselineMB": 0,
+          "decodeMs": 250,
+          "textureSizes": [
+            "2048x2048"
+          ],
+          "refused": null
+        },
+        {
+          "mode": "full",
+          "baselineMB": 612,
+          "peakMB": 861,
+          "afterMB": 814,
+          "peakAboveBaselineMB": 249,
+          "rendererPeakAboveBaselineMB": 183,
+          "jsHeapPeakAboveBaselineMB": 0,
+          "decodeMs": 217,
+          "textureSizes": [
+            "2048x2048"
+          ],
+          "refused": null
+        },
+        {
+          "mode": "full",
+          "baselineMB": 613,
+          "peakMB": 854,
+          "afterMB": 801,
+          "peakAboveBaselineMB": 242,
+          "rendererPeakAboveBaselineMB": 176,
+          "jsHeapPeakAboveBaselineMB": 0,
+          "decodeMs": 210,
+          "textureSizes": [
+            "2048x2048"
+          ],
+          "refused": null
+        }
+      ],
+      "median": {
+        "peakAboveBaselineMB": 242,
+        "rendererPeakAboveBaselineMB": 176,
+        "afterMinusBaselineMB": 188,
+        "jsHeapPeakAboveBaselineMB": 0,
+        "decodeMs": 217
+      },
+      "textureSizes": [
+        "2048x2048"
+      ]
+    },
+    "post": {
+      "runs": [
+        {
+          "mode": "post",
+          "baselineMB": 608,
+          "peakMB": 853,
+          "afterMB": 725,
+          "peakAboveBaselineMB": 245,
+          "rendererPeakAboveBaselineMB": 180,
+          "jsHeapPeakAboveBaselineMB": 0,
+          "decodeMs": 212,
+          "textureSizes": [
+            "1024x1024"
+          ],
+          "refused": null
+        },
+        {
+          "mode": "post",
+          "baselineMB": 613,
+          "peakMB": 868,
+          "afterMB": 748,
+          "peakAboveBaselineMB": 254,
+          "rendererPeakAboveBaselineMB": 188,
+          "jsHeapPeakAboveBaselineMB": 0,
+          "decodeMs": 222,
+          "textureSizes": [
+            "1024x1024"
+          ],
+          "refused": null
+        },
+        {
+          "mode": "post",
+          "baselineMB": 612,
+          "peakMB": 861,
+          "afterMB": 729,
+          "peakAboveBaselineMB": 249,
+          "rendererPeakAboveBaselineMB": 184,
+          "jsHeapPeakAboveBaselineMB": 0,
+          "decodeMs": 215,
+          "textureSizes": [
+            "1024x1024"
+          ],
+          "refused": null
+        }
+      ],
+      "median": {
+        "peakAboveBaselineMB": 249,
+        "rendererPeakAboveBaselineMB": 184,
+        "afterMinusBaselineMB": 117,
+        "jsHeapPeakAboveBaselineMB": 0,
+        "decodeMs": 215
+      },
+      "textureSizes": [
+        "1024x1024"
+      ]
+    },
+    "pre": {
+      "runs": [
+        {
+          "mode": "pre",
+          "baselineMB": 604,
+          "peakMB": 860,
+          "afterMB": 738,
+          "peakAboveBaselineMB": 255,
+          "rendererPeakAboveBaselineMB": 189,
+          "jsHeapPeakAboveBaselineMB": 0,
+          "decodeMs": 285,
+          "textureSizes": [
+            "1024x1024"
+          ],
+          "refused": null
+        },
+        {
+          "mode": "pre",
+          "baselineMB": 609,
+          "peakMB": 841,
+          "afterMB": 738,
+          "peakAboveBaselineMB": 232,
+          "rendererPeakAboveBaselineMB": 166,
+          "jsHeapPeakAboveBaselineMB": 0,
+          "decodeMs": 375,
+          "textureSizes": [
+            "1024x1024"
+          ],
+          "refused": null
+        },
+        {
+          "mode": "pre",
+          "baselineMB": 609,
+          "peakMB": 871,
+          "afterMB": 738,
+          "peakAboveBaselineMB": 263,
+          "rendererPeakAboveBaselineMB": 197,
+          "jsHeapPeakAboveBaselineMB": 0,
+          "decodeMs": 289,
+          "textureSizes": [
+            "1024x1024"
+          ],
+          "refused": null
+        }
+      ],
+      "median": {
+        "peakAboveBaselineMB": 255,
+        "rendererPeakAboveBaselineMB": 189,
+        "afterMinusBaselineMB": 129,
+        "jsHeapPeakAboveBaselineMB": 0,
+        "decodeMs": 289
+      },
+      "textureSizes": [
+        "1024x1024"
+      ]
+    },
+    "seq": {
+      "runs": [
+        {
+          "mode": "seq",
+          "baselineMB": 608,
+          "peakMB": 773,
+          "afterMB": 758,
+          "peakAboveBaselineMB": 164,
+          "rendererPeakAboveBaselineMB": 115,
+          "jsHeapPeakAboveBaselineMB": 0,
+          "decodeMs": 514,
+          "textureSizes": [
+            "1024x1024"
+          ],
+          "refused": null
+        },
+        {
+          "mode": "seq",
+          "baselineMB": 607,
+          "peakMB": 777,
+          "afterMB": 761,
+          "peakAboveBaselineMB": 170,
+          "rendererPeakAboveBaselineMB": 117,
+          "jsHeapPeakAboveBaselineMB": 0,
+          "decodeMs": 549,
+          "textureSizes": [
+            "1024x1024"
+          ],
+          "refused": null
+        },
+        {
+          "mode": "seq",
+          "baselineMB": 608,
+          "peakMB": 778,
+          "afterMB": 761,
+          "peakAboveBaselineMB": 170,
+          "rendererPeakAboveBaselineMB": 118,
+          "jsHeapPeakAboveBaselineMB": 0,
+          "decodeMs": 485,
+          "textureSizes": [
+            "1024x1024"
+          ],
+          "refused": null
+        }
+      ],
+      "median": {
+        "peakAboveBaselineMB": 170,
+        "rendererPeakAboveBaselineMB": 117,
+        "afterMinusBaselineMB": 153,
+        "jsHeapPeakAboveBaselineMB": 0,
+        "decodeMs": 514
+      },
+      "textureSizes": [
+        "1024x1024"
+      ]
+    }
+  }
+}

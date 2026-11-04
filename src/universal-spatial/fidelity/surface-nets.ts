@@ -51,7 +51,7 @@ export function surfaceNets(options: SurfaceNetsOptions): BufferGeometry {
   }
 
   // normals from the gradient; every triangle is then wound to face along it, so orientation never depends on the quad bookkeeping
-  const h = size * 0.5, vertexCount = positions.length / 3, normals = new Float32Array(vertexCount * 3), grad = new Vector3();
+  const h = size * 1.0, vertexCount = positions.length / 3, normals = new Float32Array(vertexCount * 3), grad = new Vector3();
   for (let v = 0; v < vertexCount; v++) {
     const x = positions[v * 3]!, y = positions[v * 3 + 1]!, z = positions[v * 3 + 2]!;
     grad.set(field(x + h, y, z) - field(x - h, y, z), field(x, y + h, z) - field(x, y - h, z), field(x, y, z + h) - field(x, y, z - h)).normalize();

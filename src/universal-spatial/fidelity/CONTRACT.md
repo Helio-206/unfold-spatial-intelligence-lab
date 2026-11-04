@@ -48,3 +48,11 @@ A generated mesh is a **plausible** shape, not a reconstruction, a measurement, 
 ## Integration seam (needs the Terminal's decision)
 
 `PlanSpaceLayer` calls `compileSpatialPlanV2` directly. The router has the same call shape. This branch adds an optional `compile` function to the layer's constructor, default unchanged, so a host can pass `router.compile`. That is the only change to a Terminal-owned file; it can be dropped and replaced by whatever seam the Terminal prefers.
+
+## Worker cycle (stabilisation)
+
+- `compileWithRouter` stays synchronous. With a `ContinuousService`, a cache miss draws V2 and lists the component in `report.pending`; the host calls `PlanSpaceLayer.upgradeGeometry()` (see `upgradeOnReady`) when the service reports results.
+- `RoutedPlan.upgrade(budget)` swaps only the meshes inside the existing component groups; plan, groups, ids, selection and Director state are untouched (`PresentationDirector.refreshComponents`). Arrival is spread over frames by a triangle budget.
+- A result is keyed by a content hash of the component and its partners' relative placement; only the compile that asked for it can use it, and `retire()` ends that right. Layer rebuilds retire the previous compile; `service.retain()` cancels jobs the current plan no longer needs.
+- Limits: pool <= min(2, cores-1), bounded queue, per-job timeout (worker terminated, failure remembered), LRU cache in bytes. `dispose()` terminates every worker, timer and listener.
+- GLB intake decodes one image at a time at the reduced size (`decode: 'seq'`), measured −32 % peak memory versus decoding all at full size.

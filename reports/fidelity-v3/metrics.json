@@ -1,0 +1,1507 @@
+{
+  "generatedBy": "scripts/benchmark/fidelity-metrics.ts",
+  "note": "Geometry computed from the meshes; no GPU. Angles: degrees between the drawn surface normal and the partner surface normal at vertices within 1.5 cells of the partner surface (0 = tangent-continuous, 90 = a crease). Rim turning: mean/p90 turning angle (degrees) along the open boundary of a blended skirt, 0 = straight, large = serrated. Deviation is relative to the span of the plan in deviationPctOfSpan.",
+  "cases": {
+    "lungs-like": {
+      "origin": "hand-authored reproduction of the structure recorded in reports/acceptance (not Meta output)",
+      "components": 7,
+      "continuousComponents": 7,
+      "v2": {
+        "triangles": 9792,
+        "buildMs": 32.8,
+        "slivers": {
+          "fraction": 0.0065,
+          "triangles": 9792
+        }
+      },
+      "v3": {
+        "triangles": 48822,
+        "syncBuildMs": 1933,
+        "mainThreadMsWithWorker": 7,
+        "slivers": {
+          "fraction": 0.0036,
+          "triangles": 48822
+        },
+        "fallbacks": []
+      },
+      "v3Discard": {
+        "triangles": 49272,
+        "slivers": {
+          "fraction": 0.001,
+          "triangles": 49272
+        }
+      },
+      "silhouetteIoU_vs_V2": {
+        "final_xyz": [
+          {
+            "iou": 0.9952,
+            "v2OnlyPct": 0.39,
+            "v3OnlyPct": 0.08
+          },
+          {
+            "iou": 0.9952,
+            "v2OnlyPct": 0.18,
+            "v3OnlyPct": 0.3
+          },
+          {
+            "iou": 0.9948,
+            "v2OnlyPct": 0.33,
+            "v3OnlyPct": 0.19
+          }
+        ],
+        "earlierRimDiscard_xyz": [
+          {
+            "iou": 0.9952,
+            "v2OnlyPct": 0.39,
+            "v3OnlyPct": 0.08
+          },
+          {
+            "iou": 0.9954,
+            "v2OnlyPct": 0.15,
+            "v3OnlyPct": 0.31
+          },
+          {
+            "iou": 0.9949,
+            "v2OnlyPct": 0.32,
+            "v3OnlyPct": 0.19
+          }
+        ]
+      },
+      "deviationPctOfSpan": [
+        {
+          "id": "trachea",
+          "freePct": 0.32,
+          "blendPct": 0,
+          "cellPct": 0.64
+        },
+        {
+          "id": "trachea-ring",
+          "freePct": 0.02,
+          "blendPct": 0.02,
+          "cellPct": 0.23
+        },
+        {
+          "id": "carina",
+          "freePct": 0.06,
+          "blendPct": 0.87,
+          "cellPct": 0.64
+        },
+        {
+          "id": "lung-left",
+          "freePct": 0.04,
+          "blendPct": 0,
+          "cellPct": 1.14
+        },
+        {
+          "id": "lung-right",
+          "freePct": 0.04,
+          "blendPct": 0,
+          "cellPct": 1.22
+        },
+        {
+          "id": "branches-left",
+          "freePct": 0.14,
+          "blendPct": 0.33,
+          "cellPct": 0.58
+        },
+        {
+          "id": "branches-right",
+          "freePct": 0.16,
+          "blendPct": 0.33,
+          "cellPct": 0.58
+        }
+      ],
+      "junctions": [
+        {
+          "pair": "trachea-ring -> carina",
+          "cell": 0.0168,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3Final": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3EarlierRimDiscard": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 0,
+              "turningMeanDeg": null,
+              "turningP90Deg": null
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 338,
+              "turningMeanDeg": 87,
+              "turningP90Deg": 135.06
+            }
+          }
+        },
+        {
+          "pair": "trachea-ring -> trachea",
+          "cell": 0.0168,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3Final": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3EarlierRimDiscard": {
+              "n": 268,
+              "median": 0.48,
+              "p90": 12.614
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 0,
+              "turningMeanDeg": null,
+              "turningP90Deg": null
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 338,
+              "turningMeanDeg": 87,
+              "turningP90Deg": 135.06
+            }
+          }
+        },
+        {
+          "pair": "carina -> trachea",
+          "cell": 0.0459,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3Final": {
+              "n": 48,
+              "median": 13.549,
+              "p90": 36.102
+            },
+            "v3EarlierRimDiscard": {
+              "n": 63,
+              "median": 5.236,
+              "p90": 34.899
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 170,
+              "turningMeanDeg": 10.614,
+              "turningP90Deg": 19.411
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 128,
+              "turningMeanDeg": 72.473,
+              "turningP90Deg": 135.031
+            }
+          }
+        },
+        {
+          "pair": "carina -> lung-right",
+          "cell": 0.0459,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 53,
+              "median": 73.897,
+              "p90": 87.884
+            },
+            "v3Final": {
+              "n": 140,
+              "median": 19.793,
+              "p90": 54.992
+            },
+            "v3EarlierRimDiscard": {
+              "n": 147,
+              "median": 14.482,
+              "p90": 54.113
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 170,
+              "turningMeanDeg": 10.614,
+              "turningP90Deg": 19.411
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 128,
+              "turningMeanDeg": 72.473,
+              "turningP90Deg": 135.031
+            }
+          }
+        },
+        {
+          "pair": "carina -> lung-left",
+          "cell": 0.0459,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 49,
+              "median": 72.176,
+              "p90": 87.737
+            },
+            "v3Final": {
+              "n": 150,
+              "median": 19.335,
+              "p90": 59.22
+            },
+            "v3EarlierRimDiscard": {
+              "n": 151,
+              "median": 16.053,
+              "p90": 56.023
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 170,
+              "turningMeanDeg": 10.614,
+              "turningP90Deg": 19.411
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 128,
+              "turningMeanDeg": 72.473,
+              "turningP90Deg": 135.031
+            }
+          }
+        },
+        {
+          "pair": "branches-left -> lung-left",
+          "cell": 0.0417,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 974,
+              "median": 50.129,
+              "p90": 83.087
+            },
+            "v3Final": {
+              "n": 1658,
+              "median": 26.648,
+              "p90": 58.853
+            },
+            "v3EarlierRimDiscard": {
+              "n": 1565,
+              "median": 20.655,
+              "p90": 59.492
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 724,
+              "turningMeanDeg": 10.41,
+              "turningP90Deg": 20.415
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 407,
+              "turningMeanDeg": 66.741,
+              "turningP90Deg": 134.877
+            }
+          }
+        },
+        {
+          "pair": "branches-right -> lung-right",
+          "cell": 0.0417,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 983,
+              "median": 48.253,
+              "p90": 82.597
+            },
+            "v3Final": {
+              "n": 1708,
+              "median": 28.212,
+              "p90": 58.827
+            },
+            "v3EarlierRimDiscard": {
+              "n": 1550,
+              "median": 23.313,
+              "p90": 60.143
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 774,
+              "turningMeanDeg": 13.434,
+              "turningP90Deg": 27.943
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 421,
+              "turningMeanDeg": 74.128,
+              "turningP90Deg": 136.124
+            }
+          }
+        }
+      ]
+    },
+    "microscope-like": {
+      "origin": "hand-authored reproduction of the structure recorded in reports/acceptance (not Meta output)",
+      "components": 10,
+      "continuousComponents": 9,
+      "v2": {
+        "triangles": 2812,
+        "buildMs": 12.1,
+        "slivers": {
+          "fraction": 0.2717,
+          "triangles": 2812
+        }
+      },
+      "v3": {
+        "triangles": 78493,
+        "syncBuildMs": 426.4,
+        "mainThreadMsWithWorker": 4.6,
+        "slivers": {
+          "fraction": 0.0067,
+          "triangles": 78493
+        },
+        "fallbacks": []
+      },
+      "v3Discard": {
+        "triangles": 79393,
+        "slivers": {
+          "fraction": 0.0038,
+          "triangles": 79393
+        }
+      },
+      "silhouetteIoU_vs_V2": {
+        "final_xyz": [
+          {
+            "iou": 0.9523,
+            "v2OnlyPct": 0.25,
+            "v3OnlyPct": 4.75
+          },
+          {
+            "iou": 0.9995,
+            "v2OnlyPct": 0.05,
+            "v3OnlyPct": 0
+          },
+          {
+            "iou": 0.9462,
+            "v2OnlyPct": 0.34,
+            "v3OnlyPct": 5.33
+          }
+        ],
+        "earlierRimDiscard_xyz": [
+          {
+            "iou": 0.9519,
+            "v2OnlyPct": 0.25,
+            "v3OnlyPct": 4.79
+          },
+          {
+            "iou": 0.9995,
+            "v2OnlyPct": 0.05,
+            "v3OnlyPct": 0
+          },
+          {
+            "iou": 0.9464,
+            "v2OnlyPct": 0.26,
+            "v3OnlyPct": 5.39
+          }
+        ]
+      },
+      "deviationPctOfSpan": [
+        {
+          "id": "base",
+          "freePct": 0.2,
+          "blendPct": 1.43,
+          "cellPct": 0.98
+        },
+        {
+          "id": "column",
+          "freePct": 0.48,
+          "blendPct": 0,
+          "cellPct": 0.96
+        },
+        {
+          "id": "arm",
+          "freePct": 0.15,
+          "blendPct": 1.79,
+          "cellPct": 0.69
+        },
+        {
+          "id": "ocular-tube",
+          "freePct": 0.27,
+          "blendPct": 0,
+          "cellPct": 0.53
+        },
+        {
+          "id": "eyepiece",
+          "freePct": 0.1,
+          "blendPct": 1.43,
+          "cellPct": 0.34
+        },
+        {
+          "id": "revolver",
+          "freePct": 0.14,
+          "blendPct": 0.65,
+          "cellPct": 0.38
+        },
+        {
+          "id": "objectives",
+          "freePct": 0.12,
+          "blendPct": 0,
+          "cellPct": 0.28
+        },
+        {
+          "id": "focus",
+          "freePct": 0.06,
+          "blendPct": 0.57,
+          "cellPct": 0.51
+        },
+        {
+          "id": "illuminator",
+          "freePct": 0.09,
+          "blendPct": 0.57,
+          "cellPct": 0.16
+        }
+      ],
+      "junctions": [
+        {
+          "pair": "base -> column",
+          "cell": 0.0657,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3Final": {
+              "n": 175,
+              "median": 30.768,
+              "p90": 69.458
+            },
+            "v3EarlierRimDiscard": {
+              "n": 177,
+              "median": 30.612,
+              "p90": 69.458
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 72,
+              "turningMeanDeg": 11.424,
+              "turningP90Deg": 24.007
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 39,
+              "turningMeanDeg": 36.64,
+              "turningP90Deg": 98.456
+            }
+          }
+        },
+        {
+          "pair": "arm -> column",
+          "cell": 0.0464,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 450,
+              "median": 45.453,
+              "p90": 73.462
+            },
+            "v3Final": {
+              "n": 703,
+              "median": 14.052,
+              "p90": 26.069
+            },
+            "v3EarlierRimDiscard": {
+              "n": 735,
+              "median": 10.078,
+              "p90": 25.082
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 155,
+              "turningMeanDeg": 8.385,
+              "turningP90Deg": 11.776
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 111,
+              "turningMeanDeg": 107.228,
+              "turningP90Deg": 142.812
+            }
+          }
+        },
+        {
+          "pair": "eyepiece -> ocular-tube",
+          "cell": 0.0229,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 98,
+              "median": 0,
+              "p90": 90
+            },
+            "v3Final": {
+              "n": 639,
+              "median": 5.129,
+              "p90": 36.243
+            },
+            "v3EarlierRimDiscard": {
+              "n": 749,
+              "median": 5.776,
+              "p90": 35.232
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 200,
+              "turningMeanDeg": 6.035,
+              "turningP90Deg": 9.404
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 104,
+              "turningMeanDeg": 27.62,
+              "turningP90Deg": 81.037
+            }
+          }
+        },
+        {
+          "pair": "revolver -> arm",
+          "cell": 0.0253,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 54,
+              "median": 0,
+              "p90": 85.816
+            },
+            "v3Final": {
+              "n": 500,
+              "median": 19.113,
+              "p90": 85.995
+            },
+            "v3EarlierRimDiscard": {
+              "n": 506,
+              "median": 15.823,
+              "p90": 85.964
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 436,
+              "turningMeanDeg": 7.446,
+              "turningP90Deg": 19.136
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 285,
+              "turningMeanDeg": 79.894,
+              "turningP90Deg": 132.758
+            }
+          }
+        },
+        {
+          "pair": "revolver -> objectives",
+          "cell": 0.0253,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3Final": {
+              "n": 498,
+              "median": 26.05,
+              "p90": 72.065
+            },
+            "v3EarlierRimDiscard": {
+              "n": 475,
+              "median": 31.822,
+              "p90": 72.11
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 436,
+              "turningMeanDeg": 7.446,
+              "turningP90Deg": 19.136
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 285,
+              "turningMeanDeg": 79.894,
+              "turningP90Deg": 132.758
+            }
+          }
+        },
+        {
+          "pair": "focus -> column",
+          "cell": 0.0344,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 60,
+              "median": 73.274,
+              "p90": 75.969
+            },
+            "v3Final": {
+              "n": 856,
+              "median": 14.059,
+              "p90": 45.207
+            },
+            "v3EarlierRimDiscard": {
+              "n": 963,
+              "median": 5.78,
+              "p90": 41.859
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 396,
+              "turningMeanDeg": 9.274,
+              "turningP90Deg": 18.783
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 286,
+              "turningMeanDeg": 45.248,
+              "turningP90Deg": 137.224
+            }
+          }
+        },
+        {
+          "pair": "focus -> arm",
+          "cell": 0.0344,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3Final": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3EarlierRimDiscard": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 396,
+              "turningMeanDeg": 9.274,
+              "turningP90Deg": 18.783
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 286,
+              "turningMeanDeg": 45.248,
+              "turningP90Deg": 137.224
+            }
+          }
+        },
+        {
+          "pair": "illuminator -> base",
+          "cell": 0.0107,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 50,
+              "median": 0,
+              "p90": 90
+            },
+            "v3Final": {
+              "n": 141,
+              "median": 18.404,
+              "p90": 36.128
+            },
+            "v3EarlierRimDiscard": {
+              "n": 125,
+              "median": 22.928,
+              "p90": 36.521
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 74,
+              "turningMeanDeg": 6.571,
+              "turningP90Deg": 8.18
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 44,
+              "turningMeanDeg": 41.292,
+              "turningP90Deg": 90.27
+            }
+          }
+        }
+      ]
+    },
+    "excavator (saved Meta plan)": {
+      "origin": "real plan saved from a Meta call, produced by the OLD repair step (generic placeholder shapes for some components)",
+      "components": 11,
+      "continuousComponents": 11,
+      "v2": {
+        "triangles": 5148,
+        "buildMs": 7.9,
+        "slivers": {
+          "fraction": 0.2704,
+          "triangles": 5148
+        }
+      },
+      "v3": {
+        "triangles": 251822,
+        "syncBuildMs": 1751,
+        "mainThreadMsWithWorker": 8.5,
+        "slivers": {
+          "fraction": 0.0021,
+          "triangles": 251822
+        },
+        "fallbacks": []
+      },
+      "v3Discard": {
+        "triangles": 252808,
+        "slivers": {
+          "fraction": 0.0002,
+          "triangles": 252808
+        }
+      },
+      "silhouetteIoU_vs_V2": {
+        "final_xyz": [
+          {
+            "iou": 0.9566,
+            "v2OnlyPct": 0.22,
+            "v3OnlyPct": 4.3
+          },
+          {
+            "iou": 0.9677,
+            "v2OnlyPct": 0.45,
+            "v3OnlyPct": 2.88
+          },
+          {
+            "iou": 0.9712,
+            "v2OnlyPct": 0.5,
+            "v3OnlyPct": 2.46
+          }
+        ],
+        "earlierRimDiscard_xyz": [
+          {
+            "iou": 0.9549,
+            "v2OnlyPct": 0.22,
+            "v3OnlyPct": 4.5
+          },
+          {
+            "iou": 0.9672,
+            "v2OnlyPct": 0.45,
+            "v3OnlyPct": 2.93
+          },
+          {
+            "iou": 0.9706,
+            "v2OnlyPct": 0.47,
+            "v3OnlyPct": 2.54
+          }
+        ]
+      },
+      "deviationPctOfSpan": [
+        {
+          "id": "undercarriage",
+          "freePct": 0.12,
+          "blendPct": 4.3,
+          "cellPct": 0.7
+        },
+        {
+          "id": "track-left",
+          "freePct": 0.25,
+          "blendPct": 4.3,
+          "cellPct": 0.65
+        },
+        {
+          "id": "track-right",
+          "freePct": 0.13,
+          "blendPct": 4.3,
+          "cellPct": 0.36
+        },
+        {
+          "id": "upper-frame",
+          "freePct": 0.02,
+          "blendPct": 0,
+          "cellPct": 0.32
+        },
+        {
+          "id": "cab",
+          "freePct": 0.12,
+          "blendPct": 4.3,
+          "cellPct": 0.32
+        },
+        {
+          "id": "engine-hood",
+          "freePct": 0.02,
+          "blendPct": 0,
+          "cellPct": 0.32
+        },
+        {
+          "id": "boom",
+          "freePct": 0.05,
+          "blendPct": 0,
+          "cellPct": 0.45
+        },
+        {
+          "id": "stick",
+          "freePct": 0.12,
+          "blendPct": 4.3,
+          "cellPct": 0.7
+        },
+        {
+          "id": "bucket",
+          "freePct": 0.21,
+          "blendPct": 2.91,
+          "cellPct": 0.59
+        },
+        {
+          "id": "hydraulic-boom",
+          "freePct": 0.23,
+          "blendPct": 3.23,
+          "cellPct": 0.57
+        },
+        {
+          "id": "bucket-linkage",
+          "freePct": 0.15,
+          "blendPct": 0,
+          "cellPct": 0.74
+        }
+      ],
+      "junctions": [
+        {
+          "pair": "undercarriage -> upper-frame",
+          "cell": 0.0314,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3Final": {
+              "n": 428,
+              "median": 2.135,
+              "p90": 9.605
+            },
+            "v3EarlierRimDiscard": {
+              "n": 490,
+              "median": 5.194,
+              "p90": 10.954
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 142,
+              "turningMeanDeg": 3.232,
+              "turningP90Deg": 11.876
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 125,
+              "turningMeanDeg": 100.242,
+              "turningP90Deg": 135.211
+            }
+          }
+        },
+        {
+          "pair": "track-left -> undercarriage",
+          "cell": 0.0288,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3Final": {
+              "n": 983,
+              "median": 17.162,
+              "p90": 26.958
+            },
+            "v3EarlierRimDiscard": {
+              "n": 966,
+              "median": 17.127,
+              "p90": 26.935
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 484,
+              "turningMeanDeg": 4.303,
+              "turningP90Deg": 14.434
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 392,
+              "turningMeanDeg": 96.304,
+              "turningP90Deg": 135.213
+            }
+          }
+        },
+        {
+          "pair": "track-left -> upper-frame",
+          "cell": 0.0288,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3Final": {
+              "n": 58,
+              "median": 23.341,
+              "p90": 26.34
+            },
+            "v3EarlierRimDiscard": {
+              "n": 53,
+              "median": 21.833,
+              "p90": 25.649
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 484,
+              "turningMeanDeg": 4.303,
+              "turningP90Deg": 14.434
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 392,
+              "turningMeanDeg": 96.304,
+              "turningP90Deg": 135.213
+            }
+          }
+        },
+        {
+          "pair": "track-right -> undercarriage",
+          "cell": 0.016,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3Final": {
+              "n": 701,
+              "median": 16.77,
+              "p90": 21.863
+            },
+            "v3EarlierRimDiscard": {
+              "n": 684,
+              "median": 14.04,
+              "p90": 21.863
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 488,
+              "turningMeanDeg": 3.965,
+              "turningP90Deg": 12.932
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 393,
+              "turningMeanDeg": 95.324,
+              "turningP90Deg": 135.213
+            }
+          }
+        },
+        {
+          "pair": "track-right -> upper-frame",
+          "cell": 0.016,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3Final": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3EarlierRimDiscard": {
+              "n": 22,
+              "median": 17.641,
+              "p90": 17.719
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 488,
+              "turningMeanDeg": 3.965,
+              "turningP90Deg": 12.932
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 393,
+              "turningMeanDeg": 95.324,
+              "turningP90Deg": 135.213
+            }
+          }
+        },
+        {
+          "pair": "cab -> engine-hood",
+          "cell": 0.0143,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 18,
+              "median": 16.556,
+              "p90": 20.53
+            },
+            "v3Final": {
+              "n": 371,
+              "median": 16.889,
+              "p90": 18.269
+            },
+            "v3EarlierRimDiscard": {
+              "n": 310,
+              "median": 12.835,
+              "p90": 18.269
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 260,
+              "turningMeanDeg": 4.039,
+              "turningP90Deg": 12.653
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 158,
+              "turningMeanDeg": 53.086,
+              "turningP90Deg": 131.392
+            }
+          }
+        },
+        {
+          "pair": "stick -> upper-frame",
+          "cell": 0.0314,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3Final": {
+              "n": 322,
+              "median": 19.231,
+              "p90": 31.45
+            },
+            "v3EarlierRimDiscard": {
+              "n": 329,
+              "median": 19.17,
+              "p90": 31.919
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 306,
+              "turningMeanDeg": 5.23,
+              "turningP90Deg": 11.864
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 268,
+              "turningMeanDeg": 83.533,
+              "turningP90Deg": 136.787
+            }
+          }
+        },
+        {
+          "pair": "stick -> undercarriage",
+          "cell": 0.0314,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3Final": {
+              "n": 309,
+              "median": 17.257,
+              "p90": 27.346
+            },
+            "v3EarlierRimDiscard": {
+              "n": 316,
+              "median": 16.122,
+              "p90": 26.479
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 306,
+              "turningMeanDeg": 5.23,
+              "turningP90Deg": 11.864
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 268,
+              "turningMeanDeg": 83.533,
+              "turningP90Deg": 136.787
+            }
+          }
+        },
+        {
+          "pair": "bucket -> boom",
+          "cell": 0.0264,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3Final": {
+              "n": 304,
+              "median": 15.475,
+              "p90": 31.149
+            },
+            "v3EarlierRimDiscard": {
+              "n": 298,
+              "median": 14.828,
+              "p90": 31.149
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 494,
+              "turningMeanDeg": 5.5,
+              "turningP90Deg": 12.033
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 274,
+              "turningMeanDeg": 67.651,
+              "turningP90Deg": 127.725
+            }
+          }
+        },
+        {
+          "pair": "bucket -> hydraulic-boom",
+          "cell": 0.0264,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 4,
+              "median": 65.606,
+              "p90": 78.1
+            },
+            "v3Final": {
+              "n": 230,
+              "median": 19.35,
+              "p90": 30.862
+            },
+            "v3EarlierRimDiscard": {
+              "n": 228,
+              "median": 19.392,
+              "p90": 30.778
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 494,
+              "turningMeanDeg": 5.5,
+              "turningP90Deg": 12.033
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 274,
+              "turningMeanDeg": 67.651,
+              "turningP90Deg": 127.725
+            }
+          }
+        },
+        {
+          "pair": "bucket -> bucket-linkage",
+          "cell": 0.0264,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 4,
+              "median": 78.939,
+              "p90": 82.192
+            },
+            "v3Final": {
+              "n": 548,
+              "median": 16.379,
+              "p90": 30.107
+            },
+            "v3EarlierRimDiscard": {
+              "n": 541,
+              "median": 15.591,
+              "p90": 30.107
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 494,
+              "turningMeanDeg": 5.5,
+              "turningP90Deg": 12.033
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 274,
+              "turningMeanDeg": 67.651,
+              "turningP90Deg": 127.725
+            }
+          }
+        },
+        {
+          "pair": "hydraulic-boom -> boom",
+          "cell": 0.0254,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 8,
+              "median": 88.732,
+              "p90": 88.732
+            },
+            "v3Final": {
+              "n": 618,
+              "median": 17.604,
+              "p90": 32.31
+            },
+            "v3EarlierRimDiscard": {
+              "n": 649,
+              "median": 17.483,
+              "p90": 32.133
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 242,
+              "turningMeanDeg": 2.789,
+              "turningP90Deg": 6.573
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 142,
+              "turningMeanDeg": 50.221,
+              "turningP90Deg": 119.553
+            }
+          }
+        },
+        {
+          "pair": "hydraulic-boom -> bucket-linkage",
+          "cell": 0.0254,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3Final": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3EarlierRimDiscard": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 242,
+              "turningMeanDeg": 2.789,
+              "turningP90Deg": 6.573
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 142,
+              "turningMeanDeg": 50.221,
+              "turningP90Deg": 119.553
+            }
+          }
+        },
+        {
+          "pair": "hydraulic-boom -> cab",
+          "cell": 0.0254,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3Final": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3EarlierRimDiscard": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 242,
+              "turningMeanDeg": 2.789,
+              "turningP90Deg": 6.573
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 142,
+              "turningMeanDeg": 50.221,
+              "turningP90Deg": 119.553
+            }
+          }
+        },
+        {
+          "pair": "bucket-linkage -> engine-hood",
+          "cell": 0.0332,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3Final": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            },
+            "v3EarlierRimDiscard": {
+              "n": 0,
+              "median": null,
+              "p90": null
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 0,
+              "turningMeanDeg": null,
+              "turningP90Deg": null
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 0,
+              "turningMeanDeg": null,
+              "turningP90Deg": null
+            }
+          }
+        }
+      ]
+    },
+    "harp (saved Meta plan)": {
+      "origin": "real plan saved from a Meta call, produced by the OLD repair step (generic placeholder shapes for some components)",
+      "components": 7,
+      "continuousComponents": 6,
+      "v2": {
+        "triangles": 2372,
+        "buildMs": 6.5,
+        "slivers": {
+          "fraction": 0.1147,
+          "triangles": 2372
+        }
+      },
+      "v3": {
+        "triangles": 131704,
+        "syncBuildMs": 519.8,
+        "mainThreadMsWithWorker": 3.8,
+        "slivers": {
+          "fraction": 0.0005,
+          "triangles": 131704
+        },
+        "fallbacks": []
+      },
+      "v3Discard": {
+        "triangles": 131766,
+        "slivers": {
+          "fraction": 0.0005,
+          "triangles": 131766
+        }
+      },
+      "silhouetteIoU_vs_V2": {
+        "final_xyz": [
+          {
+            "iou": 0.949,
+            "v2OnlyPct": 0.24,
+            "v3OnlyPct": 5.12
+          },
+          {
+            "iou": 0.9658,
+            "v2OnlyPct": 2.3,
+            "v3OnlyPct": 1.15
+          },
+          {
+            "iou": 0.9729,
+            "v2OnlyPct": 0.59,
+            "v3OnlyPct": 2.19
+          }
+        ],
+        "earlierRimDiscard_xyz": [
+          {
+            "iou": 0.9486,
+            "v2OnlyPct": 0.24,
+            "v3OnlyPct": 5.16
+          },
+          {
+            "iou": 0.9658,
+            "v2OnlyPct": 2.3,
+            "v3OnlyPct": 1.15
+          },
+          {
+            "iou": 0.9722,
+            "v2OnlyPct": 0.59,
+            "v3OnlyPct": 2.26
+          }
+        ]
+      },
+      "deviationPctOfSpan": [
+        {
+          "id": "harp",
+          "freePct": 0.02,
+          "blendPct": 0,
+          "cellPct": 0.21
+        },
+        {
+          "id": "harp-neck",
+          "freePct": 0.02,
+          "blendPct": 0,
+          "cellPct": 0.25
+        },
+        {
+          "id": "harp-pillar",
+          "freePct": 0.09,
+          "blendPct": 0,
+          "cellPct": 0.19
+        },
+        {
+          "id": "harp-base",
+          "freePct": 0.02,
+          "blendPct": 0,
+          "cellPct": 0.21
+        },
+        {
+          "id": "harp-strings",
+          "freePct": 0.3,
+          "blendPct": 2.16,
+          "cellPct": 0.67
+        },
+        {
+          "id": "harp-pegs",
+          "freePct": 0.15,
+          "blendPct": 0,
+          "cellPct": 0.36
+        }
+      ],
+      "junctions": [
+        {
+          "pair": "harp-strings -> harp",
+          "cell": 0.0451,
+          "normalAngleToPartner_deg": {
+            "v2": {
+              "n": 120,
+              "median": 33.685,
+              "p90": 90
+            },
+            "v3Final": {
+              "n": 1003,
+              "median": 8.816,
+              "p90": 25.803
+            },
+            "v3EarlierRimDiscard": {
+              "n": 999,
+              "median": 7.868,
+              "p90": 25.825
+            }
+          },
+          "rim": {
+            "v3Final": {
+              "openEdges": 164,
+              "turningMeanDeg": 6.646,
+              "turningP90Deg": 11.578
+            },
+            "v3EarlierRimDiscard": {
+              "openEdges": 94,
+              "turningMeanDeg": 71.618,
+              "turningP90Deg": 135.308
+            }
+          }
+        }
+      ]
+    }
+  }
+}

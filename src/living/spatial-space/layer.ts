@@ -14,8 +14,10 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 const fmt3 = (v: readonly number[]) => `[${v.map((n) => n.toFixed(3)).join(', ')}]`;
 
 type Pending = { label: string; before: string; after: string; operations: SpatialOperationV2[]; needsAuthorization: boolean; source: 'person' | 'meta' | 'meta-visual' };
+/** Triangles of arrived geometry swapped in per call (and so per frame): bounds the GPU upload one frame has to carry. */
+export const UPGRADE_TRIANGLES_PER_CALL = 60_000;
 /** A compile result that may finish later: geometry computed off the main thread arrives through `upgrade()`. V2's result has neither method. */
-type Upgradable = { upgrade?(): string[]; retire?(): void; report?: { totals: { triangles: number; meshes: number; geometryBytes: number } } };
+type Upgradable = { upgrade?(budgetTriangles?: number): string[]; readyCount?(): number; retire?(): void; report?: { totals: { triangles: number; meshes: number; geometryBytes: number } } };
 type Shape = Extract<GeometryNodeV2, { type: 'shape' }>;
 export type PendingEdit = Pending;
 /** Mirrors edits to the server session so that revisions agree. Throws when the server cannot confirm; the layer then carries on locally and says so. */
@@ -59,6 +61,8 @@ export class PlanSpaceLayer implements SpaceLayer {
   private analysisCache: AssemblyAnalysis | null = null;
   private routed: Upgradable | null = null;
   private disposed = false;
+  private continuation: (() => void) | null = null;
+  private frameHandle: unknown = null;
   private selected: string | null = null;
   private isolated: string | null = null;
   private readonly emissive = new WeakMap<Material, { color: Color; intensity: number }>();
@@ -92,7 +96,7 @@ export class PlanSpaceLayer implements SpaceLayer {
 
   private build(): ReturnType<typeof compileSpatialPlanV2>['stats'] {
     this.release();
-    this.routed?.retire?.(); // results asked for by the previous plan version can no longer be used
+    this.routed?.retire?.(); this.cancelContinuation(); // results asked for by the previous plan version can no longer be used
     const compiled = this.compile(this.plan);
     this.routed = compiled as Upgradable; this.compiled = compiled.root;
     if (!this.fixed) {
@@ -114,13 +118,26 @@ export class PlanSpaceLayer implements SpaceLayer {
    * Swaps in geometry that finished computing after the Space was built. Only the meshes inside the affected component groups change; the plan, the groups,
    * the selection, the isolation and the Director's state (entrance, focus, exploded view, tour) are untouched. Returns the component ids that changed.
    */
-  upgradeGeometry(): string[] {
+  upgradeGeometry(budgetTriangles = UPGRADE_TRIANGLES_PER_CALL): string[] {
     if (this.disposed || !this.wrapper) return [];
-    const ids = this.routed?.upgrade?.() ?? []; if (!ids.length) return [];
-    const totals = this.routed?.report?.totals; if (totals) this.stats = { ...this.stats, meshCount: totals.meshes, triangleCount: totals.triangles, geometryBytes: totals.geometryBytes };
-    this.root.updateMatrixWorld(true); this.analysisCache = null;
-    this.applyPaint(); this.director?.refreshComponents(ids); this.host.redraw();
+    const ids = this.routed?.upgrade?.(budgetTriangles) ?? [];
+    if (ids.length) {
+      const totals = this.routed?.report?.totals; if (totals) this.stats = { ...this.stats, meshCount: totals.meshes, triangleCount: totals.triangles, geometryBytes: totals.geometryBytes };
+      this.root.updateMatrixWorld(true); this.analysisCache = null;
+      this.applyPaint(); this.director?.refreshComponents(ids); this.host.redraw();
+    }
+    // a big arrival is uploaded to the GPU on the next render: what did not fit in this call follows on the next frames, so no single frame carries it all
+    if ((this.routed?.readyCount?.() ?? 0) > 0 && !this.continuation) {
+      const routedNow = this.routed, step = () => { this.continuation = null; this.frameHandle = null; if (this.disposed || this.routed !== routedNow) return; this.upgradeGeometry(budgetTriangles); };
+      this.continuation = step; const g = globalThis as { requestAnimationFrame?: (cb: () => void) => number }; this.frameHandle = g.requestAnimationFrame ? g.requestAnimationFrame(step) : setTimeout(step, 16);
+    }
     return ids;
+  }
+
+  private cancelContinuation(): void {
+    if (this.frameHandle === null) { this.continuation = null; return; }
+    const g = globalThis as { cancelAnimationFrame?: (h: number) => void }; if (g.cancelAnimationFrame) g.cancelAnimationFrame(this.frameHandle as number); else clearTimeout(this.frameHandle as ReturnType<typeof setTimeout>);
+    this.frameHandle = null; this.continuation = null;
   }
 
   private release(): void {
@@ -324,7 +341,7 @@ export class PlanSpaceLayer implements SpaceLayer {
   }
 
   dispose(): void {
-    this.disposed = true; this.routed?.retire?.(); this.routed = null;
+    this.disposed = true; this.routed?.retire?.(); this.routed = null; this.cancelContinuation();
     this.director?.dispose(); this.director = null; this.release();
   }
 }

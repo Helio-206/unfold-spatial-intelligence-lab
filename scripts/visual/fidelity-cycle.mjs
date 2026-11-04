@@ -47,7 +47,7 @@ try {
     check('2d. selection kept (layer and workspace)', after.selected === 'carina' && after.wsSelected === 'carina', { selected: after.selected, ws: after.wsSelected });
     check('2e. Cinema state kept: still exploded, same phase, same group offsets', after.exploded && after.phase === before.phase && JSON.stringify(after.positions) === JSON.stringify(before.positions), { phase: after.phase });
     check('2f. the swap itself is small on the main thread (each upgrade < 100 ms)', after.events.length > 0 && after.events.every((e) => e.ms < 100), after.events.map((e) => ({ ids: e.ids.length, ms: +e.ms.toFixed(1) })));
-    result.data.cycle = { arrivalMs, longTasksMs: after.longTasks.map((n) => +n.toFixed(0)), gpuBefore: before.gpu, gpuAfter: after.gpu, service: after.svc, report: after.report };
+    result.data.cycle = { arrivalMs, longTasksMs: after.longTasks.map((n) => +n.duration.toFixed(0)), gpuBefore: before.gpu, gpuAfter: after.gpu, service: after.svc, report: after.report };
     await page.evaluate(() => { window.__fid.layer.setExploded(false, true); window.__fid.ws.clearSelection(); }); await settle(page, 300);
     await page.screenshot({ path: resolve(out, 'live-1-v3-arrived.png') });
 
@@ -82,6 +82,22 @@ try {
     result.data.workerInline = eq;
     check('no console errors in the cycle', page.errors.length === 0, page.errors.slice(0, 3));
     await page.close();
+  }
+
+  // ------------------------------------------------------------------------------------------------ responsiveness: the same plan built on the main thread (router) and with the Worker (live)
+  {
+    const rows = {};
+    for (const [name, query] of [['lungs-like', 'fixture=lungs-like'], ['microscope-like', 'fixture=microscope-like'], ['excavator (saved Meta plan)', `src=${encodeURIComponent('/reports/universal-spatial-v2/evidence/live-image-plan.json')}`], ['harp (saved Meta plan)', `src=${encodeURIComponent('/reports/universal-spatial-v2/evidence/blind-harp-plan.json')}`]]) {
+      rows[name] = {};
+      for (const route of ['v2', 'router', 'live']) {
+        const t0 = Date.now(), page = await open(`${query}&route=${route}`); if (route === 'live') await waitIdle(page, 60_000); const doneMs = Date.now() - t0; await settle(page, 300);
+        rows[name][route] = await page.evaluate(([r, done]) => { const f = window.__fid, tasks = f.longTasks.filter((t) => t.start >= f.firstFrame.atMs), ms = f.metrics.buildMs, gaps = f.frameGaps.filter((g) => g.at >= f.firstFrame.atMs + 30).map((g) => g.gap); return { frameGaps: { maxMs: Math.round(Math.max(0, ...gaps)), over100ms: gaps.filter((g) => g > 100).length, over50ms: gaps.filter((g) => g > 50).length, frames: gaps.length }, mainThreadBuildMs: ms, longTasksAfterMount: { count: tasks.length, totalMs: Math.round(tasks.reduce((s, t) => s + t.duration, 0)), maxMs: Math.round(Math.max(0, ...tasks.map((t) => t.duration))) }, firstFrameFamilies: [...new Set(Object.values(f.firstFrame.families))], v3CompleteWallMs: r === 'live' ? done : null, upgradeMs: r === 'live' ? f.events.map((e) => +e.ms.toFixed(1)) : null, triangles: f.layer.stats.triangleCount, lastFrameMs: +f.ws.stats().lastFrameMs.toFixed(1), softwareRendering: f.ws.stats().softwareRendering }; }, [route, doneMs]);
+        await page.close();
+      }
+      console.log(name, JSON.stringify(Object.fromEntries(Object.entries(rows[name]).map(([k, v]) => [k, { build: v.mainThreadBuildMs, long: v.longTasksAfterMount.totalMs, maxGap: v.frameGaps.maxMs, gaps100: v.frameGaps.over100ms, tri: v.triangles, swaps: v.upgradeMs }]))));
+    }
+    result.data.responsiveness = rows;
+    check('responsiveness: with the Worker the Space is built on the main thread in a fraction of the synchronous build (< 1/5) and every swap of arrived geometry is < 100 ms', Object.values(rows).every((r) => r.router.mainThreadBuildMs > 5 * r.live.mainThreadBuildMs && Math.max(...r.live.upgradeMs) < 100), Object.fromEntries(Object.entries(rows).map(([k, v]) => [k, { syncBuildMs: v.router.mainThreadBuildMs, workerBuildMs: v.live.mainThreadBuildMs, maxSwapMs: Math.max(...v.live.upgradeMs), maxFrameGapSync: v.router.frameGaps.maxMs, maxFrameGapWorker: v.live.frameGaps.maxMs }])));
   }
 
   // ------------------------------------------------------------------------------------------------ 5a: timeout

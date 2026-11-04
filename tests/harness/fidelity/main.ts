@@ -16,7 +16,8 @@ import { compileSpatialPlanV2 } from '../../../src/universal-spatial/geometry-co
 import { compileWithRouter } from '../../../src/universal-spatial/fidelity/router';
 import { ContinuousService, createBrowserWorker, createInlineWorker, type WorkerLike } from '../../../src/universal-spatial/fidelity/continuous-service';
 import { createAssetOffer, type AssetOffer } from '../../../src/universal-spatial/fidelity/assets';
-import { loadValidatedGlb } from '../../../src/universal-spatial/fidelity/glb';
+import { runContinuousJob } from '../../../src/universal-spatial/fidelity/continuous-job';
+import { loadValidatedGlb, validateGlb } from '../../../src/universal-spatial/fidelity/glb';
 import { DEFAULT_ROUTER_LIMITS, type AssetApproval, type AssetProposal, type RouterReport } from '../../../src/universal-spatial/fidelity/types';
 import { viewForBox } from '../../../src/living/spatial-presentation/cues';
 
@@ -25,16 +26,17 @@ document.body.style.margin = '0';
 const ws = new SpatialWorkspace(app, { assembly: EXCAVATOR_ASSEMBLY_V1, agent: { mode: 'fixture' }, reducedMotion: true, preserveDrawingBuffer: true, look: 'premium', premiumEnvironment: createStudioEnvironment, startEmpty: true });
 ws.renderNow();
 type Api = { ws: SpatialWorkspace; layer: PlanSpaceLayer | null; report: RouterReport | null; metrics: Record<string, unknown>; assetNote: string | null; ready: Promise<void>;
-  service: ContinuousService | null; counters: { created: number; terminated: number; messages: number }; events: Array<{ t: number; ids: string[]; ms: number }>; mount(planJson: unknown, route: string, opts?: { timeoutMs?: number; inline?: boolean; pool?: number }): { layer: PlanSpaceLayer; service: ContinuousService | null; buildMs: number }; dropService(): void; longTasks: number[]; firstFrame: { atMs: number; families: Record<string, string>; pending: string[] } | null; fingerprint(root: Object3D): Record<string, { family: string; triangles: number; hash: string }>; syncFingerprint(): Record<string, { family: string; triangles: number; hash: string }> };
-const api = { ws, layer: null, report: null, metrics: {}, assetNote: null, ready: Promise.resolve(), service: null, counters: { created: 0, terminated: 0, messages: 0 }, events: [], longTasks: [], firstFrame: null } as unknown as Api;
-try { new PerformanceObserver((list) => { for (const e of list.getEntries()) api.longTasks.push(e.duration); }).observe({ entryTypes: ['longtask'] }); } catch { /* not supported: reported as such */ }
+  service: ContinuousService | null; counters: { created: number; terminated: number; messages: number }; events: Array<{ t: number; ids: string[]; ms: number }>; mount(planJson: unknown, route: string, opts?: { timeoutMs?: number; inline?: boolean; pool?: number; rim?: 'discard' }): { layer: PlanSpaceLayer; service: ContinuousService | null; buildMs: number }; dropService(): void; longTasks: Array<{ start: number; duration: number }>; mountStart: number; frameGaps: Array<{ at: number; gap: number }>; firstFrame: { atMs: number; families: Record<string, string>; pending: string[] } | null; decodeGlb(mode: 'validate' | 'full' | 'post' | 'pre' | 'seq', side: number): Promise<Record<string, unknown>>; fingerprint(root: Object3D): Record<string, { family: string; triangles: number; hash: string }>; syncFingerprint(): Record<string, { family: string; triangles: number; hash: string }> };
+const api = { ws, layer: null, report: null, metrics: {}, assetNote: null, ready: Promise.resolve(), service: null, counters: { created: 0, terminated: 0, messages: 0 }, events: [], longTasks: [], mountStart: 0, frameGaps: [], firstFrame: null } as unknown as Api;
+{ let last = performance.now(); const tick = (now: number) => { api.frameGaps.push({ at: now, gap: now - last }); last = now; requestAnimationFrame(tick); }; requestAnimationFrame(tick); } // gap between animation frames: what a person feels as a freeze
+try { new PerformanceObserver((list) => { for (const e of list.getEntries()) api.longTasks.push({ start: e.startTime, duration: e.duration }); }).observe({ entryTypes: ['longtask'] }); } catch { /* not supported: reported as such */ }
 Object.assign(window, { __fid: api });
 const sha256 = async (bytes: Uint8Array) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes as unknown as ArrayBuffer))].map((b) => b.toString(16).padStart(2, '0')).join('');
 const noop = { changed: () => undefined, redraw: () => undefined, notify: () => undefined, syncLost: () => undefined } as never;
 
 /** A Worker that counts what is created, used and terminated: the leak checks read these. */
-function countedWorker(inline: boolean): WorkerLike {
-  const w = inline ? createInlineWorker() : createBrowserWorker(); api.counters.created++;
+function countedWorker(inline: boolean, rim?: 'discard'): WorkerLike {
+  const w = rim === 'discard' ? createInlineWorker((job) => runContinuousJob(job, undefined, { rim })) : inline ? createInlineWorker() : createBrowserWorker(); api.counters.created++;
   const terminate = w.terminate.bind(w), post = w.postMessage.bind(w);
   w.terminate = () => { api.counters.terminated++; terminate(); }; w.postMessage = (m, t) => { api.counters.messages++; post(m, t); };
   return w;
@@ -42,7 +44,7 @@ function countedWorker(inline: boolean): WorkerLike {
 
 api.mount = (planJson, route, opts = {}) => {
   const plan = validateSpatialPlanV2(planJson);
-  const service = route === 'live' ? new ContinuousService({ createWorker: () => countedWorker(opts.inline === true), jobTimeoutMs: opts.timeoutMs ?? 15_000, ...(opts.pool ? { poolSize: opts.pool } : {}) }) : null;
+  const service = route === 'live' ? new ContinuousService({ createWorker: () => countedWorker(opts.inline === true, opts.rim), jobTimeoutMs: opts.timeoutMs ?? 15_000, ...(opts.pool ? { poolSize: opts.pool } : {}) }) : null;
   api.service = service;
   const t0 = performance.now();
   const layer = new PlanSpaceLayer(plan, { changed: () => ws.spaceChanged(), redraw: () => ws.redraw(), notify: () => undefined, syncLost: () => undefined } as never,
@@ -65,6 +67,14 @@ api.fingerprint = (root) => {
   return Object.fromEntries(Object.entries(out).map(([k, v]) => [k, { family: v.family, triangles: v.triangles, hash: v.hash }]));
 };
 api.syncFingerprint = () => { const routed = compileWithRouter(api.layer!.currentPlan, { limits: { maxGridCells: 96 } }); const fp = api.fingerprint(routed.root); routed.root.traverse((o) => { if (o instanceof Mesh) { o.geometry.dispose(); } }); return fp; };
+api.decodeGlb = async (mode, side) => {
+  const bytes = new Uint8Array(await (await fetch('/__assets/AntiqueCamera.glb')).arrayBuffer()), t0 = performance.now();
+  if (mode === 'validate') { const v = validateGlb(bytes, DEFAULT_ROUTER_LIMITS, { downscaleTo: side }); return { mode, ok: v.ok, ms: performance.now() - t0 }; }
+  const loaded = await loadValidatedGlb(bytes, mode === 'full' ? { ...DEFAULT_ROUTER_LIMITS, maxTextureBytes: 1024 * 1024 * 1024, maxTextureSide: 4096 } : DEFAULT_ROUTER_LIMITS, mode === 'full' ? {} : { downscaleTo: side, decode: mode });
+  if ('refused' in loaded) return { mode, refused: loaded.refused, ms: performance.now() - t0 };
+  const sizes: number[] = []; loaded.scene.traverse((o) => { if (o instanceof Mesh) for (const m of Array.isArray(o.material) ? o.material : [o.material]) for (const v of Object.values(m)) { const img = (v as { image?: { width?: number; height?: number } } | null)?.image; if (img?.width && !sizes.includes(img.width * 1e5 + (img.height ?? 0))) sizes.push(img.width * 1e5 + (img.height ?? 0)); } });
+  return { mode, ms: +(performance.now() - t0).toFixed(0), textureSizes: sizes.map((n) => `${Math.floor(n / 1e5)}x${n % 1e5}`), info: loaded.info };
+};
 api.dropService = () => { api.service?.dispose(); api.service = null; };
 
 const fixture = q.get('fixture'), source = q.get('src');
@@ -87,7 +97,8 @@ if (fixture || source) api.ready = (async () => {
   // one camera for every route: from a throw-away V2 layer
   const reference = new PlanSpaceLayer(plan, noop), refBox = reference.box() as Box3; reference.dispose();
   const route = q.get('route') ?? 'v2';
-  const built = route === 'live' ? api.mount(reply.plan, 'live', { ...(q.get('timeout') ? { timeoutMs: Number(q.get('timeout')) } : {}), inline: q.get('inline') === '1' }) : null;
+  api.mountStart = performance.now();
+  const built = route === 'live' ? api.mount(reply.plan, 'live', { ...(q.get('timeout') ? { timeoutMs: Number(q.get('timeout')) } : {}), inline: q.get('inline') === '1', ...(q.get('rim') === 'discard' ? { rim: 'discard' as const } : {}) }) : null;
   const t0 = performance.now();
   const layer = built ? built.layer : new PlanSpaceLayer(plan, { changed: () => ws.spaceChanged(), redraw: () => ws.redraw(), notify: () => undefined, syncLost: () => undefined } as never,
     route === 'router' ? (p) => { const routed = compileWithRouter(p, { assets, approvals, limits: { maxGridCells: 96 } }); api.report = routed.report; return routed; } : compileSpatialPlanV2);

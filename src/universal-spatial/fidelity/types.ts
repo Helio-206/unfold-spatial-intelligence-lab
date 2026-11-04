@@ -47,6 +47,8 @@ export type RoutingDecision = {
   triangles: number;
   /** continuous surface only: how far the surface strays from the plan's own shape (see `Deviation`) */
   deviation?: { freeMax: number; blendMax: number; cell: number };
+  /** continuous surface only: the components this one flares into (the fillet is drawn by this side only) */
+  blendedWith?: string[];
   /** where a continuous surface came from */
   computed?: 'cache' | 'computed';
   /** true while an off-main-thread computation is still running and the component is drawn by V2 meanwhile */

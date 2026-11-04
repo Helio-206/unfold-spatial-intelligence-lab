@@ -1,5 +1,7 @@
 # Universal Spatial Fidelity V3 — results
 
+> Superseded in part by `STABILISATION.md` (Worker cycle, edit/undo, ownership, junction/silhouette metrics, GLB peak memory, real Meta plans). The tables below are the first prototype and use the older synchronous route and rim.
+
 Base `b87dbe7` (the Terminal's final-integration branch). The only Terminal-owned file touched is `spatial-space/layer.ts` (an optional `compile` argument, default unchanged). Contract: `src/universal-spatial/fidelity/CONTRACT.md`. Provider comparison and what was not verified: `COMPARISON.md`.
 
 ## What was not done, and why
@@ -50,8 +52,8 @@ Selection: all components stay pickable in every route (`spatialEntityId` unchan
 ## Limits that remain
 
 - **Provider quality, licence behaviour, GPU needs, latency and cost are unknown**: see `COMPARISON.md` for the protocol. Hunyuan3D 2.1's licence excludes the EU.
-- Continuous surfaces cost CPU on the main thread (0.7 to 1.9 s here). Needs a worker and per-component caching before interactive use.
-- Fillet rims are resolution-limited (cell ≈ 1% of the object); fixing needs adaptive resolution near junctions or a mesh boolean/remesh.
+- (Resolved, see `STABILISATION.md`) Continuous surfaces now run in a Worker with a cache; V3 still draws 5–50× more triangles than V2.
+- (Largely resolved) The serrated rim is fixed by sub-triangle clipping (≈10× smoother); joints between boxes still leave residual creases.
 - Booleans, openings and cuts are **not implemented**: the plan contract cannot express them, and inventing them would put geometry the model never proposed into a reviewed plan.
 - Instancing and LOD are limited to V2's instanced repeats and a bounded grid; no LOD chain, no normal-map baking.
 - Fixtures are reproductions; they were not tuned to the router, but they are not Meta output and prove nothing about generation.

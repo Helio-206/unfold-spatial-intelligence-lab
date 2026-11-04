@@ -6,7 +6,7 @@
       "name": "1. V2 is what the very first frame shows (every component procedural_v2, V3 pending for all of them)",
       "pass": true,
       "value": {
-        "atMs": 5113.800000000279,
+        "atMs": 4705.299999999814,
         "families": {
           "trachea": "procedural_v2",
           "trachea-ring": "procedural_v2",
@@ -31,7 +31,7 @@
       "name": "2a. the result arrives from a real Worker and the components are updated",
       "pass": true,
       "value": {
-        "arrivalMs": 33,
+        "arrivalMs": 48,
         "workers": 2,
         "jobs": 7,
         "families": {
@@ -74,31 +74,31 @@
       "value": [
         {
           "ids": 1,
-          "ms": 7.8
+          "ms": 17.1
         },
         {
           "ids": 1,
-          "ms": 12.2
+          "ms": 12.9
         },
         {
           "ids": 1,
-          "ms": 15.6
+          "ms": 13.2
         },
         {
           "ids": 1,
-          "ms": 16
+          "ms": 10.7
         },
         {
           "ids": 1,
-          "ms": 9.2
+          "ms": 6.9
         },
         {
           "ids": 1,
-          "ms": 6.2
+          "ms": 8.1
         },
         {
           "ids": 1,
-          "ms": 8
+          "ms": 3.5
         }
       ]
     },
@@ -153,8 +153,8 @@
       "pass": true,
       "value": {
         "editCount": 3,
-        "cancelled": 7,
-        "completed": 17
+        "cancelled": 8,
+        "completed": 16
       }
     },
     {
@@ -169,6 +169,40 @@
       "name": "no console errors in the cycle",
       "pass": true,
       "value": []
+    },
+    {
+      "name": "responsiveness: with the Worker the Space is built on the main thread in a fraction of the synchronous build (< 1/5) and every swap of arrived geometry is < 100 ms",
+      "pass": true,
+      "value": {
+        "lungs-like": {
+          "syncBuildMs": 1468.8,
+          "workerBuildMs": 25,
+          "maxSwapMs": 17.8,
+          "maxFrameGapSync": 0,
+          "maxFrameGapWorker": 1683
+        },
+        "microscope-like": {
+          "syncBuildMs": 572,
+          "workerBuildMs": 95.3,
+          "maxSwapMs": 47.3,
+          "maxFrameGapSync": 2083,
+          "maxFrameGapWorker": 2317
+        },
+        "excavator (saved Meta plan)": {
+          "syncBuildMs": 1668.7,
+          "workerBuildMs": 51.5,
+          "maxSwapMs": 60.6,
+          "maxFrameGapSync": 2983,
+          "maxFrameGapWorker": 2300
+        },
+        "harp (saved Meta plan)": {
+          "syncBuildMs": 600.6,
+          "workerBuildMs": 23.7,
+          "maxSwapMs": 19.8,
+          "maxFrameGapSync": 0,
+          "maxFrameGapWorker": 1467
+        }
+      }
     },
     {
       "name": "5a. a task over its time limit is killed, remembered as TIMEOUT, and the component stays on V2",
@@ -219,7 +253,7 @@
       "value": {
         "created": 8,
         "terminated": 8,
-        "messages": 13
+        "messages": 18
       }
     },
     {
@@ -253,8 +287,8 @@
       "pass": true,
       "value": {
         "before": {
-          "g": 16,
-          "t": 8
+          "g": 11,
+          "t": 15
         },
         "after": {
           "g": 4,
@@ -265,10 +299,11 @@
   ],
   "data": {
     "cycle": {
-      "arrivalMs": 33,
+      "arrivalMs": 48,
       "longTasksMs": [
-        3323,
-        1322
+        3002,
+        738,
+        208
       ],
       "gpuBefore": {
         "profile": "realtime",
@@ -277,7 +312,7 @@
         "geometries": 11,
         "textures": 15,
         "programs": 8,
-        "lastFrameMs": 18.399999999906868,
+        "lastFrameMs": 202.79999999981374,
         "frames": 6,
         "pixelRatio": 1,
         "motion": false,
@@ -300,8 +335,8 @@
         "geometries": 11,
         "textures": 15,
         "programs": 8,
-        "lastFrameMs": 3.2999999998137355,
-        "frames": 10,
+        "lastFrameMs": 1.599999999627471,
+        "frames": 11,
         "pixelRatio": 1,
         "motion": false,
         "size": [
@@ -336,7 +371,7 @@
           "triangles": 48822,
           "meshes": 7,
           "geometryBytes": 1393576,
-          "ms": 2759.2000000001863
+          "ms": 2133.2000000001863
         },
         "perFamily": {
           "procedural_v2": {
@@ -347,7 +382,7 @@
           "continuous_surface": {
             "components": 7,
             "triangles": 48822,
-            "ms": 2587.399999999907
+            "ms": 2489.099999998696
           },
           "mesh_asset": {
             "components": 0,
@@ -458,18 +493,331 @@
     },
     "stale": {
       "equal": true,
-      "cancelled": 7,
-      "completed": 17
+      "cancelled": 8,
+      "completed": 16
     },
     "workerInline": {
       "compared": 7,
       "identical": 7
     },
+    "responsiveness": {
+      "lungs-like": {
+        "v2": {
+          "frameGaps": {
+            "maxMs": 0,
+            "over100ms": 0,
+            "over50ms": 0,
+            "frames": 0
+          },
+          "mainThreadBuildMs": 28.7,
+          "longTasksAfterMount": {
+            "count": 0,
+            "totalMs": 0,
+            "maxMs": 0
+          },
+          "firstFrameFamilies": [
+            "procedural_v2"
+          ],
+          "v3CompleteWallMs": null,
+          "upgradeMs": null,
+          "triangles": 9792,
+          "lastFrameMs": 1.2,
+          "softwareRendering": true
+        },
+        "router": {
+          "frameGaps": {
+            "maxMs": 0,
+            "over100ms": 0,
+            "over50ms": 0,
+            "frames": 0
+          },
+          "mainThreadBuildMs": 1468.8,
+          "longTasksAfterMount": {
+            "count": 0,
+            "totalMs": 0,
+            "maxMs": 0
+          },
+          "firstFrameFamilies": [
+            "continuous_surface"
+          ],
+          "v3CompleteWallMs": null,
+          "upgradeMs": null,
+          "triangles": 48822,
+          "lastFrameMs": 1,
+          "softwareRendering": true
+        },
+        "live": {
+          "frameGaps": {
+            "maxMs": 1683,
+            "over100ms": 1,
+            "over50ms": 1,
+            "frames": 3
+          },
+          "mainThreadBuildMs": 25,
+          "longTasksAfterMount": {
+            "count": 0,
+            "totalMs": 0,
+            "maxMs": 0
+          },
+          "firstFrameFamilies": [
+            "procedural_v2"
+          ],
+          "v3CompleteWallMs": 7144,
+          "upgradeMs": [
+            17.8,
+            8.1,
+            12.4,
+            14.2,
+            3.9,
+            4.3,
+            3.3
+          ],
+          "triangles": 48822,
+          "lastFrameMs": 10.9,
+          "softwareRendering": true
+        }
+      },
+      "microscope-like": {
+        "v2": {
+          "frameGaps": {
+            "maxMs": 0,
+            "over100ms": 0,
+            "over50ms": 0,
+            "frames": 0
+          },
+          "mainThreadBuildMs": 36.6,
+          "longTasksAfterMount": {
+            "count": 0,
+            "totalMs": 0,
+            "maxMs": 0
+          },
+          "firstFrameFamilies": [
+            "procedural_v2"
+          ],
+          "v3CompleteWallMs": null,
+          "upgradeMs": null,
+          "triangles": 3132,
+          "lastFrameMs": 1.7,
+          "softwareRendering": true
+        },
+        "router": {
+          "frameGaps": {
+            "maxMs": 2083,
+            "over100ms": 1,
+            "over50ms": 1,
+            "frames": 19
+          },
+          "mainThreadBuildMs": 572,
+          "longTasksAfterMount": {
+            "count": 0,
+            "totalMs": 0,
+            "maxMs": 0
+          },
+          "firstFrameFamilies": [
+            "continuous_surface",
+            "procedural_v2"
+          ],
+          "v3CompleteWallMs": null,
+          "upgradeMs": null,
+          "triangles": 78493,
+          "lastFrameMs": 2.3,
+          "softwareRendering": true
+        },
+        "live": {
+          "frameGaps": {
+            "maxMs": 2317,
+            "over100ms": 1,
+            "over50ms": 1,
+            "frames": 3
+          },
+          "mainThreadBuildMs": 95.3,
+          "longTasksAfterMount": {
+            "count": 0,
+            "totalMs": 0,
+            "maxMs": 0
+          },
+          "firstFrameFamilies": [
+            "procedural_v2"
+          ],
+          "v3CompleteWallMs": 6521,
+          "upgradeMs": [
+            27.1,
+            26.4,
+            19.7,
+            13.2,
+            16.2,
+            11.8,
+            47.3,
+            26.2,
+            26.4
+          ],
+          "triangles": 78493,
+          "lastFrameMs": 44.4,
+          "softwareRendering": true
+        }
+      },
+      "excavator (saved Meta plan)": {
+        "v2": {
+          "frameGaps": {
+            "maxMs": 1650,
+            "over100ms": 1,
+            "over50ms": 1,
+            "frames": 19
+          },
+          "mainThreadBuildMs": 33.7,
+          "longTasksAfterMount": {
+            "count": 0,
+            "totalMs": 0,
+            "maxMs": 0
+          },
+          "firstFrameFamilies": [
+            "procedural_v2"
+          ],
+          "v3CompleteWallMs": null,
+          "upgradeMs": null,
+          "triangles": 5148,
+          "lastFrameMs": 1.8,
+          "softwareRendering": true
+        },
+        "router": {
+          "frameGaps": {
+            "maxMs": 2983,
+            "over100ms": 1,
+            "over50ms": 1,
+            "frames": 19
+          },
+          "mainThreadBuildMs": 1668.7,
+          "longTasksAfterMount": {
+            "count": 0,
+            "totalMs": 0,
+            "maxMs": 0
+          },
+          "firstFrameFamilies": [
+            "continuous_surface"
+          ],
+          "v3CompleteWallMs": null,
+          "upgradeMs": null,
+          "triangles": 251822,
+          "lastFrameMs": 2.3,
+          "softwareRendering": true
+        },
+        "live": {
+          "frameGaps": {
+            "maxMs": 2300,
+            "over100ms": 2,
+            "over50ms": 2,
+            "frames": 3
+          },
+          "mainThreadBuildMs": 51.5,
+          "longTasksAfterMount": {
+            "count": 2,
+            "totalMs": 528,
+            "maxMs": 468
+          },
+          "firstFrameFamilies": [
+            "procedural_v2"
+          ],
+          "v3CompleteWallMs": 7394,
+          "upgradeMs": [
+            15.7,
+            38.7,
+            17.5,
+            32.7,
+            15.2,
+            14.5,
+            13.2,
+            60.6,
+            13.7,
+            10,
+            15.6
+          ],
+          "triangles": 251822,
+          "lastFrameMs": 467.2,
+          "softwareRendering": true
+        }
+      },
+      "harp (saved Meta plan)": {
+        "v2": {
+          "frameGaps": {
+            "maxMs": 0,
+            "over100ms": 0,
+            "over50ms": 0,
+            "frames": 0
+          },
+          "mainThreadBuildMs": 23.6,
+          "longTasksAfterMount": {
+            "count": 0,
+            "totalMs": 0,
+            "maxMs": 0
+          },
+          "firstFrameFamilies": [
+            "procedural_v2"
+          ],
+          "v3CompleteWallMs": null,
+          "upgradeMs": null,
+          "triangles": 2372,
+          "lastFrameMs": 1.3,
+          "softwareRendering": true
+        },
+        "router": {
+          "frameGaps": {
+            "maxMs": 0,
+            "over100ms": 0,
+            "over50ms": 0,
+            "frames": 0
+          },
+          "mainThreadBuildMs": 600.6,
+          "longTasksAfterMount": {
+            "count": 0,
+            "totalMs": 0,
+            "maxMs": 0
+          },
+          "firstFrameFamilies": [
+            "continuous_surface",
+            "procedural_v2"
+          ],
+          "v3CompleteWallMs": null,
+          "upgradeMs": null,
+          "triangles": 131704,
+          "lastFrameMs": 1.1,
+          "softwareRendering": true
+        },
+        "live": {
+          "frameGaps": {
+            "maxMs": 1467,
+            "over100ms": 1,
+            "over50ms": 1,
+            "frames": 3
+          },
+          "mainThreadBuildMs": 23.7,
+          "longTasksAfterMount": {
+            "count": 0,
+            "totalMs": 0,
+            "maxMs": 0
+          },
+          "firstFrameFamilies": [
+            "procedural_v2"
+          ],
+          "v3CompleteWallMs": 7039,
+          "upgradeMs": [
+            17.4,
+            19,
+            15.3,
+            19.8,
+            11.3,
+            7.9
+          ],
+          "triangles": 131704,
+          "lastFrameMs": 18.5,
+          "softwareRendering": true
+        }
+      }
+    },
     "lifecycle": {
       "counters": {
         "created": 8,
         "terminated": 8,
-        "messages": 13
+        "messages": 18
       },
       "disposedStats": [
         {
@@ -491,13 +839,13 @@
       "lateEventsAfterDispose": 0,
       "gpu0": {
         "profile": "realtime",
-        "drawCalls": 27,
-        "triangles": 19589,
-        "geometries": 16,
-        "textures": 8,
+        "drawCalls": 17,
+        "triangles": 97649,
+        "geometries": 11,
+        "textures": 15,
         "programs": 8,
-        "lastFrameMs": 1.2000000001862645,
-        "frames": 5,
+        "lastFrameMs": 9.799999999813735,
+        "frames": 6,
         "pixelRatio": 1,
         "motion": false,
         "size": [
@@ -519,8 +867,8 @@
         "geometries": 4,
         "textures": 7,
         "programs": 7,
-        "lastFrameMs": 6.5,
-        "frames": 8,
+        "lastFrameMs": 0.8000000007450581,
+        "frames": 10,
         "pixelRatio": 1,
         "motion": false,
         "size": [
@@ -535,7 +883,7 @@
         "libraryMaterials": 12,
         "libraryTextures": 13
       },
-      "lastEvents": 0
+      "lastEvents": 7
     }
   }
 }

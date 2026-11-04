@@ -16,7 +16,7 @@ import { surfaceNets, type Field } from './surface-nets';
  *  - the skirt is cut on the iso-line of the partner (sub-triangle clipping), not by dropping whole triangles.
  * Sizes are LOCAL (this part and its partners), so a key does not change when something far away in the scene moves.
  */
-export const JOB_VERSION = 3;
+export const JOB_VERSION = 4; // 4: normals sampled one cell wide (no pearl-string highlights along under-resolved edges)
 export type JobNeighbour = { id: string; geometry: GeometryNodeV2; /** neighbour space -> this component's space, column-major */ toLocal: number[] };
 export type ContinuousJob = { entityId: string; key: string; geometry: GeometryNodeV2; neighbours: JobNeighbour[]; maxTriangles: number; maxGridCells: number };
 export type JobGroup = { material: MaterialV2; keys: string[]; positions: Float32Array; normals: Float32Array; uvs: Float32Array; indices: Uint32Array; blend: number };
@@ -37,7 +37,9 @@ const boxGap = (a: Box3, b: Box3) => Math.hypot(Math.max(0, a.min.x - b.max.x, b
 const boxOf = (shapes: ImplicitShape[]) => { const b = new Box3(); for (const s of shapes) b.union(s.box); return b; };
 const minFeature = (shapes: ImplicitShape[]) => Math.min(...shapes.map((s) => s.featureRadius));
 
-export function runContinuousJob(job: ContinuousJob, clock: () => number = () => performance.now()): JobResult {
+/** `rim: 'discard'` is the pre-clipping behaviour (whole triangles dropped at the skirt edge). It exists ONLY as a measurement baseline for the artefact metrics; the router never uses it. */
+export type JobOptions = { rim?: 'clip' | 'discard' };
+export function runContinuousJob(job: ContinuousJob, clock: () => number = () => performance.now(), options: JobOptions = {}): JobResult {
   const t0 = clock(), own = implicitShapesOf(job.geometry);
   if ('code' in own) return { ok: false, code: own.code };
   if (!own.length) return { ok: false, code: 'NO_SHAPES' };
@@ -63,11 +65,11 @@ export function runContinuousJob(job: ContinuousJob, clock: () => number = () =>
     const min = box.min.clone().subScalar(pad + cell), dims = [0, 1, 2].map((a) => Math.max(2, Math.ceil((size3.getComponent(a) + 2 * cell) / cell))) as [number, number, number];
     if (dims[0] * dims[1] * dims[2] > 1_400_000) return { ok: false, code: 'GRID_TOO_LARGE' };
     let geometry;
-    try { geometry = surfaceNets({ min, cells: dims, size: cell, field, maxTriangles: Math.floor(job.maxTriangles / 4) }); }
+    try { geometry = surfaceNets({ min, cells: dims, size: cell, field, maxTriangles: Math.floor(job.maxTriangles / 4), ...(options.rim === 'discard' && partnerFields.length ? { keep: (x: number, y: number, z: number) => ownField(x, y, z) <= k * 0.6 + cell && partnerFields.every((pf) => pf(x, y, z) >= -cell * 0.2) } : {}) }); }
     catch (error) { return { ok: false, code: error instanceof Error && error.message.startsWith('SPATIAL_FIDELITY') ? error.message.replace('SPATIAL_FIDELITY_', '') : 'SURFACE_FAILED' }; }
     let mesh: MeshArrays = { positions: geometry.getAttribute('position').array as Float32Array, normals: geometry.getAttribute('normal').array as Float32Array, uvs: geometry.getAttribute('uv').array as Float32Array, indices: Uint32Array.from((geometry.index?.array ?? []) as ArrayLike<number>) };
     geometry.dispose();
-    if (partnerFields.length) {
+    if (partnerFields.length && options.rim !== 'discard') {
       const specs: ClipSpec[] = [{ f: ownField, keep: 'le', t: 0.6 * k }, ...partnerFields.map((f): ClipSpec => ({ f, keep: 'ge', t: -cell * 0.05 }))];
       mesh = clipMesh(mesh, specs);
     }

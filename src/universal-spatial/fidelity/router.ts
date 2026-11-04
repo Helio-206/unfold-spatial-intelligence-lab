@@ -33,7 +33,7 @@ export type RouterOptions = {
  * transforms, same hierarchy, nothing recreated. It returns the ids whose meshes changed. A result can only be used by the compile that asked for it
  * (the key is a hash of that component's geometry and of its partners' placement), and `retire()` ends that right: after it, `upgrade()` does nothing.
  */
-export type RoutedPlan = CompiledSpatialPlanV2 & { report: RouterReport; upgrade(): string[]; retire(): void };
+export type RoutedPlan = CompiledSpatialPlanV2 & { report: RouterReport; /** `budgetTriangles`: stop after the component that reaches it (at least one is always swapped), so the GPU upload of a big arrival can be spread over frames */ upgrade(budgetTriangles?: number): string[]; /** results already in the cache that `upgrade` has not swapped yet */ readyCount(): number; retire(): void };
 export const upgradeOnReady = (service: ContinuousService, layer: { upgradeGeometry(): unknown }): (() => void) => service.onReady(() => { layer.upgradeGeometry(); });
 
 const CURVED = new Set(['sphere', 'ellipsoid', 'cylinder', 'cone', 'torus', 'tube']);
@@ -90,7 +90,7 @@ export function compileWithRouter(plan: SpatialPlanV2, options: RouterOptions = 
     }
     if (!result.ok) { decision.reason = `Stays on V2: ${result.code.toLowerCase().replace(/_/g, ' ')}.`; decision.fallback = { from: 'continuous_surface', code: result.code }; continue; }
     const curvedNote = curved, g = groups.get(c.id)!, old = g.children[0]!, oldM = measure(old), next = assembleContinuous(result, c.id, c.geometry.key);
-    decision.used = 'continuous_surface'; decision.triangles = result.triangles; decision.deviation = result.deviation; decision.computed = origin;
+    decision.used = 'continuous_surface'; decision.triangles = result.triangles; decision.deviation = result.deviation; decision.blendedWith = result.blendedWith; decision.computed = origin;
     decision.reason = `Continuous surface: ${[...(curvedNote ? ['curved primitives'] : []), ...(result.blendedWith.length ? [`joins to ${result.blendedWith.join(', ')} (blend ${result.blendRadius.toFixed(3)})`] : [])].join('; ') || 'smooth surface'}.`;
     pending.push({ componentId: c.id, group: g, old, next, family: 'continuous_surface', triangles: result.triangles, bytes: result.bytes, meshes: next.children.length, oldTriangles: oldM.triangles, oldBytes: oldM.bytes, oldMeshes: oldM.meshes, ms: origin === 'computed' ? performance.now() - t0 : 0, decision });
     void result;
@@ -140,10 +140,11 @@ export function compileWithRouter(plan: SpatialPlanV2, options: RouterOptions = 
   void approvedIds;
 
   let retired = false;
-  const upgrade = (): string[] => {
+  const upgrade = (budgetTriangles = Infinity): string[] => {
     if (retired || !options.service || !waiting.length) return [];
-    const changed: string[] = [];
+    const changed: string[] = []; let spent = 0;
     for (const w of [...waiting]) {
+      if (spent >= budgetTriangles) break;
       const result = options.service.get(w.job.key); if (!result) continue;
       waiting.splice(waiting.indexOf(w), 1); pendingIds.splice(pendingIds.indexOf(w.componentId), 1); delete w.decision.pending;
       const c = byId.get(w.componentId)!;
@@ -154,15 +155,15 @@ export function compileWithRouter(plan: SpatialPlanV2, options: RouterOptions = 
       }
       w.group.remove(old); w.group.add(next); w.group.children.splice(0, 0, w.group.children.pop()!); disposeObject(old);
       const own = implicitShapesOf(c.geometry), blended = result.blendedWith.length ? `; joins to ${result.blendedWith.join(', ')} (blend ${result.blendRadius.toFixed(3)})` : '';
-      w.decision.used = 'continuous_surface'; w.decision.triangles = result.triangles; w.decision.deviation = result.deviation; w.decision.computed = 'computed'; w.decision.fallback = null;
+      w.decision.used = 'continuous_surface'; w.decision.triangles = result.triangles; w.decision.deviation = result.deviation; w.decision.blendedWith = result.blendedWith; w.decision.computed = 'computed'; w.decision.fallback = null;
       w.decision.reason = `Continuous surface: ${[...(w.curved ? ['curved primitives'] : [])].concat(blended ? [blended.slice(2)] : []).join('; ') || 'smooth surface'}.`; void own;
-      msOf.set(c.id, result.ms); changed.push(c.id);
+      msOf.set(c.id, result.ms); changed.push(c.id); spent += result.triangles;
     }
     root.updateMatrixWorld(true);
     Object.assign(report, summarise(), { service: options.service.stats() });
     return changed;
   };
-  return { root, stats: { ...compiled.stats, meshCount: report.totals.meshes, triangleCount: report.totals.triangles, geometryBytes: report.totals.geometryBytes }, report, upgrade, retire: () => { retired = true; } };
+  return { root, stats: { ...compiled.stats, meshCount: report.totals.meshes, triangleCount: report.totals.triangles, geometryBytes: report.totals.geometryBytes }, report, upgrade, readyCount: () => (retired || !options.service ? 0 : waiting.filter((w) => options.service!.has(w.job.key)).length), retire: () => { retired = true; } };
 }
 
 export const createAdaptiveGeometryRouter = (options: RouterOptions = {}) => ({ compile: (plan: SpatialPlanV2) => compileWithRouter(plan, options) });

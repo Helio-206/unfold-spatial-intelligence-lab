@@ -5,7 +5,7 @@
     "lungs-like-v2": {
       "metrics": {
         "route": "v2",
-        "buildMs": 17.5,
+        "buildMs": 13.9,
         "triangles": 9792,
         "meshes": 12,
         "geometryBytes": 239072,
@@ -24,7 +24,8 @@
           "azimuthDeg": -38,
           "elevationDeg": 14,
           "distance": 15.507094480587966
-        }
+        },
+        "firstFrameTriangles": 9792
       },
       "gpu": {
         "geometries": 16,
@@ -36,23 +37,24 @@
       "meshesByFamily": {
         "procedural_v2": 12
       },
+      "worker": null,
       "assetNote": null,
       "decisions": null,
       "report": null,
       "consoleErrors": []
     },
-    "lungs-like-router": {
+    "lungs-like-v3": {
       "metrics": {
-        "route": "router",
-        "buildMs": 1943.8,
-        "triangles": 49904,
+        "route": "live",
+        "buildMs": 28.9,
+        "triangles": 48822,
         "meshes": 7,
-        "geometryBytes": 1119392,
+        "geometryBytes": 1393576,
         "components": 7,
         "boxSize": [
           5,
-          4.619,
-          1.584
+          4.618,
+          1.583
         ],
         "view": {
           "target": [
@@ -63,17 +65,44 @@
           "azimuthDeg": -38,
           "elevationDeg": 14,
           "distance": 15.507094480587966
-        }
+        },
+        "firstFrameTriangles": 9792
       },
       "gpu": {
         "geometries": 11,
-        "textures": 8,
+        "textures": 15,
         "programs": 8
       },
       "components": 7,
       "selectableComponents": 7,
       "meshesByFamily": {
         "continuous_surface": 7
+      },
+      "worker": {
+        "stats": {
+          "hits": 7,
+          "misses": 7,
+          "completed": 7,
+          "failed": 0,
+          "timeouts": 0,
+          "cancelled": 0,
+          "evicted": 0,
+          "rejected": 0,
+          "workersCreated": 2,
+          "queued": 0,
+          "running": 0,
+          "cacheEntries": 7,
+          "cacheBytes": 1393576
+        },
+        "counters": {
+          "created": 2,
+          "terminated": 0,
+          "messages": 7
+        },
+        "longTasksMs": [
+          3003,
+          578
+        ]
       },
       "assetNote": null,
       "decisions": [
@@ -89,20 +118,20 @@
         {
           "id": "trachea-ring",
           "used": "continuous_surface",
-          "reason": "Continuous surface: curved primitives; joins to carina, trachea (blend 0.125).",
+          "reason": "Continuous surface: curved primitives; joins to carina, trachea (blend 0.040).",
           "fallback": null,
           "representation": "derived_from_plan",
           "planGeometryOrigin": "design_approximation",
-          "triangles": 6444
+          "triangles": 7264
         },
         {
           "id": "carina",
           "used": "continuous_surface",
-          "reason": "Continuous surface: curved primitives; joins to trachea, lung-right, lung-left (blend 0.325).",
+          "reason": "Continuous surface: curved primitives; joins to trachea, lung-right, lung-left (blend 0.104).",
           "fallback": null,
           "representation": "derived_from_plan",
           "planGeometryOrigin": "design_approximation",
-          "triangles": 2439
+          "triangles": 2660
         },
         {
           "id": "lung-left",
@@ -125,20 +154,20 @@
         {
           "id": "branches-left",
           "used": "continuous_surface",
-          "reason": "Continuous surface: curved primitives; joins to lung-left (blend 0.125).",
+          "reason": "Continuous surface: curved primitives; joins to lung-left (blend 0.040).",
           "fallback": null,
           "representation": "derived_from_plan",
           "planGeometryOrigin": "design_approximation",
-          "triangles": 4130
+          "triangles": 3016
         },
         {
           "id": "branches-right",
           "used": "continuous_surface",
-          "reason": "Continuous surface: curved primitives; joins to lung-right (blend 0.125).",
+          "reason": "Continuous surface: curved primitives; joins to lung-right (blend 0.040).",
           "fallback": null,
           "representation": "derived_from_plan",
           "planGeometryOrigin": "design_approximation",
-          "triangles": 4075
+          "triangles": 3066
         }
       ],
       "report": {
@@ -147,10 +176,10 @@
           "sha256": "9504848b354945916d6fb4145c8fd35577e6a85ea4caa42ac519563b0ebf19f0"
         },
         "totals": {
-          "triangles": 49904,
+          "triangles": 48822,
           "meshes": 7,
-          "geometryBytes": 1119392,
-          "ms": 1931.6000000000931
+          "geometryBytes": 1393576,
+          "ms": 2144.4000000003725
         },
         "perFamily": {
           "procedural_v2": {
@@ -160,8 +189,173 @@
           },
           "continuous_surface": {
             "components": 7,
-            "triangles": 49904,
-            "ms": 1924.5999999998603
+            "triangles": 48822,
+            "ms": 2789.9000000003725
+          },
+          "mesh_asset": {
+            "components": 0,
+            "triangles": 0,
+            "ms": 0
+          }
+        },
+        "fallbacks": 0,
+        "proposalsNotApproved": []
+      },
+      "consoleErrors": []
+    },
+    "lungs-like-v3-earlier-rim": {
+      "metrics": {
+        "route": "live",
+        "buildMs": 23.8,
+        "triangles": 49272,
+        "meshes": 7,
+        "geometryBytes": 1400256,
+        "components": 7,
+        "boxSize": [
+          5,
+          4.618,
+          1.583
+        ],
+        "view": {
+          "target": [
+            0,
+            2.309027785423821,
+            5.551115123125783e-17
+          ],
+          "azimuthDeg": -38,
+          "elevationDeg": 14,
+          "distance": 15.507094480587966
+        },
+        "firstFrameTriangles": 9792
+      },
+      "gpu": {
+        "geometries": 11,
+        "textures": 15,
+        "programs": 8
+      },
+      "components": 7,
+      "selectableComponents": 7,
+      "meshesByFamily": {
+        "continuous_surface": 7
+      },
+      "worker": {
+        "stats": {
+          "hits": 7,
+          "misses": 7,
+          "completed": 7,
+          "failed": 0,
+          "timeouts": 0,
+          "cancelled": 0,
+          "evicted": 0,
+          "rejected": 0,
+          "workersCreated": 2,
+          "queued": 0,
+          "running": 0,
+          "cacheEntries": 7,
+          "cacheBytes": 1400256
+        },
+        "counters": {
+          "created": 2,
+          "terminated": 0,
+          "messages": 7
+        },
+        "longTasksMs": [
+          2821,
+          534,
+          354,
+          161,
+          52,
+          430,
+          475
+        ]
+      },
+      "assetNote": null,
+      "decisions": [
+        {
+          "id": "trachea",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: curved primitives.",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 6936
+        },
+        {
+          "id": "trachea-ring",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: curved primitives; joins to carina, trachea (blend 0.040).",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 7454
+        },
+        {
+          "id": "carina",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: curved primitives; joins to trachea, lung-right, lung-left (blend 0.104).",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 2748
+        },
+        {
+          "id": "lung-left",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: curved primitives.",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 12492
+        },
+        {
+          "id": "lung-right",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: curved primitives.",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 13388
+        },
+        {
+          "id": "branches-left",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: curved primitives; joins to lung-left (blend 0.040).",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 3149
+        },
+        {
+          "id": "branches-right",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: curved primitives; joins to lung-right (blend 0.040).",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 3105
+        }
+      ],
+      "report": {
+        "planSource": {
+          "kind": "text",
+          "sha256": "9504848b354945916d6fb4145c8fd35577e6a85ea4caa42ac519563b0ebf19f0"
+        },
+        "totals": {
+          "triangles": 49272,
+          "meshes": 7,
+          "geometryBytes": 1400256,
+          "ms": 2062.4000000003725
+        },
+        "perFamily": {
+          "procedural_v2": {
+            "components": 0,
+            "triangles": 0,
+            "ms": 0
+          },
+          "continuous_surface": {
+            "components": 7,
+            "triangles": 49272,
+            "ms": 1510.8999999994412
           },
           "mesh_asset": {
             "components": 0,
@@ -177,7 +371,7 @@
     "microscope-like-v2": {
       "metrics": {
         "route": "v2",
-        "buildMs": 47.4,
+        "buildMs": 47.9,
         "triangles": 3132,
         "meshes": 14,
         "geometryBytes": 228096,
@@ -196,7 +390,8 @@
           "azimuthDeg": -38,
           "elevationDeg": 14,
           "distance": 14.354612051324693
-        }
+        },
+        "firstFrameTriangles": 3132
       },
       "gpu": {
         "geometries": 18,
@@ -208,23 +403,24 @@
       "meshesByFamily": {
         "procedural_v2": 14
       },
+      "worker": null,
       "assetNote": null,
       "decisions": null,
       "report": null,
       "consoleErrors": []
     },
-    "microscope-like-router": {
+    "microscope-like-v3": {
       "metrics": {
-        "route": "router",
-        "buildMs": 716.2,
-        "triangles": 60018,
+        "route": "live",
+        "buildMs": 70.9,
+        "triangles": 78493,
         "meshes": 14,
-        "geometryBytes": 1402708,
+        "geometryBytes": 2280972,
         "components": 10,
         "boxSize": [
-          2.467,
+          2.463,
           5,
-          1.79
+          1.791
         ],
         "view": {
           "target": [
@@ -235,12 +431,13 @@
           "azimuthDeg": -38,
           "elevationDeg": 14,
           "distance": 14.354612051324693
-        }
+        },
+        "firstFrameTriangles": 3132
       },
       "gpu": {
         "geometries": 18,
-        "textures": 12,
-        "programs": 12
+        "textures": 28,
+        "programs": 13
       },
       "components": 10,
       "selectableComponents": 10,
@@ -248,16 +445,44 @@
         "continuous_surface": 11,
         "procedural_v2": 3
       },
+      "worker": {
+        "stats": {
+          "hits": 9,
+          "misses": 9,
+          "completed": 9,
+          "failed": 0,
+          "timeouts": 0,
+          "cancelled": 0,
+          "evicted": 0,
+          "rejected": 0,
+          "workersCreated": 2,
+          "queued": 0,
+          "running": 0,
+          "cacheEntries": 9,
+          "cacheBytes": 2194572
+        },
+        "counters": {
+          "created": 2,
+          "terminated": 0,
+          "messages": 9
+        },
+        "longTasksMs": [
+          2865,
+          1302,
+          62,
+          72
+        ]
+      },
       "assetNote": null,
       "decisions": [
         {
           "id": "base",
           "used": "continuous_surface",
-          "reason": "Continuous surface: joins to column (blend 0.500).",
+          "reason": "Continuous surface: joins to column (blend 0.160).",
           "fallback": null,
           "representation": "derived_from_plan",
           "planGeometryOrigin": "design_approximation",
-          "triangles": 6136
+          "triangles": 9342
         },
         {
           "id": "column",
@@ -271,11 +496,11 @@
         {
           "id": "arm",
           "used": "continuous_surface",
-          "reason": "Continuous surface: joins to column (blend 0.536).",
+          "reason": "Continuous surface: joins to column (blend 0.200).",
           "fallback": null,
           "representation": "derived_from_plan",
           "planGeometryOrigin": "design_approximation",
-          "triangles": 3497
+          "triangles": 5119
         },
         {
           "id": "stage",
@@ -298,47 +523,47 @@
         {
           "id": "eyepiece",
           "used": "continuous_surface",
-          "reason": "Continuous surface: curved primitives; joins to ocular-tube (blend 0.500).",
+          "reason": "Continuous surface: curved primitives; joins to ocular-tube (blend 0.160).",
           "fallback": null,
           "representation": "derived_from_plan",
           "planGeometryOrigin": "design_approximation",
-          "triangles": 3486
+          "triangles": 6448
         },
         {
           "id": "revolver",
           "used": "continuous_surface",
-          "reason": "Continuous surface: curved primitives; joins to arm, objectives (blend 0.225).",
+          "reason": "Continuous surface: curved primitives; joins to arm, objectives (blend 0.072).",
           "fallback": null,
           "representation": "derived_from_plan",
           "planGeometryOrigin": "design_approximation",
-          "triangles": 6749
+          "triangles": 9268
         },
         {
           "id": "objectives",
           "used": "continuous_surface",
-          "reason": "Continuous surface: curved primitives; joins to arm (blend 0.350).",
+          "reason": "Continuous surface: curved primitives.",
           "fallback": null,
           "representation": "derived_from_plan",
           "planGeometryOrigin": "design_approximation",
-          "triangles": 3575
+          "triangles": 11996
         },
         {
           "id": "focus",
           "used": "continuous_surface",
-          "reason": "Continuous surface: curved primitives; joins to column, arm (blend 0.200).",
+          "reason": "Continuous surface: curved primitives; joins to column, arm (blend 0.064).",
           "fallback": null,
           "representation": "derived_from_plan",
           "planGeometryOrigin": "design_approximation",
-          "triangles": 4093
+          "triangles": 2736
         },
         {
           "id": "illuminator",
           "used": "continuous_surface",
-          "reason": "Continuous surface: curved primitives; joins to base (blend 0.200).",
+          "reason": "Continuous surface: curved primitives; joins to base (blend 0.064).",
           "fallback": null,
           "representation": "derived_from_plan",
           "planGeometryOrigin": "design_approximation",
-          "triangles": 20346
+          "triangles": 21448
         }
       ],
       "report": {
@@ -347,10 +572,10 @@
           "sha256": "438ed3f8ce542a6220f1b64cf285a01fe731d99bc0611cc2301a284798e6b3bc"
         },
         "totals": {
-          "triangles": 60018,
+          "triangles": 78493,
           "meshes": 14,
-          "geometryBytes": 1402708,
-          "ms": 667.5
+          "geometryBytes": 2280972,
+          "ms": 2201.7000000001863
         },
         "perFamily": {
           "procedural_v2": {
@@ -360,8 +585,642 @@
           },
           "continuous_surface": {
             "components": 9,
-            "triangles": 59118,
-            "ms": 656.6999999994878
+            "triangles": 77593,
+            "ms": 1247.3000000016764
+          },
+          "mesh_asset": {
+            "components": 0,
+            "triangles": 0,
+            "ms": 0
+          }
+        },
+        "fallbacks": 0,
+        "proposalsNotApproved": []
+      },
+      "consoleErrors": []
+    },
+    "microscope-like-v3-earlier-rim": {
+      "metrics": {
+        "route": "live",
+        "buildMs": 42.6,
+        "triangles": 79393,
+        "meshes": 14,
+        "geometryBytes": 2298748,
+        "components": 10,
+        "boxSize": [
+          2.463,
+          5,
+          1.791
+        ],
+        "view": {
+          "target": [
+            0,
+            2.5,
+            0
+          ],
+          "azimuthDeg": -38,
+          "elevationDeg": 14,
+          "distance": 14.354612051324693
+        },
+        "firstFrameTriangles": 3132
+      },
+      "gpu": {
+        "geometries": 18,
+        "textures": 28,
+        "programs": 13
+      },
+      "components": 10,
+      "selectableComponents": 10,
+      "meshesByFamily": {
+        "continuous_surface": 11,
+        "procedural_v2": 3
+      },
+      "worker": {
+        "stats": {
+          "hits": 9,
+          "misses": 9,
+          "completed": 9,
+          "failed": 0,
+          "timeouts": 0,
+          "cancelled": 0,
+          "evicted": 0,
+          "rejected": 0,
+          "workersCreated": 2,
+          "queued": 0,
+          "running": 0,
+          "cacheEntries": 9,
+          "cacheBytes": 2212348
+        },
+        "counters": {
+          "created": 2,
+          "terminated": 0,
+          "messages": 9
+        },
+        "longTasksMs": [
+          2836,
+          1291,
+          188,
+          63,
+          90,
+          112,
+          76,
+          67
+        ]
+      },
+      "assetNote": null,
+      "decisions": [
+        {
+          "id": "base",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: joins to column (blend 0.160).",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 9379
+        },
+        {
+          "id": "column",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: curved primitives.",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 3752
+        },
+        {
+          "id": "arm",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: joins to column (blend 0.200).",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 5227
+        },
+        {
+          "id": "stage",
+          "used": "procedural_v2",
+          "reason": "Stays on V2: flat parts with nothing to blend into, so the surface would be the same.",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 900
+        },
+        {
+          "id": "ocular-tube",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: curved primitives.",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 7484
+        },
+        {
+          "id": "eyepiece",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: curved primitives; joins to ocular-tube (blend 0.160).",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 6764
+        },
+        {
+          "id": "revolver",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: curved primitives; joins to arm, objectives (blend 0.072).",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 9385
+        },
+        {
+          "id": "objectives",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: curved primitives.",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 11996
+        },
+        {
+          "id": "focus",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: curved primitives; joins to column, arm (blend 0.064).",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 3060
+        },
+        {
+          "id": "illuminator",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: curved primitives; joins to base (blend 0.064).",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 21446
+        }
+      ],
+      "report": {
+        "planSource": {
+          "kind": "text",
+          "sha256": "438ed3f8ce542a6220f1b64cf285a01fe731d99bc0611cc2301a284798e6b3bc"
+        },
+        "totals": {
+          "triangles": 79393,
+          "meshes": 14,
+          "geometryBytes": 2298748,
+          "ms": 1932.1000000005588
+        },
+        "perFamily": {
+          "procedural_v2": {
+            "components": 1,
+            "triangles": 900,
+            "ms": 0
+          },
+          "continuous_surface": {
+            "components": 9,
+            "triangles": 78493,
+            "ms": 578.6000000005588
+          },
+          "mesh_asset": {
+            "components": 0,
+            "triangles": 0,
+            "ms": 0
+          }
+        },
+        "fallbacks": 0,
+        "proposalsNotApproved": []
+      },
+      "consoleErrors": []
+    },
+    "excavator-saved-meta-plan-v2": {
+      "metrics": {
+        "route": "v2",
+        "buildMs": 45.4,
+        "triangles": 5148,
+        "meshes": 17,
+        "geometryBytes": 478592,
+        "components": 11,
+        "boxSize": [
+          3.865,
+          5,
+          3.131
+        ],
+        "view": {
+          "target": [
+            0,
+            2.5000000000000004,
+            0
+          ],
+          "azimuthDeg": -38,
+          "elevationDeg": 14,
+          "distance": 16.54471711834049
+        },
+        "firstFrameTriangles": 5148
+      },
+      "gpu": {
+        "geometries": 21,
+        "textures": 11,
+        "programs": 12
+      },
+      "components": 11,
+      "selectableComponents": 11,
+      "meshesByFamily": {
+        "procedural_v2": 17
+      },
+      "worker": null,
+      "assetNote": null,
+      "decisions": null,
+      "report": null,
+      "consoleErrors": []
+    },
+    "excavator-saved-meta-plan-v3": {
+      "metrics": {
+        "route": "live",
+        "buildMs": 80,
+        "triangles": 251822,
+        "meshes": 17,
+        "geometryBytes": 7090440,
+        "components": 11,
+        "boxSize": [
+          3.865,
+          5,
+          3.131
+        ],
+        "view": {
+          "target": [
+            0,
+            2.5000000000000004,
+            0
+          ],
+          "azimuthDeg": -38,
+          "elevationDeg": 14,
+          "distance": 16.54471711834049
+        },
+        "firstFrameTriangles": 5148
+      },
+      "gpu": {
+        "geometries": 21,
+        "textures": 27,
+        "programs": 12
+      },
+      "components": 11,
+      "selectableComponents": 11,
+      "meshesByFamily": {
+        "continuous_surface": 17
+      },
+      "worker": {
+        "stats": {
+          "hits": 11,
+          "misses": 11,
+          "completed": 11,
+          "failed": 0,
+          "timeouts": 0,
+          "cancelled": 0,
+          "evicted": 0,
+          "rejected": 0,
+          "workersCreated": 2,
+          "queued": 0,
+          "running": 0,
+          "cacheEntries": 11,
+          "cacheBytes": 7090440
+        },
+        "counters": {
+          "created": 2,
+          "terminated": 0,
+          "messages": 11
+        },
+        "longTasksMs": [
+          3134,
+          1070,
+          514
+        ]
+      },
+      "assetNote": null,
+      "decisions": [
+        {
+          "id": "undercarriage",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: joins to upper-frame (blend 0.320).",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 8360
+        },
+        {
+          "id": "track-left",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: curved primitives; joins to undercarriage, upper-frame (blend 0.320).",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 23564
+        },
+        {
+          "id": "track-right",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: curved primitives; joins to undercarriage, upper-frame (blend 0.320).",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 38176
+        },
+        {
+          "id": "upper-frame",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: smooth surface.",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 36252
+        },
+        {
+          "id": "cab",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: joins to engine-hood (blend 0.320).",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 55010
+        },
+        {
+          "id": "engine-hood",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: smooth surface.",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 36252
+        },
+        {
+          "id": "boom",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: smooth surface.",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 23156
+        },
+        {
+          "id": "stick",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: joins to upper-frame, undercarriage (blend 0.320).",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 8630
+        },
+        {
+          "id": "bucket",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: curved primitives; joins to boom, hydraulic-boom, bucket-linkage (blend 0.216).",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 7906
+        },
+        {
+          "id": "hydraulic-boom",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: curved primitives; joins to boom, bucket-linkage, cab (blend 0.240).",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 7056
+        },
+        {
+          "id": "bucket-linkage",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: joins to engine-hood (blend 0.320).",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 7460
+        }
+      ],
+      "report": {
+        "planSource": {
+          "kind": "image",
+          "sha256": "2ba5cfac62edea6be1e8ab34590ffb2d74c0d70320970d9db1f1b2a59ab31327"
+        },
+        "totals": {
+          "triangles": 251822,
+          "meshes": 17,
+          "geometryBytes": 7090440,
+          "ms": 2882.5999999996275
+        },
+        "perFamily": {
+          "procedural_v2": {
+            "components": 0,
+            "triangles": 0,
+            "ms": 0
+          },
+          "continuous_surface": {
+            "components": 11,
+            "triangles": 251822,
+            "ms": 3331.100000000559
+          },
+          "mesh_asset": {
+            "components": 0,
+            "triangles": 0,
+            "ms": 0
+          }
+        },
+        "fallbacks": 0,
+        "proposalsNotApproved": []
+      },
+      "consoleErrors": []
+    },
+    "harp-saved-meta-plan-v2": {
+      "metrics": {
+        "route": "v2",
+        "buildMs": 13.1,
+        "triangles": 2372,
+        "meshes": 15,
+        "geometryBytes": 157408,
+        "components": 7,
+        "boxSize": [
+          2.542,
+          5,
+          0.669
+        ],
+        "view": {
+          "target": [
+            -1.1102230246251565e-16,
+            2.5,
+            0
+          ],
+          "azimuthDeg": -38,
+          "elevationDeg": 14,
+          "distance": 13.796898194847927
+        },
+        "firstFrameTriangles": 2372
+      },
+      "gpu": {
+        "geometries": 19,
+        "textures": 9,
+        "programs": 9
+      },
+      "components": 7,
+      "selectableComponents": 7,
+      "meshesByFamily": {
+        "procedural_v2": 15
+      },
+      "worker": null,
+      "assetNote": null,
+      "decisions": null,
+      "report": null,
+      "consoleErrors": []
+    },
+    "harp-saved-meta-plan-v3": {
+      "metrics": {
+        "route": "live",
+        "buildMs": 23.5,
+        "triangles": 131704,
+        "meshes": 7,
+        "geometryBytes": 3697456,
+        "components": 7,
+        "boxSize": [
+          2.542,
+          5,
+          0.669
+        ],
+        "view": {
+          "target": [
+            -1.1102230246251565e-16,
+            2.5,
+            0
+          ],
+          "azimuthDeg": -38,
+          "elevationDeg": 14,
+          "distance": 13.796898194847927
+        },
+        "firstFrameTriangles": 2372
+      },
+      "gpu": {
+        "geometries": 11,
+        "textures": 15,
+        "programs": 9
+      },
+      "components": 7,
+      "selectableComponents": 7,
+      "meshesByFamily": {
+        "continuous_surface": 6,
+        "procedural_v2": 1
+      },
+      "worker": {
+        "stats": {
+          "hits": 6,
+          "misses": 6,
+          "completed": 6,
+          "failed": 0,
+          "timeouts": 0,
+          "cancelled": 0,
+          "evicted": 0,
+          "rejected": 0,
+          "workersCreated": 2,
+          "queued": 0,
+          "running": 0,
+          "cacheEntries": 6,
+          "cacheBytes": 3693232
+        },
+        "counters": {
+          "created": 2,
+          "terminated": 0,
+          "messages": 6
+        },
+        "longTasksMs": [
+          2747,
+          1040
+        ]
+      },
+      "assetNote": null,
+      "decisions": [
+        {
+          "id": "harp",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: smooth surface.",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 36628
+        },
+        {
+          "id": "harp-neck",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: curved primitives.",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 3196
+        },
+        {
+          "id": "harp-pillar",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: curved primitives.",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 28440
+        },
+        {
+          "id": "harp-soundbox",
+          "used": "procedural_v2",
+          "reason": "Stays on V2: operator without a distance field (extrude).",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 44
+        },
+        {
+          "id": "harp-base",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: smooth surface.",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 37428
+        },
+        {
+          "id": "harp-strings",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: curved primitives; joins to harp (blend 0.240).",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 6328
+        },
+        {
+          "id": "harp-pegs",
+          "used": "continuous_surface",
+          "reason": "Continuous surface: curved primitives.",
+          "fallback": null,
+          "representation": "derived_from_plan",
+          "planGeometryOrigin": "design_approximation",
+          "triangles": 19640
+        }
+      ],
+      "report": {
+        "planSource": {
+          "kind": "text",
+          "sha256": "105827c479be30ed25ed34da194db9c67741164db501f0f897909e392502643d"
+        },
+        "totals": {
+          "triangles": 131704,
+          "meshes": 7,
+          "geometryBytes": 3697456,
+          "ms": 2009.7999999998137
+        },
+        "perFamily": {
+          "procedural_v2": {
+            "components": 1,
+            "triangles": 44,
+            "ms": 0
+          },
+          "continuous_surface": {
+            "components": 6,
+            "triangles": 131660,
+            "ms": 1707.5
           },
           "mesh_asset": {
             "components": 0,
@@ -377,10 +1236,10 @@
     "camera-asset-offered-not-approved": {
       "metrics": {
         "route": "router",
-        "buildMs": 233.8,
-        "triangles": 24747,
+        "buildMs": 231.9,
+        "triangles": 22346,
         "meshes": 2,
-        "geometryBytes": 545090,
+        "geometryBytes": 626936,
         "components": 2,
         "boxSize": [
           2.854,
@@ -396,7 +1255,8 @@
           "azimuthDeg": -38,
           "elevationDeg": 14,
           "distance": 15.96331792183037
-        }
+        },
+        "firstFrameTriangles": 22346
       },
       "gpu": {
         "geometries": 6,
@@ -408,16 +1268,17 @@
       "meshesByFamily": {
         "continuous_surface": 2
       },
-      "assetNote": "validated and loaded in 835 ms; 20066 triangles; decoded textures 32.0 MB after downscale to 1024; NOT approved",
+      "worker": null,
+      "assetNote": "validated and loaded in 1044 ms; 20066 triangles; decoded textures 32.0 MB after downscale to 1024; NOT approved",
       "decisions": [
         {
           "id": "camera",
           "used": "continuous_surface",
-          "reason": "Continuous surface: joins to tripod (blend 0.300).",
+          "reason": "Continuous surface: joins to tripod (blend 0.440).",
           "fallback": null,
           "representation": "derived_from_plan",
           "planGeometryOrigin": "design_approximation",
-          "triangles": 10619
+          "triangles": 8218
         },
         {
           "id": "tripod",
@@ -435,10 +1296,10 @@
           "sha256": "ac2d5bd02db2da829418180125581078927d5fc13302841ecd34750dfbcda971"
         },
         "totals": {
-          "triangles": 24747,
+          "triangles": 22346,
           "meshes": 2,
-          "geometryBytes": 545090,
-          "ms": 210.39999999990687
+          "geometryBytes": 626936,
+          "ms": 210.5
         },
         "perFamily": {
           "procedural_v2": {
@@ -448,8 +1309,8 @@
           },
           "continuous_surface": {
             "components": 2,
-            "triangles": 24747,
-            "ms": 205.00000000023283
+            "triangles": 22346,
+            "ms": 206
           },
           "mesh_asset": {
             "components": 0,
@@ -467,7 +1328,7 @@
     "camera-asset-approved": {
       "metrics": {
         "route": "router",
-        "buildMs": 296.9,
+        "buildMs": 361.9,
         "triangles": 20066,
         "meshes": 2,
         "geometryBytes": 798092,
@@ -486,7 +1347,8 @@
           "azimuthDeg": -38,
           "elevationDeg": 14,
           "distance": 15.96331792183037
-        }
+        },
+        "firstFrameTriangles": 20066
       },
       "gpu": {
         "geometries": 6,
@@ -498,7 +1360,8 @@
       "meshesByFamily": {
         "mesh_asset": 2
       },
-      "assetNote": "validated and loaded in 889 ms; 20066 triangles; decoded textures 32.0 MB after downscale to 1024; approved",
+      "worker": null,
+      "assetNote": "validated and loaded in 1173 ms; 20066 triangles; decoded textures 32.0 MB after downscale to 1024; approved",
       "decisions": [
         {
           "id": "camera",
@@ -528,7 +1391,7 @@
           "triangles": 20066,
           "meshes": 2,
           "geometryBytes": 798092,
-          "ms": 284.69999999995343
+          "ms": 341.19999999925494
         },
         "perFamily": {
           "procedural_v2": {
@@ -544,7 +1407,7 @@
           "mesh_asset": {
             "components": 2,
             "triangles": 20066,
-            "ms": 0.8499999999767169
+            "ms": 1.3000000002793968
           }
         },
         "fallbacks": 0,
@@ -555,7 +1418,7 @@
     "camera-standin-v2": {
       "metrics": {
         "route": "v2",
-        "buildMs": 22.7,
+        "buildMs": 15.7,
         "triangles": 620,
         "meshes": 2,
         "geometryBytes": 58784,
@@ -574,7 +1437,8 @@
           "azimuthDeg": -38,
           "elevationDeg": 14,
           "distance": 15.502754366480534
-        }
+        },
+        "firstFrameTriangles": 620
       },
       "gpu": {
         "geometries": 6,
@@ -586,6 +1450,7 @@
       "meshesByFamily": {
         "procedural_v2": 2
       },
+      "worker": null,
       "assetNote": null,
       "decisions": null,
       "report": null,
