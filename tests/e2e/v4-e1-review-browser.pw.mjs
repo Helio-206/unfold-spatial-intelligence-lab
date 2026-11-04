@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { chromium } from 'playwright-core';
 
 const backendPort = 8900, webPort = 5303;
-const out = process.env.UNFOLD_V4_E1_OUT ?? '/tmp/unfold-v4-e1-browser'; await mkdir(out, { recursive: true });
+const out = process.env.UNFOLD_V4_E1_OUT ?? `/tmp/unfold-v4-e1-browser-${process.pid}`; await mkdir(out, { recursive: true });
 const children = [];
 const start = (command, args, env, name) => {
   const child = spawn(command, args, { env: { ...process.env, ...env }, stdio: ['ignore', 'pipe', 'pipe'] });

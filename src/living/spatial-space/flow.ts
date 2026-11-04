@@ -5,7 +5,7 @@ import linkIcon from 'lucide-static/icons/link.svg?raw';
 import saveIcon from 'lucide-static/icons/save.svg?raw';
 import undoIcon from 'lucide-static/icons/undo-2.svg?raw';
 import './space.css';
-import { adoptSpatialPlanV2, applySpatialPlanV2Operation, applySpatialPlanV2Transaction, createSpatialPlanV2, createSpatialReview, decideSpatialReview, evaluateSpatialPlanV2, getSpatialReview, listSpatialReviews, proposeSpatialEditV2, SpatialApiError, SpatialTransactionUnresolvedError, undoSpatialPlanV2, type SpatialPlanV2Reply } from '../../universal-spatial/api-client';
+import { adoptSpatialPlanV2, applySpatialPlanV2Operation, applySpatialPlanV2Transaction, createSpatialPlanV2, createSpatialReview, decideSpatialReview, evaluateSpatialPlanV2, getSpatialReview, listSpatialReviews, proposeSpatialEditV2, SpatialApiError, SpatialTransactionUnresolvedError, spatialPlanFingerprintV2, undoSpatialPlanV2, type SpatialPlanV2Reply } from '../../universal-spatial/api-client';
 import { effectiveDecisions, reviewSolverGate, type SpatialReviewRecord } from '../../universal-spatial/review-v1';
 import type { SpatialOperationV2, SpatialPlanV2 } from '../../universal-spatial/contracts-v2';
 import { checkFile } from '../experience/intake';
@@ -343,9 +343,16 @@ export class SpaceFlow {
     this.attach();
     try {
       const fetchImpl = this.options.fetchImpl;
-      const summaries = await listSpatialReviews(layer.currentPlan.source.sha256, fetchImpl);
-      if (summaries[0]) { this.relationReview = (await getSpatialReview(summaries[0].reviewId, fetchImpl)).review; }
-      else {
+      // Exact plan binding: a review is only reopened when it belongs to THIS plan fingerprint.
+      // The same source can produce different plans; their decisions are never reused across them.
+      const planFingerprint = await spatialPlanFingerprintV2(layer.currentPlan);
+      const summaries = await listSpatialReviews(layer.currentPlan.source.sha256, planFingerprint, fetchImpl);
+      const summary = summaries.find((item) => item.planFingerprint === planFingerprint);
+      if (summary) {
+        const fetched = (await getSpatialReview(summary.reviewId, fetchImpl)).review;
+        if (fetched.planFingerprint !== planFingerprint || fetched.source.sha256 !== layer.currentPlan.source.sha256) throw new SpatialApiError(409, 'SPATIAL_REVIEW_BINDING_MISMATCH', 'A revisão guardada pertence a outro plano.');
+        this.relationReview = fetched;
+      } else {
         const source = this.source;
         const sourceBytes = source?.kind === 'text' ? { kind: 'text' as const, text: source.text } : source?.kind === 'image' ? { kind: 'image' as const, imageDataUrl: source.dataUrl } : undefined;
         this.relationReview = (await createSpatialReview({ plan: layer.currentPlan, planRevision: this.session?.revision ?? 0, ...(sourceBytes ? { sourceBytes } : {}) }, fetchImpl)).review;

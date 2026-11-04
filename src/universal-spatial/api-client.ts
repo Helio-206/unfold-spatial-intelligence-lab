@@ -134,7 +134,13 @@ export async function evaluateSpatialPlanV2(input: { sessionId: string; baseRevi
   return { ...reply, evaluation: parseSpatialEvaluationV2(reply.evaluation, plan) };
 }
 
-import { SPATIAL_REVIEW_CONTRACT, type ReviewDecisionKind, type ReviewRelationValue, type ReviewSolverGate, type SpatialReviewRecord } from './review-v1';
+import { SPATIAL_REVIEW_CONTRACT, canonicalPlanJson, type ReviewDecisionKind, type ReviewRelationValue, type ReviewSolverGate, type SpatialReviewRecord } from './review-v1';
+
+/** sha256 of the canonical plan JSON: the exact plan binding a review record carries. */
+export async function spatialPlanFingerprintV2(plan: SpatialPlanV2): Promise<string> {
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonicalPlanJson(plan)));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
 
 export type SpatialReviewReply = { contract: typeof SPATIAL_REVIEW_CONTRACT; review: SpatialReviewRecord; gate: ReviewSolverGate };
 export type SpatialReviewSummary = { reviewId: string; reviewRevision: number; planRevision: number; planFingerprint: string; sourceByteVerified: boolean; subjects: number; decisions: number; updatedAt: string };
@@ -153,8 +159,8 @@ export async function getSpatialReview(reviewId: string, fetchImpl: typeof fetch
   return validReviewReply(await post<SpatialReviewReply>('/api/spatial/v2/reviews/get', { reviewId }, fetchImpl));
 }
 
-export async function listSpatialReviews(sourceSha256: string, fetchImpl: typeof fetch = fetch): Promise<SpatialReviewSummary[]> {
-  const reply = await post<{ contract: typeof SPATIAL_REVIEW_CONTRACT; reviews: SpatialReviewSummary[] }>('/api/spatial/v2/reviews/list', { sourceSha256 }, fetchImpl);
+export async function listSpatialReviews(sourceSha256: string, planFingerprint?: string, fetchImpl: typeof fetch = fetch): Promise<SpatialReviewSummary[]> {
+  const reply = await post<{ contract: typeof SPATIAL_REVIEW_CONTRACT; reviews: SpatialReviewSummary[] }>('/api/spatial/v2/reviews/list', { sourceSha256, ...(planFingerprint ? { planFingerprint } : {}) }, fetchImpl);
   if (reply.contract !== SPATIAL_REVIEW_CONTRACT || !Array.isArray(reply.reviews)) throw new SpatialApiError(502, 'INVALID_SPATIAL_REVIEW_REPLY', 'Unknown spatial review response contract.');
   return reply.reviews;
 }
@@ -164,8 +170,8 @@ export async function decideSpatialReview(input: { reviewId: string; baseReviewR
   return validReviewReply(await post<SpatialReviewReply>('/api/spatial/v2/reviews/decide', input, fetchImpl));
 }
 
-/** The solver gate for a review, optionally pinned to the revision the caller read. */
-export async function getSpatialReviewEligibility(input: { reviewId: string; reviewRevision?: number }, fetchImpl: typeof fetch = fetch): Promise<SpatialReviewReply> {
+/** The solver gate for a review, optionally pinned to the revision and to the exact plan/source binding the caller expects. */
+export async function getSpatialReviewEligibility(input: { reviewId: string; reviewRevision?: number; planFingerprint?: string; sourceSha256?: string }, fetchImpl: typeof fetch = fetch): Promise<SpatialReviewReply> {
   return validReviewReply(await post<SpatialReviewReply>('/api/spatial/v2/reviews/eligibility', input, fetchImpl));
 }
 

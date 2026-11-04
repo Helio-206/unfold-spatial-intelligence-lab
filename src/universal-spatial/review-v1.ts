@@ -1,4 +1,11 @@
-import type { SpatialPlanV2 } from './contracts-v2';
+import { validateSpatialPlanV2, type SpatialPlanV2 } from './contracts-v2';
+
+/** Canonical JSON of a plan (object keys sorted recursively): the exact bytes a plan fingerprint binds to. */
+export function canonicalPlanJson(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value) ?? 'null';
+  if (Array.isArray(value)) return `[${value.map(canonicalPlanJson).join(',')}]`;
+  return `{${Object.keys(value as Record<string, unknown>).sort().map((key) => `${JSON.stringify(key)}:${canonicalPlanJson((value as Record<string, unknown>)[key])}`).join(',')}}`;
+}
 
 /**
  * Human review of spatial interpretation (V4 E1). Contract `unfold.spatial-review.v1`.
@@ -107,6 +114,58 @@ export function effectiveDecisions(record: SpatialReviewRecord): EffectiveDecisi
   const latest = new Map<string, ReviewDecision>();
   for (const decision of record.decisions) latest.set(decision.subjectId, decision);
   return record.subjects.map((subject) => ({ subject, decision: latest.get(subject.subjectId) ?? null }));
+}
+
+export type ReviewedProjection = {
+  /** A solver-only copy of the plan. The original plan is never modified by this projection. */
+  plan: SpatialPlanV2;
+  gate: ReviewSolverGate;
+  rejectedSubjectIds: string[];
+  correctedSubjectIds: string[];
+};
+
+/**
+ * The reviewed-relationship projection the solver actually consumes (E1.1). Built from the recorded
+ * decisions, validated against the current plan:
+ *   - rejected relation: absent from the projection, so the solver cannot keep enforcing it merely
+ *     because the original plan declares it (the original plan and the history keep it untouched);
+ *   - corrected relation/hypothesis: present with the corrected kind and endpoints, marked
+ *     `user_provided` (a human decision), so it is evaluated as corrected, not as the original;
+ *   - deferred or undecided hypothesis: stays out of the enforced set, never promoted;
+ *   - confirmed subjects are reported through the gate for the engine's confirmation set.
+ * A correction the plan contract cannot represent (unknown component, invalid kind, self-relation)
+ * throws `REVIEW_CORRECTION_UNSUPPORTED` instead of silently falling back to the original relation.
+ * A record bound to another source throws `REVIEW_BINDING_MISMATCH`. No physical assumption is added:
+ * the projection only restates what a person decided about statements that already exist.
+ */
+export function projectReviewedPlan(plan: SpatialPlanV2, record: SpatialReviewRecord): ReviewedProjection {
+  if (record.source.sha256 !== plan.source.sha256 || record.source.kind !== plan.source.kind) throw new Error('REVIEW_BINDING_MISMATCH:source');
+  const gate = reviewSolverGate(record);
+  const latest = new Map<string, ReviewDecision>();
+  for (const decision of record.decisions) latest.set(decision.subjectId, decision);
+  const correctedSubjectIds: string[] = [];
+  const relations: SpatialPlanV2['relations'] = [];
+  for (const relation of plan.relations) {
+    const decision = latest.get(`rel-${relation.id}`.slice(0, 48));
+    if (decision?.decision === 'reject') continue;
+    if (decision?.decision === 'correct' && decision.correctedValue) {
+      correctedSubjectIds.push(decision.subjectId);
+      relations.push({ id: relation.id, fromId: decision.correctedValue.fromId, toId: decision.correctedValue.toId, kind: decision.correctedValue.kind as SpatialPlanV2['relations'][number]['kind'], origin: 'user_provided', evidence: `Human review correction (decision ${decision.decisionId}); the original statement is preserved in the review record.` });
+      continue;
+    }
+    relations.push(relation);
+  }
+  for (const subject of record.subjects) {
+    if (subject.kind !== 'hypothesis') continue;
+    const decision = latest.get(subject.subjectId);
+    if (decision?.decision !== 'correct' || !decision.correctedValue) continue;
+    correctedSubjectIds.push(subject.subjectId);
+    relations.push({ id: `rev-${subject.subjectId}`.slice(0, 48), fromId: decision.correctedValue.fromId, toId: decision.correctedValue.toId, kind: decision.correctedValue.kind as SpatialPlanV2['relations'][number]['kind'], origin: 'user_provided', evidence: `Human review correction of a contact hypothesis (decision ${decision.decisionId}).` });
+  }
+  let projected: SpatialPlanV2;
+  try { projected = validateSpatialPlanV2({ ...plan, relations }); }
+  catch (error) { throw new Error(`REVIEW_CORRECTION_UNSUPPORTED:${error instanceof Error ? error.message : 'invalid correction'}`); }
+  return { plan: projected, gate, rejectedSubjectIds: gate.rejectedSubjectIds, correctedSubjectIds };
 }
 
 export type ReviewSolverGate = {

@@ -97,6 +97,29 @@ describe('V4 E1 human review (real HTTP, persistent store)', () => {
     });
   });
 
+  it('binds a review to the exact plan fingerprint: same source, different plan cannot reuse decisions (E1.1 tests 1-2)', async () => {
+    await withGuardedServer({}, async (port) => {
+      const a = await create(port);
+      const otherPlan = { ...plan, components: plan.components.map((c, i) => (i === 2 ? { ...c, transform: { ...c.transform, position: [9, 0, 0] } } : c)) };
+      const b = await post(port, '/api/spatial/v2/reviews', { plan: otherPlan, planRevision: 0 });
+      expect(b.status, b.text).toBe(200);
+      expect(b.json.review.planFingerprint).not.toBe(a.review.planFingerprint);
+      expect(b.json.review.source.sha256).toBe(a.review.source.sha256); // same source, different plan
+      // Lookup by source + exact fingerprint returns only the matching record.
+      const listA = await post(port, '/api/spatial/v2/reviews/list', { sourceSha256: plan.source.sha256, planFingerprint: a.review.planFingerprint });
+      expect(listA.json.reviews.map((r: { reviewId: string }) => r.reviewId)).toEqual([a.review.reviewId]);
+      const listAll = await post(port, '/api/spatial/v2/reviews/list', { sourceSha256: plan.source.sha256 });
+      expect(listAll.json.reviews).toHaveLength(2);
+      // Eligibility pinned to the other plan's fingerprint is rejected, never silently reused.
+      const foreign = await post(port, '/api/spatial/v2/reviews/eligibility', { reviewId: a.review.reviewId, planFingerprint: b.json.review.planFingerprint });
+      expect(foreign.status).toBe(409); expect(foreign.json.error.code).toBe('SPATIAL_REVIEW_BINDING_MISMATCH');
+      const bound = await post(port, '/api/spatial/v2/reviews/eligibility', { reviewId: a.review.reviewId, planFingerprint: a.review.planFingerprint, sourceSha256: plan.source.sha256 });
+      expect(bound.status).toBe(200);
+      const wrongSource = await post(port, '/api/spatial/v2/reviews/eligibility', { reviewId: a.review.reviewId, sourceSha256: 'e'.repeat(64) });
+      expect(wrongSource.status).toBe(409); expect(wrongSource.json.error.code).toBe('SPATIAL_REVIEW_BINDING_MISMATCH');
+    });
+  });
+
   it('rejects review changes without an allowed local origin or local token (no invented authentication)', async () => {
     await withGuardedServer({}, async (port) => {
       const { review } = await create(port);

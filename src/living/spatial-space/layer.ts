@@ -25,7 +25,7 @@ const CONFIRMED = new Set(['observed', 'user_provided']);
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const fmt3 = (v: readonly number[]) => `[${v.map((n) => n.toFixed(3)).join(', ')}]`;
 
-type Pending = { label: string; before: string; after: string; operations: SpatialOperationV2[]; needsAuthorization: boolean; source: 'person' | 'meta' | 'meta-visual' | 'solver'; /** what produced the proposal, recorded in the provenance when a person applies it */ evidence?: string };
+type Pending = { label: string; before: string; after: string; operations: SpatialOperationV2[]; needsAuthorization: boolean; source: 'person' | 'meta' | 'meta-visual' | 'solver'; /** what produced the proposal, recorded in the provenance when a person applies it */ evidence?: string; /** Revalidated at apply time; a false (or a throw) invalidates the proposal instead of applying it. */ authorisationGuard?: () => Promise<boolean> };
 /** Triangles of arrived geometry swapped in per call (and so per frame): bounds the GPU upload one frame has to carry. */
 export const UPGRADE_TRIANGLES_PER_CALL = 60_000;
 /** A compile result that may finish later: geometry computed off the main thread arrives through `upgrade()`. V2's result has neither method. */
@@ -428,12 +428,12 @@ export class PlanSpaceLayer implements SpaceLayer {
    * A result of a deterministic solver (V4 structural fit): several typed operations previewed as ONE step. Not an AI hypothesis and not a human value: it
    * is applied only when a person authorises it, then recorded as that person's decision with the solver's evidence in the provenance. One undo reverts all of it.
    */
-  proposeSolverEdit(operations: SpatialOperationV2[], label: string, evidence: string): boolean {
+  proposeSolverEdit(operations: SpatialOperationV2[], label: string, evidence: string, options?: { authorisationGuard?: () => Promise<boolean> }): boolean {
     if (this.disposed || !operations.length || this.isBusy) return false;
     try { let probe = this.plan; for (const operation of operations) probe = applySpatialOperationV2(probe, operation, { origin: 'inferred', evidence: 'preview' }); } catch { return false; }
     const first = this.plan.components.find((item) => item.id === operations[0]!.componentId); if (!first) return false;
     this.selected = this.selected && operations.some((op) => op.componentId === this.selected) ? this.selected : first.id;
-    this.pending = { label, before: 'colocação actual', after: `${new Set(operations.map((op) => op.componentId)).size} componentes: ${[...new Set(operations.map((op) => op.kind === 'set-geometry' ? 'geometria' : op.kind === 'set-transform' ? 'posição, rotação e escala' : op.kind === 'set-material' ? 'material' : 'padrão'))].join(', ')}`, operations, needsAuthorization: true, source: 'solver', evidence }; this.authorised = false;
+    this.pending = { label, before: 'colocação actual', after: `${new Set(operations.map((op) => op.componentId)).size} componentes: ${[...new Set(operations.map((op) => op.kind === 'set-geometry' ? 'geometria' : op.kind === 'set-transform' ? 'posição, rotação e escala' : op.kind === 'set-material' ? 'material' : 'padrão'))].join(', ')}`, operations, needsAuthorization: true, source: 'solver', evidence, ...(options?.authorisationGuard ? { authorisationGuard: options.authorisationGuard } : {}) }; this.authorised = false;
     this.applyPaint(); this.host.changed(); return true;
   }
   cancelPending(): void { this.pending = null; this.authorised = false; this.host.changed(); }
@@ -443,6 +443,12 @@ export class PlanSpaceLayer implements SpaceLayer {
     const pending = this.pending; if (!pending || this.busy) return;
     if (this.lockReason) { this.host.notify(`Edição indisponível: ${this.lockReason}.`); return; }
     if (pending.needsAuthorization && !this.authorised) { this.host.notify(pending.source === 'person' ? 'Esta edição toca num valor observado ou confirmado: marque a autorização primeiro.' : pending.source === 'solver' ? 'Uma proposta do solver só se aplica depois de a autorizar: marque a autorização.' : 'Uma alteração proposta pela IA só se aplica depois de a autorizar: marque a autorização.'); return; }
+    if (pending.authorisationGuard) {
+      // Bound to an external state (e.g. a review revision): revalidate now, fail closed on any doubt.
+      const valid = await pending.authorisationGuard().catch(() => false);
+      if (!valid) { this.pending = null; this.authorised = false; this.host.notify('Proposta invalidada: o estado revisto mudou ou não pôde ser revalidado. Nada foi aplicado.'); this.host.changed(); return; }
+      if (this.disposed) return;
+    }
     this.busy = true; this.director?.enterEditing();
     try {
       const evidence = pending.source === 'solver' ? ((suffix) => `${(pending.evidence ?? 'Proposta do solver estrutural.').slice(0, 500 - suffix.length - 1)} ${suffix}`)('Resultado de optimização (hipótese), autorizado por uma pessoa (afirmado pelo cliente, sem identidade verificada).') : pending.source === 'person' ? 'Editado por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).' : 'Proposta por Muse Spark (hipótese) e autorizada por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).';

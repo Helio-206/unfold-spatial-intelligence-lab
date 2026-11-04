@@ -364,6 +364,20 @@ describe('PlanSpaceLayer', () => {
       layer.highlight('base'); layer.proposeEdit('x+'); await layer.applyEdit();
       expect(layer.currentPlan.components.find((c) => c.id === 'base')!.transform.position[0]).toBeGreaterThan(0); layer.dispose();
     });
+    it('a proposal whose authorisation guard fails at apply time is never applied (review changed after preview, E1.1 test 7)', async () => {
+      const h = host(), layer = new PlanSpaceLayer(plan(), h), before = layer.currentPlan;
+      let guardOk = true;
+      expect(layer.proposeSolverEdit(ops(), 'x', 'y', { authorisationGuard: async () => guardOk })).toBe(true);
+      layer.authorise(true);
+      guardOk = false; // the review changed between preview and authorisation
+      await layer.applyEdit();
+      expect(layer.currentPlan).toBe(before); expect(layer.editCount).toBe(0);
+      expect(h.notify).toHaveBeenCalledWith(expect.stringContaining('invalidada'));
+      // With the guard passing, the same flow applies.
+      expect(layer.proposeSolverEdit(ops(), 'x', 'y', { authorisationGuard: async () => true })).toBe(true);
+      layer.authorise(true); await layer.applyEdit();
+      expect(layer.editCount).toBe(1); layer.dispose();
+    });
     it('does not rebuild when disposed while a grouped transaction is pending', async () => {
       const layer = new PlanSpaceLayer(plan(), host()); const before = layer.currentPlan;
       let release!: (p: SpatialPlanV2) => void;

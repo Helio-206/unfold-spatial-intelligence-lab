@@ -546,9 +546,9 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
           '/api/spatial/v2/transactions/status': ['sessionId', 'idempotencyKey'],
           '/api/spatial/v2/reviews': ['plan', 'planRevision', 'sourceBytes', 'evidence'],
           '/api/spatial/v2/reviews/get': ['reviewId'],
-          '/api/spatial/v2/reviews/list': ['sourceSha256'],
+          '/api/spatial/v2/reviews/list': ['sourceSha256', 'planFingerprint'],
           '/api/spatial/v2/reviews/decide': ['reviewId', 'baseReviewRevision', 'subjectId', 'decision', 'correctedValue', 'reviewerName', 'note', 'planRevision', 'evidenceIds'],
-          '/api/spatial/v2/reviews/eligibility': ['reviewId', 'reviewRevision'],
+          '/api/spatial/v2/reviews/eligibility': ['reviewId', 'reviewRevision', 'planFingerprint', 'sourceSha256'],
         };
         const requiredKeys: Record<string, string[]> = {
           '/api/spatial/v2/plan': ['sourceKind'], '/api/spatial/v2/adopt': ['plan'], '/api/spatial/v2/edit': ['sessionId', 'baseRevision', 'instruction'],
@@ -592,13 +592,14 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
             const failReview = (status: number, code: string, message: string, extra: Record<string, unknown> = {}) => writeJson(response, status, { error: { code, message, ...extra } }, origin);
             if (route === '/api/spatial/v2/reviews/list') {
               if (typeof reviewBody.sourceSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(reviewBody.sourceSha256)) { failReview(400, 'SPATIAL_REVIEW_SOURCE_INVALID', 'sourceSha256 inválido.'); return; }
-              const summaries = [...reviewRecords.values()].filter((r) => r.source.sha256 === reviewBody.sourceSha256).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 20)
+              const summaries = [...reviewRecords.values()].filter((r) => r.source.sha256 === reviewBody.sourceSha256 && (reviewBody.planFingerprint === undefined || r.planFingerprint === reviewBody.planFingerprint)).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 20)
                 .map((r) => ({ reviewId: r.reviewId, reviewRevision: r.reviewRevision, planRevision: r.planRevision, planFingerprint: r.planFingerprint, sourceByteVerified: r.source.byteVerified, subjects: r.subjects.length, decisions: r.decisions.length, updatedAt: r.updatedAt }));
               writeJson(response, 200, { contract: SPATIAL_REVIEW_CONTRACT, reviews: summaries }, origin); return;
             }
             if (route === '/api/spatial/v2/reviews/get' || route === '/api/spatial/v2/reviews/eligibility') {
               const record = typeof reviewBody.reviewId === 'string' ? reviewRecords.get(reviewBody.reviewId) : undefined;
               if (!record) { failReview(404, 'SPATIAL_REVIEW_NOT_FOUND', 'Revisão não encontrada.'); return; }
+              if (route === '/api/spatial/v2/reviews/eligibility' && (reviewBody.planFingerprint !== undefined && reviewBody.planFingerprint !== record.planFingerprint || reviewBody.sourceSha256 !== undefined && reviewBody.sourceSha256 !== record.source.sha256)) { failReview(409, 'SPATIAL_REVIEW_BINDING_MISMATCH', 'Esta revisão pertence a outro plano ou a outra fonte e não pode ser reutilizada aqui.', { reviewPlanFingerprint: record.planFingerprint, reviewSourceSha256: record.source.sha256 }); return; }
               if (route === '/api/spatial/v2/reviews/eligibility' && reviewBody.reviewRevision !== undefined && reviewBody.reviewRevision !== record.reviewRevision) { failReview(409, 'SPATIAL_REVIEW_REVISION_CONFLICT', 'A revisão mudou desde a leitura.', { currentReviewRevision: record.reviewRevision }); return; }
               writeJson(response, 200, { contract: SPATIAL_REVIEW_CONTRACT, review: record, gate: reviewSolverGate(record) }, origin); return;
             }
