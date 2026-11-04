@@ -1,0 +1,39 @@
+# V4 E2 — visual reconstruction research checkpoint
+
+Branch `feat/v4-e2-visual-reconstruction-engine`, base `67a806f278666a7df10f3da29a59ea3da7b70982`. The commit containing this report and the final checked-out SHA are obtained with `git rev-parse HEAD`; a Git commit cannot embed its own hash. Work is isolated, V4 is not activated, and no inference was purchased. This is **not the requested complete engine**.
+
+## Architecture and provenance
+
+`visual-reconstruction/fit.ts` consumes a validated V2 conceptual plan, one selected box/loft component, 3–8 calibrated orthographic binary fitting masks and their camera frames, and explicit resource bounds. It does not import the reference generator or access held-out views, ground-truth dimensions or source photos. It scores nine fixed multipliers 0.6–1.4 of one width with mean fitting-view silhouette IoU, validates each inferred `set-geometry` candidate on a copy, and disposes compiled scenes. It proposes only for a gain ≥0.02; the range of tested candidates within 0.01 IoU of the best is reported as an uncertainty interval. This is a discrete search, not a confidence interval. All three cases hit the search boundary; possible better widths outside the bounds are explicitly unresolved. Rotations, other geometry, pivots, hinge axes and physical scale are unresolved. A later trusted consumer must verify source bytes and reviewer identity.
+
+`visual-reconstruction/proposal.ts` sketches source/plan SHA, plan revision, review identity/revision and stale binding comparison. It does not verify a hash against source bytes, authenticate a reviewer, validate an operation batch or implement E0/E1. No automatic application or authorisation is provided. `basin.ts` separately generates a simple open-top rectangular basin as a closed solid surface: 16 vertices, 28 triangles, no boundary/non-manifold edges or winding mismatches in the tested indexed mesh, finite normals and nondegenerate triangles. This is not a complete excavator bucket: no curved back, cutting edge, side reinforcements, mount or hinge; no general self-intersection test or validated V2 serialisation/compiler extension. The earlier offset beam is still only an isolated mesh prototype.
+
+## Independent synthetic evidence
+
+`scripts/benchmark/e2-lab/references.ts` generates the reference from independent Three.js BoxGeometry and matrices, without importing candidate geometry or fitter. `generate.ts` stores eight orthographic binary masks per case with 80×80 resolution, camera directions, centre, span, partition, seed and SHA-256 mask digest; four fitting and four held-out views were frozen before scoring. The evaluator alone reads reference widths for error calculation; only fitting masks enter `fitWidth`. Reference and candidate use the same existing silhouette rasteriser. They are three simple three-box arrangements, not realistic excavator or mechanically validated independent assemblies. The fitting plan uses three disconnected root parts and therefore does not test articulated hierarchy or joint closure. There are no separate occlusion/ambiguity fixtures or third-party licensed asset. This study cannot establish general reconstruction or mechanics.
+
+Pre-registered limited criteria and limits: `e2-visual/CRITERIA.md`. Reproduce: `npx tsx scripts/benchmark/e2-lab/generate.ts`, `npx tsx scripts/benchmark/e2-lab/evaluate.ts`, `python3 scripts/benchmark/e2-lab/contact-sheet.py`. Evaluation overwrites timing/metrics output; the seed is fixed and no network is used.
+
+| Case | Fitting IoU before → after | Held-out IoU before → after | Width absolute error before → after (unitless) |
+|---|---|---|---|
+| long | 0.932 → 0.986 | 0.859 → 0.925 | 0.25 → 0.05 |
+| compact | 0.692 → 0.736 | 0.692 → 0.746 | 0.55 → 0.35 |
+| articulated | 0.656 → 0.707 | 0.766 → 0.831 | 0.15 → 0.05 |
+
+Narrow pre-registered thresholds are met on these simplified fixtures; this is not acceptance of the mission. The conceptual initial width is 0.5; every best candidate hits 0.7, the upper search boundary. The compact case retains 0.35 unit error. Other part dimensions, missing/false connections and joint residuals were not recovered or evaluated. Runtime recorded for one process run: ~70, 27 and 33 ms respectively for nine evaluations; sample size is inadequate for a latency distribution and memory peak is not measured. No GPU claims.
+
+## Visual inspection
+
+`e2-visual/mask-contact.png` is a reproducible raster mask contact sheet. `e2-visual/three-d-comparison.png` is a Chromium/SwiftShader capture of a separate fixed-camera 3D harness, showing each reference, conceptual input and fitted candidate in side and three-quarter views. Reference dimensions are duplicated in the viewer solely for display, not passed to the fitter; a future harness should eliminate this drift risk. Each row compares reference, original and fitted masks with identical camera parameters for one fitting and one held-out view. The long case is a row of rectangles; compact and articulated references show rotations which remain absent in the candidate. No model here is visually recognisable as an excavator. The image cannot show surface normals, interiors, collisions or hidden parts; no independent visual reviewer assessed it. Camera framing is the same within each comparison; the harness is not interactive and does not display joints or uncertainty. To reproduce: start `npx vite --host 127.0.0.1 --port 5189` then run `node scripts/benchmark/e2-lab/capture.mjs`.
+
+## Meta plan and safety boundaries
+
+The Phase D diagnostic was rerun locally on the stored plan at the baseline and reproduced 6.21%, 25.90% and 35.34% residual as percentage of scene span, from a bounded heuristic. These values are not mechanical ground truth. The plan supplies no verified anchors or calibrated source evidence for this fitter; it has not been reconstructed, and no relation was silently rewritten. The three boxes above are synthetic and not Meta live. No evidence links these results to real photographs.
+
+The search checks cancellation between evaluations and caps views, resolution, components, evaluation count and elapsed time checks. It is synchronous: a single rasterisation/compilation is not preemptible, an AbortSignal from the same UI thread cannot interrupt it while blocked, and there is no Worker lifetime, memory peak budget or disposal audit under repeated cancellation. The implementation is not production-safe. Degenerate/calibration/empty/cancelled/overbudget cases have tests, but actual occlusion and equally plausible conflicting candidate hypotheses are not robustly identified.
+
+## Tests and decision
+
+Dedicated and relevant regression test run: 6 files / 15 tests passed. TypeScript/Vite build passed (existing missing contact variable and bundle-size warnings). Default suite comparison, separate sequential runs with the same dependencies and default settings: base `67a806f` 2,488 passed / 4 failed; branch 2,494 passed / 4 failed. The same four tests timed out at the default 5 s in both: rendering lifecycle, two buried-component operations and bucket-width rejection. This equivalence does not prove no other workload/environment effect. Separately, `npm test -- --maxWorkers=4 --testTimeout=60000` passed 159 files / 2,498 tests; it does not make the default suite green.
+
+**NO-GO for guarded product integration.** Required: independent realistic multi-part ground truth with occlusion and genuinely blind unseen geometry; fitting multiple shape, pose and joint hypotheses from pixels with ambiguity refusal; coherent bucket with validated topology and V2 compatibility; complete non-mutating assembly proposal and E0/E1 binding; Worker cancellation and resource lifecycle; actual 3D synchronized viewer and independent visual inspection; physical-device and real-photo evidence where justified. The current result is a narrow evidence-consuming width experiment, not the full mission.
