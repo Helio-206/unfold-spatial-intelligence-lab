@@ -98,3 +98,19 @@ describe('plan-level repair used by the paid plan route', () => {
     expect(params.height).toBeGreaterThan(5);
   });
 });
+
+describe('abbreviated keys seen in a real Muse Spark run (w/h/d/r and t/r/s)', () => {
+  it('reads w/h/d as the box dimensions and keeps the proportions the model chose', () => {
+    const box = repairShapeParameters('box', { w: 2, h: 5.6, d: 1 });
+    expect(box.parameters).toEqual({ dimensions: [2, 5.6, 1] });
+    expect(box.repairs).toContain('width/height/depth read as dimensions');
+  });
+  it('reads w/h/d/r on a rounded box, with r as the bevel, and records the aliases', () => {
+    const rounded = repairShapeParameters('rounded_box', { w: 2, h: 5.6, d: 1, r: 0.06 });
+    expect(rounded.parameters).toMatchObject({ dimensions: [2, 5.6, 1], bevelM: 0.06 });
+    expect(rounded.defaulted).not.toContain('dimensions');
+    expect(rounded.repairs.join(' ')).toMatch(/read as/);
+    const long = repairShapeParameters('rounded_box', { width: 3, height: 0.2, depth: 1, bevelM: 0.05 });
+    expect(long.parameters).toMatchObject({ dimensions: [3, 0.2, 1], bevelM: 0.05 });
+  });
+});

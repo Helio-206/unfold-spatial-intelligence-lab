@@ -125,3 +125,14 @@ describe('verified captures', () => {
     expect(() => analyzeFrame({ data: new Uint8ClampedArray(16), width: 2, height: 2 }, background)).toThrow('SPATIAL_FRAME_SIZE_MISMATCH');
   });
 });
+
+describe('heroAzimuth with a restricted set of views', () => {
+  it('only returns one of the allowed azimuths, even when another diagonal has the larger silhouette', () => {
+    // a long body along Z: the widest silhouette is seen from the sides (38/128 or 218/308 are all diagonals), detail sits at the -Z end
+    const points: Vector3[] = []; for (let i = 0; i <= 40; i++) points.push(new Vector3(((i % 2) - 0.5) * 0.4, (i % 3) * 0.2, -2 + i * 0.1), new Vector3(0, 0.3, -2 + (i % 5) * 0.05));
+    const free = heroAzimuth(points), restricted = heroAzimuth(points, [38, 128]);
+    expect([38, 128]).toContain(restricted);
+    expect([38, 128, 218, 308]).toContain(free);
+    expect(heroAzimuth(points, [218])).toBe(218);
+  });
+});

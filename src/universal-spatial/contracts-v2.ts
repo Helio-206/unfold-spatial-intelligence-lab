@@ -147,14 +147,16 @@ function positive(values: unknown[], path: string, max = 1_000): void {
   if (!values.every((n) => typeof n === 'number' && Number.isFinite(n) && n > 0 && n <= max)) fail(`SPATIAL_V2_PARAMETERS_INVALID:${path}`);
 }
 
+/** The exact parameter keys of each operator: the single source for validation and for the generation guidance. */
+export const SHAPE_PARAMETER_KEYS: Readonly<Record<string, readonly string[]>> = {
+  box: ['dimensions'], rounded_box: ['dimensions', 'bevelM', 'segments'], sphere: ['radius', 'widthSegments', 'heightSegments'], ellipsoid: ['radii', 'widthSegments', 'heightSegments'],
+  cylinder: ['radiusTop', 'radiusBottom', 'height', 'radialSegments'], cone: ['radius', 'height', 'radialSegments'], torus: ['majorRadius', 'tubeRadius', 'radialSegments', 'tubularSegments'],
+  extrude: ['profile', 'depth', 'bevelM', 'curveSegments'], tube: ['points', 'radius', 'tubularSegments', 'radialSegments'], revolve: ['profile', 'segments'],
+  loft: ['profile', 'sections', 'capEnds'],
+};
+
 function validateParameters(operator: string, raw: Record<string, unknown>, path: string): void {
-  const parameterKeys: Record<string, string[]> = {
-    box: ['dimensions'], rounded_box: ['dimensions', 'bevelM', 'segments'], sphere: ['radius', 'widthSegments', 'heightSegments'], ellipsoid: ['radii', 'widthSegments', 'heightSegments'],
-    cylinder: ['radiusTop', 'radiusBottom', 'height', 'radialSegments'], cone: ['radius', 'height', 'radialSegments'], torus: ['majorRadius', 'tubeRadius', 'radialSegments', 'tubularSegments'],
-    extrude: ['profile', 'depth', 'bevelM', 'curveSegments'], tube: ['points', 'radius', 'tubularSegments', 'radialSegments'], revolve: ['profile', 'segments'],
-    loft: ['profile', 'sections', 'capEnds'],
-  };
-  const expected = parameterKeys[operator];
+  const expected = SHAPE_PARAMETER_KEYS[operator];
   if (!expected || !keysAre(raw, expected)) fail(`SPATIAL_V2_PARAMETERS_INVALID:${path}`);
   const p = raw as Record<string, unknown>;
   const points = (name: string, min: number, max: number, dimensions = 2) => {

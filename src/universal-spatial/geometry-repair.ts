@@ -107,20 +107,26 @@ export function repairShapeParameters(operator: string, raw: unknown, context: R
     defaulted.push(name); return fallback;
   };
 
+  /** `dimensions`, or the per-axis keys a model may use instead (width/height/depth or w/h/d), keeping every value it gave. */
+  const boxDimensions = (): number[] => {
+    const axes: Array<[string[], string]> = [[['width', 'w'], 'width'], [['height', 'h'], 'height'], [['depth', 'd'], 'depth']];
+    const given = axes.map(([names]) => { const name = names.find((key) => Object.hasOwn(source, key)); return name ? { name, value: num(source[name], name) } : undefined; });
+    if (!Object.hasOwn(source, 'dimensions') && !Object.hasOwn(source, 'size') && given.some((g) => g?.value !== undefined && g.value > 0)) {
+      for (const g of given) if (g) consumed.add(g.name);
+      const known = given.filter((g): g is { name: string; value: number } => g?.value !== undefined && g.value > 0), mean = known.reduce((a, g) => a + g.value, 0) / known.length;
+      repairs.push('width/height/depth read as dimensions');
+      return given.map((g, i) => { if (g?.value !== undefined && g.value > 0) { kept++; return Math.min(g.value, MAX); } defaulted.push(`dimensions[${i}]`); return mean; });
+    }
+    return triple('dimensions', defaults.dimensions as number[], ['size']);
+  };
   let candidate: Record<string, unknown>;
   switch (op) {
-    case 'box': {
-      const given = ['width', 'height', 'depth'].map((key) => (Object.hasOwn(source, key) ? num(source[key], key) : undefined));
-      if (!Object.hasOwn(source, 'dimensions') && !Object.hasOwn(source, 'size') && given.some((n) => n !== undefined && n > 0)) {
-        for (const key of ['width', 'height', 'depth']) consumed.add(key);
-        const known = given.filter((n): n is number => n !== undefined && n > 0), mean = known.reduce((a, n) => a + n, 0) / known.length;
-        candidate = { dimensions: given.map((n, i) => { if (n !== undefined && n > 0) { kept++; return Math.min(n, MAX); } defaulted.push(`dimensions[${i}]`); return mean; }) }; repairs.push('width/height/depth read as dimensions');
-      } else candidate = { dimensions: triple('dimensions', defaults.dimensions as number[], ['size']) };
-      break;
-    }
+    case 'box': candidate = { dimensions: boxDimensions() }; break;
     case 'rounded_box': {
-      const dimensions = triple('dimensions', defaults.dimensions as number[], ['size']), half = Math.min(...dimensions) / 2;
-      const bevelRaw = num(take('bevelM'), 'bevelM'); let bevelM = bevelRaw ?? Math.min(0.08 * Math.min(...dimensions), half);
+      const dimensions = boxDimensions(), half = Math.min(...dimensions) / 2;
+      const bevelKey = Object.hasOwn(source, 'bevelM') ? 'bevelM' : ['bevel', 'bevelRadius', 'cornerRadius', 'radius', 'r'].find((key) => Object.hasOwn(source, key));
+      if (bevelKey && bevelKey !== 'bevelM') { consumed.add(bevelKey); repairs.push(`${bevelKey} read as bevelM`); }
+      const bevelRaw = num(bevelKey ? source[bevelKey] : undefined, 'bevelM'); if (bevelKey === 'bevelM') consumed.add('bevelM'); let bevelM = bevelRaw ?? Math.min(0.08 * Math.min(...dimensions), half);
       if (bevelRaw === undefined) defaulted.push('bevelM'); else if (bevelRaw < 0 || bevelRaw > half) { bevelM = Math.min(Math.max(0, bevelRaw), half * 0.9); repairs.push('bevelM: clamped to the box'); }
       candidate = { dimensions, bevelM, segments: integer('segments', 1, 8, 3) }; break;
     }

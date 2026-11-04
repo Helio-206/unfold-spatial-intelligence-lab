@@ -58,7 +58,7 @@ export function collectWorldPoints(root: Object3D, maxPoints = 8000, skip?: (obj
   return points;
 }
 
-const HERO_CANDIDATES = [38, 128, 218, 308] as const;
+const HERO_CANDIDATES: readonly number[] = [38, 128, 218, 308];
 function hullArea(points: Array<[number, number]>): number {
   const sorted = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]); if (sorted.length < 3) return 0;
   const cross = (o: number[], a: number[], b: number[]) => (a[0]! - o[0]!) * (b[1]! - o[1]!) - (a[1]! - o[1]!) * (b[0]! - o[0]!);
@@ -70,16 +70,16 @@ function hullArea(points: Array<[number, number]>): number {
 
 /**
  * Azimuth of the hero shot among the four diagonal three-quarter views. An unknown object has no "front", so this is a stated heuristic, not
- * recognition: prefer the view with the largest silhouette, and among equals the one facing the end that holds more vertex detail (what a viewer
+ * recognition (`candidates` narrows the set, for example to the views from the +Z side when the plan was told its front faces +Z): prefer the view with the largest silhouette, and among equals the one facing the end that holds more vertex detail (what a viewer
  * reads first: the fan of an engine, the head of an animal, the face of a clock). Symmetric objects tie and keep the first candidate.
  */
-export function heroAzimuth(points: readonly Vector3[]): number {
-  if (!points.length) throw new Error('SPATIAL_FRAMING_EMPTY');
+export function heroAzimuth(points: readonly Vector3[], candidates: readonly number[] = HERO_CANDIDATES): number {
+  if (!points.length || !candidates.length) throw new Error('SPATIAL_FRAMING_EMPTY');
   const lo = new Vector3(Infinity, Infinity, Infinity), hi = new Vector3(-Infinity, -Infinity, -Infinity); const mean = new Vector3();
   for (const p of points) { lo.min(p); hi.max(p); mean.add(p); }
   mean.divideScalar(points.length); const center = lo.clone().add(hi).multiplyScalar(0.5), half = Math.max((hi.x - lo.x) / 2, (hi.z - lo.z) / 2, 1e-12);
   const offset = [(mean.x - center.x) / half, (mean.z - center.z) / half] as const, el = (SHOT_DIRECTIONS.hero.elevationDeg * Math.PI) / 180;
-  const scored = HERO_CANDIDATES.map((azimuthDeg) => {
+  const scored = candidates.map((azimuthDeg) => {
     const az = (azimuthDeg * Math.PI) / 180, direction = new Vector3(Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az));
     const right = new Vector3().crossVectors(new Vector3(0, 1, 0), direction).normalize(), up = new Vector3().crossVectors(direction, right).normalize();
     const area = hullArea(points.map((p) => [p.clone().sub(center).dot(right), p.clone().sub(center).dot(up)] as [number, number]));
