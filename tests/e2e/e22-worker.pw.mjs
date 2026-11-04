@@ -1,0 +1,3 @@
+import {chromium} from 'playwright-core';
+const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH??'/usr/bin/google-chrome',args:['--no-sandbox']});
+try{const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:5191/tests/harness/e22-worker/',{waitUntil:'networkidle'});const result=await page.evaluate(()=>window.runE22WorkerTest());console.log(JSON.stringify({result,errors}));if(result.count!==3||result.cancelled!=='CANCELLED'||result.stale!=='STALE_PROPOSAL'||result.disposed!=='STALE_PROPOSAL'||result.gap>.005||errors.length)throw Error('E22 worker lifecycle failed');}finally{await browser.close();}
