@@ -192,3 +192,7 @@
 .uw-flow { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
 .uw-flow > * { pointer-events: auto; }
 .uw-rail-extras { display: flex; flex-direction: column; gap: var(--space-1); }
+.uw-spatial-voice { border-block: 1px solid var(--line); margin: var(--space-3) 0; padding: var(--space-2) 0; }
+.uw-spatial-voice p { font-size: 12px; line-height: 1.5; }
+.uw-spatial-voice select, .uw-spatial-voice input { max-width: 100%; color: var(--ink); background: var(--surface); }
+.uw-spatial-voice input { width: 4.5em; }

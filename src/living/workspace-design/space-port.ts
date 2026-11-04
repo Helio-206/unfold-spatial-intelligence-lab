@@ -1,3 +1,4 @@
+import type { SpatialPlanV2 } from '../../universal-spatial/contracts-v2';
 import type { Box3, Camera, Object3D, Vector2 } from 'three';
 
 /**
@@ -8,6 +9,9 @@ import type { Box3, Camera, Object3D, Vector2 } from 'three';
 export interface SpaceLayer {
   /** Added to the Foundry scene on show and removed on clear. The layer owns what is below it and frees it in `dispose`. */
   readonly root: Object3D;
+  /** Optional reviewed plan and visual generation for explanation, owned by the layer. */
+  readonly currentPlan?: SpatialPlanV2;
+  readonly explanationVersion?: number;
   /** World box of everything shown, or of one component. Null when there is nothing to frame. */
   box(id?: string | null): Box3 | null;
   /** Azimuth (degrees, Cinema convention: from +X toward +Z) of the best three-quarter view, or null when the layer has no opinion. */

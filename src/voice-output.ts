@@ -19,7 +19,7 @@ export class VoiceOutput {
 }
 
 export function browserVoiceOutput(stopRecognition: () => void): VoiceOutput {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') return new VoiceOutput(undefined, stopRecognition);
+  if (typeof window === 'undefined' || !window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') return new VoiceOutput(undefined, stopRecognition);
   return new VoiceOutput({
     cancel: () => window.speechSynthesis.cancel(),
     speak: (text) => { const utterance = new SpeechSynthesisUtterance(text); utterance.lang = 'pt-PT'; window.speechSynthesis.speak(utterance); },
@@ -28,7 +28,7 @@ export function browserVoiceOutput(stopRecognition: () => void): VoiceOutput {
 
 /** Browser implementation of the spatial TTS port. Voice lists may arrive asynchronously. */
 export function browserSpatialTts(): import('./living/spatial-voice/speech').SpatialTtsPort | null {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') return null;
+  if (typeof window === 'undefined' || !window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') return null;
   const synth = window.speechSynthesis;
   return {
     speak(text, settings, finished) {

@@ -10,7 +10,7 @@ describe('spatial explanation context', () => {
     expect(result.componentId).toBe(id);
     expect(result.evidenceIds).toEqual([id]);
     expect(result.text).toContain(plan.components.find((component) => component.id === id)!.label);
-    expect(result.text).toContain('não está estabelecida');
+    expect(result.text).toContain('Conhecimento geral');
     expect(result.source).toBe('local-plan');
   });
   it('supports a general explanation and snapshots the plan', () => {

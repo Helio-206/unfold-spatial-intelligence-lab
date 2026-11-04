@@ -26,6 +26,10 @@ import { Box3, Sphere, Vector2, Vector3 } from 'three';
 import { applyMotionTokens, DURATION, EASE } from '../../motion/tokens';
 import { HandInteractionModel, WebcamHandTracker, type HandInteractionState } from '../../hand-tracking';
 import { BrowserVoiceInput } from '../../voice-input';
+import { browserSpatialTts } from '../../voice-output';
+import { createSpatialExplanationContext } from '../spatial-voice/context';
+import { explainSpatialContext, type ApprovedExplanation } from '../spatial-voice/explanation';
+import { SpatialSpeechController } from '../spatial-voice/speech';
 import type { Assembly } from '../contracts';
 import { buildComponentRegistry, type CanonicalComponent, type ComponentRegistry } from '../visual-foundry/component-registry';
 import { buildExcavator, type ExcavatorModel, type PartPose } from '../visual-foundry/excavator/build';
@@ -111,6 +115,14 @@ export class SpatialWorkspace {
   private attachment: { name: string; size: number; dataUrl: string } | null = null;
   private playback: { cancel(): void } | null = null;
   private voice: BrowserVoiceInput | null = null;
+  private explanation: ApprovedExplanation | null = null;
+  private explanationGeneration = 0;
+  private explanationBusy = false;
+  private explanationError = '';
+  private explanationKey = '';
+  private speechVoice: string | null = null;
+  private speechRate = 1;
+  private readonly speech = new SpatialSpeechController(browserSpatialTts(), () => this.voice?.stop(), () => { if (!this.disposed && this.el.inspector) this.renderInspector(); });
   private handTracker: WebcamHandTracker | null = null;
   private readonly handModel = new HandInteractionModel();
   private readonly disposers: Array<() => void> = [];
@@ -249,7 +261,7 @@ export class SpatialWorkspace {
       if (e.key === 'Enter' && !this.empty && this.hand.targetId) this.select(this.hand.targetId);
     });
     on(window, 'keydown', (e: KeyboardEvent) => {
-      const typing = (e.target as HTMLElement)?.closest?.('textarea, input');
+      const typing = (e.target as HTMLElement)?.closest?.('textarea, input, select');
       if (e.key === 'Escape') { e.preventDefault(); this.escape(); return; }
       if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === 'f' || e.key === 'F') { e.preventDefault(); this.toggleFocus(); }
@@ -303,6 +315,11 @@ export class SpatialWorkspace {
       else if (act === 'reject') this.reject(arg);
       else if (act === 'reset-pose') this.resetPose();
       else if (act === 'close-inspector') { this.inspectorOpen = false; this.evidenceOpen = false; this.renderInspector(); this.renderRail(); }
+      else if (act === 'explain-space') void this.explainSelection();
+      else if (act === 'speech-play') { if (this.explanation && this.explanationKey === this.currentExplanationKey()) this.speech.play(this.explanation, { language: 'pt-PT', voiceURI: this.speechVoice, rate: this.speechRate }); }
+      else if (act === 'speech-pause') this.speech.pause();
+      else if (act === 'speech-resume') this.speech.resume();
+      else if (act === 'speech-stop') this.speech.cancel();
       else if (act === 'frame') this.frameSelection();
       else if (act === 'isolate') this.toggleIsolate();
       else if (act === 'simulate') this.offerExperiment(this.selectedId, null);
@@ -316,9 +333,15 @@ export class SpatialWorkspace {
       else if (act === 'engine-resume') this.resumeEngine();
       else if (act === 'engine-cancel') this.cancelEngine();
       else if (act === 'engine-reset') this.resetPose();
+      if (e.detail === 0 && act.startsWith('speech-')) {
+        const next = act === 'speech-pause' ? 'speech-resume' : act === 'speech-resume' ? 'speech-pause' : 'speech-play';
+        this.el.inspector?.querySelector<HTMLButtonElement>(`[data-act="${next}"]`)?.focus();
+      }
     });
     on(this.root, 'change', (e: Event) => {
       const input = e.target as HTMLInputElement;
+      if (input.dataset.act === 'speech-voice') { this.speechVoice = input.value || null; return; }
+      if (input.dataset.act === 'speech-rate') { const rate = Number(input.value); if (rate >= 0.5 && rate <= 2) this.speechRate = rate; return; }
       if (input.dataset.act !== 'engine-seek') return;
       this.pauseEngine(); this.cancelPendingEngineCards(); this.engineering.seek(input.valueAsNumber); this.engineProposal = null;
       if (this.showEngineFrame() && this.engineering.state().timeS >= this.engineering.state().durationS) this.finishEngineMessage();
@@ -339,6 +362,7 @@ export class SpatialWorkspace {
       onCommand: async (value) => { await this.ask(value); return true; },
     });
     if (!this.voice.supported) this.el.mic!.hidden = true;
+    if (typeof window !== 'undefined' && window.speechSynthesis) on(window.speechSynthesis, 'voiceschanged', () => { if (this.explanation) this.renderInspector(); });
   }
 
   private autoGrow(): void { const i = this.el.input as HTMLTextAreaElement; i.style.height = 'auto'; i.style.height = `${Math.min(120, i.scrollHeight)}px`; this.syncInsets(true); }
@@ -466,13 +490,48 @@ export class SpatialWorkspace {
     this.el.toolHand!.setAttribute('aria-pressed', String(!!this.handTracker));
   }
 
+  private currentExplanationKey(): string {
+    if (!this.space?.currentPlan) return '';
+    return JSON.stringify([this.selectedId, this.space.explanationVersion ?? 0, this.space.currentPlan]);
+  }
+
+  private invalidateExplanation(): void {
+    this.explanationGeneration++; this.explanation = null; this.explanationKey = ''; this.explanationBusy = false; this.explanationError = ''; this.speech.cancel();
+  }
+
+  private async explainSelection(): Promise<void> {
+    const layer = this.space; const plan = layer?.currentPlan; const id = this.selectedId;
+    if (!layer || !plan || !id) return;
+    this.invalidateExplanation();
+    const generation = this.explanationGeneration; const key = this.currentExplanationKey();
+    this.explanationKey = key; this.explanationBusy = true; this.renderInspector();
+    try {
+      const context = createSpatialExplanationContext(plan, id, key);
+      const answer = await Promise.resolve().then(() => explainSpatialContext(context));
+      if (generation !== this.explanationGeneration || this.space !== layer || key !== this.currentExplanationKey()) return;
+      this.explanation = answer; this.explanationKey = key;
+    } catch {
+      if (generation === this.explanationGeneration) this.explanationError = 'Não foi possível validar o plano actual para explicação.';
+    } finally {
+      if (generation === this.explanationGeneration) { this.explanationBusy = false; this.renderInspector(); }
+    }
+  }
+
+  private voiceMarkup(): string {
+    const answer = this.explanation;
+    const voices = this.speech.supported ? window.speechSynthesis.getVoices() : [];
+    const options = voices.map((v) => `<option value="${esc(v.voiceURI)}" ${v.voiceURI === this.speechVoice ? 'selected' : ''}>${esc(v.name)} · ${esc(v.lang)}</option>`).join('');
+    const state = this.speech.state;
+    return `<section class="uw-spatial-voice" aria-label="Explicação espacial"><button type="button" class="uw-link" data-act="explain-space" ${this.explanationBusy ? 'disabled' : ''}>${this.explanationBusy ? 'A explicar…' : 'Explicar'}</button>${this.explanationError ? `<p role="alert">${esc(this.explanationError)}</p>` : ''}${answer ? `<p class="u-label">Explicação local · plano e conhecimento geral · ID ${esc(answer.componentId ?? '')}</p><p role="status" aria-live="polite">${!this.speech.supported ? 'Síntese de voz indisponível neste browser; a transcrição continua disponível.' : state === 'playing' ? 'A reproduzir' : state === 'paused' ? 'Em pausa' : 'Pronto para ouvir'}</p>${this.speech.supported ? `<div class="uw-inspector-actions"><button type="button" class="uw-link" data-act="speech-play">Ouvir</button><button type="button" class="uw-link" data-act="speech-pause" ${state !== 'playing' ? 'disabled' : ''}>Pausar</button><button type="button" class="uw-link" data-act="speech-resume" ${state !== 'paused' ? 'disabled' : ''}>Continuar</button><button type="button" class="uw-link" data-act="speech-stop" ${state === 'idle' ? 'disabled' : ''}>Parar</button></div><details><summary>Preferências de voz</summary><label>Voz <select data-act="speech-voice"><option value="">Automática · pt-PT</option>${options}</select></label><label> Velocidade <input data-act="speech-rate" type="number" min="0.5" max="2" step="0.1" value="${this.speechRate}"></label></details>` : ''}<p data-testid="spatial-transcript">${esc(answer.text)}</p>` : ''}</section>`;
+  }
+
   private renderInspector(): void {
     const el = this.el.inspector!;
     if (this.space) {
       const info = this.selectedId ? this.space.describe(this.selectedId) : null;
       if (!info || !this.inspectorOpen || this.state.mode === 'focus') { el.hidden = true; return; }
       el.hidden = false;
-      el.innerHTML = `<div class="uw-transient-head"><span class="u-label">${esc(info.kind)} · ${esc(this.selectedId!)}</span><button type="button" class="uw-close" data-act="close-inspector" aria-label="Fechar inspector">${icon(xIcon)}</button></div><h2>${esc(info.label)}</h2><div data-el="spaceBody"></div><div class="uw-inspector-actions"><button type="button" class="uw-link" data-act="frame">enquadrar</button><button type="button" class="uw-link" data-act="isolate">${this.space.isolatedId ? 'mostrar tudo' : 'isolar'}</button><button type="button" class="uw-link" data-act="evidence" aria-pressed="${this.evidenceOpen}">evidência</button></div>`;
+      el.innerHTML = `<div class="uw-transient-head"><span class="u-label">${esc(info.kind)} · ${esc(this.selectedId!)}</span><button type="button" class="uw-close" data-act="close-inspector" aria-label="Fechar inspector">${icon(xIcon)}</button></div><h2>${esc(info.label)}</h2>${this.space.currentPlan ? this.voiceMarkup() : ''}<div data-el="spaceBody"></div><div class="uw-inspector-actions"><button type="button" class="uw-link" data-act="frame">enquadrar</button><button type="button" class="uw-link" data-act="isolate">${this.space.isolatedId ? 'mostrar tudo' : 'isolar'}</button><button type="button" class="uw-link" data-act="evidence" aria-pressed="${this.evidenceOpen}">evidência</button></div>`;
       this.space.renderInspector(el.querySelector<HTMLElement>('[data-el="spaceBody"]')!, this.selectedId!, this.evidenceOpen);
       return;
     }
@@ -590,6 +649,7 @@ export class SpatialWorkspace {
   select(id: string): void {
     if (this.space) {
       if (!this.space.has(id)) return;
+      if (id !== this.selectedId) this.invalidateExplanation();
       this.selectedId = id; this.inspectorOpen = true; this.space.highlight(id);
       if (this.space.isolatedId && this.space.isolatedId !== id) this.space.isolate(id);
       const focus = this.componentSphere(id); if (focus) this.director.retarget(focus.center, 'user_tool');
@@ -611,6 +671,7 @@ export class SpatialWorkspace {
 
   clearSelection(): void {
     if (this.space) {
+      this.invalidateExplanation();
       this.selectedId = null; this.inspectorOpen = false; this.evidenceOpen = false;
       this.space.highlight(null); if (this.space.isolatedId) this.space.isolate(null);
       this.space.onSelectionCleared?.(); this.foundry.requestRender(); this.render(); return;
@@ -1050,7 +1111,7 @@ export class SpatialWorkspace {
 
   private toggleVoice(): void {
     if (!this.voice) return;
-    if (this.voice.status === 'LISTENING') this.voice.stop(); else this.voice.start();
+    if (this.voice.status === 'LISTENING') this.voice.stop(); else { this.speech.cancel(); this.voice.start(); }
   }
 
   /**
@@ -1184,6 +1245,7 @@ export class SpatialWorkspace {
   /** Re-frames and re-renders after the layer changed what it shows (an edit, an undo, a reveal step). */
   spaceChanged(options: { reframe?: boolean } = {}): void {
     if (!this.space || this.disposed) return;
+    if (this.explanationKey && this.explanationKey !== this.currentExplanationKey() || this.explanationBusy) this.invalidateExplanation();
     if (options.reframe) this.frameHome();
     if (this.selectedId && !this.space.has(this.selectedId)) { this.selectedId = null; this.inspectorOpen = false; this.evidenceOpen = false; }
     this.foundry.studio.updateContactShadow(); this.render();
@@ -1241,14 +1303,14 @@ export class SpatialWorkspace {
   spaceViewContext(): { viewport: { width: number; height: number }; insets: SafeInsets; baseFovDeg: number } { return { viewport: { width: this.root.clientWidth || 1, height: this.root.clientHeight || 1 }, insets: { ...this.currentInsets }, baseFovDeg: this.director.baseFov }; }
 
   /** A redraw without a state change (highlight, reveal step). */
-  redraw(): void { this.foundry.markMotion(); this.foundry.studio.updateContactShadow(); this.foundry.requestRender(); }
+  redraw(): void { if (this.explanationKey && this.explanationKey !== this.currentExplanationKey()) { this.invalidateExplanation(); this.renderInspector(); } this.foundry.markMotion(); this.foundry.studio.updateContactShadow(); this.foundry.requestRender(); }
 
   get spaceActive(): boolean { return this.space !== null; }
   get selectedSpaceId(): string | null { return this.space ? this.selectedId : null; }
 
   /** Leaves the space (frees its objects) without touching the machine slot. Idempotent. */
   private removeSpace(): void {
-    const layer = this.space; if (!layer) return; this.space = null; delete this.root.dataset.space;
+    const layer = this.space; if (!layer) return; this.invalidateExplanation(); this.space = null; delete this.root.dataset.space;
     this.foundry.scene.remove(layer.root); layer.dispose();
     this.selectedId = null; this.inspectorOpen = false; this.evidenceOpen = false;
   }
@@ -1351,7 +1413,7 @@ export class SpatialWorkspace {
     this.playback?.cancel();
     this.insetTween?.kill();
     this.stopHandTracking();
-    this.voice?.stop?.();
+    this.voice?.stop?.(); this.speech.dispose();
     for (const d of this.disposers.splice(0)) d();
     this.director.dispose();
     this.scene.dispose();

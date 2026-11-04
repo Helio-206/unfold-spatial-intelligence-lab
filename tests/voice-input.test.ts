@@ -46,6 +46,10 @@ describe('push-to-talk input adapter', () => {
     expect(voice.start()).toBe(true);
     voice.stop();
     expect(recognition?.aborted).toBe(true);
+    const results = [{ isFinal: true, 0: { transcript: 'áudio obsoleto' } }];
+    recognition?.onresult?.({ results, resultIndex: 0 } as unknown as Event);
+    recognition?.onstart?.();
+    expect(voice.status).toBe('IDLE');
     expect(command).not.toHaveBeenCalled();
   });
 });
