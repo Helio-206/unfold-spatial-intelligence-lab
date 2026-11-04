@@ -14,7 +14,7 @@ const CONFIRMED = new Set(['observed', 'user_provided']);
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const fmt3 = (v: readonly number[]) => `[${v.map((n) => n.toFixed(3)).join(', ')}]`;
 
-type Pending = { label: string; before: string; after: string; operations: SpatialOperationV2[]; needsAuthorization: boolean; source: 'person' | 'meta' | 'meta-visual' };
+type Pending = { label: string; before: string; after: string; operations: SpatialOperationV2[]; needsAuthorization: boolean; source: 'person' | 'meta' | 'meta-visual' | 'solver'; /** what produced the proposal, recorded in the provenance when a person applies it */ evidence?: string };
 /** Triangles of arrived geometry swapped in per call (and so per frame): bounds the GPU upload one frame has to carry. */
 export const UPGRADE_TRIANGLES_PER_CALL = 60_000;
 /** A compile result that may finish later: geometry computed off the main thread arrives through `upgrade()`. V2's result has neither method. */
@@ -309,16 +309,28 @@ export class PlanSpaceLayer implements SpaceLayer {
     this.selected = component.id; this.pending = { label: `${label} · ${component.label}`, before: current, after: describe(operation), operations: [operation], needsAuthorization: true, source }; this.authorised = false;
     this.applyPaint(); this.host.changed(); return true;
   }
+  /**
+   * A result of a deterministic solver (V4 structural fit): several typed operations previewed as ONE step. Not an AI hypothesis and not a human value: it
+   * is applied only when a person authorises it, then recorded as that person's decision with the solver's evidence in the provenance. One undo reverts all of it.
+   */
+  proposeSolverEdit(operations: SpatialOperationV2[], label: string, evidence: string): boolean {
+    if (!operations.length || this.lockReason) return false;
+    try { let probe = this.plan; for (const operation of operations) probe = applySpatialOperationV2(probe, operation, { origin: 'inferred', evidence: 'preview' }); } catch { return false; }
+    const first = this.plan.components.find((item) => item.id === operations[0]!.componentId); if (!first) return false;
+    this.selected = this.selected && operations.some((op) => op.componentId === this.selected) ? this.selected : first.id;
+    this.pending = { label, before: 'colocação actual', after: `${new Set(operations.map((op) => op.componentId)).size} componentes: posição e escala`, operations, needsAuthorization: true, source: 'solver', evidence }; this.authorised = false;
+    this.applyPaint(); this.host.changed(); return true;
+  }
   cancelPending(): void { this.pending = null; this.authorised = false; this.host.changed(); }
   get selectedId(): string | null { return this.selected; }
 
   async applyEdit(): Promise<void> {
     const pending = this.pending; if (!pending || this.busy) return;
     if (this.lockReason) { this.host.notify(`Edição indisponível: ${this.lockReason}.`); return; }
-    if (pending.needsAuthorization && !this.authorised) { this.host.notify(pending.source === 'person' ? 'Esta edição toca num valor observado ou confirmado: marque a autorização primeiro.' : 'Uma alteração proposta pela IA só se aplica depois de a autorizar: marque a autorização.'); return; }
+    if (pending.needsAuthorization && !this.authorised) { this.host.notify(pending.source === 'person' ? 'Esta edição toca num valor observado ou confirmado: marque a autorização primeiro.' : pending.source === 'solver' ? 'Uma proposta do solver só se aplica depois de a autorizar: marque a autorização.' : 'Uma alteração proposta pela IA só se aplica depois de a autorizar: marque a autorização.'); return; }
     this.busy = true; this.director?.enterEditing();
     try {
-      const evidence = pending.source === 'person' ? 'Editado por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).' : 'Proposta por Muse Spark (hipótese) e autorizada por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).';
+      const evidence = pending.source === 'solver' ? `${pending.evidence ?? 'Proposta do solver estrutural.'} Resultado de optimização (hipótese), autorizado por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).` : pending.source === 'person' ? 'Editado por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).' : 'Proposta por Muse Spark (hipótese) e autorizada por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).';
       await this.commit(pending.operations, { origin: 'user_provided', evidence });
       this.host.notify(`Aplicado: ${pending.label}.${this.sync ? '' : ' Edição só local: a sessão do servidor não a conhece.'}`);
     } catch (error) { this.pending = null; this.host.notify(`Edição bloqueada: ${error instanceof Error ? error.message : 'erro desconhecido'}`); }
@@ -335,8 +347,8 @@ export class PlanSpaceLayer implements SpaceLayer {
     const pending = this.pending;
     const route = this.geometryReport?.decisions.find(decision => decision.componentId === id);
     const evidence = evidenceOpen ? `<ul class="uw-evidence" aria-label="Evidência"><li>${esc(p.evidence)}</li>${route ? `<li>Método de geometria: ${esc(route.used)} · ${esc(route.reason)}</li>` : '<li>Método de geometria: procedural_v2</li>'}${keys.map((shape) => `<li><code>${esc(shape.key)}</code> · ${esc(shape.operator)}<br><code>${esc(JSON.stringify(shape.parameters).slice(0, 400))}</code></li>`).join('')}</ul>` : '';
-    const pendingHtml = pending ? `<div class="sp-pending" role="status" data-source="${pending.source}"><p class="u-label"><b>${pending.source === 'person' ? 'Pré-visualização' : pending.source === 'meta' ? 'Proposta da Meta · ainda não aplicada' : 'Proposta da avaliação visual · ainda não aplicada'}</b></p><p class="u-label">${esc(pending.label)}: ${esc(pending.before)} → ${esc(pending.after)}</p>
-        ${pending.needsAuthorization ? `<label class="sp-auth u-label"><input type="checkbox" data-auth ${this.authorised ? 'checked' : ''}> ${pending.source === 'person' ? 'Autorizo alterar um valor confirmado' : 'Autorizo aplicar esta alteração proposta pela IA'}</label>` : ''}
+    const pendingHtml = pending ? `<div class="sp-pending" role="status" data-source="${pending.source}"><p class="u-label"><b>${pending.source === 'person' ? 'Pré-visualização' : pending.source === 'meta' ? 'Proposta da Meta · ainda não aplicada' : pending.source === 'solver' ? 'Proposta do solver estrutural (resultado de optimização) · ainda não aplicada' : 'Proposta da avaliação visual · ainda não aplicada'}</b></p><p class="u-label">${esc(pending.label)}: ${esc(pending.before)} → ${esc(pending.after)}</p>
+        ${pending.needsAuthorization ? `<label class="sp-auth u-label"><input type="checkbox" data-auth ${this.authorised ? 'checked' : ''}> ${pending.source === 'person' ? 'Autorizo alterar um valor confirmado' : pending.source === 'solver' ? 'Autorizo aplicar esta proposta do solver' : 'Autorizo aplicar esta alteração proposta pela IA'}</label>` : ''}
         <div class="uw-inspector-actions"><button type="button" class="uw-link" data-apply ${this.busy ? 'disabled' : ''}>aplicar</button><button type="button" class="uw-link" data-cancel>cancelar</button></div></div>` : '';
     host.innerHTML = `${pendingHtml}<div class="uw-chips">${chip('geometria', p.geometry)}${chip('posição', p.transform)}${chip('material', p.material)}</div>
       <dl class="u-readout"><div><dt>Formas</dt><dd>${keys.length} · ${esc(operators.join(', '))}</dd></div><div><dt>Posição</dt><dd>${esc(fmt3(component.transform.position))}</dd></div><div><dt>Escala</dt><dd>${esc(fmt3(component.transform.scale))}</dd></div>${parent ? `<div><dt>Ligado a</dt><dd>${esc(parent)}</dd></div>` : ''}<div><dt>Unidades</dt><dd>${this.plan.units === 'm' ? 'metros (indicadas por si)' : 'sem unidade (escala desconhecida)'}</dd></div></dl>

@@ -1,0 +1,198 @@
+[
+  {
+    "name": "Lantern",
+    "category": "A (CC0 mesh as evidence) + D (hand-built plan)",
+    "columns": {
+      "structural": {
+        "operations": 6,
+        "componentsChanged": 6,
+        "provenanceAfter": [
+          "user_provided"
+        ],
+        "evidenceSample": "V4 structural: placement fitted to 6 calibrated silhouettes (A (CC0 mesh as evidence) + D (hand-built plan)). Basis: inferred. Resultado de optimização (hipótese), autorizado por uma pessoa no workspa",
+        "selectableAfter": "pole",
+        "undoRestoredExactly": true,
+        "triangles": 3668,
+        "lastFrameMs": 1.3999999999068677
+      },
+      "silhouette-only": {
+        "operations": 6,
+        "componentsChanged": 6,
+        "provenanceAfter": [
+          "user_provided"
+        ],
+        "evidenceSample": "V4 silhouette-only: placement fitted to 6 calibrated silhouettes (A (CC0 mesh as evidence) + D (hand-built plan)). Basis: inferred. Resultado de optimização (hipótese), autorizado por uma pessoa no wo",
+        "selectableAfter": "pole",
+        "undoRestoredExactly": true,
+        "triangles": 3937,
+        "lastFrameMs": 1.6999999999534339
+      }
+    },
+    "coverage": {
+      "verdictOk": true,
+      "problems": [],
+      "bbox": [
+        507,
+        41,
+        901,
+        836
+      ],
+      "size": [
+        1440,
+        900
+      ],
+      "bboxFraction": 0.24260802469135803,
+      "blankRejected": true,
+      "blankProblems": [
+        "blank"
+      ]
+    }
+  },
+  {
+    "name": "AntiqueCamera",
+    "category": "A (CC0 mesh as evidence) + D (hand-built plan)",
+    "columns": {
+      "structural": {
+        "operations": 5,
+        "componentsChanged": 5,
+        "provenanceAfter": [
+          "user_provided"
+        ],
+        "evidenceSample": "V4 structural: placement fitted to 6 calibrated silhouettes (A (CC0 mesh as evidence) + D (hand-built plan)). Basis: inferred. Resultado de optimização (hipótese), autorizado por uma pessoa no workspa",
+        "selectableAfter": "camera",
+        "undoRestoredExactly": true,
+        "triangles": 4008,
+        "lastFrameMs": 10.699999999953434
+      },
+      "silhouette-only": {
+        "operations": 5,
+        "componentsChanged": 5,
+        "provenanceAfter": [
+          "user_provided"
+        ],
+        "evidenceSample": "V4 silhouette-only: placement fitted to 6 calibrated silhouettes (A (CC0 mesh as evidence) + D (hand-built plan)). Basis: inferred. Resultado de optimização (hipótese), autorizado por uma pessoa no wo",
+        "selectableAfter": "camera",
+        "undoRestoredExactly": true,
+        "triangles": 3869,
+        "lastFrameMs": 2.5999999998603016
+      }
+    },
+    "coverage": {
+      "verdictOk": true,
+      "problems": [],
+      "bbox": [
+        597,
+        20,
+        901,
+        842
+      ],
+      "size": [
+        1440,
+        900
+      ],
+      "bboxFraction": 0.1936844135802469,
+      "blankRejected": true,
+      "blankProblems": [
+        "blank"
+      ]
+    }
+  },
+  {
+    "name": "lungs-like",
+    "category": "D/D (synthetic input, hand-authored ground truth)",
+    "columns": {
+      "structural": {
+        "operations": 7,
+        "componentsChanged": 7,
+        "provenanceAfter": [
+          "user_provided"
+        ],
+        "evidenceSample": "V4 structural: placement fitted to 6 calibrated silhouettes (D/D (synthetic input, hand-authored ground truth)). Basis: inferred. Resultado de optimização (hipótese), autorizado por uma pessoa no work",
+        "selectableAfter": "trachea",
+        "undoRestoredExactly": true,
+        "triangles": 16096,
+        "lastFrameMs": 2.1000000000931323
+      },
+      "silhouette-only": {
+        "operations": 7,
+        "componentsChanged": 7,
+        "provenanceAfter": [
+          "user_provided"
+        ],
+        "evidenceSample": "V4 silhouette-only: placement fitted to 6 calibrated silhouettes (D/D (synthetic input, hand-authored ground truth)). Basis: inferred. Resultado de optimização (hipótese), autorizado por uma pessoa no",
+        "selectableAfter": "trachea",
+        "undoRestoredExactly": true,
+        "triangles": 15924,
+        "lastFrameMs": 1.6000000000931323
+      }
+    },
+    "coverage": {
+      "verdictOk": true,
+      "problems": [],
+      "bbox": [
+        446,
+        173,
+        955,
+        787
+      ],
+      "size": [
+        1440,
+        900
+      ],
+      "bboxFraction": 0.2420138888888889,
+      "blankRejected": true,
+      "blankProblems": [
+        "blank"
+      ]
+    }
+  },
+  {
+    "name": "microscope-like",
+    "category": "D/D (synthetic input, hand-authored ground truth)",
+    "columns": {
+      "structural": {
+        "operations": 10,
+        "componentsChanged": 10,
+        "provenanceAfter": [
+          "user_provided"
+        ],
+        "evidenceSample": "V4 structural: placement fitted to 6 calibrated silhouettes (D/D (synthetic input, hand-authored ground truth)). Basis: inferred. Resultado de optimização (hipótese), autorizado por uma pessoa no work",
+        "selectableAfter": "base",
+        "undoRestoredExactly": true,
+        "triangles": 3132,
+        "lastFrameMs": 608.3000000000466
+      },
+      "silhouette-only": {
+        "operations": 10,
+        "componentsChanged": 10,
+        "provenanceAfter": [
+          "user_provided"
+        ],
+        "evidenceSample": "V4 silhouette-only: placement fitted to 6 calibrated silhouettes (D/D (synthetic input, hand-authored ground truth)). Basis: inferred. Resultado de optimização (hipótese), autorizado por uma pessoa no",
+        "selectableAfter": "base",
+        "undoRestoredExactly": true,
+        "triangles": 3132,
+        "lastFrameMs": 829.3000000000466
+      }
+    },
+    "coverage": {
+      "verdictOk": true,
+      "problems": [],
+      "bbox": [
+        487,
+        26,
+        972,
+        789
+      ],
+      "size": [
+        1440,
+        900
+      ],
+      "bboxFraction": 0.2865,
+      "blankRejected": true,
+      "blankProblems": [
+        "blank"
+      ]
+    }
+  }
+]

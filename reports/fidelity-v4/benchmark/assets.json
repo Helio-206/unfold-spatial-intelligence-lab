@@ -1,0 +1,25 @@
+{
+  "purpose": "Category A ground truth for the V4 structural benchmark: independent CC0 meshes, used ONLY as a source of rendered silhouettes and part boxes. They are not part of any plan and are not redistributed in this repository (only their licence text and metadata are).",
+  "audit": "Preliminary technical audit by the assistant, from PRIMARY sources only (the LICENSE.md and metadata.json that ship with each model in the Khronos repository, copied next to this file). It is not a legal approval; commercial use of the assets themselves is not proposed (they are test data, never shipped).",
+  "retrieved": "2026-11-04",
+  "pin": "sha256 of the binary (the repository could not be queried for a commit through the session policy; the hash identifies the exact bytes)",
+  "assets": [
+    {
+      "name": "Lantern", "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/Lantern/glTF-Binary/Lantern.glb",
+      "sha256": "a79458c4b02d695187a952f23a63b8bf278e7bc3d316a3c2a314f2d6974181f1", "bytes": 9564264,
+      "licence": "CC0-1.0 (all model files). Documentation files CC-BY-4.0.", "credit": "sbtron / Microsoft (2017); Draco variant by Frank Galligan (this file is the non-Draco binary)",
+      "licenceFiles": ["assets/Lantern/LICENSE.md", "assets/Lantern/metadata.json", "assets/Lantern/README.md"], "parts": "3 mesh nodes: LanternPole_Body, LanternPole_Chain, LanternPole_Lantern; 5,394 triangles"
+    },
+    {
+      "name": "AntiqueCamera", "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/AntiqueCamera/glTF-Binary/AntiqueCamera.glb",
+      "sha256": "ae89695479ad997f09ebea8060a5ad01312ad8fe7ffb92f73b4e895109feecd2", "bytes": 17540348,
+      "licence": "CC0-1.0 (all model files; the UX3D logo/trademark is excluded). Documentation files CC-BY-4.0.", "credit": "Maximillan Kamps / UX3D",
+      "licenceFiles": ["assets/AntiqueCamera/LICENSE.md", "assets/AntiqueCamera/metadata.json", "assets/AntiqueCamera/README.md"], "parts": "2 mesh nodes: camera, tripod; 20,066 triangles"
+    }
+  ],
+  "rejected": [
+    { "name": "ToyCar", "reason": "CC0 but its three mesh nodes split by material (body/fabric/glass), not by structure, and the model is millimetre-scale: not a useful structural reference" },
+    { "name": "ChairDamaskPurplegold, GlamVelvetSofa, AnisotropyBarnLamp, CesiumMilkTruck", "reason": "CC-BY-4.0 (attribution required): not used, to keep the first protocol on CC0 only" },
+    { "name": "Buggy", "reason": "licence file not found at the same path; not used until verified" }
+  ]
+}
