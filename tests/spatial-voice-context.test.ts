@@ -9,8 +9,9 @@ describe('spatial explanation context', () => {
     const result = explainSpatialContext(createSpatialExplanationContext(plan, id, 'revision-1'));
     expect(result.componentId).toBe(id);
     expect(result.evidenceIds).toEqual([id]);
-    expect(result.text).toContain(plan.components.find((component) => component.id === id)!.label);
-    expect(result.text).toContain('Conhecimento geral');
+    expect(result.evidence).toContain(plan.components.find((component) => component.id === id)!.label);
+    expect(result.evidence).toContain('conhecimento geral');
+    expect(result.text).not.toContain(id);
     expect(result.source).toBe('local-plan');
   });
   it('supports a general explanation and snapshots the plan', () => {

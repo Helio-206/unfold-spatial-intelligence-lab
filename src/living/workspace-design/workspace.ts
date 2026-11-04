@@ -28,7 +28,7 @@ import { HandInteractionModel, WebcamHandTracker, type HandInteractionState } fr
 import { BrowserVoiceInput } from '../../voice-input';
 import { browserSpatialTts } from '../../voice-output';
 import { createSpatialExplanationContext } from '../spatial-voice/context';
-import { explainSpatialContext, type ApprovedExplanation } from '../spatial-voice/explanation';
+import { approveMetaExplanation, explainSpatialContext, type ApprovedExplanation } from '../spatial-voice/explanation';
 import { SpatialSpeechController } from '../spatial-voice/speech';
 import type { Assembly } from '../contracts';
 import { buildComponentRegistry, type CanonicalComponent, type ComponentRegistry } from '../visual-foundry/component-registry';
@@ -119,6 +119,8 @@ export class SpatialWorkspace {
   private explanationGeneration = 0;
   private explanationBusy = false;
   private explanationError = '';
+  private questionHistory: Array<{ question: string; answer: string }> = [];
+  private questionAbort: AbortController | null = null;
   private explanationKey = '';
   private speechVoice: string | null = null;
   private speechRate = 1;
@@ -316,6 +318,7 @@ export class SpatialWorkspace {
       else if (act === 'reset-pose') this.resetPose();
       else if (act === 'close-inspector') { this.inspectorOpen = false; this.evidenceOpen = false; this.renderInspector(); this.renderRail(); }
       else if (act === 'explain-space') void this.explainSelection();
+      else if (act === 'ask-spatial') void this.askSpatial();
       else if (act === 'speech-play') { if (this.explanation && this.explanationKey === this.currentExplanationKey()) this.speech.play(this.explanation, { language: 'pt-PT', voiceURI: this.speechVoice, rate: this.speechRate }); }
       else if (act === 'speech-pause') this.speech.pause();
       else if (act === 'speech-resume') this.speech.resume();
@@ -492,11 +495,11 @@ export class SpatialWorkspace {
 
   private currentExplanationKey(): string {
     if (!this.space?.currentPlan) return '';
-    return JSON.stringify([this.selectedId, this.space.explanationVersion ?? 0, this.space.currentPlan]);
+    return `${this.selectedId ?? ''}:${this.space.explanationVersion ?? 0}`;
   }
 
   private invalidateExplanation(): void {
-    this.explanationGeneration++; this.explanation = null; this.explanationKey = ''; this.explanationBusy = false; this.explanationError = ''; this.speech.cancel();
+    this.questionAbort?.abort(); this.questionAbort = null; this.questionHistory = []; this.explanationGeneration++; this.explanation = null; this.explanationKey = ''; this.explanationBusy = false; this.explanationError = ''; this.speech.cancel();
   }
 
   private async explainSelection(): Promise<void> {
@@ -517,12 +520,43 @@ export class SpatialWorkspace {
     }
   }
 
+  private async askSpatial(): Promise<void> {
+    const input = this.el.inspector?.querySelector<HTMLInputElement>('[data-spatial-question]');
+    const question = input?.value.trim() ?? ''; const layer = this.space; const plan = layer?.currentPlan; const id = this.selectedId;
+    if (!question || question.length > 500 || !layer || !plan || !id || this.explanationBusy) return;
+    const generation = ++this.explanationGeneration; const key = this.currentExplanationKey();
+    this.speech.cancel(); this.questionAbort?.abort(); const abort = new AbortController(); this.questionAbort = abort;
+    this.explanationError = ''; this.explanationBusy = true; this.explanationKey = key; this.renderInspector();
+    const components = plan.components.slice(0, 40).map(({ id: componentId, label }) => ({ id: componentId, label }));
+    if (!components.some(component => component.id === id)) { this.explanationBusy = false; this.explanationError = 'O componente seleccionado excede o limite do contexto.'; this.renderInspector(); return; }
+    const ids = new Set(components.map(component => component.id));
+    const relations = plan.relations.filter(r => ids.has(r.fromId) && ids.has(r.toId)).slice(0, 80).map(({ fromId, toId, kind, origin }) => ({ fromId, toId, kind, origin }));
+    const timer = window.setTimeout(() => abort.abort(), 30000);
+    try {
+      const response = await fetch('/api/spatial/question', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: abort.signal, body: JSON.stringify({ question, selectedId: id, revision: key, title: plan.title, components, relations, unknowns: plan.unknowns.slice(0, 20).map(u => u.slice(0, 300)), history: this.questionHistory.slice(-4) }) });
+      if (!response.ok) throw new Error('UNAVAILABLE');
+      const body: unknown = await response.json();
+      if (!body || typeof body !== 'object') throw new Error('INVALID');
+      const result = body as Record<string, unknown>;
+      if (result.contract !== 'unfold.spatial-answer.v1' || result.source !== 'meta' || result.selectedId !== id || result.revision !== key || typeof result.answer !== 'string' || typeof result.limitations !== 'string') throw new Error('INVALID');
+      if (generation !== this.explanationGeneration || this.space !== layer || key !== this.currentExplanationKey()) return;
+      const local = explainSpatialContext(createSpatialExplanationContext(plan, id, key));
+      this.explanation = approveMetaExplanation(result.answer, `Resposta gerada pela Meta, não verificada. ${result.limitations} ${local.evidence}`.slice(0, 5000), id, key);
+      this.questionHistory = [...this.questionHistory, { question, answer: result.answer }].slice(-4);
+    } catch {
+      if (generation === this.explanationGeneration) { this.explanationError = 'Assistente Meta indisponível. Pode consultar a explicação local e a evidência disponível.'; this.explanation = explainSpatialContext(createSpatialExplanationContext(plan, id, key)); }
+    } finally {
+      clearTimeout(timer);
+      if (generation === this.explanationGeneration) { this.questionAbort = null; this.explanationBusy = false; this.renderInspector(); }
+    }
+  }
+
   private voiceMarkup(): string {
     const answer = this.explanation;
     const voices = this.speech.supported ? window.speechSynthesis.getVoices() : [];
     const options = voices.map((v) => `<option value="${esc(v.voiceURI)}" ${v.voiceURI === this.speechVoice ? 'selected' : ''}>${esc(v.name)} · ${esc(v.lang)}</option>`).join('');
     const state = this.speech.state;
-    return `<section class="uw-spatial-voice" aria-label="Explicação espacial"><button type="button" class="uw-link" data-act="explain-space" ${this.explanationBusy ? 'disabled' : ''}>${this.explanationBusy ? 'A explicar…' : 'Explicar'}</button>${this.explanationError ? `<p role="alert">${esc(this.explanationError)}</p>` : ''}${answer ? `<p class="u-label">Explicação local · plano e conhecimento geral · ID ${esc(answer.componentId ?? '')}</p><p role="status" aria-live="polite">${!this.speech.supported ? 'Síntese de voz indisponível neste browser; a transcrição continua disponível.' : state === 'playing' ? 'A reproduzir' : state === 'paused' ? 'Em pausa' : 'Pronto para ouvir'}</p>${this.speech.supported ? `<div class="uw-inspector-actions"><button type="button" class="uw-link" data-act="speech-play">Ouvir</button><button type="button" class="uw-link" data-act="speech-pause" ${state !== 'playing' ? 'disabled' : ''}>Pausar</button><button type="button" class="uw-link" data-act="speech-resume" ${state !== 'paused' ? 'disabled' : ''}>Continuar</button><button type="button" class="uw-link" data-act="speech-stop" ${state === 'idle' ? 'disabled' : ''}>Parar</button></div><details><summary>Preferências de voz</summary><label>Voz <select data-act="speech-voice"><option value="">Automática · pt-PT</option>${options}</select></label><label> Velocidade <input data-act="speech-rate" type="number" min="0.5" max="2" step="0.1" value="${this.speechRate}"></label></details>` : ''}<p data-testid="spatial-transcript">${esc(answer.text)}</p>` : ''}</section>`;
+    return `<section class="uw-spatial-voice" aria-label="Explicação espacial"><label>Pergunta <input data-spatial-question maxlength="500" placeholder="Para que serve?"></label><button type="button" class="uw-link" data-act="ask-spatial" ${this.explanationBusy ? 'disabled' : ''}>Perguntar</button><button type="button" class="uw-link" data-act="explain-space" ${this.explanationBusy ? 'disabled' : ''}>${this.explanationBusy ? 'A explicar…' : 'Explicar'}</button>${this.explanationError ? `<p role="alert">${esc(this.explanationError)}</p>` : ''}${answer ? `<p class="u-label">${answer.source === 'meta' ? 'Meta · resposta não verificada' : 'Explicação local · conhecimento geral'}</p><p data-testid="spatial-transcript">${esc(answer.text)}</p><p role="status" aria-live="polite">${!this.speech.supported ? 'Síntese indisponível; pode ler a transcrição.' : state === 'playing' ? 'A reproduzir' : state === 'paused' ? 'Em pausa' : ''}</p>${this.speech.supported ? `<div class="uw-inspector-actions">${state === 'idle' ? '<button type="button" class="uw-link" data-act="speech-play">Ouvir</button>' : state === 'playing' ? '<button type="button" class="uw-link" data-act="speech-pause">Pausar</button><button type="button" class="uw-link" data-act="speech-stop">Parar</button>' : '<button type="button" class="uw-link" data-act="speech-resume">Continuar</button><button type="button" class="uw-link" data-act="speech-stop">Parar</button>'}</div><details><summary>Preferências de voz</summary><label>Voz <select data-act="speech-voice"><option value="">Automática · pt-PT</option>${options}</select></label><label> Velocidade <input data-act="speech-rate" type="number" min="0.5" max="2" step="0.1" value="${this.speechRate}"></label></details>` : ''}<details><summary>Evidência e limitações</summary><p>${esc(answer.evidence)}</p></details>` : ''}</section>`;
   }
 
   private renderInspector(): void {

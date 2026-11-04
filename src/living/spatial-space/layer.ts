@@ -92,6 +92,7 @@ export class PlanSpaceLayer implements SpaceLayer {
   get editCount(): number { return this.history.length; }
 
   private build(): ReturnType<typeof compileSpatialPlanV2>['stats'] {
+    this.explanationVersion++;
     this.release();
     this.routed?.retire?.(); // results asked for by the previous plan version can no longer be used
     const compiled = this.compile(this.plan);

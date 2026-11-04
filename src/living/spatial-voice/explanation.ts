@@ -4,18 +4,18 @@ const approved = new WeakSet<object>();
 
 export function isApprovedExplanation(value: ApprovedExplanation): boolean { return approved.has(value); }
 
-export type ApprovedExplanation = Readonly<{ text: string; componentId: string | null; revision: string; source: 'local-plan'; evidenceIds: readonly string[] }>;
+export type ApprovedExplanation = Readonly<{ text: string; componentId: string | null; revision: string; source: 'local-plan' | 'meta'; evidenceIds: readonly string[]; evidence: string }>;
 
 /** General facts are conditional on the plan's labels, never assertions about physical reconstruction. */
 function generalKnowledge(title: string, label: string): string | null {
   const domain = title.toLowerCase(); const name = label.toLowerCase();
   if (/microscop/.test(domain)) {
-    if (/eyepiece|ocular/.test(name) && !/tube/.test(name)) return 'Conhecimento geral, condicionado à identificação pelo nome: a ocular é a lente pela qual se observa a imagem ampliada formada pelas objectivas. O plano não demonstra a óptica interna nem o alinhamento entre estas peças.';
-    if (/objective|objectiva/.test(name)) return 'Conhecimento geral, condicionado à identificação pelo nome: as objectivas recolhem luz da amostra e formam uma imagem ampliada, observada através da ocular. O plano não demonstra ampliações nem a óptica interna.';
+    if (/eyepiece|ocular/.test(name) && !/tube/.test(name)) return 'A ocular é a parte do microscópio através da qual observamos a imagem ampliada. Trabalha com as objectivas, que formam a imagem da amostra.';
+    if (/objective|objectiva/.test(name)) return 'As objectivas recolhem luz da amostra e formam uma imagem ampliada, que observamos através da ocular.';
   }
   if (/lung|pulm/.test(domain)) {
-    if (/trachea|traqueia/.test(name)) return 'Conhecimento geral, condicionado à identificação pelo nome: a traqueia conduz ar em direcção aos brônquios principais, que se ramificam nos pulmões. A geometria deste Space é conceptual e não comprova precisão anatómica ou funcionamento.';
-    if (/bronch|brônqu/.test(name)) return 'Conhecimento geral, condicionado à identificação pelo nome: os brônquios conduzem o ar da traqueia e ramificam-se nos pulmões. A geometria deste Space é conceptual e não comprova precisão anatómica ou funcionamento.';
+    if (/trachea|traqueia/.test(name)) return 'A traqueia conduz o ar até aos brônquios principais, que se ramificam nos pulmões. Esta representação é conceptual e não demonstra precisão anatómica.';
+    if (/bronch|brônqu/.test(name)) return 'Os brônquios conduzem o ar da traqueia e ramificam-se nos pulmões. Esta representação é conceptual e não demonstra precisão anatómica.';
   }
   return null;
 }
@@ -26,11 +26,18 @@ export function explainSpatialContext(context: SpatialExplanationContext): Appro
   const component = componentId === null ? null : plan.components.find((item) => item.id === componentId);
   if (componentId !== null && !component) throw new Error('EXPLANATION_COMPONENT_NOT_FOUND');
   const relations = component ? plan.relations.filter((relation) => relation.fromId === component.id || relation.toId === component.id) : [];
-  const lines = component
-    ? [`No plano «${plan.title}», o componente seleccionado é «${component.label}» (${component.id}).`, `Origem da geometria: ${component.provenance.geometry}; posição: ${component.provenance.transform}; material: ${component.provenance.material}.`, ...(component.provenance.evidence ? [`Evidência registada: ${component.provenance.evidence}`] : []), ...relations.map((relation) => `Relação registada: ${relation.fromId} ${relation.kind} ${relation.toId}; origem: ${relation.origin}.`), generalKnowledge(plan.title, component.label) ?? 'A função deste componente não está estabelecida pelo plano.']
-    : [`O Space «${plan.title}» contém ${plan.components.length} componentes no plano.`, `Componentes: ${plan.components.map((item) => item.label).join(', ')}.`];
-  if (plan.unknowns.length) lines.push(`Limitações registadas: ${plan.unknowns.join('; ')}.`);
-  const result = Object.freeze({ text: lines.join(' '), componentId, revision, source: 'local-plan' as const, evidenceIds: Object.freeze(component ? [component.id] : []) });
+  const text = component ? generalKnowledge(plan.title, component.label) ?? `O plano identifica este componente como ${component.label}, mas não estabelece a sua função.` : `Este Space contém ${plan.components.length} componentes. A sua geometria é conceptual.`;
+  const evidence = component ? [`Componente ${component.label} (${component.id}).`, `Geometria: ${component.provenance.geometry}; posição: ${component.provenance.transform}; material: ${component.provenance.material}.`, component.provenance.evidence, ...relations.map((relation) => `${relation.fromId} ${relation.kind} ${relation.toId} (${relation.origin}).`), 'A função descrita é conhecimento geral condicionado à identificação pelo nome; não é observação da geometria.'] : [`Space: ${plan.title}.`];
+  if (plan.unknowns.length) evidence.push(`Limitações: ${plan.unknowns.join('; ')}.`);
+  const result = Object.freeze({ text, evidence: evidence.filter(Boolean).join(' '), componentId, revision, source: 'local-plan' as const, evidenceIds: Object.freeze(component ? [component.id] : []) });
+  approved.add(result);
+  return result;
+}
+
+/** Structural validation is not factual verification; the UI must disclose the model origin. */
+export function approveMetaExplanation(text: string, evidence: string, componentId: string, revision: string): ApprovedExplanation {
+  if (!text.trim() || text.length > 1200 || !evidence.trim() || evidence.length > 5000 || !componentId || !revision) throw new Error('INVALID_SPATIAL_ANSWER');
+  const result: ApprovedExplanation = Object.freeze({ text, evidence, componentId, revision, source: 'meta', evidenceIds: Object.freeze([componentId]) });
   approved.add(result);
   return result;
 }
