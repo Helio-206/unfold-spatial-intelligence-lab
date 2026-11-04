@@ -55,7 +55,7 @@ for (const name of ['excavator', 'harp']) {
   await page.check('[data-auth]'); await page.click('[data-apply]'); await waitIdle(page, 1); await page.waitForFunction(() => !window.__space.layer.geometryReport?.pending.length, null, { timeout: 40000 }); await page.waitForTimeout(1200);
   const after = await snap(page), changed = after.plan.components.filter((k) => JSON.stringify(k.transform) !== JSON.stringify(base.plan.components.find((x) => x.id === k.id).transform));
   assert.deepEqual(after.plan.components.map((k) => k.id), base.plan.components.map((k) => k.id)); assert.deepEqual(after.plan.components.map((k) => k.parentId), base.plan.components.map((k) => k.parentId), 'hierarchy changed'); assert.equal(after.plan.source.sha256, base.plan.source.sha256);
-  assert.ok(changed.length > 0 && changed.every((k) => k.provenance.transform === 'user_provided' && /Hierarchical structural solver/.test(k.provenance.evidence)), 'provenance not recorded');
+  assert.ok(changed.length > 0 && changed.every((k) => k.provenance.transform === 'inferred' && /Hierarchical structural solver/.test(k.provenance.evidence)), 'provenance not recorded');
   assert.ok(after.plan.components.filter((k) => !changed.includes(k)).every((k) => k.provenance.transform === base.plan.components.find((x) => x.id === k.id).provenance.transform), 'an untouched component changed provenance');
   row.steps.confirmedApply = { componentsChanged: changed.length, of: after.plan.components.length, provenance: [...new Set(changed.map((k) => k.provenance.transform))], families: after.families, geometryReport: await page.evaluate(() => window.__space.layer.geometryReport?.totals ?? null) };
   await shoot('3-v4-hierarchical');

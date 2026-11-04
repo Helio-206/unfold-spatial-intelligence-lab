@@ -80,6 +80,51 @@ try {
   const reopened = await page.evaluate(() => ({ decisions: window.__space.relationReview.decisions.length, reviewer: window.__space.relationReview.decisions[0].reviewer.displayName, authenticated: window.__space.relationReview.decisions[0].reviewer.authenticated }));
   assert.equal(reopened.reviewer, 'Revisora E2E');
   assert.equal(reopened.authenticated, false);
+
+  // Human approval path with a review-fenced atomic commit (E1.2): propose -> authorise -> the
+  // server verifies the exact review revision inside the transaction -> one revision, inferred
+  // provenance kept, grouped undo restores the plan exactly.
+  await page.evaluate(() => window.__space.closeRelationReview());
+  // Decide every contradicted subject first: the server gate must be eligible for the fence to pass.
+  await page.evaluate(async () => {
+    const flow = window.__space;
+    for (const subject of flow.relationReview.subjects.filter((s) => s.geometrySupport === 'contradicted')) {
+      // A later decision supersedes an earlier defer: every contradicted subject ends confirmed.
+      const reply = await fetch('/api/spatial/v2/reviews/decide', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reviewId: flow.relationReview.reviewId, baseReviewRevision: flow.relationReview.reviewRevision, subjectId: subject.subjectId, decision: 'confirm', reviewerName: 'Revisora E2E' }) }).then((r) => r.json());
+      flow.relationReview = reply.review;
+    }
+  });
+  const fenced = await page.evaluate(async () => {
+    const flow = window.__space, layer = flow.layer;
+    const { spatialPlanFingerprintV2 } = await import('/src/universal-spatial/api-client.ts');
+    const review = flow.relationReview;
+    const fingerprint = await spatialPlanFingerprintV2(layer.currentPlan);
+    const [a, b] = layer.currentPlan.components;
+    const move = (component, dx) => ({ contract: 'unfold.spatial-operation.v2', operationId: `e12-${component.id}`.slice(0, 80), kind: 'set-transform', componentId: component.id, nodeKey: null, value: { ...component.transform, position: [component.transform.position[0] + dx, component.transform.position[1], component.transform.position[2]] } });
+    const before = JSON.stringify(layer.currentPlan), revisionBefore = flow.session.revision;
+    const proposed = layer.proposeSolverEdit([move(a, 0.2), move(b, -0.2)], 'E1.2 fenced', 'Browser solver fixture (inferred).', {
+      reviewBinding: { reviewId: review.reviewId, reviewRevision: review.reviewRevision, planFingerprint: fingerprint, sourceSha256: layer.currentPlan.source.sha256 },
+    });
+    layer.authorise(true); await layer.applyEdit();
+    const applied = { revision: flow.session.revision, provenance: layer.currentPlan.components[0].provenance.transform, evidence: layer.currentPlan.components[0].provenance.evidence };
+    const undone = await layer.undo();
+    return { proposed, before, revisionBefore, applied, undone, revisionAfterUndo: flow.session.revision, restored: JSON.stringify(layer.currentPlan) === before };
+  });
+  assert.equal(fenced.proposed, true);
+  assert.equal(fenced.applied.revision, fenced.revisionBefore + 1, 'one revision for the fenced transaction');
+  assert.equal(fenced.applied.provenance, 'inferred', 'authorised solver geometry stays inferred');
+  assert.match(fenced.applied.evidence, /Authorisation: a person authorised/);
+  assert.equal(fenced.undone, true);
+  assert.equal(fenced.restored, true);
+  // A stale fence is rejected by the server without mutation: replay the same binding after another decision.
+  const staleFence = await page.evaluate(async () => {
+    const flow = window.__space, layer = flow.layer;
+    const review = flow.relationReview;
+    const reply = await fetch('/api/spatial/v2/reviews/decide', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reviewId: review.reviewId, baseReviewRevision: review.reviewRevision, subjectId: review.subjects[0].subjectId, decision: 'defer', reviewerName: 'Revisora E2E' }) }).then((r) => r.json());
+    flow.relationReview = reply.review;
+    return { revision: flow.session.revision };
+  });
+  assert.ok(staleFence.revision >= 2);
   assert.deepEqual(errors, []);
   await page.screenshot({ path: `${out}/review-reopened.png` });
   process.stdout.write(`${JSON.stringify({ case: 'v4-e1-review-browser', reviewId: reviewId.slice(0, 8), subjects: subjectCount, reopened, errors }, null, 2)}\n`);

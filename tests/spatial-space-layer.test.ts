@@ -364,6 +364,65 @@ describe('PlanSpaceLayer', () => {
       layer.highlight('base'); layer.proposeEdit('x+'); await layer.applyEdit();
       expect(layer.currentPlan.components.find((c) => c.id === 'base')!.transform.position[0]).toBeGreaterThan(0); layer.dispose();
     });
+    it('a cancelled or replaced proposal never commits when its guard resolves late, and duplicate applies submit once (E1.2 milestone C)', async () => {
+      // Cancelled while the guard is in flight.
+      const layerA = new PlanSpaceLayer(plan(), host()), beforeA = layerA.currentPlan;
+      let releaseA!: (ok: boolean) => void;
+      const applyA = vi.fn(async () => beforeA);
+      layerA.attachSync({ apply: applyA, undo: async () => beforeA, applyTransaction: applyA as never });
+      expect(layerA.proposeSolverEdit(ops(), 'x', 'y', { authorisationGuard: () => new Promise<boolean>((r) => { releaseA = r; }) })).toBe(true);
+      layerA.authorise(true);
+      const pendingA = layerA.applyEdit();
+      layerA.cancelPending();
+      releaseA(true);
+      await pendingA;
+      expect(layerA.currentPlan).toBe(beforeA); expect(layerA.editCount).toBe(0); expect(applyA).not.toHaveBeenCalled(); layerA.dispose();
+
+      // Replaced while the guard is in flight: the old guard resolving must not commit the old ops.
+      const layerB = new PlanSpaceLayer(plan(), host()), beforeB = layerB.currentPlan;
+      let releaseB!: (ok: boolean) => void;
+      const txB = vi.fn(async (operations: SpatialOperationV2[], provenance: { origin: 'user_provided' | 'inferred'; evidence: string }) => { let next = beforeB; for (const operation of operations) next = applySpatialOperationV2(next, operation, provenance); return next; });
+      layerB.attachSync({ apply: async () => beforeB, undo: async () => beforeB, applyTransaction: txB as never });
+      expect(layerB.proposeSolverEdit(ops(), 'old', 'y', { authorisationGuard: () => new Promise<boolean>((r) => { releaseB = r; }) })).toBe(true);
+      layerB.authorise(true);
+      const pendingB = layerB.applyEdit();
+      expect(layerB.proposeSolverEdit(ops(), 'new', 'y')).toBe(true); // replaces the pending proposal mid-guard
+      releaseB(true);
+      await pendingB;
+      expect(txB).not.toHaveBeenCalled(); expect(layerB.currentPlan).toBe(beforeB);
+      expect(layerB.pendingEdit?.label).toBe('new'); // the replacement survives, unapplied
+      layerB.authorise(true); await layerB.applyEdit();
+      expect(txB).toHaveBeenCalledTimes(1); expect(layerB.editCount).toBe(1); layerB.dispose();
+
+      // Duplicate concurrent applies: one submission only.
+      const layerC = new PlanSpaceLayer(plan(), host());
+      let releaseC!: (ok: boolean) => void;
+      const txC = vi.fn(async (operations: SpatialOperationV2[], provenance: { origin: 'user_provided' | 'inferred'; evidence: string }) => { let next = layerC.currentPlan; for (const operation of operations) next = applySpatialOperationV2(next, operation, provenance); return next; });
+      layerC.attachSync({ apply: async () => layerC.currentPlan, undo: async () => layerC.currentPlan, applyTransaction: txC as never });
+      expect(layerC.proposeSolverEdit(ops(), 'x', 'y', { authorisationGuard: () => new Promise<boolean>((r) => { releaseC = r; }) })).toBe(true);
+      layerC.authorise(true);
+      const first = layerC.applyEdit(), second = layerC.applyEdit();
+      releaseC(true);
+      await Promise.all([first, second]);
+      expect(txC).toHaveBeenCalledTimes(1); expect(layerC.editCount).toBe(1); layerC.dispose();
+    });
+    it('an authorised solver proposal keeps inferred provenance and records authorisation separately (E1.2 milestone B)', async () => {
+      const seen: Array<{ origin: string; evidence: string }> = [];
+      const layer = new PlanSpaceLayer(plan(), host());
+      layer.attachSync({
+        apply: async (op: SpatialOperationV2, provenance) => { seen.push(provenance); return applySpatialOperationV2(layer.currentPlan, op, provenance); },
+        undo: async () => layer.currentPlan,
+        applyTransaction: async (operations: SpatialOperationV2[], provenance) => { seen.push(provenance); let next = layer.currentPlan; for (const operation of operations) next = applySpatialOperationV2(next, operation, provenance); return next; },
+      });
+      expect(layer.proposeSolverEdit(ops(), 'Ajuste', 'Solver fitted 6 silhouettes.')).toBe(true);
+      layer.authorise(true); await layer.applyEdit();
+      expect(seen[0]!.origin).toBe('inferred');
+      expect(seen[0]!.evidence).toMatch(/Solver fitted 6 silhouettes/);
+      expect(seen[0]!.evidence).toMatch(/Authorisation: a person authorised/);
+      expect(seen[0]!.evidence).toMatch(/not authenticated/i);
+      expect(layer.currentPlan.components.find((c) => c.id === 'base')!.provenance.transform).toBe('inferred');
+      layer.dispose();
+    });
     it('a proposal whose authorisation guard fails at apply time is never applied (review changed after preview, E1.1 test 7)', async () => {
       const h = host(), layer = new PlanSpaceLayer(plan(), h), before = layer.currentPlan;
       let guardOk = true;

@@ -1,6 +1,6 @@
 import { Box3, Color, Group, Mesh, Raycaster, type Camera, type Material, type Vector2 } from 'three';
 import { analyzeAssembly, describeDefect, refineAssembly, type AssemblyAnalysis } from '../../universal-spatial/assembly-analysis';
-import { applySpatialOperationV2, type GeometryNodeV2, type SpatialOperationV2, type SpatialPlanV2 } from '../../universal-spatial/contracts-v2';
+import { applySpatialOperationV2, type GeometryNodeV2, type SpatialOperationV2, type SpatialPlanV2, type SpatialReviewPrecondition } from '../../universal-spatial/contracts-v2';
 import { collectWorldPoints, heroAzimuth, normalizeForPresentation } from '../../universal-spatial/framing';
 import { compileSpatialPlanV2, disposeCompiledSpatialPlan } from '../../universal-spatial/geometry-compiler-v2';
 import type { SpaceLayer } from '../workspace-design/space-port';
@@ -25,7 +25,7 @@ const CONFIRMED = new Set(['observed', 'user_provided']);
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const fmt3 = (v: readonly number[]) => `[${v.map((n) => n.toFixed(3)).join(', ')}]`;
 
-type Pending = { label: string; before: string; after: string; operations: SpatialOperationV2[]; needsAuthorization: boolean; source: 'person' | 'meta' | 'meta-visual' | 'solver'; /** what produced the proposal, recorded in the provenance when a person applies it */ evidence?: string; /** Revalidated at apply time; a false (or a throw) invalidates the proposal instead of applying it. */ authorisationGuard?: () => Promise<boolean> };
+type Pending = { label: string; before: string; after: string; operations: SpatialOperationV2[]; needsAuthorization: boolean; source: 'person' | 'meta' | 'meta-visual' | 'solver'; /** what produced the proposal, recorded in the provenance when a person applies it */ evidence?: string; /** Revalidated at apply time; a false (or a throw) invalidates the proposal instead of applying it. */ authorisationGuard?: () => Promise<boolean>; /** The exact reviewed state this proposal was computed from; sent as the server-side transaction fence. */ reviewBinding?: SpatialReviewPrecondition };
 /** Triangles of arrived geometry swapped in per call (and so per frame): bounds the GPU upload one frame has to carry. */
 export const UPGRADE_TRIANGLES_PER_CALL = 60_000;
 /** A compile result that may finish later: geometry computed off the main thread arrives through `upgrade()`. V2's result has neither method. */
@@ -39,7 +39,7 @@ export type LayerSync = {
   apply(operation: SpatialOperationV2, provenance: OperationProvenance): Promise<SpatialPlanV2>;
   undo(): Promise<SpatialPlanV2>;
   /** Atomic multi-operation commit (V4 E0). When present, grouped edits use it instead of failing closed. The idempotency key is generated once by the layer and stays stable across reconciliation. */
-  applyTransaction?(operations: SpatialOperationV2[], provenance: OperationProvenance, idempotencyKey: string): Promise<SpatialPlanV2>;
+  applyTransaction?(operations: SpatialOperationV2[], provenance: OperationProvenance, idempotencyKey: string, reviewPrecondition?: SpatialReviewPrecondition): Promise<SpatialPlanV2>;
   /** One grouped undo for one grouped commit. When present, grouped undo never falls back to repeated single undos. */
   undoTransaction?(): Promise<SpatialPlanV2>;
   /**
@@ -88,6 +88,8 @@ export class PlanSpaceLayer implements SpaceLayer {
   /** While set, no edit is applied (the server session is being prepared and would not know it). */
   private lockReason: string | null = null;
   private busy = false;
+  /** An applyEdit is between claim and commit (guard or network in flight): no second application may start. */
+  private applying = false;
   private director: PresentationDirector | null = null;
   presentation: PresentationState | null = null;
   private pending: Pending | null = null;
@@ -294,15 +296,17 @@ export class PlanSpaceLayer implements SpaceLayer {
   get closableGaps(): boolean { return !!this.analysis()?.defects.some((defect) => defect.kind === 'floating' && !('blockedBy' in defect && defect.blockedBy)); }
 
   /** Applies operations in order, through the server session when there is one, so both sides keep the same revision. */
-  private async commit(operations: SpatialOperationV2[], provenance: { origin: 'user_provided' | 'inferred'; evidence: string }, localPlan?: SpatialPlanV2): Promise<void> {
+  private async commit(operations: SpatialOperationV2[], provenance: { origin: 'user_provided' | 'inferred'; evidence: string }, localPlan?: SpatialPlanV2, reviewPrecondition?: SpatialReviewPrecondition): Promise<void> {
     if (this.unresolvedTx) throw new Error('SPATIAL_V2_TRANSACTION_UNRESOLVED');
     const before = this.plan; let next = before;
-    if (this.sync && operations.length > 1) {
+    if (this.sync && (operations.length > 1 || reviewPrecondition)) {
       // Grouped edits only ever commit through the atomic transaction endpoint. Without it, fail
       // closed; with it, a failure leaves the local plan untouched (never a silent local commit).
-      if (!this.sync.applyTransaction) throw new Error('BATCH_REQUIRES_ATOMIC_SERVER');
+      // A review-fenced edit uses the transaction endpoint even for one operation, so the server
+      // can verify the fence in the same critical section as the commit.
+      if (!this.sync.applyTransaction) throw new Error(reviewPrecondition ? 'REVIEW_FENCED_TRANSACTION_UNAVAILABLE' : 'BATCH_REQUIRES_ATOMIC_SERVER');
       const idempotencyKey = `txn-${globalThis.crypto.randomUUID()}`;
-      try { next = await this.sync.applyTransaction(operations, provenance, idempotencyKey); }
+      try { next = await this.sync.applyTransaction(operations, provenance, idempotencyKey, reviewPrecondition); }
       catch (error) {
         // Outcome unknown: keep the stable key and the pre-transaction plan, and block dependent
         // edits until reconcileTransaction() settles this against the authoritative server result.
@@ -428,35 +432,53 @@ export class PlanSpaceLayer implements SpaceLayer {
    * A result of a deterministic solver (V4 structural fit): several typed operations previewed as ONE step. Not an AI hypothesis and not a human value: it
    * is applied only when a person authorises it, then recorded as that person's decision with the solver's evidence in the provenance. One undo reverts all of it.
    */
-  proposeSolverEdit(operations: SpatialOperationV2[], label: string, evidence: string, options?: { authorisationGuard?: () => Promise<boolean> }): boolean {
+  proposeSolverEdit(operations: SpatialOperationV2[], label: string, evidence: string, options?: { authorisationGuard?: () => Promise<boolean>; reviewBinding?: SpatialReviewPrecondition }): boolean {
     if (this.disposed || !operations.length || this.isBusy) return false;
     try { let probe = this.plan; for (const operation of operations) probe = applySpatialOperationV2(probe, operation, { origin: 'inferred', evidence: 'preview' }); } catch { return false; }
     const first = this.plan.components.find((item) => item.id === operations[0]!.componentId); if (!first) return false;
     this.selected = this.selected && operations.some((op) => op.componentId === this.selected) ? this.selected : first.id;
-    this.pending = { label, before: 'colocação actual', after: `${new Set(operations.map((op) => op.componentId)).size} componentes: ${[...new Set(operations.map((op) => op.kind === 'set-geometry' ? 'geometria' : op.kind === 'set-transform' ? 'posição, rotação e escala' : op.kind === 'set-material' ? 'material' : 'padrão'))].join(', ')}`, operations, needsAuthorization: true, source: 'solver', evidence, ...(options?.authorisationGuard ? { authorisationGuard: options.authorisationGuard } : {}) }; this.authorised = false;
+    this.pending = { label, before: 'colocação actual', after: `${new Set(operations.map((op) => op.componentId)).size} componentes: ${[...new Set(operations.map((op) => op.kind === 'set-geometry' ? 'geometria' : op.kind === 'set-transform' ? 'posição, rotação e escala' : op.kind === 'set-material' ? 'material' : 'padrão'))].join(', ')}`, operations, needsAuthorization: true, source: 'solver', evidence, ...(options?.authorisationGuard ? { authorisationGuard: options.authorisationGuard } : {}), ...(options?.reviewBinding ? { reviewBinding: options.reviewBinding } : {}) }; this.authorised = false;
     this.applyPaint(); this.host.changed(); return true;
   }
   cancelPending(): void { this.pending = null; this.authorised = false; this.host.changed(); }
   get selectedId(): string | null { return this.selected; }
 
   async applyEdit(): Promise<void> {
-    const pending = this.pending; if (!pending || this.busy) return;
+    const pending = this.pending; if (!pending || this.busy || this.applying) return;
     if (this.lockReason) { this.host.notify(`Edição indisponível: ${this.lockReason}.`); return; }
     if (pending.needsAuthorization && !this.authorised) { this.host.notify(pending.source === 'person' ? 'Esta edição toca num valor observado ou confirmado: marque a autorização primeiro.' : pending.source === 'solver' ? 'Uma proposta do solver só se aplica depois de a autorizar: marque a autorização.' : 'Uma alteração proposta pela IA só se aplica depois de a autorizar: marque a autorização.'); return; }
-    if (pending.authorisationGuard) {
-      // Bound to an external state (e.g. a review revision): revalidate now, fail closed on any doubt.
-      const valid = await pending.authorisationGuard().catch(() => false);
-      if (!valid) { this.pending = null; this.authorised = false; this.host.notify('Proposta invalidada: o estado revisto mudou ou não pôde ser revalidado. Nada foi aplicado.'); this.host.changed(); return; }
-      if (this.disposed) return;
-    }
-    this.busy = true; this.director?.enterEditing();
+    // One application at a time, claimed synchronously before any await: a second applyEdit during
+    // the guard (or the commit) is a no-op, never a duplicate submission.
+    this.applying = true;
+    const planAtStart = this.plan, authorisedAtStart = this.authorised;
     try {
-      const evidence = pending.source === 'solver' ? ((suffix) => `${(pending.evidence ?? 'Proposta do solver estrutural.').slice(0, 500 - suffix.length - 1)} ${suffix}`)('Resultado de optimização (hipótese), autorizado por uma pessoa (afirmado pelo cliente, sem identidade verificada).') : pending.source === 'person' ? 'Editado por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).' : 'Proposta por Muse Spark (hipótese) e autorizada por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).';
-      await this.commit(pending.operations, { origin: 'user_provided', evidence });
-      this.host.notify(`Aplicado: ${pending.label}.${this.sync ? '' : ' Edição só local: a sessão do servidor não a conhece.'}`);
-    } catch (error) { this.pending = null; if (!this.disposed) this.host.notify(`Edição bloqueada: ${error instanceof Error ? error.message : 'erro desconhecido'}`); }
-    finally { this.busy = false; }
-    this.director?.resumeExploring(); if (!this.disposed) this.host.changed();
+      if (pending.authorisationGuard) {
+        // Bound to an external state (e.g. a review revision): revalidate now, fail closed on any doubt.
+        const valid = await pending.authorisationGuard().catch(() => false);
+        if (!valid) { if (this.pending === pending) { this.pending = null; this.authorised = false; } if (!this.disposed) { this.host.notify('Proposta invalidada: o estado revisto mudou ou não pôde ser revalidado. Nada foi aplicado.'); this.host.changed(); } return; }
+        // While the guard was awaiting the network, the world may have moved: only the exact same
+        // pending proposal, with the same authorisation, on the same plan, may proceed.
+        if (this.disposed) return;
+        if (this.pending !== pending || this.plan !== planAtStart || this.authorised !== authorisedAtStart || pending.needsAuthorization && !this.authorised) {
+          if (!this.disposed) { this.host.notify('Proposta invalidada: a proposta, a autorização ou o plano mudaram durante a revalidação. Nada foi aplicado.'); this.host.changed(); }
+          return;
+        }
+      }
+      this.busy = true; this.director?.enterEditing();
+      try {
+        // Three facts stay separate: who inferred the values (the provenance origin), that a person
+        // authorised applying them (recorded in the evidence text), and the server commit itself.
+        // Authorisation never promotes inferred geometry to user_provided.
+        const inferred = pending.source !== 'person';
+        const baseEvidence = pending.source === 'solver' ? (pending.evidence ?? 'Proposta do solver estrutural.') : pending.source === 'person' ? 'Editado por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).' : 'Proposta pela IA (hipótese) no workspace (afirmado pelo cliente, sem identidade verificada).';
+        const authorisationNote = inferred ? ` Authorisation: a person authorised applying this inferred result in the workspace (client-asserted, reviewer identity not authenticated)${pending.reviewBinding ? `; review ${pending.reviewBinding.reviewId} revision ${pending.reviewBinding.reviewRevision}` : ''}.` : '';
+        const evidence = `${baseEvidence.slice(0, Math.max(0, 500 - authorisationNote.length))}${authorisationNote}`.slice(0, 500);
+        await this.commit(pending.operations, { origin: inferred ? 'inferred' : 'user_provided', evidence }, undefined, pending.reviewBinding);
+        this.host.notify(`Aplicado: ${pending.label}.${this.sync ? '' : ' Edição só local: a sessão do servidor não a conhece.'}`);
+      } catch (error) { if (this.pending === pending) this.pending = null; if (!this.disposed) this.host.notify(`Edição bloqueada: ${error instanceof Error ? error.message : 'erro desconhecido'}`); }
+      finally { this.busy = false; }
+      this.director?.resumeExploring(); if (!this.disposed) this.host.changed();
+    } finally { this.applying = false; }
   }
 
   renderInspector(host: HTMLElement, id: string, evidenceOpen: boolean): void {

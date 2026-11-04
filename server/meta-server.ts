@@ -542,7 +542,7 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
           '/api/spatial/v2/refine': ['sessionId', 'baseRevision'],
           '/api/spatial/v2/undo': ['sessionId', 'baseRevision', 'idempotencyKey'],
           '/api/spatial/v2/evaluate': ['sessionId', 'baseRevision', 'imageDataUrl'],
-          '/api/spatial/v2/transactions': ['contract', 'sessionId', 'baseRevision', 'idempotencyKey', 'operations', 'provenance'],
+          '/api/spatial/v2/transactions': ['contract', 'sessionId', 'baseRevision', 'idempotencyKey', 'operations', 'provenance', 'reviewPrecondition'],
           '/api/spatial/v2/transactions/status': ['sessionId', 'idempotencyKey'],
           '/api/spatial/v2/reviews': ['plan', 'planRevision', 'sourceBytes', 'evidence'],
           '/api/spatial/v2/reviews/get': ['reviewId'],
@@ -726,13 +726,24 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
             const current = session!;
             let transaction;
             try { transaction = parseSpatialTransactionV2(body); } catch (error) { writeJson(response, 400, { error: { code: error instanceof Error ? error.message : 'SPATIAL_V2_TRANSACTION_INVALID', message: 'Transacção espacial V2 inválida.' } }, origin); return; }
-            const fingerprint = createHash('sha256').update(stableStringify({ baseRevision: transaction.baseRevision, operations: transaction.operations, provenance: transaction.provenance })).digest('hex');
+            const fingerprint = createHash('sha256').update(stableStringify({ baseRevision: transaction.baseRevision, operations: transaction.operations, provenance: transaction.provenance, reviewPrecondition: transaction.reviewPrecondition ?? null })).digest('hex');
             const existing = current.transactions.get(transaction.idempotencyKey);
             if (existing) {
               if (existing.fingerprint !== fingerprint) { writeJson(response, 409, { error: { code: 'SPATIAL_V2_IDEMPOTENCY_KEY_CONFLICT', message: 'A chave de idempotência já foi usada com outro conteúdo.', currentRevision: current.revision } }, origin); return; }
               writeJson(response, 200, { ...structuredClone(existing.body), replayed: true }, origin); return;
             }
             if (transaction.baseRevision !== current.revision) { writeJson(response, 409, { error: { code: 'SPATIAL_V2_REVISION_CONFLICT', message: 'A revisão base está desactualizada.', currentRevision: current.revision } }, origin); return; }
+            if (transaction.reviewPrecondition) {
+              // Review fence (E1.2): verified here, in the same synchronous critical section as the
+              // commit, so no review decision can interleave between this check and publication.
+              // Idempotent replays returned above never reach this check and never re-mutate.
+              const fence = transaction.reviewPrecondition;
+              const record = reviewRecords.get(fence.reviewId);
+              const currentFingerprint = createHash('sha256').update(stableStringify(current.plan)).digest('hex');
+              if (!record || record.reviewRevision !== fence.reviewRevision || record.planFingerprint !== fence.planFingerprint || record.source.sha256 !== fence.sourceSha256 || record.planFingerprint !== currentFingerprint || record.source.sha256 !== current.plan.source.sha256 || !reviewSolverGate(record).eligible) {
+                writeJson(response, 409, { error: { code: 'SPATIAL_REVIEW_PRECONDITION_STALE', message: 'O estado revisto mudou ou não pertence a este plano; a transacção foi rejeitada sem mutação.', currentRevision: current.revision, currentReviewRevision: record?.reviewRevision ?? null } }, origin); return;
+              }
+            }
             // No await from here to the commit: validation runs on an isolated copy and the session
             // is mutated only after every operation and the final plan have been validated.
             let next: SpatialPlanV2;
@@ -740,7 +751,7 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
               next = structuredClone(current.plan);
               for (const operation of transaction.operations) next = applySpatialOperationV2(next, operation, transaction.provenance);
               const compiled = compileSpatialPlanV2(next); const constraintReport = evaluateSpatialConstraintsV2(next, compiled.root); disposeCompiledSpatialPlan(compiled.root);
-              const receipt = { contract: SPATIAL_TRANSACTION_RECEIPT_CONTRACT, transactionId: `txn-${createHash('sha256').update(transaction.idempotencyKey).digest('hex').slice(0, 24)}`, sessionId: candidate.sessionId as string, baseRevision: transaction.baseRevision, revision: current.revision + 1, replayed: false, operationIds: transaction.operations.map((operation) => operation.operationId), plan: next, constraintReport, review: { status: 'applied' as const, actorEvidence: 'client_asserted_unverified' as const, authenticatedReviewer: false as const } };
+              const receipt = { contract: SPATIAL_TRANSACTION_RECEIPT_CONTRACT, transactionId: `txn-${createHash('sha256').update(transaction.idempotencyKey).digest('hex').slice(0, 24)}`, sessionId: candidate.sessionId as string, baseRevision: transaction.baseRevision, revision: current.revision + 1, replayed: false, operationIds: transaction.operations.map((operation) => operation.operationId), plan: next, ...(transaction.reviewPrecondition ? { reviewPrecondition: transaction.reviewPrecondition } : {}), constraintReport, review: { status: 'applied' as const, actorEvidence: 'client_asserted_unverified' as const, authenticatedReviewer: false as const } };
               current.history.push(current.plan); if (current.history.length > 50) current.history.shift();
               current.plan = next; current.revision += 1; current.pendingRefinement = undefined;
               rememberBounded(current.transactions, transaction.idempotencyKey, { fingerprint, status: 200, body: structuredClone(receipt) as unknown as Record<string, unknown> });

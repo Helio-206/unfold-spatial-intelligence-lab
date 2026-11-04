@@ -60,7 +60,7 @@ for (const c of CASES) {
     const after = await snapshot(page); await shoot(`${c.name}-${shot}`);
     const changed = after.plan.components.filter((k) => JSON.stringify(k.transform) !== JSON.stringify(input.plan.components.find((x) => x.id === k.id).transform));
     assert.deepEqual(after.plan.components.map((k) => k.id), base.plan.components.map((k) => k.id), 'ids changed'); assert.equal(after.plan.source.sha256, base.plan.source.sha256, 'source hash changed');
-    assert.ok(changed.every((k) => k.provenance.transform === 'user_provided' && /placement fitted|Resultado de optimização/.test(k.provenance.evidence)), 'provenance not recorded');
+    assert.ok(changed.every((k) => k.provenance.transform === 'inferred' && /placement fitted|Resultado de optimização/.test(k.provenance.evidence)), 'provenance not recorded');
     assert.ok(after.selected, 'selection lost'); await page.evaluate((id) => window.__workspace.select(id), after.selected);
     // undo through the real button: back to the input plan, exactly
     await page.evaluate(() => window.__workspace.select(window.__space.layer.currentPlan.components[0].id)); await page.waitForSelector('[data-undo]:not([disabled])'); await page.click('[data-undo]'); await page.waitForFunction((n) => window.__space.layer.editCount === n && !window.__space.layer.isBusy, base.edits, { timeout: 15000 });

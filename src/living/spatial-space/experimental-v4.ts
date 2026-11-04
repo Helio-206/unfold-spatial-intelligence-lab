@@ -114,6 +114,6 @@ export class ExperimentalV4 {
     if (!await revalidate()) return false;
     if (this.disposed || this.active() !== r.layer || r.layer.explanationVersion !== r.version) return false;
     this.select?.(first.componentId);
-    return r.layer.proposeSolverEdit(r.operations, 'Proposta experimental V4', r.evidence, { authorisationGuard: revalidate });
+    return r.layer.proposeSolverEdit(r.operations, 'Proposta experimental V4', r.evidence, { authorisationGuard: revalidate, ...(r.reviewId !== null && r.reviewRevision !== null && r.planFingerprint !== null ? { reviewBinding: { reviewId: r.reviewId, reviewRevision: r.reviewRevision, planFingerprint: r.planFingerprint, sourceSha256: r.source } } : {}) });
   }
 }

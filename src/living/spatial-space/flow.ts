@@ -12,6 +12,7 @@ import { checkFile } from '../experience/intake';
 import { canvasTranscoder, prepareImage, TranscodeError, type Transcoder } from '../unified-workspace/image-transcode';
 import type { SpatialWorkspace, WorkspaceOptions } from '../workspace-design/workspace';
 import { PlanSpaceLayer, SpatialTransactionSessionRecoveredError, type LayerSync } from './layer';
+import type { SpatialReviewPrecondition } from '../../universal-spatial/contracts-v2';
 import { ProductGeometry } from './product-geometry';
 import { AtlasSpaceLayer, ATLAS_NOTICE } from './atlas-layer';
 import { decide, decideAll, initialSpaceReview, pruneSpatialPlan, removedIds, reviewBlockers, reviewRecord, type SpaceReview } from './review';
@@ -293,16 +294,23 @@ export class SpaceFlow {
       // The exact transaction request (including the layer's stable idempotency key) is kept for the
       // life of this session, so reconciliation resubmits/recovers the same transaction and no other.
       let pendingTransaction: Parameters<typeof applySpatialPlanV2Transaction>[0] | null = null;
+      let pendingUndoKey: string | null = null;
       const sync: LayerSync = {
         apply: async (operation: SpatialOperationV2, provenance) => { const r = await this.api.operation({ sessionId: session.id, baseRevision: session.revision, operation, origin: provenance.origin, evidence: provenance.evidence.slice(0, 300) }, fetchImpl); session.revision = r.revision; return r.plan; },
         undo: async () => { const r = await this.api.undo({ sessionId: session.id, baseRevision: session.revision }, fetchImpl); session.revision = r.revision; return r.plan; },
-        applyTransaction: async (operations: SpatialOperationV2[], provenance, idempotencyKey: string) => {
-          const request = { sessionId: session.id, baseRevision: session.revision, idempotencyKey, operations, provenance: { origin: provenance.origin, evidence: provenance.evidence.slice(0, 500) } };
+        applyTransaction: async (operations: SpatialOperationV2[], provenance, idempotencyKey: string, reviewPrecondition?: SpatialReviewPrecondition) => {
+          const request = { sessionId: session.id, baseRevision: session.revision, idempotencyKey, operations, provenance: { origin: provenance.origin, evidence: provenance.evidence.slice(0, 500) }, ...(reviewPrecondition ? { reviewPrecondition } : {}) };
           pendingTransaction = request;
           try { const r = await this.api.transaction(request, fetchImpl); pendingTransaction = null; session.revision = r.revision; return r.plan; }
           catch (error) { if (!(error instanceof SpatialTransactionUnresolvedError)) pendingTransaction = null; throw error; }
         },
-        undoTransaction: async () => { const r = await this.api.undo({ sessionId: session.id, baseRevision: session.revision, idempotencyKey: `undo-${globalThis.crypto.randomUUID()}` }, fetchImpl); session.revision = r.revision; return r.plan; },
+        undoTransaction: async () => {
+            // One stable key per undo attempt: a retry after a lost response replays the server
+            // receipt instead of undoing a second history entry.
+            pendingUndoKey ??= `undo-${globalThis.crypto.randomUUID()}`;
+            try { const r = await this.api.undo({ sessionId: session.id, baseRevision: session.revision, idempotencyKey: pendingUndoKey }, fetchImpl); pendingUndoKey = null; session.revision = r.revision; return r.plan; }
+            catch (error) { if (error instanceof SpatialApiError) pendingUndoKey = null; throw error; }
+          },
         reconcileTransaction: async (idempotencyKey: string) => {
           if (!pendingTransaction || pendingTransaction.idempotencyKey !== idempotencyKey) throw new SpatialTransactionUnresolvedError(session.id, idempotencyKey, 'response-and-recovery-failed');
           try {

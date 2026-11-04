@@ -65,7 +65,7 @@ async function review(page, base, ops, label, evidence, name, tag) {
   });
   assert.ok(found.unchanged && !found.pending && found.ops.length > 0); row.table = found.table;
   row.geometryProposal = await review(page, base, found.ops, 'Primitivas alternativas', found.evidence, 'lantern', '2-v4-primitives');
-  assert.ok(row.geometryProposal.changed.every((c) => c.geometryProv === 'user_provided'), 'geometry provenance not recorded');
+  assert.ok(row.geometryProposal.changed.every((c) => c.geometryProv === 'inferred'), 'geometry provenance not recorded');
   assert.deepEqual(page.errors, []); await page.close(); records.push(row); console.log('lantern ok', JSON.stringify(found.table.filter((x) => x.proposed)));
 }
 await writeFile(`${out}/results.json`, JSON.stringify(records, null, 2)); await browser.close();
