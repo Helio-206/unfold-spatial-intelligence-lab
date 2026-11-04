@@ -15,7 +15,7 @@
       "evaluations": 33,
       "vertices": 1800,
       "triangles": 600,
-      "ms": 98.31530700000002,
+      "ms": 103.14178900000002,
       "errors": [
         {
           "id": "boom",
@@ -56,7 +56,7 @@
       "evaluations": 49,
       "vertices": 2700,
       "triangles": 900,
-      "ms": 122.63762700000001,
+      "ms": 126.43226299999998,
       "errors": [
         {
           "id": "boom",
@@ -108,7 +108,7 @@
       "evaluations": 49,
       "vertices": 2700,
       "triangles": 900,
-      "ms": 111.93315799999993,
+      "ms": 106.402983,
       "errors": [
         {
           "id": "boom",
