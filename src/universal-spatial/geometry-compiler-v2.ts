@@ -40,6 +40,9 @@ function createLoft(profile: number[][], sections: number[][], capEnds: boolean[
   if (capEnds[1]) for (const triangle of triangles) indices.push(last + triangle[0]!, last + triangle[1]!, last + triangle[2]!);
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new Float32BufferAttribute(new Float32Array(positions), 3));
+  // u runs around the outline, v along the sections: enough for the micro-surface finishes (roughness, bump, tone variation) to apply to a loft.
+  const uvs: number[] = []; for (let ring = 0; ring < sections.length; ring++) for (let i = 0; i < ringSize; i++) uvs.push(i / ringSize, ring / Math.max(1, sections.length - 1));
+  geometry.setAttribute('uv', new Float32BufferAttribute(new Float32Array(uvs), 2));
   geometry.setIndex(indices); geometry.computeVertexNormals(); geometry.computeBoundingBox(); geometry.computeBoundingSphere();
   return geometry;
 }
