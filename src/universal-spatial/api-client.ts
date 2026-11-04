@@ -3,7 +3,7 @@ import { SPATIAL_PLAN_V2_CONTRACT, validateSpatialPlanV2, type SpatialOperationV
 import { parseSpatialEvaluationV2, type SpatialEvaluationV2 } from './evaluation-v2';
 
 export class SpatialApiError extends Error {
-  constructor(readonly status: number, readonly code: string, message: string) { super(message); this.name = 'SpatialApiError'; }
+  constructor(readonly status: number, readonly code: string, message: string, readonly meta?: Record<string, unknown>) { super(message); this.name = 'SpatialApiError'; }
 }
 
 export type SpatialPlanReply = { contract: typeof SPATIAL_PLAN_CONTRACT; sessionId: string; revision: number; plan: SpatialPlan; sceneSummary: { entityCount: number; operators: string[]; provenanceCounts: Record<string, number> }; constructionEvents: unknown[]; meta: Record<string, unknown>; limitations: string[] };
@@ -11,8 +11,8 @@ export type SpatialMutationReply = { contract: 'unfold.spatial-review.v1'; sessi
 
 async function post<T>(path: string, body: unknown, fetchImpl: typeof fetch): Promise<T> {
   const response = await fetchImpl(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  const payload = await response.json() as { error?: { code?: unknown; message?: unknown } } & Record<string, unknown>;
-  if (!response.ok) throw new SpatialApiError(response.status, typeof payload.error?.code === 'string' ? payload.error.code : 'SPATIAL_API_ERROR', typeof payload.error?.message === 'string' ? payload.error.message : `Spatial API returned HTTP ${response.status}.`);
+  const payload = await response.json() as { error?: { code?: unknown; message?: unknown }; meta?: Record<string, unknown> } & Record<string, unknown>;
+  if (!response.ok) throw new SpatialApiError(response.status, typeof payload.error?.code === 'string' ? payload.error.code : 'SPATIAL_API_ERROR', typeof payload.error?.message === 'string' ? payload.error.message : `Spatial API returned HTTP ${response.status}.`, payload.meta && typeof payload.meta === 'object' ? payload.meta : undefined);
   return payload as T;
 }
 

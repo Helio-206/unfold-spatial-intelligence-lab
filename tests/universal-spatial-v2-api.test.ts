@@ -65,6 +65,18 @@ describe('universal spatial V2 HTTP pipeline', () => {
     });
   });
 
+  it('reads the abbreviated transform keys t/r/s a real model used, instead of stacking every part at the origin', async () => {
+    const abbreviated = { ...plan, components: [{ ...plan.components[0]!, transform: JSON.stringify({ t: [0, 3.1, 0], r: [0, 0, 0], s: [1, 1, 1] }), geometry: { ...plan.components[0]!.geometry, transform: JSON.stringify({ t: [0.5, 0, 0], r: [0, 0, 0], s: [1, 1, 1] }) } }] };
+    const upstream = vi.fn<typeof fetch>().mockResolvedValue(metaResponse(JSON.stringify(abbreviated)));
+    await withGuardedServer({ fetchImpl: upstream }, async (port) => {
+      const created = await rawRequest(port, { path: '/api/spatial/v2/plan', headers, body: { sourceKind: 'text', instruction: 'Create a small fan.' } });
+      expect(created.status, created.text).toBe(200);
+      expect(created.json.plan.components[0].transform.position).toEqual([0, 3.1, 0]);
+      expect(created.json.plan.components[0].geometry.transform.position).toEqual([0.5, 0, 0]);
+      expect(created.json.plan.unknowns.join(' ')).not.toMatch(/identity transform defaulted position/);
+    });
+  });
+
   it('rejects oversized or malformed image inputs before Meta and rejects incomplete request objects', async () => {
     const upstream = vi.fn<typeof fetch>().mockResolvedValue(metaResponse(JSON.stringify(plan)));
     await withGuardedServer({ fetchImpl: upstream }, async (port) => {

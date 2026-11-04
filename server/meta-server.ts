@@ -49,6 +49,8 @@ const MAX_PREVIEW_BODY_BYTES = 16 * 1024;
 const MAX_SPATIAL_AGENT_BODY_BYTES = 48 * 1024;
 const SPATIAL_EDIT_SCHEMA = { type: 'object', additionalProperties: false, required: ['kind', 'entityId', 'value'], properties: { kind: { type: 'string', enum: ['set-transform', 'set-material', 'set-geometry', 'set-repeat'] }, entityId: { type: 'string', minLength: 1, maxLength: 48 }, value: { type: 'string', minLength: 2, maxLength: 4000 } } } as const;
 const MAX_SPATIAL_REFINEMENTS = 2;
+/** Reasoning tokens count against the output cap: a real run spent 3,652 of 6,000 on reasoning and the plan was cut off mid-JSON. */
+const SPATIAL_V2_PLAN_MAX_OUTPUT_TOKENS = 12_000;
 const MAX_SPATIAL_SESSION_COUNT = 100;
 const SPATIAL_SESSION_TTL_MS = 30 * 60_000;
 function localOrigins(): Set<string> {
@@ -290,6 +292,23 @@ function persistUpstreamEvidence(config: ServerOptions['upstreamEvidence'], reco
   if (Buffer.byteLength(serialized, 'utf8') > 6_144) throw new Error('Evidência upstream excede o limite de tamanho.');
   const path = resolve(config.directory, `conversation-upstream-${randomUUID()}.json`);
   writeFileSync(path, `${serialized}\n`, { flag: 'wx', mode: 0o600 });
+}
+
+/**
+ * Keeps one spatial run on disk: the raw model text exactly as received, the normalised plan the browser got, and the request id.
+ * It stores model output and a source hash only (never headers, keys, the instruction or image bytes); files are owner-only and bounded.
+ */
+function persistSpatialRunEvidence(config: ServerOptions['upstreamEvidence'], record: Record<string, unknown>): boolean {
+  if (!config?.enabled) return false;
+  const maxFiles = config.maxFiles ?? 100;
+  try {
+    mkdirSync(config.directory, { recursive: true, mode: 0o700 });
+    if (readdirSync(config.directory).filter((name) => /^spatial-run-[a-f0-9-]+\.json$/.test(name)).length >= maxFiles) return false;
+    const serialized = JSON.stringify({ schema: 'unfold_spatial_run_evidence.v1', recordedAt: new Date().toISOString(), ...record });
+    if (Buffer.byteLength(serialized, 'utf8') > 512 * 1024) return false;
+    writeFileSync(resolve(config.directory, `spatial-run-${randomUUID()}.json`), `${serialized}\n`, { flag: 'wx', mode: 0o600 });
+    return true;
+  } catch { return false; }
 }
 
 function conversationErrorCode(error: unknown): { code: string; category: string; status: number } {
@@ -548,13 +567,13 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
             if (candidate.sourceKind === 'text') {
               if (typeof candidate.instruction !== 'string' || !candidate.instruction.trim() || candidate.instruction.length > 8_000) { writeJson(response, 400, { error: { code: 'INVALID_SPATIAL_V2_INSTRUCTION', message: 'instruction obrigatório, máximo 8000 caracteres.' } }, origin); return; }
               instruction = candidate.instruction; source = { kind: 'text', sha256: createHash('sha256').update(instruction, 'utf8').digest('hex') };
-              reserveMetaCall(); result = await requestMetaStructuredText(`${rules}\nUser request:\n${instruction}`, apiKey, SPATIAL_PLAN_V2_META_JSON_SCHEMA as unknown as Record<string, unknown>, options.fetchImpl, 6_000, 'low', 'unfold_spatial_plan_v2');
+              reserveMetaCall(); result = await requestMetaStructuredText(`${rules}\nUser request:\n${instruction}`, apiKey, SPATIAL_PLAN_V2_META_JSON_SCHEMA as unknown as Record<string, unknown>, options.fetchImpl, SPATIAL_V2_PLAN_MAX_OUTPUT_TOKENS, 'low', 'unfold_spatial_plan_v2');
             } else {
               let image;
               try { image = validateImageDataUrl(candidate.imageDataUrl); const bytes = Buffer.from(image.dataUrl.slice(image.dataUrl.indexOf(',') + 1), 'base64'); const size = dimensionsFromHeader(bytes, image.mimeType); if (!size.width || !size.height || size.width > 10_000 || size.height > 10_000 || size.width * size.height > 16_000_000) throw new Error('Dimensões da imagem excedem os limites.'); source = { kind: 'image', sha256: createHash('sha256').update(bytes).digest('hex') }; }
               catch (error) { writeJson(response, 400, { error: { code: 'INVALID_SPATIAL_V2_IMAGE', message: error instanceof Error ? error.message : 'Imagem inválida.' } }, origin); return; }
               instruction = 'Identify the visible object and construct a conceptual, multi-part spatial plan from visible evidence only.'; reserveMetaCall();
-              result = await requestMetaStructuredImage(image.dataUrl, `${rules}\nThe supplied photograph does not provide physical scale unless a visible known reference is explicitly supported. Do not invent dimensions or hidden-part facts.`, apiKey, SPATIAL_PLAN_V2_META_JSON_SCHEMA as unknown as Record<string, unknown>, options.fetchImpl, 6_000, undefined, 'low', 'unfold_spatial_plan_v2', 'high');
+              result = await requestMetaStructuredImage(image.dataUrl, `${rules}\nThe supplied photograph does not provide physical scale unless a visible known reference is explicitly supported. Do not invent dimensions or hidden-part facts.`, apiKey, SPATIAL_PLAN_V2_META_JSON_SCHEMA as unknown as Record<string, unknown>, options.fetchImpl, SPATIAL_V2_PLAN_MAX_OUTPUT_TOKENS, undefined, 'low', 'unfold_spatial_plan_v2', 'high');
             }
             const modelPlan = JSON.parse(result.text) as Record<string, unknown>;
             const parseModelJSON = (value: unknown): unknown => typeof value === 'string' ? JSON.parse(value) : value;
@@ -584,14 +603,14 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
               const parsed = parseModelJSON(value);
               if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return parsed;
               const transform = parsed as Record<string, unknown>;
+              // Muse Spark has answered with t/r/s and with translation/rotation; both are unambiguous, and reading them keeps the model's own placement.
+              const position = transform.position ?? transform.translation ?? transform.t, rotation = transform.rotationRad ?? transform.rotation_rad ?? transform.rotation ?? transform.r, scale = transform.scale ?? transform.s;
               const missing: string[] = [];
-              for (const key of ['position', 'rotationRad', 'scale']) if (!Object.hasOwn(transform, key) && !(key === 'rotationRad' && (Object.hasOwn(transform, 'rotation_rad') || Object.hasOwn(transform, 'rotation')))) missing.push(key);
+              if (position === undefined) missing.push('position'); if (rotation === undefined) missing.push('rotationRad'); if (scale === undefined) missing.push('scale');
               if (missing.length) normalizationNotes.push(`${path}: identity transform defaulted ${missing.join(', ')}`);
-              return {
-                position: transform.position ?? [0, 0, 0],
-                rotationRad: transform.rotationRad ?? transform.rotation_rad ?? transform.rotation ?? [0, 0, 0],
-                scale: transform.scale ?? [1, 1, 1],
-              };
+              const aliased = ['translation', 't', 'rotation_rad', 'rotation', 'r', 's'].filter((key) => Object.hasOwn(transform, key));
+              if (aliased.length) normalizationNotes.push(`${path}: transform keys ${aliased.join(', ')} read as position/rotationRad/scale`);
+              return { position: position ?? [0, 0, 0], rotationRad: rotation ?? [0, 0, 0], scale: scale ?? [1, 1, 1] };
             };
             const normalizeModelMaterial = (value: unknown, path: string): unknown => {
               const parsed = parseModelJSON(value);
@@ -646,9 +665,11 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
             const compiled = compileSpatialPlanV2(plan); const constraintReport = evaluateSpatialConstraintsV2(plan, compiled.root); disposeCompiledSpatialPlan(compiled.root);
             const now = Date.now(); for (const [id, current] of spatialV2Sessions) if (current.expires < now) spatialV2Sessions.delete(id);
             if (spatialV2Sessions.size >= MAX_SPATIAL_SESSION_COUNT) { writeJson(response, 503, { error: { code: 'SPATIAL_V2_SESSION_CAPACITY', message: 'Limite de sessões espaciais V2 atingido.' } }, origin); return; }
+            const rawResponseSha256 = createHash('sha256').update(result.text, 'utf8').digest('hex');
+            const rawResponseStored = persistSpatialRunEvidence(upstreamEvidence, { route, source, requestId: result.log.requestId ?? null, model: result.log.model ?? null, latencyMs: result.log.latencyMs ?? null, usage: (result.log as Record<string, unknown>).usage ?? null, rawResponseSha256, rawResponseText: result.text, normalizationNotes, normalizedPlan: plan });
             const sessionId = randomUUID(); spatialV2Sessions.set(sessionId, { plan, revision: 0, history: [], expires: now + SPATIAL_SESSION_TTL_MS, instruction, sourceKind: source.kind, refinementsUsed: 0, maxRefinements: Number(maxRefinements) });
             const operators = new Set<string>(); let nodeCount = 0; const collect = (node: SpatialPlanV2['components'][number]['geometry']) => { nodeCount++; if (node.type === 'group') node.children.forEach(collect); else operators.add(node.operator); }; plan.components.forEach((component) => collect(component.geometry));
-            writeJson(response, 200, { contract: SPATIAL_PLAN_V2_CONTRACT, sessionId, revision: 0, plan, sceneSummary: { componentCount: plan.components.length, geometryNodeCount: nodeCount, operators: [...operators], constraintReady: constraintReport.ready }, constraintReport, constructionEvents: [{ type: 'scene_created', at: 0 }, ...plan.components.map((component, index) => ({ type: 'component_placed', at: index + 1, entityId: component.id, transform: component.transform })), { type: 'assembly_ready', at: plan.components.length + 1 }, { type: 'scene_revealed', at: plan.components.length + 2 }], meta: result.log, limitations: ['Composição conceptual gerada por operadores geométricos; não constitui reconstrução métrica ou validada.', ...(source.kind === 'image' ? ['A fotografia não fornece escala física; dimensões e escala permanecem desconhecidas.'] : []), 'Perfis de apresentação não alteram a proveniência nem validam materiais reais.'] }, origin); return;
+            writeJson(response, 200, { contract: SPATIAL_PLAN_V2_CONTRACT, sessionId, revision: 0, plan, sceneSummary: { componentCount: plan.components.length, geometryNodeCount: nodeCount, operators: [...operators], constraintReady: constraintReport.ready }, constraintReport, constructionEvents: [{ type: 'scene_created', at: 0 }, ...plan.components.map((component, index) => ({ type: 'component_placed', at: index + 1, entityId: component.id, transform: component.transform })), { type: 'assembly_ready', at: plan.components.length + 1 }, { type: 'scene_revealed', at: plan.components.length + 2 }], meta: { ...result.log, rawResponseSha256, rawResponseStored, normalizationNotes }, limitations: ['Composição conceptual gerada por operadores geométricos; não constitui reconstrução métrica ou validada.', ...(source.kind === 'image' ? ['A fotografia não fornece escala física; dimensões e escala permanecem desconhecidas.'] : []), 'Perfis de apresentação não alteram a proveniência nem validam materiais reais.'] }, origin); return;
           }
           writeJson(response, 404, { error: { code: 'SPATIAL_V2_ROUTE_NOT_FOUND', message: 'Rota espacial V2 não encontrada.' } }, origin); return;
         } catch (error) {
@@ -657,6 +678,7 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
           const code = error instanceof MetaApiError ? error.kind === 'incomplete' ? 'SPATIAL_V2_META_INCOMPLETE' : error.kind === 'http_error' ? 'SPATIAL_V2_META_HTTP_ERROR' : 'SPATIAL_V2_META_FAILED' : error instanceof Error && error.message.startsWith('SPATIAL_V2_') ? error.message : 'SPATIAL_V2_REQUEST_INVALID';
           const status = error instanceof MetaApiError ? error.log.httpStatus === 429 ? 429 : 502 : code === 'SPATIAL_V2_REQUEST_INVALID' ? 400 : 422;
           const meta = error instanceof MetaApiError ? error.log : undefined;
+          if (request.url === '/api/spatial/v2/plan') persistSpatialRunEvidence(upstreamEvidence, { route: request.url, outcome: 'failed', code, httpStatus: status, meta: meta ?? null, upstreamExcerpt: error instanceof MetaApiError ? (error.upstreamExcerpt ?? null) : null, failureMessage: error instanceof Error ? error.message.slice(0, 300) : null });
           writeJson(response, status, { error: { code, message: 'O pedido V2 não passou na validação e nenhuma cena/refinamento foi aplicado.' }, ...(meta ? { meta } : {}) }, origin); return;
         }
       }
