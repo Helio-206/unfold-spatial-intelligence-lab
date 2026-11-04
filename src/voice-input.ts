@@ -65,8 +65,9 @@ export class BrowserVoiceInput {
     recognition.lang = 'pt-PT';
     recognition.interimResults = true;
     recognition.continuous = false;
-    recognition.onstart = () => this.setStatus('LISTENING');
+    recognition.onstart = () => { if (this.recognition === recognition) this.setStatus('LISTENING'); };
     recognition.onresult = (event) => {
+      if (this.recognition !== recognition) return;
       const transcript = Array.from({ length: event.results.length }, (_, index) => event.results[index][0]?.transcript ?? '').join(' ').trim();
       if (transcript) this.handlers.onTranscript(transcript);
       const finalResult = event.results[event.results.length - 1];
@@ -78,8 +79,9 @@ export class BrowserVoiceInput {
         else this.fail('O comando não foi executado. Consulta o estado apresentado no workspace.');
       }).finally(() => { this.processingCommand = false; });
     };
-    recognition.onerror = (event) => this.fail(event.error === 'not-allowed' ? 'Permissão do microfone recusada. Usa a entrada textual.' : `Falha de voz: ${event.error}.`);
+    recognition.onerror = (event) => { if (this.recognition !== recognition) return; this.fail(event.error === 'not-allowed' ? 'Permissão do microfone recusada. Usa a entrada textual.' : `Falha de voz: ${event.error}.`); };
     recognition.onend = () => {
+      if (this.recognition !== recognition) return;
       if (this.statusValue === 'LISTENING') this.setStatus('IDLE');
       else if (this.statusValue === 'PROCESSING' && !this.processingCommand) this.setStatus('IDLE');
       this.recognition = undefined;
@@ -95,8 +97,9 @@ export class BrowserVoiceInput {
 
   stop(): void {
     if (!this.recognition) return;
-    this.recognition.abort();
+    const recognition = this.recognition;
     this.recognition = undefined;
+    recognition.abort();
     this.setStatus('IDLE');
   }
 

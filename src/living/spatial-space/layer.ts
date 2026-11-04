@@ -67,6 +67,7 @@ export class PlanSpaceLayer implements SpaceLayer {
   private disposed = false;
   private continuation: (() => void) | null = null;
   private frameHandle: unknown = null;
+  explanationVersion = 0;
   private selected: string | null = null;
   private isolated: string | null = null;
   private readonly emissive = new WeakMap<Material, { color: Color; intensity: number }>();
@@ -128,6 +129,7 @@ export class PlanSpaceLayer implements SpaceLayer {
     if (this.disposed || !this.wrapper) return [];
     const ids = this.routed?.upgrade?.(budgetTriangles) ?? [];
     if (ids.length) {
+      this.explanationVersion++;
       const totals = this.routed?.report?.totals; if (totals) this.stats = { ...this.stats, meshCount: totals.meshes, triangleCount: totals.triangles, geometryBytes: totals.geometryBytes };
       this.root.updateMatrixWorld(true); this.analysisCache = null;
       this.applyPaint(); this.director?.refreshComponents(ids); this.host.redraw();
