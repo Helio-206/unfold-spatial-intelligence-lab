@@ -3,10 +3,10 @@
  "protocol": "reports/acceptance/PROTOCOL.md",
  "budget": {
   "cap": 6,
-  "used": 2,
+  "used": 3,
   "planned": 3,
-  "remaining": 4,
-  "note": "text request (phase 2) not yet run"
+  "reserveUsed": 0,
+  "remaining": 3
  },
  "automaticDecisions": "the harness kept every proposed component and ticked the acknowledgement; nothing was rejected. This is NOT a human review.",
  "humanReview": null,
@@ -195,6 +195,152 @@
    },
    "liveRun": "reports/acceptance/runs/image2-lungs/ (aborted at the idle assertion, see incident 1)",
    "replayRun": "reports/acceptance/runs/image2-lungs-replay/ (own stored plan, labelled replay)"
+  },
+  {
+   "name": "text: compound optical microscope",
+   "input": {
+    "prompt": "see PROTOCOL.md (phase 2), sent once, never edited"
+   },
+   "planCall": {
+    "model": "muse-spark-1.3",
+    "requestId": "d14a0904-1d6b-478b-a655-5bf9ab1d9975",
+    "latencyMs": 52013,
+    "usage": {
+     "inputTokens": 1032,
+     "outputTokens": 7472,
+     "totalTokens": 8504,
+     "cachedInputTokens": 0,
+     "reasoningTokens": 3465
+    },
+    "estimatedCostUsd": 0.033046,
+    "costNote": "reported by the server from provider usage; not a bill",
+    "rawResponseSha256": "719fb4a1a7195a0d43dd990356dfe5f48adc65b180b88f2c9d29906118536909"
+   },
+   "plan": {
+    "title": "Microscópio óptico composto de laboratório",
+    "units": "unitless",
+    "components": [
+     {
+      "id": "base",
+      "label": "Base do microscópio",
+      "parentId": null,
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     },
+     {
+      "id": "coluna-suporte",
+      "label": "Coluna de suporte",
+      "parentId": "base",
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     },
+     {
+      "id": "braco",
+      "label": "Braço de suporte",
+      "parentId": "coluna-suporte",
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     },
+     {
+      "id": "platina",
+      "label": "Platina para lâminas",
+      "parentId": "coluna-suporte",
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     },
+     {
+      "id": "tubo-ocular",
+      "label": "Tubo ocular principal",
+      "parentId": "braco",
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     },
+     {
+      "id": "ocular",
+      "label": "Ocular",
+      "parentId": "tubo-ocular",
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     },
+     {
+      "id": "revolver",
+      "label": "Revólver porta-objetivas",
+      "parentId": "tubo-ocular",
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     },
+     {
+      "id": "objetivas",
+      "label": "Três objetivas",
+      "parentId": "revolver",
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     },
+     {
+      "id": "focos",
+      "label": "Botões de focagem",
+      "parentId": "coluna-suporte",
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     },
+     {
+      "id": "iluminador",
+      "label": "Iluminador sob platina",
+      "parentId": "base",
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     }
+    ],
+    "unknowns": [
+     "Escala física real desconhecida — dimensões conceptuais sem unidades, longest side ~4.3 unidades",
+     "Geometria interna ótica e mecanismos de focagem fina/grossa não modelados",
+     "Abertura real da platina e condensador simplificados como disco luminoso",
+     "Invalid Meta constraint proposals were omitted; no unvalidated constraints were applied."
+    ],
+    "normalizationNotes": [
+     "Invalid Meta constraint proposals were omitted; no unvalidated constraints were applied."
+    ]
+   },
+   "liveRun": "reports/acceptance/runs/text-microscope/ (completed end to end, live)",
+   "checks": {
+    "idleFramesPer2sWindow": [
+     0,
+     0
+    ],
+    "gpu": {
+     "before": {
+      "geometries": 4,
+      "textures": 7,
+      "programs": 5
+     },
+     "afterLeaving": {
+      "geometries": 4,
+      "textures": 7,
+      "programs": 8
+     }
+    },
+    "consoleErrors": [],
+    "qualityChecksFailed": [],
+    "selectable": [
+     "ocular",
+     "tubo-ocular",
+     "braco",
+     "platina"
+    ],
+    "rejectedByScript": null,
+    "built": 10
+   }
   }
- ]
+ ],
+ "totalEstimatedCostUsd": "about 0.095 for the three plans (two derived, one reported); not a bill"
 }
