@@ -294,22 +294,42 @@ export class SpaceFlow {
       // The exact transaction request (including the layer's stable idempotency key) is kept for the
       // life of this session, so reconciliation resubmits/recovers the same transaction and no other.
       let pendingTransaction: Parameters<typeof applySpatialPlanV2Transaction>[0] | null = null;
-      let pendingUndoKey: string | null = null;
+      let pendingUndo: { key: string; baseRevision: number } | null = null;
       const sync: LayerSync = {
         apply: async (operation: SpatialOperationV2, provenance) => { const r = await this.api.operation({ sessionId: session.id, baseRevision: session.revision, operation, origin: provenance.origin, evidence: provenance.evidence.slice(0, 300) }, fetchImpl); session.revision = r.revision; return r.plan; },
         undo: async () => { const r = await this.api.undo({ sessionId: session.id, baseRevision: session.revision }, fetchImpl); session.revision = r.revision; return r.plan; },
         applyTransaction: async (operations: SpatialOperationV2[], provenance, idempotencyKey: string, reviewPrecondition?: SpatialReviewPrecondition) => {
-          const request = { sessionId: session.id, baseRevision: session.revision, idempotencyKey, operations, provenance: { origin: provenance.origin, evidence: provenance.evidence.slice(0, 500) }, ...(reviewPrecondition ? { reviewPrecondition } : {}) };
+          const request = { sessionId: session.id, baseRevision: session.revision, idempotencyKey, operations, provenance: { origin: provenance.origin, evidence: provenance.evidence.slice(0, 500) }, ...(reviewPrecondition ? { reviewPrecondition, approvalActor: this.reviewName || 'não identificado' } : {}) };
           pendingTransaction = request;
           try { const r = await this.api.transaction(request, fetchImpl); pendingTransaction = null; session.revision = r.revision; return r.plan; }
           catch (error) { if (!(error instanceof SpatialTransactionUnresolvedError)) pendingTransaction = null; throw error; }
         },
         undoTransaction: async () => {
             // One stable key per undo attempt: a retry after a lost response replays the server
-            // receipt instead of undoing a second history entry.
-            pendingUndoKey ??= `undo-${globalThis.crypto.randomUUID()}`;
-            try { const r = await this.api.undo({ sessionId: session.id, baseRevision: session.revision, idempotencyKey: pendingUndoKey }, fetchImpl); pendingUndoKey = null; session.revision = r.revision; return r.plan; }
-            catch (error) { if (error instanceof SpatialApiError) pendingUndoKey = null; throw error; }
+            // receipt instead of undoing a second history entry. If even the retry cannot produce
+            // an answer, the outcome is explicitly unresolved, never invented.
+            pendingUndo ??= { key: `undo-${globalThis.crypto.randomUUID()}`, baseRevision: session.revision };
+            const attempt = pendingUndo;
+            try { const r = await this.api.undo({ sessionId: session.id, baseRevision: attempt.baseRevision, idempotencyKey: attempt.key }, fetchImpl); pendingUndo = null; session.revision = r.revision; return r.plan; }
+            catch (error) {
+              if (error instanceof SpatialApiError) { pendingUndo = null; throw error; }
+              throw new SpatialTransactionUnresolvedError(session.id, attempt.key, 'response-and-recovery-failed', error);
+            }
+          },
+        reconcileUndo: async (idempotencyKey: string) => {
+            if (!pendingUndo || pendingUndo.key !== idempotencyKey) throw new SpatialTransactionUnresolvedError(session.id, idempotencyKey, 'response-and-recovery-failed');
+            try {
+              const r = await this.api.undo({ sessionId: session.id, baseRevision: pendingUndo.baseRevision, idempotencyKey }, fetchImpl);
+              pendingUndo = null; session.revision = r.revision; return r.plan;
+            } catch (error) {
+              const sessionGone = error instanceof SpatialTransactionUnresolvedError && error.reason === 'session-not-found' || error instanceof SpatialApiError && error.status === 404;
+              if (!sessionGone) throw error;
+              const current = this.layer?.currentPlan; if (!current || this.layer !== layer) throw error;
+              const recovered = await this.api.adopt({ plan: current, instruction: `Recovered space: ${current.title}` }, fetchImpl);
+              if (this.layer !== layer) throw error;
+              session.id = recovered.sessionId; session.revision = recovered.revision; pendingUndo = null; this.syncNote = null;
+              throw new SpatialTransactionSessionRecoveredError();
+            }
           },
         reconcileTransaction: async (idempotencyKey: string) => {
           if (!pendingTransaction || pendingTransaction.idempotencyKey !== idempotencyKey) throw new SpatialTransactionUnresolvedError(session.id, idempotencyKey, 'response-and-recovery-failed');
@@ -547,7 +567,7 @@ export class SpaceFlow {
     if (this.presentationNotice) notices.push({ id: 'space-presentation', text: this.presentationNotice });
     if (status) notices.push({ id: 'space-note', text: status });
     const tools: NonNullable<WorkspaceOptions['extraTools']> = [
-      ...(layer.transactionUnresolved ? [{ id: 'space-reconcile', label: 'Reconciliar transacção', hint: 'o resultado remoto é desconhecido; as edições estão bloqueadas até reconciliar', icon: linkIcon, run: () => void layer.reconcileTransaction().then((outcome) => { this.note = outcome === 'committed' ? 'Transacção reconciliada: o plano do servidor foi adoptado.' : outcome === 'recovered-not-committed' ? 'Sessão recuperada: a transacção não ficou aplicada.' : 'Ainda não foi possível reconciliar; as edições continuam bloqueadas.'; this.refreshContext(); this.updateComposer(); }) }] : []),
+      ...((layer.transactionUnresolved || layer.undoUnresolved) ? [{ id: 'space-reconcile', label: 'Reconciliar transacção', hint: 'o resultado remoto é desconhecido; as edições estão bloqueadas até reconciliar', icon: linkIcon, run: () => void layer.reconcileUnresolved().then((outcome) => { this.note = outcome === 'committed' ? 'Transacção reconciliada: o plano do servidor foi adoptado.' : outcome === 'recovered-not-committed' ? 'Sessão recuperada: a transacção não ficou aplicada.' : 'Ainda não foi possível reconciliar; as edições continuam bloqueadas.'; this.refreshContext(); this.updateComposer(); }) }] : []),
       { id: 'space-save', label: this.dirty ? 'Guardar' : 'Guardado', hint: 'guarda só neste navegador (não é cópia na nuvem)', icon: saveIcon, run: () => void this.save() },
       { id: 'space-eval', label: 'Avaliar vista', hint: this.session ? 'a Meta olha para a imagem (chamada paga; só uma hipótese)' : 'indisponível: sem sessão no servidor', icon: eyeIcon, run: () => void this.evaluateView() },
       { id: 'space-gaps', label: 'Fechar folgas', hint: 'o solver propõe posições; ficam como inferidas e desfazíveis', icon: linkIcon, run: () => void layer.closeGaps().then((r) => { this.note = r.applied ? `Solver: ${r.applied} folga(s) fechada(s) em ${r.iterations} iteração(ões). Posições marcadas como inferidas.` : 'Nada que o solver possa fechar.'; this.refreshContext(); }) },

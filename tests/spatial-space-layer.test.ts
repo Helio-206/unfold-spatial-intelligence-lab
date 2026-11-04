@@ -437,6 +437,30 @@ describe('PlanSpaceLayer', () => {
       expect(layer.currentPlan.components.find((c) => c.id === 'base')!.provenance.transform).toBe('inferred');
       layer.dispose();
     });
+    it('an unresolved grouped undo holds its history entry and blocks everything until reconciled (E1.3 milestone D)', async () => {
+      const layer = new PlanSpaceLayer(plan(), host());
+      let server = plan(); const stack: SpatialPlanV2[] = [];
+      layer.attachSync({
+        apply: async (op: SpatialOperationV2, provenance) => applySpatialOperationV2(server, op, provenance),
+        undo: async () => server,
+        applyTransaction: async (operations: SpatialOperationV2[], provenance) => { stack.push(server); for (const operation of operations) server = applySpatialOperationV2(server, operation, provenance); return server; },
+        undoTransaction: async () => { throw new SpatialTransactionUnresolvedError('s', 'undo-stable-1', 'response-and-recovery-failed'); },
+        reconcileUndo: async (key: string) => { expect(key).toBe('undo-stable-1'); server = stack.pop()!; return server; },
+      });
+      expect(layer.proposeSolverEdit(ops(), 'x', 'y')).toBe(true); layer.authorise(true); await layer.applyEdit();
+      expect(layer.editCount).toBe(1);
+      expect(await layer.undo()).toBe(false);
+      expect(layer.undoUnresolved).toBe(true);
+      expect(layer.canUndo).toBe(false);
+      // Neither another undo nor a dependent edit may proceed, and no second entry can be consumed.
+      expect(await layer.undo()).toBe(false);
+      layer.highlight('base'); layer.proposeEdit('x+'); await layer.applyEdit();
+      expect(layer.editCount).toBe(0); // the entry is held by the unresolved undo, not lost and not duplicated
+      expect(await layer.reconcileUnresolved()).toBe('committed');
+      expect(layer.undoUnresolved).toBe(false); expect(layer.editCount).toBe(0);
+      expect(layer.currentPlan.components.find((c) => c.id === 'base')!.transform.scale[0]).toBe(1);
+      layer.dispose();
+    });
     it('a proposal whose authorisation guard fails at apply time is never applied (review changed after preview, E1.1 test 7)', async () => {
       const h = host(), layer = new PlanSpaceLayer(plan(), h), before = layer.currentPlan;
       let guardOk = true;

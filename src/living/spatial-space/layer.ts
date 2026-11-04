@@ -49,6 +49,12 @@ export type LayerSync = {
    * without it; any other throw keeps the unresolved state.
    */
   reconcileTransaction?(idempotencyKey: string): Promise<SpatialPlanV2>;
+  /**
+   * Reconciles an unresolved grouped undo with the same stable key. Resolves with the authoritative
+   * (undone) plan when the undo is committed on the server; throws
+   * `SpatialTransactionSessionRecoveredError` when the session was explicitly recovered without it.
+   */
+  reconcileUndo?(idempotencyKey: string): Promise<SpatialPlanV2>;
 };
 export type SpaceLayerHost = {
   /** A camera request from the Presentation Director. The workspace asks its arbiter; a person's input always wins. */
@@ -85,6 +91,8 @@ export class PlanSpaceLayer implements SpaceLayer {
    * and must not diverge further from a possibly-committed remote state.
    */
   private unresolvedTx: { key: string; before: SpatialPlanV2; ops: number } | null = null;
+  /** A grouped undo whose remote outcome is unknown. The history entry is held here, not restored, so no second undo can consume another entry until this is reconciled. */
+  private unresolvedUndoState: { key: string; entry: { plan: SpatialPlanV2; ops: number } } | null = null;
   /** While set, no edit is applied (the server session is being prepared and would not know it). */
   private lockReason: string | null = null;
   private busy = false;
@@ -125,10 +133,11 @@ export class PlanSpaceLayer implements SpaceLayer {
   get geometryReport(): RouterReport | null { return this.routed?.report ?? null; }
   get pendingEdit(): Pending | null { return this.pending; }
   authorise(value: boolean): void { this.authorised = value; }
-  get canUndo(): boolean { return this.history.length > 0 && !this.busy && this.lockReason === null && !this.unresolvedTx; }
-  get isBusy(): boolean { return this.busy || this.lockReason !== null || this.unresolvedTx !== null; }
+  get canUndo(): boolean { return this.history.length > 0 && !this.busy && this.lockReason === null && !this.unresolvedTx && !this.unresolvedUndoState; }
+  get isBusy(): boolean { return this.busy || this.lockReason !== null || this.unresolvedTx !== null || this.unresolvedUndoState !== null; }
   /** True while a grouped transaction's remote outcome is unknown; dependent edits stay blocked. */
   get transactionUnresolved(): boolean { return this.unresolvedTx !== null; }
+  get undoUnresolved(): boolean { return this.unresolvedUndoState !== null; }
   get unresolvedTransactionKey(): string | null { return this.unresolvedTx?.key ?? null; }
   lockEditing(reason: string): void { this.lockReason = reason; }
   unlockEditing(): void { this.lockReason = null; }
@@ -298,6 +307,7 @@ export class PlanSpaceLayer implements SpaceLayer {
   /** Applies operations in order, through the server session when there is one, so both sides keep the same revision. */
   private async commit(operations: SpatialOperationV2[], provenance: { origin: 'user_provided' | 'inferred'; evidence: string }, localPlan?: SpatialPlanV2, reviewPrecondition?: SpatialReviewPrecondition): Promise<void> {
     if (this.unresolvedTx) throw new Error('SPATIAL_V2_TRANSACTION_UNRESOLVED');
+    if (this.unresolvedUndoState) throw new Error('SPATIAL_V2_UNDO_UNRESOLVED');
     // Fail closed (E1.3): a review-bound proposal may only become authoritative through a server
     // transaction that verifies the fence. Without a sync there is no such path, so it must never
     // fall through to local application. Local-only edits that never claimed review authority are
@@ -347,6 +357,7 @@ export class PlanSpaceLayer implements SpaceLayer {
   async undo(): Promise<boolean> {
     if (this.disposed) return false;
     if (this.unresolvedTx) { this.host.notify('Undo bloqueado: há uma transacção por reconciliar (SPATIAL_V2_TRANSACTION_UNRESOLVED).'); return false; }
+    if (this.unresolvedUndoState) { this.host.notify('Undo bloqueado: há um undo por reconciliar (SPATIAL_V2_UNDO_UNRESOLVED).'); return false; }
     if (this.lockReason) { this.host.notify(`Edição indisponível: ${this.lockReason}.`); return false; }
     const previous = this.history.pop(); if (!previous || this.busy) { if (previous) this.history.push(previous); return false; }
     if (this.sync && previous.ops > 1 && !this.sync.undoTransaction) { this.history.push(previous); this.host.notify('Undo agrupado indisponível: o servidor não oferece transacção atómica.'); return false; }
@@ -355,13 +366,52 @@ export class PlanSpaceLayer implements SpaceLayer {
       if (this.sync && previous.ops > 1) {
         // One grouped undo for the whole transaction; on failure nothing changes locally.
         try { const restored = await this.sync.undoTransaction!(); if (this.disposed) { this.history.push(previous); return false; } this.plan = restored; }
-        catch (error) { this.history.push(previous); if (!this.disposed) this.host.notify(`Undo agrupado bloqueado: ${error instanceof Error ? error.message : 'erro desconhecido'}`); return false; }
+        catch (error) {
+          if (error instanceof SpatialTransactionUnresolvedError) {
+            // Outcome unknown: hold the history entry here. It is neither restored (which would let
+            // another undo consume the next entry) nor consumed (which would invent the undo).
+            this.unresolvedUndoState = { key: error.idempotencyKey, entry: previous };
+            if (!this.disposed) this.host.notify('Undo por reconciliar: o resultado no servidor é desconhecido (SPATIAL_V2_UNDO_UNRESOLVED). As edições ficam bloqueadas até reconciliar.');
+            return false;
+          }
+          this.history.push(previous); if (!this.disposed) this.host.notify(`Undo agrupado bloqueado: ${error instanceof Error ? error.message : 'erro desconhecido'}`); return false;
+        }
       }
       else if (this.sync) { try { let restored = this.plan; for (let i = 0; i < previous.ops; i++) restored = await this.sync.undo(); if (this.disposed) return false; this.plan = restored; } catch (error) { if (this.disposed) return false; this.sync = null; this.host.syncLost?.(error instanceof Error ? error.message : 'sessão do servidor indisponível'); this.plan = previous.plan; } }
       else this.plan = previous.plan;
       this.pending = null; this.stats = this.build();
     } finally { this.busy = false; }
     this.director?.resumeExploring(); this.host.changed(); return true;
+  }
+
+  /** Reconciles whichever unresolved mutation is outstanding (transaction first, then undo). */
+  async reconcileUnresolved(): Promise<'committed' | 'recovered-not-committed' | 'still-unresolved'> {
+    if (this.unresolvedUndoState && !this.unresolvedTx) return this.reconcileUndo();
+    return this.reconcileTransaction();
+  }
+
+  /** Settles an unresolved grouped undo. The held history entry is consumed only on `committed`. */
+  async reconcileUndo(): Promise<'committed' | 'recovered-not-committed' | 'still-unresolved'> {
+    const pendingUndo = this.unresolvedUndoState;
+    if (this.disposed || !pendingUndo || this.busy) return 'still-unresolved';
+    if (!this.sync?.reconcileUndo) { this.host.notify('Reconciliação do undo indisponível nesta sessão.'); return 'still-unresolved'; }
+    this.busy = true; this.director?.enterEditing();
+    try {
+      const authoritative = await this.sync.reconcileUndo(pendingUndo.key);
+      if (this.disposed) return 'still-unresolved';
+      this.plan = authoritative; this.unresolvedUndoState = null; this.pending = null; this.authorised = false; this.stats = this.build();
+      this.host.notify('Undo reconciliado: o plano do servidor foi adoptado.');
+      return 'committed';
+    } catch (error) {
+      if (error instanceof SpatialTransactionSessionRecoveredError) {
+        if (this.disposed) return 'still-unresolved';
+        this.history.push(pendingUndo.entry); this.unresolvedUndoState = null;
+        this.host.notify('Sessão recuperada sem o undo por reconciliar: ele não ficou aplicado e a história foi reposta.');
+        return 'recovered-not-committed';
+      }
+      if (!this.disposed) this.host.notify('Reconciliação do undo ainda impossível. As edições continuam bloqueadas.');
+      return 'still-unresolved';
+    } finally { this.busy = false; this.director?.resumeExploring(); if (!this.disposed) this.host.changed(); }
   }
 
   /**
