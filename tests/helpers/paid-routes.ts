@@ -54,6 +54,7 @@ export function paidRouteCases(): Record<string, PaidRouteCase> {
       },
       upstreamText: JSON.stringify({ schema: 'spatial_agent_result.v1', kind: 'PROPOSE_ACTION', text: 'Proponho aumentar a parede seleccionada em 30 cm.', basis: 'scene', evidenceIds: ['wall-a'], question: null, action: { kind: 'Resize', target: { reference: 'selected', label: null, ordinal: null }, value: 0.3, valueMode: 'increase_by', unit: 'm', axis: null, opening: null } }),
     },
+    '/api/spatial/question': { body: { question: 'Para que serve?', selectedId: 'hub', revision: 'hub:1', title: 'Fan', components: [{ id: 'hub', label: 'Hub' }], relations: [], unknowns: [], history: [] }, upstreamText: JSON.stringify({ answer: 'O cubo liga as pás.', limitations: 'Identificação não verificada.' }) },
     '/api/spatial/plan': {
       body: { sourceKind: 'text', instruction: 'Cria uma forma conceptual.' },
       upstreamText: JSON.stringify({ title: 'Concept', units: 'unitless', entities: [{ id: 'body', label: 'Body', parentId: null, geometry: { operator: 'box', parameters: [1, 1, 1] }, repeat: null, transform: { position: [0, 0, 0], rotationRad: [0, 0, 0], scale: [1, 1, 1] }, material: { color: '#888888', roughness: 0.5, metalness: 0 }, origin: 'design_approximation', evidence: 'Model generated primitive.' }], relations: [], unknowns: ['Scale unknown.'] }),
