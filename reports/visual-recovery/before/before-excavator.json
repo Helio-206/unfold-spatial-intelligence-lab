@@ -1,0 +1,36 @@
+{
+  "label": "before-excavator",
+  "plan": "reports/universal-spatial-v2/evidence/live-image-plan.json",
+  "viewport": "1440x1000",
+  "shot": null,
+  "stage": {
+    "width": 1010,
+    "height": 680,
+    "objectHeightPx": 62,
+    "objectWidthPx": 42,
+    "objectHeightOfStage": 0.091,
+    "objectBoxAreaOfStage": 0.0038
+  },
+  "canvas": [
+    1008,
+    151
+  ],
+  "objectPixelFraction": 0.004,
+  "bboxFraction": 0.0171,
+  "bbox": [
+    486,
+    45,
+    527,
+    106
+  ],
+  "meanObjectLuma": 83.3,
+  "touchesEdge": false,
+  "consoleErrors": [],
+  "compiler": {
+    "meshCount": 17,
+    "triangleCount": 2268,
+    "geometryBytes": 198992,
+    "componentCount": 11,
+    "nodeCount": 20
+  }
+}

@@ -1,0 +1,366 @@
+{
+  "browser": "Chromium Playwright + SwiftShader",
+  "viewport": "1440x1000",
+  "url": "http://127.0.0.1:5179/universal-spatial-v2",
+  "input": {
+    "path": "/tmp/codex-clipboard-93f0e5f1-fb3c-401b-bad4-52d414ea704b.png",
+    "sha256": "2ba5cfac62edea6be1e8ab34590ffb2d74c0d70320970d9db1f1b2a59ab31327",
+    "bytes": 1048734
+  },
+  "model": {
+    "model": "muse-spark-1.3",
+    "endpoint": "https://api.meta.ai/v1/responses",
+    "requestId": "57e57273-6f7a-44f4-af8a-4737f03435ff",
+    "httpStatus": 200,
+    "latencyMs": 45305,
+    "maxOutputTokens": 6000,
+    "responseStatus": "completed",
+    "usage": {
+      "inputTokens": 2071,
+      "outputTokens": 5074,
+      "totalTokens": 7145,
+      "cachedInputTokens": 0,
+      "reasoningTokens": 1208
+    },
+    "estimatedCostUsd": 0.02415325,
+    "upstreamEnvelope": {
+      "fields": [
+        "background",
+        "completed_at",
+        "created_at",
+        "error",
+        "id",
+        "incomplete_details",
+        "instructions",
+        "max_output_tokens",
+        "model",
+        "object",
+        "output",
+        "parallel_tool_calls",
+        "reasoning",
+        "service_tier",
+        "status",
+        "store",
+        "temperature",
+        "text",
+        "tool_choice",
+        "tools",
+        "top_logprobs",
+        "top_p",
+        "truncation",
+        "usage"
+      ],
+      "outputItemTypes": [
+        "reasoning",
+        "message"
+      ],
+      "contentTypes": [
+        "output_text"
+      ],
+      "outputTextLength": 11767
+    },
+    "status": "success"
+  },
+  "plan": {
+    "title": "Compact tracked excavator - conceptual",
+    "units": "unitless",
+    "componentCount": 11,
+    "components": [
+      {
+        "id": "undercarriage",
+        "label": "Tracked undercarriage frame",
+        "parentId": null,
+        "provenance": {
+          "evidence": "Low dark platform connecting both tracks below upper body Local normalization: under-frame: neutral design material fallback for metalness, clearcoat. Local safe fallback parameters substituted for invalid box output at undercarriage.",
+          "geometry": "design_approximation",
+          "material": "design_approximation",
+          "transform": "inferred"
+        }
+      },
+      {
+        "id": "track-left",
+        "label": "Left crawler track",
+        "parentId": "undercarriage",
+        "provenance": {
+          "evidence": "Right-side visible ribbed track with grousers in photo Local normalization: left-frame: neutral design material fallback for metalness, clearcoat; left-pads: neutral design material fallback for metalness, clearcoat; left-roller: neutral design material fallback for metalness, clearcoat. Local safe fallback parameters substituted for invalid box output at track-left.children.0. Local safe fallback parameters substituted for invalid box output at track-left.children.1. Local safe fallback paramet",
+          "geometry": "design_approximation",
+          "material": "design_approximation",
+          "transform": "observed"
+        }
+      },
+      {
+        "id": "track-right",
+        "label": "Right crawler track",
+        "parentId": "undercarriage",
+        "provenance": {
+          "evidence": "Left-side track partially visible behind frame Local normalization: right-frame: neutral design material fallback for metalness, clearcoat; right-pads: neutral design material fallback for metalness, clearcoat; right-roller: neutral design material fallback for metalness, clearcoat. Local safe fallback parameters substituted for invalid box output at track-right.children.0. Local safe fallback parameters substituted for invalid box output at track-right.children.1. Local safe fallback parameters",
+          "geometry": "design_approximation",
+          "material": "design_approximation",
+          "transform": "inferred"
+        }
+      },
+      {
+        "id": "upper-frame",
+        "label": "Upper rotating frame",
+        "parentId": "undercarriage",
+        "provenance": {
+          "evidence": "Dark deck above tracks supporting cab and boom Local normalization: upper-deck: neutral design material fallback for metalness, clearcoat. Local safe fallback parameters substituted for invalid rounded_box output at upper-frame.",
+          "geometry": "design_approximation",
+          "material": "design_approximation",
+          "transform": "inferred"
+        }
+      },
+      {
+        "id": "cab",
+        "label": "Operator cab",
+        "parentId": "upper-frame",
+        "provenance": {
+          "evidence": "Boxy cab with dark glazing and orange interior post on right side Local normalization: cab-shell: neutral design material fallback for metalness, clearcoat; cab-glass: neutral design material fallback for metalness, clearcoat; cab-accent: neutral design material fallback for metalness, clearcoat. Local safe fallback parameters substituted for invalid rounded_box output at cab.children.0. Local safe fallback parameters substituted for invalid box output at cab.children.1. Local safe fallback para",
+          "geometry": "design_approximation",
+          "material": "design_approximation",
+          "transform": "observed"
+        }
+      },
+      {
+        "id": "engine-hood",
+        "label": "Engine counterweight hood",
+        "parentId": "upper-frame",
+        "provenance": {
+          "evidence": "Rear box behind cab with vents and small orange reflector Local normalization: hood-body: neutral design material fallback for metalness, clearcoat. Local safe fallback parameters substituted for invalid rounded_box output at engine-hood.",
+          "geometry": "design_approximation",
+          "material": "design_approximation",
+          "transform": "inferred"
+        }
+      },
+      {
+        "id": "boom",
+        "label": "Main boom arm",
+        "parentId": "upper-frame",
+        "provenance": {
+          "evidence": "Large bent arm rising from front then sloping to stick pin Local normalization: boom-body: neutral design material fallback for metalness, clearcoat. Local safe fallback parameters substituted for invalid box output at boom.",
+          "geometry": "design_approximation",
+          "material": "design_approximation",
+          "transform": "inferred"
+        }
+      },
+      {
+        "id": "stick",
+        "label": "Stick arm",
+        "parentId": "boom",
+        "provenance": {
+          "evidence": "Narrow straight arm from boom elbow to bucket Local normalization: stick-body: neutral design material fallback for metalness, clearcoat. Local safe fallback parameters substituted for invalid box output at stick.",
+          "geometry": "design_approximation",
+          "material": "design_approximation",
+          "transform": "inferred"
+        }
+      },
+      {
+        "id": "bucket",
+        "label": "Excavator bucket",
+        "parentId": "stick",
+        "provenance": {
+          "evidence": "Dark wide scoop hanging at end with side plates Local normalization: bucket-shell: neutral design material fallback for metalness, clearcoat. Local safe fallback parameters substituted for invalid cylinder output at bucket.",
+          "geometry": "design_approximation",
+          "material": "design_approximation",
+          "transform": "inferred"
+        }
+      },
+      {
+        "id": "hydraulic-boom",
+        "label": "Boom hydraulic cylinder",
+        "parentId": "upper-frame",
+        "provenance": {
+          "evidence": "Silver cylinder from upper frame to boom underside Local normalization: boom-cyl: neutral design material fallback for metalness, clearcoat. Local safe fallback parameters substituted for invalid cylinder output at hydraulic-boom.",
+          "geometry": "design_approximation",
+          "material": "design_approximation",
+          "transform": "inferred"
+        }
+      },
+      {
+        "id": "bucket-linkage",
+        "label": "Orange bucket linkage",
+        "parentId": "stick",
+        "provenance": {
+          "evidence": "Bright orange links at bucket pin joint Local normalization: link-accent: neutral design material fallback for metalness, clearcoat. Local safe fallback parameters substituted for invalid box output at bucket-linkage.",
+          "geometry": "design_approximation",
+          "material": "design_approximation",
+          "transform": "inferred"
+        }
+      }
+    ],
+    "unknowns": [
+      "Absolute physical scale not visible - all dimensions conceptual",
+      "Track tread detail and roller count simplified",
+      "Rear and underside geometry occluded",
+      "Hydraulic hose routing not modeled",
+      "Cab interior not visible through dark glazing",
+      "Invalid Meta constraint proposals were omitted; no unvalidated constraints were applied.",
+      "under-frame: neutral design material fallback for metalness, clearcoat",
+      "left-frame: neutral design material fallback for metalness, clearcoat",
+      "left-pads: neutral design material fallback for metalness, clearcoat",
+      "left-roller: neutral design material fallback for metalness, clearcoat",
+      "right-frame: neutral design material fallback for metalness, clearcoat",
+      "right-pads: neutral design material fallback for metalness, clearcoat",
+      "right-roller: neutral design material fallback for metalness, clearcoat",
+      "upper-deck: neutral design material fallback for metalness, clearcoat",
+      "cab-shell: neutral design material fallback for metalness, clearcoat",
+      "cab-glass: neutral design material fallback for metalness, clearcoat",
+      "cab-accent: neutral design material fallback for metalness, clearcoat",
+      "hood-body: neutral design material fallback for metalness, clearcoat",
+      "boom-body: neutral design material fallback for metalness, clearcoat",
+      "stick-body: neutral design material fallback for metalness, clearcoat",
+      "bucket-shell: neutral design material fallback for metalness, clearcoat",
+      "boom-cyl: neutral design material fallback for metalness, clearcoat",
+      "link-accent: neutral design material fallback for metalness, clearcoat",
+      "Some box parameters were invalid and replaced by dimensionless conceptual defaults for Tracked undercarriage frame.",
+      "Some box parameters were invalid and replaced by dimensionless conceptual defaults for Left crawler track.",
+      "Some cylinder parameters were invalid and replaced by dimensionless conceptual defaults for Left crawler track.",
+      "Some box parameters were invalid and replaced by dimensionless conceptual defaults for Right crawler track.",
+      "Some cylinder parameters were invalid and replaced by dimensionless conceptual defaults for Right crawler track.",
+      "Some rounded_box parameters were invalid and replaced by dimensionless conceptual defaults for Upper rotating frame.",
+      "Some rounded_box parameters were invalid and replaced by dimensionless conceptual defaults for Operator cab.",
+      "Some box parameters were invalid and replaced by dimensionless conceptual defaults for Operator cab.",
+      "Some rounded_box parameters were invalid and replaced by dimensionless conceptual defaults for Engine counterweight hood.",
+      "Some box parameters were invalid and replaced by dimensionless conceptual defaults for Main boom arm.",
+      "Some box parameters were invalid and replaced by dimensionless conceptual defaults for Stick arm.",
+      "Some cylinder parameters were invalid and replaced by dimensionless conceptual defaults for Excavator bucket.",
+      "Some cylinder parameters were invalid and replaced by dimensionless conceptual defaults for Boom hydraulic cylinder.",
+      "Some box parameters were invalid and replaced by dimensionless conceptual defaults for Orange bucket linkage.",
+      "Physical dimensions and absolute scale are unknown because no known reference was supplied."
+    ],
+    "operators": [
+      "box",
+      "cylinder",
+      "rounded_box"
+    ],
+    "constraints": {
+      "ready": false,
+      "results": [
+        {
+          "id": "tracks-symmetric",
+          "kind": "symmetric",
+          "status": "violated",
+          "measured": 1.0000000059604646,
+          "tolerance": 0.1,
+          "method": "axis-aligned-bounds",
+          "limitation": "AABB approximation; does not prove contact of actual surfaces or physical validity."
+        },
+        {
+          "id": "cab-hood-adjacent",
+          "kind": "aligned",
+          "status": "violated",
+          "measured": 0.9463746615373849,
+          "tolerance": 0.2,
+          "method": "world-transform",
+          "limitation": "Transform relation only; does not prove mechanical validity."
+        },
+        {
+          "id": "stick-bucket-attached",
+          "kind": "attached_at",
+          "status": "satisfied",
+          "measured": 0,
+          "tolerance": 0.2,
+          "method": "axis-aligned-bounds",
+          "limitation": "AABB approximation; does not prove contact of actual surfaces or physical validity."
+        },
+        {
+          "id": "upper-centered",
+          "kind": "centered_on",
+          "status": "satisfied",
+          "measured": 0.21109613008140768,
+          "tolerance": 0.3,
+          "method": "axis-aligned-bounds",
+          "limitation": "AABB approximation; does not prove contact of actual surfaces or physical validity."
+        }
+      ],
+      "violatedIds": [
+        "tracks-symmetric",
+        "cab-hood-adjacent"
+      ]
+    },
+    "stats": {
+      "meshCount": 17,
+      "triangleCount": 2268,
+      "geometryBytes": 198992,
+      "componentCount": 11,
+      "nodeCount": 20
+    }
+  },
+  "evaluationStatus": "Visual hypothesis · recognizability 0/100 · silhouette 0/100 · spatial integrity 0/100 · $0.00630375 · none",
+  "evaluation": {
+    "contract": "unfold.spatial-evaluation.v1",
+    "recognizabilityScore": 0,
+    "silhouetteScore": 0,
+    "spatialIntegrityScore": 0,
+    "confidence": 0.95,
+    "discrepancies": [
+      {
+        "componentId": "undercarriage",
+        "kind": "missing",
+        "observation": "No undercarriage frame visible; image is uniformly black with no geometry.",
+        "severity": "high"
+      },
+      {
+        "componentId": "track-left",
+        "kind": "missing",
+        "observation": "Left crawler track not visible in black image.",
+        "severity": "high"
+      },
+      {
+        "componentId": "track-right",
+        "kind": "missing",
+        "observation": "Right crawler track not visible in black image.",
+        "severity": "high"
+      },
+      {
+        "componentId": "upper-frame",
+        "kind": "missing",
+        "observation": "Upper rotating frame not visible.",
+        "severity": "high"
+      },
+      {
+        "componentId": "cab",
+        "kind": "missing",
+        "observation": "Operator cab and glass not discernible.",
+        "severity": "high"
+      },
+      {
+        "componentId": "engine-hood",
+        "kind": "missing",
+        "observation": "Engine hood/counterweight not visible.",
+        "severity": "high"
+      },
+      {
+        "componentId": "boom",
+        "kind": "missing",
+        "observation": "Main boom arm not visible.",
+        "severity": "high"
+      },
+      {
+        "componentId": "stick",
+        "kind": "missing",
+        "observation": "Stick arm not visible.",
+        "severity": "high"
+      },
+      {
+        "componentId": "bucket",
+        "kind": "missing",
+        "observation": "Excavator bucket not visible.",
+        "severity": "high"
+      },
+      {
+        "componentId": "hydraulic-boom",
+        "kind": "missing",
+        "observation": "Boom hydraulic cylinder not visible.",
+        "severity": "medium"
+      }
+    ],
+    "suggestedOperation": null,
+    "rationale": "Supplied screenshot appears uniformly black with no visible object, lighting, or silhouette. Conceptual plan describes compact tracked excavator but no evidence can be verified. Scores reflect absence of visible evidence only, not engineering validation."
+  },
+  "screenshots": [
+    "v2-excavator-source.png",
+    "v2-excavator-evaluated.png"
+  ],
+  "consoleErrors": []
+}

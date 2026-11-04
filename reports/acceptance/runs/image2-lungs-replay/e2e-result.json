@@ -1,0 +1,189 @@
+{
+  "mode": "mock",
+  "url": "http://127.0.0.1:5191/living",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "browser": "Chromium (system) + SwiftShader",
+  "at": "2026-11-04T07:41:03.062Z",
+  "input": {
+    "kind": "text",
+    "prompt": "Um relógio de pêndulo de pé: caixa alta de madeira, mostrador redondo com ponteiros, pêndulo com disco de latão e pés.",
+    "promptSha256": "d794a4a285889fd88d558f8691340296ba4a917043a57bb1d94ec4ae20d3a8ae"
+  },
+  "latencyMsToReview": 2386,
+  "review": {
+    "components": 6,
+    "title": "Human Lungs and Trachea - Conceptual Model",
+    "rejected": null,
+    "built": [
+      "trachea",
+      "carina",
+      "lung-left",
+      "lung-right",
+      "bronch-left",
+      "bronch-right"
+    ]
+  },
+  "meta": {
+    "model": "replay-of-stored-run",
+    "requestId": "44a82d0a-cd02-46c8-8aa4-0d0b5a2cd4d7",
+    "latencyMs": 49081,
+    "estimatedCostUsd": 0,
+    "rawResponseSha256": null,
+    "rawResponseStored": false
+  },
+  "normalizedPlan": {
+    "title": "Human Lungs and Trachea - Conceptual Model",
+    "units": "unitless",
+    "components": [
+      {
+        "id": "trachea",
+        "label": "Trachea",
+        "parentId": null,
+        "origin": "observed"
+      },
+      {
+        "id": "carina",
+        "label": "Bronchial bifurcation",
+        "parentId": "trachea",
+        "origin": "observed"
+      },
+      {
+        "id": "lung-left",
+        "label": "Left lung",
+        "parentId": null,
+        "origin": "observed"
+      },
+      {
+        "id": "lung-right",
+        "label": "Right lung",
+        "parentId": null,
+        "origin": "observed"
+      },
+      {
+        "id": "bronch-left",
+        "label": "Left bronchial tree",
+        "parentId": "lung-left",
+        "origin": "observed"
+      },
+      {
+        "id": "bronch-right",
+        "label": "Right bronchial tree",
+        "parentId": "lung-right",
+        "origin": "observed"
+      }
+    ],
+    "unknowns": [
+      "Absolute physical scale unknown - conceptual unitless dimensions used",
+      "Posterior lung shape and depth hidden in front illustration",
+      "Fine bronchiole branching detail simplified to main stems",
+      "Physical dimensions and absolute scale are unknown because no known reference was supplied."
+    ],
+    "sceneSummary": {
+      "componentCount": 6,
+      "geometryNodeCount": 33,
+      "operators": [
+        "torus",
+        "tube",
+        "cylinder",
+        "ellipsoid",
+        "box"
+      ],
+      "constraintReady": true
+    }
+  },
+  "coverage": {
+    "width": 1440,
+    "height": 900,
+    "objectFraction": 0.18300925925925926,
+    "meanLuma": 49.116839954199115,
+    "maxLuma": 249.14839999999998
+  },
+  "distinctSelectable": [
+    "trachea",
+    "lung-left",
+    "lung-right"
+  ],
+  "edit": {
+    "componentId": "trachea",
+    "from": [
+      0,
+      1.65,
+      0
+    ],
+    "to": [
+      0.216899,
+      1.65,
+      0
+    ],
+    "originAfter": "user_provided",
+    "undone": true
+  },
+  "gpu": {
+    "before": {
+      "geometries": 4,
+      "textures": 7,
+      "programs": 5
+    },
+    "afterLeaving": {
+      "geometries": 4,
+      "textures": 7,
+      "programs": 7
+    }
+  },
+  "idleFramesPer2sWindow": [
+    3,
+    1,
+    0
+  ],
+  "qualityChecksFailed": [],
+  "humanRecognition": null,
+  "apiCalls": [
+    "POST /api/spatial/v2/plan",
+    "POST /api/spatial/v2/adopt",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/edit",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/evaluate",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/adopt"
+  ],
+  "planRequest": {
+    "sourceKind": "text",
+    "hasInstruction": true,
+    "imageMime": null,
+    "maxRefinements": 0
+  },
+  "consoleErrors": [],
+  "screenshots": {
+    "entry": "01-entry.png",
+    "newSpace": "02-new-space.png",
+    "waiting": "03-waiting.png",
+    "review": "04-review.png",
+    "reviewed": "05-reviewed.png",
+    "built": "06-built.png",
+    "orbited": "07-orbited.png",
+    "selected": "08-selected.png",
+    "preview": "09-edit-preview.png",
+    "edited": "10-edited.png",
+    "recoloured": "11-recoloured.png",
+    "isolated": "12-isolated.png",
+    "framed": "13-framed.png",
+    "evidence": "14-evidence.png",
+    "exploded": "13b-exploded.png",
+    "proposal": "13c-meta-proposal.png",
+    "evaluated": "13d-visual-evaluation.png",
+    "leaving": "13e-leave-guard.png",
+    "library": "13f-my-spaces.png",
+    "reopened": "13g-reopened.png",
+    "back": "15-back-to-entry.png"
+  }
+}

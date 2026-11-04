@@ -1,0 +1,194 @@
+{
+  "mode": "mock",
+  "url": "http://127.0.0.1:5191/living",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "browser": "Chromium (system) + SwiftShader",
+  "at": "2026-11-04T07:02:12.832Z",
+  "input": {
+    "kind": "text",
+    "prompt": "Um relógio de pêndulo de pé: caixa alta de madeira, mostrador redondo com ponteiros, pêndulo com disco de latão e pés.",
+    "promptSha256": "d794a4a285889fd88d558f8691340296ba4a917043a57bb1d94ec4ae20d3a8ae"
+  },
+  "latencyMsToReview": 2262,
+  "review": {
+    "components": 6,
+    "title": "Bicycle (hand-authored fixture)",
+    "rejected": "drivetrain",
+    "built": [
+      "rear-wheel",
+      "front-wheel",
+      "frame",
+      "fork",
+      "saddle"
+    ]
+  },
+  "meta": {
+    "model": "hand-authored-fixture",
+    "requestId": "none",
+    "latencyMs": 0,
+    "estimatedCostUsd": 0,
+    "rawResponseSha256": null,
+    "rawResponseStored": false
+  },
+  "normalizedPlan": {
+    "title": "Bicycle (hand-authored fixture)",
+    "units": "unitless",
+    "components": [
+      {
+        "id": "rear-wheel",
+        "label": "Rear wheel",
+        "parentId": null,
+        "origin": "design_approximation"
+      },
+      {
+        "id": "front-wheel",
+        "label": "Front wheel",
+        "parentId": null,
+        "origin": "design_approximation"
+      },
+      {
+        "id": "frame",
+        "label": "Frame",
+        "parentId": null,
+        "origin": "design_approximation"
+      },
+      {
+        "id": "fork",
+        "label": "Fork and steering",
+        "parentId": null,
+        "origin": "design_approximation"
+      },
+      {
+        "id": "saddle",
+        "label": "Saddle",
+        "parentId": null,
+        "origin": "design_approximation"
+      },
+      {
+        "id": "drivetrain",
+        "label": "Crank and pedals",
+        "parentId": null,
+        "origin": "design_approximation"
+      }
+    ],
+    "unknowns": [
+      "Hand-authored fixture, not a Meta response.",
+      "Physical dimensions are unknown; proportions are conceptual.",
+      "Chain, brakes, cables and gears are not modelled."
+    ],
+    "sceneSummary": {
+      "componentCount": 6,
+      "geometryNodeCount": 33,
+      "operators": [
+        "torus",
+        "tube",
+        "cylinder",
+        "ellipsoid",
+        "box"
+      ],
+      "constraintReady": true
+    }
+  },
+  "coverage": {
+    "width": 1440,
+    "height": 900,
+    "objectFraction": 0.1217067901234568,
+    "meanLuma": 56.4330695931957,
+    "maxLuma": 254.0722
+  },
+  "distinctSelectable": [
+    "frame",
+    "front-wheel",
+    "rear-wheel"
+  ],
+  "edit": {
+    "componentId": "frame",
+    "from": [
+      0,
+      0,
+      0
+    ],
+    "to": [
+      0.088431,
+      0,
+      0
+    ],
+    "originAfter": "user_provided",
+    "undone": true
+  },
+  "gpu": {
+    "before": {
+      "geometries": 4,
+      "textures": 7,
+      "programs": 5
+    },
+    "afterLeaving": {
+      "geometries": 4,
+      "textures": 7,
+      "programs": 8
+    }
+  },
+  "qualityChecksFailed": [],
+  "humanRecognition": null,
+  "apiCalls": [
+    "POST /api/spatial/v2/plan",
+    "POST /api/spatial/v2/adopt",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/edit",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/evaluate",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/adopt"
+  ],
+  "planRequest": {
+    "sourceKind": "text",
+    "hasInstruction": true,
+    "imageMime": null,
+    "maxRefinements": 0
+  },
+  "consoleErrors": [],
+  "screenshots": {
+    "entry": "01-entry.png",
+    "newSpace": "02-new-space.png",
+    "waiting": "03-waiting.png",
+    "review": "04-review.png",
+    "reviewed": "05-reviewed.png",
+    "built": "06-built.png",
+    "orbited": "07-orbited.png",
+    "selected": "08-selected.png",
+    "preview": "09-edit-preview.png",
+    "edited": "10-edited.png",
+    "recoloured": "11-recoloured.png",
+    "isolated": "12-isolated.png",
+    "framed": "13-framed.png",
+    "evidence": "14-evidence.png",
+    "exploded": "13b-exploded.png",
+    "proposal": "13c-meta-proposal.png",
+    "evaluated": "13d-visual-evaluation.png",
+    "leaving": "13e-leave-guard.png",
+    "library": "13f-my-spaces.png",
+    "reopened": "13g-reopened.png",
+    "back": "15-back-to-entry.png"
+  }
+}

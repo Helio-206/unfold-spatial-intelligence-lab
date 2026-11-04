@@ -1,0 +1,208 @@
+{
+  "mode": "live",
+  "url": "http://127.0.0.1:5191/living",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "browser": "Chromium (system) + SwiftShader",
+  "at": "2026-11-04T00:56:21.250Z",
+  "input": {
+    "kind": "text",
+    "prompt": "A grandfather pendulum clock: tall wooden case, round dial with hands, brass pendulum disc, and feet.",
+    "promptSha256": "1633960ae475ddbb7691aa5b6f9686c3b3cd22324f94de14cd69580c3125b40a"
+  },
+  "latencyMsToReview": 37480,
+  "review": {
+    "components": 6,
+    "title": "Grandfather pendulum clock - conceptual"
+  },
+  "meta": {
+    "model": "muse-spark-1.3",
+    "requestId": "f33e06a4-09d1-42de-b777-be647c655fdf",
+    "latencyMs": 36977,
+    "estimatedCostUsd": 0.026844,
+    "rawResponseSha256": "2e8a4abe2b24e1e85ac989f8dcd6ab6cd519e0b3d053ea25cb7c326b5f75f8b8",
+    "rawResponseStored": true
+  },
+  "normalizedPlan": {
+    "title": "Grandfather pendulum clock - conceptual",
+    "units": "unitless",
+    "components": [
+      {
+        "id": "clock-case",
+        "label": "Tall wooden case body",
+        "parentId": null,
+        "origin": "design_approximation"
+      },
+      {
+        "id": "clock-hood",
+        "label": "Top hood and crown",
+        "parentId": "clock-case",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "clock-dial",
+        "label": "Round dial with bezel",
+        "parentId": "clock-hood",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "clock-hands",
+        "label": "Dial hands",
+        "parentId": "clock-dial",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "clock-pendulum",
+        "label": "Brass pendulum rod and disc",
+        "parentId": "clock-case",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "clock-feet",
+        "label": "Pair of bracket feet",
+        "parentId": "clock-case",
+        "origin": "design_approximation"
+      }
+    ],
+    "unknowns": [
+      "True physical scale and wood joinery not modeled",
+      "Dial numerals and glass door details omitted",
+      "Pendulum shown proud of case for legibility, not inside",
+      "Invalid Meta constraint proposals were omitted; no unvalidated constraints were applied.",
+      "case-group: identity transform defaulted position, rotationRad, scale",
+      "case-body: identity transform defaulted position, rotationRad, scale",
+      "case-body: neutral design material fallback for metalness, clearcoat",
+      "case-waist-trim: identity transform defaulted position, rotationRad, scale",
+      "case-waist-trim: neutral design material fallback for metalness, clearcoat",
+      "clock-case: identity transform defaulted position, rotationRad, scale",
+      "hood-group: identity transform defaulted position, rotationRad, scale",
+      "hood-box: identity transform defaulted position, rotationRad, scale",
+      "hood-box: neutral design material fallback for metalness, clearcoat",
+      "hood-crown: identity transform defaulted position, rotationRad, scale",
+      "hood-crown: neutral design material fallback for metalness, clearcoat",
+      "clock-hood: identity transform defaulted position, rotationRad, scale",
+      "dial-group: identity transform defaulted position, rotationRad, scale",
+      "dial-face: identity transform defaulted position, rotationRad, scale",
+      "dial-face: neutral design material fallback for metalness, clearcoat",
+      "dial-bezel: identity transform defaulted position, rotationRad, scale",
+      "dial-bezel: neutral design material fallback for metalness, clearcoat",
+      "clock-dial: identity transform defaulted position, rotationRad, scale",
+      "hands-group: identity transform defaulted position, rotationRad, scale",
+      "hour-hand: identity transform defaulted position, rotationRad, scale",
+      "hour-hand: neutral design material fallback for metalness, clearcoat",
+      "minute-hand: identity transform defaulted position, rotationRad, scale",
+      "minute-hand: neutral design material fallback for metalness, clearcoat",
+      "hand-pin: identity transform defaulted position, rotationRad, scale",
+      "hand-pin: neutral design material fallback for metalness, clearcoat",
+      "clock-hands: identity transform defaulted position, rotationRad, scale",
+      "pendulum-group: identity transform defaulted position, rotationRad, scale",
+      "pendulum-rod: identity transform defaulted position, rotationRad, scale",
+      "pendulum-rod: neutral design material fallback for metalness, clearcoat",
+      "pendulum-disc: identity transform defaulted position, rotationRad, scale",
+      "pendulum-disc: neutral design material fallback for metalness, clearcoat",
+      "clock-pendulum: identity transform defaulted position, rotationRad, scale",
+      "feet-group: identity transform defaulted position, rotationRad, scale",
+      "foot-left: identity transform defaulted position, rotationRad, scale",
+      "foot-left: neutral design material fallback for metalness, clearcoat",
+      "foot-right: identity transform defaulted position, rotationRad, scale",
+      "foot-right: neutral design material fallback for metalness, clearcoat",
+      "clock-feet: identity transform defaulted position, rotationRad, scale",
+      "Parameters of case-body (rounded_box) were invalid and replaced by a generic shape; the resulting proportions are a design approximation.",
+      "Parameters of case-waist-trim (rounded_box) were invalid and replaced by a generic shape; the resulting proportions are a design approximation.",
+      "Parameters of hood-box (rounded_box) were invalid and replaced by a generic shape; the resulting proportions are a design approximation.",
+      "Parameters of hood-crown (rounded_box) were invalid and replaced by a generic shape; the resulting proportions are a design approximation.",
+      "Parameters of dial-face (cylinder) were invalid and replaced by a generic shape; the resulting proportions are a design approximation.",
+      "Parameters of dial-bezel (torus) were invalid and replaced by a generic shape; the resulting proportions are a design approximation.",
+      "Parameters of hour-hand (rounded_box) were invalid and replaced by a generic shape; the resulting proportions are a design approximation.",
+      "Parameters of minute-hand (rounded_box) were invalid and replaced by a generic shape; the resulting proportions are a design approximation.",
+      "Parameters of hand-pin (cylinder) were invalid and replaced by a generic shape; the resulting proportions are a design approximation.",
+      "Parameters of pendulum-rod (cylinder) were invalid and replaced by a generic shape; the resulting proportions are a design approximation.",
+      "Parameters of pendulum-disc (cylinder) were invalid and replaced by a generic shape; the resulting proportions are a design approximation.",
+      "Parameters of foot-left (rounded_box) were invalid and replaced by a generic shape; the resulting proportions are a design approximation.",
+      "Parameters of foot-right (rounded_box) were invalid and replaced by a generic shape; the resulting proportions are a design approximation."
+    ],
+    "sceneSummary": {
+      "componentCount": 6,
+      "geometryNodeCount": 19,
+      "operators": [
+        "rounded_box",
+        "cylinder",
+        "torus"
+      ],
+      "constraintReady": true
+    }
+  },
+  "coverage": {
+    "width": 1440,
+    "height": 900,
+    "objectFraction": 0.26340663580246915,
+    "meanLuma": 42.809385171926,
+    "maxLuma": 221.3444
+  },
+  "distinctSelectable": [
+    "clock-case",
+    "clock-dial"
+  ],
+  "edit": {
+    "componentId": "clock-case",
+    "from": [
+      0,
+      0,
+      0
+    ],
+    "to": [
+      0.048,
+      0,
+      0
+    ],
+    "originAfter": "user_provided",
+    "undone": true
+  },
+  "gpu": {
+    "before": {
+      "geometries": 4,
+      "textures": 7,
+      "programs": 5
+    },
+    "afterLeaving": {
+      "geometries": 4,
+      "textures": 7,
+      "programs": 7
+    }
+  },
+  "apiCalls": [
+    "POST /api/spatial/v2/plan"
+  ],
+  "planRequest": {
+    "sourceKind": "text",
+    "hasInstruction": true,
+    "imageMime": null,
+    "maxRefinements": 0
+  },
+  "consoleErrors": [],
+  "screenshots": {
+    "entry": "01-entry.png",
+    "newSpace": "02-new-space.png",
+    "waiting": "03-waiting.png",
+    "review": "04-review.png",
+    "reviewed": "05-reviewed.png",
+    "built": "06-built.png",
+    "orbited": "07-orbited.png",
+    "selected": "08-selected.png",
+    "preview": "09-edit-preview.png",
+    "edited": "10-edited.png",
+    "recoloured": "11-recoloured.png",
+    "isolated": "12-isolated.png",
+    "framed": "13-framed.png",
+    "evidence": "14-evidence.png",
+    "back": "15-back-to-entry.png"
+  },
+  "rawResponse": {
+    "file": "spatial-run-5d557deb-f763-42c7-b99c-c27453683376.json",
+    "shaOfStoredText": "2e8a4abe2b24e1e85ac989f8dcd6ab6cd519e0b3d053ea25cb7c326b5f75f8b8",
+    "bytes": 8285,
+    "location": "reports/space-integration/raw/ (git-ignored, mode 0600)"
+  }
+}

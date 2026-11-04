@@ -1,0 +1,32 @@
+{
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "picked": [
+    "aortic-arch",
+    "superior-vena-cava",
+    "pulmonary-trunk"
+  ],
+  "gpu": {
+    "before": {
+      "geometries": 4,
+      "textures": 7
+    },
+    "after": {
+      "geometries": 4,
+      "textures": 7
+    }
+  },
+  "apiCalls": [],
+  "consoleErrors": [],
+  "screenshots": {
+    "intake": "01-intake-with-atlas.png",
+    "atlas": "02-atlas.png",
+    "selected": "03-selected.png",
+    "isolated": "04-isolated.png",
+    "exploded": "05-exploded.png",
+    "back": "06-back.png"
+  },
+  "at": "2026-11-04T07:07:55.028Z"
+}

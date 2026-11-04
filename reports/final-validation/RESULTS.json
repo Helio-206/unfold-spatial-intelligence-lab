@@ -1,0 +1,314 @@
+{
+ "frozenCode": "027b95a7cd015473e8a4555cf2d57825472048ab",
+ "protocol": "reports/final-validation/PROTOCOL.md",
+ "budget": {
+  "cap": 6,
+  "used": 4,
+  "planned": 4,
+  "reserveUsed": 0,
+  "calls": [
+   {
+    "n": 1,
+    "purpose": "plan from text (street lamp)",
+    "requestId": "553f6972-35ad-4491-adaa-c70d2da51b71"
+   },
+   {
+    "n": 2,
+    "purpose": "edit proposal",
+    "note": "proposal only; not applied"
+   },
+   {
+    "n": 3,
+    "purpose": "visual evaluation",
+    "outcome": "model reply rejected by validation (SPATIAL_V2_EVALUATION_INVALID)"
+   },
+   {
+    "n": 4,
+    "purpose": "plan from licensed image (heart illustration)",
+    "requestId": "08ec5f61-9789-4bca-9cd1-1c9a9da4b3a4"
+   }
+  ]
+ },
+ "runs": [
+  {
+   "scenario": "unexpected object, text",
+   "drawnAfterFreeze": "a street lamp with a curved arm",
+   "request": {
+    "kind": "text",
+    "text": "A street lamp with a curved arm."
+   },
+   "planCall": {
+    "model": "muse-spark-1.3",
+    "requestId": "553f6972-35ad-4491-adaa-c70d2da51b71",
+    "latencyMs": 28124,
+    "usage": {
+     "inputTokens": 962,
+     "outputTokens": 3587,
+     "totalTokens": 4549,
+     "cachedInputTokens": 0,
+     "reasoningTokens": 1609
+    },
+    "rawResponseSha256": "fd26a5fdc5c6d944f28787efe8432d292519ceda9a414268117325013c54a843",
+    "rawStored": "reports/space-integration/raw/ (git-ignored, mode 0600)"
+   },
+   "plan": {
+    "title": "Street lamp with curved arm",
+    "units": "unitless",
+    "components": [
+     {
+      "id": "pole-base",
+      "label": "Pole base pedestal",
+      "parentId": null,
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     },
+     {
+      "id": "pole-shaft",
+      "label": "Vertical pole shaft",
+      "parentId": "pole-base",
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     },
+     {
+      "id": "base-collar",
+      "label": "Base collar ring",
+      "parentId": "pole-shaft",
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     },
+     {
+      "id": "lamp-arm",
+      "label": "Curved outreach arm",
+      "parentId": "pole-shaft",
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     },
+     {
+      "id": "lamp-head",
+      "label": "Lamp head fixture",
+      "parentId": "lamp-arm",
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     }
+    ],
+    "unknowns": [
+     "Absolute physical scale not supplied - dimensions are conceptual",
+     "Internal wiring, mounting bolts and photometric details not modeled",
+     "Exact curvature and luminaire profile inferred from typical street lamp"
+    ],
+    "normalizationNotes": []
+   },
+   "review": "Decisions were made by the test script, not by a person: keep all but the last listed component (lamp-head), which the script rejects on purpose to exercise the rejection path. The live screenshots therefore show the lamp WITHOUT its luminaire. The same stored plan built whole (replay, no model call) is in runs/replay-street-lamp-desktop and runs/replay-street-lamp-mobile.",
+   "editProposalCall": {
+    "result": "proposal received and previewed, not applied until authorised",
+    "note": "Meta proposed raising lamp-arm by 0.15 units; the UI showed the preview and blocked apply without the authorisation checkbox",
+    "estimatedCostUsd": 0.005
+   },
+   "visualEvaluationCall": {
+    "verifiedCapture": "ok (object fills 93% of the frame height, not clipped, centred)",
+    "result": "FAILED: the server rejected the model reply as invalid (SPATIAL_V2_EVALUATION_INVALID, HTTP 422); the UI said \"Avaliação indisponível ... Nada mudou\"; the reply was not stored",
+    "consequence": "the live run stopped at this step; save/reopen/mobile for this plan were exercised from a replay of the stored plan (labelled)"
+   },
+   "geometricProblems": [
+    "live screenshots: no luminaire (rejected by the script, not the model's omission)",
+    "replay of the same plan, built whole: luminaire present at the arm end, pole top and arm meet without a visible joint; the luminaire is small relative to the pole"
+   ],
+   "assistantRecognition": "Built whole (replay): clearly a street lamp (pole, base, curved outreach arm, luminaire). The live screenshots without the luminaire read as a pole with a bent arm.",
+   "humanRecognition": null,
+   "screenshots": "live: reports/space-integration/runs/final-text-street-lamp/ · full plan, replay: reports/space-integration/runs/replay-street-lamp-desktop/ and -mobile/"
+  },
+  {
+   "scenario": "image, licensed illustration",
+   "request": {
+    "kind": "image",
+    "file": "Diagram of the human heart (Wapcaplet / Yaddah, Wikimedia Commons, CC BY-SA 3.0), rasterised to 642x656 PNG",
+    "pngSha256": "10f26058f0051471a7b136365feb7ed6aab2fb35318b249c2c97d9aa8102a56e",
+    "note": "an illustration, not a photograph; no physical scale"
+   },
+   "planCall": {
+    "model": "muse-spark-1.3",
+    "requestId": "08ec5f61-9789-4bca-9cd1-1c9a9da4b3a4",
+    "latencyMs": 44270,
+    "usage": {
+     "inputTokens": 1531,
+     "outputTokens": 6650,
+     "totalTokens": 8181,
+     "cachedInputTokens": 0,
+     "reasoningTokens": 1445
+    },
+    "rawResponseSha256": "5ad5c0a83bfb674f6196212d90b2fe6e27bd613de9372c83ff2319717acef8af",
+    "rawStored": "reports/space-integration/raw/ (git-ignored, mode 0600)"
+   },
+   "plan": {
+    "title": "Conceptual Human Heart Blood Flow Diagram",
+    "units": "unitless",
+    "components": [
+     {
+      "id": "right-heart-body",
+      "label": "Right atrium and ventricle mass",
+      "parentId": null,
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "design_approximation"
+     },
+     {
+      "id": "left-heart-body",
+      "label": "Left ventricle mass",
+      "parentId": null,
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "design_approximation"
+     },
+     {
+      "id": "outer-wall-rim",
+      "label": "Pink myocardial outer rim",
+      "parentId": null,
+      "geometry": "inferred",
+      "transform": "inferred",
+      "material": "design_approximation"
+     },
+     {
+      "id": "aorta-arch",
+      "label": "Aorta arch",
+      "parentId": null,
+      "geometry": "inferred",
+      "transform": "inferred",
+      "material": "design_approximation"
+     },
+     {
+      "id": "aorta-branches",
+      "label": "Aortic arch branches",
+      "parentId": "aorta-arch",
+      "geometry": "inferred",
+      "transform": "inferred",
+      "material": "design_approximation"
+     },
+     {
+      "id": "superior-vena-cava",
+      "label": "Superior vena cava",
+      "parentId": null,
+      "geometry": "inferred",
+      "transform": "inferred",
+      "material": "design_approximation"
+     },
+     {
+      "id": "inferior-vena-cava",
+      "label": "Inferior vena cava",
+      "parentId": null,
+      "geometry": "inferred",
+      "transform": "inferred",
+      "material": "design_approximation"
+     },
+     {
+      "id": "pulmonary-trunk",
+      "label": "Pulmonary artery trunk",
+      "parentId": null,
+      "geometry": "inferred",
+      "transform": "inferred",
+      "material": "design_approximation"
+     },
+     {
+      "id": "pulmonary-veins-left",
+      "label": "Left pulmonary veins",
+      "parentId": null,
+      "geometry": "inferred",
+      "transform": "inferred",
+      "material": "design_approximation"
+     },
+     {
+      "id": "pulmonary-veins-right",
+      "label": "Right pulmonary veins",
+      "parentId": null,
+      "geometry": "inferred",
+      "transform": "inferred",
+      "material": "design_approximation"
+     },
+     {
+      "id": "left-atrium-cap",
+      "label": "Left atrium bulge",
+      "parentId": null,
+      "geometry": "inferred",
+      "transform": "inferred",
+      "material": "design_approximation"
+     },
+     {
+      "id": "valve-rings",
+      "label": "Valve rings on front surface",
+      "parentId": null,
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "design_approximation"
+     }
+    ],
+    "unknowns": [
+     "Absolute physical scale not provided in photo; all dimensions conceptual",
+     "Internal septum, chamber wall thickness and hidden posterior anatomy unknown",
+     "Exact vessel lengths and valve morphology simplified for legibility",
+     "Invalid Meta constraint proposals were omitted; no unvalidated constraints were applied.",
+     "right-body: neutral design material fallback for clearcoat",
+     "left-body: neutral design material fallback for clearcoat",
+     "rim-tube: neutral design material fallback for clearcoat",
+     "aorta-tube: neutral design material fallback for clearcoat",
+     "branch-a: neutral design material fallback for clearcoat",
+     "branch-b: neutral design material fallback for clearcoat",
+     "branch-c: neutral design material fallback for clearcoat",
+     "svc-cyl: neutral design material fallback for clearcoat",
+     "ivc-cyl: neutral design material fallback for clearcoat",
+     "pa-tube: neutral design material fallback for clearcoat",
+     "pv-l1: neutral design material fallback for clearcoat",
+     "pv-l2: neutral design material fallback for clearcoat",
+     "pv-r1: neutral design material fallback for clearcoat",
+     "pv-r2: neutral design material fallback for clearcoat",
+     "la-cap: neutral design material fallback for clearcoat",
+     "valve-mitral: neutral design material fallback for clearcoat",
+     "valve-tricuspid: neutral design material fallback for clearcoat",
+     "valve-aortic: neutral design material fallback for clearcoat",
+     "Physical dimensions and absolute scale are unknown because no known reference was supplied."
+    ],
+    "normalizationNotes": [
+     "Invalid Meta constraint proposals were omitted; no unvalidated constraints were applied.",
+     "right-body: neutral design material fallback for clearcoat",
+     "left-body: neutral design material fallback for clearcoat",
+     "rim-tube: neutral design material fallback for clearcoat",
+     "aorta-tube: neutral design material fallback for clearcoat",
+     "branch-a: neutral design material fallback for clearcoat",
+     "branch-b: neutral design material fallback for clearcoat",
+     "branch-c: neutral design material fallback for clearcoat",
+     "svc-cyl: neutral design material fallback for clearcoat",
+     "ivc-cyl: neutral design material fallback for clearcoat",
+     "pa-tube: neutral design material fallback for clearcoat",
+     "pv-l1: neutral design material fallback for clearcoat",
+     "pv-l2: neutral design material fallback for clearcoat",
+     "pv-r1: neutral design material fallback for clearcoat",
+     "pv-r2: neutral design material fallback for clearcoat",
+     "la-cap: neutral design material fallback for clearcoat",
+     "valve-mitral: neutral design material fallback for clearcoat",
+     "valve-tricuspid: neutral design material fallback for clearcoat",
+     "valve-aortic: neutral design material fallback for clearcoat"
+    ]
+   },
+   "review": "Decisions were made by the test script, not by a person: keep all but the last listed component (valve-rings), rejected on purpose to exercise the rejection path. 11 of 12 components were built.",
+   "geometricProblems": [
+    "three vessel cylinders float detached from the heart mass (assembly check: 2 warnings)",
+    "chambers are ellipsoids; valves and septum are not modelled (valve-rings was rejected by the script)"
+   ],
+   "assistantRecognition": "a schematic heart: two large chambers, aorta arch and great vessels are recognisable; it is a stylised concept, not anatomy",
+   "humanRecognition": null,
+   "screenshots": "reports/space-integration/runs/final-image-heart-illustration/"
+  }
+ ],
+ "harnessNote": "The e2e script's automatic rejection of the last component is a test-harness behaviour. It was applied to both live runs before I noticed it contaminated the evidence; it is now limited to the labelled fixture.",
+ "knownCostUsd": {
+  "planFromImage": 0.03017625,
+  "editProposal": 0.005,
+  "planFromText": "about 0.016 (derived: the provider reported 962 input and 3587 output tokens; rates implied by two other priced calls on the same model)",
+  "visualEvaluation": "unknown (failed validation; usage not retained)",
+  "approximateTotal": "about 0.06 USD, partly derived, not a bill",
+  "earlierDevelopmentCalls": "7 more calls (about 0.18 USD) in the PR #25 session; none in this validation"
+ }
+}

@@ -1,0 +1,346 @@
+{
+ "frozenCode": "04709dca9e151e42e1f9d5873410fd437c09f495",
+ "protocol": "reports/acceptance/PROTOCOL.md",
+ "budget": {
+  "cap": 6,
+  "used": 3,
+  "planned": 3,
+  "reserveUsed": 0,
+  "remaining": 3
+ },
+ "automaticDecisions": "the harness kept every proposed component and ticked the acknowledgement; nothing was rejected. This is NOT a human review.",
+ "humanReview": null,
+ "humanRecognition": null,
+ "scenarios": [
+  {
+   "name": "image 1: architectural floor plan",
+   "input": {
+    "file": "inputs/floor-plan.jpg",
+    "sha256": "24ca76249ae1302c36065f543d07e43c5841a1f1bf0eeb5d35324811e5287cc3",
+    "size": "459x600 JPEG"
+   },
+   "planCall": {
+    "model": "muse-spark-1.3",
+    "requestId": "6708a264-69eb-40a2-93f5-6d4187870c1b",
+    "latencyMs": 48525,
+    "usage": {
+     "inputTokens": 1315,
+     "outputTokens": 7004,
+     "totalTokens": 8319,
+     "cachedInputTokens": 0,
+     "reasoningTokens": 2726
+    },
+    "estimatedCostUsd": 0.0314,
+    "costNote": "derived from provider usage and the rates implied by earlier priced calls; not a bill",
+    "rawResponseSha256": "c3456ee33f5d253c5594c470c96252806d4872b35b9fedfa17da9ef50a4dc131"
+   },
+   "plan": {
+    "title": "Single-storey house floor plan massing - 880 unit width",
+    "units": "unitless",
+    "components": [
+     {
+      "id": "base-slab",
+      "label": "Foundation floor slab",
+      "parentId": null,
+      "geometry": "inferred",
+      "transform": "inferred",
+      "material": "design_approximation"
+     },
+     {
+      "id": "outer-walls",
+      "label": "Outer perimeter walls",
+      "parentId": "base-slab",
+      "geometry": "observed",
+      "transform": "inferred",
+      "material": "design_approximation"
+     },
+     {
+      "id": "interior-walls",
+      "label": "Interior room partitions",
+      "parentId": "base-slab",
+      "geometry": "observed",
+      "transform": "inferred",
+      "material": "design_approximation"
+     },
+     {
+      "id": "verandas",
+      "label": "Front and side verandas",
+      "parentId": "base-slab",
+      "geometry": "observed",
+      "transform": "inferred",
+      "material": "design_approximation"
+     },
+     {
+      "id": "wc-fixtures",
+      "label": "WC sanitary fixtures",
+      "parentId": "base-slab",
+      "geometry": "inferred",
+      "transform": "inferred",
+      "material": "design_approximation"
+     },
+     {
+      "id": "kitchen-block",
+      "label": "Kitchen counter block",
+      "parentId": "base-slab",
+      "geometry": "inferred",
+      "transform": "inferred",
+      "material": "design_approximation"
+     },
+     {
+      "id": "dining-table",
+      "label": "Dining room table marker",
+      "parentId": "base-slab",
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "design_approximation"
+     }
+    ],
+    "unknowns": [
+     "True physical scale not visible - conceptual unitless dimensions retain plan proportions only",
+     "Wall heights, thicknesses, door/window openings and roof form not shown in 2D plan",
+     "Exact fixture types and kitchen layout hidden - blocks are placeholders",
+     "Front orientation (+Z) assumed toward VARANDA 880 side",
+     "Invalid Meta constraint proposals were omitted; no unvalidated constraints were applied.",
+     "Physical dimensions and absolute scale are unknown because no known reference was supplied."
+    ],
+    "normalizationNotes": [
+     "Invalid Meta constraint proposals were omitted; no unvalidated constraints were applied."
+    ]
+   },
+   "liveRun": "reports/acceptance/runs/image1-floor-plan/ (aborted at the idle assertion, see incident 1)",
+   "replayRun": "reports/acceptance/runs/image1-floor-plan-replay/ (own stored plan, labelled replay)"
+  },
+  {
+   "name": "image 2: lungs illustration (WebP)",
+   "input": {
+    "file": "inputs/lungs.webp",
+    "sha256": "c8d5fb2e7bbab3cb46439ce1c8e869c5913d202802406e87358cf1560d614f34",
+    "size": "480x270 WebP, converted to PNG in the browser before sending"
+   },
+   "planCall": {
+    "model": "muse-spark-1.3",
+    "requestId": "44a82d0a-cd02-46c8-8aa4-0d0b5a2cd4d7",
+    "latencyMs": 49081,
+    "usage": {
+     "inputTokens": 1159,
+     "outputTokens": 6936,
+     "totalTokens": 8095,
+     "cachedInputTokens": 0,
+     "reasoningTokens": 3612
+    },
+    "estimatedCostUsd": 0.0309,
+    "costNote": "derived from provider usage and the rates implied by earlier priced calls; not a bill",
+    "rawResponseSha256": "650ac70c0b0a058ecb421a82d7ae3f30701cc5987fb36e4150bdfc1ad75b9651"
+   },
+   "plan": {
+    "title": "Human Lungs and Trachea - Conceptual Model",
+    "units": "unitless",
+    "components": [
+     {
+      "id": "trachea",
+      "label": "Trachea",
+      "parentId": null,
+      "geometry": "observed",
+      "transform": "inferred",
+      "material": "inferred"
+     },
+     {
+      "id": "carina",
+      "label": "Bronchial bifurcation",
+      "parentId": "trachea",
+      "geometry": "observed",
+      "transform": "inferred",
+      "material": "inferred"
+     },
+     {
+      "id": "lung-left",
+      "label": "Left lung",
+      "parentId": null,
+      "geometry": "observed",
+      "transform": "inferred",
+      "material": "observed"
+     },
+     {
+      "id": "lung-right",
+      "label": "Right lung",
+      "parentId": null,
+      "geometry": "observed",
+      "transform": "inferred",
+      "material": "observed"
+     },
+     {
+      "id": "bronch-left",
+      "label": "Left bronchial tree",
+      "parentId": "lung-left",
+      "geometry": "observed",
+      "transform": "inferred",
+      "material": "inferred"
+     },
+     {
+      "id": "bronch-right",
+      "label": "Right bronchial tree",
+      "parentId": "lung-right",
+      "geometry": "observed",
+      "transform": "inferred",
+      "material": "inferred"
+     }
+    ],
+    "unknowns": [
+     "Absolute physical scale unknown - conceptual unitless dimensions used",
+     "Posterior lung shape and depth hidden in front illustration",
+     "Fine bronchiole branching detail simplified to main stems",
+     "Physical dimensions and absolute scale are unknown because no known reference was supplied."
+    ],
+    "normalizationNotes": []
+   },
+   "liveRun": "reports/acceptance/runs/image2-lungs/ (aborted at the idle assertion, see incident 1)",
+   "replayRun": "reports/acceptance/runs/image2-lungs-replay/ (own stored plan, labelled replay)"
+  },
+  {
+   "name": "text: compound optical microscope",
+   "input": {
+    "prompt": "see PROTOCOL.md (phase 2), sent once, never edited"
+   },
+   "planCall": {
+    "model": "muse-spark-1.3",
+    "requestId": "d14a0904-1d6b-478b-a655-5bf9ab1d9975",
+    "latencyMs": 52013,
+    "usage": {
+     "inputTokens": 1032,
+     "outputTokens": 7472,
+     "totalTokens": 8504,
+     "cachedInputTokens": 0,
+     "reasoningTokens": 3465
+    },
+    "estimatedCostUsd": 0.033046,
+    "costNote": "reported by the server from provider usage; not a bill",
+    "rawResponseSha256": "719fb4a1a7195a0d43dd990356dfe5f48adc65b180b88f2c9d29906118536909"
+   },
+   "plan": {
+    "title": "Microscópio óptico composto de laboratório",
+    "units": "unitless",
+    "components": [
+     {
+      "id": "base",
+      "label": "Base do microscópio",
+      "parentId": null,
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     },
+     {
+      "id": "coluna-suporte",
+      "label": "Coluna de suporte",
+      "parentId": "base",
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     },
+     {
+      "id": "braco",
+      "label": "Braço de suporte",
+      "parentId": "coluna-suporte",
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     },
+     {
+      "id": "platina",
+      "label": "Platina para lâminas",
+      "parentId": "coluna-suporte",
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     },
+     {
+      "id": "tubo-ocular",
+      "label": "Tubo ocular principal",
+      "parentId": "braco",
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     },
+     {
+      "id": "ocular",
+      "label": "Ocular",
+      "parentId": "tubo-ocular",
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     },
+     {
+      "id": "revolver",
+      "label": "Revólver porta-objetivas",
+      "parentId": "tubo-ocular",
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     },
+     {
+      "id": "objetivas",
+      "label": "Três objetivas",
+      "parentId": "revolver",
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     },
+     {
+      "id": "focos",
+      "label": "Botões de focagem",
+      "parentId": "coluna-suporte",
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     },
+     {
+      "id": "iluminador",
+      "label": "Iluminador sob platina",
+      "parentId": "base",
+      "geometry": "design_approximation",
+      "transform": "design_approximation",
+      "material": "inferred"
+     }
+    ],
+    "unknowns": [
+     "Escala física real desconhecida — dimensões conceptuais sem unidades, longest side ~4.3 unidades",
+     "Geometria interna ótica e mecanismos de focagem fina/grossa não modelados",
+     "Abertura real da platina e condensador simplificados como disco luminoso",
+     "Invalid Meta constraint proposals were omitted; no unvalidated constraints were applied."
+    ],
+    "normalizationNotes": [
+     "Invalid Meta constraint proposals were omitted; no unvalidated constraints were applied."
+    ]
+   },
+   "liveRun": "reports/acceptance/runs/text-microscope/ (completed end to end, live)",
+   "checks": {
+    "idleFramesPer2sWindow": [
+     0,
+     0
+    ],
+    "gpu": {
+     "before": {
+      "geometries": 4,
+      "textures": 7,
+      "programs": 5
+     },
+     "afterLeaving": {
+      "geometries": 4,
+      "textures": 7,
+      "programs": 8
+     }
+    },
+    "consoleErrors": [],
+    "qualityChecksFailed": [],
+    "selectable": [
+     "ocular",
+     "tubo-ocular",
+     "braco",
+     "platina"
+    ],
+    "rejectedByScript": null,
+    "built": 10
+   }
+  }
+ ],
+ "totalEstimatedCostUsd": "about 0.095 for the three plans (two derived, one reported); not a bill"
+}

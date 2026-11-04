@@ -8,6 +8,7 @@
     "dev:phase4c": "vite --host 127.0.0.1 --port 5173",
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
+    "test:e2e:universal-spatial": "node tests/e2e/universal-spatial.pw.mjs",
     "benchmark:perception": "tsx scripts/benchmark/perception-quality.ts",
     "server": "tsx server/index.ts",
     "server:phase4c": "UNFOLD_BACKEND_PORT=8787 tsx server/index.ts",

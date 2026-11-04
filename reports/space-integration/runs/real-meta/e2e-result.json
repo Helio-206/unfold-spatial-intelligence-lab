@@ -1,0 +1,184 @@
+{
+  "mode": "live",
+  "url": "http://127.0.0.1:5191/living",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "browser": "Chromium (system) + SwiftShader",
+  "at": "2026-11-04T01:03:31.969Z",
+  "input": {
+    "kind": "text",
+    "prompt": "A grandfather pendulum clock: tall wooden case, round dial with hands, brass pendulum disc, and feet.",
+    "promptSha256": "1633960ae475ddbb7691aa5b6f9686c3b3cd22324f94de14cd69580c3125b40a"
+  },
+  "latencyMsToReview": 32979,
+  "review": {
+    "components": 8,
+    "title": "grandfather pendulum clock - conceptual"
+  },
+  "meta": {
+    "model": "muse-spark-1.3",
+    "requestId": "8bca424f-8f96-4e5c-b50d-1b3d48835a48",
+    "latencyMs": 32131,
+    "estimatedCostUsd": 0.0225155,
+    "rawResponseSha256": "116fa87d346372e0bdb118aec1a9dd3dd70bc90eb4ddb67c2d09c63ed9ca9037",
+    "rawResponseStored": true
+  },
+  "normalizedPlan": {
+    "title": "grandfather pendulum clock - conceptual",
+    "units": "unitless",
+    "components": [
+      {
+        "id": "clock-case",
+        "label": "tall wooden case body",
+        "parentId": null,
+        "origin": "design_approximation"
+      },
+      {
+        "id": "clock-crown",
+        "label": "top crown pediment",
+        "parentId": "clock-case",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "clock-base",
+        "label": "bottom plinth base",
+        "parentId": "clock-case",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "feet-front",
+        "label": "front bun feet pair",
+        "parentId": "clock-case",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "feet-back",
+        "label": "back bun feet pair",
+        "parentId": "clock-case",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "clock-dial",
+        "label": "round clock dial",
+        "parentId": "clock-case",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "clock-hands",
+        "label": "dial hands set",
+        "parentId": "clock-dial",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "clock-pendulum",
+        "label": "brass pendulum rod and disc",
+        "parentId": "clock-case",
+        "origin": "design_approximation"
+      }
+    ],
+    "unknowns": [
+      "actual physical scale and dimensions unknown - conceptual proportions only",
+      "internal movement and chime mechanism not modeled",
+      "glass door and side panels omitted for legibility",
+      "true dial numerals and markings omitted",
+      "Invalid Meta constraint proposals were omitted; no unvalidated constraints were applied.",
+      "case-body: neutral design material fallback for clearcoat",
+      "crown-shape: neutral design material fallback for clearcoat",
+      "base-shape: neutral design material fallback for clearcoat",
+      "foot-front-shape: neutral design material fallback for clearcoat",
+      "foot-back-shape: neutral design material fallback for clearcoat",
+      "dial-shape: neutral design material fallback for clearcoat",
+      "hour-hand: neutral design material fallback for clearcoat",
+      "minute-hand: neutral design material fallback for clearcoat",
+      "hand-pin: neutral design material fallback for clearcoat",
+      "pendulum-rod: neutral design material fallback for clearcoat",
+      "pendulum-bob: neutral design material fallback for clearcoat"
+    ],
+    "sceneSummary": {
+      "componentCount": 8,
+      "geometryNodeCount": 14,
+      "operators": [
+        "rounded_box",
+        "sphere",
+        "cylinder",
+        "tube"
+      ],
+      "constraintReady": true
+    }
+  },
+  "coverage": {
+    "width": 1440,
+    "height": 900,
+    "objectFraction": 0.14810493827160492,
+    "meanLuma": 52.03580890322236,
+    "maxLuma": 246.051
+  },
+  "distinctSelectable": [
+    "clock-case",
+    "clock-hands",
+    "clock-dial",
+    "clock-pendulum"
+  ],
+  "edit": {
+    "componentId": "clock-case",
+    "from": [
+      0,
+      0,
+      0
+    ],
+    "to": [
+      0.3106,
+      0,
+      0
+    ],
+    "originAfter": "user_provided",
+    "undone": true
+  },
+  "gpu": {
+    "before": {
+      "geometries": 4,
+      "textures": 7,
+      "programs": 5
+    },
+    "afterLeaving": {
+      "geometries": 4,
+      "textures": 7,
+      "programs": 8
+    }
+  },
+  "apiCalls": [
+    "POST /api/spatial/v2/plan"
+  ],
+  "planRequest": {
+    "sourceKind": "text",
+    "hasInstruction": true,
+    "imageMime": null,
+    "maxRefinements": 0
+  },
+  "consoleErrors": [],
+  "screenshots": {
+    "entry": "01-entry.png",
+    "newSpace": "02-new-space.png",
+    "waiting": "03-waiting.png",
+    "review": "04-review.png",
+    "reviewed": "05-reviewed.png",
+    "built": "06-built.png",
+    "orbited": "07-orbited.png",
+    "selected": "08-selected.png",
+    "preview": "09-edit-preview.png",
+    "edited": "10-edited.png",
+    "recoloured": "11-recoloured.png",
+    "isolated": "12-isolated.png",
+    "framed": "13-framed.png",
+    "evidence": "14-evidence.png",
+    "back": "15-back-to-entry.png"
+  },
+  "rawResponse": {
+    "file": "spatial-run-b9944ae0-9b88-437e-bbd9-a15bb5bd0ec3.json",
+    "shaOfStoredText": "116fa87d346372e0bdb118aec1a9dd3dd70bc90eb4ddb67c2d09c63ed9ca9037",
+    "bytes": 9265,
+    "location": "reports/space-integration/raw/ (git-ignored, mode 0600)"
+  }
+}

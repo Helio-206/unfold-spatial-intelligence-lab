@@ -56,13 +56,28 @@ export MODEL_API_KEY='<your-key>'   # server-side only, never commit it
 npm run server                       # backend on http://127.0.0.1:8787
 ```
 
-Useful routes in the frontend include `/demo` and `/spatial-editor` (see `src/main.ts`).
+Useful routes in the frontend include `/living` (the unified workspace, below), `/demo` and `/spatial-editor` (see `src/main.ts`).
+
+Ports: the frontend defaults to `127.0.0.1:5173` and proxies `/api` to the backend on `8787`; the backend accepts browser requests only from `http://127.0.0.1:5173` and `http://localhost:5173`. For another frontend port, add it to the backend: `UNFOLD_LOCAL_ORIGINS=http://127.0.0.1:5191 npm run server` and `npm run dev -- --port 5191 --strictPort`. Without `MODEL_API_KEY` every Meta-backed action answers `MODEL_API_KEY_MISSING` and nothing is simulated.
+
+### The unified workspace (`/living`)
+
+One workspace (one renderer, camera, inspector, selection and composer) serves three things:
+
+- **The Foundry excavator** (button «Abrir exemplo»): the hand-built, labelled synthetic reference machine with the Engineering Engine.
+- **New Space** («Novo espaço»): describe any object or attach an image → Meta Muse Spark proposes a conceptual plan (`unfold.spatial-plan.v2`) → you review it component by component (observed / inferred / approximation / unknown are kept apart) → the Presentation Director builds it → explore, select, isolate, exploded view, edit with preview and undo (changes proposed by the model need your explicit authorisation) → save to **My Spaces** and reopen. My Spaces is `localStorage` in one browser: versioned, checksummed, limited (24 spaces, 400 kB per record, 3 MB); it is not sync and not a backup.
+- **Anatomy atlas** («Atlas do coração»): the static BodyParts3D heart (CC BY 4.0) as a Space: educational reference, not a reconstruction of your source, not clinical, no scale. The Meta image-to-atlas review of PR #21 stays on its own route (`/api/anatomy/observe`) and is not wired into the workspace.
+
+A Space is a conceptual composition of primitives, not a measurement or a faithful reconstruction.
+
+Optional server-side evidence for a paid run (model text and plan, owner-only files, no key, git-ignored): `UNFOLD_UPSTREAM_EVIDENCE=1 UNFOLD_UPSTREAM_EVIDENCE_DIR=$PWD/reports/space-integration/raw`. A call budget is enforced by the backend (`UNFOLD_ACCEPTANCE_MAX_META_CALLS`, `UNFOLD_ACCEPTANCE_BUDGET_FILE`).
 
 ## Tests
 
-- `npm test` runs the Vitest suite (43 test files / 240 tests in the source version, all passing before publication; see Known limitations for the three evidence-dependent files excluded from this snapshot).
-- `npm run build` runs `tsc --noEmit` and the Vite production build; it passed before publication.
-- CDP scripts in `tests/e2e/` require a local Chrome/Chromium and, for the real-plan cases, the private plan images/evidence that are not published, so they are not runnable from this snapshot alone.
+- `npm test` runs the Vitest suite offline (no paid call): 132 files / 2 285 tests at the final head, all passing. Two older tests (`rendering-lifecycle`, `bucket-width`) can exceed the default 5 s when the machine is loaded; use `npx vitest run --testTimeout=60000`.
+- `npm run build` runs `tsc --noEmit` and the Vite production build. Known warnings: `VITE_UNFOLD_CONTACT_EMAIL` not defined for the landing page (the contact action shows as unavailable), and chunks above 500 kB.
+- Browser E2E (`tests/e2e/`, Chromium; `CHROMIUM_PATH` defaults to `/usr/bin/google-chrome`, run against a running frontend and backend): `space-workspace.pw.mjs` (mock by default, `UNFOLD_SPACE_MODE=live` makes paid calls), `space-atlas.pw.mjs`, `space-vs-foundry.pw.mjs`, `unified-living.pw.ts`, `unified-lifecycle.pw.ts`. Evidence and reports: `reports/space-integration/`, `reports/final-validation/`, `reports/acceptance/`.
+- Some older CDP scripts need private plan images/evidence that are not published.
 
 ## Known limitations
 
@@ -71,6 +86,7 @@ Useful routes in the frontend include `/demo` and `/spatial-editor` (see `src/ma
 - The 3D viewer is 2.5D: geometry is generated from the validated structure rather than a full BIM model.
 - Live Muse Spark behaviour is not re-validated by the test suite; tests are offline and make no Meta, audio, or paid-service calls.
 - Three test files that asserted against private live Meta evidence (`technical-evidence`, `spatial-handoff`, `phase-7e4-resume`) were excluded from this public-clean snapshot; two small structured fixtures needed by other tests are kept under `reports/`.
-- Mobile viewport behaviour was not visually inspected in the final local iteration.
+- Mobile was checked in a 390×844 emulated viewport only, on software rendering; no real device or GPU.
+- Spaces: sessions on the server are in memory (30 minutes); no authentication; reviewer identity is client-asserted. See `reports/acceptance/REPORT.md` for the validated scope and the geometric-fidelity limits.
 
 No licence is included in this repository.

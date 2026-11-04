@@ -1,0 +1,956 @@
+{
+  "contract": "unfold.spatial-plan.v2",
+  "sessionId": "00000000-0000-4000-8000-000000000000",
+  "revision": 0,
+  "plan": {
+    "contract": "unfold.spatial-plan.v2",
+    "source": {
+      "kind": "text",
+      "sha256": "1633960ae475ddbb7691aa5b6f9686c3b3cd22324f94de14cd69580c3125b40a"
+    },
+    "title": "grandfather pendulum clock - conceptual (hand-authored reproduction)",
+    "units": "unitless",
+    "presentationProfile": "neutral",
+    "components": [
+      {
+        "id": "clock-case",
+        "label": "tall wooden case body",
+        "parentId": null,
+        "geometry": {
+          "type": "shape",
+          "key": "case-body",
+          "operator": "rounded_box",
+          "parameters": {
+            "dimensions": [
+              1.5,
+              4.2,
+              1
+            ],
+            "bevelM": 0.05,
+            "segments": 3
+          },
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": null,
+          "material": {
+            "profile": "organic",
+            "color": "#c9581f",
+            "roughness": 0.7,
+            "metalness": 0,
+            "clearcoat": 0
+          }
+        },
+        "transform": {
+          "position": [
+            0,
+            3.4,
+            0
+          ],
+          "rotationRad": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored fixture that reproduces the component list, operators and visible faults of the real Meta run of PR #25 (its plan was not kept). Not Meta output."
+        }
+      },
+      {
+        "id": "clock-crown",
+        "label": "top crown pediment",
+        "parentId": "clock-case",
+        "geometry": {
+          "type": "shape",
+          "key": "crown-shape",
+          "operator": "rounded_box",
+          "parameters": {
+            "dimensions": [
+              1.8,
+              0.45,
+              1.2
+            ],
+            "bevelM": 0.05,
+            "segments": 3
+          },
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": null,
+          "material": {
+            "profile": "organic",
+            "color": "#5c3b25",
+            "roughness": 0.7,
+            "metalness": 0,
+            "clearcoat": 0
+          }
+        },
+        "transform": {
+          "position": [
+            0,
+            2.3,
+            0
+          ],
+          "rotationRad": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored fixture that reproduces the component list, operators and visible faults of the real Meta run of PR #25 (its plan was not kept). Not Meta output."
+        }
+      },
+      {
+        "id": "clock-base",
+        "label": "bottom plinth base",
+        "parentId": "clock-case",
+        "geometry": {
+          "type": "shape",
+          "key": "base-shape",
+          "operator": "rounded_box",
+          "parameters": {
+            "dimensions": [
+              1.9,
+              0.5,
+              1.3
+            ],
+            "bevelM": 0.05,
+            "segments": 3
+          },
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": null,
+          "material": {
+            "profile": "organic",
+            "color": "#5c3b25",
+            "roughness": 0.7,
+            "metalness": 0,
+            "clearcoat": 0
+          }
+        },
+        "transform": {
+          "position": [
+            0,
+            -1.95,
+            0
+          ],
+          "rotationRad": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored fixture that reproduces the component list, operators and visible faults of the real Meta run of PR #25 (its plan was not kept). Not Meta output."
+        }
+      },
+      {
+        "id": "feet-front",
+        "label": "front bun feet pair",
+        "parentId": "clock-case",
+        "geometry": {
+          "type": "shape",
+          "key": "foot-front-shape",
+          "operator": "sphere",
+          "parameters": {
+            "radius": 0.15,
+            "widthSegments": 24,
+            "heightSegments": 16
+          },
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": {
+            "kind": "linear",
+            "count": 2,
+            "axis": "x",
+            "spacingOrRadius": 1.3
+          },
+          "material": {
+            "profile": "organic",
+            "color": "#5c3b25",
+            "roughness": 0.7,
+            "metalness": 0,
+            "clearcoat": 0
+          }
+        },
+        "transform": {
+          "position": [
+            0,
+            -2.5,
+            0.45
+          ],
+          "rotationRad": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored fixture that reproduces the component list, operators and visible faults of the real Meta run of PR #25 (its plan was not kept). Not Meta output."
+        }
+      },
+      {
+        "id": "feet-back",
+        "label": "back bun feet pair",
+        "parentId": "clock-case",
+        "geometry": {
+          "type": "shape",
+          "key": "foot-back-shape",
+          "operator": "sphere",
+          "parameters": {
+            "radius": 0.15,
+            "widthSegments": 24,
+            "heightSegments": 16
+          },
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": {
+            "kind": "linear",
+            "count": 2,
+            "axis": "x",
+            "spacingOrRadius": 1.3
+          },
+          "material": {
+            "profile": "organic",
+            "color": "#5c3b25",
+            "roughness": 0.7,
+            "metalness": 0,
+            "clearcoat": 0
+          }
+        },
+        "transform": {
+          "position": [
+            0,
+            -2.5,
+            -0.45
+          ],
+          "rotationRad": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored fixture that reproduces the component list, operators and visible faults of the real Meta run of PR #25 (its plan was not kept). Not Meta output."
+        }
+      },
+      {
+        "id": "clock-dial",
+        "label": "round clock dial",
+        "parentId": "clock-case",
+        "geometry": {
+          "type": "shape",
+          "key": "dial-shape",
+          "operator": "cylinder",
+          "parameters": {
+            "radiusTop": 0.55,
+            "radiusBottom": 0.55,
+            "height": 0.08,
+            "radialSegments": 48
+          },
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotationRad": [
+              1.5707963267948966,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": null,
+          "material": {
+            "profile": "neutral",
+            "color": "#d9d9d6",
+            "roughness": 0.5,
+            "metalness": 0,
+            "clearcoat": 0
+          }
+        },
+        "transform": {
+          "position": [
+            0,
+            1.3,
+            0.52
+          ],
+          "rotationRad": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored fixture that reproduces the component list, operators and visible faults of the real Meta run of PR #25 (its plan was not kept). Not Meta output."
+        }
+      },
+      {
+        "id": "clock-hands",
+        "label": "dial hands set",
+        "parentId": "clock-dial",
+        "geometry": {
+          "type": "group",
+          "key": "hands",
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": null,
+          "children": [
+            {
+              "type": "shape",
+              "key": "hour-hand",
+              "operator": "tube",
+              "parameters": {
+                "points": [
+                  [
+                    0,
+                    0,
+                    0.06
+                  ],
+                  [
+                    0.12,
+                    0.25,
+                    0.06
+                  ]
+                ],
+                "radius": 0.022,
+                "tubularSegments": 8,
+                "radialSegments": 8
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "neutral",
+                "color": "#101010",
+                "roughness": 0.5,
+                "metalness": 0,
+                "clearcoat": 0
+              }
+            },
+            {
+              "type": "shape",
+              "key": "minute-hand",
+              "operator": "tube",
+              "parameters": {
+                "points": [
+                  [
+                    0,
+                    0,
+                    0.08
+                  ],
+                  [
+                    -0.05,
+                    0.4,
+                    0.08
+                  ]
+                ],
+                "radius": 0.016,
+                "tubularSegments": 8,
+                "radialSegments": 8
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "neutral",
+                "color": "#101010",
+                "roughness": 0.5,
+                "metalness": 0,
+                "clearcoat": 0
+              }
+            },
+            {
+              "type": "shape",
+              "key": "hand-pin",
+              "operator": "sphere",
+              "parameters": {
+                "radius": 0.04,
+                "widthSegments": 16,
+                "heightSegments": 12
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0.08
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "neutral",
+                "color": "#101010",
+                "roughness": 0.5,
+                "metalness": 0,
+                "clearcoat": 0
+              }
+            }
+          ]
+        },
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotationRad": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored fixture that reproduces the component list, operators and visible faults of the real Meta run of PR #25 (its plan was not kept). Not Meta output."
+        }
+      },
+      {
+        "id": "clock-pendulum",
+        "label": "brass pendulum rod and disc",
+        "parentId": "clock-case",
+        "geometry": {
+          "type": "group",
+          "key": "pendulum",
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": null,
+          "children": [
+            {
+              "type": "shape",
+              "key": "pendulum-rod",
+              "operator": "tube",
+              "parameters": {
+                "points": [
+                  [
+                    0,
+                    0.7,
+                    0.58
+                  ],
+                  [
+                    0,
+                    -1.5,
+                    0.58
+                  ]
+                ],
+                "radius": 0.02,
+                "tubularSegments": 8,
+                "radialSegments": 8
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "metal",
+                "color": "#b8892b",
+                "roughness": 0.3,
+                "metalness": 0.9,
+                "clearcoat": 0
+              }
+            },
+            {
+              "type": "shape",
+              "key": "pendulum-bob",
+              "operator": "cylinder",
+              "parameters": {
+                "radiusTop": 0.28,
+                "radiusBottom": 0.28,
+                "height": 0.06,
+                "radialSegments": 40
+              },
+              "transform": {
+                "position": [
+                  0,
+                  -1.55,
+                  0.58
+                ],
+                "rotationRad": [
+                  1.5707963267948966,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "metal",
+                "color": "#b8892b",
+                "roughness": 0.3,
+                "metalness": 0.9,
+                "clearcoat": 0
+              }
+            }
+          ]
+        },
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotationRad": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored fixture that reproduces the component list, operators and visible faults of the real Meta run of PR #25 (its plan was not kept). Not Meta output."
+        }
+      }
+    ],
+    "relations": [],
+    "constraints": [],
+    "unknowns": [
+      "Hand-authored fixture, not a Meta response.",
+      "Physical dimensions are unknown; proportions are conceptual.",
+      "The real Meta plan of PR #25 was not kept; this reproduces its structure."
+    ]
+  },
+  "sceneSummary": {
+    "componentCount": 8,
+    "geometryNodeCount": 13,
+    "operators": [
+      "rounded_box",
+      "sphere",
+      "cylinder",
+      "tube"
+    ],
+    "constraintReady": true
+  },
+  "constraintReport": {
+    "ready": true,
+    "results": [],
+    "violatedIds": []
+  },
+  "constructionEvents": [
+    {
+      "type": "scene_created",
+      "at": 0
+    },
+    {
+      "type": "component_placed",
+      "at": 1,
+      "entityId": "clock-case",
+      "transform": {
+        "position": [
+          0,
+          3.4,
+          0
+        ],
+        "rotationRad": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "component_placed",
+      "at": 2,
+      "entityId": "clock-crown",
+      "transform": {
+        "position": [
+          0,
+          2.3,
+          0
+        ],
+        "rotationRad": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "component_placed",
+      "at": 3,
+      "entityId": "clock-base",
+      "transform": {
+        "position": [
+          0,
+          -1.95,
+          0
+        ],
+        "rotationRad": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "component_placed",
+      "at": 4,
+      "entityId": "feet-front",
+      "transform": {
+        "position": [
+          0,
+          -2.5,
+          0.45
+        ],
+        "rotationRad": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "component_placed",
+      "at": 5,
+      "entityId": "feet-back",
+      "transform": {
+        "position": [
+          0,
+          -2.5,
+          -0.45
+        ],
+        "rotationRad": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "component_placed",
+      "at": 6,
+      "entityId": "clock-dial",
+      "transform": {
+        "position": [
+          0,
+          1.3,
+          0.52
+        ],
+        "rotationRad": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "component_placed",
+      "at": 7,
+      "entityId": "clock-hands",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationRad": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "component_placed",
+      "at": 8,
+      "entityId": "clock-pendulum",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationRad": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "assembly_ready",
+      "at": 9
+    },
+    {
+      "type": "scene_revealed",
+      "at": 10
+    }
+  ],
+  "meta": {
+    "model": "hand-authored-fixture",
+    "requestId": "none",
+    "latencyMs": 0,
+    "estimatedCostUsd": 0
+  },
+  "limitations": [
+    "Hand-authored fixture standing in for a model plan; not Meta output."
+  ]
+}

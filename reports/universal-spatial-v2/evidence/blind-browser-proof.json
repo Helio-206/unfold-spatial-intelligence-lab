@@ -1,0 +1,62 @@
+{
+  "frozenSha": "ed05db4482768de2cae6b585397e8af3588b5fdd",
+  "browser": "Chromium Playwright + SwiftShader",
+  "viewport": "1440x1000",
+  "planFile": "blind-harp-plan.json",
+  "sourceKind": "text",
+  "units": "unitless",
+  "componentCount": 7,
+  "componentIds": [
+    "harp",
+    "harp-neck",
+    "harp-pillar",
+    "harp-soundbox",
+    "harp-base",
+    "harp-strings",
+    "harp-pegs"
+  ],
+  "operators": [
+    "rounded_box",
+    "tube",
+    "cylinder",
+    "extrude",
+    "box"
+  ],
+  "constraintReport": {
+    "ready": true,
+    "results": [
+      {
+        "id": "pillar-soundbox-parallel",
+        "kind": "parallel",
+        "status": "satisfied",
+        "measured": 0.5663706143591729,
+        "tolerance": 10,
+        "method": "world-transform",
+        "limitation": "Transform relation only; does not prove mechanical validity."
+      },
+      {
+        "id": "base-supports-attached",
+        "kind": "connected_by_curve",
+        "status": "satisfied",
+        "measured": 1.9529145285514926,
+        "tolerance": 8,
+        "method": "axis-aligned-bounds",
+        "limitation": "AABB approximation; does not prove contact of actual surfaces or physical validity."
+      }
+    ],
+    "violatedIds": []
+  },
+  "render": {
+    "meshCount": 15,
+    "triangleCount": 2084,
+    "geometryBytes": 129448,
+    "componentCount": 7,
+    "nodeCount": 18
+  },
+  "selectionVerified": true,
+  "consoleErrors": [],
+  "screenshots": [
+    "blind-harp-browser.png",
+    "blind-harp-canvas.png"
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "plan": {
+    "status": 200,
+    "requestId": "1587c820-9e85-4259-8e5f-eeadfd247ab8",
+    "entityCount": 5,
+    "revision": 0
+  },
+  "edit": {
+    "status": 200,
+    "requestId": "a9fe729b-f1f4-4f42-8cf9-7978b906cf54",
+    "revision": 1,
+    "operation": {
+      "contract": "unfold.spatial-operation.v1",
+      "operationId": "fdf3f29f-9192-4097-8ed0-74810476b2ca",
+      "kind": "set-repeat",
+      "entityId": "fan-blade",
+      "value": {
+        "axis": "z",
+        "count": 8,
+        "kind": "radial",
+        "spacingOrRadius": 0.28
+      }
+    },
+    "updatedEntityProvenance": "inferred",
+    "reviewIdentity": {
+      "status": "applied",
+      "actorEvidence": "client_asserted_unverified",
+      "authenticatedReviewer": false,
+      "operationId": "fdf3f29f-9192-4097-8ed0-74810476b2ca"
+    },
+    "limitation": "A operação é aplicada após validação estrita. A identidade e a revisão humana só podem ser provadas pela integração com uma interface autenticada."
+  },
+  "repeatAfter": {
+    "axis": "z",
+    "count": 8,
+    "kind": "radial",
+    "spacingOrRadius": 0.28
+  },
+  "undo": {
+    "status": 200,
+    "revision": 2,
+    "repeatAfterUndo": {
+      "axis": "z",
+      "count": 6,
+      "kind": "radial",
+      "spacingOrRadius": 0.28
+    }
+  }
+}

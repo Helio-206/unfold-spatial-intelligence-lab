@@ -1,0 +1,63 @@
+{
+  "label": "after-jet-engine-rear",
+  "plan": "reports/visual-recovery/fixtures/jet-engine.json",
+  "viewport": "1440x1000",
+  "shot": "px",
+  "appCapture": {
+    "verdict": {
+      "ok": true,
+      "problems": []
+    },
+    "analysis": {
+      "width": 1007,
+      "height": 678,
+      "coverage": 0.22517890987277844,
+      "bbox": [
+        300,
+        34,
+        706,
+        643
+      ],
+      "bboxFraction": 0.36363449950640503,
+      "extentFraction": 0.8997050147492626,
+      "centerOffset": [
+        0,
+        0
+      ],
+      "touchesEdge": false,
+      "meanLuma": 89.17863207336737,
+      "uniformBlack": false
+    },
+    "dataUrlBytes": 380806
+  },
+  "stage": {
+    "width": 1010,
+    "height": 680,
+    "objectHeightPx": 610,
+    "objectWidthPx": 408,
+    "objectHeightOfStage": 0.897,
+    "objectBoxAreaOfStage": 0.3625
+  },
+  "canvas": [
+    1008,
+    679
+  ],
+  "objectPixelFraction": 0.2251,
+  "bboxFraction": 0.3636,
+  "bbox": [
+    300,
+    34,
+    707,
+    643
+  ],
+  "meanObjectLuma": 172.8,
+  "touchesEdge": false,
+  "consoleErrors": [],
+  "compiler": {
+    "meshCount": 25,
+    "triangleCount": 8732,
+    "geometryBytes": 186408,
+    "componentCount": 8,
+    "nodeCount": 9
+  }
+}

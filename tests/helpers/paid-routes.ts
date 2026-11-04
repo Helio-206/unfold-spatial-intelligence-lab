@@ -10,8 +10,9 @@ import { createOfflineTextObservation } from '../../src/living/reconstruction/ob
 
 export const ALLOWED_ORIGIN = 'http://127.0.0.1:5173';
 const validJpegDataUrl = 'data:image/jpeg;base64,/9j/4AA=';
+const validPngDataUrl = (() => { const bytes = Buffer.alloc(24); Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]).copy(bytes); bytes.writeUInt32BE(13, 8); bytes.write('IHDR', 12); bytes.writeUInt32BE(64, 16); bytes.writeUInt32BE(64, 20); return `data:image/png;base64,${bytes.toString('base64')}`; })();
 
-export type PaidRouteCase = { body: unknown; upstreamText: string };
+export type PaidRouteCase = { body: unknown; upstreamText: string; prepare?: (port: number, headers: Record<string, string>) => Promise<Record<string, unknown>> };
 
 const operation = JSON.stringify({ schema: 'kinematic_operation.v1', action: 'update_length', componentId: 'crank', newValue: 80, unit: 'mm' });
 
@@ -19,6 +20,14 @@ const operation = JSON.stringify({ schema: 'kinematic_operation.v1', action: 'up
 // o teste de cobertura falha, por isso não dá para esquecer a guarda nem o teste.
 export function paidRouteCases(): Record<string, PaidRouteCase> {
   const fixture = createPhase3DReferenceFixture();
+  const v2Plan = { title: 'Fan', units: 'unitless', presentationProfile: 'industrial', components: [{ id: 'hub', label: 'Hub', parentId: null, geometry: { type: 'shape', key: 'hub-shell', operator: 'cylinder', parameters: { radiusTop: 0.4, radiusBottom: 0.4, height: 0.2, radialSegments: 16 }, transform: { position: [0, 0, 0], rotationRad: [0, 0, 0], scale: [1, 1, 1] }, repeat: null, material: { profile: 'metal', color: '#777777', roughness: 0.4, metalness: 0.7, clearcoat: 0 } }, transform: { position: [0, 0, 0], rotationRad: [0, 0, 0], scale: [1, 1, 1] }, provenance: { geometry: 'inferred', transform: 'inferred', material: 'inferred', evidence: 'Test fixture.' } }], relations: [], constraints: [], unknowns: [] };
+  const v2PlanText = JSON.stringify(v2Plan);
+  const seedSession = async (port: number, headers: Record<string, string>) => {
+    const response = await rawRequest(port, { path: '/api/spatial/v2/plan', headers, body: { sourceKind: 'text', instruction: 'Build a small fan.' } });
+    if (response.status !== 200 || typeof response.json?.sessionId !== 'string') throw new Error('Unable to seed V2 route test.');
+    return { sessionId: response.json.sessionId, baseRevision: 0 };
+  };
+  const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p6sAAAAASUVORK5CYII=';
   return {
     '/api/meta/text': { body: { prompt: 'olá' }, upstreamText: 'ok' },
     '/api/meta/image': {
@@ -45,9 +54,24 @@ export function paidRouteCases(): Record<string, PaidRouteCase> {
       },
       upstreamText: JSON.stringify({ schema: 'spatial_agent_result.v1', kind: 'PROPOSE_ACTION', text: 'Proponho aumentar a parede seleccionada em 30 cm.', basis: 'scene', evidenceIds: ['wall-a'], question: null, action: { kind: 'Resize', target: { reference: 'selected', label: null, ordinal: null }, value: 0.3, valueMode: 'increase_by', unit: 'm', axis: null, opening: null } }),
     },
+    '/api/spatial/plan': {
+      body: { sourceKind: 'text', instruction: 'Cria uma forma conceptual.' },
+      upstreamText: JSON.stringify({ title: 'Concept', units: 'unitless', entities: [{ id: 'body', label: 'Body', parentId: null, geometry: { operator: 'box', parameters: [1, 1, 1] }, repeat: null, transform: { position: [0, 0, 0], rotationRad: [0, 0, 0], scale: [1, 1, 1] }, material: { color: '#888888', roughness: 0.5, metalness: 0 }, origin: 'design_approximation', evidence: 'Model generated primitive.' }], relations: [], unknowns: ['Scale unknown.'] }),
+    },
+    '/api/spatial/v2/plan': { body: { sourceKind: 'text', instruction: 'Build a small fan.' }, upstreamText: v2PlanText },
+    '/api/spatial/v2/edit': { body: { sessionId: '', baseRevision: 0, instruction: 'Move hub.' }, upstreamText: JSON.stringify({ kind: 'set-transform', componentId: 'hub', nodeKey: null, value: JSON.stringify({ position: [0.1, 0, 0], rotationRad: [0, 0, 0], scale: [1, 1, 1] }) }), prepare: seedSession },
+    '/api/spatial/v2/evaluate': { body: { sessionId: '', baseRevision: 0, imageDataUrl: png }, upstreamText: JSON.stringify({ recognizabilityScore: 70, silhouetteScore: 65, spatialIntegrityScore: 80, confidence: 0.6, discrepancies: [], suggestedOperation: null, rationale: 'A compact conceptual fan is visible.' }), prepare: seedSession },
     '/api/living/reconstruction': {
       body: { sourceKind: 'text', instruction: 'Escavadora', sourceReference: 'guard-fixture' },
       upstreamText: JSON.stringify(createOfflineTextObservation('Escavadora', 'guard-fixture')),
+    },
+    '/api/anatomy/observe': {
+      body: { imageDataUrl: validPngDataUrl, sourceReference: 'guard-fixture' },
+      upstreamText: JSON.stringify({
+        schema: 'unfold.anatomy_observation.v1', subjectDisposition: 'heart_illustration',
+        subjectEvidence: [{ id: 'subject', kind: 'image_region', detail: 'A heart illustration is visible.', locator: null }],
+        structures: [], relations: [], hypotheses: [], uncertainties: ['Physical dimensions are unknown.'],
+      }),
     },
   };
 }
@@ -58,7 +82,17 @@ export function metaResponse(text: string): Response {
 
 // fetch simulado que só conta: é ele que prova que um pedido rejeitado nunca chegou à Meta.
 export function countingFetch(text = 'ok') {
-  return vi.fn<typeof fetch>().mockImplementation(async () => metaResponse(text));
+  return vi.fn<typeof fetch>().mockImplementation(async (_url, init) => {
+    try {
+      const request = JSON.parse(String(init?.body));
+      if (request.text?.format?.name === 'unfold_spatial_plan_v2') {
+        const material = { profile: 'metal', color: '#777777', roughness: 0.4, metalness: 0.7, clearcoat: 0 };
+        const identity = { position: [0, 0, 0], rotationRad: [0, 0, 0], scale: [1, 1, 1] };
+        return metaResponse(JSON.stringify({ title: 'Fan', units: 'unitless', presentationProfile: 'industrial', components: [{ id: 'hub', label: 'Hub', parentId: null, geometry: { type: 'shape', key: 'hub-shell', operator: 'cylinder', parameters: { radiusTop: 0.4, radiusBottom: 0.4, height: 0.2, radialSegments: 16 }, transform: identity, repeat: null, material }, transform: identity, provenance: { geometry: 'inferred', transform: 'inferred', material: 'inferred', evidence: 'Test fixture.' } }], relations: [], constraints: [], unknowns: [] }));
+      }
+    } catch { /* The tested endpoint owns malformed upstream responses. */ }
+    return metaResponse(text);
+  });
 }
 
 export type Reply = { status: number; headers: IncomingHttpHeaders; text: string; json: any };

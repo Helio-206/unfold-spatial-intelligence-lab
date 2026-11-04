@@ -188,6 +188,7 @@ export async function mountExperience(app: HTMLElement, options: ExperienceOptio
       ${flow.problem ? `<p class="ux-problem" role="alert">${esc(flow.problem.message)}</p>` : ''}
       ${flow.message ? `<p class="u-small" role="status">${esc(flow.message)}</p>` : ''}
       <div class="ux-row ux-row--end">${port.mode === 'demo' ? `<label class="ux-scenario u-label">cenário de demonstração <select id="ux-scenario">${DEMO_SCENARIOS.map((sc) => `<option value="${sc}" ${(port as DemoReconstructionPort).scenario === sc ? 'selected' : ''}>${esc(DEMO_SCENARIO_LABEL[sc])}</option>`).join('')}</select></label>` : ''}
+        ${options.space ? '<button class="u-btn u-btn--outline" type="button" data-space="open">Novo espaço</button>' : ''}
         ${options.example ? '<button class="u-btn u-btn--outline" type="button" data-example="open">Abrir exemplo</button>' : ''}
         <button class="u-btn u-btn--primary" type="button" data-flow="submit" ${flow.phase === 'selected' ? '' : 'disabled'}>Reconstruir</button></div>
       ${options.example ? '<p class="u-label ux-example-note">O exemplo é uma máquina sintética de referência: não vem de nenhuma fonte sua.</p>' : ''}`;
@@ -368,6 +369,7 @@ export async function mountExperience(app: HTMLElement, options: ExperienceOptio
   app.addEventListener('click', (e) => {
     const t = e.target as Element;
     if (t.closest('[data-example]') && options.example) { openExample(); return; }
+    if (t.closest('[data-space]') && options.space) { options.space.open(); return; }
     const gw = t.closest<HTMLElement>('[data-gw]');
     if (gw && options.handoff && review) {
       const h = options.handoff;

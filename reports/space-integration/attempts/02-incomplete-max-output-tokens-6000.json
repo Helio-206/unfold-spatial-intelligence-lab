@@ -1,0 +1,13 @@
+{
+  "mode": "live",
+  "prompt": "A grandfather pendulum clock: tall wooden case, round dial with hands, brass pendulum disc, and feet.",
+  "failure": {
+    "detail": "pedido c1b12ee9-6b62-4003-947e-22bd9d7a65cf · motivo: max_output_tokens · 35099 ms",
+    "code": "SPATIAL_V2_META_INCOMPLETE",
+    "message": "O servidor recusou o pedido (SPATIAL_V2_META_INCOMPLETE). Nenhuma cena foi construída."
+  },
+  "calls": [
+    "POST /api/spatial/v2/plan"
+  ],
+  "at": "2026-11-04T00:38:23.078Z"
+}

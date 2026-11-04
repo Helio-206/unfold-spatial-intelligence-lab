@@ -1,0 +1,92 @@
+/* New Space: panels hosted inside the workspace (same host as the import and review panels). Tokens only. */
+.sp-root { position: absolute; inset: 0; display: grid; place-items: center; padding: calc(var(--space-16) + var(--space-2)) var(--space-4) calc(var(--space-16) + var(--space-6)); overflow: auto; color: var(--ink); font-family: var(--font-sans); pointer-events: none; }
+.sp-root[hidden] { display: none; }
+.sp-root *, .sp-root *::before, .sp-root *::after { box-sizing: border-box; }
+.sp-root :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.sp-card { pointer-events: auto; display: grid; gap: var(--space-4); width: min(560px, 100%); max-height: 100%; overflow: auto; padding: var(--space-6); background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-lg); }
+.sp-card--review { width: min(720px, 100%); }
+.sp-h1 { margin: 0; font-size: var(--type-title-size); line-height: var(--type-title-line); font-weight: 600; letter-spacing: var(--type-title-tracking); }
+.sp-card p { margin: 0; }
+.sp-head { display: grid; gap: var(--space-1); }
+.sp-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.sp-grow { flex: 1 1 auto; }
+.sp-field { display: grid; gap: var(--space-1); }
+.sp-field textarea { width: 100%; min-height: 44px; padding: var(--space-2) var(--space-3); border: 1px solid var(--ink-muted); border-radius: var(--radius-sm); background: var(--surface-sunken); color: var(--ink); font: 400 var(--type-body-size)/var(--type-body-line) var(--font-sans); resize: vertical; }
+.sp-drop { position: relative; display: grid; gap: var(--space-1); place-items: center; text-align: center; padding: var(--space-4); border: 1px dashed var(--ink-muted); border-radius: var(--radius-md); background: var(--surface-sunken); cursor: pointer; }
+.sp-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.sp-drop:focus-within { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.sp-problem { padding: var(--space-2) var(--space-3); border-left: 2px solid var(--fold-ink); background: var(--surface-sunken); }
+.sp-preview { margin: 0; display: grid; gap: var(--space-1); }
+.sp-preview img { max-width: 100%; max-height: 180px; object-fit: contain; border-radius: var(--radius-sm); background: var(--surface-sunken); justify-self: start; }
+.sp-preview blockquote { margin: 0; padding: var(--space-2) var(--space-3); border-left: 2px solid var(--line); color: var(--ink-muted); }
+.sp-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); max-height: min(44dvh, 420px); overflow: auto; }
+.sp-comp { display: grid; gap: var(--space-1); padding: var(--space-2) var(--space-3); border: 1px solid var(--line); border-left: 2px dashed var(--fold-ink); border-radius: var(--radius-sm); }
+.sp-comp[data-decided="keep"] { border-left: 2px solid var(--ink); }
+.sp-comp[data-decided="reject"] { border-left: 2px dotted var(--ink-muted); opacity: .6; }
+.sp-comp-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); }
+.sp-comp-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.sp-comp .uw-link[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.sp-unknowns summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; }
+.sp-unknowns ul { margin: var(--space-1) 0 0; padding-left: var(--space-4); display: grid; gap: var(--space-1); font-size: var(--type-small-size); color: var(--ink-muted); }
+.sp-check { display: flex; align-items: flex-start; gap: var(--space-2); font-size: var(--type-small-size); line-height: var(--type-small-line); }
+.sp-check input { margin-top: 3px; width: 18px; height: 18px; flex: none; accent-color: var(--ink); }
+.sp-blockers { color: var(--ink-muted); max-width: 32ch; text-align: right; }
+.sp-wait { color: var(--ink-muted); }
+.sp-pending { display: grid; gap: var(--space-1); margin-top: var(--space-2); padding: var(--space-2) var(--space-3); border-left: 2px solid var(--fold-ink); background: var(--surface-sunken); }
+.sp-auth { display: flex; gap: var(--space-2); align-items: center; }
+.sp-colour { display: inline-flex; align-items: center; gap: var(--space-2); }
+.sp-colour input { width: 28px; height: 22px; padding: 0; border: 0; background: transparent; }
+@media (max-width: 760px) {
+  .sp-root { padding: 96px var(--space-3) 120px; place-items: end center; }
+  .sp-card { padding: var(--space-4); }
+  .sp-list { max-height: 36dvh; }
+  .sp-blockers { text-align: left; max-width: none; }
+}
+
+/* ---- inside a Space: only what works is shown */
+.uw-root[data-space="true"] [data-el="toolSimulate"], .uw-root[data-space="true"] [data-el="toolHand"] { display: none; }
+.sp-legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2) var(--space-4); margin: 0; }
+.sp-legend > div { display: grid; gap: 2px; }
+.sp-legend dt, .sp-legend dd { margin: 0; }
+.sp-legend dd { color: var(--ink-muted); }
+.sp-meaning summary, .sp-unknowns summary { cursor: pointer; min-height: 28px; display: flex; align-items: center; }
+.sp-tally { align-items: center; }
+.sp-unknowns ul { margin: 0; padding-left: var(--space-4); display: grid; gap: var(--space-1); font-size: var(--type-small-size); color: var(--ink-muted); }
+.sp-empty { margin: 0; padding: var(--space-4); border: 1px dashed var(--line); border-radius: var(--radius-md); color: var(--ink-muted); }
+.sp-edit { margin-top: var(--space-2); }
+.sp-edit summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; }
+.sp-hint { margin: var(--space-1) 0 0; color: var(--ink-muted); }
+.sp-pending[data-source="meta"], .sp-pending[data-source="meta-visual"] { border-left-color: var(--ink); }
+/* the inspector stays a side card: it never grows past a third of the stage or the viewport height */
+@media (max-width: 760px) {
+  .sp-legend { grid-template-columns: 1fr; }
+  .uw-root[data-space="true"] .uw-inspector { max-height: 40%; }
+}
+
+/* composition: the card never outgrows the stage; only the component list scrolls, the actions stay in reach above the composer */
+.sp-root { padding-bottom: calc(var(--uw-composer-h, 76px) + var(--space-6)); }
+.sp-card { display: flex; flex-direction: column; max-height: 100%; min-height: 0; }
+.sp-card > * { flex: none; }
+.sp-card--review { max-height: min(100%, 760px); }
+.sp-card .sp-list { flex: 1 1 140px; min-height: 96px; max-height: none; overflow: auto; }
+.sp-card .sp-unknowns { max-height: 112px; overflow: auto; }
+.sp-decide { display: inline-flex; gap: var(--space-1); margin-left: auto; white-space: nowrap; }
+@media (max-width: 760px) { .sp-root { padding-top: 64px; } .sp-card--review { max-height: 100%; } .sp-card .sp-unknowns { max-height: 72px; } }
+/* a definite row, so the card's max-height resolves against the free area (otherwise it grows under the composer) */
+.sp-root { grid-template-rows: minmax(0, 1fr); grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 760px) { .sp-root { padding-left: 68px; padding-right: var(--space-3); place-items: end stretch; } .sp-card, .sp-card--review { width: 100%; } }
+@media (max-width: 680px) {
+  /* notices grow downward on a phone: the rail starts below them and scrolls if the tools do not fit */
+  .uw-root[data-space="true"] .uw-rail { top: calc(var(--uw-notices-h, 0px) + 28px); max-height: calc(100% - var(--uw-notices-h, 0px) - var(--uw-composer-h, 76px) - 64px); overflow-y: auto; }
+}
+.sp-card .sp-list { min-height: 64px; }
+.sp-why summary { cursor: pointer; min-height: 28px; display: flex; align-items: center; }
+.sp-why p { margin: 0; }
+.sp-foot { display: grid; gap: var(--space-3); }
+@media (max-width: 760px) {
+  /* a phone has no room for a list inside a card: the card scrolls as a whole and the decision stays pinned at the bottom */
+  .sp-card--review { overflow: auto; }
+  .sp-card--review .sp-list { flex: none; max-height: none; overflow: visible; }
+  .sp-card--review .sp-unknowns { max-height: none; overflow: visible; }
+  .sp-card--review .sp-foot { position: sticky; bottom: calc(-1 * var(--space-4)); margin: 0 calc(-1 * var(--space-4)); padding: var(--space-3) var(--space-4); background: var(--surface-raised); border-top: 1px solid var(--line); }
+}

@@ -1,0 +1,32 @@
+{
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "picked": [
+    "superior-vena-cava",
+    "right-atrium",
+    "ventricular-wall"
+  ],
+  "gpu": {
+    "before": {
+      "geometries": 4,
+      "textures": 7
+    },
+    "after": {
+      "geometries": 4,
+      "textures": 7
+    }
+  },
+  "apiCalls": [],
+  "consoleErrors": [],
+  "screenshots": {
+    "intake": "01-intake-with-atlas.png",
+    "atlas": "02-atlas.png",
+    "selected": "03-selected.png",
+    "isolated": "04-isolated.png",
+    "exploded": "05-exploded.png",
+    "back": "06-back.png"
+  },
+  "at": "2026-11-04T07:08:19.591Z"
+}

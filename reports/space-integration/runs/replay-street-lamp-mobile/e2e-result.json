@@ -1,0 +1,174 @@
+{
+  "mode": "mock",
+  "url": "http://127.0.0.1:5191/living",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "browser": "Chromium (system) + SwiftShader",
+  "at": "2026-11-04T07:07:07.463Z",
+  "input": {
+    "kind": "text",
+    "prompt": "Um relógio de pêndulo de pé: caixa alta de madeira, mostrador redondo com ponteiros, pêndulo com disco de latão e pés.",
+    "promptSha256": "d794a4a285889fd88d558f8691340296ba4a917043a57bb1d94ec4ae20d3a8ae"
+  },
+  "latencyMsToReview": 1929,
+  "review": {
+    "components": 5,
+    "title": "Street lamp with curved arm",
+    "rejected": null,
+    "built": [
+      "pole-base",
+      "pole-shaft",
+      "base-collar",
+      "lamp-arm",
+      "lamp-head"
+    ]
+  },
+  "meta": {
+    "model": "replay-of-stored-run",
+    "requestId": "553f6972-35ad-4491-adaa-c70d2da51b71",
+    "latencyMs": 28124,
+    "estimatedCostUsd": 0,
+    "rawResponseSha256": null,
+    "rawResponseStored": false
+  },
+  "normalizedPlan": {
+    "title": "Street lamp with curved arm",
+    "units": "unitless",
+    "components": [
+      {
+        "id": "pole-base",
+        "label": "Pole base pedestal",
+        "parentId": null,
+        "origin": "design_approximation"
+      },
+      {
+        "id": "pole-shaft",
+        "label": "Vertical pole shaft",
+        "parentId": "pole-base",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "base-collar",
+        "label": "Base collar ring",
+        "parentId": "pole-shaft",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "lamp-arm",
+        "label": "Curved outreach arm",
+        "parentId": "pole-shaft",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "lamp-head",
+        "label": "Lamp head fixture",
+        "parentId": "lamp-arm",
+        "origin": "design_approximation"
+      }
+    ],
+    "unknowns": [
+      "Absolute physical scale not supplied - dimensions are conceptual",
+      "Internal wiring, mounting bolts and photometric details not modeled",
+      "Exact curvature and luminaire profile inferred from typical street lamp"
+    ],
+    "sceneSummary": {
+      "componentCount": 6,
+      "geometryNodeCount": 33,
+      "operators": [
+        "torus",
+        "tube",
+        "cylinder",
+        "ellipsoid",
+        "box"
+      ],
+      "constraintReady": true
+    }
+  },
+  "coverage": {
+    "width": 390,
+    "height": 844,
+    "objectFraction": 0.06903025884068538,
+    "meanLuma": 45.11943812084283,
+    "maxLuma": 245.5026
+  },
+  "distinctSelectable": [
+    "lamp-arm",
+    "lamp-head",
+    "pole-shaft"
+  ],
+  "edit": {
+    "componentId": "lamp-arm",
+    "from": [
+      0,
+      3.6,
+      0
+    ],
+    "to": [
+      0.224,
+      3.6,
+      0
+    ],
+    "originAfter": "user_provided",
+    "undone": true
+  },
+  "gpu": {
+    "before": {
+      "geometries": 4,
+      "textures": 7,
+      "programs": 5
+    },
+    "afterLeaving": {
+      "geometries": 4,
+      "textures": 7,
+      "programs": 7
+    }
+  },
+  "qualityChecksFailed": [],
+  "humanRecognition": null,
+  "apiCalls": [
+    "POST /api/spatial/v2/plan",
+    "POST /api/spatial/v2/adopt",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/edit",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/evaluate",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/adopt"
+  ],
+  "planRequest": {
+    "sourceKind": "text",
+    "hasInstruction": true,
+    "imageMime": null,
+    "maxRefinements": 0
+  },
+  "consoleErrors": [],
+  "screenshots": {
+    "entry": "01-entry.png",
+    "newSpace": "02-new-space.png",
+    "waiting": "03-waiting.png",
+    "review": "04-review.png",
+    "reviewed": "05-reviewed.png",
+    "built": "06-built.png",
+    "orbited": "07-orbited.png",
+    "selected": "08-selected.png",
+    "preview": "09-edit-preview.png",
+    "edited": "10-edited.png",
+    "recoloured": "11-recoloured.png",
+    "isolated": "12-isolated.png",
+    "framed": "13-framed.png",
+    "evidence": "14-evidence.png",
+    "exploded": "13b-exploded.png",
+    "proposal": "13c-meta-proposal.png",
+    "evaluated": "13d-visual-evaluation.png",
+    "leaving": "13e-leave-guard.png",
+    "library": "13f-my-spaces.png",
+    "reopened": "13g-reopened.png",
+    "back": "15-back-to-entry.png"
+  }
+}

@@ -1,0 +1,173 @@
+{
+  "mode": "live",
+  "url": "http://127.0.0.1:5191/living",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "browser": "Chromium (system) + SwiftShader",
+  "at": "2026-11-04T00:40:33.303Z",
+  "input": {
+    "kind": "text",
+    "prompt": "A grandfather pendulum clock: tall wooden case, round dial with hands, brass pendulum disc, and feet.",
+    "promptSha256": "1633960ae475ddbb7691aa5b6f9686c3b3cd22324f94de14cd69580c3125b40a"
+  },
+  "latencyMsToReview": 31953,
+  "review": {
+    "components": 8,
+    "title": "Grandfather Pendulum Clock - Conceptual"
+  },
+  "meta": {
+    "model": "muse-spark-1.3",
+    "requestId": "70e78304-d05e-4788-8c31-ae5b53742aea",
+    "latencyMs": 31029,
+    "estimatedCostUsd": 0.0235906,
+    "rawResponseSha256": "51544f8b11e32b386f2188bd25a577061c7bcc9509b3b0a6f1d7cab77d6c8239",
+    "rawResponseStored": true
+  },
+  "normalizedPlan": {
+    "title": "Grandfather Pendulum Clock - Conceptual",
+    "units": "unitless",
+    "components": [
+      {
+        "id": "clock-case",
+        "label": "Tall wooden case body",
+        "parentId": null,
+        "origin": "design_approximation"
+      },
+      {
+        "id": "clock-crown",
+        "label": "Top pediment cap",
+        "parentId": "clock-case",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "clock-base",
+        "label": "Bottom plinth base",
+        "parentId": "clock-case",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "clock-dial",
+        "label": "Round dial with hands",
+        "parentId": "clock-case",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "clock-pendulum-rod",
+        "label": "Brass pendulum rod",
+        "parentId": "clock-case",
+        "origin": "inferred"
+      },
+      {
+        "id": "clock-pendulum-disc",
+        "label": "Brass pendulum disc",
+        "parentId": "clock-case",
+        "origin": "observed"
+      },
+      {
+        "id": "clock-foot-left",
+        "label": "Left front foot",
+        "parentId": "clock-case",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "clock-foot-right",
+        "label": "Right front foot",
+        "parentId": "clock-case",
+        "origin": "design_approximation"
+      }
+    ],
+    "unknowns": [
+      "True physical dimensions and wood finish unknown; conceptual proportions only",
+      "Internal movement, glass door detailing and back panel hidden geometry unknown",
+      "Exact dial numerals and hand style simplified as blocks",
+      "Invalid Meta constraint proposals were omitted; no unvalidated constraints were applied.",
+      "case-main: neutral design material fallback for metalness, clearcoat",
+      "crown-main: neutral design material fallback for metalness, clearcoat",
+      "base-main: neutral design material fallback for metalness, clearcoat",
+      "dial-face: neutral design material fallback for metalness, clearcoat",
+      "dial-bezel: neutral design material fallback for metalness, clearcoat",
+      "hour-hand: neutral design material fallback for metalness, clearcoat",
+      "minute-hand: neutral design material fallback for metalness, clearcoat",
+      "center-pin: neutral design material fallback for metalness, clearcoat",
+      "rod-main: neutral design material fallback for metalness, clearcoat",
+      "disc-main: neutral design material fallback for metalness, clearcoat",
+      "foot-l: neutral design material fallback for metalness, clearcoat",
+      "foot-r: neutral design material fallback for metalness, clearcoat",
+      "Parameters of case-main (rounded_box) were partly repaired; the resulting proportions are a design approximation.",
+      "Parameters of crown-main (rounded_box) were partly repaired; the resulting proportions are a design approximation.",
+      "Parameters of base-main (rounded_box) were partly repaired; the resulting proportions are a design approximation.",
+      "Parameters of dial-bezel (torus) were invalid and replaced by a generic shape; the resulting proportions are a design approximation.",
+      "Parameters of hour-hand (box) were partly repaired; the resulting proportions are a design approximation.",
+      "Parameters of minute-hand (box) were partly repaired; the resulting proportions are a design approximation.",
+      "Parameters of foot-l (rounded_box) were partly repaired; the resulting proportions are a design approximation.",
+      "Parameters of foot-r (rounded_box) were partly repaired; the resulting proportions are a design approximation."
+    ],
+    "sceneSummary": {
+      "componentCount": 8,
+      "geometryNodeCount": 13,
+      "operators": [
+        "rounded_box",
+        "cylinder",
+        "torus",
+        "box",
+        "sphere"
+      ],
+      "constraintReady": true
+    }
+  },
+  "coverage": {
+    "width": 1440,
+    "height": 900,
+    "objectFraction": 0.10808719135802469,
+    "meanLuma": 52.73054950512989,
+    "maxLuma": 159.009
+  },
+  "distinctSelectable": [
+    "clock-case",
+    "clock-base"
+  ],
+  "edit": {
+    "componentId": "clock-case",
+    "from": [
+      0,
+      3.1,
+      0
+    ],
+    "to": [
+      0.3185,
+      3.1,
+      0
+    ],
+    "originAfter": "user_provided",
+    "undone": true
+  },
+  "apiCalls": [
+    "POST /api/spatial/v2/plan"
+  ],
+  "consoleErrors": [],
+  "screenshots": {
+    "entry": "01-entry.png",
+    "newSpace": "02-new-space.png",
+    "waiting": "03-waiting.png",
+    "review": "04-review.png",
+    "reviewed": "05-reviewed.png",
+    "built": "06-built.png",
+    "orbited": "07-orbited.png",
+    "selected": "08-selected.png",
+    "preview": "09-edit-preview.png",
+    "edited": "10-edited.png",
+    "recoloured": "11-recoloured.png",
+    "isolated": "12-isolated.png",
+    "framed": "13-framed.png",
+    "evidence": "14-evidence.png",
+    "back": "15-back-to-entry.png"
+  },
+  "rawResponse": {
+    "file": "spatial-run-1549dd2c-2608-4c56-b057-61d513da59b0.json",
+    "shaOfStoredText": "51544f8b11e32b386f2188bd25a577061c7bcc9509b3b0a6f1d7cab77d6c8239",
+    "bytes": 8858,
+    "location": "reports/space-integration/raw/ (git-ignored, mode 0600)"
+  }
+}

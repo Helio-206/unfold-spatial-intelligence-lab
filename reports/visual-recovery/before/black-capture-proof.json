@@ -1,0 +1,16 @@
+{
+  "url": "http://127.0.0.1:5191/universal-spatial-v2",
+  "plan": "reports/universal-spatial-v2/evidence/live-image-plan.json",
+  "toDataURLAsTheOldHandlerDidIt": {
+    "width": 1007,
+    "height": 150,
+    "meanLuma": 0,
+    "maxLuma": 0
+  },
+  "screenshotOfTheSameCanvas": {
+    "width": 1008,
+    "height": 151,
+    "meanLuma": 19.59,
+    "maxLuma": 133
+  }
+}

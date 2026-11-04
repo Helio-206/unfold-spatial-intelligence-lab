@@ -57,7 +57,7 @@ export function finishPixels(finish: Finish, size = SIZE): Uint8Array {
   return out;
 }
 
-function finishTexture(finish: Finish, repeat: [number, number]): DataTexture {
+export function finishTexture(finish: Finish, repeat: [number, number]): DataTexture {
   const texture = new DataTexture(finishPixels(finish), SIZE, SIZE, RGBAFormat, UnsignedByteType);
   texture.wrapS = texture.wrapT = RepeatWrapping;
   texture.magFilter = LinearFilter; texture.minFilter = LinearMipmapLinearFilter; texture.generateMipmaps = true;

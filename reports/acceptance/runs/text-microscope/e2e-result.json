@@ -1,0 +1,213 @@
+{
+  "mode": "live",
+  "url": "http://127.0.0.1:5191/living",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "browser": "Chromium (system) + SwiftShader",
+  "at": "2026-11-04T08:01:54.518Z",
+  "input": {
+    "kind": "text",
+    "prompt": "Cria um modelo 3D conceptual e explorável de um microscópio óptico composto de laboratório, com base, braço de suporte, platina para lâminas, tubo ocular, revólver com três objectivas e botões de focagem. Os componentes devem formar um instrumento reconhecível e estruturalmente coerente. Não foram fornecidas medidas físicas.",
+    "promptSha256": "51da76e59cb433e877d9ea0fd8ff17c6622d05fa37908fd98a3344f4828549e0"
+  },
+  "latencyMsToReview": 52718,
+  "review": {
+    "components": 10,
+    "title": "Microscópio óptico composto de laboratório",
+    "rejected": null,
+    "built": [
+      "base",
+      "coluna-suporte",
+      "braco",
+      "platina",
+      "tubo-ocular",
+      "ocular",
+      "revolver",
+      "objetivas",
+      "focos",
+      "iluminador"
+    ]
+  },
+  "meta": {
+    "model": "muse-spark-1.3",
+    "requestId": "d14a0904-1d6b-478b-a655-5bf9ab1d9975",
+    "latencyMs": 52013,
+    "estimatedCostUsd": 0.033046,
+    "rawResponseSha256": "719fb4a1a7195a0d43dd990356dfe5f48adc65b180b88f2c9d29906118536909",
+    "rawResponseStored": true
+  },
+  "normalizedPlan": {
+    "title": "Microscópio óptico composto de laboratório",
+    "units": "unitless",
+    "components": [
+      {
+        "id": "base",
+        "label": "Base do microscópio",
+        "parentId": null,
+        "origin": "design_approximation"
+      },
+      {
+        "id": "coluna-suporte",
+        "label": "Coluna de suporte",
+        "parentId": "base",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "braco",
+        "label": "Braço de suporte",
+        "parentId": "coluna-suporte",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "platina",
+        "label": "Platina para lâminas",
+        "parentId": "coluna-suporte",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "tubo-ocular",
+        "label": "Tubo ocular principal",
+        "parentId": "braco",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "ocular",
+        "label": "Ocular",
+        "parentId": "tubo-ocular",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "revolver",
+        "label": "Revólver porta-objetivas",
+        "parentId": "tubo-ocular",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "objetivas",
+        "label": "Três objetivas",
+        "parentId": "revolver",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "focos",
+        "label": "Botões de focagem",
+        "parentId": "coluna-suporte",
+        "origin": "design_approximation"
+      },
+      {
+        "id": "iluminador",
+        "label": "Iluminador sob platina",
+        "parentId": "base",
+        "origin": "design_approximation"
+      }
+    ],
+    "unknowns": [
+      "Escala física real desconhecida — dimensões conceptuais sem unidades, longest side ~4.3 unidades",
+      "Geometria interna ótica e mecanismos de focagem fina/grossa não modelados",
+      "Abertura real da platina e condensador simplificados como disco luminoso",
+      "Invalid Meta constraint proposals were omitted; no unvalidated constraints were applied."
+    ],
+    "sceneSummary": {
+      "componentCount": 10,
+      "geometryNodeCount": 18,
+      "operators": [
+        "rounded_box",
+        "cylinder",
+        "box"
+      ],
+      "constraintReady": true
+    }
+  },
+  "coverage": {
+    "width": 1440,
+    "height": 900,
+    "objectFraction": 0.09863966049382716,
+    "meanLuma": 50.481381016130726,
+    "maxLuma": 252.85559999999998
+  },
+  "distinctSelectable": [
+    "ocular",
+    "tubo-ocular",
+    "braco",
+    "platina"
+  ],
+  "edit": {
+    "componentId": "ocular",
+    "from": [
+      0,
+      1.01,
+      0
+    ],
+    "to": [
+      0.20425,
+      1.01,
+      0
+    ],
+    "originAfter": "user_provided",
+    "undone": true
+  },
+  "gpu": {
+    "before": {
+      "geometries": 4,
+      "textures": 7,
+      "programs": 5
+    },
+    "afterLeaving": {
+      "geometries": 4,
+      "textures": 7,
+      "programs": 8
+    }
+  },
+  "idleFramesPer2sWindow": [
+    0,
+    0
+  ],
+  "qualityChecksFailed": [],
+  "humanRecognition": null,
+  "apiCalls": [
+    "POST /api/spatial/v2/plan",
+    "POST /api/spatial/v2/adopt",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/adopt"
+  ],
+  "planRequest": {
+    "sourceKind": "text",
+    "hasInstruction": true,
+    "imageMime": null,
+    "maxRefinements": 0
+  },
+  "consoleErrors": [],
+  "screenshots": {
+    "entry": "01-entry.png",
+    "newSpace": "02-new-space.png",
+    "waiting": "03-waiting.png",
+    "review": "04-review.png",
+    "reviewed": "05-reviewed.png",
+    "built": "06-built.png",
+    "orbited": "07-orbited.png",
+    "selected": "08-selected.png",
+    "preview": "09-edit-preview.png",
+    "edited": "10-edited.png",
+    "recoloured": "11-recoloured.png",
+    "isolated": "12-isolated.png",
+    "framed": "13-framed.png",
+    "evidence": "14-evidence.png",
+    "exploded": "13b-exploded.png",
+    "leaving": "13e-leave-guard.png",
+    "library": "13f-my-spaces.png",
+    "reopened": "13g-reopened.png",
+    "back": "15-back-to-entry.png"
+  },
+  "rawResponse": {
+    "file": "spatial-run-c312e57c-c1b5-4d30-90bb-f3a2a658ecd0.json",
+    "shaOfStoredText": "719fb4a1a7195a0d43dd990356dfe5f48adc65b180b88f2c9d29906118536909",
+    "bytes": 11892,
+    "location": "reports/space-integration/raw/ (git-ignored, mode 0600)"
+  }
+}
