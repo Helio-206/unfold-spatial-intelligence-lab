@@ -1,0 +1,118 @@
+{
+  "fixture": "saved Meta plan; no photographic ground truth",
+  "diagnoses": {
+    "diagnoses": [
+      {
+        "relation": "rel-rel-left-to-frame",
+        "a": "undercarriage",
+        "b": "track-left",
+        "declaredKind": "connected_to",
+        "gapPctSpan": 3.37,
+        "moves": "track-left",
+        "bestGapPctSpan": 0.04,
+        "verdict": "closable_by_transform",
+        "breaksOtherRelations": false,
+        "hint": "track-left (with its subtree) can meet undercarriage within the allowed scale, rotation and shift"
+      },
+      {
+        "relation": "rel-rel-right-to-frame",
+        "a": "undercarriage",
+        "b": "track-right",
+        "declaredKind": "connected_to",
+        "gapPctSpan": 3.37,
+        "moves": "track-right",
+        "bestGapPctSpan": 0.05,
+        "verdict": "closable_by_transform",
+        "breaksOtherRelations": false,
+        "hint": "track-right (with its subtree) can meet undercarriage within the allowed scale, rotation and shift"
+      },
+      {
+        "relation": "rel-rel-upper-on-lower",
+        "a": "undercarriage",
+        "b": "upper-frame",
+        "declaredKind": "attached_to",
+        "gapPctSpan": 4.49,
+        "moves": "upper-frame",
+        "bestGapPctSpan": 0.03,
+        "verdict": "closable_by_transform",
+        "breaksOtherRelations": false,
+        "hint": "upper-frame (with its subtree) can meet undercarriage within the allowed scale, rotation and shift"
+      },
+      {
+        "relation": "rel-rel-cab-on-upper",
+        "a": "upper-frame",
+        "b": "cab",
+        "declaredKind": "attached_to",
+        "gapPctSpan": 17.44,
+        "moves": "cab",
+        "bestGapPctSpan": 0.07,
+        "verdict": "closable_by_transform",
+        "breaksOtherRelations": false,
+        "hint": "cab (with its subtree) can meet upper-frame within the allowed scale, rotation and shift"
+      },
+      {
+        "relation": "rel-rel-boom-to-upper",
+        "a": "upper-frame",
+        "b": "boom",
+        "declaredKind": "connected_to",
+        "gapPctSpan": 31.39,
+        "moves": "boom",
+        "bestGapPctSpan": 6.21,
+        "verdict": "not_closable_by_transform",
+        "breaksOtherRelations": false,
+        "hint": "even the best allowed placement of boom leaves 6.2 % of the span between it and upper-frame: shape or size mismatch, or a connecting part is missing"
+      },
+      {
+        "relation": "rel-rel-stick-to-boom",
+        "a": "boom",
+        "b": "stick",
+        "declaredKind": "connected_to",
+        "gapPctSpan": 51.51,
+        "moves": "stick",
+        "bestGapPctSpan": 25.9,
+        "verdict": "not_closable_by_transform",
+        "breaksOtherRelations": false,
+        "hint": "even the best allowed placement of stick leaves 25.9 % of the span between it and boom: shape or size mismatch, or a connecting part is missing"
+      },
+      {
+        "relation": "rel-rel-bucket-to-stick",
+        "a": "stick",
+        "b": "bucket",
+        "declaredKind": "connected_to",
+        "gapPctSpan": 52.29,
+        "moves": "bucket",
+        "bestGapPctSpan": 35.34,
+        "verdict": "not_closable_by_transform",
+        "breaksOtherRelations": false,
+        "hint": "even the best allowed placement of bucket leaves 35.3 % of the span between it and stick: shape or size mismatch, or a connecting part is missing"
+      }
+    ],
+    "notCorrectableByTransforms": [
+      "boom",
+      "stick",
+      "bucket"
+    ],
+    "closable": [
+      "track-left",
+      "track-right",
+      "upper-frame",
+      "cab"
+    ]
+  },
+  "arbitrarySyntheticBeam": {
+    "baseline": {
+      "meshes": 17,
+      "vertices": 14884,
+      "triangles": 5148
+    },
+    "candidate": {
+      "meshes": 17,
+      "vertices": 13996,
+      "triangles": 4868
+    },
+    "physicalUnitsKnown": false,
+    "fittedToEvidence": false
+  },
+  "wallMs": 1518.527142,
+  "heapUsedBytes": 33140856
+}
