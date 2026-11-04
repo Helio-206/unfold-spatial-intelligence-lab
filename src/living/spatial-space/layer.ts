@@ -265,10 +265,14 @@ export class PlanSpaceLayer implements SpaceLayer {
   /** Applies operations in order, through the server session when there is one, so both sides keep the same revision. */
   private async commit(operations: SpatialOperationV2[], provenance: { origin: 'user_provided' | 'inferred'; evidence: string }, localPlan?: SpatialPlanV2): Promise<void> {
     const before = this.plan; let next = before;
+    // The current server API applies one operation per request and has no atomic batch.
+    // Never present a partially applied server batch as one completed transaction.
+    if (this.sync && operations.length > 1) throw new Error('BATCH_REQUIRES_ATOMIC_SERVER');
     if (this.sync) {
       try { for (const operation of operations) next = await this.sync.apply(operation, provenance); }
-      catch (error) { this.sync = null; this.host.syncLost?.(error instanceof Error ? error.message : 'sessão do servidor indisponível'); next = localPlan ?? this.applyLocal(before, operations, provenance); }
+      catch (error) { if (this.disposed) throw new Error('SPACE_DISPOSED'); this.sync = null; this.host.syncLost?.(error instanceof Error ? error.message : 'sessão do servidor indisponível'); next = localPlan ?? this.applyLocal(before, operations, provenance); }
     } else next = localPlan ?? this.applyLocal(before, operations, provenance);
+    if (this.disposed) throw new Error('SPACE_DISPOSED');
     this.history.push({ plan: before, ops: operations.length }); this.plan = next; this.pending = null; this.authorised = false; this.stats = this.build();
   }
   private applyLocal(plan: SpatialPlanV2, operations: SpatialOperationV2[], provenance: { origin: 'user_provided' | 'inferred'; evidence: string }): SpatialPlanV2 {
@@ -277,21 +281,26 @@ export class PlanSpaceLayer implements SpaceLayer {
 
   /** The bounded solver proposes `set-transform` operations only; they are marked inferred and can be undone. */
   async closeGaps(): Promise<{ applied: number; iterations: number }> {
+    if (this.disposed) return { applied: 0, iterations: 0 };
     if (this.busy || this.lockReason) { if (this.lockReason) this.host.notify(`Edição indisponível: ${this.lockReason}.`); return { applied: 0, iterations: 0 }; }
     const result = refineAssembly(this.plan);
     if (!result.applied.length) return { applied: 0, iterations: result.iterations };
     this.busy = true; this.director?.enterEditing();
-    try { await this.commit(result.applied.map((a) => a.operation), { origin: 'inferred', evidence: 'Assembly solver proposed a position that closes a gap (bounding boxes, not a contact proof).' }, this.sync ? undefined : result.plan); }
+    let committed = false;
+    try { await this.commit(result.applied.map((a) => a.operation), { origin: 'inferred', evidence: 'Assembly solver proposed a position that closes a gap (bounding boxes, not a contact proof).' }, this.sync ? undefined : result.plan); committed = true; }
+    catch (error) { if (!this.disposed) this.host.notify(`Edição bloqueada: ${error instanceof Error ? error.message : 'erro desconhecido'}`); }
     finally { this.busy = false; }
-    this.director?.resumeExploring(); this.host.changed();
-    return { applied: result.applied.length, iterations: result.iterations };
+    this.director?.resumeExploring(); if (!this.disposed) this.host.changed();
+    return { applied: committed ? result.applied.length : 0, iterations: result.iterations };
   }
   async undo(): Promise<boolean> {
+    if (this.disposed) return false;
     if (this.lockReason) { this.host.notify(`Edição indisponível: ${this.lockReason}.`); return false; }
     const previous = this.history.pop(); if (!previous || this.busy) { if (previous) this.history.push(previous); return false; }
+    if (this.sync && previous.ops > 1) { this.history.push(previous); this.host.notify('Undo agrupado indisponível: o servidor não oferece transacção atómica.'); return false; }
     this.busy = true; this.director?.enterEditing();
     try {
-      if (this.sync) { try { let restored = this.plan; for (let i = 0; i < previous.ops; i++) restored = await this.sync.undo(); this.plan = restored; } catch (error) { this.sync = null; this.host.syncLost?.(error instanceof Error ? error.message : 'sessão do servidor indisponível'); this.plan = previous.plan; } }
+      if (this.sync) { try { let restored = this.plan; for (let i = 0; i < previous.ops; i++) restored = await this.sync.undo(); if (this.disposed) return false; this.plan = restored; } catch (error) { if (this.disposed) return false; this.sync = null; this.host.syncLost?.(error instanceof Error ? error.message : 'sessão do servidor indisponível'); this.plan = previous.plan; } }
       else this.plan = previous.plan;
       this.pending = null; this.stats = this.build();
     } finally { this.busy = false; }
@@ -341,7 +350,7 @@ export class PlanSpaceLayer implements SpaceLayer {
    * is applied only when a person authorises it, then recorded as that person's decision with the solver's evidence in the provenance. One undo reverts all of it.
    */
   proposeSolverEdit(operations: SpatialOperationV2[], label: string, evidence: string): boolean {
-    if (this.disposed || !operations.length || this.lockReason) return false;
+    if (this.disposed || !operations.length || this.isBusy) return false;
     try { let probe = this.plan; for (const operation of operations) probe = applySpatialOperationV2(probe, operation, { origin: 'inferred', evidence: 'preview' }); } catch { return false; }
     const first = this.plan.components.find((item) => item.id === operations[0]!.componentId); if (!first) return false;
     this.selected = this.selected && operations.some((op) => op.componentId === this.selected) ? this.selected : first.id;
@@ -360,9 +369,9 @@ export class PlanSpaceLayer implements SpaceLayer {
       const evidence = pending.source === 'solver' ? ((suffix) => `${(pending.evidence ?? 'Proposta do solver estrutural.').slice(0, 500 - suffix.length - 1)} ${suffix}`)('Resultado de optimização (hipótese), autorizado por uma pessoa (afirmado pelo cliente, sem identidade verificada).') : pending.source === 'person' ? 'Editado por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).' : 'Proposta por Muse Spark (hipótese) e autorizada por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).';
       await this.commit(pending.operations, { origin: 'user_provided', evidence });
       this.host.notify(`Aplicado: ${pending.label}.${this.sync ? '' : ' Edição só local: a sessão do servidor não a conhece.'}`);
-    } catch (error) { this.pending = null; this.host.notify(`Edição bloqueada: ${error instanceof Error ? error.message : 'erro desconhecido'}`); }
+    } catch (error) { this.pending = null; if (!this.disposed) this.host.notify(`Edição bloqueada: ${error instanceof Error ? error.message : 'erro desconhecido'}`); }
     finally { this.busy = false; }
-    this.director?.resumeExploring(); this.host.changed();
+    this.director?.resumeExploring(); if (!this.disposed) this.host.changed();
   }
 
   renderInspector(host: HTMLElement, id: string, evidenceOpen: boolean): void {

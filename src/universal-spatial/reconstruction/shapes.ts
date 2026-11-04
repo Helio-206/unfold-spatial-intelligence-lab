@@ -1,3 +1,4 @@
+import { meshWorldTriangles } from './mesh-triangles';
 import { Box3, Mesh, Vector3, type Object3D } from 'three';
 import { applySpatialOperationV2, type GeometryNodeV2, type SpatialOperationV2, type SpatialPlanV2 } from '../contracts-v2';
 import { compileSpatialPlanV2, disposeCompiledSpatialPlan } from '../geometry-compiler-v2';
@@ -18,7 +19,7 @@ export type ShapeOptions = { components?: string[]; minImprovement?: number };
 type Shape = Extract<GeometryNodeV2, { type: 'shape' }>;
 const SWAPPABLE = new Set(['box', 'rounded_box', 'cylinder', 'ellipsoid', 'sphere', 'cone']);
 
-const scene = (plan: SpatialPlanV2) => { const c = compileSpatialPlanV2(plan); c.root.updateMatrixWorld(true); const tris = new Map<string, Tri[]>(), worlds = new Map<string, import('three').Matrix4>(); c.root.traverse((o: Object3D) => { if (o.userData.spatialComponentRoot) worlds.set(o.userData.spatialEntityId as string, o.matrixWorld.clone()); if (!(o instanceof Mesh) || typeof o.userData.spatialEntityId !== 'string') return; const id = o.userData.spatialEntityId as string, pos = o.geometry.getAttribute('position'), idx = o.geometry.index, n = idx ? idx.count : pos.count, l = tris.get(id) ?? []; const v = (i: number) => new Vector3().fromBufferAttribute(pos, idx ? idx.getX(i) : i).applyMatrix4(o.matrixWorld); for (let i = 0; i + 2 < n; i += 3) l.push([v(i), v(i + 1), v(i + 2)]); tris.set(id, l); }); disposeCompiledSpatialPlan(c.root); return { tris, worlds }; };
+const scene = (plan: SpatialPlanV2) => { const c = compileSpatialPlanV2(plan); c.root.updateMatrixWorld(true); const tris = new Map<string, Tri[]>(), worlds = new Map<string, import('three').Matrix4>(); c.root.traverse((o: Object3D) => { if (o.userData.spatialComponentRoot) worlds.set(o.userData.spatialEntityId as string, o.matrixWorld.clone()); if (!(o instanceof Mesh) || typeof o.userData.spatialEntityId !== 'string') return; const id = o.userData.spatialEntityId as string, l = tris.get(id) ?? []; for (const tri of meshWorldTriangles(o)) l.push(tri); tris.set(id, l); }); disposeCompiledSpatialPlan(c.root); return { tris, worlds }; };
 const r6 = (n: number) => Math.round(n * 1e6) / 1e6;
 
 /** Candidate shape nodes for a part whose extent in the component's own frame is `size` centred at `centre`. */

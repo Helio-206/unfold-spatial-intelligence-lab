@@ -1,3 +1,4 @@
+import { meshWorldTriangles } from './mesh-triangles';
 import { Box3, Matrix4, Mesh, Vector3, type Object3D } from 'three';
 import { applySpatialOperationV2, type SpatialOperationV2, type SpatialPlanV2 } from '../contracts-v2';
 import { compileSpatialPlanV2, disposeCompiledSpatialPlan } from '../geometry-compiler-v2';
@@ -30,7 +31,7 @@ export type Outcome = {
 };
 
 const empty = (): Outcome['checks'] => ({ transformConsistencyMax: null, worldConsistencyAfterMax: null, idsPreserved: null, sourcePreserved: null, hierarchyPreserved: null, jointResidualMax: null });
-const worldTris = (root: Object3D) => { root.updateMatrixWorld(true); const map = new Map<string, Tri[]>(), worlds = new Map<string, Matrix4>(); root.traverse((o) => { if (o.userData.spatialComponentRoot) worlds.set(o.userData.spatialEntityId as string, o.matrixWorld.clone()); if (!(o instanceof Mesh) || typeof o.userData.spatialEntityId !== 'string') return; const id = o.userData.spatialEntityId as string, pos = o.geometry.getAttribute('position'), idx = o.geometry.index, n = idx ? idx.count : pos.count, l = map.get(id) ?? []; const v = (i: number) => new Vector3().fromBufferAttribute(pos, idx ? idx.getX(i) : i).applyMatrix4(o.matrixWorld); for (let i = 0; i + 2 < n; i += 3) l.push([v(i), v(i + 1), v(i + 2)]); map.set(id, l); }); return { map, worlds }; };
+const worldTris = (root: Object3D) => { root.updateMatrixWorld(true); const map = new Map<string, Tri[]>(), worlds = new Map<string, Matrix4>(); root.traverse((o) => { if (o.userData.spatialComponentRoot) worlds.set(o.userData.spatialEntityId as string, o.matrixWorld.clone()); if (!(o instanceof Mesh) || typeof o.userData.spatialEntityId !== 'string') return; const id = o.userData.spatialEntityId as string, l = map.get(id) ?? []; for (const tri of meshWorldTriangles(o)) l.push(tri); map.set(id, l); }); return { map, worlds }; };
 const matrixDiff = (a: Matrix4, b: Matrix4) => a.elements.reduce((m, v, i) => Math.max(m, Math.abs(v - b.elements[i]!)), 0);
 
 /** Views that are calibrated, share one resolution and point in genuinely different directions (greedy, by angle). */

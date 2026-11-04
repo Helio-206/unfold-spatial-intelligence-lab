@@ -136,6 +136,18 @@ describe('PlanSpaceLayer', () => {
     layer.dispose();
   });
 
+  it('does not rebuild after a delayed undo finishes on a disposed layer', async () => {
+    const layer = new PlanSpaceLayer(plan(), host()); layer.highlight('base'); layer.proposeEdit('x+'); await layer.applyEdit();
+    const before = layer.currentPlan; let release!: (p: SpatialPlanV2) => void;
+    layer.attachSync({ apply: async () => before, undo: () => new Promise(resolve => { release = resolve; }) });
+    const pending = layer.undo(); layer.dispose(); release(plan());
+    expect(await pending).toBe(false); expect(layer.root.children).toHaveLength(0); expect(layer.currentPlan).toBe(before);
+  });
+  it('does not undo or run a solver after disposal', async () => {
+    const layer = new PlanSpaceLayer(plan(), host()); layer.highlight('base'); layer.proposeEdit('x+'); await layer.applyEdit();
+    layer.dispose(); expect(await layer.undo()).toBe(false); expect((await layer.closeGaps()).applied).toBe(0); expect(layer.root.children).toHaveLength(0);
+  });
+
   it('keeps editing locally when the server cannot confirm, and says the session was lost', async () => {
     const h = host(), layer = new PlanSpaceLayer(plan(), h);
     layer.attachSync({ apply: async () => { throw new Error('SPATIAL_V2_SESSION_NOT_FOUND'); }, undo: async () => { throw new Error('x'); } });
@@ -240,6 +252,19 @@ describe('PlanSpaceLayer', () => {
 
   describe('solver proposals (V4 structural fit)', () => {
     const ops = (): SpatialOperationV2[] => ['base', 'top'].map((cid, n) => ({ contract: 'unfold.spatial-operation.v2', operationId: `v4-test-${n}`, kind: 'set-transform', componentId: cid, nodeKey: null, value: { position: [0.4, n ? 1.7 : 0.5, 0], rotationRad: [0, 0, 0], scale: [1.2, 1.2, 1.2] } }));
+    it('does not start a non-atomic grouped server operation', async () => {
+      const h = host(), layer = new PlanSpaceLayer(plan(), h), before = layer.currentPlan;
+      const apply = vi.fn(async () => before); layer.attachSync({ apply, undo: async () => before });
+      expect(layer.proposeSolverEdit(ops(), 'batch', 'fixture')).toBe(true); layer.authorise(true); await layer.applyEdit();
+      expect(apply).not.toHaveBeenCalled(); expect(layer.currentPlan).toBe(before); expect(layer.editCount).toBe(0);
+      expect(h.notify).toHaveBeenCalledWith(expect.stringContaining('BATCH_REQUIRES_ATOMIC_SERVER')); layer.dispose();
+    });
+    it('does not partially undo a local group after a server session is attached', async () => {
+      const h = host(), layer = new PlanSpaceLayer(plan(), h); layer.proposeSolverEdit(ops(), 'batch', 'fixture'); layer.authorise(true); await layer.applyEdit();
+      const grouped = layer.currentPlan, undo = vi.fn(async () => grouped);
+      layer.attachSync({ apply: async () => grouped, undo });
+      expect(await layer.undo()).toBe(false); expect(undo).not.toHaveBeenCalled(); expect(layer.currentPlan).toBe(grouped); expect(layer.editCount).toBe(1); layer.dispose();
+    });
     it('is only a preview: the plan does not change until a person authorises, and it says it is a solver result', async () => {
       const h = host(), layer = new PlanSpaceLayer(plan(), h), before = layer.currentPlan;
       expect(layer.proposeSolverEdit(ops(), 'Ajuste estrutural', 'Solver fitted 6 silhouettes.')).toBe(true);
