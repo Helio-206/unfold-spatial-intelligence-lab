@@ -10,6 +10,7 @@ import { createReconstructionClient } from './reconstruction-client';
 import { LiveReconstructionPort } from './live-port';
 import { asReviewHandoff, ReviewGateway } from './review-bridge';
 import { EMPTY_BRAND, newProjectIcon, WorkspaceStageHost } from './lab-host';
+import { SpaceFlow } from '../spatial-space/flow';
 
 const EXAMPLE_NOTICE = {
   id: 'example',
@@ -65,9 +66,16 @@ export function mountLivingShell(app: HTMLElement): void {
     }),
     close: () => { if (!workspace.isEmpty) workspace.clearMachine({ brandLabel: EMPTY_BRAND, notices: [], extraTools: [] }); },
   };
-  if (debug) Object.assign(window, { __workspace: workspace, __foundry: { ready: !params.has('example') }, __unified: { port, gateway, lab } });
-  addEventListener('pagehide', (event) => { if (!(event as PageTransitionEvent).persisted) { workspace.dispose(); port.session.dispose(); } });
-  void mountExperience(app, { port, handoff: asReviewHandoff(gateway), lab, example, embedded }).then((experience) => {
+  // New Space: any object, from text or a photograph, through Muse Spark and a human review, on this same stage. Its panels sit beside the experience's.
+  const experienceRoot = () => workspace.panelHost.querySelector<HTMLElement>('.ux-root');
+  const space = new SpaceFlow({
+    workspace, host: workspace.panelHost,
+    onActive: (active) => { const root = experienceRoot(); if (root) root.hidden = active; },
+    onExit: () => { const root = experienceRoot(); if (root) root.hidden = false; api?.restart(); },
+  });
+  if (debug) Object.assign(window, { __workspace: workspace, __foundry: { ready: !params.has('example') }, __unified: { port, gateway, lab }, __space: space });
+  addEventListener('pagehide', (event) => { if (!(event as PageTransitionEvent).persisted) { space.dispose(); workspace.dispose(); port.session.dispose(); } });
+  void mountExperience(app, { port, handoff: asReviewHandoff(gateway), lab, example, space: { open: () => space.open() }, embedded }).then((experience) => {
     api = experience;
     if (params.has('example')) { experience.openExample(); if (debug) (window as unknown as { __foundry: { ready: boolean } }).__foundry.ready = true; }
   });

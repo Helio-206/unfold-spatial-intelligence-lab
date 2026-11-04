@@ -82,4 +82,7 @@ export interface EmbeddedHost {
 /** What a host can drive from outside. */
 export type ExperienceApi = { takeText(text: string): void; takeFile(file: File): void; openExample(): void; restart(): void; phase(): string };
 
-export type ExperienceOptions = { port?: import('./intake').ReconstructionPort; handoff?: ReviewHandoff; lab?: LabHost; example?: ExampleEntry; embedded?: EmbeddedHost };
+/** A second way in, for any object rather than the excavator: the host opens its own New Space flow on the same stage. */
+export interface SpaceEntry { open(): void }
+
+export type ExperienceOptions = { port?: import('./intake').ReconstructionPort; handoff?: ReviewHandoff; lab?: LabHost; example?: ExampleEntry; space?: SpaceEntry; embedded?: EmbeddedHost };
