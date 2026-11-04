@@ -10,6 +10,7 @@ import { createOfflineTextObservation } from '../../src/living/reconstruction/ob
 
 export const ALLOWED_ORIGIN = 'http://127.0.0.1:5173';
 const validJpegDataUrl = 'data:image/jpeg;base64,/9j/4AA=';
+const validPngDataUrl = (() => { const bytes = Buffer.alloc(24); Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]).copy(bytes); bytes.writeUInt32BE(13, 8); bytes.write('IHDR', 12); bytes.writeUInt32BE(64, 16); bytes.writeUInt32BE(64, 20); return `data:image/png;base64,${bytes.toString('base64')}`; })();
 
 export type PaidRouteCase = { body: unknown; upstreamText: string; prepare?: (port: number, headers: Record<string, string>) => Promise<Record<string, unknown>> };
 
@@ -63,6 +64,14 @@ export function paidRouteCases(): Record<string, PaidRouteCase> {
     '/api/living/reconstruction': {
       body: { sourceKind: 'text', instruction: 'Escavadora', sourceReference: 'guard-fixture' },
       upstreamText: JSON.stringify(createOfflineTextObservation('Escavadora', 'guard-fixture')),
+    },
+    '/api/anatomy/observe': {
+      body: { imageDataUrl: validPngDataUrl, sourceReference: 'guard-fixture' },
+      upstreamText: JSON.stringify({
+        schema: 'unfold.anatomy_observation.v1', subjectDisposition: 'heart_illustration',
+        subjectEvidence: [{ id: 'subject', kind: 'image_region', detail: 'A heart illustration is visible.', locator: null }],
+        structures: [], relations: [], hypotheses: [], uncertainties: ['Physical dimensions are unknown.'],
+      }),
     },
   };
 }
