@@ -41,3 +41,5 @@ V1 PR #22 provided four scenarios (robotic arm text, turbofan image, fan repetit
 ## Consumer integration boundary
 
 The only intended consumer is the existing Unified Spatial Workspace. It should retain ownership of its renderer, scene, camera/Cinema environment, picking, component selection, inspector, timeline, auth, and human-review identity. The adapter supplies a validated plan, owned Three.js `Group`, stable entity/subcomponent IDs, constraint report, event sequence, and disposal function. The technical harness at `/universal-spatial-v2` is test-only, not a second product workspace. The optional asset/provider extension is not part of this change.
+
+> Note (V4 branch): the `/universal-spatial-v2` Engine Lab page, its harness and e2e tests were removed. Visual validation runs in `/living`.

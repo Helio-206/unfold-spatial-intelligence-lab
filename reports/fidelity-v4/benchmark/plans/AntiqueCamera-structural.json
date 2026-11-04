@@ -1,0 +1,525 @@
+{
+ "contract": "unfold.spatial-plan.v2",
+ "sessionId": "00000000-0000-4000-8000-000000000000",
+ "revision": 0,
+ "plan": {
+  "contract": "unfold.spatial-plan.v2",
+  "source": {
+   "kind": "image",
+   "sha256": "ae89695479ad997f09ebea8060a5ad01312ad8fe7ffb92f73b4e895109feecd2"
+  },
+  "title": "Bellows camera on a tripod (hand-built approximation)",
+  "units": "unitless",
+  "presentationProfile": "industrial",
+  "components": [
+   {
+    "id": "camera",
+    "label": "Camera body",
+    "parentId": null,
+    "transform": {
+     "position": [
+      0.00021,
+      6.16323,
+      -0.03628
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      0.84375,
+      0.84375,
+      0.84375
+     ]
+    },
+    "geometry": {
+     "type": "shape",
+     "key": "camera-s",
+     "operator": "box",
+     "parameters": {
+      "dimensions": [
+       1.6,
+       2,
+       2.4
+      ]
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "neutral",
+      "color": "#2b2b2b",
+      "roughness": 0.55,
+      "metalness": 0.1,
+      "clearcoat": 0
+     }
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "inferred",
+     "material": "design_approximation",
+     "evidence": "Structural solver (structural) fitted to 6 calibrated silhouettes of a CC0 reference; held-out silhouette IoU 0.654. Basis: inferred. Category D plan, category A evidence."
+    }
+   },
+   {
+    "id": "head",
+    "label": "Tripod head",
+    "parentId": null,
+    "transform": {
+     "position": [
+      0.01392,
+      5.1446,
+      -0.03099
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      0.875,
+      0.875,
+      0.875
+     ]
+    },
+    "geometry": {
+     "type": "shape",
+     "key": "head-s",
+     "operator": "cylinder",
+     "parameters": {
+      "radiusTop": 0.45,
+      "radiusBottom": 0.45,
+      "height": 0.9,
+      "radialSegments": 20
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "neutral",
+      "color": "#3a3a3a",
+      "roughness": 0.55,
+      "metalness": 0.1,
+      "clearcoat": 0
+     }
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "inferred",
+     "material": "design_approximation",
+     "evidence": "Structural solver (structural) fitted to 6 calibrated silhouettes of a CC0 reference; held-out silhouette IoU 0.654. Basis: inferred. Category D plan, category A evidence."
+    }
+   },
+   {
+    "id": "leg-a",
+    "label": "leg-a",
+    "parentId": null,
+    "transform": {
+     "position": [
+      0,
+      0,
+      -0.03004
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "geometry": {
+     "type": "shape",
+     "key": "leg-a-s",
+     "operator": "tube",
+     "parameters": {
+      "points": [
+       [
+        0,
+        5.1,
+        0
+       ],
+       [
+        0.67,
+        0,
+        1.36
+       ]
+      ],
+      "radius": 0.13,
+      "tubularSegments": 12,
+      "radialSegments": 8
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "neutral",
+      "color": "#6b4a2b",
+      "roughness": 0.55,
+      "metalness": 0.1,
+      "clearcoat": 0
+     }
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "inferred",
+     "material": "design_approximation",
+     "evidence": "Structural solver (structural) fitted to 6 calibrated silhouettes of a CC0 reference; held-out silhouette IoU 0.654. Basis: inferred. Category D plan, category A evidence."
+    }
+   },
+   {
+    "id": "leg-b",
+    "label": "leg-b",
+    "parentId": null,
+    "transform": {
+     "position": [
+      0,
+      0,
+      -0.03004
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "geometry": {
+     "type": "shape",
+     "key": "leg-b-s",
+     "operator": "tube",
+     "parameters": {
+      "points": [
+       [
+        0,
+        5.1,
+        0
+       ],
+       [
+        -1.51,
+        0,
+        0.04
+       ]
+      ],
+      "radius": 0.13,
+      "tubularSegments": 12,
+      "radialSegments": 8
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "neutral",
+      "color": "#6b4a2b",
+      "roughness": 0.55,
+      "metalness": 0.1,
+      "clearcoat": 0
+     }
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "inferred",
+     "material": "design_approximation",
+     "evidence": "Structural solver (structural) fitted to 6 calibrated silhouettes of a CC0 reference; held-out silhouette IoU 0.654. Basis: inferred. Category D plan, category A evidence."
+    }
+   },
+   {
+    "id": "leg-c",
+    "label": "leg-c",
+    "parentId": null,
+    "transform": {
+     "position": [
+      0,
+      0,
+      -0.03004
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "geometry": {
+     "type": "shape",
+     "key": "leg-c-s",
+     "operator": "tube",
+     "parameters": {
+      "points": [
+       [
+        0,
+        5.1,
+        0
+       ],
+       [
+        0.56,
+        0,
+        -1.29
+       ]
+      ],
+      "radius": 0.13,
+      "tubularSegments": 12,
+      "radialSegments": 8
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "neutral",
+      "color": "#6b4a2b",
+      "roughness": 0.55,
+      "metalness": 0.1,
+      "clearcoat": 0
+     }
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "inferred",
+     "material": "design_approximation",
+     "evidence": "Structural solver (structural) fitted to 6 calibrated silhouettes of a CC0 reference; held-out silhouette IoU 0.654. Basis: inferred. Category D plan, category A evidence."
+    }
+   }
+  ],
+  "relations": [],
+  "constraints": [],
+  "unknowns": [
+   "Hand-built approximation of a CC0 asset; units are the asset's own.",
+   "Physical scale unknown."
+  ]
+ },
+ "sceneSummary": {
+  "componentCount": 5,
+  "geometryNodeCount": 5,
+  "operators": [
+   "box",
+   "cylinder",
+   "tube"
+  ],
+  "constraintReady": true
+ },
+ "constraintReport": {
+  "ready": true,
+  "results": [],
+  "violatedIds": []
+ },
+ "constructionEvents": [
+  {
+   "type": "scene_created",
+   "at": 0
+  },
+  {
+   "type": "component_placed",
+   "at": 1,
+   "entityId": "camera",
+   "transform": {
+    "position": [
+     0.00021,
+     6.16323,
+     -0.03628
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     0.84375,
+     0.84375,
+     0.84375
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 2,
+   "entityId": "head",
+   "transform": {
+    "position": [
+     0.01392,
+     5.1446,
+     -0.03099
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     0.875,
+     0.875,
+     0.875
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 3,
+   "entityId": "leg-a",
+   "transform": {
+    "position": [
+     0,
+     0,
+     -0.03004
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 4,
+   "entityId": "leg-b",
+   "transform": {
+    "position": [
+     0,
+     0,
+     -0.03004
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 5,
+   "entityId": "leg-c",
+   "transform": {
+    "position": [
+     0,
+     0,
+     -0.03004
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "assembly_ready",
+   "at": 6
+  },
+  {
+   "type": "scene_revealed",
+   "at": 7
+  }
+ ],
+ "meta": {
+  "model": "hand-authored-fixture",
+  "requestId": "none",
+  "latencyMs": 0,
+  "estimatedCostUsd": 0
+ },
+ "limitations": [
+  "Hand-authored fixture standing in for a model plan; not Meta output."
+ ]
+}

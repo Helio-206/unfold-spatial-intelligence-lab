@@ -1,0 +1,1155 @@
+{
+ "contract": "unfold.spatial-plan.v2",
+ "sessionId": "00000000-0000-4000-8000-000000000000",
+ "revision": 0,
+ "plan": {
+  "contract": "unfold.spatial-plan.v2",
+  "source": {
+   "kind": "text",
+   "sha256": "438ed3f8ce542a6220f1b64cf285a01fe731d99bc0611cc2301a284798e6b3bc"
+  },
+  "title": "Compound optical microscope - conceptual (hand-authored reproduction)",
+  "units": "unitless",
+  "presentationProfile": "neutral",
+  "components": [
+   {
+    "id": "base",
+    "label": "Base",
+    "parentId": null,
+    "geometry": {
+     "type": "shape",
+     "key": "base-shape",
+     "operator": "rounded_box",
+     "parameters": {
+      "dimensions": [
+       3.2,
+       0.4,
+       2.4
+      ],
+      "bevelM": 0.12,
+      "segments": 3
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "industrial",
+      "color": "#2f3338",
+      "roughness": 0.4,
+      "metalness": 0.4,
+      "clearcoat": 0.4
+     }
+    },
+    "transform": {
+     "position": [
+      0,
+      0.2,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-authored reproduction of the structure recorded in reports/acceptance/REPORT.md for the real Meta microscope run (its plan was not kept). Not Meta output."
+    }
+   },
+   {
+    "id": "column",
+    "label": "Support column",
+    "parentId": null,
+    "geometry": {
+     "type": "shape",
+     "key": "column-shape",
+     "operator": "cylinder",
+     "parameters": {
+      "radiusTop": 0.28,
+      "radiusBottom": 0.28,
+      "height": 3.6,
+      "radialSegments": 32
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "industrial",
+      "color": "#2f3338",
+      "roughness": 0.4,
+      "metalness": 0.4,
+      "clearcoat": 0.4
+     }
+    },
+    "transform": {
+     "position": [
+      -1,
+      2.2,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-authored reproduction of the structure recorded in reports/acceptance/REPORT.md for the real Meta microscope run (its plan was not kept). Not Meta output."
+    }
+   },
+   {
+    "id": "arm",
+    "label": "Arm",
+    "parentId": null,
+    "geometry": {
+     "type": "shape",
+     "key": "arm-shape",
+     "operator": "box",
+     "parameters": {
+      "dimensions": [
+       2,
+       0.5,
+       0.6
+      ]
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "industrial",
+      "color": "#2f3338",
+      "roughness": 0.4,
+      "metalness": 0.4,
+      "clearcoat": 0.4
+     }
+    },
+    "transform": {
+     "position": [
+      -0.1,
+      3.75,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0.5
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-authored reproduction of the structure recorded in reports/acceptance/REPORT.md for the real Meta microscope run (its plan was not kept). Not Meta output."
+    }
+   },
+   {
+    "id": "stage",
+    "label": "Stage",
+    "parentId": null,
+    "geometry": {
+     "type": "group",
+     "key": "stage-parts",
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "children": [
+      {
+       "type": "shape",
+       "key": "stage-plate",
+       "operator": "box",
+       "parameters": {
+        "dimensions": [
+         1.8,
+         0.15,
+         1.6
+        ]
+       },
+       "transform": {
+        "position": [
+         0,
+         0,
+         0
+        ],
+        "rotationRad": [
+         0,
+         0,
+         0
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "repeat": null,
+       "material": {
+        "profile": "rubber",
+        "color": "#111317",
+        "roughness": 0.8,
+        "metalness": 0,
+        "clearcoat": 0
+       }
+      },
+      {
+       "type": "shape",
+       "key": "stage-slide",
+       "operator": "box",
+       "parameters": {
+        "dimensions": [
+         0.8,
+         0.04,
+         0.3
+        ]
+       },
+       "transform": {
+        "position": [
+         0,
+         0.1,
+         0
+        ],
+        "rotationRad": [
+         0,
+         0,
+         0
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "repeat": null,
+       "material": {
+        "profile": "glass",
+        "color": "#cfe8ff",
+        "roughness": 0.1,
+        "metalness": 0,
+        "clearcoat": 0
+       }
+      },
+      {
+       "type": "shape",
+       "key": "stage-clip",
+       "operator": "box",
+       "parameters": {
+        "dimensions": [
+         0.4,
+         0.05,
+         0.08
+        ]
+       },
+       "transform": {
+        "position": [
+         0.5,
+         0.11,
+         0.3
+        ],
+        "rotationRad": [
+         0,
+         0,
+         0
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "repeat": null,
+       "material": {
+        "profile": "metal",
+        "color": "#a9afb6",
+        "roughness": 0.3,
+        "metalness": 0.9,
+        "clearcoat": 0
+       }
+      }
+     ]
+    },
+    "transform": {
+     "position": [
+      0.8,
+      1.95,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      -0.5
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-authored reproduction of the structure recorded in reports/acceptance/REPORT.md for the real Meta microscope run (its plan was not kept). Not Meta output."
+    }
+   },
+   {
+    "id": "ocular-tube",
+    "label": "Ocular tube",
+    "parentId": null,
+    "geometry": {
+     "type": "shape",
+     "key": "tube-shape",
+     "operator": "cylinder",
+     "parameters": {
+      "radiusTop": 0.28,
+      "radiusBottom": 0.28,
+      "height": 2,
+      "radialSegments": 32
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "industrial",
+      "color": "#2f3338",
+      "roughness": 0.4,
+      "metalness": 0.4,
+      "clearcoat": 0.4
+     }
+    },
+    "transform": {
+     "position": [
+      0.8,
+      4.9,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-authored reproduction of the structure recorded in reports/acceptance/REPORT.md for the real Meta microscope run (its plan was not kept). Not Meta output."
+    }
+   },
+   {
+    "id": "eyepiece",
+    "label": "Eyepiece",
+    "parentId": null,
+    "geometry": {
+     "type": "shape",
+     "key": "eyepiece-shape",
+     "operator": "cylinder",
+     "parameters": {
+      "radiusTop": 0.2,
+      "radiusBottom": 0.2,
+      "height": 0.8,
+      "radialSegments": 32
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "metal",
+      "color": "#a9afb6",
+      "roughness": 0.3,
+      "metalness": 0.9,
+      "clearcoat": 0
+     }
+    },
+    "transform": {
+     "position": [
+      0.8,
+      6.3,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-authored reproduction of the structure recorded in reports/acceptance/REPORT.md for the real Meta microscope run (its plan was not kept). Not Meta output."
+    }
+   },
+   {
+    "id": "revolver",
+    "label": "Revolver",
+    "parentId": null,
+    "geometry": {
+     "type": "shape",
+     "key": "revolver-shape",
+     "operator": "cylinder",
+     "parameters": {
+      "radiusTop": 0.6,
+      "radiusBottom": 0.6,
+      "height": 0.18,
+      "radialSegments": 40
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "metal",
+      "color": "#a9afb6",
+      "roughness": 0.3,
+      "metalness": 0.9,
+      "clearcoat": 0
+     }
+    },
+    "transform": {
+     "position": [
+      0.8,
+      3.4,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-authored reproduction of the structure recorded in reports/acceptance/REPORT.md for the real Meta microscope run (its plan was not kept). Not Meta output."
+    }
+   },
+   {
+    "id": "objectives",
+    "label": "Objectives",
+    "parentId": null,
+    "geometry": {
+     "type": "shape",
+     "key": "objective-shape",
+     "operator": "cylinder",
+     "parameters": {
+      "radiusTop": 0.1,
+      "radiusBottom": 0.14,
+      "height": 0.6,
+      "radialSegments": 24
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": {
+      "kind": "radial",
+      "count": 3,
+      "axis": "y",
+      "spacingOrRadius": 0.38
+     },
+     "material": {
+      "profile": "accent",
+      "color": "#2b5fa8",
+      "roughness": 0.35,
+      "metalness": 0.1,
+      "clearcoat": 0.5
+     }
+    },
+    "transform": {
+     "position": [
+      0.8,
+      3,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-authored reproduction of the structure recorded in reports/acceptance/REPORT.md for the real Meta microscope run (its plan was not kept). Not Meta output."
+    }
+   },
+   {
+    "id": "focus",
+    "label": "Focus knobs",
+    "parentId": null,
+    "geometry": {
+     "type": "group",
+     "key": "focus-parts",
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "children": [
+      {
+       "type": "shape",
+       "key": "focus-axle",
+       "operator": "cylinder",
+       "parameters": {
+        "radiusTop": 0.08,
+        "radiusBottom": 0.08,
+        "height": 1.2,
+        "radialSegments": 16
+       },
+       "transform": {
+        "position": [
+         0,
+         0,
+         0
+        ],
+        "rotationRad": [
+         0,
+         0,
+         1.5707963267948966
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "repeat": null,
+       "material": {
+        "profile": "metal",
+        "color": "#a9afb6",
+        "roughness": 0.3,
+        "metalness": 0.9,
+        "clearcoat": 0
+       }
+      },
+      {
+       "type": "shape",
+       "key": "focus-knob",
+       "operator": "cylinder",
+       "parameters": {
+        "radiusTop": 0.28,
+        "radiusBottom": 0.28,
+        "height": 0.14,
+        "radialSegments": 32
+       },
+       "transform": {
+        "position": [
+         0,
+         0,
+         0
+        ],
+        "rotationRad": [
+         0,
+         0,
+         1.5707963267948966
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "repeat": {
+        "kind": "linear",
+        "count": 2,
+        "axis": "x",
+        "spacingOrRadius": 1.2
+       },
+       "material": {
+        "profile": "rubber",
+        "color": "#111317",
+        "roughness": 0.8,
+        "metalness": 0,
+        "clearcoat": 0
+       }
+      }
+     ]
+    },
+    "transform": {
+     "position": [
+      -1,
+      2.6,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-authored reproduction of the structure recorded in reports/acceptance/REPORT.md for the real Meta microscope run (its plan was not kept). Not Meta output."
+    }
+   },
+   {
+    "id": "illuminator",
+    "label": "Illuminator",
+    "parentId": null,
+    "geometry": {
+     "type": "group",
+     "key": "illuminator-parts",
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "children": [
+      {
+       "type": "shape",
+       "key": "lamp-stem",
+       "operator": "cylinder",
+       "parameters": {
+        "radiusTop": 0.08,
+        "radiusBottom": 0.08,
+        "height": 1,
+        "radialSegments": 16
+       },
+       "transform": {
+        "position": [
+         0,
+         0,
+         0
+        ],
+        "rotationRad": [
+         0,
+         0,
+         0
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "repeat": null,
+       "material": {
+        "profile": "metal",
+        "color": "#a9afb6",
+        "roughness": 0.3,
+        "metalness": 0.9,
+        "clearcoat": 0
+       }
+      },
+      {
+       "type": "shape",
+       "key": "lamp-head",
+       "operator": "cylinder",
+       "parameters": {
+        "radiusTop": 0.3,
+        "radiusBottom": 0.3,
+        "height": 0.2,
+        "radialSegments": 32
+       },
+       "transform": {
+        "position": [
+         0,
+         0.5,
+         0
+        ],
+        "rotationRad": [
+         0,
+         0,
+         0
+        ],
+        "scale": [
+         1,
+         1,
+         1
+        ]
+       },
+       "repeat": null,
+       "material": {
+        "profile": "neutral",
+        "color": "#e8e4c8",
+        "roughness": 0.5,
+        "metalness": 0,
+        "clearcoat": 0
+       }
+      }
+     ]
+    },
+    "transform": {
+     "position": [
+      0.8,
+      0.9,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-authored reproduction of the structure recorded in reports/acceptance/REPORT.md for the real Meta microscope run (its plan was not kept). Not Meta output."
+    }
+   }
+  ],
+  "relations": [],
+  "constraints": [],
+  "unknowns": [
+   "Hand-authored fixture, not a Meta response.",
+   "Physical dimensions are unknown; proportions are conceptual.",
+   "Optics and internal mechanism are not modelled."
+  ]
+ },
+ "sceneSummary": {
+  "componentCount": 10,
+  "geometryNodeCount": 17,
+  "operators": [
+   "rounded_box",
+   "cylinder",
+   "box"
+  ],
+  "constraintReady": true
+ },
+ "constraintReport": {
+  "ready": true,
+  "results": [],
+  "violatedIds": []
+ },
+ "constructionEvents": [
+  {
+   "type": "scene_created",
+   "at": 0
+  },
+  {
+   "type": "component_placed",
+   "at": 1,
+   "entityId": "base",
+   "transform": {
+    "position": [
+     0,
+     0.2,
+     0
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 2,
+   "entityId": "column",
+   "transform": {
+    "position": [
+     -1,
+     2.2,
+     0
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 3,
+   "entityId": "arm",
+   "transform": {
+    "position": [
+     -0.1,
+     3.75,
+     0
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 4,
+   "entityId": "stage",
+   "transform": {
+    "position": [
+     0.8,
+     1.95,
+     0
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 5,
+   "entityId": "ocular-tube",
+   "transform": {
+    "position": [
+     0.8,
+     4.9,
+     0
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 6,
+   "entityId": "eyepiece",
+   "transform": {
+    "position": [
+     0.8,
+     6.3,
+     0
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 7,
+   "entityId": "revolver",
+   "transform": {
+    "position": [
+     0.8,
+     3.4,
+     0
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 8,
+   "entityId": "objectives",
+   "transform": {
+    "position": [
+     0.8,
+     3,
+     0
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 9,
+   "entityId": "focus",
+   "transform": {
+    "position": [
+     -1,
+     2.6,
+     0
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 10,
+   "entityId": "illuminator",
+   "transform": {
+    "position": [
+     0.8,
+     0.9,
+     0
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "assembly_ready",
+   "at": 11
+  },
+  {
+   "type": "scene_revealed",
+   "at": 12
+  }
+ ],
+ "meta": {
+  "model": "hand-authored-fixture",
+  "requestId": "none",
+  "latencyMs": 0,
+  "estimatedCostUsd": 0
+ },
+ "limitations": [
+  "Hand-authored fixture standing in for a model plan; not Meta output."
+ ]
+}

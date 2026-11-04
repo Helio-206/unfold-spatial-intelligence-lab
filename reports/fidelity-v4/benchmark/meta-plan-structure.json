@@ -1,0 +1,41 @@
+{
+  "excavator (saved Meta plan)": {
+    "category": "C: produced by Meta, no ground truth; structure statistics only",
+    "components": 11,
+    "withParent": 10,
+    "declaredRelations": 8,
+    "declaredConstraints": 4,
+    "contactsSupportedByGeometry": 0,
+    "rootsOfConnectedGroups": 0,
+    "isolatedParts": [
+      "undercarriage"
+    ],
+    "notes": [
+      "Relation rel-left-to-frame: a component is not part of this fit (has a parent or is missing); not enforced.",
+      "Relation rel-right-to-frame: a component is not part of this fit (has a parent or is missing); not enforced.",
+      "Relation rel-upper-on-lower: a component is not part of this fit (has a parent or is missing); not enforced.",
+      "Relation rel-cab-on-upper: a component is not part of this fit (has a parent or is missing); not enforced.",
+      "Relation rel-boom-to-upper: a component is not part of this fit (has a parent or is missing); not enforced.",
+      "Relation rel-stick-to-boom: a component is not part of this fit (has a parent or is missing); not enforced.",
+      "Relation rel-bucket-to-stick: a component is not part of this fit (has a parent or is missing); not enforced."
+    ]
+  },
+  "harp (saved Meta plan)": {
+    "category": "C: produced by Meta, no ground truth; structure statistics only",
+    "components": 7,
+    "withParent": 6,
+    "declaredRelations": 5,
+    "declaredConstraints": 2,
+    "contactsSupportedByGeometry": 0,
+    "rootsOfConnectedGroups": 0,
+    "isolatedParts": [
+      "harp"
+    ],
+    "notes": [
+      "Relation neck-to-pillar: a component is not part of this fit (has a parent or is missing); not enforced.",
+      "Relation neck-to-soundbox: a component is not part of this fit (has a parent or is missing); not enforced.",
+      "Relation strings-between: a component is not part of this fit (has a parent or is missing); not enforced.",
+      "Relation pillar-on-base: a component is not part of this fit (has a parent or is missing); not enforced."
+    ]
+  }
+}
