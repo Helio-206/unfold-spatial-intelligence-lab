@@ -80,6 +80,21 @@ function validTransactionReply(reply: SpatialTransactionReceiptV2): SpatialTrans
   return { ...reply, plan: validateSpatialPlanV2(reply.plan) };
 }
 
+/**
+ * The client cannot determine whether a transaction committed: the response was lost and the
+ * recovery request did not produce an authoritative answer either. This is never reported as a
+ * success or as a definitive failure; the caller must keep the idempotency key and reconcile.
+ */
+export class SpatialTransactionUnresolvedError extends Error {
+  readonly code = 'SPATIAL_V2_TRANSACTION_UNRESOLVED' as const;
+  constructor(
+    readonly sessionId: string,
+    readonly idempotencyKey: string,
+    readonly reason: 'response-and-recovery-failed' | 'session-not-found',
+    cause?: unknown,
+  ) { super(`SPATIAL_V2_TRANSACTION_UNRESOLVED:${reason}`); this.name = 'SpatialTransactionUnresolvedError'; this.cause = cause; }
+}
+
 /** Submits several operations as one atomic transaction. One revision increment; never partially applied. */
 export async function applySpatialPlanV2Transaction(input: Omit<SpatialTransactionV2, 'contract'>, fetchImpl: typeof fetch = fetch): Promise<SpatialTransactionV2Reply> {
   const body: SpatialTransactionV2 = { contract: SPATIAL_TRANSACTION_CONTRACT, ...input };
@@ -87,9 +102,23 @@ export async function applySpatialPlanV2Transaction(input: Omit<SpatialTransacti
     return validTransactionReply(await post<SpatialTransactionReceiptV2>('/api/spatial/v2/transactions', body, fetchImpl));
   } catch (error) {
     if (error instanceof SpatialApiError) throw error;
-    // Response lost in transit: recover the authoritative receipt before reporting failure.
+    // Response lost in transit: recover the authoritative receipt before reporting anything.
     try { return await recoverSpatialPlanV2Transaction({ sessionId: input.sessionId, idempotencyKey: input.idempotencyKey }, fetchImpl); }
-    catch { throw error; }
+    catch (recoveryError) {
+      if (recoveryError instanceof SpatialApiError && recoveryError.code === 'SPATIAL_V2_TRANSACTION_NOT_FOUND') {
+        // The server authoritatively holds no receipt for this key, so the first submission did not
+        // commit. Resubmit once with the same key: it either commits now or replays, never doubles.
+        try { return validTransactionReply(await post<SpatialTransactionReceiptV2>('/api/spatial/v2/transactions', body, fetchImpl)); }
+        catch (resubmitError) {
+          if (resubmitError instanceof SpatialApiError) throw resubmitError;
+          throw new SpatialTransactionUnresolvedError(input.sessionId, input.idempotencyKey, 'response-and-recovery-failed', resubmitError);
+        }
+      }
+      if (recoveryError instanceof SpatialApiError && recoveryError.code === 'SPATIAL_V2_SESSION_NOT_FOUND') {
+        throw new SpatialTransactionUnresolvedError(input.sessionId, input.idempotencyKey, 'session-not-found', recoveryError);
+      }
+      throw new SpatialTransactionUnresolvedError(input.sessionId, input.idempotencyKey, 'response-and-recovery-failed', recoveryError);
+    }
   }
 }
 

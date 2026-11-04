@@ -6,6 +6,17 @@ import { compileSpatialPlanV2, disposeCompiledSpatialPlan } from '../../universa
 import type { SpaceLayer } from '../workspace-design/space-port';
 import type { RouterReport } from '../../universal-spatial/fidelity/types';
 import { createPresentationDirector, type CameraCue, type PresentationDirector, type PresentationState, type ViewContext } from '../spatial-presentation';
+import { SpatialTransactionUnresolvedError } from '../../universal-spatial/api-client';
+
+/**
+ * Thrown by a sync's reconciliation when the server session was explicitly recovered (re-adopted
+ * from the local pre-transaction plan): the transaction is authoritatively absent from the new
+ * session. It is a recovery outcome, not a claim that the original submission reached the server.
+ */
+export class SpatialTransactionSessionRecoveredError extends Error {
+  readonly code = 'SPATIAL_V2_TRANSACTION_NOT_COMMITTED_SESSION_RECOVERED' as const;
+  constructor() { super('SPATIAL_V2_TRANSACTION_NOT_COMMITTED_SESSION_RECOVERED'); this.name = 'SpatialTransactionSessionRecoveredError'; }
+}
 
 /** Presentation size of the longest side, in stage units. The plan keeps its own units; the scale lives on a wrapper and is never written back. */
 export const SPACE_PRESENTATION_SIZE = 5;
@@ -27,10 +38,17 @@ export type LayerSync = {
   /** The provenance travels with the operation: a solver result stays `inferred` on the server too. */
   apply(operation: SpatialOperationV2, provenance: OperationProvenance): Promise<SpatialPlanV2>;
   undo(): Promise<SpatialPlanV2>;
-  /** Atomic multi-operation commit (V4 E0). When present, grouped edits use it instead of failing closed. */
-  applyTransaction?(operations: SpatialOperationV2[], provenance: OperationProvenance): Promise<SpatialPlanV2>;
+  /** Atomic multi-operation commit (V4 E0). When present, grouped edits use it instead of failing closed. The idempotency key is generated once by the layer and stays stable across reconciliation. */
+  applyTransaction?(operations: SpatialOperationV2[], provenance: OperationProvenance, idempotencyKey: string): Promise<SpatialPlanV2>;
   /** One grouped undo for one grouped commit. When present, grouped undo never falls back to repeated single undos. */
   undoTransaction?(): Promise<SpatialPlanV2>;
+  /**
+   * Reconciles an unresolved transaction against the authoritative server result for the same
+   * idempotency key. Resolves with the authoritative plan when the transaction is committed;
+   * throws `SpatialTransactionSessionRecoveredError` when the session was explicitly recovered
+   * without it; any other throw keeps the unresolved state.
+   */
+  reconcileTransaction?(idempotencyKey: string): Promise<SpatialPlanV2>;
 };
 export type SpaceLayerHost = {
   /** A camera request from the Presentation Director. The workspace asks its arbiter; a person's input always wins. */
@@ -61,6 +79,12 @@ export class PlanSpaceLayer implements SpaceLayer {
   private plan: SpatialPlanV2;
   private readonly history: Array<{ plan: SpatialPlanV2; ops: number }> = [];
   private sync: LayerSync | null = null;
+  /**
+   * A grouped transaction whose outcome is unknown (the server may or may not have committed it).
+   * While set, every dependent edit and undo is blocked: the local plan is the pre-transaction plan
+   * and must not diverge further from a possibly-committed remote state.
+   */
+  private unresolvedTx: { key: string; before: SpatialPlanV2; ops: number } | null = null;
   /** While set, no edit is applied (the server session is being prepared and would not know it). */
   private lockReason: string | null = null;
   private busy = false;
@@ -99,8 +123,11 @@ export class PlanSpaceLayer implements SpaceLayer {
   get geometryReport(): RouterReport | null { return this.routed?.report ?? null; }
   get pendingEdit(): Pending | null { return this.pending; }
   authorise(value: boolean): void { this.authorised = value; }
-  get canUndo(): boolean { return this.history.length > 0 && !this.busy && this.lockReason === null; }
-  get isBusy(): boolean { return this.busy || this.lockReason !== null; }
+  get canUndo(): boolean { return this.history.length > 0 && !this.busy && this.lockReason === null && !this.unresolvedTx; }
+  get isBusy(): boolean { return this.busy || this.lockReason !== null || this.unresolvedTx !== null; }
+  /** True while a grouped transaction's remote outcome is unknown; dependent edits stay blocked. */
+  get transactionUnresolved(): boolean { return this.unresolvedTx !== null; }
+  get unresolvedTransactionKey(): string | null { return this.unresolvedTx?.key ?? null; }
   lockEditing(reason: string): void { this.lockReason = reason; }
   unlockEditing(): void { this.lockReason = null; }
   get synced(): boolean { return this.sync !== null; }
@@ -268,12 +295,20 @@ export class PlanSpaceLayer implements SpaceLayer {
 
   /** Applies operations in order, through the server session when there is one, so both sides keep the same revision. */
   private async commit(operations: SpatialOperationV2[], provenance: { origin: 'user_provided' | 'inferred'; evidence: string }, localPlan?: SpatialPlanV2): Promise<void> {
+    if (this.unresolvedTx) throw new Error('SPATIAL_V2_TRANSACTION_UNRESOLVED');
     const before = this.plan; let next = before;
     if (this.sync && operations.length > 1) {
       // Grouped edits only ever commit through the atomic transaction endpoint. Without it, fail
       // closed; with it, a failure leaves the local plan untouched (never a silent local commit).
       if (!this.sync.applyTransaction) throw new Error('BATCH_REQUIRES_ATOMIC_SERVER');
-      next = await this.sync.applyTransaction(operations, provenance);
+      const idempotencyKey = `txn-${globalThis.crypto.randomUUID()}`;
+      try { next = await this.sync.applyTransaction(operations, provenance, idempotencyKey); }
+      catch (error) {
+        // Outcome unknown: keep the stable key and the pre-transaction plan, and block dependent
+        // edits until reconcileTransaction() settles this against the authoritative server result.
+        if (error instanceof SpatialTransactionUnresolvedError) { this.unresolvedTx = { key: idempotencyKey, before, ops: operations.length }; }
+        throw error;
+      }
     } else if (this.sync) {
       try { for (const operation of operations) next = await this.sync.apply(operation, provenance); }
       catch (error) { if (this.disposed) throw new Error('SPACE_DISPOSED'); this.sync = null; this.host.syncLost?.(error instanceof Error ? error.message : 'sessão do servidor indisponível'); next = localPlan ?? this.applyLocal(before, operations, provenance); }
@@ -288,6 +323,7 @@ export class PlanSpaceLayer implements SpaceLayer {
   /** The bounded solver proposes `set-transform` operations only; they are marked inferred and can be undone. */
   async closeGaps(): Promise<{ applied: number; iterations: number }> {
     if (this.disposed) return { applied: 0, iterations: 0 };
+    if (this.unresolvedTx) { this.host.notify('Edição bloqueada: há uma transacção por reconciliar (SPATIAL_V2_TRANSACTION_UNRESOLVED).'); return { applied: 0, iterations: 0 }; }
     if (this.busy || this.lockReason) { if (this.lockReason) this.host.notify(`Edição indisponível: ${this.lockReason}.`); return { applied: 0, iterations: 0 }; }
     const result = refineAssembly(this.plan);
     if (!result.applied.length) return { applied: 0, iterations: result.iterations };
@@ -301,6 +337,7 @@ export class PlanSpaceLayer implements SpaceLayer {
   }
   async undo(): Promise<boolean> {
     if (this.disposed) return false;
+    if (this.unresolvedTx) { this.host.notify('Undo bloqueado: há uma transacção por reconciliar (SPATIAL_V2_TRANSACTION_UNRESOLVED).'); return false; }
     if (this.lockReason) { this.host.notify(`Edição indisponível: ${this.lockReason}.`); return false; }
     const previous = this.history.pop(); if (!previous || this.busy) { if (previous) this.history.push(previous); return false; }
     if (this.sync && previous.ops > 1 && !this.sync.undoTransaction) { this.history.push(previous); this.host.notify('Undo agrupado indisponível: o servidor não oferece transacção atómica.'); return false; }
@@ -316,6 +353,37 @@ export class PlanSpaceLayer implements SpaceLayer {
       this.pending = null; this.stats = this.build();
     } finally { this.busy = false; }
     this.director?.resumeExploring(); this.host.changed(); return true;
+  }
+
+  /**
+   * Settles an unresolved grouped transaction against the authoritative server result.
+   * `committed`: the authoritative plan is adopted as one undoable history entry.
+   * `recovered-not-committed`: the session was explicitly recovered without the transaction; the
+   * local pre-transaction plan stands and editing resumes. `still-unresolved`: nothing was
+   * decided and the block stays. Never invents an outcome.
+   */
+  async reconcileTransaction(): Promise<'committed' | 'recovered-not-committed' | 'still-unresolved'> {
+    const pendingTx = this.unresolvedTx;
+    if (this.disposed || !pendingTx || this.busy) return 'still-unresolved';
+    if (!this.sync?.reconcileTransaction) { this.host.notify('Reconciliação indisponível: a sessão não oferece recuperação de transacções.'); return 'still-unresolved'; }
+    this.busy = true; this.director?.enterEditing();
+    try {
+      const authoritative = await this.sync.reconcileTransaction(pendingTx.key);
+      if (this.disposed) return 'still-unresolved';
+      this.history.push({ plan: pendingTx.before, ops: pendingTx.ops });
+      this.plan = authoritative; this.unresolvedTx = null; this.pending = null; this.authorised = false; this.stats = this.build();
+      this.host.notify('Transacção reconciliada: o plano do servidor foi adoptado.');
+      return 'committed';
+    } catch (error) {
+      if (error instanceof SpatialTransactionSessionRecoveredError) {
+        if (this.disposed) return 'still-unresolved';
+        this.unresolvedTx = null; this.pending = null;
+        this.host.notify('Sessão recuperada sem a transacção por reconciliar: ela não ficou aplicada e as edições reabriram sobre o plano actual.');
+        return 'recovered-not-committed';
+      }
+      if (!this.disposed) this.host.notify(`Reconciliação ainda impossível: ${error instanceof Error ? error.message : 'erro desconhecido'}. As edições continuam bloqueadas.`);
+      return 'still-unresolved';
+    } finally { this.busy = false; this.director?.resumeExploring(); if (!this.disposed) this.host.changed(); }
   }
 
   // ------------------------------------------------------------------------------------------------ editing

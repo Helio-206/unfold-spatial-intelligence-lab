@@ -3,7 +3,8 @@ import { Mesh, MeshPhysicalMaterial, Raycaster, Vector2, PerspectiveCamera } fro
 import { validateSpatialPlanV2, type SpatialPlanV2 } from '../src/universal-spatial/contracts-v2';
 import type { SpatialOperationV2 } from '../src/universal-spatial/contracts-v2';
 import { applySpatialOperationV2 } from '../src/universal-spatial/contracts-v2';
-import { PlanSpaceLayer, type LayerSync } from '../src/living/spatial-space/layer';
+import { PlanSpaceLayer, SpatialTransactionSessionRecoveredError, type LayerSync } from '../src/living/spatial-space/layer';
+import { SpatialTransactionUnresolvedError } from '../src/universal-spatial/api-client';
 
 const id = { position: [0, 0, 0], rotationRad: [0, 0, 0], scale: [1, 1, 1] };
 const mat = (color: string) => ({ profile: 'metal', color, roughness: 0.4, metalness: 0.7, clearcoat: 0 });
@@ -310,6 +311,58 @@ describe('PlanSpaceLayer', () => {
       expect(layer.proposeSolverEdit(ops(), 'x', 'y')).toBe(true); layer.authorise(true); await layer.applyEdit();
       expect(layer.currentPlan).toBe(before); expect(layer.editCount).toBe(0);
       expect(h.notify).toHaveBeenCalledWith(expect.stringContaining('SPATIAL_V2_REVISION_CONFLICT')); layer.dispose();
+    });
+    it('an unresolved transaction blocks every dependent edit and undo until reconciliation adopts the authoritative plan (V4 E0 audit)', async () => {
+      const h = host(), layer = new PlanSpaceLayer(plan(), h), before = layer.currentPlan;
+      let server = plan(); const stack: SpatialPlanV2[] = [];
+      const apply = vi.fn(async (op: SpatialOperationV2, provenance: { origin: 'user_provided' | 'inferred'; evidence: string }) => applySpatialOperationV2(server, op, provenance));
+      const applyTransaction = vi.fn(async () => { throw new SpatialTransactionUnresolvedError('session-1', 'txn-fixed-key', 'response-and-recovery-failed'); });
+      const reconcileTransaction = vi.fn(async (key: string) => {
+        expect(key).toBe(layer.unresolvedTransactionKey);
+        stack.push(server); for (const operation of ops()) server = applySpatialOperationV2(server, operation, { origin: 'inferred', evidence: 'reconciled' });
+        return server;
+      });
+      const undoTransaction = vi.fn(async () => { server = stack.pop()!; return server; });
+      layer.attachSync({ apply, undo: async () => server, applyTransaction, undoTransaction, reconcileTransaction });
+      expect(layer.proposeSolverEdit(ops(), 'x', 'y')).toBe(true); layer.authorise(true); await layer.applyEdit();
+      expect(layer.transactionUnresolved).toBe(true); expect(layer.currentPlan).toBe(before); expect(layer.editCount).toBe(0);
+      expect(h.notify).toHaveBeenCalledWith(expect.stringContaining('SPATIAL_V2_TRANSACTION_UNRESOLVED'));
+      // Dependent edits and undo are blocked while local and remote state may differ.
+      layer.highlight('base'); layer.proposeEdit('x+'); await layer.applyEdit();
+      expect(apply).not.toHaveBeenCalled(); expect(layer.currentPlan).toBe(before);
+      expect(await layer.undo()).toBe(false); expect((await layer.closeGaps()).applied).toBe(0);
+      // Reconciliation adopts the authoritative plan as one undoable history entry.
+      expect(await layer.reconcileTransaction()).toBe('committed');
+      expect(layer.transactionUnresolved).toBe(false); expect(layer.editCount).toBe(1);
+      expect(layer.currentPlan.components.find((c) => c.id === 'base')!.transform.scale[0]).toBeCloseTo(1.2);
+      expect(await layer.undo()).toBe(true); expect(undoTransaction).toHaveBeenCalledTimes(1); layer.dispose();
+    });
+    it('repeated reconciliation failure keeps the unresolved state and the block; a later success clears it', async () => {
+      const layer = new PlanSpaceLayer(plan(), host()), before = layer.currentPlan;
+      let attempts = 0;
+      layer.attachSync({
+        apply: async () => before, undo: async () => before,
+        applyTransaction: async () => { throw new SpatialTransactionUnresolvedError('s', 'k', 'response-and-recovery-failed'); },
+        reconcileTransaction: async () => { attempts += 1; if (attempts < 3) throw new SpatialTransactionUnresolvedError('s', 'k', 'response-and-recovery-failed'); return before; },
+      });
+      expect(layer.proposeSolverEdit(ops(), 'x', 'y')).toBe(true); layer.authorise(true); await layer.applyEdit();
+      expect(await layer.reconcileTransaction()).toBe('still-unresolved'); expect(layer.transactionUnresolved).toBe(true);
+      expect(await layer.reconcileTransaction()).toBe('still-unresolved'); expect(layer.currentPlan).toBe(before);
+      expect(await layer.reconcileTransaction()).toBe('committed'); expect(layer.transactionUnresolved).toBe(false); layer.dispose();
+    });
+    it('explicit session recovery clears the block without inventing the transaction: the plan stays pre-transaction and editing resumes', async () => {
+      const layer = new PlanSpaceLayer(plan(), host()), before = layer.currentPlan;
+      layer.attachSync({
+        apply: async (op: SpatialOperationV2, provenance) => applySpatialOperationV2(before, op, provenance), undo: async () => before,
+        applyTransaction: async () => { throw new SpatialTransactionUnresolvedError('s', 'k', 'session-not-found'); },
+        reconcileTransaction: async () => { throw new SpatialTransactionSessionRecoveredError(); },
+      });
+      expect(layer.proposeSolverEdit(ops(), 'x', 'y')).toBe(true); layer.authorise(true); await layer.applyEdit();
+      expect(layer.transactionUnresolved).toBe(true);
+      expect(await layer.reconcileTransaction()).toBe('recovered-not-committed');
+      expect(layer.transactionUnresolved).toBe(false); expect(layer.currentPlan).toBe(before); expect(layer.editCount).toBe(0);
+      layer.highlight('base'); layer.proposeEdit('x+'); await layer.applyEdit();
+      expect(layer.currentPlan.components.find((c) => c.id === 'base')!.transform.position[0]).toBeGreaterThan(0); layer.dispose();
     });
     it('does not rebuild when disposed while a grouped transaction is pending', async () => {
       const layer = new PlanSpaceLayer(plan(), host()); const before = layer.currentPlan;

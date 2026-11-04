@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { rawRequest, withGuardedServer, ALLOWED_ORIGIN } from './helpers/paid-routes';
-import { applySpatialPlanV2Transaction, recoverSpatialPlanV2Transaction } from '../src/universal-spatial/api-client';
+import { applySpatialPlanV2Transaction, recoverSpatialPlanV2Transaction, SpatialTransactionUnresolvedError } from '../src/universal-spatial/api-client';
 
 const headers = { 'content-type': 'application/json', origin: ALLOWED_ORIGIN };
 const identity = { position: [0, 0, 0], rotationRad: [0, 0, 0], scale: [1, 1, 1] };
@@ -123,9 +123,66 @@ describe('V4 E0 atomic spatial transactions (real HTTP)', () => {
         if (String(input).endsWith('/transactions')) throw new TypeError('timeout before commit');
         return fetch(`${base}${String(input)}`, { ...init, headers: { ...(init?.headers as Record<string, string>), origin: ALLOWED_ORIGIN } });
       };
-      await expect(applySpatialPlanV2Transaction({ sessionId, baseRevision: 0, idempotencyKey: 'txn-key-early', operations: [op('early-1', 'base', 5) as never], provenance: { origin: 'inferred', evidence: 'timeout fixture' } }, fetchImpl)).rejects.toThrow('timeout before commit');
+      // Every submission fails before reaching the server, so the outcome is unknown to the client
+      // (never reported as a definitive failure) while the server remains untouched.
+      const failure = await applySpatialPlanV2Transaction({ sessionId, baseRevision: 0, idempotencyKey: 'txn-key-early', operations: [op('early-1', 'base', 5) as never], provenance: { origin: 'inferred', evidence: 'timeout fixture' } }, fetchImpl).catch((error: unknown) => error);
+      expect(failure).toBeInstanceOf(SpatialTransactionUnresolvedError);
+      expect((failure as SpatialTransactionUnresolvedError).idempotencyKey).toBe('txn-key-early');
       const done = await post(port, '/api/spatial/v2/transactions', txn(sessionId, 0, 'txn-key-early-2', [op('early-2', 'base', 1)]));
       expect(done.status, done.text).toBe(200); expect(done.json.revision).toBe(1);
+    });
+  });
+
+  it('a pre-commit timeout followed by an authoritative not-found resubmits once with the same key and commits exactly once', async () => {
+    await withGuardedServer({}, async (port) => {
+      const sessionId = await adopt(port);
+      const base = `http://127.0.0.1:${port}`;
+      let submissions = 0;
+      const fetchImpl: typeof fetch = async (input, init) => {
+        if (String(input).endsWith('/transactions')) { submissions += 1; if (submissions === 1) throw new TypeError('timeout before commit'); }
+        return fetch(`${base}${String(input)}`, { ...init, headers: { ...(init?.headers as Record<string, string>), origin: ALLOWED_ORIGIN } });
+      };
+      const receipt = await applySpatialPlanV2Transaction({ sessionId, baseRevision: 0, idempotencyKey: 'txn-key-precommit', operations: [op('pre-1', 'base', 4) as never], provenance: { origin: 'inferred', evidence: 'pre-commit fixture' } }, fetchImpl);
+      expect(receipt).toMatchObject({ revision: 1, replayed: false });
+      const recovered = await post(port, '/api/spatial/v2/transactions/status', { sessionId, idempotencyKey: 'txn-key-precommit' });
+      expect(recovered.json.revision).toBe(1);
+    });
+  });
+
+  it('intermittent failure: lost response plus failing recovery stays unresolved, then later reconciliation recovers revision 1 exactly once', async () => {
+    await withGuardedServer({}, async (port) => {
+      const sessionId = await adopt(port);
+      const base = `http://127.0.0.1:${port}`;
+      let networkDown = true;
+      const fetchImpl: typeof fetch = async (input, init) => {
+        const response = await fetch(`${base}${String(input)}`, { ...init, headers: { ...(init?.headers as Record<string, string>), origin: ALLOWED_ORIGIN } });
+        if (networkDown) { await response.text(); throw new TypeError('network down'); }
+        return response;
+      };
+      const failure = await applySpatialPlanV2Transaction({ sessionId, baseRevision: 0, idempotencyKey: 'txn-key-flaky', operations: [op('flaky-1', 'base', 6) as never], provenance: { origin: 'inferred', evidence: 'flaky fixture' } }, fetchImpl).catch((error: unknown) => error);
+      expect(failure).toBeInstanceOf(SpatialTransactionUnresolvedError);
+      // The client must not invent the outcome: the server did commit, provable once the network returns.
+      networkDown = false;
+      const receipt = await recoverSpatialPlanV2Transaction({ sessionId, idempotencyKey: 'txn-key-flaky' }, fetchImpl);
+      expect(receipt).toMatchObject({ revision: 1, replayed: true });
+      expect(receipt.plan.components[0].transform.position).toEqual([6, 0, 0]);
+    });
+  });
+
+  it('server restart (new server, no session) during recovery is reported as session-not-found unresolved, never as success or failure', async () => {
+    await withGuardedServer({}, async (port) => {
+      const sessionId = await adopt(port);
+      await withGuardedServer({}, async (restartedPort) => {
+        const fetchImpl: typeof fetch = async (input, init) => {
+          const target = String(input).endsWith('/status') ? restartedPort : port;
+          const response = await fetch(`http://127.0.0.1:${target}${String(input)}`, { ...init, headers: { ...(init?.headers as Record<string, string>), origin: ALLOWED_ORIGIN } });
+          if (String(input).endsWith('/transactions')) { await response.text(); throw new TypeError('response lost'); }
+          return response;
+        };
+        const failure = await applySpatialPlanV2Transaction({ sessionId, baseRevision: 0, idempotencyKey: 'txn-key-restart', operations: [op('restart-1', 'base', 1) as never], provenance: { origin: 'inferred', evidence: 'restart fixture' } }, fetchImpl).catch((error: unknown) => error);
+        expect(failure).toBeInstanceOf(SpatialTransactionUnresolvedError);
+        expect((failure as SpatialTransactionUnresolvedError).reason).toBe('session-not-found');
+      });
     });
   });
 });
