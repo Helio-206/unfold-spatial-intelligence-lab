@@ -36,7 +36,7 @@ import { dimensionsFromHeader } from '../src/plan-image';
 import type { ExcavatorObservationV1 } from '../src/living/reconstruction/contracts';
 import { applySpatialOperation, SPATIAL_PLAN_JSON_SCHEMA, spatialConstructionEvents, validateSpatialPlan, type SpatialOperation, type SpatialPlan } from '../src/universal-spatial/contracts';
 import { spatialPlanToThree } from '../src/universal-spatial/three-adapter';
-import { applySpatialOperationV2, SPATIAL_OPERATION_V2_JSON_SCHEMA, SPATIAL_PLAN_V2_CONTRACT, SPATIAL_PLAN_V2_META_JSON_SCHEMA, validateSpatialPlanV2, type SpatialOperationV2, type SpatialPlanV2 } from '../src/universal-spatial/contracts-v2';
+import { applySpatialOperationV2, isValidIdempotencyKey, parseSpatialTransactionV2, SPATIAL_OPERATION_V2_JSON_SCHEMA, SPATIAL_PLAN_V2_CONTRACT, SPATIAL_PLAN_V2_META_JSON_SCHEMA, SPATIAL_TRANSACTION_RECEIPT_CONTRACT, validateSpatialPlanV2, type SpatialOperationV2, type SpatialPlanV2 } from '../src/universal-spatial/contracts-v2';
 import { compileSpatialPlanV2, disposeCompiledSpatialPlan } from '../src/universal-spatial/geometry-compiler-v2';
 import { repairModelPlanShapes } from '../src/universal-spatial/geometry-repair';
 import { SPATIAL_V2_GEOMETRY_GUIDANCE } from '../src/universal-spatial/spatial-prompt-v2';
@@ -92,8 +92,20 @@ export const PAID_ROUTES = [
   '/api/anatomy/observe',
 ] as const;
 const PAID_ROUTE_SET: ReadonlySet<string> = new Set(PAID_ROUTES);
-const LOCAL_SPATIAL_ROUTES = new Set(['/api/spatial/operation', '/api/spatial/edit', '/api/spatial/undo', '/api/spatial/v2/adopt', '/api/spatial/v2/operation', '/api/spatial/v2/refine', '/api/spatial/v2/undo']);
-const NO_META_SPATIAL_ROUTES = new Set(['/api/spatial/operation', '/api/spatial/undo', '/api/spatial/v2/adopt', '/api/spatial/v2/operation', '/api/spatial/v2/refine', '/api/spatial/v2/undo']);
+const LOCAL_SPATIAL_ROUTES = new Set(['/api/spatial/operation', '/api/spatial/edit', '/api/spatial/undo', '/api/spatial/v2/adopt', '/api/spatial/v2/operation', '/api/spatial/v2/refine', '/api/spatial/v2/undo', '/api/spatial/v2/transactions', '/api/spatial/v2/transactions/status']);
+const NO_META_SPATIAL_ROUTES = new Set(['/api/spatial/operation', '/api/spatial/undo', '/api/spatial/v2/adopt', '/api/spatial/v2/operation', '/api/spatial/v2/refine', '/api/spatial/v2/undo', '/api/spatial/v2/transactions', '/api/spatial/v2/transactions/status']);
+const MAX_IDEMPOTENCY_RECORDS_PER_SESSION = 64;
+
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value) ?? 'null';
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+  return `{${Object.keys(value as Record<string, unknown>).sort().map((key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`).join(',')}}`;
+}
+function rememberBounded<K, V>(map: Map<K, V>, key: K, entry: V): void {
+  map.delete(key); map.set(key, entry);
+  while (map.size > MAX_IDEMPOTENCY_RECORDS_PER_SESSION) map.delete(map.keys().next().value as K);
+}
+type V2IdempotencyRecord = { fingerprint: string; status: number; body: Record<string, unknown> };
 const ROUTE_SET: ReadonlySet<string> = new Set([...PAID_ROUTE_SET, ...LOCAL_SPATIAL_ROUTES]);
 
 type GuardRejection = { status: number; code: string; message: string; allow?: string };
@@ -332,7 +344,7 @@ function conversationErrorCode(error: unknown): { code: string; category: string
 export function createMetaServer(options: ServerOptions = {}): MetaServer {
   const reconstructionSessions = new Map<string, { observation: ExcavatorObservationV1; mode: 'live' | 'offline'; expires: number }>();
   const spatialSessions = new Map<string, { plan: SpatialPlan; revision: number; history: SpatialPlan[]; expires: number }>();
-  const spatialV2Sessions = new Map<string, { plan: SpatialPlanV2; revision: number; history: SpatialPlanV2[]; expires: number; instruction: string; sourceKind: 'text' | 'image'; refinementsUsed: number; maxRefinements: number; pendingRefinement?: SpatialOperationV2 }>();
+  const spatialV2Sessions = new Map<string, { plan: SpatialPlanV2; revision: number; history: SpatialPlanV2[]; expires: number; instruction: string; sourceKind: 'text' | 'image'; refinementsUsed: number; maxRefinements: number; pendingRefinement?: SpatialOperationV2; transactions: Map<string, V2IdempotencyRecord>; undoReceipts: Map<string, V2IdempotencyRecord> }>();
   const upstreamEvidence = evidenceOptions(options);
   const localTokenFile = options.localTokenFile ?? process.env.UNFOLD_LOCAL_TOKEN_FILE;
   const localToken = createLocalToken(localTokenFile);
@@ -480,16 +492,20 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
           '/api/spatial/v2/edit': ['sessionId', 'baseRevision', 'instruction', 'propose'],
           '/api/spatial/v2/operation': ['sessionId', 'baseRevision', 'operation', 'origin', 'evidence'],
           '/api/spatial/v2/refine': ['sessionId', 'baseRevision'],
-          '/api/spatial/v2/undo': ['sessionId', 'baseRevision'],
+          '/api/spatial/v2/undo': ['sessionId', 'baseRevision', 'idempotencyKey'],
           '/api/spatial/v2/evaluate': ['sessionId', 'baseRevision', 'imageDataUrl'],
+          '/api/spatial/v2/transactions': ['contract', 'sessionId', 'baseRevision', 'idempotencyKey', 'operations', 'provenance'],
+          '/api/spatial/v2/transactions/status': ['sessionId', 'idempotencyKey'],
         };
         const requiredKeys: Record<string, string[]> = {
           '/api/spatial/v2/plan': ['sourceKind'], '/api/spatial/v2/adopt': ['plan'], '/api/spatial/v2/edit': ['sessionId', 'baseRevision', 'instruction'],
           '/api/spatial/v2/operation': ['sessionId', 'baseRevision', 'operation'], '/api/spatial/v2/refine': ['sessionId', 'baseRevision'],
           '/api/spatial/v2/undo': ['sessionId', 'baseRevision'], '/api/spatial/v2/evaluate': ['sessionId', 'baseRevision', 'imageDataUrl'],
+          '/api/spatial/v2/transactions': ['contract', 'sessionId', 'baseRevision', 'idempotencyKey', 'operations', 'provenance'],
+          '/api/spatial/v2/transactions/status': ['sessionId', 'idempotencyKey'],
         };
         if (!body || typeof body !== 'object' || Array.isArray(body) || !allowedKeys[route] || Object.keys(body).some((key) => !allowedKeys[route]!.includes(key)) || !requiredKeys[route]!.every((key) => Object.hasOwn(body, key))) { writeJson(response, 400, { error: { code: 'INVALID_SPATIAL_V2_REQUEST', message: 'Corpo V2 inválido, incompleto ou com campos desconhecidos.' } }, origin); return; }
-        const candidate = body as { sessionId?: unknown; baseRevision?: unknown; instruction?: unknown; imageDataUrl?: unknown; sourceKind?: unknown; mode?: unknown; maxRefinements?: unknown; operation?: unknown; plan?: unknown; propose?: unknown; origin?: unknown; evidence?: unknown };
+        const candidate = body as { sessionId?: unknown; baseRevision?: unknown; instruction?: unknown; imageDataUrl?: unknown; sourceKind?: unknown; mode?: unknown; maxRefinements?: unknown; operation?: unknown; plan?: unknown; propose?: unknown; origin?: unknown; evidence?: unknown; idempotencyKey?: unknown; operations?: unknown; provenance?: unknown; contract?: unknown };
         if ((route === '/api/spatial/v2/evaluate' || route === '/api/spatial/v2/plan' && candidate.sourceKind === 'image')) {
           const peer = request.socket.remoteAddress ?? 'unknown', key = `spatial-v2-image:${peer}`, now = Date.now();
           for (const [entry, timestamps] of imageRequests) if (!timestamps.some((time) => now - time < 60_000)) imageRequests.delete(entry);
@@ -505,7 +521,10 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
         if (!sessionless && (!session || session.expires < Date.now())) {
           writeJson(response, 404, { error: { code: 'SPATIAL_V2_SESSION_NOT_FOUND', message: 'Sessão espacial V2 ausente ou expirada.' } }, origin); return;
         }
-        if (session && revisionConflict(session)) { writeJson(response, 409, { error: { code: 'SPATIAL_V2_REVISION_CONFLICT', message: 'A revisão base está desactualizada.', currentRevision: session.revision } }, origin); return; }
+        // Idempotent routes check their stored receipt before the revision precondition, so a retry
+        // after a lost response recovers the committed result instead of failing as stale.
+        const idempotencyFirst = route === '/api/spatial/v2/transactions' || route === '/api/spatial/v2/transactions/status' || route === '/api/spatial/v2/undo' && candidate.idempotencyKey !== undefined;
+        if (session && !idempotencyFirst && revisionConflict(session)) { writeJson(response, 409, { error: { code: 'SPATIAL_V2_REVISION_CONFLICT', message: 'A revisão base está desactualizada.', currentRevision: session.revision } }, origin); return; }
         if (session) refreshV2Expiry(session);
         try {
           if (route === '/api/spatial/v2/adopt') {
@@ -515,16 +534,64 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
             const text = typeof candidate.instruction === 'string' && candidate.instruction.trim() ? candidate.instruction.slice(0, 1_000) : `Reviewed space: ${adopted.title}`;
             const now = Date.now(); for (const [id, current] of spatialV2Sessions) if (current.expires < now) spatialV2Sessions.delete(id);
             if (spatialV2Sessions.size >= MAX_SPATIAL_SESSION_COUNT) { writeJson(response, 503, { error: { code: 'SPATIAL_V2_SESSION_CAPACITY', message: 'Limite de sessões espaciais V2 atingido.' } }, origin); return; }
-            const sessionId = randomUUID(); spatialV2Sessions.set(sessionId, { plan: adopted, revision: 0, history: [], expires: now + SPATIAL_SESSION_TTL_MS, instruction: text, sourceKind: adopted.source.kind, refinementsUsed: 0, maxRefinements: 1 });
+            const sessionId = randomUUID(); spatialV2Sessions.set(sessionId, { plan: adopted, revision: 0, history: [], expires: now + SPATIAL_SESSION_TTL_MS, instruction: text, sourceKind: adopted.source.kind, refinementsUsed: 0, maxRefinements: 1, transactions: new Map(), undoReceipts: new Map() });
             const compiled = compileSpatialPlanV2(adopted); const constraintReport = evaluateSpatialConstraintsV2(adopted, compiled.root); disposeCompiledSpatialPlan(compiled.root);
             writeJson(response, 200, { contract: 'unfold.spatial-v2-review.v1', sessionId, revision: 0, plan: adopted, constraintReport, review: { status: 'adopted', actorEvidence: 'client_asserted_unverified', authenticatedReviewer: false } }, origin); return;
           }
+          if (route === '/api/spatial/v2/transactions/status') {
+            const current = session!;
+            if (!isValidIdempotencyKey(candidate.idempotencyKey)) { writeJson(response, 400, { error: { code: 'SPATIAL_V2_TRANSACTION_IDEMPOTENCY_KEY_INVALID', message: 'idempotencyKey inválida.' } }, origin); return; }
+            const record = current.transactions.get(candidate.idempotencyKey);
+            if (!record) { writeJson(response, 404, { error: { code: 'SPATIAL_V2_TRANSACTION_NOT_FOUND', message: 'Não há transacção cometida com essa chave nesta sessão.', currentRevision: current.revision } }, origin); return; }
+            writeJson(response, 200, { ...structuredClone(record.body), replayed: true }, origin); return;
+          }
+          if (route === '/api/spatial/v2/transactions') {
+            const current = session!;
+            let transaction;
+            try { transaction = parseSpatialTransactionV2(body); } catch (error) { writeJson(response, 400, { error: { code: error instanceof Error ? error.message : 'SPATIAL_V2_TRANSACTION_INVALID', message: 'Transacção espacial V2 inválida.' } }, origin); return; }
+            const fingerprint = createHash('sha256').update(stableStringify({ baseRevision: transaction.baseRevision, operations: transaction.operations, provenance: transaction.provenance })).digest('hex');
+            const existing = current.transactions.get(transaction.idempotencyKey);
+            if (existing) {
+              if (existing.fingerprint !== fingerprint) { writeJson(response, 409, { error: { code: 'SPATIAL_V2_IDEMPOTENCY_KEY_CONFLICT', message: 'A chave de idempotência já foi usada com outro conteúdo.', currentRevision: current.revision } }, origin); return; }
+              writeJson(response, 200, { ...structuredClone(existing.body), replayed: true }, origin); return;
+            }
+            if (transaction.baseRevision !== current.revision) { writeJson(response, 409, { error: { code: 'SPATIAL_V2_REVISION_CONFLICT', message: 'A revisão base está desactualizada.', currentRevision: current.revision } }, origin); return; }
+            // No await from here to the commit: validation runs on an isolated copy and the session
+            // is mutated only after every operation and the final plan have been validated.
+            let next: SpatialPlanV2;
+            try {
+              next = structuredClone(current.plan);
+              for (const operation of transaction.operations) next = applySpatialOperationV2(next, operation, transaction.provenance);
+              const compiled = compileSpatialPlanV2(next); const constraintReport = evaluateSpatialConstraintsV2(next, compiled.root); disposeCompiledSpatialPlan(compiled.root);
+              const receipt = { contract: SPATIAL_TRANSACTION_RECEIPT_CONTRACT, transactionId: `txn-${createHash('sha256').update(transaction.idempotencyKey).digest('hex').slice(0, 24)}`, sessionId: candidate.sessionId as string, baseRevision: transaction.baseRevision, revision: current.revision + 1, replayed: false, operationIds: transaction.operations.map((operation) => operation.operationId), plan: next, constraintReport, review: { status: 'applied' as const, actorEvidence: 'client_asserted_unverified' as const, authenticatedReviewer: false as const } };
+              current.history.push(current.plan); if (current.history.length > 50) current.history.shift();
+              current.plan = next; current.revision += 1; current.pendingRefinement = undefined;
+              rememberBounded(current.transactions, transaction.idempotencyKey, { fingerprint, status: 200, body: structuredClone(receipt) as unknown as Record<string, unknown> });
+              writeJson(response, 200, receipt, origin); return;
+            } catch (error) {
+              writeJson(response, 400, { error: { code: error instanceof Error ? error.message.split(':')[0]! : 'SPATIAL_V2_TRANSACTION_FAILED', message: 'A transacção foi rejeitada; a sessão não mudou.', currentRevision: current.revision } }, origin); return;
+            }
+          }
           if (route === '/api/spatial/v2/undo') {
-            const current = session!; const previous = current.history.pop();
+            const current = session!;
+            const hasKey = candidate.idempotencyKey !== undefined;
+            if (hasKey && !isValidIdempotencyKey(candidate.idempotencyKey)) { writeJson(response, 400, { error: { code: 'SPATIAL_V2_TRANSACTION_IDEMPOTENCY_KEY_INVALID', message: 'idempotencyKey inválida.' } }, origin); return; }
+            const fingerprint = hasKey ? createHash('sha256').update(stableStringify({ baseRevision: candidate.baseRevision, undo: true })).digest('hex') : '';
+            if (hasKey) {
+              const existing = current.undoReceipts.get(candidate.idempotencyKey as string);
+              if (existing) {
+                if (existing.fingerprint !== fingerprint) { writeJson(response, 409, { error: { code: 'SPATIAL_V2_IDEMPOTENCY_KEY_CONFLICT', message: 'A chave de idempotência já foi usada com outro conteúdo.', currentRevision: current.revision } }, origin); return; }
+                writeJson(response, 200, { ...structuredClone(existing.body), replayed: true }, origin); return;
+              }
+              if (revisionConflict(current)) { writeJson(response, 409, { error: { code: 'SPATIAL_V2_REVISION_CONFLICT', message: 'A revisão base está desactualizada.', currentRevision: current.revision } }, origin); return; }
+            }
+            const previous = current.history.pop();
             if (!previous) { writeJson(response, 409, { error: { code: 'SPATIAL_V2_UNDO_EMPTY', message: 'Não há operação V2 para desfazer.' } }, origin); return; }
             current.plan = previous; current.revision += 1; current.pendingRefinement = undefined;
             const compiled = compileSpatialPlanV2(current.plan); const constraints = evaluateSpatialConstraintsV2(current.plan, compiled.root); disposeCompiledSpatialPlan(compiled.root);
-            writeJson(response, 200, { contract: 'unfold.spatial-v2-review.v1', sessionId: candidate.sessionId, revision: current.revision, plan: current.plan, constraintReport: constraints, review: { status: 'undone', actorEvidence: 'client_asserted_unverified', authenticatedReviewer: false } }, origin); return;
+            const receiptBody = { contract: 'unfold.spatial-v2-review.v1', sessionId: candidate.sessionId, revision: current.revision, plan: current.plan, constraintReport: constraints, replayed: false, review: { status: 'undone', actorEvidence: 'client_asserted_unverified', authenticatedReviewer: false } };
+            if (hasKey) rememberBounded(current.undoReceipts, candidate.idempotencyKey as string, { fingerprint, status: 200, body: structuredClone(receiptBody) as unknown as Record<string, unknown> });
+            writeJson(response, 200, receiptBody, origin); return;
           }
           if (route === '/api/spatial/v2/operation' || route === '/api/spatial/v2/refine' || route === '/api/spatial/v2/edit') {
             const current = session!; let operation: SpatialOperationV2; let meta: MetaCallLog | undefined;
@@ -699,7 +766,7 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
             if (spatialV2Sessions.size >= MAX_SPATIAL_SESSION_COUNT) { writeJson(response, 503, { error: { code: 'SPATIAL_V2_SESSION_CAPACITY', message: 'Limite de sessões espaciais V2 atingido.' } }, origin); return; }
             const rawResponseSha256 = createHash('sha256').update(result.text, 'utf8').digest('hex');
             const rawResponseStored = persistSpatialRunEvidence(upstreamEvidence, { route, source, requestId: result.log.requestId ?? null, model: result.log.model ?? null, latencyMs: result.log.latencyMs ?? null, usage: (result.log as Record<string, unknown>).usage ?? null, rawResponseSha256, rawResponseText: result.text, normalizationNotes, normalizedPlan: plan });
-            const sessionId = randomUUID(); spatialV2Sessions.set(sessionId, { plan, revision: 0, history: [], expires: now + SPATIAL_SESSION_TTL_MS, instruction, sourceKind: source.kind, refinementsUsed: 0, maxRefinements: Number(maxRefinements) });
+            const sessionId = randomUUID(); spatialV2Sessions.set(sessionId, { plan, revision: 0, history: [], expires: now + SPATIAL_SESSION_TTL_MS, instruction, sourceKind: source.kind, refinementsUsed: 0, maxRefinements: Number(maxRefinements), transactions: new Map(), undoReceipts: new Map() });
             const operators = new Set<string>(); let nodeCount = 0; const collect = (node: SpatialPlanV2['components'][number]['geometry']) => { nodeCount++; if (node.type === 'group') node.children.forEach(collect); else operators.add(node.operator); }; plan.components.forEach((component) => collect(component.geometry));
             writeJson(response, 200, { contract: SPATIAL_PLAN_V2_CONTRACT, sessionId, revision: 0, plan, sceneSummary: { componentCount: plan.components.length, geometryNodeCount: nodeCount, operators: [...operators], constraintReady: constraintReport.ready }, constraintReport, constructionEvents: [{ type: 'scene_created', at: 0 }, ...plan.components.map((component, index) => ({ type: 'component_placed', at: index + 1, entityId: component.id, transform: component.transform })), { type: 'assembly_ready', at: plan.components.length + 1 }, { type: 'scene_revealed', at: plan.components.length + 2 }], meta: { ...result.log, rawResponseSha256, rawResponseStored, normalizationNotes }, limitations: ['Composição conceptual gerada por operadores geométricos; não constitui reconstrução métrica ou validada.', ...(source.kind === 'image' ? ['A fotografia não fornece escala física; dimensões e escala permanecem desconhecidas.'] : []), 'Perfis de apresentação não alteram a proveniência nem validam materiais reais.'] }, origin); return;
           }

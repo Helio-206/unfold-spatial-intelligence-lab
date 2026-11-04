@@ -5,7 +5,7 @@ import linkIcon from 'lucide-static/icons/link.svg?raw';
 import saveIcon from 'lucide-static/icons/save.svg?raw';
 import undoIcon from 'lucide-static/icons/undo-2.svg?raw';
 import './space.css';
-import { adoptSpatialPlanV2, applySpatialPlanV2Operation, createSpatialPlanV2, evaluateSpatialPlanV2, proposeSpatialEditV2, SpatialApiError, undoSpatialPlanV2, type SpatialPlanV2Reply } from '../../universal-spatial/api-client';
+import { adoptSpatialPlanV2, applySpatialPlanV2Operation, applySpatialPlanV2Transaction, createSpatialPlanV2, evaluateSpatialPlanV2, proposeSpatialEditV2, SpatialApiError, undoSpatialPlanV2, type SpatialPlanV2Reply } from '../../universal-spatial/api-client';
 import type { SpatialOperationV2, SpatialPlanV2 } from '../../universal-spatial/contracts-v2';
 import { checkFile } from '../experience/intake';
 import { canvasTranscoder, prepareImage, TranscodeError, type Transcoder } from '../unified-workspace/image-transcode';
@@ -30,7 +30,7 @@ export type SpacePhase = 'closed' | 'intake' | 'library' | 'waiting' | 'failed' 
 /** What is known about the run that produced the Space on stage (from the server reply, or from the saved record). */
 export type RunInfo = { origin: 'meta' | 'reopened'; model: string | null; requestId: string | null; latencyMs: number | null; estimatedCostUsd: number | null; rawResponseSha256: string | null; rawResponseStored: boolean; sourceKind: 'text' | 'image'; sourceSha256: string; limitations: string[] };
 type Create = (input: Parameters<typeof createSpatialPlanV2>[0], fetchImpl?: typeof fetch) => Promise<SpatialPlanV2Reply>;
-type Api = { adopt: typeof adoptSpatialPlanV2; operation: typeof applySpatialPlanV2Operation; undo: typeof undoSpatialPlanV2; propose: typeof proposeSpatialEditV2; evaluate: typeof evaluateSpatialPlanV2 };
+type Api = { adopt: typeof adoptSpatialPlanV2; operation: typeof applySpatialPlanV2Operation; undo: typeof undoSpatialPlanV2; propose: typeof proposeSpatialEditV2; evaluate: typeof evaluateSpatialPlanV2; transaction: typeof applySpatialPlanV2Transaction };
 
 export type SpaceFlowOptions = {
   workspace: SpatialWorkspace;
@@ -113,7 +113,7 @@ export class SpaceFlow {
 
   constructor(private readonly options: SpaceFlowOptions) {
     this.create = options.create ?? createSpatialPlanV2;
-    this.api = { adopt: adoptSpatialPlanV2, operation: applySpatialPlanV2Operation, undo: undoSpatialPlanV2, propose: proposeSpatialEditV2, evaluate: evaluateSpatialPlanV2, ...options.api };
+    this.api = { adopt: adoptSpatialPlanV2, operation: applySpatialPlanV2Operation, undo: undoSpatialPlanV2, propose: proposeSpatialEditV2, evaluate: evaluateSpatialPlanV2, transaction: applySpatialPlanV2Transaction, ...options.api };
     this.store = options.store ?? new SpaceStore(browserStorage());
     this.transcode = options.transcode ?? canvasTranscoder;
     this.reducedMotion = options.reducedMotion ?? options.workspace.reducedMotion;
@@ -288,6 +288,8 @@ export class SpaceFlow {
       const sync: LayerSync = {
         apply: async (operation: SpatialOperationV2, provenance) => { const r = await this.api.operation({ sessionId: session.id, baseRevision: session.revision, operation, origin: provenance.origin, evidence: provenance.evidence.slice(0, 300) }, fetchImpl); session.revision = r.revision; return r.plan; },
         undo: async () => { const r = await this.api.undo({ sessionId: session.id, baseRevision: session.revision }, fetchImpl); session.revision = r.revision; return r.plan; },
+        applyTransaction: async (operations: SpatialOperationV2[], provenance) => { const r = await this.api.transaction({ sessionId: session.id, baseRevision: session.revision, idempotencyKey: `txn-${globalThis.crypto.randomUUID()}`, operations, provenance: { origin: provenance.origin, evidence: provenance.evidence.slice(0, 500) } }, fetchImpl); session.revision = r.revision; return r.plan; },
+        undoTransaction: async () => { const r = await this.api.undo({ sessionId: session.id, baseRevision: session.revision, idempotencyKey: `undo-${globalThis.crypto.randomUUID()}` }, fetchImpl); session.revision = r.revision; return r.plan; },
       };
       layer.attachSync(sync);
     } catch (error) {

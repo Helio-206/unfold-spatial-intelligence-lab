@@ -1,5 +1,5 @@
 import { SPATIAL_PLAN_CONTRACT, validateSpatialPlan, type SpatialOperation, type SpatialPlan } from './contracts';
-import { SPATIAL_PLAN_V2_CONTRACT, validateSpatialPlanV2, type SpatialOperationV2, type SpatialPlanV2 } from './contracts-v2';
+import { SPATIAL_PLAN_V2_CONTRACT, SPATIAL_TRANSACTION_CONTRACT, SPATIAL_TRANSACTION_RECEIPT_CONTRACT, validateSpatialPlanV2, type SpatialOperationV2, type SpatialPlanV2, type SpatialTransactionReceiptV2, type SpatialTransactionV2 } from './contracts-v2';
 import { parseSpatialEvaluationV2, type SpatialEvaluationV2 } from './evaluation-v2';
 
 export class SpatialApiError extends Error {
@@ -63,8 +63,39 @@ export async function refineSpatialPlanV2(input: { sessionId: string; baseRevisi
   return validSpatialPlanV2Reply(await post<SpatialMutationV2Reply>('/api/spatial/v2/refine', input, fetchImpl)) as SpatialMutationV2Reply;
 }
 
-export async function undoSpatialPlanV2(input: { sessionId: string; baseRevision: number }, fetchImpl: typeof fetch = fetch): Promise<SpatialMutationV2Reply> {
-  return validSpatialPlanV2Reply(await post<SpatialMutationV2Reply>('/api/spatial/v2/undo', input, fetchImpl)) as SpatialMutationV2Reply;
+export async function undoSpatialPlanV2(input: { sessionId: string; baseRevision: number; idempotencyKey?: string }, fetchImpl: typeof fetch = fetch): Promise<SpatialMutationV2Reply & { replayed?: boolean }> {
+  try {
+    return validSpatialPlanV2Reply(await post<SpatialMutationV2Reply>('/api/spatial/v2/undo', input, fetchImpl)) as SpatialMutationV2Reply;
+  } catch (error) {
+    // A lost response may mean the undo already committed; retrying with the same key replays its receipt.
+    if (!input.idempotencyKey || error instanceof SpatialApiError) throw error;
+    return validSpatialPlanV2Reply(await post<SpatialMutationV2Reply>('/api/spatial/v2/undo', input, fetchImpl)) as SpatialMutationV2Reply;
+  }
+}
+
+export type SpatialTransactionV2Reply = SpatialTransactionReceiptV2;
+
+function validTransactionReply(reply: SpatialTransactionReceiptV2): SpatialTransactionReceiptV2 {
+  if (reply.contract !== SPATIAL_TRANSACTION_RECEIPT_CONTRACT || typeof reply.transactionId !== 'string' || !Number.isSafeInteger(reply.revision)) throw new SpatialApiError(502, 'INVALID_SPATIAL_V2_TRANSACTION_REPLY', 'Unknown spatial transaction response contract.');
+  return { ...reply, plan: validateSpatialPlanV2(reply.plan) };
+}
+
+/** Submits several operations as one atomic transaction. One revision increment; never partially applied. */
+export async function applySpatialPlanV2Transaction(input: Omit<SpatialTransactionV2, 'contract'>, fetchImpl: typeof fetch = fetch): Promise<SpatialTransactionV2Reply> {
+  const body: SpatialTransactionV2 = { contract: SPATIAL_TRANSACTION_CONTRACT, ...input };
+  try {
+    return validTransactionReply(await post<SpatialTransactionReceiptV2>('/api/spatial/v2/transactions', body, fetchImpl));
+  } catch (error) {
+    if (error instanceof SpatialApiError) throw error;
+    // Response lost in transit: recover the authoritative receipt before reporting failure.
+    try { return await recoverSpatialPlanV2Transaction({ sessionId: input.sessionId, idempotencyKey: input.idempotencyKey }, fetchImpl); }
+    catch { throw error; }
+  }
+}
+
+/** Recovers the authoritative receipt of a transaction whose response was lost. */
+export async function recoverSpatialPlanV2Transaction(input: { sessionId: string; idempotencyKey: string }, fetchImpl: typeof fetch = fetch): Promise<SpatialTransactionV2Reply> {
+  return validTransactionReply(await post<SpatialTransactionReceiptV2>('/api/spatial/v2/transactions/status', input, fetchImpl));
 }
 
 export async function evaluateSpatialPlanV2(input: { sessionId: string; baseRevision: number; imageDataUrl: string; plan: SpatialPlanV2 }, fetchImpl: typeof fetch = fetch): Promise<SpatialEvaluationV2Reply> {

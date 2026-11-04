@@ -292,5 +292,32 @@ describe('PlanSpaceLayer', () => {
     it('refuses a proposal that does not apply to the plan', () => {
       const layer = new PlanSpaceLayer(plan(), host()); expect(layer.proposeSolverEdit([{ ...ops()[0]!, componentId: 'ghost' }], 'x', 'y')).toBe(false); expect(layer.pendingEdit).toBeNull();
     });
+    it('commits a solver group through one atomic transaction and undoes it through one grouped undo (V4 E0)', async () => {
+      let server = plan(); const stack: SpatialPlanV2[] = [];
+      const applyTransaction = vi.fn(async (operations: SpatialOperationV2[], provenance: { origin: 'user_provided' | 'inferred'; evidence: string }) => { stack.push(server); for (const operation of operations) server = applySpatialOperationV2(server, operation, provenance); return server; });
+      const undoTransaction = vi.fn(async () => { server = stack.pop()!; return server; });
+      const layer = new PlanSpaceLayer(plan(), host());
+      layer.attachSync({ apply: async () => { throw new Error('single-op path must not be used for a group'); }, undo: async () => { throw new Error('single undo must not be used for a group'); }, applyTransaction, undoTransaction });
+      expect(layer.proposeSolverEdit(ops(), 'Ajuste estrutural', 'Solver fixture.')).toBe(true); layer.authorise(true); await layer.applyEdit();
+      expect(applyTransaction).toHaveBeenCalledTimes(1); expect(layer.editCount).toBe(1);
+      expect(layer.currentPlan.components.find((c) => c.id === 'base')!.transform.scale[0]).toBeCloseTo(1.2);
+      expect(await layer.undo()).toBe(true); expect(undoTransaction).toHaveBeenCalledTimes(1);
+      expect(layer.currentPlan.components.find((c) => c.id === 'base')!.transform.scale[0]).toBe(1); layer.dispose();
+    });
+    it('a failed atomic transaction leaves the local plan and history unchanged', async () => {
+      const h = host(), layer = new PlanSpaceLayer(plan(), h), before = layer.currentPlan;
+      layer.attachSync({ apply: async () => before, undo: async () => before, applyTransaction: async () => { throw new Error('SPATIAL_V2_REVISION_CONFLICT'); } });
+      expect(layer.proposeSolverEdit(ops(), 'x', 'y')).toBe(true); layer.authorise(true); await layer.applyEdit();
+      expect(layer.currentPlan).toBe(before); expect(layer.editCount).toBe(0);
+      expect(h.notify).toHaveBeenCalledWith(expect.stringContaining('SPATIAL_V2_REVISION_CONFLICT')); layer.dispose();
+    });
+    it('does not rebuild when disposed while a grouped transaction is pending', async () => {
+      const layer = new PlanSpaceLayer(plan(), host()); const before = layer.currentPlan;
+      let release!: (p: SpatialPlanV2) => void;
+      layer.attachSync({ apply: async () => before, undo: async () => before, applyTransaction: () => new Promise((resolve) => { release = resolve; }) });
+      expect(layer.proposeSolverEdit(ops(), 'x', 'y')).toBe(true); layer.authorise(true);
+      const pending = layer.applyEdit(); layer.dispose(); release(plan());
+      await pending; expect(layer.root.children).toHaveLength(0); expect(layer.currentPlan).toBe(before);
+    });
   });
 });

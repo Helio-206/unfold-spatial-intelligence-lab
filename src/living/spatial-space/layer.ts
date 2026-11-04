@@ -27,6 +27,10 @@ export type LayerSync = {
   /** The provenance travels with the operation: a solver result stays `inferred` on the server too. */
   apply(operation: SpatialOperationV2, provenance: OperationProvenance): Promise<SpatialPlanV2>;
   undo(): Promise<SpatialPlanV2>;
+  /** Atomic multi-operation commit (V4 E0). When present, grouped edits use it instead of failing closed. */
+  applyTransaction?(operations: SpatialOperationV2[], provenance: OperationProvenance): Promise<SpatialPlanV2>;
+  /** One grouped undo for one grouped commit. When present, grouped undo never falls back to repeated single undos. */
+  undoTransaction?(): Promise<SpatialPlanV2>;
 };
 export type SpaceLayerHost = {
   /** A camera request from the Presentation Director. The workspace asks its arbiter; a person's input always wins. */
@@ -265,10 +269,12 @@ export class PlanSpaceLayer implements SpaceLayer {
   /** Applies operations in order, through the server session when there is one, so both sides keep the same revision. */
   private async commit(operations: SpatialOperationV2[], provenance: { origin: 'user_provided' | 'inferred'; evidence: string }, localPlan?: SpatialPlanV2): Promise<void> {
     const before = this.plan; let next = before;
-    // The current server API applies one operation per request and has no atomic batch.
-    // Never present a partially applied server batch as one completed transaction.
-    if (this.sync && operations.length > 1) throw new Error('BATCH_REQUIRES_ATOMIC_SERVER');
-    if (this.sync) {
+    if (this.sync && operations.length > 1) {
+      // Grouped edits only ever commit through the atomic transaction endpoint. Without it, fail
+      // closed; with it, a failure leaves the local plan untouched (never a silent local commit).
+      if (!this.sync.applyTransaction) throw new Error('BATCH_REQUIRES_ATOMIC_SERVER');
+      next = await this.sync.applyTransaction(operations, provenance);
+    } else if (this.sync) {
       try { for (const operation of operations) next = await this.sync.apply(operation, provenance); }
       catch (error) { if (this.disposed) throw new Error('SPACE_DISPOSED'); this.sync = null; this.host.syncLost?.(error instanceof Error ? error.message : 'sessão do servidor indisponível'); next = localPlan ?? this.applyLocal(before, operations, provenance); }
     } else next = localPlan ?? this.applyLocal(before, operations, provenance);
@@ -297,10 +303,15 @@ export class PlanSpaceLayer implements SpaceLayer {
     if (this.disposed) return false;
     if (this.lockReason) { this.host.notify(`Edição indisponível: ${this.lockReason}.`); return false; }
     const previous = this.history.pop(); if (!previous || this.busy) { if (previous) this.history.push(previous); return false; }
-    if (this.sync && previous.ops > 1) { this.history.push(previous); this.host.notify('Undo agrupado indisponível: o servidor não oferece transacção atómica.'); return false; }
+    if (this.sync && previous.ops > 1 && !this.sync.undoTransaction) { this.history.push(previous); this.host.notify('Undo agrupado indisponível: o servidor não oferece transacção atómica.'); return false; }
     this.busy = true; this.director?.enterEditing();
     try {
-      if (this.sync) { try { let restored = this.plan; for (let i = 0; i < previous.ops; i++) restored = await this.sync.undo(); if (this.disposed) return false; this.plan = restored; } catch (error) { if (this.disposed) return false; this.sync = null; this.host.syncLost?.(error instanceof Error ? error.message : 'sessão do servidor indisponível'); this.plan = previous.plan; } }
+      if (this.sync && previous.ops > 1) {
+        // One grouped undo for the whole transaction; on failure nothing changes locally.
+        try { const restored = await this.sync.undoTransaction!(); if (this.disposed) { this.history.push(previous); return false; } this.plan = restored; }
+        catch (error) { this.history.push(previous); if (!this.disposed) this.host.notify(`Undo agrupado bloqueado: ${error instanceof Error ? error.message : 'erro desconhecido'}`); return false; }
+      }
+      else if (this.sync) { try { let restored = this.plan; for (let i = 0; i < previous.ops; i++) restored = await this.sync.undo(); if (this.disposed) return false; this.plan = restored; } catch (error) { if (this.disposed) return false; this.sync = null; this.host.syncLost?.(error instanceof Error ? error.message : 'sessão do servidor indisponível'); this.plan = previous.plan; } }
       else this.plan = previous.plan;
       this.pending = null; this.stats = this.build();
     } finally { this.busy = false; }
