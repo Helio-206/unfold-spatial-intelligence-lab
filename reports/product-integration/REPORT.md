@@ -8,12 +8,12 @@ The normal `SpaceFlow.show` now uses `ProductGeometry`, not the V3 reference har
 
 ## Browser measurements, saved plans
 
-Chromium + SwiftShader, 1440×900, normal `/living` flow, locally replayed saved Meta plans produced with the old repair step; no live calls. An explicit mock supplies the plan and a mock supplies the Voice response; TTS is simulated. Times are elapsed from clicking Build to all jobs settling, including browser scheduling and rendering; they are not isolated worker or GPU timings.
+Chromium + SwiftShader, 1440×900, normal `/living` flow, locally replayed saved Meta plans produced with the old repair step; no live calls. An explicit mock supplies the plan and a mock supplies the Voice response; TTS is simulated. The measured run shared the machine with the test suite; these are single observations, not a benchmark or performance guarantee. Times are elapsed from clicking Build to all jobs settling, including browser scheduling and rendering; they are not isolated worker or GPU timings.
 
 | Plan | First frame | Final | elapsed | triangles / geometry bytes | conclusion |
 |---|---|---|---|---|---|
-| Harp | 7 V2, neck pending | neck continuous; 6 V2 | 1811 ms | 5184 / 237456 | no visual fidelity improvement asserted |
-| Excavator | 11 V2 | 11 V2 (not eligible) | 1103 ms | 5148 / 478592 | no visual fidelity improvement asserted |
+| Harp | 7 V2, neck pending | neck continuous; 6 V2 | 7605 ms | 5184 / 237456 | no visual fidelity improvement asserted |
+| Excavator | 11 V2 | 11 V2 (not eligible) | 1747 ms | 5148 / 478592 | no visual fidelity improvement asserted |
 
 `tests/e2e/product-geometry.pw.mjs` reproduces the measurement and a pointer → contextual question → TTS flow. Output and screenshots are written to `/tmp/unfold-product-geometry` by default. The plans have placeholder geometry; smoothing is not proof of improved reconstruction. Browser/device, GPU and audio limits remain; Voice Meta response semantics are not mechanically guaranteed.
 
