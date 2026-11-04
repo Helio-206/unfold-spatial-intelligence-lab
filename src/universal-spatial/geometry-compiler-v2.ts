@@ -1,5 +1,5 @@
 import {
-  BoxGeometry, BufferGeometry, CatmullRomCurve3, ConeGeometry, CylinderGeometry, DoubleSide, ExtrudeGeometry, Group,
+  BufferGeometry, CatmullRomCurve3, ConeGeometry, CylinderGeometry, DoubleSide, ExtrudeGeometry, Group,
   Float32BufferAttribute, InstancedMesh, LatheGeometry, Matrix4, Mesh, MeshPhysicalMaterial, Quaternion, Shape, ShapeUtils, SphereGeometry,
   TorusGeometry, TubeGeometry, Vector2, Vector3, type ColorRepresentation, type Object3D,
 } from 'three';
@@ -47,10 +47,17 @@ function createLoft(profile: number[][], sections: number[][], capEnds: boolean[
   return geometry;
 }
 
+/** Edge radius used to soften `box` shapes (7% of the thinnest side; never more than half of it). */
+export const boxEdgeRadius = (dimensions: readonly number[]): number => Math.min(...dimensions) * 0.07;
+
 function createShape(node: Extract<GeometryNodeV2, { type: 'shape' }>): BufferGeometry {
   const p = node.parameters as Record<string, unknown>;
   switch (node.operator) {
-    case 'box': return new BoxGeometry(...(p.dimensions as [number, number, number]));
+    case 'box': {
+      // Presentation detail: a razor-sharp box reads as a placeholder, so edges are softened in proportion to the thinnest side. The declared outer dimensions are unchanged.
+      const d = p.dimensions as [number, number, number];
+      return new RoundedBoxGeometry(d[0], d[1], d[2], 2, boxEdgeRadius(d));
+    }
     case 'rounded_box': {
       const d = p.dimensions as [number, number, number];
       return new RoundedBoxGeometry(d[0], d[1], d[2], Number(p.segments), Number(p.bevelM));
@@ -133,7 +140,7 @@ function compileNode(node: GeometryNodeV2, entityId: string): Object3D {
     base = group;
   } else {
     const mesh = new Mesh(createShape(node), createMaterial(node.material));
-    mesh.name = node.key; mesh.userData = { spatialEntityId: entityId, spatialSubcomponentKey: node.key, materialProfile: node.material.profile };
+    mesh.name = node.key; mesh.userData = { spatialEntityId: entityId, spatialSubcomponentKey: node.key, materialProfile: node.material.profile, ...(node.operator === 'box' ? { spatialEdgeSoftening: boxEdgeRadius(node.parameters.dimensions as number[]) } : {}) };
     mesh.castShadow = true; mesh.receiveShadow = true;
     base = mesh;
   }

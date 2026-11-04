@@ -291,7 +291,7 @@ function renderedMeshCount(node: GeometryNodeV2, factor = 1): number {
 function estimatedLeafTriangles(node: Extract<GeometryNodeV2, { type: 'shape' }>): number {
   const p = node.parameters as Record<string, unknown>;
   switch (node.operator) {
-    case 'box': return 12;
+    case 'box': return 300; // softened edges: RoundedBoxGeometry with 2 segments
     case 'rounded_box': return 12 * Number(p.segments) ** 2;
     case 'sphere': case 'ellipsoid': return Number(p.widthSegments) * Number(p.heightSegments) * 2;
     case 'cylinder': return Number(p.radialSegments) * 4;
