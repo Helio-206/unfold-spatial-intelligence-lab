@@ -1233,6 +1233,8 @@ export class SpatialWorkspace {
     if (durationMs <= 0 || this.reducedMotion) { this.director.jumpTo(spec); return { moved: true }; }
     return this.director.moveTo(spec, 'assistant');
   }
+  /** Brings everything the space shows back into view (after an exploded view, say), with the director's own transition. */
+  refocusSpace(): void { const b = this.space?.box(); if (b && !b.isEmpty() && !this.disposed) this.director.focusSphere(b.getBoundingSphere(new Sphere()), 'user_tool', 0.72); }
   /** What the Director needs to turn boxes into distances. */
   spaceViewContext(): { viewport: { width: number; height: number }; insets: SafeInsets; baseFovDeg: number } { return { viewport: { width: this.root.clientWidth || 1, height: this.root.clientHeight || 1 }, insets: { ...this.currentInsets }, baseFovDeg: this.director.baseFov }; }
 

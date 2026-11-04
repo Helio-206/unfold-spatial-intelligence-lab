@@ -11,6 +11,7 @@ import { checkFile } from '../experience/intake';
 import { canvasTranscoder, prepareImage, TranscodeError, type Transcoder } from '../unified-workspace/image-transcode';
 import type { SpatialWorkspace, WorkspaceOptions } from '../workspace-design/workspace';
 import { PlanSpaceLayer, type LayerSync } from './layer';
+import { AtlasSpaceLayer, ATLAS_NOTICE } from './atlas-layer';
 import { decide, decideAll, initialSpaceReview, pruneSpatialPlan, removedIds, reviewBlockers, reviewRecord, type SpaceReview } from './review';
 import { browserStorage, SpaceStore, type SpaceListing, type SpaceRecord, type StoreProblem } from './store';
 
@@ -77,6 +78,8 @@ export class SpaceFlow {
   phase: SpacePhase = 'closed';
   reply: SpatialPlanV2Reply | null = null;
   layer: PlanSpaceLayer | null = null;
+  /** Anatomy as another provider of Space: the educational heart atlas. Never together with `layer`. */
+  atlas: AtlasSpaceLayer | null = null;
   review: SpaceReview = initialSpaceReview();
   failure: { code: string; message: string; detail?: string } | null = null;
   run: RunInfo | null = null;
@@ -167,7 +170,7 @@ export class SpaceFlow {
   dispose(): void { this.abort?.abort(); clearInterval(this.tick); this.layer = null; this.panel.remove(); }
 
   private dropScene(): void {
-    if (this.layer) { this.layer = null; this.options.workspace.clearMachine({ brandLabel: 'laboratório vazio', notices: [], extraTools: [] }); }
+    if (this.layer || this.atlas) { this.layer = null; this.atlas = null; this.options.workspace.clearMachine({ brandLabel: 'laboratório vazio', notices: [], extraTools: [] }); }
     this.session = null; this.syncNote = null; this.presentationNotice = null;
   }
 
@@ -362,7 +365,39 @@ export class SpaceFlow {
   /** A status line is not a log: it leaves after a while unless something newer replaced it. */
   private expireNote(text: string | null): void { window.setTimeout(() => { if (this.note === text && this.layer) { this.note = null; this.refreshContext(); } }, 9000); }
 
-  private refreshContext(): void { if (this.layer) this.options.workspace.setContext(this.context()); }
+  private refreshContext(): void { if (this.layer) this.options.workspace.setContext(this.context()); else if (this.atlas) this.options.workspace.setContext(this.atlasContext()); }
+
+  /** The educational atlas on stage: always labelled, never editable, never presented as a reconstruction. */
+  async openAtlas(): Promise<boolean> {
+    return new Promise((resolve) => this.guard(() => void this.showAtlas().then(resolve)));
+  }
+
+  private async showAtlas(): Promise<boolean> {
+    this.attach(); this.dropScene(); this.abort?.abort(); clearInterval(this.tick);
+    this.phase = 'waiting'; this.source = null; this.failure = null; this.startedAt = Date.now(); this.panel.hidden = false; this.panel.dataset.phase = 'atlas-loading';
+    this.panel.innerHTML = '<div class="sp-card"><h1 class="sp-h1">A carregar o atlas</h1><p class="u-small">Modelo educativo de referência do coração (BodyParts3D).</p></div>';
+    const workspace = this.options.workspace;
+    try {
+      const atlas = await AtlasSpaceLayer.load({ redraw: () => workspace.redraw(), changed: () => this.refreshContext(), settled: () => workspace.refocusSpace() });
+      if (this.phase !== 'waiting') { atlas.dispose(); return false; }
+      this.atlas = atlas; this.phase = 'built'; this.panel.hidden = true; this.panel.replaceChildren();
+      workspace.showSpace(atlas, this.atlasContext());
+      workspace.setComposerIntake({ onText: () => undefined, onFile: () => undefined, placeholder: 'Seleccione uma estrutura na cena', status: 'atlas de referência · sem edição', disabled: true });
+      return true;
+    } catch (error) {
+      this.failure = { code: error instanceof Error ? error.message : 'ATLAS', message: 'Não foi possível carregar o atlas anatómico. Nada foi construído.' }; this.phase = 'failed'; this.render(); return false;
+    }
+  }
+
+  private atlasContext(): { brandLabel: string; notices: Array<{ id: string; text: string; detail?: string }>; extraTools: NonNullable<WorkspaceOptions['extraTools']> } {
+    const notices: Array<{ id: string; text: string; detail?: string }> = [{ id: 'atlas-origin', ...ATLAS_NOTICE }];
+    if (this.atlas?.presentationNotice) notices.push({ id: 'atlas-explode', text: this.atlas.presentationNotice });
+    return { brandLabel: 'atlas anatómico · coração · educativo', notices, extraTools: [
+      { id: 'space-library', label: 'Os meus Spaces', hint: 'guardados neste navegador', icon: folderIcon, run: () => this.openLibrary() },
+      { id: 'space-new', label: 'Novo espaço', hint: 'pede um objecto à Meta', icon: arrowLeftIcon, run: () => this.open() },
+      { id: 'space-exit', label: 'Voltar ao laboratório', hint: 'sai dos espaços', icon: arrowLeftIcon, run: () => this.exit() },
+    ] };
+  }
 
   private context(): { brandLabel: string; notices: Array<{ id: string; text: string; detail?: string }>; extraTools: NonNullable<WorkspaceOptions['extraTools']> } {
     const layer = this.layer!, run = this.run!, plan = layer.currentPlan;
@@ -421,7 +456,7 @@ export class SpaceFlow {
       ${this.source?.kind === 'image' ? '' : `<label class="sp-field"><span class="u-label">descrição</span><textarea id="sp-text" rows="3" maxlength="${SPACE_TEXT_LIMITS.max}" placeholder="Ex.: uma harpa de concerto, ou uma turbina eólica de secretária com três pás (mínimo ${SPACE_TEXT_LIMITS.min} caracteres)">${esc(text)}</textarea></label>`}
       ${this.source?.kind === 'image' ? this.sourcePreview() : `<label class="sp-drop"><input id="sp-file" type="file" accept="image/png,image/jpeg,image/webp"><span>ou <u>escolha uma fotografia</u></span><span class="u-label">PNG, JPEG ou WebP · até 10 MB · sem escala física, a escala fica desconhecida</span></label>`}
       ${this.problem ? `<p class="sp-problem" role="alert">${esc(this.problem)}</p>` : ''}
-      <div class="sp-row">${this.source?.kind === 'image' ? '<button class="u-btn u-btn--outline" type="button" data-sp="clear">Remover fotografia</button>' : ''}${this.store.available ? `<button class="u-btn u-btn--outline" type="button" data-sp="library">Os meus Spaces (${saved})</button>` : ''}<span class="sp-grow"></span><button class="u-btn u-btn--outline" type="button" data-sp="exit">Voltar</button><button class="u-btn u-btn--primary" type="button" data-sp="submit" ${this.source ? '' : 'disabled'}>Pedir à Meta</button></div></div>`;
+      <div class="sp-row">${this.source?.kind === 'image' ? '<button class="u-btn u-btn--outline" type="button" data-sp="clear">Remover fotografia</button>' : ''}${this.store.available ? `<button class="u-btn u-btn--outline" type="button" data-sp="library">Os meus Spaces (${saved})</button>` : ''}<span class="sp-grow"></span><button class="u-btn u-btn--outline" type="button" data-sp="atlas">Atlas do coração (educativo)</button><button class="u-btn u-btn--outline" type="button" data-sp="exit">Voltar</button><button class="u-btn u-btn--primary" type="button" data-sp="submit" ${this.source ? '' : 'disabled'}>Pedir à Meta</button></div></div>`;
   }
 
   private libraryHtml(): string {
@@ -494,6 +529,7 @@ export class SpaceFlow {
     else if (action === 'exit') this.exit();
     else if (action === 'discard') { this.startIntake(); }
     else if (action === 'library') void this.showLibrary();
+    else if (action === 'atlas') void this.openAtlas();
     else if (action === 'new') this.startIntake();
     else if (action === 'keep-space') { this.confirmDelete = null; this.render(); }
     else if (action === 'keep-all') this.decideAll('keep');
