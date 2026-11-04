@@ -384,7 +384,7 @@ export class SpatialWorkspace {
     this.renderNotices(v);
     this.renderRail();
     this.renderInspector();
-    if (this.space) { const key = `${this.el.inspector!.hidden}|${this.el.inspector!.offsetHeight}|${this.root.clientWidth}`; if (key !== this.insetKey) { this.insetKey = key; this.syncInsets(true); } }
+    if (this.space) { const key = `${this.el.inspector!.hidden}|${this.el.inspector!.offsetHeight}|${this.root.clientWidth}|${this.el.notices!.offsetHeight}`; if (key !== this.insetKey) { this.insetKey = key; this.syncInsets(true); } }
     this.foundry.requestRender();
   }
 
@@ -528,7 +528,9 @@ export class SpatialWorkspace {
     const card = this.space && !this.el.inspector!.hidden ? this.el.inspector! : null;
     const bottom = composerH + 32 + (narrow && this.state.mode === 'conversation' ? this.el.conversation!.offsetHeight + 8 : 0) + (card && narrow ? card.offsetHeight + 8 : 0);
     const right = !narrow && this.state.mode === 'conversation' ? Math.min(420, W * 0.38) + 32 : 24 + (card && !narrow ? card.offsetWidth + 16 : 0);
-    return { top: 64, right, bottom, left: narrow ? 56 : 72 };
+    // in a Space the notices stack from the top: keep the object below them instead of behind them
+    const notices = this.space ? this.el.notices!.offsetHeight : 0;
+    return { top: Math.max(64, notices ? notices + 28 : 0), right, bottom, left: narrow ? 56 : 72 };
   }
 
   private syncInsets(animate: boolean): void {
@@ -1176,7 +1178,7 @@ export class SpatialWorkspace {
     this.buildMachine(structuredClone(this.placeholder));
     this.space = layer; this.foundry.scene.add(layer.root); this.root.dataset.space = 'true';
     this.setContext({ brandLabel: context.brandLabel, notices: context.notices, extraTools: context.extraTools });
-    this.frameHome(); this.foundry.studio.updateContactShadow(); this.render();
+    this.syncInsets(false); this.frameHome(); this.foundry.studio.updateContactShadow(); this.render();
   }
 
   /** Re-frames and re-renders after the layer changed what it shows (an edit, an undo, a reveal step). */
