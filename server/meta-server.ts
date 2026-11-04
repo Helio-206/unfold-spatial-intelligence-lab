@@ -98,8 +98,9 @@ export const PAID_ROUTES = [
 ] as const;
 const PAID_ROUTE_SET: ReadonlySet<string> = new Set(PAID_ROUTES);
 const REVIEW_ROUTES = ['/api/spatial/v2/reviews', '/api/spatial/v2/reviews/get', '/api/spatial/v2/reviews/list', '/api/spatial/v2/reviews/decide', '/api/spatial/v2/reviews/eligibility'];
-const LOCAL_SPATIAL_ROUTES = new Set(['/api/spatial/operation', '/api/spatial/edit', '/api/spatial/undo', '/api/spatial/v2/adopt', '/api/spatial/v2/operation', '/api/spatial/v2/refine', '/api/spatial/v2/undo', '/api/spatial/v2/transactions', '/api/spatial/v2/transactions/status', ...REVIEW_ROUTES]);
-const NO_META_SPATIAL_ROUTES = new Set(['/api/spatial/operation', '/api/spatial/undo', '/api/spatial/v2/adopt', '/api/spatial/v2/operation', '/api/spatial/v2/refine', '/api/spatial/v2/undo', '/api/spatial/v2/transactions', '/api/spatial/v2/transactions/status', ...REVIEW_ROUTES]);
+const SESSION_POLICY_ROUTE = '/api/spatial/v2/sessions/review-binding';
+const LOCAL_SPATIAL_ROUTES = new Set(['/api/spatial/operation', '/api/spatial/edit', '/api/spatial/undo', '/api/spatial/v2/adopt', '/api/spatial/v2/operation', '/api/spatial/v2/refine', '/api/spatial/v2/undo', '/api/spatial/v2/transactions', '/api/spatial/v2/transactions/status', ...REVIEW_ROUTES, SESSION_POLICY_ROUTE]);
+const NO_META_SPATIAL_ROUTES = new Set(['/api/spatial/operation', '/api/spatial/undo', '/api/spatial/v2/adopt', '/api/spatial/v2/operation', '/api/spatial/v2/refine', '/api/spatial/v2/undo', '/api/spatial/v2/transactions', '/api/spatial/v2/transactions/status', ...REVIEW_ROUTES, SESSION_POLICY_ROUTE]);
 const MAX_REVIEW_RECORDS = 100;
 const MAX_IDEMPOTENCY_RECORDS_PER_SESSION = 64;
 
@@ -606,6 +607,7 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
           '/api/spatial/v2/reviews/list': ['sourceSha256', 'planFingerprint'],
           '/api/spatial/v2/reviews/decide': ['reviewId', 'baseReviewRevision', 'subjectId', 'decision', 'correctedValue', 'reviewerName', 'note', 'planRevision', 'evidenceIds'],
           '/api/spatial/v2/reviews/eligibility': ['reviewId', 'reviewRevision', 'planFingerprint', 'sourceSha256'],
+          '/api/spatial/v2/sessions/review-binding': ['sessionId', 'baseRevision', 'reviewId'],
         };
         const requiredKeys: Record<string, string[]> = {
           '/api/spatial/v2/plan': ['sourceKind'], '/api/spatial/v2/adopt': ['plan'], '/api/spatial/v2/edit': ['sessionId', 'baseRevision', 'instruction'],
@@ -618,6 +620,7 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
           '/api/spatial/v2/reviews/list': ['sourceSha256'],
           '/api/spatial/v2/reviews/decide': ['reviewId', 'baseReviewRevision', 'subjectId', 'decision', 'reviewerName'],
           '/api/spatial/v2/reviews/eligibility': ['reviewId'],
+          '/api/spatial/v2/sessions/review-binding': ['sessionId', 'baseRevision', 'reviewId'],
         };
         if (!body || typeof body !== 'object' || Array.isArray(body) || !allowedKeys[route] || Object.keys(body).some((key) => !allowedKeys[route]!.includes(key)) || !requiredKeys[route]!.every((key) => Object.hasOwn(body, key))) { writeJson(response, 400, { error: { code: 'INVALID_SPATIAL_V2_REQUEST', message: 'Corpo V2 inválido, incompleto ou com campos desconhecidos.' } }, origin); return; }
         const candidate = body as { sessionId?: unknown; baseRevision?: unknown; instruction?: unknown; imageDataUrl?: unknown; sourceKind?: unknown; mode?: unknown; maxRefinements?: unknown; operation?: unknown; plan?: unknown; propose?: unknown; origin?: unknown; evidence?: unknown; idempotencyKey?: unknown; operations?: unknown; provenance?: unknown; contract?: unknown; mutationPolicy?: unknown; reviewId?: unknown };
@@ -781,6 +784,26 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
             try { persistSessions(); } catch { spatialV2Sessions.delete(sessionId); writeJson(response, 500, { error: { code: 'SPATIAL_SESSION_PERSISTENCE_FAILED', message: 'Não foi possível gravar a sessão; nada foi criado.' } }, origin); return; }
             const compiled = compileSpatialPlanV2(adopted); const constraintReport = evaluateSpatialConstraintsV2(adopted, compiled.root); disposeCompiledSpatialPlan(compiled.root);
             writeJson(response, 200, { contract: 'unfold.spatial-v2-review.v1', sessionId, revision: 0, plan: adopted, constraintReport, mutationPolicy: policy, sessionDurability, review: { status: 'adopted', actorEvidence: 'client_asserted_unverified', authenticatedReviewer: false } }, origin); return;
+          }
+          if (route === SESSION_POLICY_ROUTE) {
+            // Review-binding transition (E1.4 patch): the only way the active review of a session
+            // changes. It preserves plan, revision, history and every idempotency receipt; it only
+            // replaces the policy binding, after validating that the new review belongs to the
+            // exact current authoritative plan. The generic revision check above has already
+            // rejected stale writers. Persisted atomically, with rollback on failure.
+            const current = session!;
+            const record = typeof candidate.reviewId === 'string' ? reviewRecords.get(candidate.reviewId) : undefined;
+            const currentFingerprint = createHash('sha256').update(stableStringify(current.plan)).digest('hex');
+            if (!record || record.planFingerprint !== currentFingerprint || record.source.sha256 !== current.plan.source.sha256) {
+              writeJson(response, 409, { error: { code: 'SPATIAL_SESSION_POLICY_BINDING_INVALID', message: 'A nova revisão não pertence ao plano autoritativo actual desta sessão.', currentRevision: current.revision } }, origin); return;
+            }
+            const previousPolicy = current.policy;
+            current.policy = { mode: 'review_fenced', reviewId: record.reviewId };
+            try { persistSessions(); } catch {
+              current.policy = previousPolicy;
+              writeJson(response, 500, { error: { code: 'SPATIAL_SESSION_PERSISTENCE_FAILED', message: 'A gravação durável falhou; a vinculação não mudou.', currentRevision: current.revision } }, origin); return;
+            }
+            writeJson(response, 200, { contract: 'unfold.spatial-session-policy.v1', sessionId: candidate.sessionId, revision: current.revision, mutationPolicy: current.policy, sessionDurability }, origin); return;
           }
           if (route === '/api/spatial/v2/transactions/status') {
             const current = session!;
