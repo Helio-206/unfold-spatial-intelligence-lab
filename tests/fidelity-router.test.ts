@@ -42,6 +42,15 @@ describe('adaptive geometry router', () => {
     disposeCompiledSpatialPlan(routed.root);
   });
 
+  it('draws a junction fillet on one side only: the thinner part flares into the thicker one, never both', () => {
+    const routed = compileWithRouter(sample(), { limits: { maxGridCells: 48 } }), meshes = (id: string) => ownMeshes(routed.root, id);
+    const blend = (id: string) => Math.max(0, ...meshes(id).map((m) => Number(m.userData.blendRadius ?? 0)));
+    expect(blend('duct')).toBeGreaterThan(0); // thin tube into the large body
+    expect(blend('body')).toBe(0);            // the body keeps its own surface where the tube enters it
+    const d = Object.fromEntries(routed.report.decisions.map((x) => [x.componentId, x])); expect(d.duct!.reason).toMatch(/joins to body/); expect(d.body!.reason).not.toMatch(/joins to duct/);
+    disposeCompiledSpatialPlan(routed.root);
+  });
+
   it('keeps every component selectable with the same entity id, subcomponent key and material profile', () => {
     const routed = compileWithRouter(sample(), { limits: { maxGridCells: 48 } });
     for (const id of ['body', 'duct', 'slab', 'profile']) { const meshes = ownMeshes(routed.root, id); expect(meshes.length).toBeGreaterThan(0); for (const o of meshes) { expect(o.userData.spatialEntityId).toBe(id); expect(typeof o.userData.spatialSubcomponentKey).toBe('string'); expect(typeof o.userData.materialProfile).toBe('string'); } }

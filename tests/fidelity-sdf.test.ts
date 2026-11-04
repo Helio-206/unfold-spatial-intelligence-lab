@@ -3,7 +3,7 @@ import { Box3, Vector3 } from 'three';
 import { validateSpatialPlanV2 } from '../src/universal-spatial/contracts-v2';
 import { compileSpatialPlanV2, disposeCompiledSpatialPlan } from '../src/universal-spatial/geometry-compiler-v2';
 import { collectWorldPoints } from '../src/universal-spatial/framing';
-import { implicitShapesOf, unionField, smoothMin } from '../src/universal-spatial/fidelity/sdf';
+import { implicitShapesOf, unionField, unionFieldCulled, smoothMin } from '../src/universal-spatial/fidelity/sdf';
 import { surfaceNets } from '../src/universal-spatial/fidelity/surface-nets';
 
 type V3 = [number, number, number];
@@ -31,6 +31,13 @@ describe('distance fields describe the same shapes as the V2 compiler', () => {
     const mesh = surfaceNets({ min, cells: [0, 1, 2].map((a) => Math.ceil(size.getComponent(a) / cell) + 4) as V3, size: cell, field }); mesh.computeBoundingBox();
     const got = mesh.boundingBox!, tol = cell * 1.6;
     for (const axis of ['x', 'y', 'z'] as const) { expect(Math.abs(got.min[axis] - v2.min[axis]), `${operator} min ${axis}`).toBeLessThan(tol); expect(Math.abs(got.max[axis] - v2.max[axis]), `${operator} max ${axis}`).toBeLessThan(tol); }
+  });
+
+  it('bounding-box culling returns exactly the same field as evaluating every shape', () => {
+    const plan = { type: 'group' as const, key: 'g', transform: { position: [0, 0, 0] as V3, rotationRad: [0, 0, 0] as V3, scale: [1, 1, 1] as V3 }, repeat: { kind: 'radial', count: 9, axis: 'y', spacingOrRadius: 1.6 }, children: [geometryFor('tube', { points: [[0, 0, 0], [0.5, 1, 0.2], [1.2, 1.6, 0]], radius: 0.1, tubularSegments: 16, radialSegments: 8 }, rot), geometryFor('ellipsoid', { radii: [0.5, 0.3, 0.4], widthSegments: 16, heightSegments: 12 }, rot)] };
+    const shapes = implicitShapesOf(plan as never) as Exclude<ReturnType<typeof implicitShapesOf>, { code: string }>; expect(shapes.length).toBe(18);
+    const full = unionField(shapes.map((s) => s.field), 0.3), culled = unionFieldCulled(shapes, 0.3); let seed = 7; const rand = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
+    for (let n = 0; n < 600; n++) { const x = rand() * 6 - 3, y = rand() * 5 - 1.5, z = rand() * 6 - 3; expect(culled(x, y, z)).toBeCloseTo(full(x, y, z), 9); }
   });
 
   it('refuses operators that have no distance field, with a code', () => {

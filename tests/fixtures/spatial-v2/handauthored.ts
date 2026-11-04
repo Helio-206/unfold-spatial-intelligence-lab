@@ -117,3 +117,67 @@ export function clockLikeReply() {
   ];
   return replyFromPlan(finish('grandfather pendulum clock - conceptual (hand-authored reproduction)', 'A grandfather pendulum clock: tall wooden case, round dial with hands, brass pendulum disc, and feet.', components, ['The real Meta plan of PR #25 was not kept; this reproduces its structure.']));
 }
+
+/**
+ * Lungs: a reproduction of the STRUCTURE the Terminal's acceptance run recorded for the lungs illustration (reports/acceptance/REPORT.md): trachea (cylinder + ring),
+ * carina (two tubes), left and right lung (ellipsoids, right larger), left and right bronchial branches (3 tubes each). The flaws that report names are reproduced
+ * as written: the carina tubes stop short of the trachea, the ring floats at its base, the branches lie on the lobe surfaces. The real plan was not kept.
+ * Hand-authored; NOT Meta output; used to compare geometry routes on an identical input, not as proof of generation.
+ */
+export function lungsLikeReply() {
+  const evidence = 'Hand-authored reproduction of the structure and flaws recorded in reports/acceptance/REPORT.md for the real Meta lungs run (its plan was not kept). Not Meta output.';
+  const lung = mat('organic', '#7a1f2b', 0.62, 0), pipe = mat('organic', '#e58c9a', 0.55, 0), vessel = mat('organic', '#b23a48', 0.5, 0);
+  const lobe = (cx: number, cy: number, rx: number, ry: number, rz: number) => (x: number, y: number) => { const t = 1 - ((x - cx) / rx) ** 2 - ((y - cy) / ry) ** 2; return Math.sqrt(Math.max(t, 0)) * rz - 0.1 + 0.02; };
+  const onLobe = (surface: (x: number, y: number) => number, path: Array<[number, number]>): V3[] => path.map(([x, y]) => [x, y, surface(x, y)]);
+  const left = lobe(-2.1, 0.9, 1.35, 2.3, 1.0), right = lobe(2.2, 0.8, 1.55, 2.45, 1.1);
+  const branches = (side: number, surface: (x: number, y: number) => number, key: string) => group(`${key}-tree`, [
+    tube(`${key}-main`, onLobe(surface, [[side * 1.0, 1.5], [side * 1.7, 0.9], [side * 2.3, 0.1], [side * 2.6, -0.9]]), 0.07, vessel),
+    tube(`${key}-upper`, onLobe(surface, [[side * 1.7, 0.9], [side * 1.9, 1.9], [side * 2.1, 2.6]]), 0.055, vessel),
+    tube(`${key}-side`, onLobe(surface, [[side * 2.3, 0.1], [side * 2.9, 0.7]]), 0.05, vessel),
+  ]);
+  const components = [
+    component('trachea', 'Trachea', shape('trachea-shell', 'cylinder', { radiusTop: 0.34, radiusBottom: 0.34, height: 2.6, radialSegments: 32 }, pipe), tf([0, 3.7, 0]), evidence),
+    component('trachea-ring', 'Tracheal ring', shape('ring-shape', 'torus', { majorRadius: 0.36, tubeRadius: 0.05, radialSegments: 12, tubularSegments: 40 }, pipe, tf([0, 0, 0], [Math.PI / 2, 0, 0])), tf([0, 2.32, 0]), evidence),
+    component('carina', 'Carina', group('carina-tubes', [tube('carina-left', [[0, 2.2, 0], [-0.45, 1.9, 0], [-1.0, 1.5, 0]], 0.13, pipe), tube('carina-right', [[0, 2.2, 0], [0.45, 1.9, 0], [1.0, 1.5, 0]], 0.13, pipe)]), tf(), evidence),
+    component('lung-left', 'Left lung', shape('lung-left-shape', 'ellipsoid', { radii: [1.35, 2.3, 1.0], widthSegments: 32, heightSegments: 24 }, lung), tf([-2.1, 0.9, -0.1]), evidence),
+    component('lung-right', 'Right lung', shape('lung-right-shape', 'ellipsoid', { radii: [1.55, 2.45, 1.1], widthSegments: 32, heightSegments: 24 }, lung), tf([2.2, 0.8, -0.1]), evidence),
+    component('branches-left', 'Left bronchial branches', branches(-1, left, 'bl'), tf(), evidence),
+    component('branches-right', 'Right bronchial branches', branches(1, right, 'br'), tf(), evidence),
+  ];
+  return replyFromPlan(finish('Human lungs and trachea - conceptual (hand-authored reproduction)', 'An illustration of human lungs with trachea and bronchi.', components, ['Posterior shape, lobe fissures and depth are unknown.']));
+}
+
+/**
+ * Compound microscope: a reproduction of the structure recorded for the real Meta text run (base, support column, arm, stage of 3 shapes, ocular tube, eyepiece,
+ * revolver disc, objectives = one cylinder repeated radially 3 times, focus = axle + knob repeated twice, illuminator of 2 shapes), built from boxes and cylinders as
+ * that run did. The real plan was not kept. Hand-authored; NOT Meta output.
+ */
+export function microscopeLikeReply() {
+  const evidence = 'Hand-authored reproduction of the structure recorded in reports/acceptance/REPORT.md for the real Meta microscope run (its plan was not kept). Not Meta output.';
+  const body = mat('industrial', '#2f3338', 0.4, 0.4, 0.4), steel = mat('metal', '#a9afb6', 0.3, 0.9), blue = mat('accent', '#2b5fa8', 0.35, 0.1, 0.5), pale = mat('neutral', '#e8e4c8', 0.5, 0), glass = mat('glass', '#cfe8ff', 0.1, 0), black = mat('rubber', '#111317', 0.8, 0);
+  const z90: V3 = [0, 0, Math.PI / 2];
+  const components = [
+    component('base', 'Base', shape('base-shape', 'rounded_box', { dimensions: [3.2, 0.4, 2.4], bevelM: 0.12, segments: 3 }, body), tf([0, 0.2, 0]), evidence),
+    component('column', 'Support column', shape('column-shape', 'cylinder', { radiusTop: 0.28, radiusBottom: 0.28, height: 3.6, radialSegments: 32 }, body), tf([-1.0, 2.2, 0]), evidence),
+    component('arm', 'Arm', shape('arm-shape', 'box', { dimensions: [2.0, 0.5, 0.6] }, body), tf([-0.1, 3.75, 0]), evidence),
+    component('stage', 'Stage', group('stage-parts', [shape('stage-plate', 'box', { dimensions: [1.8, 0.15, 1.6] }, black), shape('stage-slide', 'box', { dimensions: [0.8, 0.04, 0.3] }, glass, tf([0, 0.1, 0])), shape('stage-clip', 'box', { dimensions: [0.4, 0.05, 0.08] }, steel, tf([0.5, 0.11, 0.3]))]), tf([0.8, 1.95, 0]), evidence),
+    component('ocular-tube', 'Ocular tube', shape('tube-shape', 'cylinder', { radiusTop: 0.28, radiusBottom: 0.28, height: 2.0, radialSegments: 32 }, body), tf([0.8, 4.9, 0]), evidence),
+    component('eyepiece', 'Eyepiece', shape('eyepiece-shape', 'cylinder', { radiusTop: 0.2, radiusBottom: 0.2, height: 0.8, radialSegments: 32 }, steel), tf([0.8, 6.3, 0]), evidence),
+    component('revolver', 'Revolver', shape('revolver-shape', 'cylinder', { radiusTop: 0.6, radiusBottom: 0.6, height: 0.18, radialSegments: 40 }, steel), tf([0.8, 3.4, 0]), evidence),
+    component('objectives', 'Objectives', shape('objective-shape', 'cylinder', { radiusTop: 0.1, radiusBottom: 0.14, height: 0.6, radialSegments: 24 }, blue, tf(), { kind: 'radial', count: 3, axis: 'y', spacingOrRadius: 0.38 }), tf([0.8, 3.0, 0]), evidence),
+    component('focus', 'Focus knobs', group('focus-parts', [shape('focus-axle', 'cylinder', { radiusTop: 0.08, radiusBottom: 0.08, height: 1.2, radialSegments: 16 }, steel, tf([0, 0, 0], z90)), shape('focus-knob', 'cylinder', { radiusTop: 0.28, radiusBottom: 0.28, height: 0.14, radialSegments: 32 }, black, tf([0, 0, 0], z90), { kind: 'linear', count: 2, axis: 'x', spacingOrRadius: 1.2 })]), tf([-1.0, 2.6, 0]), evidence),
+    component('illuminator', 'Illuminator', group('illuminator-parts', [shape('lamp-stem', 'cylinder', { radiusTop: 0.08, radiusBottom: 0.08, height: 1.0, radialSegments: 16 }, steel), shape('lamp-head', 'cylinder', { radiusTop: 0.3, radiusBottom: 0.3, height: 0.2, radialSegments: 32 }, pale, tf([0, 0.5, 0]))]), tf([0.8, 0.9, 0]), evidence),
+  ];
+  return replyFromPlan(finish('Compound optical microscope - conceptual (hand-authored reproduction)', 'A compound optical microscope with base, arm, stage, objectives and eyepiece.', components, ['Optics and internal mechanism are not modelled.']));
+}
+
+/** Two-component stand-in plan for the licensed external mesh (a camera on a tripod). It exists only to give the mesh path two V2 components to be offered for. */
+export function cameraStandInReply() {
+  const evidence = 'Hand-authored two-component placeholder plan. The external CC0 mesh is offered for these components to exercise the approval path. Not Meta output.';
+  const wood = mat('organic', '#6b4a2a', 0.6, 0), brass = mat('metal', '#b08d57', 0.35, 0.8);
+  const components = [
+    component('camera', 'Camera', shape('camera-body', 'rounded_box', { dimensions: [1.4, 1.1, 1.8], bevelM: 0.1, segments: 3 }, brass), tf([0, 3.2, 0]), evidence),
+    component('tripod', 'Tripod', shape('tripod-legs', 'cone', { radius: 1.1, height: 3.0, radialSegments: 16 }, wood), tf([0, 1.5, 0]), evidence),
+  ];
+  return replyFromPlan(finish('Camera on a tripod - mesh path stand-in (hand-authored placeholder)', 'A camera on a tripod.', components, ['Placeholder plan for the external-mesh path.']));
+}

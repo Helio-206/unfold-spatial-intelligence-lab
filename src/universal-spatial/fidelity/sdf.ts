@@ -17,6 +17,21 @@ export type ImplicitFailure = { code: 'OPERATOR_NOT_IMPLICIT' | 'TOO_MANY_INSTAN
 export const smoothMin = (a: number, b: number, k: number): number => { if (k <= 0) return Math.min(a, b); const h = Math.max(k - Math.abs(a - b), 0) / k; return Math.min(a, b) - h * h * k * 0.25; };
 export const unionField = (fields: Field[], k: number): Field => (x, y, z) => { let d = Infinity; for (const f of fields) d = smoothMin(d, f(x, y, z), k); return d; };
 
+/**
+ * Same result as `unionField`, much cheaper: a shape whose bounding box is farther than the best distance so far plus the blend radius cannot change the
+ * result, so it is not evaluated. Exact for shapes with uniform scale; under non-uniform scale a field underestimates distance, so a far shape's
+ * influence could in theory be missed (only at distances beyond `k`, never near a surface).
+ */
+export const unionFieldCulled = (shapes: Pick<ImplicitShape, 'field' | 'box'>[], k: number): Field => (x, y, z) => {
+  let d = Infinity;
+  for (const s of shapes) {
+    const b = s.box, dx = Math.max(b.min.x - x, 0, x - b.max.x), dy = Math.max(b.min.y - y, 0, y - b.max.y), dz = Math.max(b.min.z - z, 0, z - b.max.z);
+    if (d !== Infinity && Math.hypot(dx, dy, dz) > d + k) continue;
+    d = smoothMin(d, s.field(x, y, z), k);
+  }
+  return d;
+};
+
 const sdBox = (x: number, y: number, z: number, hx: number, hy: number, hz: number) => { const qx = Math.abs(x) - hx, qy = Math.abs(y) - hy, qz = Math.abs(z) - hz; return Math.hypot(Math.max(qx, 0), Math.max(qy, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qy, qz), 0); };
 const sdCappedCone = (x: number, y: number, z: number, h: number, r1: number, r2: number) => {
   const qx = Math.hypot(x, z), qy = y, k2x = r2 - r1, k2y = 2 * h, cax = qx - Math.min(qx, qy < 0 ? r1 : r2), cay = Math.abs(qy) - h;

@@ -1,0 +1,1692 @@
+{
+  "contract": "unfold.spatial-plan.v2",
+  "sessionId": "00000000-0000-4000-8000-000000000000",
+  "revision": 0,
+  "plan": {
+    "contract": "unfold.spatial-plan.v2",
+    "source": {
+      "kind": "text",
+      "sha256": "cd087af236399ee8e1fe2b752d82e03432b440b8298a7b5052907c1081eaf024"
+    },
+    "title": "Bicycle (hand-authored fixture)",
+    "units": "unitless",
+    "presentationProfile": "neutral",
+    "components": [
+      {
+        "id": "rear-wheel",
+        "label": "Rear wheel",
+        "parentId": null,
+        "geometry": {
+          "type": "group",
+          "key": "rear-wheel-parts",
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": null,
+          "children": [
+            {
+              "type": "shape",
+              "key": "rear-wheel-tyre",
+              "operator": "torus",
+              "parameters": {
+                "majorRadius": 0.33,
+                "tubeRadius": 0.035,
+                "radialSegments": 14,
+                "tubularSegments": 72
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "rubber",
+                "color": "#1b1d20",
+                "roughness": 0.9,
+                "metalness": 0,
+                "clearcoat": 0
+              }
+            },
+            {
+              "type": "shape",
+              "key": "rear-wheel-rim",
+              "operator": "torus",
+              "parameters": {
+                "majorRadius": 0.292,
+                "tubeRadius": 0.012,
+                "radialSegments": 10,
+                "tubularSegments": 72
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "metal",
+                "color": "#9aa3ad",
+                "roughness": 0.25,
+                "metalness": 0.9,
+                "clearcoat": 0
+              }
+            },
+            {
+              "type": "shape",
+              "key": "rear-wheel-spoke",
+              "operator": "tube",
+              "parameters": {
+                "points": [
+                  [
+                    0,
+                    0.02,
+                    0
+                  ],
+                  [
+                    0,
+                    0.29,
+                    0
+                  ]
+                ],
+                "radius": 0.003,
+                "tubularSegments": 8,
+                "radialSegments": 6
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": {
+                "kind": "radial",
+                "count": 28,
+                "axis": "z",
+                "spacingOrRadius": 0.001
+              },
+              "material": {
+                "profile": "metal",
+                "color": "#b8bec6",
+                "roughness": 0.25,
+                "metalness": 0.9,
+                "clearcoat": 0
+              }
+            },
+            {
+              "type": "shape",
+              "key": "rear-wheel-hub",
+              "operator": "cylinder",
+              "parameters": {
+                "radiusTop": 0.025,
+                "radiusBottom": 0.025,
+                "height": 0.1,
+                "radialSegments": 20
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  1.5707963267948966,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "metal",
+                "color": "#b8bec6",
+                "roughness": 0.25,
+                "metalness": 0.9,
+                "clearcoat": 0
+              }
+            }
+          ]
+        },
+        "transform": {
+          "position": [
+            -0.52,
+            0.36,
+            0
+          ],
+          "rotationRad": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored fixture standing in for a model plan."
+        }
+      },
+      {
+        "id": "front-wheel",
+        "label": "Front wheel",
+        "parentId": null,
+        "geometry": {
+          "type": "group",
+          "key": "front-wheel-parts",
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": null,
+          "children": [
+            {
+              "type": "shape",
+              "key": "front-wheel-tyre",
+              "operator": "torus",
+              "parameters": {
+                "majorRadius": 0.33,
+                "tubeRadius": 0.035,
+                "radialSegments": 14,
+                "tubularSegments": 72
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "rubber",
+                "color": "#1b1d20",
+                "roughness": 0.9,
+                "metalness": 0,
+                "clearcoat": 0
+              }
+            },
+            {
+              "type": "shape",
+              "key": "front-wheel-rim",
+              "operator": "torus",
+              "parameters": {
+                "majorRadius": 0.292,
+                "tubeRadius": 0.012,
+                "radialSegments": 10,
+                "tubularSegments": 72
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "metal",
+                "color": "#9aa3ad",
+                "roughness": 0.25,
+                "metalness": 0.9,
+                "clearcoat": 0
+              }
+            },
+            {
+              "type": "shape",
+              "key": "front-wheel-spoke",
+              "operator": "tube",
+              "parameters": {
+                "points": [
+                  [
+                    0,
+                    0.02,
+                    0
+                  ],
+                  [
+                    0,
+                    0.29,
+                    0
+                  ]
+                ],
+                "radius": 0.003,
+                "tubularSegments": 8,
+                "radialSegments": 6
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": {
+                "kind": "radial",
+                "count": 28,
+                "axis": "z",
+                "spacingOrRadius": 0.001
+              },
+              "material": {
+                "profile": "metal",
+                "color": "#b8bec6",
+                "roughness": 0.25,
+                "metalness": 0.9,
+                "clearcoat": 0
+              }
+            },
+            {
+              "type": "shape",
+              "key": "front-wheel-hub",
+              "operator": "cylinder",
+              "parameters": {
+                "radiusTop": 0.025,
+                "radiusBottom": 0.025,
+                "height": 0.1,
+                "radialSegments": 20
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  1.5707963267948966,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "metal",
+                "color": "#b8bec6",
+                "roughness": 0.25,
+                "metalness": 0.9,
+                "clearcoat": 0
+              }
+            }
+          ]
+        },
+        "transform": {
+          "position": [
+            0.52,
+            0.36,
+            0
+          ],
+          "rotationRad": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored fixture standing in for a model plan."
+        }
+      },
+      {
+        "id": "frame",
+        "label": "Frame",
+        "parentId": null,
+        "geometry": {
+          "type": "group",
+          "key": "frame-tubes",
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": null,
+          "children": [
+            {
+              "type": "shape",
+              "key": "top-tube",
+              "operator": "tube",
+              "parameters": {
+                "points": [
+                  [
+                    -0.12,
+                    0.8,
+                    0
+                  ],
+                  [
+                    0.4,
+                    0.82,
+                    0
+                  ]
+                ],
+                "radius": 0.016,
+                "tubularSegments": 24,
+                "radialSegments": 10
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "industrial",
+                "color": "#b3261e",
+                "roughness": 0.3,
+                "metalness": 0.3,
+                "clearcoat": 0.6
+              }
+            },
+            {
+              "type": "shape",
+              "key": "down-tube",
+              "operator": "tube",
+              "parameters": {
+                "points": [
+                  [
+                    0,
+                    0.3,
+                    0
+                  ],
+                  [
+                    0.42,
+                    0.64,
+                    0
+                  ]
+                ],
+                "radius": 0.019,
+                "tubularSegments": 24,
+                "radialSegments": 10
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "industrial",
+                "color": "#b3261e",
+                "roughness": 0.3,
+                "metalness": 0.3,
+                "clearcoat": 0.6
+              }
+            },
+            {
+              "type": "shape",
+              "key": "seat-tube",
+              "operator": "tube",
+              "parameters": {
+                "points": [
+                  [
+                    0,
+                    0.3,
+                    0
+                  ],
+                  [
+                    -0.12,
+                    0.84,
+                    0
+                  ]
+                ],
+                "radius": 0.016,
+                "tubularSegments": 24,
+                "radialSegments": 10
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "industrial",
+                "color": "#b3261e",
+                "roughness": 0.3,
+                "metalness": 0.3,
+                "clearcoat": 0.6
+              }
+            },
+            {
+              "type": "shape",
+              "key": "head-tube",
+              "operator": "tube",
+              "parameters": {
+                "points": [
+                  [
+                    0.42,
+                    0.62,
+                    0
+                  ],
+                  [
+                    0.4,
+                    0.86,
+                    0
+                  ]
+                ],
+                "radius": 0.024,
+                "tubularSegments": 24,
+                "radialSegments": 10
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "industrial",
+                "color": "#b3261e",
+                "roughness": 0.3,
+                "metalness": 0.3,
+                "clearcoat": 0.6
+              }
+            },
+            {
+              "type": "shape",
+              "key": "chain-stay",
+              "operator": "tube",
+              "parameters": {
+                "points": [
+                  [
+                    0,
+                    0.3,
+                    -0.05
+                  ],
+                  [
+                    -0.52,
+                    0.36,
+                    -0.05
+                  ]
+                ],
+                "radius": 0.011,
+                "tubularSegments": 24,
+                "radialSegments": 10
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "industrial",
+                "color": "#b3261e",
+                "roughness": 0.3,
+                "metalness": 0.3,
+                "clearcoat": 0.6
+              }
+            },
+            {
+              "type": "shape",
+              "key": "chain-stay-r",
+              "operator": "tube",
+              "parameters": {
+                "points": [
+                  [
+                    0,
+                    0.3,
+                    0.05
+                  ],
+                  [
+                    -0.52,
+                    0.36,
+                    0.05
+                  ]
+                ],
+                "radius": 0.011,
+                "tubularSegments": 24,
+                "radialSegments": 10
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "industrial",
+                "color": "#b3261e",
+                "roughness": 0.3,
+                "metalness": 0.3,
+                "clearcoat": 0.6
+              }
+            },
+            {
+              "type": "shape",
+              "key": "seat-stay",
+              "operator": "tube",
+              "parameters": {
+                "points": [
+                  [
+                    -0.12,
+                    0.8,
+                    -0.04
+                  ],
+                  [
+                    -0.52,
+                    0.36,
+                    -0.05
+                  ]
+                ],
+                "radius": 0.009,
+                "tubularSegments": 24,
+                "radialSegments": 10
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "industrial",
+                "color": "#b3261e",
+                "roughness": 0.3,
+                "metalness": 0.3,
+                "clearcoat": 0.6
+              }
+            },
+            {
+              "type": "shape",
+              "key": "seat-stay-r",
+              "operator": "tube",
+              "parameters": {
+                "points": [
+                  [
+                    -0.12,
+                    0.8,
+                    0.04
+                  ],
+                  [
+                    -0.52,
+                    0.36,
+                    0.05
+                  ]
+                ],
+                "radius": 0.009,
+                "tubularSegments": 24,
+                "radialSegments": 10
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "industrial",
+                "color": "#b3261e",
+                "roughness": 0.3,
+                "metalness": 0.3,
+                "clearcoat": 0.6
+              }
+            }
+          ]
+        },
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotationRad": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored fixture standing in for a model plan."
+        }
+      },
+      {
+        "id": "fork",
+        "label": "Fork and steering",
+        "parentId": null,
+        "geometry": {
+          "type": "group",
+          "key": "fork-parts",
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": null,
+          "children": [
+            {
+              "type": "shape",
+              "key": "fork-leg",
+              "operator": "tube",
+              "parameters": {
+                "points": [
+                  [
+                    0.42,
+                    0.64,
+                    -0.04
+                  ],
+                  [
+                    0.5,
+                    0.36,
+                    -0.05
+                  ]
+                ],
+                "radius": 0.012,
+                "tubularSegments": 24,
+                "radialSegments": 10
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "metal",
+                "color": "#b8bec6",
+                "roughness": 0.25,
+                "metalness": 0.9,
+                "clearcoat": 0
+              }
+            },
+            {
+              "type": "shape",
+              "key": "fork-leg-r",
+              "operator": "tube",
+              "parameters": {
+                "points": [
+                  [
+                    0.42,
+                    0.64,
+                    0.04
+                  ],
+                  [
+                    0.5,
+                    0.36,
+                    0.05
+                  ]
+                ],
+                "radius": 0.012,
+                "tubularSegments": 24,
+                "radialSegments": 10
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "metal",
+                "color": "#b8bec6",
+                "roughness": 0.25,
+                "metalness": 0.9,
+                "clearcoat": 0
+              }
+            },
+            {
+              "type": "shape",
+              "key": "stem",
+              "operator": "tube",
+              "parameters": {
+                "points": [
+                  [
+                    0.4,
+                    0.86,
+                    0
+                  ],
+                  [
+                    0.37,
+                    0.96,
+                    0
+                  ]
+                ],
+                "radius": 0.014,
+                "tubularSegments": 24,
+                "radialSegments": 10
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "metal",
+                "color": "#b8bec6",
+                "roughness": 0.25,
+                "metalness": 0.9,
+                "clearcoat": 0
+              }
+            },
+            {
+              "type": "shape",
+              "key": "handlebar",
+              "operator": "tube",
+              "parameters": {
+                "points": [
+                  [
+                    0.4,
+                    0.97,
+                    -0.24
+                  ],
+                  [
+                    0.34,
+                    0.97,
+                    -0.12
+                  ],
+                  [
+                    0.34,
+                    0.97,
+                    0.12
+                  ],
+                  [
+                    0.4,
+                    0.97,
+                    0.24
+                  ]
+                ],
+                "radius": 0.013,
+                "tubularSegments": 48,
+                "radialSegments": 10
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "rubber",
+                "color": "#1b1d20",
+                "roughness": 0.9,
+                "metalness": 0,
+                "clearcoat": 0
+              }
+            }
+          ]
+        },
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotationRad": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored fixture standing in for a model plan."
+        }
+      },
+      {
+        "id": "saddle",
+        "label": "Saddle",
+        "parentId": null,
+        "geometry": {
+          "type": "group",
+          "key": "saddle-parts",
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": null,
+          "children": [
+            {
+              "type": "shape",
+              "key": "seat-post",
+              "operator": "tube",
+              "parameters": {
+                "points": [
+                  [
+                    -0.12,
+                    0.8,
+                    0
+                  ],
+                  [
+                    -0.14,
+                    0.9,
+                    0
+                  ]
+                ],
+                "radius": 0.014,
+                "tubularSegments": 24,
+                "radialSegments": 10
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "metal",
+                "color": "#b8bec6",
+                "roughness": 0.25,
+                "metalness": 0.9,
+                "clearcoat": 0
+              }
+            },
+            {
+              "type": "shape",
+              "key": "saddle-pad",
+              "operator": "ellipsoid",
+              "parameters": {
+                "radii": [
+                  0.15,
+                  0.03,
+                  0.075
+                ],
+                "widthSegments": 24,
+                "heightSegments": 12
+              },
+              "transform": {
+                "position": [
+                  -0.15,
+                  0.93,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "organic",
+                "color": "#3b2a20",
+                "roughness": 0.7,
+                "metalness": 0,
+                "clearcoat": 0
+              }
+            }
+          ]
+        },
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotationRad": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored fixture standing in for a model plan."
+        }
+      },
+      {
+        "id": "drivetrain",
+        "label": "Crank and pedals",
+        "parentId": null,
+        "geometry": {
+          "type": "group",
+          "key": "drivetrain-parts",
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": null,
+          "children": [
+            {
+              "type": "shape",
+              "key": "chainring",
+              "operator": "cylinder",
+              "parameters": {
+                "radiusTop": 0.09,
+                "radiusBottom": 0.09,
+                "height": 0.01,
+                "radialSegments": 32
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0.3,
+                  0.07
+                ],
+                "rotationRad": [
+                  1.5707963267948966,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "metal",
+                "color": "#b8bec6",
+                "roughness": 0.25,
+                "metalness": 0.9,
+                "clearcoat": 0
+              }
+            },
+            {
+              "type": "shape",
+              "key": "crank-arm",
+              "operator": "tube",
+              "parameters": {
+                "points": [
+                  [
+                    0,
+                    0.3,
+                    0.09
+                  ],
+                  [
+                    0.1,
+                    0.18,
+                    0.09
+                  ]
+                ],
+                "radius": 0.01,
+                "tubularSegments": 24,
+                "radialSegments": 10
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "metal",
+                "color": "#b8bec6",
+                "roughness": 0.25,
+                "metalness": 0.9,
+                "clearcoat": 0
+              }
+            },
+            {
+              "type": "shape",
+              "key": "crank-arm-l",
+              "operator": "tube",
+              "parameters": {
+                "points": [
+                  [
+                    0,
+                    0.3,
+                    -0.09
+                  ],
+                  [
+                    -0.1,
+                    0.42,
+                    -0.09
+                  ]
+                ],
+                "radius": 0.01,
+                "tubularSegments": 24,
+                "radialSegments": 10
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "metal",
+                "color": "#b8bec6",
+                "roughness": 0.25,
+                "metalness": 0.9,
+                "clearcoat": 0
+              }
+            },
+            {
+              "type": "shape",
+              "key": "pedal",
+              "operator": "box",
+              "parameters": {
+                "dimensions": [
+                  0.1,
+                  0.014,
+                  0.05
+                ]
+              },
+              "transform": {
+                "position": [
+                  0.1,
+                  0.18,
+                  0.13
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "rubber",
+                "color": "#1b1d20",
+                "roughness": 0.9,
+                "metalness": 0,
+                "clearcoat": 0
+              }
+            },
+            {
+              "type": "shape",
+              "key": "pedal-l",
+              "operator": "box",
+              "parameters": {
+                "dimensions": [
+                  0.1,
+                  0.014,
+                  0.05
+                ]
+              },
+              "transform": {
+                "position": [
+                  -0.1,
+                  0.42,
+                  -0.13
+                ],
+                "rotationRad": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "rubber",
+                "color": "#1b1d20",
+                "roughness": 0.9,
+                "metalness": 0,
+                "clearcoat": 0
+              }
+            }
+          ]
+        },
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotationRad": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored fixture standing in for a model plan."
+        }
+      }
+    ],
+    "relations": [],
+    "constraints": [],
+    "unknowns": [
+      "Hand-authored fixture, not a Meta response.",
+      "Physical dimensions are unknown; proportions are conceptual.",
+      "Chain, brakes, cables and gears are not modelled."
+    ]
+  },
+  "sceneSummary": {
+    "componentCount": 6,
+    "geometryNodeCount": 33,
+    "operators": [
+      "torus",
+      "tube",
+      "cylinder",
+      "ellipsoid",
+      "box"
+    ],
+    "constraintReady": true
+  },
+  "constraintReport": {
+    "ready": true,
+    "results": [],
+    "violatedIds": []
+  },
+  "constructionEvents": [
+    {
+      "type": "scene_created",
+      "at": 0
+    },
+    {
+      "type": "component_placed",
+      "at": 1,
+      "entityId": "rear-wheel",
+      "transform": {
+        "position": [
+          -0.52,
+          0.36,
+          0
+        ],
+        "rotationRad": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "component_placed",
+      "at": 2,
+      "entityId": "front-wheel",
+      "transform": {
+        "position": [
+          0.52,
+          0.36,
+          0
+        ],
+        "rotationRad": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "component_placed",
+      "at": 3,
+      "entityId": "frame",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationRad": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "component_placed",
+      "at": 4,
+      "entityId": "fork",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationRad": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "component_placed",
+      "at": 5,
+      "entityId": "saddle",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationRad": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "component_placed",
+      "at": 6,
+      "entityId": "drivetrain",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationRad": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "assembly_ready",
+      "at": 7
+    },
+    {
+      "type": "scene_revealed",
+      "at": 8
+    }
+  ],
+  "meta": {
+    "model": "hand-authored-fixture",
+    "requestId": "none",
+    "latencyMs": 0,
+    "estimatedCostUsd": 0
+  },
+  "limitations": [
+    "Hand-authored fixture standing in for a model plan; not Meta output."
+  ]
+}

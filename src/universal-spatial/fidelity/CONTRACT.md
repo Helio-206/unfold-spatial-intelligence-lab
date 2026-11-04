@@ -27,9 +27,15 @@ Specialised families are generic: eligibility is decided from the operators and 
 7. **Bounded**: `RouterLimits` caps triangles, meshes, geometry bytes, sampling grid, asset bytes, texture side and bytes, asset triangles and nodes. A scene over the budget returns to V2 for the most expensive components first.
 8. **Disposal**: `disposeCompiledSpatialPlan` frees everything the router creates (geometry, materials, textures).
 
+## Junctions and what the prototype learned
+
+- A junction between two parts is drawn by **one side only**: the part with the thinner feature flares into the thicker one (ties: the later id). Both sides drawing it covers the same region twice in different colours and the skirts fight each other (observed, fixed).
+- The fillet skirt is drawn with a polygon offset and its triangles inside the neighbour are removed, because the skirt and the neighbour's surface are nearly coincident.
+- Known limit: the skirt's rim is resolution-limited (teeth the size of one grid cell).
+
 ## Safe GLB path (`validateGlb`, then load)
 
-A GLB is data from outside. It is checked **before** any decoding: container and chunk lengths, JSON size, `asset.version`, node/mesh/triangle/texture counts, image dimensions read from the container, no external URIs (`uri` other than embedded data is refused), no extensions outside an allowlist (`KHR_materials_*`, `KHR_texture_transform`, `KHR_mesh_quantization`, `KHR_draco_mesh_compression` is **refused** until a decoder is vetted), accessor ranges inside buffer views. Failure returns a coded reason, never a partial scene. Memory is estimated from the decoded texture sizes, not the file size.
+A GLB is data from outside. It is checked **before** any decoding: container and chunk lengths, JSON size, `asset.version`, node/mesh/triangle/texture counts, image dimensions read from the container, no external URIs (`uri` other than embedded data is refused), no extensions outside an allowlist (`KHR_materials_*`, `KHR_texture_transform`, `KHR_mesh_quantization`, `KHR_draco_mesh_compression` is **refused** until a decoder is vetted), accessor ranges inside buffer views. Failure returns a coded reason, never a partial scene. Memory is estimated from the decoded texture sizes, not the file size (a real CC0 asset was 17.5 MB on disk and 134 MB decoded). An intake may declare `downscaleTo`: textures are then reduced before they reach the GPU and memory is judged on the reduced size; a hard 4096 px cap still applies to what is decoded.
 
 ## Optional external providers
 

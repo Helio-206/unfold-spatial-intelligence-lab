@@ -71,7 +71,7 @@ export function compileWithRouter(plan: SpatialPlanV2, options: RouterOptions = 
     if ('fallback' in result) { decision.reason = `Stays on V2: ${result.fallback.toLowerCase().replace(/_/g, ' ')}.`; decision.fallback = { from: 'continuous_surface', code: result.fallback }; continue; }
     const g = groups.get(c.id)!, old = g.children[0]!, oldM = measure(old);
     decision.used = 'continuous_surface'; decision.triangles = result.triangles;
-    decision.reason = `Continuous surface: ${[...(curved ? ['curved primitives'] : []), ...(neighbours.length ? [`joins to ${neighbours.map((n) => n.id).join(', ')} (blend ${result.blendRadius.toFixed(3)})`] : [])].join('; ')}.`;
+    decision.reason = `Continuous surface: ${[...(curved ? ['curved primitives'] : []), ...(result.blendedWith.length ? [`joins to ${result.blendedWith.join(', ')} (blend ${result.blendRadius.toFixed(3)})`] : [])].join('; ')}.`;
     pending.push({ componentId: c.id, group: g, old, next: result.group, family: 'continuous_surface', triangles: result.triangles, bytes: result.bytes, meshes: result.group.children.length, oldTriangles: oldM.triangles, oldBytes: oldM.bytes, oldMeshes: oldM.meshes, ms: performance.now() - t0, decision });
   }
 
