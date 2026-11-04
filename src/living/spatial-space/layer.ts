@@ -4,6 +4,7 @@ import { applySpatialOperationV2, type GeometryNodeV2, type SpatialOperationV2, 
 import { collectWorldPoints, heroAzimuth, normalizeForPresentation } from '../../universal-spatial/framing';
 import { compileSpatialPlanV2, disposeCompiledSpatialPlan } from '../../universal-spatial/geometry-compiler-v2';
 import type { SpaceLayer } from '../workspace-design/space-port';
+import type { RouterReport } from '../../universal-spatial/fidelity/types';
 import { createPresentationDirector, type CameraCue, type PresentationDirector, type PresentationState, type ViewContext } from '../spatial-presentation';
 
 /** Presentation size of the longest side, in stage units. The plan keeps its own units; the scale lives on a wrapper and is never written back. */
@@ -17,7 +18,7 @@ type Pending = { label: string; before: string; after: string; operations: Spati
 /** Triangles of arrived geometry swapped in per call (and so per frame): bounds the GPU upload one frame has to carry. */
 export const UPGRADE_TRIANGLES_PER_CALL = 60_000;
 /** A compile result that may finish later: geometry computed off the main thread arrives through `upgrade()`. V2's result has neither method. */
-type Upgradable = { upgrade?(budgetTriangles?: number): string[]; readyCount?(): number; retire?(): void; report?: { totals: { triangles: number; meshes: number; geometryBytes: number } } };
+type Upgradable = { upgrade?(budgetTriangles?: number): string[]; readyCount?(): number; retire?(): void; report?: RouterReport };
 type Shape = Extract<GeometryNodeV2, { type: 'shape' }>;
 export type PendingEdit = Pending;
 /** Mirrors edits to the server session so that revisions agree. Throws when the server cannot confirm; the layer then carries on locally and says so. */
@@ -88,6 +89,7 @@ export class PlanSpaceLayer implements SpaceLayer {
   }
 
   get currentPlan(): SpatialPlanV2 { return this.plan; }
+  get geometryReport(): RouterReport | null { return this.routed?.report ?? null; }
   get pendingEdit(): Pending | null { return this.pending; }
   authorise(value: boolean): void { this.authorised = value; }
   get canUndo(): boolean { return this.history.length > 0 && !this.busy && this.lockReason === null; }
@@ -331,7 +333,8 @@ export class PlanSpaceLayer implements SpaceLayer {
     const operators = [...new Set(keys.map((shape) => shape.operator))];
     const parent = component.parentId ? this.plan.components.find((item) => item.id === component.parentId)?.label ?? component.parentId : null;
     const pending = this.pending;
-    const evidence = evidenceOpen ? `<ul class="uw-evidence" aria-label="Evidência"><li>${esc(p.evidence)}</li>${keys.map((shape) => `<li><code>${esc(shape.key)}</code> · ${esc(shape.operator)}<br><code>${esc(JSON.stringify(shape.parameters).slice(0, 400))}</code></li>`).join('')}</ul>` : '';
+    const route = this.geometryReport?.decisions.find(decision => decision.componentId === id);
+    const evidence = evidenceOpen ? `<ul class="uw-evidence" aria-label="Evidência"><li>${esc(p.evidence)}</li>${route ? `<li>Método de geometria: ${esc(route.used)} · ${esc(route.reason)}</li>` : '<li>Método de geometria: procedural_v2</li>'}${keys.map((shape) => `<li><code>${esc(shape.key)}</code> · ${esc(shape.operator)}<br><code>${esc(JSON.stringify(shape.parameters).slice(0, 400))}</code></li>`).join('')}</ul>` : '';
     const pendingHtml = pending ? `<div class="sp-pending" role="status" data-source="${pending.source}"><p class="u-label"><b>${pending.source === 'person' ? 'Pré-visualização' : pending.source === 'meta' ? 'Proposta da Meta · ainda não aplicada' : 'Proposta da avaliação visual · ainda não aplicada'}</b></p><p class="u-label">${esc(pending.label)}: ${esc(pending.before)} → ${esc(pending.after)}</p>
         ${pending.needsAuthorization ? `<label class="sp-auth u-label"><input type="checkbox" data-auth ${this.authorised ? 'checked' : ''}> ${pending.source === 'person' ? 'Autorizo alterar um valor confirmado' : 'Autorizo aplicar esta alteração proposta pela IA'}</label>` : ''}
         <div class="uw-inspector-actions"><button type="button" class="uw-link" data-apply ${this.busy ? 'disabled' : ''}>aplicar</button><button type="button" class="uw-link" data-cancel>cancelar</button></div></div>` : '';

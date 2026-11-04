@@ -11,6 +11,7 @@ import { checkFile } from '../experience/intake';
 import { canvasTranscoder, prepareImage, TranscodeError, type Transcoder } from '../unified-workspace/image-transcode';
 import type { SpatialWorkspace, WorkspaceOptions } from '../workspace-design/workspace';
 import { PlanSpaceLayer, type LayerSync } from './layer';
+import { ProductGeometry } from './product-geometry';
 import { AtlasSpaceLayer, ATLAS_NOTICE } from './atlas-layer';
 import { decide, decideAll, initialSpaceReview, pruneSpatialPlan, removedIds, reviewBlockers, reviewRecord, type SpaceReview } from './review';
 import { browserStorage, SpaceStore, type SpaceListing, type SpaceRecord, type StoreProblem } from './store';
@@ -88,6 +89,7 @@ export class SpaceFlow {
   syncNote: string | null = null;
   savedId: string | null = null;
   readonly store: SpaceStore;
+  private geometry: ProductGeometry | null = null;
   private savedPlanJson: string | null = null;
   private source: SpaceSource | null = null;
   private problem: string | null = null;
@@ -167,9 +169,10 @@ export class SpaceFlow {
   /** Leaving for the laboratory: asks first when something unsaved is on stage. */
   exit(): void { this.guard(() => { this.close(); this.options.onExit(); }); }
 
-  dispose(): void { this.abort?.abort(); clearInterval(this.tick); this.layer = null; this.panel.remove(); }
+  dispose(): void { this.abort?.abort(); clearInterval(this.tick); this.geometry?.dispose(); this.geometry = null; this.layer = null; this.panel.remove(); }
 
   private dropScene(): void {
+    this.geometry?.dispose(); this.geometry = null;
     if (this.layer || this.atlas) { this.layer = null; this.atlas = null; this.options.workspace.clearMachine({ brandLabel: 'laboratório vazio', notices: [], extraTools: [] }); }
     this.session = null; this.syncNote = null; this.presentationNotice = null;
   }
@@ -251,6 +254,7 @@ export class SpaceFlow {
 
   private show(plan: SpatialPlanV2, cinematic: boolean): void {
     const workspace = this.options.workspace;
+    const geometry = new ProductGeometry(); this.geometry = geometry;
     const layer = new PlanSpaceLayer(plan, {
       changed: () => { this.refreshContext(); workspace.spaceChanged(); },
       redraw: () => workspace.redraw(),
@@ -260,7 +264,8 @@ export class SpaceFlow {
       viewContext: () => workspace.spaceViewContext(),
       notify: (text) => { this.note = text; this.refreshContext(); this.expireNote(text); },
       syncLost: (reason) => { this.session = null; this.syncNote = `Sessão do servidor perdida (${reason}). As edições continuam locais; propostas da Meta e avaliação visual ficam bloqueadas.`; this.refreshContext(); this.updateComposer(); },
-    });
+    }, geometry.compile);
+    geometry.attach(() => layer.upgradeGeometry(12_000));
     // edits wait for the server session: one made before it exists would be unknown to it and later overwritten
     layer.lockEditing('a preparar a sessão do servidor');
     this.layer = layer; this.phase = 'built'; this.panel.hidden = true; this.panel.replaceChildren();

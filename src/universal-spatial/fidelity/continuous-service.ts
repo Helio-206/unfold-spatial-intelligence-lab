@@ -83,12 +83,14 @@ export class ContinuousService {
   private pump(): void {
     while (!this.disposed && this.queue.length && this.running.size < this.opt.poolSize) {
       const job = this.queue.shift()!; this.queuedKeys.delete(job.key);
-      const worker = this.idle.pop() ?? this.spawn(), id = this.nextId++;
+      let worker: WorkerLike;
+      try { worker = this.idle.pop() ?? this.spawn(); } catch { this.counters.failed++; this.store(job.key, { ok: false, code: 'WORKER_ERROR' }); continue; }
+      const id = this.nextId++;
       const run: Running = { id, key: job.key, worker, timer: this.opt.setTimer(() => this.timeout(run), this.opt.jobTimeoutMs) };
       this.running.set(job.key, run);
       worker.onmessage = (event) => this.done(run, (event.data as { id: number; result: JobResult }).result);
       worker.onerror = () => this.fail(run, 'WORKER_ERROR', false);
-      worker.postMessage({ id, job });
+      try { worker.postMessage({ id, job }); } catch { this.fail(run, 'WORKER_ERROR', false); }
     }
   }
   private spawn(): WorkerLike { this.counters.workersCreated++; return this.opt.createWorker(); }
