@@ -74,10 +74,11 @@ describe('persistence failures are never acknowledged as success (E1.4 finding 1
 
   it('idempotency fingerprint covers approval metadata: same key, different actor is a conflict, original receipt immutable (finding 4)', async () => {
     await withGuardedServer({}, async (port) => {
-      const created = await post(port, '/api/spatial/v2/reviews', { plan: { ...plan, relations: [{ id: 'base-top', fromId: 'base', toId: 'top', kind: 'attached_to', origin: 'inferred', evidence: 'x' }] }, planRevision: 0 });
+      const planWithRelation = { ...plan, relations: [{ id: 'base-top', fromId: 'base', toId: 'top', kind: 'attached_to', origin: 'inferred', evidence: 'x' }] };
+      const created = await post(port, '/api/spatial/v2/reviews', { plan: planWithRelation, planRevision: 0 });
       expect(created.status, created.text).toBe(200);
       const review = created.json.review;
-      const adopted = await post(port, '/api/spatial/v2/adopt', { plan });
+      const adopted = await post(port, '/api/spatial/v2/adopt', { plan: planWithRelation });
       const sessionId = adopted.json.sessionId;
       const fence = { reviewId: review.reviewId, reviewRevision: 0, planFingerprint: review.planFingerprint, sourceSha256: plan.source.sha256 };
       const body = { ...txn(sessionId, 0, 'idem-actor-1', { reviewPrecondition: fence, approvalActor: 'Revisora Um' }) };
