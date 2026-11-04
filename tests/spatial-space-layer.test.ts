@@ -138,4 +138,16 @@ describe('PlanSpaceLayer', () => {
     expect(state()).toEqual(before); expect(state().every(([v]) => v)).toBe(true);
     layer.dispose();
   });
+
+  it('the Presentation Director owns the exploded view: it is announced, and editing restores the planned positions exactly', async () => {
+    const layer = new PlanSpaceLayer(plan(), host());
+    const positions = () => { const out: number[][] = []; layer.root.traverse((o) => { if (o.userData.spatialComponentRoot) out.push(o.position.toArray()); }); return out; };
+    const planned = positions();
+    layer.setExploded(true, true); layer.update(5000);
+    expect(positions()).not.toEqual(planned); expect(layer.presentationNotice).toMatch(/explodida/i);
+    layer.highlight('base'); layer.proposeEdit('y+'); await layer.applyEdit();
+    expect(layer.isExploded).toBe(false);
+    expect(layer.currentPlan.components.find((c) => c.id === 'base')!.transform.position[1]).toBeGreaterThan(0.5);
+    layer.dispose();
+  });
 });

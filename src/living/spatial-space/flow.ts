@@ -94,6 +94,8 @@ export class SpaceFlow {
   private builtRecord: ReturnType<typeof reviewRecord> | null = null;
   private note: string | null = null;
   private busyMeta = false;
+  /** Text the Presentation Director requires while an exploded view is shown. */
+  presentationNotice: string | null = null;
   private metaCalls = 0;
   private listing: { spaces: SpaceListing[]; damaged: StoreProblem[] } = { spaces: [], damaged: [] };
   private confirmDelete: string | null = null;
@@ -166,7 +168,7 @@ export class SpaceFlow {
 
   private dropScene(): void {
     if (this.layer) { this.layer = null; this.options.workspace.clearMachine({ brandLabel: 'laboratório vazio', notices: [], extraTools: [] }); }
-    this.session = null; this.syncNote = null;
+    this.session = null; this.syncNote = null; this.presentationNotice = null;
   }
 
   // ------------------------------------------------------------------------------------------------ source
@@ -249,13 +251,17 @@ export class SpaceFlow {
     const layer = new PlanSpaceLayer(plan, {
       changed: () => { this.refreshContext(); workspace.spaceChanged(); },
       redraw: () => workspace.redraw(),
+      cue: (cue) => { workspace.requestSpaceView(cue.view, cue.durationMs); },
+      presentationChanged: (state) => { const notice = state.notice; if (notice !== this.presentationNotice) { this.presentationNotice = notice; this.refreshContext(); } },
+      reducedMotion: () => this.reducedMotion,
+      viewContext: () => workspace.spaceViewContext(),
       notify: (text) => { this.note = text; this.refreshContext(); this.expireNote(text); },
       syncLost: (reason) => { this.session = null; this.syncNote = `Sessão do servidor perdida (${reason}). As edições continuam locais; propostas da Meta e avaliação visual ficam bloqueadas.`; this.refreshContext(); this.updateComposer(); },
     });
     this.layer = layer; this.phase = 'built'; this.panel.hidden = true; this.panel.replaceChildren();
     workspace.showSpace(layer, this.context());
     this.updateComposer();
-    if (cinematic) { workspace.introSpace(); layer.reveal(this.reducedMotion); } else layer.reveal(true);
+    layer.reveal(!cinematic || this.reducedMotion);
     void this.adopt(plan);
   }
 
@@ -331,7 +337,7 @@ export class SpaceFlow {
   async evaluateView(): Promise<boolean> {
     const layer = this.layer, session = this.session; if (!layer || !session || this.busyMeta) { this.note = this.syncNote ?? 'A avaliação visual precisa de uma sessão no servidor.'; this.refreshContext(); return false; }
     // the model should see the whole object from the hero view, not whatever the person was zooming into
-    this.options.workspace.frameAll(); this.options.workspace.renderNow();
+    layer.settle(); this.options.workspace.frameAll(); this.options.workspace.renderNow();
     const capture = this.options.workspace.captureSpaceFrame();
     if (!capture) return false;
     if (!capture.verdict.ok) { this.note = `Captura rejeitada (${capture.verdict.problems.join(', ')}): nada foi enviado à Meta.`; this.refreshContext(); return false; }
@@ -375,6 +381,7 @@ export class SpaceFlow {
         ...(lines.length ? [`Verificação de montagem (caixas envolventes, não prova de contacto): ${lines.join(' ')}`] : [])].join(' '),
     }];
     const status = [this.syncNote, this.note].filter(Boolean).join(' · ');
+    if (this.presentationNotice) notices.push({ id: 'space-presentation', text: this.presentationNotice });
     if (status) notices.push({ id: 'space-note', text: status });
     const tools: NonNullable<WorkspaceOptions['extraTools']> = [
       { id: 'space-save', label: this.dirty ? 'Guardar' : 'Guardado', hint: 'guarda só neste navegador (não é cópia na nuvem)', icon: saveIcon, run: () => void this.save() },

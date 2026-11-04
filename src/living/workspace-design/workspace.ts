@@ -155,7 +155,12 @@ export class SpatialWorkspace {
     this.director.reducedMotion = this.reducedMotion;
     this.showEngineFrame();
 
-    this.disposers.push(this.foundry.onBeforeRender(() => { if (this.director.update()) { this.foundry.markMotion(); this.foundry.requestRender(); } }));
+    let lastFrame = performance.now();
+    this.disposers.push(this.foundry.onBeforeRender(() => {
+      const now = performance.now(), dt = Math.min(100, now - lastFrame); lastFrame = now;
+      const moving = this.director.update(), presenting = this.space?.update?.(dt) ?? false;
+      if (moving || presenting) { this.foundry.markMotion(); this.foundry.requestRender(); }
+    }));
     this.disposers.push(this.foundry.onAfterRender(() => this.updateHandOverlay()));
     const ro = new ResizeObserver(() => { this.foundry.resize(); this.syncInsets(false); });
     ro.observe(this.root); this.disposers.push(() => ro.disconnect());
@@ -265,9 +270,8 @@ export class SpatialWorkspace {
     on(this.el.toolFrame!, 'click', () => this.frameSelection());
     on(this.el.toolIsolate!, 'click', () => this.toggleIsolate());
     on(this.el.toolExplode!, 'click', () => {
-      if (this.space?.setExploded) { const on = this.space.setExploded(!this.space.isExploded); this.notice('explode', on ? 'Vista explodida · afastamento só visual, não é uma pose nem uma simulação.' : null, 'info'); this.foundry.requestRender(); this.renderRail();
-        // after the pieces have moved, bring the whole of them back into view
-        window.setTimeout(() => { const b = this.space?.box(); if (b && !b.isEmpty() && !this.disposed) this.director.focusSphere(b.getBoundingSphere(new Sphere()), 'user_tool', 0.7); }, this.reducedMotion ? 0 : 760); return; }
+      if (this.space?.setExploded) { this.space.setExploded(!this.space.isExploded); this.foundry.requestRender(); this.renderRail();
+        return; }
       const exploded = !this.scene.exploded; this.scene.setExploded(exploded); this.notice('explode', exploded ? 'Vista explodida · deslocamento só visual, não é uma pose do motor.' : null, 'info'); this.renderRail(); });
     on(this.el.toolSimulate!, 'click', () => this.offerExperiment(this.selectedId, null));
     on(this.el.toolMore!, 'click', () => this.dispatch({ type: 'toggle_rail' }));
@@ -1207,13 +1211,30 @@ export class SpatialWorkspace {
     // the model sees the whole stage, not the part the chrome leaves free: frame with no insets for the capture, then put them back
     const insets = this.currentInsets, viewport = { width: this.root.clientWidth || 1, height: this.root.clientHeight || 1 }, zero = { top: 0, right: 0, bottom: 0, left: 0 };
     this.currentInsets = zero; this.director.setViewport(viewport, zero); this.frameHome();
+    // object mask from a shadow-free pair (a floor shadow is not the object); the frame that is sent is the real one, with its shadows
+    const renderer = this.foundry.renderer, shadowsWere = renderer.shadowMap.enabled, contact = this.foundry.scene.getObjectByName('studio:contact-shadow');
+    const flat = (on: boolean) => { renderer.shadowMap.enabled = shadowsWere && !on; if (contact) contact.visible = !on; };
     const was = layer.root.visible;
+    flat(true);
     layer.root.visible = false; this.foundry.renderNow(); const reference = read();
-    layer.root.visible = was; this.foundry.renderNow(); const presented = read(); const dataUrl = canvas.toDataURL('image/png');
-    const analysis = analyzeFrame(presented, reference, presented);
+    layer.root.visible = was; this.foundry.renderNow(); const mask = read();
+    flat(false); this.foundry.renderNow(); const presented = read(); const dataUrl = canvas.toDataURL('image/png');
+    const analysis = analyzeFrame(mask, reference, presented);
     this.currentInsets = insets; this.director.setViewport(viewport, insets); this.frameHome(); this.foundry.requestRender();
     return { dataUrl, analysis, verdict: verifyFrame(analysis) };
   }
+
+  /**
+   * A camera request from a space's presentation: honoured through the same arbiter as the assistant's moves, so a person orbiting always wins.
+   * With no duration (reduced motion) the camera jumps.
+   */
+  requestSpaceView(view: { target: [number, number, number]; azimuthDeg: number; elevationDeg: number; distance: number }, durationMs: number): { moved: boolean; reason?: string } {
+    const spec = { target: new Vector3(...view.target), azimuth: (view.azimuthDeg * Math.PI) / 180, elevation: (view.elevationDeg * Math.PI) / 180, distance: Math.max(this.director.controls.minDistance, view.distance) };
+    if (durationMs <= 0 || this.reducedMotion) { this.director.jumpTo(spec); return { moved: true }; }
+    return this.director.moveTo(spec, 'assistant');
+  }
+  /** What the Director needs to turn boxes into distances. */
+  spaceViewContext(): { viewport: { width: number; height: number }; insets: SafeInsets; baseFovDeg: number } { return { viewport: { width: this.root.clientWidth || 1, height: this.root.clientHeight || 1 }, insets: { ...this.currentInsets }, baseFovDeg: this.director.baseFov }; }
 
   /** A redraw without a state change (highlight, reveal step). */
   redraw(): void { this.foundry.markMotion(); this.foundry.studio.updateContactShadow(); this.foundry.requestRender(); }

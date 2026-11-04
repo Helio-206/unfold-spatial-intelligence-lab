@@ -197,6 +197,7 @@ try {
     await page.click('[data-extra="space-eval"]');
     await page.waitForFunction(() => /Hipótese visual|Captura rejeitada|Avaliação indisponível/.test(document.body.innerText), null, { timeout: 120000 });
     const verdictText = await page.evaluate(() => document.body.innerText.match(/Hipótese visual[^\n]*|Captura rejeitada[^\n]*|Avaliação indisponível[^\n]*/)?.[0]);
+    if (!/Hipótese visual/.test(verdictText)) console.error('capture analysis', JSON.stringify(await page.evaluate(() => { const c = window.__workspace.captureSpaceFrame(); return c && { analysis: c.analysis, verdict: c.verdict, dataUrl: c.dataUrl }; }).then(async (r) => { if (r?.dataUrl) await writeFile(resolve(out, 'zz-capture.png'), Buffer.from(r.dataUrl.split(',')[1], 'base64')); delete r.dataUrl; return r; })));
     assert.match(verdictText, /Hipótese visual/, verdictText);
     steps.evaluated = await shot('13d-visual-evaluation');
     await page.evaluate(() => window.__space.layer.cancelPending());

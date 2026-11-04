@@ -14,6 +14,8 @@ export interface SpaceLayer {
   heroAzimuthDeg?(): number | null;
   /** The id of the component under `ndc`, or null. */
   pick(ndc: Vector2, camera: Camera): string | null;
+  /** Advance presentation state by the real elapsed time of this frame; true while another frame is needed. */
+  update?(dtMs: number): boolean;
   highlight(id: string | null): void;
   /** Generic exploded view (display only). Absent when the layer cannot do it. */
   setExploded?(on: boolean): boolean;

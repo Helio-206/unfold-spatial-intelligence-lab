@@ -1,10 +1,10 @@
-import gsap from 'gsap';
-import { Box3, Color, Group, Mesh, Raycaster, Vector3, type Camera, type Material, type Object3D, type Vector2 } from 'three';
+import { Box3, Color, Group, Mesh, Raycaster, type Camera, type Material, type Vector2 } from 'three';
 import { analyzeAssembly, describeDefect, refineAssembly, type AssemblyAnalysis } from '../../universal-spatial/assembly-analysis';
 import { applySpatialOperationV2, type GeometryNodeV2, type SpatialOperationV2, type SpatialPlanV2 } from '../../universal-spatial/contracts-v2';
 import { collectWorldPoints, heroAzimuth, normalizeForPresentation } from '../../universal-spatial/framing';
 import { compileSpatialPlanV2, disposeCompiledSpatialPlan } from '../../universal-spatial/geometry-compiler-v2';
 import type { SpaceLayer } from '../workspace-design/space-port';
+import { createPresentationDirector, type CameraCue, type PresentationDirector, type PresentationState, type ViewContext } from '../spatial-presentation';
 
 /** Presentation size of the longest side, in stage units. The plan keeps its own units; the scale lives on a wrapper and is never written back. */
 export const SPACE_PRESENTATION_SIZE = 5;
@@ -22,6 +22,11 @@ export type LayerSync = {
   undo(): Promise<SpatialPlanV2>;
 };
 export type SpaceLayerHost = {
+  /** A camera request from the Presentation Director. The workspace asks its arbiter; a person's input always wins. */
+  cue?(cue: CameraCue): void;
+  presentationChanged?(state: PresentationState): void;
+  reducedMotion?(): boolean;
+  viewContext?(): ViewContext | undefined;
   /** The server session cannot be trusted any more (expired, conflict, network). The reason is shown to the person. */
   syncLost?(reason: string): void;
   /** The plan changed (edit, undo, solver). The host refreshes the chrome and the inspector. */
@@ -46,18 +51,14 @@ export class PlanSpaceLayer implements SpaceLayer {
   private readonly history: Array<{ plan: SpatialPlanV2; ops: number }> = [];
   private sync: LayerSync | null = null;
   private busy = false;
-  private explodeTween: gsap.core.Tween | null = null;
-  private exploded = false;
-  private baseLocal = new Map<Object3D, Vector3>();
+  private director: PresentationDirector | null = null;
+  presentation: PresentationState | null = null;
   private pending: Pending | null = null;
   private analysisCache: AssemblyAnalysis | null = null;
   private selected: string | null = null;
   private isolated: string | null = null;
   private readonly emissive = new WeakMap<Material, { color: Color; intensity: number }>();
   private readonly raycaster = new Raycaster();
-  private revealTimer = 0;
-  private revealTween: gsap.core.Tween | null = null;
-  private disposed = false;
   private authorised = false;
   stats: ReturnType<typeof compileSpatialPlanV2>['stats'];
 
@@ -65,6 +66,11 @@ export class PlanSpaceLayer implements SpaceLayer {
     this.root.name = 'space-layer';
     this.plan = plan;
     this.stats = this.build();
+    this.director = createPresentationDirector({
+      plan: this.plan, root: this.wrapper!, requestRender: () => this.host.redraw(), tuning: { dim: 0.55 },
+      onCue: (cue) => this.host.cue?.(cue), onState: (state) => { this.presentation = state; this.host.presentationChanged?.(state); },
+      reducedMotion: this.host.reducedMotion?.() ? true : 'auto', view: this.host.viewContext?.(),
+    });
   }
 
   get currentPlan(): SpatialPlanV2 { return this.plan; }
@@ -74,7 +80,9 @@ export class PlanSpaceLayer implements SpaceLayer {
   get isBusy(): boolean { return this.busy; }
   get synced(): boolean { return this.sync !== null; }
   attachSync(sync: LayerSync | null): void { this.sync = sync; }
-  get isExploded(): boolean { return this.exploded; }
+  get isExploded(): boolean { return (this.director?.state.exploded ?? 0) > 0.5; }
+  /** Called from the workspace frame loop with the real elapsed time; true while another frame is needed. */
+  update(dtMs: number): boolean { return this.director?.update(dtMs) ?? false; }
   get editCount(): number { return this.history.length; }
 
   private build(): ReturnType<typeof compileSpatialPlanV2>['stats'] {
@@ -90,7 +98,8 @@ export class PlanSpaceLayer implements SpaceLayer {
       wrapper.scale.setScalar(this.fixed.scale); wrapper.position.set(...this.fixed.position); wrapper.add(compiled.root); this.wrapper = wrapper;
     }
     this.root.add(this.wrapper); this.root.updateMatrixWorld(true);
-    this.analysisCache = null; this.exploded = false; this.baseLocal = new Map();
+    this.analysisCache = null;
+    this.director?.rebind({ plan: this.plan, root: this.wrapper });
     this.applyPaint();
     return compiled.stats;
   }
@@ -134,7 +143,7 @@ export class PlanSpaceLayer implements SpaceLayer {
 
   highlight(id: string | null): void {
     if (id !== this.selected) { this.pending = null; this.authorised = false; }
-    this.selected = id; this.applyPaint(); this.host.redraw();
+    this.selected = id; this.director?.focus(id, { cue: false }); this.applyPaint(); this.host.redraw();
   }
   isolate(id: string | null): void { this.isolated = id; this.applyPaint(); this.host.redraw(); }
   onSelectionCleared(): void { this.selected = null; this.pending = null; this.applyPaint(); }
@@ -155,64 +164,21 @@ export class PlanSpaceLayer implements SpaceLayer {
   }
 
   /**
-   * Construction: the components rise into place one after another, largest masses first (a presentation cue, not motion of the object and not a
-   * simulation). Instant when `immediate`. Positions are restored exactly at the end.
+   * Construction by the Presentation Director (#26): parts arrive in structural order and settle on the planned positions. Instant when `immediate`.
+   * Presentation only; it is not a simulation and not an assembly procedure.
    */
-  reveal(immediate: boolean, stepMs = 170): void {
-    clearTimeout(this.revealTimer); this.revealTween?.kill();
-    const roots: Object3D[] = []; this.wrapper?.traverse((object) => { if (object.userData.spatialComponentRoot) roots.push(object); });
-    const size = (o: Object3D) => { const b = new Box3().setFromObject(o); return b.isEmpty() ? 0 : b.getSize(new Vector3()).length(); };
-    const order = roots.map((o) => ({ o, size: size(o) })).sort((x, y) => y.size - x.size).map((x) => x.o);
-    const base = new Map(order.map((o) => [o, { y: o.position.y, s: o.scale.clone() }]));
-    const rest = () => { for (const [o, b] of base) { o.visible = true; o.position.y = b.y; o.scale.copy(b.s); } this.applyPaint(); this.host.redraw(); };
-    if (immediate || !order.length) { rest(); return; }
-    const lift = (this.analysis()?.span ?? 1) * 0.12, state = { t: 0 }, total = order.length;
-    for (const o of order) o.visible = false;
-    this.revealTween = gsap.to(state, {
-      t: total, duration: (total * stepMs) / 1000 + 0.45, ease: 'none',
-      onUpdate: () => {
-        if (this.disposed) return;
-        order.forEach((o, i) => {
-          const k = Math.min(1, Math.max(0, (state.t - i) / 1.6)), e = 1 - (1 - k) * (1 - k), b = base.get(o)!;
-          o.visible = k > 0; o.position.y = b.y - (1 - e) * lift; o.scale.set(b.s.x * (0.86 + 0.14 * e), b.s.y * (0.86 + 0.14 * e), b.s.z * (0.86 + 0.14 * e));
-        });
-        this.host.redraw();
-      },
-      onComplete: () => { this.revealTween = null; rest(); },
-    });
+  reveal(immediate: boolean): void {
+    const d = this.director; if (!d) return;
+    if (immediate) { d.setReducedMotion(true); d.playEntrance(); d.setReducedMotion(this.host.reducedMotion?.() ? true : 'auto'); return; }
+    d.playEntrance();
   }
-  get revealing(): boolean { return this.revealTween !== null; }
+  get revealing(): boolean { return this.director?.state.phase === 'entering'; }
+  /** Stops any presentation motion and restores the planned state, so a capture shows the object as planned. */
+  settle(): void { this.director?.cancel(); this.applyPaint(); }
+  get presentationNotice(): string | null { return this.director?.state.notice ?? null; }
 
-  /**
-   * Exploded view, generic: every component moves away from the centre of the assembly along the line from that centre to its own centre, deeper
-   * components a little further. Display only: it never touches the plan, and the notice says so.
-   */
-  setExploded(on: boolean, immediate = false): boolean {
-    if (!this.wrapper || this.exploded === on) return this.exploded;
-    this.explodeTween?.kill(); this.exploded = on;
-    const roots: Object3D[] = []; this.wrapper.traverse((o) => { if (o.userData.spatialComponentRoot) roots.push(o); });
-    if (on) {
-      this.baseLocal = new Map(roots.map((o) => [o, o.position.clone()]));
-      const all = this.box(); if (!all) return false;
-      const centre = all.getCenter(new Vector3()), span = all.getSize(new Vector3()).length() || 1, depthOf = (o: Object3D) => { let d = 0; for (let p = o.parent; p && p !== this.wrapper; p = p.parent) if (p.userData.spatialComponentRoot) d++; return d; };
-      const targets = new Map<Object3D, Vector3>();
-      for (const o of roots) {
-        const b = new Box3().setFromObject(o); if (b.isEmpty()) continue;
-        const direction = b.getCenter(new Vector3()).sub(centre); if (direction.length() < span * 0.02) direction.set(0, 1, 0);
-        const worldDelta = direction.normalize().multiplyScalar(span * 0.28 * (1 + depthOf(o) * 0.35)), parent = o.parent!;
-        const from = o.getWorldPosition(new Vector3()), to = parent.worldToLocal(from.clone().add(worldDelta));
-        targets.set(o, to);
-      }
-      this.animatePositions(targets, immediate);
-    } else this.animatePositions(new Map(roots.map((o) => [o, this.baseLocal.get(o) ?? o.position.clone()])), immediate);
-    return this.exploded;
-  }
-  private animatePositions(targets: Map<Object3D, Vector3>, immediate: boolean): void {
-    const from = new Map([...targets.keys()].map((o) => [o, o.position.clone()])), state = { k: 0 };
-    const apply = (k: number) => { for (const [o, to] of targets) o.position.lerpVectors(from.get(o)!, to, k); this.host.redraw(); };
-    if (immediate) { apply(1); return; }
-    this.explodeTween = gsap.to(state, { k: 1, duration: 0.7, ease: 'power2.inOut', onUpdate: () => apply(state.k), onComplete: () => { this.explodeTween = null; apply(1); } });
-  }
+  /** Exploded view by the Director: generic, reversible, announced by `presentationNotice`. */
+  setExploded(on: boolean, immediate = false): boolean { this.director?.setExploded(on ? 1 : 0, { animate: !immediate, cue: !immediate }); return this.isExploded || on; }
 
   // ------------------------------------------------------------------------------------------------ analysis
   analysis(): AssemblyAnalysis | null {
@@ -240,21 +206,21 @@ export class PlanSpaceLayer implements SpaceLayer {
     if (this.busy) return { applied: 0, iterations: 0 };
     const result = refineAssembly(this.plan);
     if (!result.applied.length) return { applied: 0, iterations: result.iterations };
-    this.busy = true;
+    this.busy = true; this.director?.enterEditing();
     try { await this.commit(result.applied.map((a) => a.operation), { origin: 'inferred', evidence: 'Assembly solver proposed a position that closes a gap (bounding boxes, not a contact proof).' }, this.sync ? undefined : result.plan); }
     finally { this.busy = false; }
-    this.host.changed();
+    this.director?.resumeExploring(); this.host.changed();
     return { applied: result.applied.length, iterations: result.iterations };
   }
   async undo(): Promise<boolean> {
     const previous = this.history.pop(); if (!previous || this.busy) { if (previous) this.history.push(previous); return false; }
-    this.busy = true;
+    this.busy = true; this.director?.enterEditing();
     try {
       if (this.sync) { try { let restored = this.plan; for (let i = 0; i < previous.ops; i++) restored = await this.sync.undo(); this.plan = restored; } catch (error) { this.sync = null; this.host.syncLost?.(error instanceof Error ? error.message : 'sessão do servidor indisponível'); this.plan = previous.plan; } }
       else this.plan = previous.plan;
       this.pending = null; this.stats = this.build();
     } finally { this.busy = false; }
-    this.host.changed(); return true;
+    this.director?.resumeExploring(); this.host.changed(); return true;
   }
 
   // ------------------------------------------------------------------------------------------------ editing
@@ -301,14 +267,14 @@ export class PlanSpaceLayer implements SpaceLayer {
   async applyEdit(): Promise<void> {
     const pending = this.pending; if (!pending || this.busy) return;
     if (pending.needsAuthorization && !this.authorised) { this.host.notify(pending.source === 'person' ? 'Esta edição toca num valor observado ou confirmado: marque a autorização primeiro.' : 'Uma alteração proposta pela IA só se aplica depois de a autorizar: marque a autorização.'); return; }
-    this.busy = true;
+    this.busy = true; this.director?.enterEditing();
     try {
       const evidence = pending.source === 'person' ? 'Editado por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).' : 'Proposta por Muse Spark (hipótese) e autorizada por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).';
       await this.commit(pending.operations, { origin: 'user_provided', evidence });
       this.host.notify(`Aplicado: ${pending.label}.${this.sync ? '' : ' Edição só local: a sessão do servidor não a conhece.'}`);
     } catch (error) { this.pending = null; this.host.notify(`Edição bloqueada: ${error instanceof Error ? error.message : 'erro desconhecido'}`); }
     finally { this.busy = false; }
-    this.host.changed();
+    this.director?.resumeExploring(); this.host.changed();
   }
 
   renderInspector(host: HTMLElement, id: string, evidenceOpen: boolean): void {
@@ -339,6 +305,6 @@ export class PlanSpaceLayer implements SpaceLayer {
   }
 
   dispose(): void {
-    this.disposed = true; clearTimeout(this.revealTimer); this.revealTween?.kill(); this.explodeTween?.kill(); this.release();
+    this.director?.dispose(); this.director = null; this.release();
   }
 }
