@@ -54,7 +54,7 @@ const shot = async (name, opts = {}) => { await page.waitForTimeout(500); await 
 const steps = {};
 // on a real model answer, content quality is something to RECORD, not to assert away: the run must finish and report what it saw
 const softFailures = [];
-const quality = (condition, message) => { if (condition) return; if (mode === 'live') softFailures.push(message); else assert.fail(message); };
+const quality = (condition, message) => { if (condition) return; if (mode === 'live' || process.env.UNFOLD_SPACE_REPLAY) softFailures.push(message); else assert.fail(message); };
 const openEdit = () => page.evaluate(() => document.querySelector('.sp-edit')?.setAttribute('open', ''));
 try {
   await page.goto(`${base}/living?debug-living&rm=1`, { waitUntil: 'networkidle' });
@@ -92,8 +92,9 @@ try {
   await page.click('[data-sp="keep-all"]');
   assert.equal(await page.isDisabled('[data-sp="build"]'), true, 'build must be blocked until acknowledged');
   // a rejected component leaves the built scene (the last one in the list, whatever it is)
-  const rejectId = await page.evaluate(() => window.__space.reply.plan.components.at(-1).id);
-  await page.click(`[data-sp-decide="reject"][data-id="${rejectId}"]`);
+  // the rejection path is exercised on the labelled fixture only; a real or replayed model plan is built whole, so what is on screen is what the model proposed
+  const rejectId = mode === 'mock' && !process.env.UNFOLD_SPACE_REPLAY ? await page.evaluate(() => window.__space.reply.plan.components.at(-1).id) : null;
+  if (rejectId) await page.click(`[data-sp-decide="reject"][data-id="${rejectId}"]`);
   await page.check('#sp-ack');
   assert.equal(await page.isDisabled('[data-sp="build"]'), false);
   steps.reviewed = await shot('05-reviewed');
@@ -102,7 +103,7 @@ try {
   await page.waitForTimeout(800);
   steps.built = await shot('06-built');
   const builtIds = await page.evaluate(() => window.__space.layer.currentPlan.components.map((c) => c.id));
-  assert.ok(!builtIds.includes(rejectId), 'a rejected component is not built');
+  if (rejectId) assert.ok(!builtIds.includes(rejectId), 'a rejected component is not built'); else assert.equal(builtIds.length, reviewState.components, 'every proposed component is built');
   assert.ok(builtIds.length >= 1);
 
   // coverage of the frame by the object: same view with and without the layer, chrome hidden (focus mode)

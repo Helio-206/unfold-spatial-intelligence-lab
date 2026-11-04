@@ -1,0 +1,241 @@
+{
+  "mode": "live",
+  "url": "http://127.0.0.1:5191/living",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "browser": "Chromium (system) + SwiftShader",
+  "at": "2026-11-04T02:44:25.193Z",
+  "input": {
+    "kind": "image",
+    "path": "/tmp/claude-1000/-home-helio-HEr-META/5d05189c-9a3e-41ac-b7be-a7cbfde5fa28/scratchpad/heart-illustration.png"
+  },
+  "latencyMsToReview": 45050,
+  "review": {
+    "components": 12,
+    "title": "Conceptual Human Heart Blood Flow Diagram",
+    "rejected": "valve-rings",
+    "built": [
+      "right-heart-body",
+      "left-heart-body",
+      "outer-wall-rim",
+      "aorta-arch",
+      "aorta-branches",
+      "superior-vena-cava",
+      "inferior-vena-cava",
+      "pulmonary-trunk",
+      "pulmonary-veins-left",
+      "pulmonary-veins-right",
+      "left-atrium-cap"
+    ]
+  },
+  "meta": {
+    "model": "muse-spark-1.3",
+    "requestId": "08ec5f61-9789-4bca-9cd1-1c9a9da4b3a4",
+    "latencyMs": 44270,
+    "estimatedCostUsd": 0.03017625,
+    "rawResponseSha256": "5ad5c0a83bfb674f6196212d90b2fe6e27bd613de9372c83ff2319717acef8af",
+    "rawResponseStored": true
+  },
+  "normalizedPlan": {
+    "title": "Conceptual Human Heart Blood Flow Diagram",
+    "units": "unitless",
+    "components": [
+      {
+        "id": "right-heart-body",
+        "label": "Right atrium and ventricle mass",
+        "parentId": null,
+        "origin": "design_approximation"
+      },
+      {
+        "id": "left-heart-body",
+        "label": "Left ventricle mass",
+        "parentId": null,
+        "origin": "design_approximation"
+      },
+      {
+        "id": "outer-wall-rim",
+        "label": "Pink myocardial outer rim",
+        "parentId": null,
+        "origin": "inferred"
+      },
+      {
+        "id": "aorta-arch",
+        "label": "Aorta arch",
+        "parentId": null,
+        "origin": "inferred"
+      },
+      {
+        "id": "aorta-branches",
+        "label": "Aortic arch branches",
+        "parentId": "aorta-arch",
+        "origin": "inferred"
+      },
+      {
+        "id": "superior-vena-cava",
+        "label": "Superior vena cava",
+        "parentId": null,
+        "origin": "inferred"
+      },
+      {
+        "id": "inferior-vena-cava",
+        "label": "Inferior vena cava",
+        "parentId": null,
+        "origin": "inferred"
+      },
+      {
+        "id": "pulmonary-trunk",
+        "label": "Pulmonary artery trunk",
+        "parentId": null,
+        "origin": "inferred"
+      },
+      {
+        "id": "pulmonary-veins-left",
+        "label": "Left pulmonary veins",
+        "parentId": null,
+        "origin": "inferred"
+      },
+      {
+        "id": "pulmonary-veins-right",
+        "label": "Right pulmonary veins",
+        "parentId": null,
+        "origin": "inferred"
+      },
+      {
+        "id": "left-atrium-cap",
+        "label": "Left atrium bulge",
+        "parentId": null,
+        "origin": "inferred"
+      },
+      {
+        "id": "valve-rings",
+        "label": "Valve rings on front surface",
+        "parentId": null,
+        "origin": "design_approximation"
+      }
+    ],
+    "unknowns": [
+      "Absolute physical scale not provided in photo; all dimensions conceptual",
+      "Internal septum, chamber wall thickness and hidden posterior anatomy unknown",
+      "Exact vessel lengths and valve morphology simplified for legibility",
+      "Invalid Meta constraint proposals were omitted; no unvalidated constraints were applied.",
+      "right-body: neutral design material fallback for clearcoat",
+      "left-body: neutral design material fallback for clearcoat",
+      "rim-tube: neutral design material fallback for clearcoat",
+      "aorta-tube: neutral design material fallback for clearcoat",
+      "branch-a: neutral design material fallback for clearcoat",
+      "branch-b: neutral design material fallback for clearcoat",
+      "branch-c: neutral design material fallback for clearcoat",
+      "svc-cyl: neutral design material fallback for clearcoat",
+      "ivc-cyl: neutral design material fallback for clearcoat",
+      "pa-tube: neutral design material fallback for clearcoat",
+      "pv-l1: neutral design material fallback for clearcoat",
+      "pv-l2: neutral design material fallback for clearcoat",
+      "pv-r1: neutral design material fallback for clearcoat",
+      "pv-r2: neutral design material fallback for clearcoat",
+      "la-cap: neutral design material fallback for clearcoat",
+      "valve-mitral: neutral design material fallback for clearcoat",
+      "valve-tricuspid: neutral design material fallback for clearcoat",
+      "valve-aortic: neutral design material fallback for clearcoat",
+      "Physical dimensions and absolute scale are unknown because no known reference was supplied."
+    ],
+    "sceneSummary": {
+      "componentCount": 12,
+      "geometryNodeCount": 22,
+      "operators": [
+        "ellipsoid",
+        "tube",
+        "cylinder",
+        "torus"
+      ],
+      "constraintReady": false
+    }
+  },
+  "coverage": {
+    "width": 1440,
+    "height": 900,
+    "objectFraction": 0.12177854938271605,
+    "meanLuma": 53.76288321371127,
+    "maxLuma": 244.7678
+  },
+  "distinctSelectable": [
+    "superior-vena-cava",
+    "pulmonary-trunk",
+    "right-heart-body",
+    "inferior-vena-cava"
+  ],
+  "edit": {
+    "componentId": "superior-vena-cava",
+    "from": [
+      -1.35,
+      1.35,
+      0.15
+    ],
+    "to": [
+      -0.90141,
+      1.35,
+      0.15
+    ],
+    "originAfter": "user_provided",
+    "undone": true
+  },
+  "gpu": {
+    "before": {
+      "geometries": 4,
+      "textures": 7,
+      "programs": 5
+    },
+    "afterLeaving": {
+      "geometries": 4,
+      "textures": 7,
+      "programs": 7
+    }
+  },
+  "qualityChecksFailed": [],
+  "humanRecognition": null,
+  "apiCalls": [
+    "POST /api/spatial/v2/plan",
+    "POST /api/spatial/v2/adopt",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/adopt"
+  ],
+  "planRequest": {
+    "sourceKind": "image",
+    "hasInstruction": false,
+    "imageMime": "image/png",
+    "maxRefinements": 0
+  },
+  "consoleErrors": [],
+  "screenshots": {
+    "entry": "01-entry.png",
+    "newSpace": "02-new-space.png",
+    "waiting": "03-waiting.png",
+    "review": "04-review.png",
+    "reviewed": "05-reviewed.png",
+    "built": "06-built.png",
+    "orbited": "07-orbited.png",
+    "selected": "08-selected.png",
+    "preview": "09-edit-preview.png",
+    "edited": "10-edited.png",
+    "recoloured": "11-recoloured.png",
+    "isolated": "12-isolated.png",
+    "framed": "13-framed.png",
+    "evidence": "14-evidence.png",
+    "exploded": "13b-exploded.png",
+    "leaving": "13e-leave-guard.png",
+    "library": "13f-my-spaces.png",
+    "reopened": "13g-reopened.png",
+    "back": "15-back-to-entry.png"
+  },
+  "rawResponse": {
+    "file": "spatial-run-acd0a4a2-b290-4504-8717-ac4d95f5f418.json",
+    "shaOfStoredText": "5ad5c0a83bfb674f6196212d90b2fe6e27bd613de9372c83ff2319717acef8af",
+    "bytes": 14335,
+    "location": "reports/space-integration/raw/ (git-ignored, mode 0600)"
+  }
+}

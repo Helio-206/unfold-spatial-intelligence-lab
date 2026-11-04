@@ -6,13 +6,13 @@
     "height": 900
   },
   "browser": "Chromium (system) + SwiftShader",
-  "at": "2026-11-04T01:06:15.609Z",
+  "at": "2026-11-04T02:58:35.830Z",
   "input": {
     "kind": "text",
     "prompt": "Um relógio de pêndulo de pé: caixa alta de madeira, mostrador redondo com ponteiros, pêndulo com disco de latão e pés.",
     "promptSha256": "d794a4a285889fd88d558f8691340296ba4a917043a57bb1d94ec4ae20d3a8ae"
   },
-  "latencyMsToReview": 2306,
+  "latencyMsToReview": 2287,
   "review": {
     "components": 6,
     "title": "Bicycle (hand-authored fixture)",
@@ -95,18 +95,17 @@
   "coverage": {
     "width": 1440,
     "height": 900,
-    "objectFraction": 0.1251442901234568,
-    "meanLuma": 56.299274758628364,
-    "maxLuma": 252.43439999999998
+    "objectFraction": 0.1314182098765432,
+    "meanLuma": 56.441875408627425,
+    "maxLuma": 254.0722
   },
   "distinctSelectable": [
-    "saddle",
-    "rear-wheel",
+    "frame",
     "front-wheel",
-    "frame"
+    "rear-wheel"
   ],
   "edit": {
-    "componentId": "saddle",
+    "componentId": "frame",
     "from": [
       0,
       0,
@@ -129,11 +128,38 @@
     "afterLeaving": {
       "geometries": 4,
       "textures": 7,
-      "programs": 8
+      "programs": 9
     }
   },
+  "qualityChecksFailed": [],
+  "humanRecognition": null,
   "apiCalls": [
-    "POST /api/spatial/v2/plan"
+    "POST /api/spatial/v2/plan",
+    "POST /api/spatial/v2/adopt",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/edit",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/evaluate",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/adopt"
   ],
   "planRequest": {
     "sourceKind": "text",
@@ -157,6 +183,12 @@
     "isolated": "12-isolated.png",
     "framed": "13-framed.png",
     "evidence": "14-evidence.png",
+    "exploded": "13b-exploded.png",
+    "proposal": "13c-meta-proposal.png",
+    "evaluated": "13d-visual-evaluation.png",
+    "leaving": "13e-leave-guard.png",
+    "library": "13f-my-spaces.png",
+    "reopened": "13g-reopened.png",
     "back": "15-back-to-entry.png"
   }
 }
