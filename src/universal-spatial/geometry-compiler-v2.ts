@@ -178,7 +178,7 @@ export function compileSpatialPlanV2(value: SpatialPlanV2 | unknown): CompiledSp
 
 function countTreeNodes(nodes: GeometryNodeV2[]): number { return nodes.reduce((sum, node) => sum + 1 + (node.type === 'group' ? countTreeNodes(node.children) : 0), 0); }
 
-export function disposeCompiledSpatialPlan(root: Group): void {
+export function disposeCompiledSpatialPlan(root: Group, deferMaterials = false): () => void {
   // Any material (an external mesh brings MeshStandardMaterial) and any texture it holds: nothing a compiled plan owns may outlive it.
   const geometries = new Set<BufferGeometry>(), materials = new Set<Material>(), textures = new Set<Texture>();
   root.traverse((object) => {
@@ -190,7 +190,15 @@ export function disposeCompiledSpatialPlan(root: Group): void {
     }
   });
   for (const geometry of geometries) geometry.dispose();
-  for (const material of materials) material.dispose();
-  for (const texture of textures) texture.dispose();
   root.clear();
+  let released = false;
+  const releaseMaterials = () => {
+    if (released) return;
+    released = true;
+    for (const material of materials) material.dispose();
+    for (const texture of textures) texture.dispose();
+    materials.clear(); textures.clear();
+  };
+  if (!deferMaterials) releaseMaterials();
+  return releaseMaterials;
 }

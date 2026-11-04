@@ -5,7 +5,7 @@ const base=process.env.UNFOLD_SPACE_URL ?? 'http://127.0.0.1:5195', out=process.
 const reply=JSON.parse(await readFile('reports/universal-spatial-v2/evidence/blind-harp-plan.json','utf8'));
 const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH ?? '/usr/bin/google-chrome',args:['--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
 const configs=[['A-v2',true,false,false,false],['B-v3',false,false,false,false],['C-generated-no-swap',false,true,false,false],['D-no-probes',false,false,false,true],['B-screenshots',false,false,true,false]];
-for(const [name,v2,noSwap,shots,bare] of configs){
+for(const [name,v2,noSwap,shots,bare] of configs.filter(([name]) => !process.env.UNFOLD_RCA_MODES || process.env.UNFOLD_RCA_MODES.split(',').includes(name))){
  const page=await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1});
  if(v2)await page.addInitScript(()=>{Object.defineProperty(window,'Worker',{value:undefined,configurable:true});});
  await page.route('**/api/spatial/v2/plan',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(reply)}));
@@ -29,7 +29,7 @@ for(const [name,v2,noSwap,shots,bare] of configs){
  await waitReady();
  const initial=await page.evaluate(()=>{const l=window.__space.layer;return {report:structuredClone(l.geometryReport),camera:window.__workspace.foundry.camera.position.toArray(),plan:l.currentPlan.title}});
  if(!v2&&!noSwap)assert.ok(initial.report.decisions.some(d=>d.used==='continuous_surface'),'V3 swap must happen');
- if(noSwap)assert.ok(initial.report.decisions.every(d=>d.used==='procedural_v2')&&initial.report.pending.length>0,'generation must not swap');
+ if(noSwap)assert.ok(initial.report.decisions.every(d=>d.used==='procedural_v2')&&initial.report.pending.length>0,`generation must not swap: ${JSON.stringify(initial.report)}`);
  const prepared=await page.evaluate(({bare})=>{const w=window.__workspace,l=window.__space.layer;w.select('harp-neck');l.attachSync(null);if(!bare){let old=l.compile;l.compile=(...args)=>{let t=performance.now();try{return old(...args)}finally{window.__rca.events.push({label:'compile',phase:window.__rca.phase,iteration:window.__rca.iteration,start:t,ms:performance.now()-t})}}}return {selected:w.selectedSpaceId,component:l.selectedId};},{bare});assert.equal(prepared.selected,'harp-neck');
  const measurements=[];
  for(let i=-3;i<12;i++)for(const action of ['edit','undo']){

@@ -66,6 +66,9 @@ export class PlanSpaceLayer implements SpaceLayer {
   private analysisCache: AssemblyAnalysis | null = null;
   private routed: Upgradable | null = null;
   private disposed = false;
+  private displayed = false;
+  private retiredMaterials: (() => void) | null = null;
+  private retirementTimer: ReturnType<typeof setTimeout> | null = null;
   private continuation: (() => void) | null = null;
   private frameHandle: unknown = null;
   explanationVersion = 0;
@@ -101,6 +104,7 @@ export class PlanSpaceLayer implements SpaceLayer {
   get isExploded(): boolean { return (this.director?.state.exploded ?? 0) > 0.5; }
   /** Called from the workspace frame loop with the real elapsed time; true while another frame is needed. */
   update(dtMs: number): boolean { return this.director?.update(dtMs) ?? false; }
+  afterRender(): void { if (this.disposed) return; this.displayed = true; this.releaseRetiredMaterials(); }
   get editCount(): number { return this.history.length; }
 
   private build(): ReturnType<typeof compileSpatialPlanV2>['stats'] {
@@ -162,8 +166,22 @@ export class PlanSpaceLayer implements SpaceLayer {
 
   private release(): void {
     if (this.wrapper) this.root.remove(this.wrapper);
-    if (this.compiled) disposeCompiledSpatialPlan(this.compiled);
+    if (this.compiled) {
+      const defer = this.displayed && !this.disposed;
+      const releaseMaterials = disposeCompiledSpatialPlan(this.compiled, defer);
+      if (defer) {
+        this.releaseRetiredMaterials(); this.retiredMaterials = releaseMaterials;
+        // A hidden or stalled scene must not keep the previous materials indefinitely.
+        this.retirementTimer = setTimeout(() => this.releaseRetiredMaterials(), 1000);
+      }
+    }
+    this.displayed = false;
     this.wrapper = null; this.compiled = null;
+  }
+
+  private releaseRetiredMaterials(): void {
+    if (this.retirementTimer !== null) clearTimeout(this.retirementTimer);
+    this.retirementTimer = null; this.retiredMaterials?.(); this.retiredMaterials = null;
   }
 
   // ------------------------------------------------------------------------------------------------ SpaceLayer
@@ -366,5 +384,6 @@ export class PlanSpaceLayer implements SpaceLayer {
   dispose(): void {
     this.disposed = true; this.routed?.retire?.(); this.routed = null; this.cancelContinuation();
     this.director?.dispose(); this.director = null; this.release();
+    this.releaseRetiredMaterials();
   }
 }

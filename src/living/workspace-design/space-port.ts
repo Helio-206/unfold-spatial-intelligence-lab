@@ -20,6 +20,8 @@ export interface SpaceLayer {
   pick(ndc: Vector2, camera: Camera): string | null;
   /** Advance presentation state by the real elapsed time of this frame; true while another frame is needed. */
   update?(dtMs: number): boolean;
+  /** A successful renderer frame has completed. */
+  afterRender?(): void;
   highlight(id: string | null): void;
   /** Generic exploded view (display only). Absent when the layer cannot do it. */
   setExploded?(on: boolean): boolean;

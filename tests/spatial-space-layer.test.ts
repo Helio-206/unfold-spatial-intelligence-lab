@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Raycaster, Vector2, PerspectiveCamera } from 'three';
+import { Mesh, MeshPhysicalMaterial, Raycaster, Vector2, PerspectiveCamera } from 'three';
 import { validateSpatialPlanV2, type SpatialPlanV2 } from '../src/universal-spatial/contracts-v2';
 import type { SpatialOperationV2 } from '../src/universal-spatial/contracts-v2';
 import { applySpatialOperationV2 } from '../src/universal-spatial/contracts-v2';
@@ -23,6 +23,42 @@ const floating = (): SpatialPlanV2 => validateSpatialPlanV2({
 const host = () => ({ changed: vi.fn(), redraw: vi.fn(), notify: vi.fn(), syncLost: vi.fn() });
 
 describe('PlanSpaceLayer', () => {
+  it('keeps only the last displayed materials until a successful new frame and disposes everything on exit', async () => {
+    const layer = new PlanSpaceLayer(plan(), host());
+    const material = (id: string) => { let found: MeshPhysicalMaterial | null = null; layer.root.traverse(o => { if (o instanceof Mesh && o.userData.spatialEntityId === id) found = o.material as MeshPhysicalMaterial; }); return found!; };
+    const old = material('base'), other = material('top'); expect(old).not.toBe(other);
+    const oldDispose = vi.fn(); old.addEventListener('dispose', oldDispose);
+    layer.highlight('base'); layer.afterRender();
+    layer.proposeEdit('x+'); await layer.applyEdit();
+    expect(oldDispose).not.toHaveBeenCalled();
+    const intermediate = material('base'), intermediateDispose = vi.fn(); intermediate.addEventListener('dispose', intermediateDispose);
+    layer.proposeColour('#2d6cdf'); await layer.applyEdit();
+    expect(intermediateDispose).toHaveBeenCalledOnce(); expect(oldDispose).not.toHaveBeenCalled();
+    const current = material('base'), currentDispose = vi.fn(); current.addEventListener('dispose', currentDispose);
+    expect(current).not.toBe(material('top')); expect(current.color.getHexString()).toBe('2d6cdf');
+    expect(layer.selectedId).toBe('base'); layer.afterRender();
+    expect(oldDispose).toHaveBeenCalledOnce(); expect(currentDispose).not.toHaveBeenCalled();
+    layer.dispose(); expect(currentDispose).toHaveBeenCalledOnce();
+  });
+
+  it('releases deferred materials when the Space closes before another frame', async () => {
+    const layer = new PlanSpaceLayer(plan(), host()); let old: MeshPhysicalMaterial | null = null;
+    layer.root.traverse(o => { if (o instanceof Mesh && o.userData.spatialEntityId === 'base') old = o.material as MeshPhysicalMaterial; });
+    const disposed = vi.fn(); old!.addEventListener('dispose', disposed); layer.highlight('base'); layer.afterRender();
+    layer.proposeEdit('x+'); await layer.applyEdit(); expect(disposed).not.toHaveBeenCalled();
+    layer.dispose(); expect(disposed).toHaveBeenCalledOnce(); layer.afterRender(); expect(disposed).toHaveBeenCalledOnce();
+  });
+
+  it('releases deferred materials if no frame arrives', async () => {
+    vi.useFakeTimers();
+    try {
+      const layer = new PlanSpaceLayer(plan(), host()); let old: MeshPhysicalMaterial | null = null;
+      layer.root.traverse(o => { if (o instanceof Mesh && o.userData.spatialEntityId === 'base') old = o.material as MeshPhysicalMaterial; });
+      const disposed = vi.fn(); old!.addEventListener('dispose', disposed); layer.highlight('base'); layer.afterRender();
+      layer.proposeEdit('x+'); await layer.applyEdit(); expect(disposed).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1000); expect(disposed).toHaveBeenCalledOnce(); layer.dispose();
+    } finally { vi.useRealTimers(); }
+  });
   it('previews a nudge, applies it through the typed operation as user_provided, and undoes it', async () => {
     const h = host(), layer = new PlanSpaceLayer(plan(), h);
     layer.highlight('base');

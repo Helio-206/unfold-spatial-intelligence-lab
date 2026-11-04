@@ -175,7 +175,7 @@ export class SpatialWorkspace {
       const moving = this.director.update(), presenting = this.space?.update?.(dt) ?? false;
       if (moving || presenting) { this.foundry.markMotion(); this.foundry.requestRender(); }
     }));
-    this.disposers.push(this.foundry.onAfterRender(() => this.updateHandOverlay()));
+    this.disposers.push(this.foundry.onAfterRender(() => { this.space?.afterRender?.(); this.updateHandOverlay(); }));
     const ro = new ResizeObserver(() => { this.foundry.resize(); this.syncInsets(false); });
     ro.observe(this.root); this.disposers.push(() => ro.disconnect());
     this.bindEvents();

@@ -188,7 +188,14 @@ try {
   await page.click('[data-el="toolIsolate"]'); await page.click('[data-el="toolFrame"]'); await page.waitForTimeout(1200); steps.framed = await shot('13-framed');
   // the renderer idles: with nothing moving, no frames are drawn
   await page.waitForFunction(() => window.__space.layer.presentation?.phase !== 'entering' && (window.__space.layer.geometryReport?.pending.length ?? 0) === 0, null, { timeout: 120000 });
-  await page.waitForTimeout(1500);
+  // OrbitControls damping can still request frames after the fixed animation delay.
+  // Require a quiet window before measuring; a persistent loop still times out.
+  await page.waitForFunction(() => {
+    const now = performance.now(), frames = window.__workspace.stats().frames;
+    const state = window.__idleProbe ?? (window.__idleProbe = { frames, since: now });
+    if (frames !== state.frames) { state.frames = frames; state.since = now; }
+    return now - state.since >= 1000;
+  }, null, { timeout: 30000, polling: 100 });
   await page.evaluate(() => { window.__temporal.phase = 'idle'; });
   const idleFrames = await page.evaluate(async () => { const a = window.__workspace.stats().frames; await new Promise((r) => setTimeout(r, 2000)); return window.__workspace.stats().frames - a; });
   const temporal = await page.evaluate(() => window.__temporal);
