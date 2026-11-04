@@ -216,6 +216,14 @@ describe('PlanSpaceLayer', () => {
       const base = layer.currentPlan.components.find((c) => c.id === 'base')!; expect(base.transform.scale[0]).toBeCloseTo(1.2); expect(base.provenance.evidence).toMatch(/Solver fitted 6 silhouettes/); expect(layer.currentPlan.components.map((c) => c.id)).toEqual(ids);
       expect(await layer.undo()).toBe(true); expect(layer.currentPlan.components.find((c) => c.id === 'base')!.transform.scale[0]).toBe(1);
     });
+    it('after dispose it offers nothing, and a pending proposal is dropped with the layer', () => {
+      const layer = new PlanSpaceLayer(plan(), host()); expect(layer.proposeSolverEdit(ops(), 'x', 'y')).toBe(true); layer.dispose();
+      expect(layer.proposeSolverEdit(ops(), 'x', 'y')).toBe(false); expect(layer.pendingEdit).toBeNull();
+    });
+    it('can be cancelled: the plan is unchanged and nothing stays pending', async () => {
+      const layer = new PlanSpaceLayer(plan(), host()), before = layer.currentPlan; layer.proposeSolverEdit(ops(), 'x', 'y'); layer.cancelPending();
+      expect(layer.pendingEdit).toBeNull(); await layer.applyEdit(); expect(layer.currentPlan).toBe(before); expect(layer.editCount).toBe(0);
+    });
     it('refuses a proposal that does not apply to the plan', () => {
       const layer = new PlanSpaceLayer(plan(), host()); expect(layer.proposeSolverEdit([{ ...ops()[0]!, componentId: 'ghost' }], 'x', 'y')).toBe(false); expect(layer.pendingEdit).toBeNull();
     });

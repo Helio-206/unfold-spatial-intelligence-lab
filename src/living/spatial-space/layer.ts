@@ -314,7 +314,7 @@ export class PlanSpaceLayer implements SpaceLayer {
    * is applied only when a person authorises it, then recorded as that person's decision with the solver's evidence in the provenance. One undo reverts all of it.
    */
   proposeSolverEdit(operations: SpatialOperationV2[], label: string, evidence: string): boolean {
-    if (!operations.length || this.lockReason) return false;
+    if (this.disposed || !operations.length || this.lockReason) return false;
     try { let probe = this.plan; for (const operation of operations) probe = applySpatialOperationV2(probe, operation, { origin: 'inferred', evidence: 'preview' }); } catch { return false; }
     const first = this.plan.components.find((item) => item.id === operations[0]!.componentId); if (!first) return false;
     this.selected = this.selected && operations.some((op) => op.componentId === this.selected) ? this.selected : first.id;
@@ -367,7 +367,7 @@ export class PlanSpaceLayer implements SpaceLayer {
   }
 
   dispose(): void {
-    this.disposed = true; this.routed?.retire?.(); this.routed = null; this.cancelContinuation();
+    this.disposed = true; this.pending = null; this.routed?.retire?.(); this.routed = null; this.cancelContinuation();
     this.director?.dispose(); this.director = null; this.release();
   }
 }

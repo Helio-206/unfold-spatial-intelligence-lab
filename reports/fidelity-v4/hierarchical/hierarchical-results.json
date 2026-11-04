@@ -1,0 +1,578 @@
+{
+  "generatedBy": "scripts/benchmark/v4-hierarchical.ts",
+  "results": {
+    "excavator": {
+      "origin": "C: plan saved from a real Meta call (old repair step). No ground truth for the original photograph exists.",
+      "traversal": {
+        "components": 11,
+        "depth": 4,
+        "levels": [
+          "undercarriage",
+          "  track-left",
+          "  track-right",
+          "  upper-frame",
+          "    cab",
+          "    engine-hood",
+          "    boom",
+          "      stick",
+          "        bucket",
+          "        bucket-linkage",
+          "    hydraulic-boom"
+        ],
+        "hierarchyOk": true,
+        "issues": [],
+        "worldVsCompiledMaxDiff": 0,
+        "relations": {
+          "declared_supported": 0,
+          "declared_contradicted": 7,
+          "detected_hypothesis": 8,
+          "human_confirmed": 0
+        },
+        "contradicted": [
+          {
+            "pair": "undercarriage~track-left",
+            "gapPctSpan": 3.37,
+            "declared": "connected_to"
+          },
+          {
+            "pair": "undercarriage~track-right",
+            "gapPctSpan": 3.37,
+            "declared": "connected_to"
+          },
+          {
+            "pair": "undercarriage~upper-frame",
+            "gapPctSpan": 4.49,
+            "declared": "attached_to"
+          },
+          {
+            "pair": "upper-frame~cab",
+            "gapPctSpan": 17.44,
+            "declared": "attached_to"
+          },
+          {
+            "pair": "upper-frame~boom",
+            "gapPctSpan": 31.39,
+            "declared": "connected_to"
+          },
+          {
+            "pair": "boom~stick",
+            "gapPctSpan": 51.51,
+            "declared": "connected_to"
+          },
+          {
+            "pair": "stick~bucket",
+            "gapPctSpan": 52.29,
+            "declared": "connected_to"
+          }
+        ],
+        "hypotheses": [
+          "undercarriage~stick",
+          "track-right~stick",
+          "upper-frame~stick",
+          "cab~engine-hood",
+          "boom~bucket",
+          "boom~hydraulic-boom",
+          "bucket~bucket-linkage",
+          "bucket~hydraulic-boom"
+        ],
+        "defaultNoEvidence": [
+          {
+            "code": "NO_VIEWS",
+            "detail": "no evidence views were given"
+          }
+        ],
+        "defaultWithSyntheticEvidence": [
+          {
+            "code": "CONTRADICTORY_RELATIONS",
+            "detail": "7 declared relation(s) disagree with the plan's own geometry: undercarriage~track-left, undercarriage~track-right, undercarriage~upper-frame, upper-frame~cab, upper-frame~boom, boom~stick, .... They need the assembly solver or a person before structure can be trusted."
+          }
+        ]
+      },
+      "mechanics": {
+        "note": "ground truth = the saved plan; input = seeded local scale x0.80-1.25 and local shift up to +-4 % of the span on EVERY component; evidence = 6 rendered views; held-out = 12 other views. Mechanics only.",
+        "v3Original": {
+          "heldOutIou": 0.602,
+          "meanCentreErrPctSpan": 8.84,
+          "meanLocalScaleErrLog": 0.118,
+          "perComponent": [
+            {
+              "id": "undercarriage",
+              "centreErrPctSpan": 3.37
+            },
+            {
+              "id": "track-left",
+              "centreErrPctSpan": 9.28
+            },
+            {
+              "id": "track-right",
+              "centreErrPctSpan": 6.63
+            },
+            {
+              "id": "upper-frame",
+              "centreErrPctSpan": 8.45
+            },
+            {
+              "id": "cab",
+              "centreErrPctSpan": 8.29
+            },
+            {
+              "id": "engine-hood",
+              "centreErrPctSpan": 8.74
+            },
+            {
+              "id": "boom",
+              "centreErrPctSpan": 11.13
+            },
+            {
+              "id": "stick",
+              "centreErrPctSpan": 12.76
+            },
+            {
+              "id": "bucket",
+              "centreErrPctSpan": 10.86
+            },
+            {
+              "id": "hydraulic-boom",
+              "centreErrPctSpan": 9.11
+            },
+            {
+              "id": "bucket-linkage",
+              "centreErrPctSpan": 8.63
+            }
+          ],
+          "idsPreserved": true,
+          "parentsPreserved": true,
+          "hierarchyOk": true
+        },
+        "v4NonHierarchical": {
+          "heldOutIou": 0.381,
+          "meanCentreErrPctSpan": 23.53,
+          "meanLocalScaleErrLog": 0.137,
+          "perComponent": [
+            {
+              "id": "undercarriage",
+              "centreErrPctSpan": 12.06
+            },
+            {
+              "id": "track-left",
+              "centreErrPctSpan": 17.4
+            },
+            {
+              "id": "track-right",
+              "centreErrPctSpan": 20.05
+            },
+            {
+              "id": "upper-frame",
+              "centreErrPctSpan": 20.88
+            },
+            {
+              "id": "cab",
+              "centreErrPctSpan": 28.05
+            },
+            {
+              "id": "engine-hood",
+              "centreErrPctSpan": 28.82
+            },
+            {
+              "id": "boom",
+              "centreErrPctSpan": 22.34
+            },
+            {
+              "id": "stick",
+              "centreErrPctSpan": 22.81
+            },
+            {
+              "id": "bucket",
+              "centreErrPctSpan": 31.22
+            },
+            {
+              "id": "hydraulic-boom",
+              "centreErrPctSpan": 24.19
+            },
+            {
+              "id": "bucket-linkage",
+              "centreErrPctSpan": 31
+            }
+          ],
+          "idsPreserved": true,
+          "parentsPreserved": true,
+          "hierarchyOk": true,
+          "fittedComponents": [
+            "undercarriage"
+          ],
+          "note": "only parentless components were fitted; their new transform also moves and scales every descendant, which the fit never saw",
+          "fitIouReportedBySolver": 0.174
+        },
+        "v4HierarchicalDefault": {
+          "status": "refused",
+          "refusals": [
+            {
+              "code": "CONTRADICTORY_RELATIONS",
+              "detail": "7 declared relation(s) disagree with the plan's own geometry: undercarriage~track-left, undercarriage~track-right, undercarriage~upper-frame, upper-frame~cab, upper-frame~boom, boom~stick, .... They need the assembly solver or a person before structure can be trusted."
+            }
+          ],
+          "ms": 496,
+          "relations": {
+            "declared_supported": 0,
+            "declared_contradicted": 7,
+            "detected_hypothesis": 5,
+            "human_confirmed": 0
+          },
+          "unresolved": [],
+          "hypotheses": 5,
+          "checks": {
+            "transformConsistencyMax": 0,
+            "worldConsistencyAfterMax": null,
+            "idsPreserved": null,
+            "sourcePreserved": null,
+            "hierarchyPreserved": null,
+            "jointResidualMax": null
+          }
+        },
+        "v4HierarchicalOverride": {
+          "status": "proposal",
+          "refusals": [],
+          "ms": 4094,
+          "relations": {
+            "declared_supported": 0,
+            "declared_contradicted": 7,
+            "detected_hypothesis": 5,
+            "human_confirmed": 0
+          },
+          "unresolved": [],
+          "hypotheses": 5,
+          "heldOutIou": 0.906,
+          "meanCentreErrPctSpan": 1.93,
+          "meanLocalScaleErrLog": 0.064,
+          "perComponent": [
+            {
+              "id": "undercarriage",
+              "centreErrPctSpan": 4.77
+            },
+            {
+              "id": "track-left",
+              "centreErrPctSpan": 0.73
+            },
+            {
+              "id": "track-right",
+              "centreErrPctSpan": 1.03
+            },
+            {
+              "id": "upper-frame",
+              "centreErrPctSpan": 1.22
+            },
+            {
+              "id": "cab",
+              "centreErrPctSpan": 0.87
+            },
+            {
+              "id": "engine-hood",
+              "centreErrPctSpan": 1
+            },
+            {
+              "id": "boom",
+              "centreErrPctSpan": 5.48
+            },
+            {
+              "id": "stick",
+              "centreErrPctSpan": 1.89
+            },
+            {
+              "id": "bucket",
+              "centreErrPctSpan": 2.28
+            },
+            {
+              "id": "hydraulic-boom",
+              "centreErrPctSpan": 1.31
+            },
+            {
+              "id": "bucket-linkage",
+              "centreErrPctSpan": 0.61
+            }
+          ],
+          "idsPreserved": true,
+          "parentsPreserved": true,
+          "hierarchyOk": true,
+          "changed": [
+            "undercarriage",
+            "track-left",
+            "track-right",
+            "upper-frame",
+            "cab",
+            "engine-hood",
+            "boom",
+            "bucket",
+            "bucket-linkage",
+            "hydraulic-boom"
+          ],
+          "fitIou": [
+            0.612,
+            0.912
+          ],
+          "leftOutViews": [
+            0.586,
+            0.908
+          ],
+          "checks": {
+            "transformConsistencyMax": 0,
+            "worldConsistencyAfterMax": 0.0000021650121024840985,
+            "idsPreserved": true,
+            "sourcePreserved": true,
+            "hierarchyPreserved": true,
+            "jointResidualMax": 0
+          },
+          "evaluations": 353
+        }
+      }
+    },
+    "harp": {
+      "origin": "C: plan saved from a real Meta call (old repair step). No ground truth for the original photograph exists.",
+      "traversal": {
+        "components": 7,
+        "depth": 1,
+        "levels": [
+          "harp",
+          "  harp-neck",
+          "  harp-pillar",
+          "  harp-soundbox",
+          "  harp-base",
+          "  harp-strings",
+          "  harp-pegs"
+        ],
+        "hierarchyOk": true,
+        "issues": [],
+        "worldVsCompiledMaxDiff": 0,
+        "relations": {
+          "declared_supported": 0,
+          "declared_contradicted": 4,
+          "detected_hypothesis": 1,
+          "human_confirmed": 0
+        },
+        "contradicted": [
+          {
+            "pair": "harp-neck~harp-pillar",
+            "gapPctSpan": 10.47,
+            "declared": "connected_to"
+          },
+          {
+            "pair": "harp-neck~harp-soundbox",
+            "gapPctSpan": 10.5,
+            "declared": "connected_to"
+          },
+          {
+            "pair": "harp-neck~harp-strings",
+            "gapPctSpan": 9.34,
+            "declared": "attached_to"
+          },
+          {
+            "pair": "harp-pillar~harp-base",
+            "gapPctSpan": 18.49,
+            "declared": "attached_to"
+          }
+        ],
+        "hypotheses": [
+          "harp~harp-strings"
+        ],
+        "defaultNoEvidence": [
+          {
+            "code": "NO_VIEWS",
+            "detail": "no evidence views were given"
+          }
+        ],
+        "defaultWithSyntheticEvidence": [
+          {
+            "code": "CONTRADICTORY_RELATIONS",
+            "detail": "4 declared relation(s) disagree with the plan's own geometry: harp-neck~harp-pillar, harp-neck~harp-soundbox, harp-neck~harp-strings, harp-pillar~harp-base. They need the assembly solver or a person before structure can be trusted."
+          }
+        ]
+      },
+      "mechanics": {
+        "note": "ground truth = the saved plan; input = seeded local scale x0.80-1.25 and local shift up to +-4 % of the span on EVERY component; evidence = 6 rendered views; held-out = 12 other views. Mechanics only.",
+        "v3Original": {
+          "heldOutIou": 0.52,
+          "meanCentreErrPctSpan": 4.71,
+          "meanLocalScaleErrLog": 0.112,
+          "perComponent": [
+            {
+              "id": "harp",
+              "centreErrPctSpan": 3.73
+            },
+            {
+              "id": "harp-neck",
+              "centreErrPctSpan": 5.29
+            },
+            {
+              "id": "harp-pillar",
+              "centreErrPctSpan": 6.34
+            },
+            {
+              "id": "harp-soundbox",
+              "centreErrPctSpan": 4.3
+            },
+            {
+              "id": "harp-base",
+              "centreErrPctSpan": 2.84
+            },
+            {
+              "id": "harp-strings",
+              "centreErrPctSpan": 0.64
+            },
+            {
+              "id": "harp-pegs",
+              "centreErrPctSpan": 9.81
+            }
+          ],
+          "idsPreserved": true,
+          "parentsPreserved": true,
+          "hierarchyOk": true
+        },
+        "v4NonHierarchical": {
+          "heldOutIou": 0.533,
+          "meanCentreErrPctSpan": 4.67,
+          "meanLocalScaleErrLog": 0.123,
+          "perComponent": [
+            {
+              "id": "harp",
+              "centreErrPctSpan": 2.26
+            },
+            {
+              "id": "harp-neck",
+              "centreErrPctSpan": 6.07
+            },
+            {
+              "id": "harp-pillar",
+              "centreErrPctSpan": 3.62
+            },
+            {
+              "id": "harp-soundbox",
+              "centreErrPctSpan": 5.27
+            },
+            {
+              "id": "harp-base",
+              "centreErrPctSpan": 6.19
+            },
+            {
+              "id": "harp-strings",
+              "centreErrPctSpan": 6.5
+            },
+            {
+              "id": "harp-pegs",
+              "centreErrPctSpan": 2.78
+            }
+          ],
+          "idsPreserved": true,
+          "parentsPreserved": true,
+          "hierarchyOk": true,
+          "fittedComponents": [
+            "harp"
+          ],
+          "note": "only parentless components were fitted; their new transform also moves and scales every descendant, which the fit never saw",
+          "fitIouReportedBySolver": 0.264
+        },
+        "v4HierarchicalDefault": {
+          "status": "refused",
+          "refusals": [
+            {
+              "code": "CONTRADICTORY_RELATIONS",
+              "detail": "4 declared relation(s) disagree with the plan's own geometry: harp-neck~harp-pillar, harp-neck~harp-soundbox, harp-neck~harp-strings, harp-pillar~harp-base. They need the assembly solver or a person before structure can be trusted."
+            }
+          ],
+          "ms": 119,
+          "relations": {
+            "declared_supported": 0,
+            "declared_contradicted": 4,
+            "detected_hypothesis": 1,
+            "human_confirmed": 0
+          },
+          "unresolved": [],
+          "hypotheses": 1,
+          "checks": {
+            "transformConsistencyMax": 0,
+            "worldConsistencyAfterMax": null,
+            "idsPreserved": null,
+            "sourcePreserved": null,
+            "hierarchyPreserved": null,
+            "jointResidualMax": null
+          }
+        },
+        "v4HierarchicalOverride": {
+          "status": "proposal",
+          "refusals": [],
+          "ms": 1430,
+          "relations": {
+            "declared_supported": 0,
+            "declared_contradicted": 4,
+            "detected_hypothesis": 1,
+            "human_confirmed": 0
+          },
+          "unresolved": [
+            {
+              "id": "harp-neck",
+              "reason": "too_thin_for_silhouette"
+            }
+          ],
+          "hypotheses": 1,
+          "heldOutIou": 0.847,
+          "meanCentreErrPctSpan": 1.81,
+          "meanLocalScaleErrLog": 0.102,
+          "perComponent": [
+            {
+              "id": "harp",
+              "centreErrPctSpan": 3.73
+            },
+            {
+              "id": "harp-neck",
+              "centreErrPctSpan": 5.29
+            },
+            {
+              "id": "harp-pillar",
+              "centreErrPctSpan": 0.78
+            },
+            {
+              "id": "harp-soundbox",
+              "centreErrPctSpan": 0.6
+            },
+            {
+              "id": "harp-base",
+              "centreErrPctSpan": 0.86
+            },
+            {
+              "id": "harp-strings",
+              "centreErrPctSpan": 0.64
+            },
+            {
+              "id": "harp-pegs",
+              "centreErrPctSpan": 0.78
+            }
+          ],
+          "idsPreserved": true,
+          "parentsPreserved": true,
+          "hierarchyOk": true,
+          "changed": [
+            "harp-pillar",
+            "harp-soundbox",
+            "harp-base",
+            "harp-pegs"
+          ],
+          "fitIou": [
+            0.543,
+            0.845
+          ],
+          "leftOutViews": [
+            0.608,
+            0.837
+          ],
+          "checks": {
+            "transformConsistencyMax": 0,
+            "worldConsistencyAfterMax": 4.034166596889044e-7,
+            "idsPreserved": true,
+            "sourcePreserved": true,
+            "hierarchyPreserved": true,
+            "jointResidualMax": 0
+          },
+          "evaluations": 193
+        }
+      }
+    }
+  }
+}
