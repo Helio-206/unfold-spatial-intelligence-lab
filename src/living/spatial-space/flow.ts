@@ -265,13 +265,15 @@ export class SpaceFlow {
       notify: (text) => { this.note = text; this.refreshContext(); this.expireNote(text); },
       syncLost: (reason) => { this.session = null; this.syncNote = `Sessão do servidor perdida (${reason}). As edições continuam locais; propostas da Meta e avaliação visual ficam bloqueadas.`; this.refreshContext(); this.updateComposer(); },
     }, geometry.compile);
-    geometry.attach(() => layer.upgradeGeometry(12_000));
     // edits wait for the server session: one made before it exists would be unknown to it and later overwritten
     layer.lockEditing('a preparar a sessão do servidor');
     this.layer = layer; this.phase = 'built'; this.panel.hidden = true; this.panel.replaceChildren();
     workspace.showSpace(layer, this.context());
-    this.updateComposer();
     layer.reveal(!cinematic || this.reducedMotion);
+    // Commit the initial V2 frame before a worker completion may upgrade any component.
+    workspace.renderNow();
+    geometry.attach(() => layer.upgradeGeometry(12_000));
+    this.updateComposer();
     void this.adopt(plan);
   }
 
