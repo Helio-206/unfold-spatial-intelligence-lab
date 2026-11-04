@@ -13,7 +13,8 @@ import { SpatialWorkspace } from '../../../src/living/workspace-design/workspace
 import { PlanSpaceLayer } from '../../../src/living/spatial-space/layer';
 import { validateSpatialPlanV2 } from '../../../src/universal-spatial/contracts-v2';
 import { compileSpatialPlanV2 } from '../../../src/universal-spatial/geometry-compiler-v2';
-import { compileWithRouter, type AssetOffer } from '../../../src/universal-spatial/fidelity/router';
+import { compileWithRouter } from '../../../src/universal-spatial/fidelity/router';
+import { createAssetOffer, type AssetOffer } from '../../../src/universal-spatial/fidelity/assets';
 import { loadValidatedGlb } from '../../../src/universal-spatial/fidelity/glb';
 import { DEFAULT_ROUTER_LIMITS, type AssetApproval, type AssetProposal, type RouterReport } from '../../../src/universal-spatial/fidelity/types';
 import { viewForBox } from '../../../src/living/spatial-presentation/cues';
@@ -39,7 +40,7 @@ if (fixture) api.ready = (async () => {
     else {
       const proposal: AssetProposal = { id: `glb-${digest.slice(0, 12)}`, sha256: digest, source: { kind: 'licensed_library', library: 'KhronosGroup/glTF-Sample-Assets AntiqueCamera (UX3D, CC0-1.0)' }, license: { spdx: 'CC0-1.0', attribution: 'Maximillan Kamps / UX3D', sourceUrl: 'https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/AntiqueCamera', verified: true },
         mapping: [{ componentId: 'camera', nodePaths: ['camera'], method: 'node_name', confidence: 1 }, { componentId: 'tripod', nodePaths: ['tripod'], method: 'node_name', confidence: 1 }], stats: { triangles: loaded.info.triangles, nodes: loaded.info.nodes, materials: loaded.info.materials, textures: loaded.info.textures, textureBytes: loaded.info.textureBytes, bytes: loaded.info.bytes }, status: 'proposed' };
-      assets.push({ proposal, scene: loaded.scene });
+      assets.push(createAssetOffer(proposal, loaded.scene));
       if (q.get('approve') === '1') approvals.push({ proposalId: proposal.id, componentIds: ['camera', 'tripod'], decidedBy: 'human_review', reviewerAuthenticated: false, at: new Date().toISOString() });
       api.assetNote = `validated and loaded in ${(performance.now() - t0).toFixed(0)} ms; ${loaded.info.triangles} triangles; decoded textures ${(loaded.info.textureBytes / 1048576).toFixed(1)} MB after downscale to ${loaded.info.downscaledTo}; ${approvals.length ? 'approved' : 'NOT approved'}`;
     }

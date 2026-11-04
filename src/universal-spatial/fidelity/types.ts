@@ -45,6 +45,12 @@ export type RoutingDecision = {
   representation: 'derived_from_plan' | 'external_asset';
   assetId: string | null;
   triangles: number;
+  /** continuous surface only: how far the surface strays from the plan's own shape (see `Deviation`) */
+  deviation?: { freeMax: number; blendMax: number; cell: number };
+  /** where a continuous surface came from */
+  computed?: 'cache' | 'computed';
+  /** true while an off-main-thread computation is still running and the component is drawn by V2 meanwhile */
+  pending?: boolean;
 };
 
 export type AssetLicense = { spdx: string | 'unknown'; attribution: string | null; sourceUrl: string | null; verified: boolean };
@@ -73,6 +79,9 @@ export type RouterReport = {
   planSource: { kind: 'text' | 'image'; sha256: string };
   decisions: RoutingDecision[];
   proposalsNotApproved: string[];
+  /** components waiting for the worker (drawn by V2 until it finishes) */
+  pending: string[];
+  service: { hits: number; misses: number; queued: number; running: number; cacheEntries: number; cacheBytes: number; completed: number; failed: number; timeouts: number; cancelled: number; evicted: number; rejected: number; workersCreated: number } | null;
   limits: RouterLimits;
   totals: { triangles: number; meshes: number; geometryBytes: number; ms: number };
   perFamily: Record<GeometryFamily, { components: number; triangles: number; ms: number }>;

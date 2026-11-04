@@ -3,6 +3,7 @@ import { BoxGeometry, Group, Mesh, MeshStandardMaterial, Texture, DataTexture, t
 import { validateSpatialPlanV2, type SpatialPlanV2 } from '../src/universal-spatial/contracts-v2';
 import { disposeCompiledSpatialPlan } from '../src/universal-spatial/geometry-compiler-v2';
 import { compileWithRouter } from '../src/universal-spatial/fidelity/router';
+import { createAssetOffer } from '../src/universal-spatial/fidelity/assets';
 import type { AssetApproval, AssetProposal } from '../src/universal-spatial/fidelity/types';
 
 type V3 = [number, number, number];
@@ -88,27 +89,28 @@ describe('mesh assets: proposals, approval, disposal', () => {
   const approval = (): AssetApproval => ({ proposalId: 'asset-1', componentIds: ['slab'], decidedBy: 'human_review', reviewerAuthenticated: false, at: '2026-11-04T00:00:00Z' });
 
   it('a mesh on offer draws nothing until a person approves it, and says so', () => {
-    const routed = compileWithRouter(sample(), { assets: [{ proposal: proposal(), scene: asset() }], requests: { slab: 'mesh_asset' }, limits: { maxGridCells: 32 } });
+    const routed = compileWithRouter(sample(), { assets: [createAssetOffer(proposal(), asset())], requests: { slab: 'mesh_asset' }, limits: { maxGridCells: 32 } });
     expect(meshFamilies(routed.root, 'slab')).toEqual(['procedural_v2']); expect(routed.report.proposalsNotApproved).toEqual(['asset-1']);
     const d = routed.report.decisions.find((x) => x.componentId === 'slab')!; expect(d.fallback).toEqual({ from: 'mesh_asset', code: 'ASSET_NOT_APPROVED' }); disposeCompiledSpatialPlan(routed.root);
   });
 
   it('an approved mesh replaces only the named component, is fitted to its bounds and is marked as an external asset', () => {
-    const routed = compileWithRouter(sample(), { assets: [{ proposal: proposal(), scene: asset() }], approvals: [approval()], limits: { maxGridCells: 32 } }), d = routed.report.decisions.find((x) => x.componentId === 'slab')!;
+    const routed = compileWithRouter(sample(), { assets: [createAssetOffer(proposal(), asset())], approvals: [approval()], limits: { maxGridCells: 32 } }), d = routed.report.decisions.find((x) => x.componentId === 'slab')!;
     expect(d.used).toBe('mesh_asset'); expect(d.representation).toBe('external_asset'); expect(d.assetId).toBe('asset-1'); expect(d.planGeometryOrigin).toBe('design_approximation');
     expect(meshFamilies(routed.root, 'slab')).toEqual(['mesh_asset']); expect(meshFamilies(routed.root, 'body')).toEqual(['continuous_surface']); expect(routed.report.proposalsNotApproved).toEqual([]);
     disposeCompiledSpatialPlan(routed.root);
   });
 
   it('a mapping to a node the mesh does not have returns the component to V2', () => {
-    const bad = { ...proposal(), mapping: [{ componentId: 'slab', nodePaths: ['Missing'], method: 'manual' as const, confidence: 1 }] }, routed = compileWithRouter(sample(), { assets: [{ proposal: bad, scene: asset() }], approvals: [approval()] });
+    const bad = { ...proposal(), mapping: [{ componentId: 'slab', nodePaths: ['Missing'], method: 'manual' as const, confidence: 1 }] }, routed = compileWithRouter(sample(), { assets: [createAssetOffer(bad, asset())], approvals: [approval()] });
     expect(meshFamilies(routed.root, 'slab')).toEqual(['procedural_v2']); expect(routed.report.decisions.find((x) => x.componentId === 'slab')!.fallback!.code).toBe('ASSET_NODE_MISSING'); disposeCompiledSpatialPlan(routed.root);
   });
 
-  it('disposing the compiled plan frees external materials and their textures too (no GPU leak)', () => {
-    const routed = compileWithRouter(sample(), { assets: [{ proposal: proposal(), scene: asset() }], approvals: [approval()] }), textures: Texture[] = [], materials: MeshStandardMaterial[] = [];
+  it('the plan frees its cloned materials; the textures belong to the offer and are freed exactly once when it is disposed (no GPU leak, no double free)', () => {
+    const offer = createAssetOffer(proposal(), asset()), routed = compileWithRouter(sample(), { assets: [offer], approvals: [approval()] }), textures: Texture[] = [], materials: MeshStandardMaterial[] = [];
     routed.root.traverse((o) => { if (o instanceof Mesh && o.userData.geometryFamily === 'mesh_asset') { const m = o.material as MeshStandardMaterial; materials.push(m); if (m.map) textures.push(m.map); } });
     expect(textures.length).toBeGreaterThan(0); let disposedTextures = 0, disposedMaterials = 0; for (const t of textures) t.addEventListener('dispose', () => disposedTextures++); for (const m of materials) m.addEventListener('dispose', () => disposedMaterials++);
-    disposeCompiledSpatialPlan(routed.root); expect(disposedMaterials).toBe(materials.length); expect(disposedTextures).toBe(textures.length);
+    disposeCompiledSpatialPlan(routed.root); expect(disposedMaterials).toBe(materials.length); expect(disposedTextures).toBe(0);
+    offer.dispose(); expect(disposedTextures).toBe(textures.length);
   });
 });

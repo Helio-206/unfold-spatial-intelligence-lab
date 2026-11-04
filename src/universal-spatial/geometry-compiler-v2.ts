@@ -183,10 +183,10 @@ export function disposeCompiledSpatialPlan(root: Group): void {
   const geometries = new Set<BufferGeometry>(), materials = new Set<Material>(), textures = new Set<Texture>();
   root.traverse((object) => {
     if (!(object instanceof Mesh)) return;
-    geometries.add(object.geometry);
+    if (!object.geometry.userData.fidelityShared) geometries.add(object.geometry); // shared with an external mesh offer: the offer owns it
     for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
       materials.add(material);
-      for (const value of Object.values(material)) if (value && (value as Texture).isTexture) textures.add(value as Texture);
+      for (const value of Object.values(material)) if (value && (value as Texture).isTexture && !(value as Texture).userData.fidelityShared) textures.add(value as Texture);
     }
   });
   for (const geometry of geometries) geometry.dispose();

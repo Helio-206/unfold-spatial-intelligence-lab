@@ -1,9 +1,12 @@
 import { Box3, Group, InstancedMesh, Matrix4, Mesh, Vector3, type BufferGeometry, type Object3D } from 'three';
 import type { SpatialPlanV2 } from '../contracts-v2';
 import { compileSpatialPlanV2, type CompiledSpatialPlanV2 } from '../geometry-compiler-v2';
-import { buildContinuousComponent, disposeObject, type NeighbourField } from './continuous-surface';
+import { assembleContinuous, disposeObject } from './continuous-surface';
+import { jobKey, runContinuousJob, type ContinuousJob } from './continuous-job';
+import type { ContinuousService } from './continuous-service';
+import { markShared, type AssetOffer } from './assets';
 import { implicitShapesOf, type ImplicitShape } from './sdf';
-import { DEFAULT_ROUTER_LIMITS, type AssetApproval, type AssetProposal, type GeometryFamily, type RouterLimits, type RouterReport, type RoutingDecision } from './types';
+import { DEFAULT_ROUTER_LIMITS, type AssetApproval, type GeometryFamily, type RouterLimits, type RouterReport, type RoutingDecision } from './types';
 
 /**
  * Adaptive Geometry Router (prototype). `compileWithRouter(plan, options)` returns what `compileSpatialPlanV2(plan)` returns plus a report. It starts from the
@@ -11,7 +14,7 @@ import { DEFAULT_ROUTER_LIMITS, type AssetApproval, type AssetProposal, type Geo
  * family's drawing where a rule or a request says so AND the result is within limits. Anything else stays V2. The plan is read, never written.
  * Contract and rules: `./CONTRACT.md`.
  */
-export type AssetOffer = { proposal: AssetProposal; scene: Object3D };
+export type { AssetOffer } from './assets';
 export type RouterOptions = {
   limits?: Partial<RouterLimits>;
   /** `auto`: continuous surface where it helps (curved primitives or parts that join others); `v2_only`: never leave V2; `continuous_all`: every eligible component. */
@@ -21,6 +24,8 @@ export type RouterOptions = {
   /** meshes on offer. They draw nothing unless approved. */
   assets?: AssetOffer[];
   approvals?: AssetApproval[];
+  /** Off-main-thread computation with a cache. Without it the continuous surfaces are computed inline, synchronously. With it a cache miss draws V2 now and `service.onReady` tells the host to rebuild. */
+  service?: ContinuousService;
 };
 export type RoutedPlan = CompiledSpatialPlanV2 & { report: RouterReport };
 
@@ -53,6 +58,7 @@ export function compileWithRouter(plan: SpatialPlanV2, options: RouterOptions = 
   const whole = new Box3(); for (const b of worldBox.values()) whole.union(b); const span = Math.max(...whole.getSize(new Vector3()).toArray(), 1e-12);
 
   // ---- continuous surface
+  const neededKeys = new Set<string>(), pendingIds: string[] = [];
   if (policy !== 'v2_only') for (const c of plan.components) {
     const decision = decisions.get(c.id)!, requested = options.requests?.[c.id] ?? null;
     if (requested === 'procedural_v2' || requested === 'mesh_asset') { if (requested === 'procedural_v2') decision.reason = 'Requested: V2.'; continue; }
@@ -64,21 +70,31 @@ export function compileWithRouter(plan: SpatialPlanV2, options: RouterOptions = 
     const curved = own.some((s) => CURVED.has(s.operator));
     if (policy === 'auto' && requested !== 'continuous_surface' && !curved && !neighbours.length) { decision.reason = 'Stays on V2: flat parts with nothing to blend into, so the surface would be the same.'; continue; }
     const inverseSelf = groups.get(c.id)!.matrixWorld.clone().invert();
-    const fields: NeighbourField[] = neighbours.map((o) => ({ id: o.id, shapes: shapes.get(o.id)!, toLocal: new Matrix4().multiplyMatrices(inverseSelf, groups.get(o.id)!.matrixWorld) }));
+    const base = { entityId: c.id, geometry: c.geometry, neighbours: neighbours.map((o) => ({ id: o.id, geometry: o.geometry, toLocal: new Matrix4().multiplyMatrices(inverseSelf, groups.get(o.id)!.matrixWorld).elements.slice() })), maxTriangles: limits.maxTriangles, maxGridCells: limits.maxGridCells };
+    const job: ContinuousJob = { ...base, key: jobKey(base) }; neededKeys.add(job.key);
     const t0 = performance.now();
-    let result: ReturnType<typeof buildContinuousComponent>;
-    try { result = buildContinuousComponent({ key: c.geometry.key, geometry: c.geometry, entityId: c.id, neighbours: fields, span, limits }); } catch (error) { result = { fallback: 'EXCEPTION' }; void error; }
-    if ('fallback' in result) { decision.reason = `Stays on V2: ${result.fallback.toLowerCase().replace(/_/g, ' ')}.`; decision.fallback = { from: 'continuous_surface', code: result.fallback }; continue; }
-    const g = groups.get(c.id)!, old = g.children[0]!, oldM = measure(old);
-    decision.used = 'continuous_surface'; decision.triangles = result.triangles;
-    decision.reason = `Continuous surface: ${[...(curved ? ['curved primitives'] : []), ...(result.blendedWith.length ? [`joins to ${result.blendedWith.join(', ')} (blend ${result.blendRadius.toFixed(3)})`] : [])].join('; ')}.`;
-    pending.push({ componentId: c.id, group: g, old, next: result.group, family: 'continuous_surface', triangles: result.triangles, bytes: result.bytes, meshes: result.group.children.length, oldTriangles: oldM.triangles, oldBytes: oldM.bytes, oldMeshes: oldM.meshes, ms: performance.now() - t0, decision });
+    let result = options.service ? options.service.get(job.key) : undefined, origin: 'cache' | 'computed' = 'cache';
+    if (!result && !options.service) { try { result = runContinuousJob(job); } catch { result = { ok: false, code: 'EXCEPTION' }; } origin = 'computed'; }
+    if (!result) { // worker path, miss: V2 now, the host rebuilds when the service says ready
+      const state = options.service!.request(job);
+      if (state === 'rejected') { decision.reason = 'Stays on V2: the computation queue is full.'; decision.fallback = { from: 'continuous_surface', code: 'QUEUE_FULL' }; }
+      else { decision.reason = 'Stays on V2 for now: continuous surface is being computed off the main thread.'; decision.pending = true; pendingIds.push(c.id); }
+      continue;
+    }
+    if (!result.ok) { decision.reason = `Stays on V2: ${result.code.toLowerCase().replace(/_/g, ' ')}.`; decision.fallback = { from: 'continuous_surface', code: result.code }; continue; }
+    const curvedNote = own.some((x) => CURVED.has(x.operator)), g = groups.get(c.id)!, old = g.children[0]!, oldM = measure(old), next = assembleContinuous(result, c.id, c.geometry.key);
+    decision.used = 'continuous_surface'; decision.triangles = result.triangles; decision.deviation = result.deviation; decision.computed = origin;
+    decision.reason = `Continuous surface: ${[...(curvedNote ? ['curved primitives'] : []), ...(result.blendedWith.length ? [`joins to ${result.blendedWith.join(', ')} (blend ${result.blendRadius.toFixed(3)})`] : [])].join('; ') || 'smooth surface'}.`;
+    pending.push({ componentId: c.id, group: g, old, next, family: 'continuous_surface', triangles: result.triangles, bytes: result.bytes, meshes: next.children.length, oldTriangles: oldM.triangles, oldBytes: oldM.bytes, oldMeshes: oldM.meshes, ms: origin === 'computed' ? performance.now() - t0 : 0, decision });
+    void result;
   }
+  options.service?.retain(neededKeys);
 
   // ---- approved meshes (a proposal without an approval draws nothing)
   const approvedIds = new Set<string>(), notApproved: string[] = [];
   for (const offer of options.assets ?? []) {
     const approvals = (options.approvals ?? []).filter((a) => a.proposalId === offer.proposal.id);
+    if (offer.disposed) { for (const m of offer.proposal.mapping) if (byId.has(m.componentId) && approvals.some((a) => a.componentIds.includes(m.componentId))) { const d = decisions.get(m.componentId)!; d.fallback = { from: 'mesh_asset', code: 'ASSET_DISPOSED' }; d.reason = 'Stays on V2: the mesh offer was already disposed.'; } continue; }
     const componentIds = new Set(approvals.flatMap((a) => a.componentIds).filter((id) => byId.has(id) && offer.proposal.mapping.some((m) => m.componentId === id)));
     if (!componentIds.size) { notApproved.push(offer.proposal.id); for (const m of offer.proposal.mapping) if (byId.has(m.componentId)) { const d = decisions.get(m.componentId)!; if (d.requested === 'mesh_asset') { d.fallback = { from: 'mesh_asset', code: 'ASSET_NOT_APPROVED' }; d.reason = 'Stays on V2: a mesh is on offer but no person has approved it for this component.'; } } continue; }
     const t0 = performance.now(); offer.scene.updateMatrixWorld(true);
@@ -90,7 +106,7 @@ export function compileWithRouter(plan: SpatialPlanV2, options: RouterOptions = 
     for (const p of parts) {
       const g = groups.get(p.id)!, holder = new Group(); holder.name = `${byId.get(p.id)!.geometry.key}:asset`; holder.userData.spatialSubcomponentKey = byId.get(p.id)!.geometry.key;
       const inverse = g.matrixWorld.clone().invert();
-      for (const node of p.nodes as Object3D[]) { const copy = node.clone(true); copy.matrixAutoUpdate = true; new Matrix4().multiplyMatrices(inverse, fit).multiply(node.matrixWorld).decompose(copy.position, copy.quaternion, copy.scale); copy.traverse((o) => { if (o instanceof Mesh) { o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone(); o.userData = { ...o.userData, spatialEntityId: p.id, spatialSubcomponentKey: byId.get(p.id)!.geometry.key, geometryFamily: 'mesh_asset', assetId: offer.proposal.id, materialProfile: 'neutral' }; o.castShadow = true; o.receiveShadow = true; } }); holder.add(copy); }
+      for (const node of p.nodes as Object3D[]) { const copy = node.clone(true); copy.matrixAutoUpdate = true; new Matrix4().multiplyMatrices(inverse, fit).multiply(node.matrixWorld).decompose(copy.position, copy.quaternion, copy.scale); copy.traverse((o) => { if (o instanceof Mesh) { o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone(); o.userData = { ...o.userData, spatialEntityId: p.id, spatialSubcomponentKey: byId.get(p.id)!.geometry.key, geometryFamily: 'mesh_asset', assetId: offer.proposal.id, materialProfile: 'neutral' }; o.castShadow = true; o.receiveShadow = true; markShared(o); } }); holder.add(copy); }
       const m = measure(holder), old = g.children[0]!, oldM = measure(old), d = decisions.get(p.id)!;
       const existing = pending.findIndex((x) => x.componentId === p.id); if (existing >= 0) { disposeObject(pending[existing]!.next); pending.splice(existing, 1); }
       d.used = 'mesh_asset'; d.representation = 'external_asset'; d.assetId = offer.proposal.id; d.triangles = m.triangles; d.fallback = null; d.reason = `Approved mesh ${offer.proposal.id} (${offer.proposal.license.spdx}), fitted rigidly to the component's bounds.`; approvedIds.add(p.id);
@@ -110,7 +126,7 @@ export function compileWithRouter(plan: SpatialPlanV2, options: RouterOptions = 
   const total = measure(root), perFamily: RouterReport['perFamily'] = { procedural_v2: { components: 0, triangles: 0, ms: 0 }, continuous_surface: { components: 0, triangles: 0, ms: 0 }, mesh_asset: { components: 0, triangles: 0, ms: 0 } };
   const msOf = new Map(pending.map((p) => [p.componentId, p.ms]));
   for (const d of decisions.values()) { const f = perFamily[d.used]; f.components++; f.triangles += d.triangles; f.ms += d.used === 'procedural_v2' ? 0 : msOf.get(d.componentId) ?? 0; }
-  const report: RouterReport = { planSource: { kind: plan.source.kind, sha256: plan.source.sha256 }, decisions: plan.components.map((c) => decisions.get(c.id)!), proposalsNotApproved: notApproved, limits, totals: { triangles: total.triangles, meshes: total.meshes, geometryBytes: total.bytes, ms: performance.now() - started }, perFamily, fallbacks: [...decisions.values()].filter((d) => d.fallback).length };
+  const report: RouterReport = { planSource: { kind: plan.source.kind, sha256: plan.source.sha256 }, decisions: plan.components.map((c) => decisions.get(c.id)!), proposalsNotApproved: notApproved, pending: pendingIds, service: options.service?.stats() ?? null, limits, totals: { triangles: total.triangles, meshes: total.meshes, geometryBytes: total.bytes, ms: performance.now() - started }, perFamily, fallbacks: [...decisions.values()].filter((d) => d.fallback).length };
   void approvedIds;
   return { root, stats: { ...compiled.stats, meshCount: total.meshes, triangleCount: total.triangles, geometryBytes: total.bytes }, report };
 }
