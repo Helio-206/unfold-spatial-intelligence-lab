@@ -1,0 +1,12 @@
+{
+  "mode": "live",
+  "prompt": "Um relógio de pêndulo de pé: caixa alta de madeira, mostrador redondo com ponteiros, pêndulo com disco de latão e pés.",
+  "failure": {
+    "code": "SPATIAL_V2_META_INCOMPLETE",
+    "message": "O servidor recusou o pedido (SPATIAL_V2_META_INCOMPLETE). Nenhuma cena foi construída."
+  },
+  "calls": [
+    "POST /api/spatial/v2/plan"
+  ],
+  "at": "2026-11-04T00:36:24.431Z"
+}
