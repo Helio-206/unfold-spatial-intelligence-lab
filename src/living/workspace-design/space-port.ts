@@ -15,6 +15,9 @@ export interface SpaceLayer {
   /** The id of the component under `ndc`, or null. */
   pick(ndc: Vector2, camera: Camera): string | null;
   highlight(id: string | null): void;
+  /** Generic exploded view (display only). Absent when the layer cannot do it. */
+  setExploded?(on: boolean): boolean;
+  readonly isExploded?: boolean;
   isolate(id: string | null): void;
   readonly isolatedId: string | null;
   /** Fills the inspector body for the selected component and wires its own controls. `invalidate` is called when the layer changes anything visible. */

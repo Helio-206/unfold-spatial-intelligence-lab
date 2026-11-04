@@ -44,6 +44,7 @@ import { groundOutcome, type Grounded } from './grounding';
 import { WorkspaceEngineeringSession } from './engineering-session';
 import { planExtendExperiment } from './experiments';
 import type { SpaceLayer } from './space-port';
+import { analyzeFrame, verifyFrame, type FrameAnalysis, type FrameVerdict, type RgbaFrame } from '../../universal-spatial/frame-analysis';
 import { initialWorkspaceState, reduceWorkspace, visibility, type Message, type WorkspaceAction, type WorkspaceState } from './workspace-state';
 
 export type WorkspaceOptions = {
@@ -127,6 +128,7 @@ export class SpatialWorkspace {
   private revealTween: gsap.core.Tween | null = null;
   /** A scene that is not the excavator, shown on the same stage (see space-port.ts). While set, selection, framing, isolation and the inspector belong to it. */
   private space: SpaceLayer | null = null;
+  private insetKey = '';
   private defaultPlaceholder = '';
   private premiumShared: { environment: { texture: Texture; dispose(): void } | null; previous: { environment: Texture | null; intensity: number; exposure: number } } | null = null;
   private premium: { handle: PremiumLookHandle; environment: { texture: Texture; dispose(): void } | null; previous: { environment: Texture | null; intensity: number; exposure: number } } | null = null;
@@ -262,7 +264,11 @@ export class SpatialWorkspace {
     on(this.el.railExtras!, 'click', (e: Event) => { const b = (e.target as HTMLElement).closest<HTMLElement>('[data-extra]'); if (b) this.extraTools.find((t) => t.id === b.dataset.extra)?.run(); });
     on(this.el.toolFrame!, 'click', () => this.frameSelection());
     on(this.el.toolIsolate!, 'click', () => this.toggleIsolate());
-    on(this.el.toolExplode!, 'click', () => { const exploded = !this.scene.exploded; this.scene.setExploded(exploded); this.notice('explode', exploded ? 'Vista explodida · deslocamento só visual, não é uma pose do motor.' : null, 'info'); this.renderRail(); });
+    on(this.el.toolExplode!, 'click', () => {
+      if (this.space?.setExploded) { const on = this.space.setExploded(!this.space.isExploded); this.notice('explode', on ? 'Vista explodida · afastamento só visual, não é uma pose nem uma simulação.' : null, 'info'); this.foundry.requestRender(); this.renderRail();
+        // after the pieces have moved, bring the whole of them back into view
+        window.setTimeout(() => { const b = this.space?.box(); if (b && !b.isEmpty() && !this.disposed) this.director.focusSphere(b.getBoundingSphere(new Sphere()), 'user_tool', 0.7); }, this.reducedMotion ? 0 : 760); return; }
+      const exploded = !this.scene.exploded; this.scene.setExploded(exploded); this.notice('explode', exploded ? 'Vista explodida · deslocamento só visual, não é uma pose do motor.' : null, 'info'); this.renderRail(); });
     on(this.el.toolSimulate!, 'click', () => this.offerExperiment(this.selectedId, null));
     on(this.el.toolMore!, 'click', () => this.dispatch({ type: 'toggle_rail' }));
     on(this.el.toolEvidence!, 'click', () => { if (!this.selectedId) return; this.inspectorOpen = true; this.evidenceOpen = !this.evidenceOpen; this.renderInspector(); this.renderRail(); });
@@ -374,6 +380,7 @@ export class SpatialWorkspace {
     this.renderNotices(v);
     this.renderRail();
     this.renderInspector();
+    if (this.space) { const key = `${this.el.inspector!.hidden}|${this.el.inspector!.offsetHeight}|${this.root.clientWidth}`; if (key !== this.insetKey) { this.insetKey = key; this.syncInsets(true); } }
     this.foundry.requestRender();
   }
 
@@ -437,7 +444,8 @@ export class SpatialWorkspace {
     if (this.space) {
       const has = !!this.selectedId && this.space.has(this.selectedId);
       // the excavator-only tools (explode, experiment, gestures) stay visible but unavailable
-      for (const id of ['toolExplode', 'toolSimulate', 'toolHand']) { const b = this.el[id] as HTMLButtonElement | undefined; if (b) { b.disabled = true; b.setAttribute('aria-disabled', 'true'); } }
+      for (const id of ['toolSimulate', 'toolHand']) { const b = this.el[id] as HTMLButtonElement | undefined; if (b) { b.disabled = true; b.setAttribute('aria-disabled', 'true'); } }
+      (this.el.toolExplode as HTMLButtonElement).disabled = !this.space.setExploded; this.el.toolExplode!.setAttribute('aria-pressed', String(!!this.space.isExploded));
       (this.el.toolIsolate as HTMLButtonElement).disabled = !has; this.el.toolIsolate!.setAttribute('aria-pressed', String(!!this.space.isolatedId));
       (this.el.toolEvidence as HTMLButtonElement).disabled = !has; this.el.toolEvidence!.setAttribute('aria-pressed', String(this.evidenceOpen));
       return;
@@ -512,8 +520,10 @@ export class SpatialWorkspace {
     if (this.state.mode === 'focus') return { top: 16, right: 16, bottom: 72, left: 16 };
     const composerH = this.el.composer!.offsetHeight || 64;
     this.root.style.setProperty('--uw-composer-h', `${composerH}px`);
-    const bottom = composerH + 32 + (narrow && this.state.mode === 'conversation' ? this.el.conversation!.offsetHeight + 8 : 0);
-    const right = !narrow && this.state.mode === 'conversation' ? Math.min(420, W * 0.38) + 32 : 24;
+    // in a Space the inspector is a card over the stage: keep the object in the part of the stage it does not cover
+    const card = this.space && !this.el.inspector!.hidden ? this.el.inspector! : null;
+    const bottom = composerH + 32 + (narrow && this.state.mode === 'conversation' ? this.el.conversation!.offsetHeight + 8 : 0) + (card && narrow ? card.offsetHeight + 8 : 0);
+    const right = !narrow && this.state.mode === 'conversation' ? Math.min(420, W * 0.38) + 32 : 24 + (card && !narrow ? card.offsetWidth + 16 : 0);
     return { top: 64, right, bottom, left: narrow ? 56 : 72 };
   }
 
@@ -576,6 +586,7 @@ export class SpatialWorkspace {
       if (!this.space.has(id)) return;
       this.selectedId = id; this.inspectorOpen = true; this.space.highlight(id);
       if (this.space.isolatedId && this.space.isolatedId !== id) this.space.isolate(id);
+      const focus = this.componentSphere(id); if (focus) this.director.retarget(focus.center, 'user_tool');
       this.foundry.requestRender(); this.render(); return;
     }
     if (this.empty) return;
@@ -1159,7 +1170,7 @@ export class SpatialWorkspace {
     this.teardownMachine(); this.resetForMachine();
     this.empty = true;
     this.buildMachine(structuredClone(this.placeholder));
-    this.space = layer; this.foundry.scene.add(layer.root);
+    this.space = layer; this.foundry.scene.add(layer.root); this.root.dataset.space = 'true';
     this.setContext({ brandLabel: context.brandLabel, notices: context.notices, extraTools: context.extraTools });
     this.frameHome(); this.foundry.studio.updateContactShadow(); this.render();
   }
@@ -1172,6 +1183,38 @@ export class SpatialWorkspace {
     this.foundry.studio.updateContactShadow(); this.render();
   }
 
+  /**
+   * Opening shot: the camera starts wider, higher and turned away, and settles into the hero view with the director's own transition.
+   * Same camera, same controls; any input from the person cancels it. Instant under reduced motion.
+   */
+  introSpace(): boolean {
+    if (!this.space || this.reducedMotion) return false;
+    const box = this.space.box(); if (!box) return false;
+    const target = box.getCenter(new Vector3()), home = this.director.homeView();
+    this.director.jumpTo({ target, azimuth: home.azimuth + 0.9, elevation: Math.min(0.9, home.elevation + 0.35), distance: home.distance * 1.7 });
+    this.director.reset();
+    return true;
+  }
+
+  /**
+   * One frame of the stage for a visual evaluation, read in the same task as its render (the drawing buffer is not preserved). The same view is rendered
+   * with and without the space so a blank or object-less frame is detected before anything is sent. Chrome is DOM and never in the canvas.
+   */
+  captureSpaceFrame(): { dataUrl: string; analysis: FrameAnalysis; verdict: FrameVerdict } | null {
+    const layer = this.space; if (!layer) return null;
+    const gl = this.foundry.renderer.getContext(), canvas = this.foundry.renderer.domElement;
+    const read = (): RgbaFrame => { const width = gl.drawingBufferWidth, height = gl.drawingBufferHeight, data = new Uint8Array(width * height * 4); gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, data); return { data, width, height }; };
+    // the model sees the whole stage, not the part the chrome leaves free: frame with no insets for the capture, then put them back
+    const insets = this.currentInsets, viewport = { width: this.root.clientWidth || 1, height: this.root.clientHeight || 1 }, zero = { top: 0, right: 0, bottom: 0, left: 0 };
+    this.currentInsets = zero; this.director.setViewport(viewport, zero); this.frameHome();
+    const was = layer.root.visible;
+    layer.root.visible = false; this.foundry.renderNow(); const reference = read();
+    layer.root.visible = was; this.foundry.renderNow(); const presented = read(); const dataUrl = canvas.toDataURL('image/png');
+    const analysis = analyzeFrame(presented, reference, presented);
+    this.currentInsets = insets; this.director.setViewport(viewport, insets); this.frameHome(); this.foundry.requestRender();
+    return { dataUrl, analysis, verdict: verifyFrame(analysis) };
+  }
+
   /** A redraw without a state change (highlight, reveal step). */
   redraw(): void { this.foundry.markMotion(); this.foundry.studio.updateContactShadow(); this.foundry.requestRender(); }
 
@@ -1180,7 +1223,7 @@ export class SpatialWorkspace {
 
   /** Leaves the space (frees its objects) without touching the machine slot. Idempotent. */
   private removeSpace(): void {
-    const layer = this.space; if (!layer) return; this.space = null;
+    const layer = this.space; if (!layer) return; this.space = null; delete this.root.dataset.space;
     this.foundry.scene.remove(layer.root); layer.dispose();
     this.selectedId = null; this.inspectorOpen = false; this.evidenceOpen = false;
   }

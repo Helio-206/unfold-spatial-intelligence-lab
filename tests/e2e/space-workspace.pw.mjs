@@ -34,8 +34,23 @@ if (mode === 'mock') {
   }
   await page.route('**/api/spatial/v2/plan', async (route) => { await new Promise((r) => setTimeout(r, 1800)); await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...fixture, meta: { ...fixture.meta, rawResponseStored: false, rawResponseSha256: null } }) }); });
 }
+const extras = mode === 'mock' || process.env.UNFOLD_SPACE_LIVE_EXTRAS === '1';
+if (mode === 'mock') {
+  // paid routes only; adopt, operation and undo are local and go to the real backend
+  await page.route('**/api/spatial/v2/edit', async (route) => {
+    const body = JSON.parse(route.request().postData() ?? '{}');
+    const target = await page.evaluate(() => window.__space.layer.currentPlan.components.at(-1).id);
+    const position = await page.evaluate((id) => window.__space.layer.currentPlan.components.find((c) => c.id === id).transform.position, target);
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ contract: 'unfold.spatial-v2-proposal.v1', sessionId: body.sessionId, revision: body.baseRevision, applied: false, operation: { contract: 'unfold.spatial-operation.v2', operationId: 'meta-mock-1', kind: 'set-transform', componentId: target, nodeKey: null, value: { position: [position[0], position[1] + 0.6, position[2]], rotationRad: [0, 0, 0], scale: [1, 1, 1] } }, meta: { estimatedCostUsd: 0 } }) });
+  });
+  await page.route('**/api/spatial/v2/evaluate', async (route) => {
+    const body = JSON.parse(route.request().postData() ?? '{}');
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ contract: 'unfold.spatial-evaluation.v1', sessionId: body.sessionId, revision: body.baseRevision, evaluation: { contract: 'unfold.spatial-evaluation.v1', recognizabilityScore: 70, silhouetteScore: 65, spatialIntegrityScore: 72, confidence: 0.6, discrepancies: [{ componentId: null, kind: 'other', severity: 'low', observation: 'Mock evaluation.' }], suggestedOperation: null, rationale: 'mock' }, suggestionStatus: 'none', refinementBudget: { maximum: 1, used: 0 }, constraintReport: {}, meta: { estimatedCostUsd: 0 }, limitations: [] }) });
+  });
+}
 const shot = async (name, opts = {}) => { await page.waitForTimeout(500); await page.screenshot({ path: resolve(out, `${name}.png`), ...opts }); return `${name}.png`; };
 const steps = {};
+const openEdit = () => page.evaluate(() => document.querySelector('.sp-edit')?.setAttribute('open', ''));
 try {
   await page.goto(`${base}/living?debug-living&rm=1`, { waitUntil: 'networkidle' });
   await page.waitForSelector('[data-space="open"]');
@@ -126,7 +141,7 @@ try {
   await page.evaluate((i) => window.__workspace.select(i), id);
   assert.equal(await page.evaluate(() => window.__workspace.selectedSpaceId), id);
   const posBefore = await page.evaluate((i) => window.__space.layer.currentPlan.components.find((c) => c.id === i).transform.position, id);
-  await page.click('[data-edit="x+"]');
+  await openEdit(); await page.click('[data-edit="x+"]');
   await page.waitForSelector('[data-apply]');
   steps.preview = await shot('09-edit-preview');
   const needsAuth = await page.locator('[data-auth]').count();
@@ -150,13 +165,71 @@ try {
   // isolate + frame tools
   await page.click('[data-el="toolIsolate"]'); await page.waitForTimeout(500); steps.isolated = await shot('12-isolated');
   await page.click('[data-el="toolIsolate"]'); await page.click('[data-el="toolFrame"]'); await page.waitForTimeout(1200); steps.framed = await shot('13-framed');
-  // open evidence
+  // evidence
   await page.click('[data-el="toolMore"]'); await page.click('[data-el="toolEvidence"]'); await page.waitForTimeout(300); steps.evidence = await shot('14-evidence');
-  // leave and come back to the excavator entry without leaking the space
-  const leaves = await page.evaluate(() => ({ spaceActive: window.__workspace.spaceActive }));
-  assert.equal(leaves.spaceActive, true);
-  await page.click('[data-extra="space-exit"]'); await page.waitForTimeout(800);
-  assert.equal(await page.evaluate(() => window.__workspace.spaceActive), false, 'leaving frees the space');
+  await page.click('[data-el="toolEvidence"]');
+  // exploded view: generic, display only, restores exactly
+  const planBefore = await page.evaluate(() => JSON.stringify(window.__space.layer.currentPlan));
+  await page.click('[data-el="toolExplode"]'); await page.waitForTimeout(1000);
+  assert.equal(await page.evaluate(() => window.__space.layer.isExploded), true);
+  steps.exploded = await shot('13b-exploded');
+  assert.equal(await page.evaluate(() => JSON.stringify(window.__space.layer.currentPlan)), planBefore, 'exploding never changes the plan');
+  await page.click('[data-el="toolExplode"]'); await page.waitForTimeout(1000);
+  assert.equal(await page.evaluate(() => window.__space.layer.isExploded), false);
+  // the server session mirrors the Space (edits, undo) so the paid proposals can rely on it
+  assert.ok(await page.evaluate(() => !!window.__space.session), 'a server session exists for the Space on stage');
+  const revisionBefore = await page.evaluate(() => window.__space.session.revision);
+  assert.ok(revisionBefore >= 2, 'edit + undo + colour edit + undo were mirrored to the server');
+  // Meta edit in proposal mode: previewed, blocked without authorisation, applied after it, undone
+  if (extras) {
+    const metaBefore = await page.evaluate(() => JSON.stringify(window.__space.layer.currentPlan));
+    await page.fill('[data-el="input"]', 'Raise the last part a little.'); await page.keyboard.press('Enter');
+    await page.waitForSelector('.sp-pending[data-source="meta"]', { timeout: 120000 });
+    assert.equal(await page.evaluate(() => JSON.stringify(window.__space.layer.currentPlan)), metaBefore, 'a proposal changes nothing');
+    steps.proposal = await shot('13c-meta-proposal');
+    await page.click('[data-apply]'); await page.waitForTimeout(300);
+    assert.equal(await page.evaluate(() => JSON.stringify(window.__space.layer.currentPlan)), metaBefore, 'applying without authorisation is refused');
+    await page.check('[data-auth]'); await page.click('[data-apply]'); await page.waitForTimeout(600);
+    assert.notEqual(await page.evaluate(() => JSON.stringify(window.__space.layer.currentPlan)), metaBefore, 'authorised proposal is applied');
+    await page.click('[data-undo]'); await page.waitForTimeout(600);
+    assert.equal(await page.evaluate(() => JSON.stringify(window.__space.layer.currentPlan)), metaBefore);
+    // verified capture + visual evaluation (hypothesis only)
+    await page.click('[data-extra="space-eval"]');
+    await page.waitForFunction(() => /Hipótese visual|Captura rejeitada|Avaliação indisponível/.test(document.body.innerText), null, { timeout: 120000 });
+    const verdictText = await page.evaluate(() => document.body.innerText.match(/Hipótese visual[^\n]*|Captura rejeitada[^\n]*|Avaliação indisponível[^\n]*/)?.[0]);
+    assert.match(verdictText, /Hipótese visual/, verdictText);
+    steps.evaluated = await shot('13d-visual-evaluation');
+    await page.evaluate(() => window.__space.layer.cancelPending());
+  }
+  // save → leave guard → My Spaces → reopen → delete
+  await page.evaluate(() => localStorage.clear());
+  await page.click('[data-extra="space-save"]'); await page.waitForTimeout(500);
+  assert.equal(await page.evaluate(() => window.__space.dirty), false, 'saved Space is not dirty');
+  const savedPlan = await page.evaluate(() => JSON.stringify(window.__space.layer.currentPlan));
+  await page.evaluate((i) => window.__workspace.select(i), id);
+  await openEdit(); await page.click('[data-edit="y+"]'); await page.check('[data-auth]').catch(() => {}); await page.click('[data-apply]'); await page.waitForTimeout(500);
+  assert.equal(await page.evaluate(() => window.__space.dirty), true, 'an edit after saving makes it dirty');
+  await page.click('[data-extra="space-exit"]'); await page.waitForSelector('.sp-root[data-phase="leaving"]');
+  steps.leaving = await shot('13e-leave-guard');
+  await page.click('[data-sp="stay"]'); await page.waitForTimeout(300);
+  assert.equal(await page.evaluate(() => window.__workspace.spaceActive), true, 'staying keeps the Space on stage');
+  await page.click('[data-extra="space-save"]'); await page.waitForTimeout(500);
+  await page.click('[data-extra="space-library"]'); await page.waitForSelector('.sp-root[data-phase="library"]');
+  assert.equal(await page.evaluate(() => window.__workspace.spaceActive), false, 'the library frees the Space on stage');
+  assert.equal(await page.locator('[data-sp-open]').count(), 1);
+  steps.library = await shot('13f-my-spaces');
+  await page.click('[data-sp-open]'); await page.waitForFunction(() => window.__workspace.spaceActive); await page.waitForTimeout(1200);
+  const reopened = await page.evaluate(() => JSON.stringify(window.__space.layer.currentPlan));
+  assert.notEqual(reopened, savedPlan, 'the later save replaced the first one'); assert.equal(await page.evaluate(() => window.__space.dirty), false);
+  steps.reopened = await shot('13g-reopened');
+  assert.ok(await page.evaluate(() => !!window.__space.session), 'a reopened Space gets a fresh server session');
+  await page.click('[data-extra="space-library"]'); await page.waitForSelector('.sp-root[data-phase="library"]');
+  await page.click('[data-sp-ask-delete]'); await page.click('[data-sp-delete]'); await page.waitForTimeout(400);
+  assert.equal(await page.locator('[data-sp-open]').count(), 0, 'deleted');
+  assert.equal(await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('unfold.space.v1:')).length), 0);
+  await page.click('[data-sp="new"]'); await page.waitForSelector('.sp-root[data-phase="intake"]');
+  // back on stage for the rest of the run is not needed: leave through the lab entry
+  await page.click('[data-sp="exit"]'); await page.waitForSelector('[data-space="open"]');
   await page.waitForSelector('[data-space="open"]');
   steps.back = await shot('15-back-to-entry');
   const gpuAfter = await page.evaluate(() => { window.__workspace.renderNow(); const st = window.__workspace.stats(); return { geometries: st.geometries, textures: st.textures, programs: st.programs }; });

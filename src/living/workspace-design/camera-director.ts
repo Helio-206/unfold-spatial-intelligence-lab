@@ -35,6 +35,7 @@ export class CameraDirector {
   }
 
   setHome(view: ViewSpec): void { this.home = view; }
+  homeView(): ViewSpec { return { ...this.home, target: this.home.target.clone() }; }
 
   /** Applies viewport and UI insets: shifts the projection centre into the usable area. */
   setViewport(viewport: Viewport, insets: SafeInsets): void {
@@ -85,6 +86,15 @@ export class CameraDirector {
       onComplete: () => { this.tween = null; if (by === 'assistant') this.arbiter.assistantDone(token); this.requestRender(); },
     });
     return { moved: true };
+  }
+
+  /** Moves the point the camera looks at to `target` keeping direction and distance: selection draws the eye without zooming the person in or out. */
+  retarget(target: Vector3, by: 'user_tool' | 'assistant' = 'user_tool'): { moved: boolean; reason?: string } {
+    const offset = this.camera.position.clone().sub(this.controls.target), distance = offset.length();
+    if (distance < 1e-6 || this.controls.target.distanceTo(target) < 1e-3) return { moved: false };
+    const dir = offset.normalize();
+    const az = Math.atan2(-dir.z, dir.x), el = Math.asin(Math.max(-1, Math.min(1, dir.y)));
+    return this.moveTo({ target: target.clone(), azimuth: az, elevation: Math.max(0.05, el), distance }, by);
   }
 
   /** Frame a sphere from the current viewing direction, at a distance that fits the usable area. */

@@ -1,4 +1,5 @@
-import { Box3, Color, Group, Mesh, Raycaster, type Camera, type Material, type Object3D, type Vector2 } from 'three';
+import gsap from 'gsap';
+import { Box3, Color, Group, Mesh, Raycaster, Vector3, type Camera, type Material, type Object3D, type Vector2 } from 'three';
 import { analyzeAssembly, describeDefect, refineAssembly, type AssemblyAnalysis } from '../../universal-spatial/assembly-analysis';
 import { applySpatialOperationV2, type GeometryNodeV2, type SpatialOperationV2, type SpatialPlanV2 } from '../../universal-spatial/contracts-v2';
 import { collectWorldPoints, heroAzimuth, normalizeForPresentation } from '../../universal-spatial/framing';
@@ -12,10 +13,17 @@ const CONFIRMED = new Set(['observed', 'user_provided']);
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const fmt3 = (v: readonly number[]) => `[${v.map((n) => n.toFixed(3)).join(', ')}]`;
 
-type Pending = { label: string; before: string; after: string; operations: SpatialOperationV2[]; needsAuthorization: boolean };
+type Pending = { label: string; before: string; after: string; operations: SpatialOperationV2[]; needsAuthorization: boolean; source: 'person' | 'meta' | 'meta-visual' };
 type Shape = Extract<GeometryNodeV2, { type: 'shape' }>;
 export type PendingEdit = Pending;
+/** Mirrors edits to the server session so that revisions agree. Throws when the server cannot confirm; the layer then carries on locally and says so. */
+export type LayerSync = {
+  apply(operation: SpatialOperationV2): Promise<SpatialPlanV2>;
+  undo(): Promise<SpatialPlanV2>;
+};
 export type SpaceLayerHost = {
+  /** The server session cannot be trusted any more (expired, conflict, network). The reason is shown to the person. */
+  syncLost?(reason: string): void;
   /** The plan changed (edit, undo, solver). The host refreshes the chrome and the inspector. */
   changed(): void;
   /** Redraw only (a highlight, a reveal step). */
@@ -35,7 +43,12 @@ export class PlanSpaceLayer implements SpaceLayer {
   private compiled: Group | null = null;
   private fixed: { scale: number; position: [number, number, number] } | null = null;
   private plan: SpatialPlanV2;
-  private readonly history: SpatialPlanV2[] = [];
+  private readonly history: Array<{ plan: SpatialPlanV2; ops: number }> = [];
+  private sync: LayerSync | null = null;
+  private busy = false;
+  private explodeTween: gsap.core.Tween | null = null;
+  private exploded = false;
+  private baseLocal = new Map<Object3D, Vector3>();
   private pending: Pending | null = null;
   private analysisCache: AssemblyAnalysis | null = null;
   private selected: string | null = null;
@@ -43,6 +56,7 @@ export class PlanSpaceLayer implements SpaceLayer {
   private readonly emissive = new WeakMap<Material, { color: Color; intensity: number }>();
   private readonly raycaster = new Raycaster();
   private revealTimer = 0;
+  private revealTween: gsap.core.Tween | null = null;
   private disposed = false;
   private authorised = false;
   stats: ReturnType<typeof compileSpatialPlanV2>['stats'];
@@ -56,7 +70,11 @@ export class PlanSpaceLayer implements SpaceLayer {
   get currentPlan(): SpatialPlanV2 { return this.plan; }
   get pendingEdit(): Pending | null { return this.pending; }
   authorise(value: boolean): void { this.authorised = value; }
-  get canUndo(): boolean { return this.history.length > 0; }
+  get canUndo(): boolean { return this.history.length > 0 && !this.busy; }
+  get isBusy(): boolean { return this.busy; }
+  get synced(): boolean { return this.sync !== null; }
+  attachSync(sync: LayerSync | null): void { this.sync = sync; }
+  get isExploded(): boolean { return this.exploded; }
   get editCount(): number { return this.history.length; }
 
   private build(): ReturnType<typeof compileSpatialPlanV2>['stats'] {
@@ -72,7 +90,7 @@ export class PlanSpaceLayer implements SpaceLayer {
       wrapper.scale.setScalar(this.fixed.scale); wrapper.position.set(...this.fixed.position); wrapper.add(compiled.root); this.wrapper = wrapper;
     }
     this.root.add(this.wrapper); this.root.updateMatrixWorld(true);
-    this.analysisCache = null;
+    this.analysisCache = null; this.exploded = false; this.baseLocal = new Map();
     this.applyPaint();
     return compiled.stats;
   }
@@ -136,20 +154,64 @@ export class PlanSpaceLayer implements SpaceLayer {
     }
   }
 
-  /** Components appear one by one, in plan order: a presentation cue, not motion of the object. Instant when `immediate`. */
-  reveal(immediate: boolean, stepMs = 140): void {
-    clearTimeout(this.revealTimer);
+  /**
+   * Construction: the components rise into place one after another, largest masses first (a presentation cue, not motion of the object and not a
+   * simulation). Instant when `immediate`. Positions are restored exactly at the end.
+   */
+  reveal(immediate: boolean, stepMs = 170): void {
+    clearTimeout(this.revealTimer); this.revealTween?.kill();
     const roots: Object3D[] = []; this.wrapper?.traverse((object) => { if (object.userData.spatialComponentRoot) roots.push(object); });
-    if (immediate) { for (const object of roots) object.visible = true; this.host.redraw(); return; }
-    for (const object of roots) object.visible = false;
-    let index = 0;
-    const next = () => {
-      if (this.disposed) return;
-      const object = roots[index++]; if (object) object.visible = true;
-      this.host.redraw();
-      if (index < roots.length) this.revealTimer = window.setTimeout(next, stepMs); else this.applyPaint();
-    };
-    next();
+    const size = (o: Object3D) => { const b = new Box3().setFromObject(o); return b.isEmpty() ? 0 : b.getSize(new Vector3()).length(); };
+    const order = roots.map((o) => ({ o, size: size(o) })).sort((x, y) => y.size - x.size).map((x) => x.o);
+    const base = new Map(order.map((o) => [o, { y: o.position.y, s: o.scale.clone() }]));
+    const rest = () => { for (const [o, b] of base) { o.visible = true; o.position.y = b.y; o.scale.copy(b.s); } this.applyPaint(); this.host.redraw(); };
+    if (immediate || !order.length) { rest(); return; }
+    const lift = (this.analysis()?.span ?? 1) * 0.12, state = { t: 0 }, total = order.length;
+    for (const o of order) o.visible = false;
+    this.revealTween = gsap.to(state, {
+      t: total, duration: (total * stepMs) / 1000 + 0.45, ease: 'none',
+      onUpdate: () => {
+        if (this.disposed) return;
+        order.forEach((o, i) => {
+          const k = Math.min(1, Math.max(0, (state.t - i) / 1.6)), e = 1 - (1 - k) * (1 - k), b = base.get(o)!;
+          o.visible = k > 0; o.position.y = b.y - (1 - e) * lift; o.scale.set(b.s.x * (0.86 + 0.14 * e), b.s.y * (0.86 + 0.14 * e), b.s.z * (0.86 + 0.14 * e));
+        });
+        this.host.redraw();
+      },
+      onComplete: () => { this.revealTween = null; rest(); },
+    });
+  }
+  get revealing(): boolean { return this.revealTween !== null; }
+
+  /**
+   * Exploded view, generic: every component moves away from the centre of the assembly along the line from that centre to its own centre, deeper
+   * components a little further. Display only: it never touches the plan, and the notice says so.
+   */
+  setExploded(on: boolean, immediate = false): boolean {
+    if (!this.wrapper || this.exploded === on) return this.exploded;
+    this.explodeTween?.kill(); this.exploded = on;
+    const roots: Object3D[] = []; this.wrapper.traverse((o) => { if (o.userData.spatialComponentRoot) roots.push(o); });
+    if (on) {
+      this.baseLocal = new Map(roots.map((o) => [o, o.position.clone()]));
+      const all = this.box(); if (!all) return false;
+      const centre = all.getCenter(new Vector3()), span = all.getSize(new Vector3()).length() || 1, depthOf = (o: Object3D) => { let d = 0; for (let p = o.parent; p && p !== this.wrapper; p = p.parent) if (p.userData.spatialComponentRoot) d++; return d; };
+      const targets = new Map<Object3D, Vector3>();
+      for (const o of roots) {
+        const b = new Box3().setFromObject(o); if (b.isEmpty()) continue;
+        const direction = b.getCenter(new Vector3()).sub(centre); if (direction.length() < span * 0.02) direction.set(0, 1, 0);
+        const worldDelta = direction.normalize().multiplyScalar(span * 0.28 * (1 + depthOf(o) * 0.35)), parent = o.parent!;
+        const from = o.getWorldPosition(new Vector3()), to = parent.worldToLocal(from.clone().add(worldDelta));
+        targets.set(o, to);
+      }
+      this.animatePositions(targets, immediate);
+    } else this.animatePositions(new Map(roots.map((o) => [o, this.baseLocal.get(o) ?? o.position.clone()])), immediate);
+    return this.exploded;
+  }
+  private animatePositions(targets: Map<Object3D, Vector3>, immediate: boolean): void {
+    const from = new Map([...targets.keys()].map((o) => [o, o.position.clone()])), state = { k: 0 };
+    const apply = (k: number) => { for (const [o, to] of targets) o.position.lerpVectors(from.get(o)!, to, k); this.host.redraw(); };
+    if (immediate) { apply(1); return; }
+    this.explodeTween = gsap.to(state, { k: 1, duration: 0.7, ease: 'power2.inOut', onUpdate: () => apply(state.k), onComplete: () => { this.explodeTween = null; apply(1); } });
   }
 
   // ------------------------------------------------------------------------------------------------ analysis
@@ -160,16 +222,39 @@ export class PlanSpaceLayer implements SpaceLayer {
   assemblyLines(): string[] { const a = this.analysis(); return a ? a.defects.map(describeDefect) : []; }
   get closableGaps(): boolean { return !!this.analysis()?.defects.some((defect) => defect.kind === 'floating' && !('blockedBy' in defect && defect.blockedBy)); }
 
+  /** Applies operations in order, through the server session when there is one, so both sides keep the same revision. */
+  private async commit(operations: SpatialOperationV2[], provenance: { origin: 'user_provided' | 'inferred'; evidence: string }, localPlan?: SpatialPlanV2): Promise<void> {
+    const before = this.plan; let next = before;
+    if (this.sync) {
+      try { for (const operation of operations) next = await this.sync.apply(operation); }
+      catch (error) { this.sync = null; this.host.syncLost?.(error instanceof Error ? error.message : 'sessão do servidor indisponível'); next = localPlan ?? this.applyLocal(before, operations, provenance); }
+    } else next = localPlan ?? this.applyLocal(before, operations, provenance);
+    this.history.push({ plan: before, ops: operations.length }); this.plan = next; this.pending = null; this.authorised = false; this.stats = this.build();
+  }
+  private applyLocal(plan: SpatialPlanV2, operations: SpatialOperationV2[], provenance: { origin: 'user_provided' | 'inferred'; evidence: string }): SpatialPlanV2 {
+    let next = plan; for (const operation of operations) next = applySpatialOperationV2(next, operation, provenance); return next;
+  }
+
   /** The bounded solver proposes `set-transform` operations only; they are marked inferred and can be undone. */
-  closeGaps(): { applied: number; iterations: number } {
+  async closeGaps(): Promise<{ applied: number; iterations: number }> {
+    if (this.busy) return { applied: 0, iterations: 0 };
     const result = refineAssembly(this.plan);
     if (!result.applied.length) return { applied: 0, iterations: result.iterations };
-    this.history.push(this.plan); this.plan = result.plan; this.stats = this.build(); this.host.changed();
+    this.busy = true;
+    try { await this.commit(result.applied.map((a) => a.operation), { origin: 'inferred', evidence: 'Assembly solver proposed a position that closes a gap (bounding boxes, not a contact proof).' }, this.sync ? undefined : result.plan); }
+    finally { this.busy = false; }
+    this.host.changed();
     return { applied: result.applied.length, iterations: result.iterations };
   }
-  undo(): boolean {
-    const previous = this.history.pop(); if (!previous) return false;
-    this.plan = previous; this.pending = null; this.stats = this.build(); this.host.changed(); return true;
+  async undo(): Promise<boolean> {
+    const previous = this.history.pop(); if (!previous || this.busy) { if (previous) this.history.push(previous); return false; }
+    this.busy = true;
+    try {
+      if (this.sync) { try { let restored = this.plan; for (let i = 0; i < previous.ops; i++) restored = await this.sync.undo(); this.plan = restored; } catch (error) { this.sync = null; this.host.syncLost?.(error instanceof Error ? error.message : 'sessão do servidor indisponível'); this.plan = previous.plan; } }
+      else this.plan = previous.plan;
+      this.pending = null; this.stats = this.build();
+    } finally { this.busy = false; }
+    this.host.changed(); return true;
   }
 
   // ------------------------------------------------------------------------------------------------ editing
@@ -188,7 +273,7 @@ export class PlanSpaceLayer implements SpaceLayer {
       position[axis] = Math.round((position[axis]! + sign * this.step()) * 1e6) / 1e6;
       operations = [op({ ...component.transform, position })]; before = `posição ${fmt3(component.transform.position)}`; after = `posição ${fmt3(position)}`;
     }
-    this.pending = { label, before, after, operations, needsAuthorization: CONFIRMED.has(component.provenance.transform) };
+    this.pending = { label, before, after, operations, needsAuthorization: CONFIRMED.has(component.provenance.transform), source: 'person' };
     this.authorised = false; this.host.changed();
   }
   proposeColour(colour: string): void {
@@ -196,20 +281,34 @@ export class PlanSpaceLayer implements SpaceLayer {
     const keys = shapes(component.geometry); if (!keys.length) return;
     const stamp = Date.now().toString(36);
     this.pending = {
-      label: 'Cor', before: keys[0]!.material.color, after: colour, needsAuthorization: CONFIRMED.has(component.provenance.material),
+      label: 'Cor', before: keys[0]!.material.color, after: colour, needsAuthorization: CONFIRMED.has(component.provenance.material), source: 'person',
       operations: keys.map((shape, index) => ({ contract: 'unfold.spatial-operation.v2' as const, operationId: `edit-colour-${stamp}-${index}`.slice(0, 80), kind: 'set-material' as const, componentId: component.id, nodeKey: shape.key, value: { ...shape.material, color: colour } })),
     };
     this.authorised = false; this.host.changed();
   }
-  applyEdit(): void {
-    const pending = this.pending; if (!pending) return;
-    if (pending.needsAuthorization && !this.authorised) { this.host.notify('Esta edição toca num valor observado ou confirmado: marque a autorização primeiro.'); return; }
+  /** An operation a model proposed. It is only previewed; it is applied when a person authorises it, always. */
+  proposeOperation(operation: SpatialOperationV2, source: 'meta' | 'meta-visual', label: string): boolean {
+    const component = this.plan.components.find((item) => item.id === operation.componentId); if (!component) return false;
+    try { applySpatialOperationV2(this.plan, operation, { origin: 'inferred', evidence: 'preview' }); } catch { return false; }
+    const describe = (op: SpatialOperationV2) => op.kind === 'set-transform' ? `posição ${fmt3((op.value as { position: number[] }).position)}, escala ${fmt3((op.value as { scale: number[] }).scale)}` : op.kind === 'set-material' ? `cor ${(op.value as { color: string }).color}` : op.kind === 'set-repeat' ? 'padrão de repetição' : 'geometria';
+    const current = operation.kind === 'set-transform' ? `posição ${fmt3(component.transform.position)}, escala ${fmt3(component.transform.scale)}` : operation.kind === 'set-material' ? `cor ${shapes(component.geometry)[0]?.material.color ?? '?'}` : 'valor actual';
+    this.selected = component.id; this.pending = { label: `${label} · ${component.label}`, before: current, after: describe(operation), operations: [operation], needsAuthorization: true, source }; this.authorised = false;
+    this.applyPaint(); this.host.changed(); return true;
+  }
+  cancelPending(): void { this.pending = null; this.authorised = false; this.host.changed(); }
+  get selectedId(): string | null { return this.selected; }
+
+  async applyEdit(): Promise<void> {
+    const pending = this.pending; if (!pending || this.busy) return;
+    if (pending.needsAuthorization && !this.authorised) { this.host.notify(pending.source === 'person' ? 'Esta edição toca num valor observado ou confirmado: marque a autorização primeiro.' : 'Uma alteração proposta pela IA só se aplica depois de a autorizar: marque a autorização.'); return; }
+    this.busy = true;
     try {
-      let next = this.plan;
-      for (const operation of pending.operations) next = applySpatialOperationV2(next, operation, { origin: 'user_provided', evidence: 'Editado por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).' });
-      this.history.push(this.plan); this.plan = next; this.pending = null; this.authorised = false; this.stats = this.build();
-      this.host.notify(`Aplicado: ${pending.label}. Edição local; a sessão do servidor não é actualizada.`); this.host.changed();
-    } catch (error) { this.host.notify(`Edição bloqueada: ${error instanceof Error ? error.message : 'erro desconhecido'}`); }
+      const evidence = pending.source === 'person' ? 'Editado por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).' : 'Proposta por Muse Spark (hipótese) e autorizada por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).';
+      await this.commit(pending.operations, { origin: 'user_provided', evidence });
+      this.host.notify(`Aplicado: ${pending.label}.${this.sync ? '' : ' Edição só local: a sessão do servidor não a conhece.'}`);
+    } catch (error) { this.pending = null; this.host.notify(`Edição bloqueada: ${error instanceof Error ? error.message : 'erro desconhecido'}`); }
+    finally { this.busy = false; }
+    this.host.changed();
   }
 
   renderInspector(host: HTMLElement, id: string, evidenceOpen: boolean): void {
@@ -220,25 +319,26 @@ export class PlanSpaceLayer implements SpaceLayer {
     const parent = component.parentId ? this.plan.components.find((item) => item.id === component.parentId)?.label ?? component.parentId : null;
     const pending = this.pending;
     const evidence = evidenceOpen ? `<ul class="uw-evidence" aria-label="Evidência"><li>${esc(p.evidence)}</li>${keys.map((shape) => `<li><code>${esc(shape.key)}</code> · ${esc(shape.operator)}<br><code>${esc(JSON.stringify(shape.parameters).slice(0, 400))}</code></li>`).join('')}</ul>` : '';
-    host.innerHTML = `<div class="uw-chips">${chip('geometria', p.geometry)}${chip('posição', p.transform)}${chip('material', p.material)}</div>
+    const pendingHtml = pending ? `<div class="sp-pending" role="status" data-source="${pending.source}"><p class="u-label"><b>${pending.source === 'person' ? 'Pré-visualização' : pending.source === 'meta' ? 'Proposta da Meta · ainda não aplicada' : 'Proposta da avaliação visual · ainda não aplicada'}</b></p><p class="u-label">${esc(pending.label)}: ${esc(pending.before)} → ${esc(pending.after)}</p>
+        ${pending.needsAuthorization ? `<label class="sp-auth u-label"><input type="checkbox" data-auth ${this.authorised ? 'checked' : ''}> ${pending.source === 'person' ? 'Autorizo alterar um valor confirmado' : 'Autorizo aplicar esta alteração proposta pela IA'}</label>` : ''}
+        <div class="uw-inspector-actions"><button type="button" class="uw-link" data-apply ${this.busy ? 'disabled' : ''}>aplicar</button><button type="button" class="uw-link" data-cancel>cancelar</button></div></div>` : '';
+    host.innerHTML = `${pendingHtml}<div class="uw-chips">${chip('geometria', p.geometry)}${chip('posição', p.transform)}${chip('material', p.material)}</div>
       <dl class="u-readout"><div><dt>Formas</dt><dd>${keys.length} · ${esc(operators.join(', '))}</dd></div><div><dt>Posição</dt><dd>${esc(fmt3(component.transform.position))}</dd></div><div><dt>Escala</dt><dd>${esc(fmt3(component.transform.scale))}</dd></div>${parent ? `<div><dt>Ligado a</dt><dd>${esc(parent)}</dd></div>` : ''}<div><dt>Unidades</dt><dd>${this.plan.units === 'm' ? 'metros (indicadas por si)' : 'sem unidade (escala desconhecida)'}</dd></div></dl>
-      <div class="uw-inspector-actions" data-el="spaceEdit" role="group" aria-label="Editar componente">
-        ${[['scale-down', 'menor'], ['scale-up', 'maior'], ['x-', '−X'], ['x+', '+X'], ['y-', '−Y'], ['y+', '+Y'], ['z-', '−Z'], ['z+', '+Z']].map(([code, label]) => `<button type="button" class="uw-link" data-edit="${code}">${label}</button>`).join('')}
-        <label class="uw-link sp-colour">cor <input type="color" data-edit-colour value="${esc((keys[0]?.material.color ?? '#888888').toLowerCase())}"></label>
-      </div>
-      ${pending ? `<div class="sp-pending" role="status"><p class="u-label">${esc(pending.label)}: ${esc(pending.before)} → ${esc(pending.after)}${pending.needsAuthorization ? ' · toca num valor observado ou confirmado' : ''}</p>
-        ${pending.needsAuthorization ? `<label class="sp-auth u-label"><input type="checkbox" data-auth ${this.authorised ? 'checked' : ''}> Autorizo alterar um valor confirmado</label>` : ''}
-        <div class="uw-inspector-actions"><button type="button" class="uw-link" data-apply>aplicar</button><button type="button" class="uw-link" data-cancel>cancelar</button></div></div>` : ''}
-      <div class="uw-inspector-actions"><button type="button" class="uw-link" data-undo ${this.canUndo ? '' : 'disabled'}>desfazer${this.canUndo ? ` (${this.history.length})` : ''}</button></div>${evidence}`;
+      <details class="sp-edit" ${pending ? 'open' : ''}><summary class="u-label">Editar este componente</summary>
+        <div class="uw-inspector-actions" data-el="spaceEdit" role="group" aria-label="Editar componente">
+          ${[['scale-down', 'menor'], ['scale-up', 'maior'], ['x-', '−X'], ['x+', '+X'], ['y-', '−Y'], ['y+', '+Y'], ['z-', '−Z'], ['z+', '+Z']].map(([code, label]) => `<button type="button" class="uw-link" data-edit="${code}">${label}</button>`).join('')}
+          <label class="uw-link sp-colour">cor <input type="color" data-edit-colour value="${esc((keys[0]?.material.color ?? '#888888').toLowerCase())}"></label>
+        </div><p class="u-label sp-hint">Cada alteração é pré-visualizada primeiro e só se aplica quando carrega em «aplicar».</p></details>
+      <div class="uw-inspector-actions"><button type="button" class="uw-link" data-undo ${this.canUndo ? '' : 'disabled'}>desfazer${this.history.length ? ` (${this.history.length})` : ''}</button></div>${evidence}`;
     host.querySelectorAll<HTMLButtonElement>('[data-edit]').forEach((button) => button.addEventListener('click', () => this.proposeEdit(button.dataset.edit!, button.textContent ?? button.dataset.edit!)));
     host.querySelector<HTMLInputElement>('[data-edit-colour]')?.addEventListener('change', (event) => this.proposeColour((event.target as HTMLInputElement).value));
     host.querySelector<HTMLInputElement>('[data-auth]')?.addEventListener('change', (event) => { this.authorised = (event.target as HTMLInputElement).checked; });
-    host.querySelector('[data-apply]')?.addEventListener('click', () => this.applyEdit());
-    host.querySelector('[data-cancel]')?.addEventListener('click', () => { this.pending = null; this.authorised = false; this.host.changed(); });
-    host.querySelector('[data-undo]')?.addEventListener('click', () => this.undo());
+    host.querySelector('[data-apply]')?.addEventListener('click', () => void this.applyEdit());
+    host.querySelector('[data-cancel]')?.addEventListener('click', () => this.cancelPending());
+    host.querySelector('[data-undo]')?.addEventListener('click', () => void this.undo());
   }
 
   dispose(): void {
-    this.disposed = true; clearTimeout(this.revealTimer); this.release();
+    this.disposed = true; clearTimeout(this.revealTimer); this.revealTween?.kill(); this.explodeTween?.kill(); this.release();
   }
 }
