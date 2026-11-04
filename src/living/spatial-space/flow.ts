@@ -92,6 +92,9 @@ export class SpaceFlow {
   /** Persistent human-review record for the Space on stage (V4 E1). Decisions live on the server. */
   relationReview: SpatialReviewRecord | null = null;
   private reviewName = '';
+  /** Mutation policy of the current server session, as reported by the server (never assumed). */
+  sessionPolicy: 'legacy' | 'review_fenced' = 'legacy';
+  sessionDurability: 'file' | 'volatile' | null = null;
   get currentReviewId(): string | null { return this.relationReview?.reviewId ?? null; }
   savedId: string | null = null;
   readonly store: SpaceStore;
@@ -291,6 +294,7 @@ export class SpaceFlow {
       const reply = await this.api.adopt({ plan, instruction: `Reviewed space: ${plan.title}` }, fetchImpl);
       if (this.layer !== layer) return;
       const session = { id: reply.sessionId, revision: reply.revision }; this.session = session; this.syncNote = null;
+      this.sessionPolicy = reply.mutationPolicy?.mode ?? 'legacy'; this.sessionDurability = reply.sessionDurability ?? null;
       // The exact transaction request (including the layer's stable idempotency key) is kept for the
       // life of this session, so reconciliation resubmits/recovers the same transaction and no other.
       let pendingTransaction: Parameters<typeof applySpatialPlanV2Transaction>[0] | null = null;
@@ -325,7 +329,7 @@ export class SpaceFlow {
               const sessionGone = error instanceof SpatialTransactionUnresolvedError && error.reason === 'session-not-found' || error instanceof SpatialApiError && error.status === 404;
               if (!sessionGone) throw error;
               const current = this.layer?.currentPlan; if (!current || this.layer !== layer) throw error;
-              const recovered = await this.api.adopt({ plan: current, instruction: `Recovered space: ${current.title}` }, fetchImpl);
+              const recovered = await this.api.adopt(await this.recoveryAdopt(current), fetchImpl);
               if (this.layer !== layer) throw error;
               session.id = recovered.sessionId; session.revision = recovered.revision; pendingUndo = null; this.syncNote = null;
               throw new SpatialTransactionSessionRecoveredError();
@@ -344,7 +348,7 @@ export class SpaceFlow {
             // Explicit session recovery: re-adopt the local pre-transaction plan as a fresh session.
             // The recovered session authoritatively does not contain the transaction.
             const current = this.layer?.currentPlan; if (!current || this.layer !== layer) throw error;
-            const recovered = await this.api.adopt({ plan: current, instruction: `Recovered space: ${current.title}` }, fetchImpl);
+            const recovered = await this.api.adopt(await this.recoveryAdopt(current), fetchImpl);
             if (this.layer !== layer) throw error;
             session.id = recovered.sessionId; session.revision = recovered.revision; pendingTransaction = null; this.syncNote = null;
             throw new SpatialTransactionSessionRecoveredError();
@@ -389,7 +393,46 @@ export class SpaceFlow {
       this.note = `Revisão de relações indisponível (${error instanceof SpatialApiError ? error.code : 'sem ligação ao servidor'}). Nada foi decidido nem alterado.`;
       this.refreshContext(); return;
     }
+    await this.bindSessionPolicyToReview();
     this.renderRelationReview();
+  }
+
+  /**
+   * Policy continuity (E1.4): once a valid review exists for the exact plan on stage, the session
+   * is re-adopted as `review_fenced` bound to that record (the server validates the binding). The
+   * plan itself does not change, so the new session starts from the same authoritative plan.
+   * If the current plan cannot be bound to the review, this fails closed: the session is dropped
+   * to local-only with the reason shown, rather than silently continuing as unrestricted legacy.
+   */
+  private async bindSessionPolicyToReview(): Promise<void> {
+    const layer = this.layer, review = this.relationReview, session = this.session;
+    if (!layer || !review || !session || this.sessionPolicy === 'review_fenced') return;
+    try {
+      const fingerprint = await spatialPlanFingerprintV2(layer.currentPlan);
+      if (review.planFingerprint !== fingerprint || review.source.sha256 !== layer.currentPlan.source.sha256) throw new Error('BINDING_MISMATCH');
+      const reply = await this.api.adopt({ plan: layer.currentPlan, instruction: `Reviewed space: ${layer.currentPlan.title}`, mutationPolicy: 'review_fenced', reviewId: review.reviewId }, this.options.fetchImpl);
+      if (this.layer !== layer || this.session !== session) return;
+      session.id = reply.sessionId; session.revision = reply.revision;
+      this.sessionPolicy = 'review_fenced'; this.sessionDurability = reply.sessionDurability ?? this.sessionDurability;
+      this.syncNote = null;
+    } catch {
+      // Fail closed: without a bindable review record there is no reviewed session to continue.
+      this.session = null; this.sessionPolicy = 'legacy';
+      layer.attachSync(null);
+      this.syncNote = 'A sessão não pôde ser vinculada à revisão deste plano (fingerprint incompatível). As edições ficam locais e as propostas revistas ficam bloqueadas até criar uma nova revisão ou recuperar explicitamente a sessão.';
+    }
+  }
+
+  /** Adopt parameters that preserve the session policy across explicit recovery (never a downgrade to legacy). */
+  private async recoveryAdopt(reviewBoundPlan: SpatialPlanV2): Promise<Parameters<typeof adoptSpatialPlanV2>[0]> {
+    if (this.sessionPolicy !== 'review_fenced') return { plan: reviewBoundPlan, instruction: `Recovered space: ${reviewBoundPlan.title}` };
+    const review = this.relationReview;
+    const fingerprint = await spatialPlanFingerprintV2(reviewBoundPlan);
+    if (!review || review.planFingerprint !== fingerprint || review.source.sha256 !== reviewBoundPlan.source.sha256) {
+      // Fail closed: a fenced session is never recovered as unrestricted legacy.
+      throw new SpatialTransactionUnresolvedError(this.session?.id ?? 'unknown', 'policy-continuity', 'session-not-found');
+    }
+    return { plan: reviewBoundPlan, instruction: `Recovered space: ${reviewBoundPlan.title}`, mutationPolicy: 'review_fenced', reviewId: review.reviewId };
   }
 
   private renderRelationReview(): void {

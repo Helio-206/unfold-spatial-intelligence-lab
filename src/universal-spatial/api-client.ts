@@ -178,7 +178,7 @@ export async function getSpatialReviewEligibility(input: { reviewId: string; rev
 export type SpatialProposalV2Reply = { contract: 'unfold.spatial-v2-proposal.v1'; sessionId: string; revision: number; operation: SpatialOperationV2; applied: false; meta?: Record<string, unknown>; limitation?: string };
 
 /** Turns a plan a person has reviewed into a server session (local, not paid), so typed edits, undo and the paid proposals work on exactly that plan. */
-export async function adoptSpatialPlanV2(input: { plan: SpatialPlanV2; instruction?: string }, fetchImpl: typeof fetch = fetch): Promise<SpatialMutationV2Reply> {
+export async function adoptSpatialPlanV2(input: { plan: SpatialPlanV2; instruction?: string; mutationPolicy?: 'legacy' | 'review_fenced'; reviewId?: string }, fetchImpl: typeof fetch = fetch): Promise<SpatialMutationV2Reply & { mutationPolicy?: { mode: 'legacy' } | { mode: 'review_fenced'; reviewId: string }; sessionDurability?: 'file' | 'volatile' }> {
   return validSpatialPlanV2Reply(await post<SpatialMutationV2Reply>('/api/spatial/v2/adopt', input, fetchImpl)) as SpatialMutationV2Reply;
 }
 

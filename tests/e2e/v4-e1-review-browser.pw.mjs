@@ -60,6 +60,15 @@ try {
   await page.waitForFunction(() => window.__space.relationReview && window.__space.relationReview.decisions.length === 1 && window.__space.relationReview.reviewRevision === 1, null, { timeout: 20_000 });
   const reviewId = await page.evaluate(() => window.__space.currentReviewId);
   assert.ok(reviewId);
+  // Policy continuity (E1.4): opening the review re-adopts the session as review_fenced, and the
+  // server then rejects unfenced mutation attempts on it.
+  const policy = await page.evaluate(async () => {
+    const flow = window.__space;
+    const unfenced = await fetch('/api/spatial/v2/transactions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contract: 'unfold.spatial-transaction.v2', sessionId: flow.session.id, baseRevision: flow.session.revision, idempotencyKey: 'e14-unfenced-1', operations: [{ contract: 'unfold.spatial-operation.v2', operationId: 'e14-op', kind: 'set-transform', componentId: flow.layer.currentPlan.components[0].id, nodeKey: null, value: flow.layer.currentPlan.components[0].transform }], provenance: { origin: 'inferred', evidence: 'policy probe' } }) }).then(async (r) => ({ status: r.status, code: (await r.json()).error?.code }));
+    return { policy: flow.sessionPolicy, durability: flow.sessionDurability, unfenced };
+  });
+  assert.equal(policy.policy, 'review_fenced', JSON.stringify(policy));
+  assert.equal(policy.unfenced.status, 403, JSON.stringify(policy));
   await page.screenshot({ path: `${out}/review-decided.png` });
 
   // Defer another subject (when one exists), then check solver eligibility through the real API.
