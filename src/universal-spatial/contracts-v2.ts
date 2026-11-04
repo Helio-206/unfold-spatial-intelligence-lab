@@ -63,6 +63,22 @@ export type SpatialTransactionProvenance = { origin: 'user_provided' | 'inferred
  * Transactions without it keep the original E0 semantics.
  */
 export type SpatialReviewPrecondition = { reviewId: string; reviewRevision: number; planFingerprint: string; sourceSha256: string };
+/**
+ * Structured approval (E1.3): recorded on the transaction receipt by the server, separate from the
+ * plan provenance. The actor name is client-asserted and never authenticated; the geometry keeps its
+ * own inferred origin. Approval, inference and commit are three independent facts.
+ */
+export type SpatialApprovalRecord = {
+  contract: 'unfold.spatial-approval.v1';
+  transactionId: string;
+  reviewId: string;
+  reviewRevision: number;
+  planFingerprint: string;
+  sourceSha256: string;
+  actor: { displayName: string; authenticated: false; attribution: 'client_asserted_unverified' };
+  approvedAt: string;
+  commitRevision: number;
+};
 export type SpatialTransactionV2 = {
   contract: typeof SPATIAL_TRANSACTION_CONTRACT;
   sessionId: string;
@@ -71,6 +87,8 @@ export type SpatialTransactionV2 = {
   operations: SpatialOperationV2[];
   provenance: SpatialTransactionProvenance;
   reviewPrecondition?: SpatialReviewPrecondition;
+  /** Client-asserted name of the person who authorised this commit (never authenticated). */
+  approvalActor?: string;
 };
 export type SpatialTransactionReceiptV2 = {
   contract: typeof SPATIAL_TRANSACTION_RECEIPT_CONTRACT;
@@ -82,6 +100,7 @@ export type SpatialTransactionReceiptV2 = {
   operationIds: string[];
   plan: SpatialPlanV2;
   reviewPrecondition?: SpatialReviewPrecondition;
+  approval?: SpatialApprovalRecord;
   constraintReport?: unknown;
   review: { status: 'applied' | 'undone'; actorEvidence: 'client_asserted_unverified'; authenticatedReviewer: false };
 };
@@ -92,7 +111,8 @@ const IDEMPOTENCY_KEY = /^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/;
 export function parseSpatialTransactionV2(value: unknown): SpatialTransactionV2 {
   if (!value || typeof value !== 'object' || Array.isArray(value)) fail('SPATIAL_V2_TRANSACTION_INVALID');
   const raw = value as Record<string, unknown>;
-  if (!keysAre(raw, ['contract', 'sessionId', 'baseRevision', 'idempotencyKey', 'operations', 'provenance', ...(Object.hasOwn(raw, 'reviewPrecondition') ? ['reviewPrecondition'] : [])]) || raw.contract !== SPATIAL_TRANSACTION_CONTRACT) fail('SPATIAL_V2_TRANSACTION_INVALID');
+  if (!keysAre(raw, ['contract', 'sessionId', 'baseRevision', 'idempotencyKey', 'operations', 'provenance', ...(Object.hasOwn(raw, 'reviewPrecondition') ? ['reviewPrecondition'] : []), ...(Object.hasOwn(raw, 'approvalActor') ? ['approvalActor'] : [])]) || raw.contract !== SPATIAL_TRANSACTION_CONTRACT) fail('SPATIAL_V2_TRANSACTION_INVALID');
+  if (raw.approvalActor !== undefined && (typeof raw.approvalActor !== 'string' || !raw.approvalActor.trim() || raw.approvalActor.length > 80)) fail('SPATIAL_V2_TRANSACTION_APPROVAL_ACTOR_INVALID');
   if (raw.reviewPrecondition !== undefined) {
     const fence = raw.reviewPrecondition as Record<string, unknown>;
     if (!fence || typeof fence !== 'object' || Array.isArray(fence) || !keysAre(fence, ['reviewId', 'reviewRevision', 'planFingerprint', 'sourceSha256']) || typeof fence.reviewId !== 'string' || !fence.reviewId || fence.reviewId.length > 80 || !Number.isSafeInteger(fence.reviewRevision) || Number(fence.reviewRevision) < 0 || typeof fence.planFingerprint !== 'string' || !/^[a-f0-9]{64}$/.test(fence.planFingerprint) || typeof fence.sourceSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(fence.sourceSha256)) fail('SPATIAL_V2_TRANSACTION_REVIEW_PRECONDITION_INVALID');

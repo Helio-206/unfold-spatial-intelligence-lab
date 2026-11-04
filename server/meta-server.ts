@@ -142,6 +142,41 @@ function loadReviewStore(file: string | undefined): Map<string, SpatialReviewRec
   }
   return records;
 }
+export const SPATIAL_SESSION_STORE_CONTRACT = 'unfold.spatial-sessions.v2' as const;
+export type SpatialMutationPolicy = { mode: 'legacy' } | { mode: 'review_fenced'; reviewId: string };
+type StoredV2Session = { id: string; plan: SpatialPlanV2; revision: number; history: SpatialPlanV2[]; expires: number; instruction: string; sourceKind: 'text' | 'image'; refinementsUsed: number; maxRefinements: number; pendingRefinement?: SpatialOperationV2; policy: SpatialMutationPolicy; transactions: Array<[string, V2IdempotencyRecord]>; undoReceipts: Array<[string, V2IdempotencyRecord]> };
+
+/**
+ * Durable spatial sessions (E1.3), same storage conventions as the review store: one JSON document,
+ * atomic write (temporary 0600 file + rename) in a 0700 directory, quarantined on corruption.
+ * A commit is only acknowledged after this write succeeds for the mutation being reported; on
+ * failure the in-memory mutation is rolled back and the request fails, so memory and disk never
+ * hold conflicting authoritative revisions. This is crash recovery for a single local process,
+ * not power-loss durability (no fsync is claimed) and not multi-process storage.
+ * Expired sessions are dropped on load and never resurrected. Without a file, sessions are
+ * explicitly volatile and every session reply says so (`sessionDurability: 'volatile'`).
+ */
+function loadSessionStore(file: string | undefined): Map<string, StoredV2Session> {
+  const sessions = new Map<string, StoredV2Session>();
+  if (!file) return sessions;
+  try {
+    const parsed = JSON.parse(readFileSync(file, 'utf8')) as { contract?: unknown; sessions?: unknown };
+    if (parsed.contract !== SPATIAL_SESSION_STORE_CONTRACT || !Array.isArray(parsed.sessions)) throw new Error('session store contract mismatch');
+    const now = Date.now();
+    for (const raw of parsed.sessions as StoredV2Session[]) {
+      if (!raw || typeof raw.id !== 'string' || !raw.plan || !Number.isSafeInteger(raw.revision) || !Array.isArray(raw.history) || !Array.isArray(raw.transactions)) throw new Error('stored session invalid');
+      if (raw.expires < now) continue; // expired while the server was down: not resurrected
+      sessions.set(raw.id, { ...raw, policy: raw.policy?.mode === 'review_fenced' && typeof raw.policy.reviewId === 'string' ? raw.policy : { mode: 'legacy' } });
+    }
+  } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') return sessions;
+    try { renameSync(file, `${file}.corrupt-${Date.now()}`); } catch { /* best effort */ }
+    console.info(JSON.stringify({ event: 'spatial.session.store_quarantined', file }));
+    return new Map();
+  }
+  return sessions;
+}
+
 function persistReviewStore(file: string | undefined, records: Map<string, SpatialReviewRecord>): void {
   if (!file) return;
   mkdirSync(dirname(file), { recursive: true, mode: 0o700 });
@@ -223,6 +258,8 @@ export type ServerOptions = {
   localTokenFile?: string;
   /** Where human-review records persist (V4 E1). Without it reviews are memory-only. */
   reviewStoreFile?: string;
+  /** Where spatial V2 sessions persist (E1.3). Without it sessions are explicitly volatile. */
+  sessionStoreFile?: string;
   upstreamEvidence?: { enabled: boolean; directory: string; maxFiles?: number };
 };
 
@@ -389,7 +426,21 @@ function conversationErrorCode(error: unknown): { code: string; category: string
 export function createMetaServer(options: ServerOptions = {}): MetaServer {
   const reconstructionSessions = new Map<string, { observation: ExcavatorObservationV1; mode: 'live' | 'offline'; expires: number }>();
   const spatialSessions = new Map<string, { plan: SpatialPlan; revision: number; history: SpatialPlan[]; expires: number }>();
-  const spatialV2Sessions = new Map<string, { plan: SpatialPlanV2; revision: number; history: SpatialPlanV2[]; expires: number; instruction: string; sourceKind: 'text' | 'image'; refinementsUsed: number; maxRefinements: number; pendingRefinement?: SpatialOperationV2; transactions: Map<string, V2IdempotencyRecord>; undoReceipts: Map<string, V2IdempotencyRecord> }>();
+  type LiveV2Session = { plan: SpatialPlanV2; revision: number; history: SpatialPlanV2[]; expires: number; instruction: string; sourceKind: 'text' | 'image'; refinementsUsed: number; maxRefinements: number; pendingRefinement?: SpatialOperationV2; policy: SpatialMutationPolicy; transactions: Map<string, V2IdempotencyRecord>; undoReceipts: Map<string, V2IdempotencyRecord> };
+  const sessionStoreFile = options.sessionStoreFile ?? process.env.UNFOLD_SESSION_STORE_FILE;
+  const spatialV2Sessions = new Map<string, LiveV2Session>([...loadSessionStore(sessionStoreFile)].map(([id, stored]) => [id, { ...stored, transactions: new Map(stored.transactions), undoReceipts: new Map(stored.undoReceipts) }]));
+  const sessionDurability = sessionStoreFile ? 'file' as const : 'volatile' as const;
+  /** Serialises every live session. Throws on failure; callers reporting a commit must roll back. */
+  const persistSessions = (): void => {
+    if (!sessionStoreFile) return;
+    const now = Date.now();
+    for (const [id, session] of spatialV2Sessions) if (session.expires < now) spatialV2Sessions.delete(id);
+    mkdirSync(dirname(sessionStoreFile), { recursive: true, mode: 0o700 });
+    const stored: StoredV2Session[] = [...spatialV2Sessions.entries()].map(([id, s]) => ({ id, plan: s.plan, revision: s.revision, history: s.history, expires: s.expires, instruction: s.instruction, sourceKind: s.sourceKind, refinementsUsed: s.refinementsUsed, maxRefinements: s.maxRefinements, ...(s.pendingRefinement ? { pendingRefinement: s.pendingRefinement } : {}), policy: s.policy, transactions: [...s.transactions.entries()], undoReceipts: [...s.undoReceipts.entries()] }));
+    const temporaryFile = `${sessionStoreFile}.${randomUUID()}.tmp`;
+    writeFileSync(temporaryFile, JSON.stringify({ contract: SPATIAL_SESSION_STORE_CONTRACT, sessions: stored }), { flag: 'wx', mode: 0o600 });
+    renameSync(temporaryFile, sessionStoreFile);
+  };
   const reviewStoreFile = options.reviewStoreFile ?? process.env.UNFOLD_REVIEW_STORE_FILE;
   const reviewRecords = loadReviewStore(reviewStoreFile);
   const persistReviews = () => persistReviewStore(reviewStoreFile, reviewRecords);
@@ -536,13 +587,13 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
         const route = request.url;
         const allowedKeys: Record<string, string[]> = {
           '/api/spatial/v2/plan': ['sourceKind', 'instruction', 'imageDataUrl', 'mode', 'maxRefinements'],
-          '/api/spatial/v2/adopt': ['plan', 'instruction'],
+          '/api/spatial/v2/adopt': ['plan', 'instruction', 'mutationPolicy', 'reviewId'],
           '/api/spatial/v2/edit': ['sessionId', 'baseRevision', 'instruction', 'propose'],
           '/api/spatial/v2/operation': ['sessionId', 'baseRevision', 'operation', 'origin', 'evidence'],
           '/api/spatial/v2/refine': ['sessionId', 'baseRevision'],
           '/api/spatial/v2/undo': ['sessionId', 'baseRevision', 'idempotencyKey'],
           '/api/spatial/v2/evaluate': ['sessionId', 'baseRevision', 'imageDataUrl'],
-          '/api/spatial/v2/transactions': ['contract', 'sessionId', 'baseRevision', 'idempotencyKey', 'operations', 'provenance', 'reviewPrecondition'],
+          '/api/spatial/v2/transactions': ['contract', 'sessionId', 'baseRevision', 'idempotencyKey', 'operations', 'provenance', 'reviewPrecondition', 'approvalActor'],
           '/api/spatial/v2/transactions/status': ['sessionId', 'idempotencyKey'],
           '/api/spatial/v2/reviews': ['plan', 'planRevision', 'sourceBytes', 'evidence'],
           '/api/spatial/v2/reviews/get': ['reviewId'],
@@ -563,7 +614,7 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
           '/api/spatial/v2/reviews/eligibility': ['reviewId'],
         };
         if (!body || typeof body !== 'object' || Array.isArray(body) || !allowedKeys[route] || Object.keys(body).some((key) => !allowedKeys[route]!.includes(key)) || !requiredKeys[route]!.every((key) => Object.hasOwn(body, key))) { writeJson(response, 400, { error: { code: 'INVALID_SPATIAL_V2_REQUEST', message: 'Corpo V2 inválido, incompleto ou com campos desconhecidos.' } }, origin); return; }
-        const candidate = body as { sessionId?: unknown; baseRevision?: unknown; instruction?: unknown; imageDataUrl?: unknown; sourceKind?: unknown; mode?: unknown; maxRefinements?: unknown; operation?: unknown; plan?: unknown; propose?: unknown; origin?: unknown; evidence?: unknown; idempotencyKey?: unknown; operations?: unknown; provenance?: unknown; contract?: unknown };
+        const candidate = body as { sessionId?: unknown; baseRevision?: unknown; instruction?: unknown; imageDataUrl?: unknown; sourceKind?: unknown; mode?: unknown; maxRefinements?: unknown; operation?: unknown; plan?: unknown; propose?: unknown; origin?: unknown; evidence?: unknown; idempotencyKey?: unknown; operations?: unknown; provenance?: unknown; contract?: unknown; mutationPolicy?: unknown; reviewId?: unknown };
         if ((route === '/api/spatial/v2/evaluate' || route === '/api/spatial/v2/plan' && candidate.sourceKind === 'image')) {
           const peer = request.socket.remoteAddress ?? 'unknown', key = `spatial-v2-image:${peer}`, now = Date.now();
           for (const [entry, timestamps] of imageRequests) if (!timestamps.some((time) => now - time < 60_000)) imageRequests.delete(entry);
@@ -711,9 +762,19 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
             const text = typeof candidate.instruction === 'string' && candidate.instruction.trim() ? candidate.instruction.slice(0, 1_000) : `Reviewed space: ${adopted.title}`;
             const now = Date.now(); for (const [id, current] of spatialV2Sessions) if (current.expires < now) spatialV2Sessions.delete(id);
             if (spatialV2Sessions.size >= MAX_SPATIAL_SESSION_COUNT) { writeJson(response, 503, { error: { code: 'SPATIAL_V2_SESSION_CAPACITY', message: 'Limite de sessões espaciais V2 atingido.' } }, origin); return; }
-            const sessionId = randomUUID(); spatialV2Sessions.set(sessionId, { plan: adopted, revision: 0, history: [], expires: now + SPATIAL_SESSION_TTL_MS, instruction: text, sourceKind: adopted.source.kind, refinementsUsed: 0, maxRefinements: 1, transactions: new Map(), undoReceipts: new Map() });
+            // Immutable mutation policy (E1.3): bound at adoption to a validated review record.
+            let policy: SpatialMutationPolicy = { mode: 'legacy' };
+            if (candidate.mutationPolicy !== undefined && candidate.mutationPolicy !== 'legacy' && candidate.mutationPolicy !== 'review_fenced') { writeJson(response, 400, { error: { code: 'SPATIAL_SESSION_POLICY_INVALID', message: 'mutationPolicy deve ser legacy ou review_fenced.' } }, origin); return; }
+            if (candidate.mutationPolicy === 'review_fenced') {
+              const record = typeof candidate.reviewId === 'string' ? reviewRecords.get(candidate.reviewId) : undefined;
+              const fingerprint = createHash('sha256').update(stableStringify(adopted)).digest('hex');
+              if (!record || record.planFingerprint !== fingerprint || record.source.sha256 !== adopted.source.sha256) { writeJson(response, 400, { error: { code: 'SPATIAL_SESSION_POLICY_BINDING_INVALID', message: 'review_fenced exige um registo de revisão validado para exactamente este plano e fonte.' } }, origin); return; }
+              policy = { mode: 'review_fenced', reviewId: record.reviewId };
+            }
+            const sessionId = randomUUID(); spatialV2Sessions.set(sessionId, { plan: adopted, revision: 0, history: [], expires: now + SPATIAL_SESSION_TTL_MS, instruction: text, sourceKind: adopted.source.kind, refinementsUsed: 0, maxRefinements: 1, policy, transactions: new Map(), undoReceipts: new Map() });
+            try { persistSessions(); } catch { spatialV2Sessions.delete(sessionId); writeJson(response, 500, { error: { code: 'SPATIAL_SESSION_PERSISTENCE_FAILED', message: 'Não foi possível gravar a sessão; nada foi criado.' } }, origin); return; }
             const compiled = compileSpatialPlanV2(adopted); const constraintReport = evaluateSpatialConstraintsV2(adopted, compiled.root); disposeCompiledSpatialPlan(compiled.root);
-            writeJson(response, 200, { contract: 'unfold.spatial-v2-review.v1', sessionId, revision: 0, plan: adopted, constraintReport, review: { status: 'adopted', actorEvidence: 'client_asserted_unverified', authenticatedReviewer: false } }, origin); return;
+            writeJson(response, 200, { contract: 'unfold.spatial-v2-review.v1', sessionId, revision: 0, plan: adopted, constraintReport, mutationPolicy: policy, sessionDurability, review: { status: 'adopted', actorEvidence: 'client_asserted_unverified', authenticatedReviewer: false } }, origin); return;
           }
           if (route === '/api/spatial/v2/transactions/status') {
             const current = session!;
@@ -726,6 +787,8 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
             const current = session!;
             let transaction;
             try { transaction = parseSpatialTransactionV2(body); } catch (error) { writeJson(response, 400, { error: { code: error instanceof Error ? error.message : 'SPATIAL_V2_TRANSACTION_INVALID', message: 'Transacção espacial V2 inválida.' } }, origin); return; }
+            if (current.policy.mode === 'review_fenced' && !transaction.reviewPrecondition) { writeJson(response, 403, { error: { code: 'SPATIAL_REVIEW_POLICY_REQUIRES_FENCE', message: 'Esta sessão é review_fenced: mutações exigem a precondição de revisão vinculada à sessão.', currentRevision: current.revision } }, origin); return; }
+            if (current.policy.mode === 'review_fenced' && transaction.reviewPrecondition!.reviewId !== current.policy.reviewId) { writeJson(response, 409, { error: { code: 'SPATIAL_REVIEW_PRECONDITION_STALE', message: 'A revisão do fence não é a revisão vinculada a esta sessão.', currentRevision: current.revision } }, origin); return; }
             const fingerprint = createHash('sha256').update(stableStringify({ baseRevision: transaction.baseRevision, operations: transaction.operations, provenance: transaction.provenance, reviewPrecondition: transaction.reviewPrecondition ?? null })).digest('hex');
             const existing = current.transactions.get(transaction.idempotencyKey);
             if (existing) {
@@ -751,10 +814,19 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
               next = structuredClone(current.plan);
               for (const operation of transaction.operations) next = applySpatialOperationV2(next, operation, transaction.provenance);
               const compiled = compileSpatialPlanV2(next); const constraintReport = evaluateSpatialConstraintsV2(next, compiled.root); disposeCompiledSpatialPlan(compiled.root);
-              const receipt = { contract: SPATIAL_TRANSACTION_RECEIPT_CONTRACT, transactionId: `txn-${createHash('sha256').update(transaction.idempotencyKey).digest('hex').slice(0, 24)}`, sessionId: candidate.sessionId as string, baseRevision: transaction.baseRevision, revision: current.revision + 1, replayed: false, operationIds: transaction.operations.map((operation) => operation.operationId), plan: next, ...(transaction.reviewPrecondition ? { reviewPrecondition: transaction.reviewPrecondition } : {}), constraintReport, review: { status: 'applied' as const, actorEvidence: 'client_asserted_unverified' as const, authenticatedReviewer: false as const } };
+              const transactionId = `txn-${createHash('sha256').update(transaction.idempotencyKey).digest('hex').slice(0, 24)}`;
+              const approval = transaction.reviewPrecondition ? { contract: 'unfold.spatial-approval.v1' as const, transactionId, reviewId: transaction.reviewPrecondition.reviewId, reviewRevision: transaction.reviewPrecondition.reviewRevision, planFingerprint: transaction.reviewPrecondition.planFingerprint, sourceSha256: transaction.reviewPrecondition.sourceSha256, actor: { displayName: (transaction.approvalActor ?? 'não identificado').trim(), authenticated: false as const, attribution: 'client_asserted_unverified' as const }, approvedAt: new Date().toISOString(), commitRevision: current.revision + 1 } : undefined;
+              const receipt = { contract: SPATIAL_TRANSACTION_RECEIPT_CONTRACT, transactionId, sessionId: candidate.sessionId as string, baseRevision: transaction.baseRevision, revision: current.revision + 1, replayed: false, operationIds: transaction.operations.map((operation) => operation.operationId), plan: next, ...(transaction.reviewPrecondition ? { reviewPrecondition: transaction.reviewPrecondition } : {}), ...(approval ? { approval } : {}), constraintReport, review: { status: 'applied' as const, actorEvidence: 'client_asserted_unverified' as const, authenticatedReviewer: false as const } };
+              const snapshot = { plan: current.plan, revision: current.revision, history: [...current.history], pendingRefinement: current.pendingRefinement };
               current.history.push(current.plan); if (current.history.length > 50) current.history.shift();
               current.plan = next; current.revision += 1; current.pendingRefinement = undefined;
               rememberBounded(current.transactions, transaction.idempotencyKey, { fingerprint, status: 200, body: structuredClone(receipt) as unknown as Record<string, unknown> });
+              try { persistSessions(); } catch {
+                // Never acknowledge a durable commit that did not reach disk: roll memory back so
+                // the two stores cannot disagree about the authoritative revision.
+                current.plan = snapshot.plan; current.revision = snapshot.revision; current.history = snapshot.history; current.pendingRefinement = snapshot.pendingRefinement; current.transactions.delete(transaction.idempotencyKey);
+                writeJson(response, 500, { error: { code: 'SPATIAL_SESSION_PERSISTENCE_FAILED', message: 'A gravação durável falhou; a transacção não foi cometida.', currentRevision: current.revision } }, origin); return;
+              }
               writeJson(response, 200, receipt, origin); return;
             } catch (error) {
               writeJson(response, 400, { error: { code: error instanceof Error ? error.message.split(':')[0]! : 'SPATIAL_V2_TRANSACTION_FAILED', message: 'A transacção foi rejeitada; a sessão não mudou.', currentRevision: current.revision } }, origin); return;
@@ -779,10 +851,13 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
             const compiled = compileSpatialPlanV2(current.plan); const constraints = evaluateSpatialConstraintsV2(current.plan, compiled.root); disposeCompiledSpatialPlan(compiled.root);
             const receiptBody = { contract: 'unfold.spatial-v2-review.v1', sessionId: candidate.sessionId, revision: current.revision, plan: current.plan, constraintReport: constraints, replayed: false, review: { status: 'undone', actorEvidence: 'client_asserted_unverified', authenticatedReviewer: false } };
             if (hasKey) rememberBounded(current.undoReceipts, candidate.idempotencyKey as string, { fingerprint, status: 200, body: structuredClone(receiptBody) as unknown as Record<string, unknown> });
+            try { persistSessions(); } catch { console.info(JSON.stringify({ event: 'spatial.session.persist_failed', route })); }
             writeJson(response, 200, receiptBody, origin); return;
           }
           if (route === '/api/spatial/v2/operation' || route === '/api/spatial/v2/refine' || route === '/api/spatial/v2/edit') {
             const current = session!; let operation: SpatialOperationV2; let meta: MetaCallLog | undefined;
+            // Stored session policy (E1.3): legacy mutation routes cannot bypass a review fence.
+            if (current.policy.mode === 'review_fenced') { writeJson(response, 403, { error: { code: 'SPATIAL_REVIEW_POLICY_REQUIRES_FENCE', message: 'Esta sessão é review_fenced: use a transacção atómica com a precondição de revisão.', currentRevision: current.revision } }, origin); return; }
             if (route === '/api/spatial/v2/refine') {
               if (!current.pendingRefinement || current.refinementsUsed >= current.maxRefinements) { writeJson(response, 409, { error: { code: 'SPATIAL_V2_NO_PENDING_REFINEMENT', message: 'Não existe proposta visual pendente dentro do limite desta sessão.' } }, origin); return; }
               operation = current.pendingRefinement;
@@ -814,6 +889,7 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
             const compiled = compileSpatialPlanV2(next); const constraintReport = evaluateSpatialConstraintsV2(next, compiled.root); disposeCompiledSpatialPlan(compiled.root);
             current.history.push(current.plan); if (current.history.length > 50) current.history.shift(); current.plan = next; current.revision += 1;
             if (route === '/api/spatial/v2/refine') { current.refinementsUsed += 1; current.pendingRefinement = undefined; }
+            try { persistSessions(); } catch { console.info(JSON.stringify({ event: 'spatial.session.persist_failed', route })); }
             writeJson(response, 200, { contract: 'unfold.spatial-v2-review.v1', sessionId: candidate.sessionId, revision: current.revision, plan: next, operation, constraintReport, review: { status: route === '/api/spatial/v2/refine' ? 'model_refinement_applied' : 'applied', actorEvidence: 'client_asserted_unverified', authenticatedReviewer: false, operationId: operation.operationId }, ...(meta ? { meta } : {}), limitation: 'This declarative edit is validated structurally; it is not human authentication, mechanical verification, or physical validation.' }, origin); return;
           }
           if (route === '/api/spatial/v2/evaluate') {
@@ -954,7 +1030,8 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
             if (spatialV2Sessions.size >= MAX_SPATIAL_SESSION_COUNT) { writeJson(response, 503, { error: { code: 'SPATIAL_V2_SESSION_CAPACITY', message: 'Limite de sessões espaciais V2 atingido.' } }, origin); return; }
             const rawResponseSha256 = createHash('sha256').update(result.text, 'utf8').digest('hex');
             const rawResponseStored = persistSpatialRunEvidence(upstreamEvidence, { route, source, requestId: result.log.requestId ?? null, model: result.log.model ?? null, latencyMs: result.log.latencyMs ?? null, usage: (result.log as Record<string, unknown>).usage ?? null, rawResponseSha256, rawResponseText: result.text, normalizationNotes, normalizedPlan: plan });
-            const sessionId = randomUUID(); spatialV2Sessions.set(sessionId, { plan, revision: 0, history: [], expires: now + SPATIAL_SESSION_TTL_MS, instruction, sourceKind: source.kind, refinementsUsed: 0, maxRefinements: Number(maxRefinements), transactions: new Map(), undoReceipts: new Map() });
+            const sessionId = randomUUID(); spatialV2Sessions.set(sessionId, { plan, revision: 0, history: [], expires: now + SPATIAL_SESSION_TTL_MS, instruction, sourceKind: source.kind, refinementsUsed: 0, maxRefinements: Number(maxRefinements), policy: { mode: 'legacy' as const }, transactions: new Map(), undoReceipts: new Map() });
+            try { persistSessions(); } catch { /* a plan reply must not be lost to a persistence failure; the session stays volatile in memory */ }
             const operators = new Set<string>(); let nodeCount = 0; const collect = (node: SpatialPlanV2['components'][number]['geometry']) => { nodeCount++; if (node.type === 'group') node.children.forEach(collect); else operators.add(node.operator); }; plan.components.forEach((component) => collect(component.geometry));
             writeJson(response, 200, { contract: SPATIAL_PLAN_V2_CONTRACT, sessionId, revision: 0, plan, sceneSummary: { componentCount: plan.components.length, geometryNodeCount: nodeCount, operators: [...operators], constraintReady: constraintReport.ready }, constraintReport, constructionEvents: [{ type: 'scene_created', at: 0 }, ...plan.components.map((component, index) => ({ type: 'component_placed', at: index + 1, entityId: component.id, transform: component.transform })), { type: 'assembly_ready', at: plan.components.length + 1 }, { type: 'scene_revealed', at: plan.components.length + 2 }], meta: { ...result.log, rawResponseSha256, rawResponseStored, normalizationNotes }, limitations: ['Composição conceptual gerada por operadores geométricos; não constitui reconstrução métrica ou validada.', ...(source.kind === 'image' ? ['A fotografia não fornece escala física; dimensões e escala permanecem desconhecidas.'] : []), 'Perfis de apresentação não alteram a proveniência nem validam materiais reais.'] }, origin); return;
           }
