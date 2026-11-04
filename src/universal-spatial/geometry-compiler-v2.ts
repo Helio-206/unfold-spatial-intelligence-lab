@@ -1,5 +1,5 @@
 import {
-  BufferGeometry, CatmullRomCurve3, ConeGeometry, CylinderGeometry, DoubleSide, ExtrudeGeometry, Group,
+  BufferGeometry, CatmullRomCurve3, type Material, type Texture, ConeGeometry, CylinderGeometry, DoubleSide, ExtrudeGeometry, Group,
   Float32BufferAttribute, InstancedMesh, LatheGeometry, Matrix4, Mesh, MeshPhysicalMaterial, Quaternion, Shape, ShapeUtils, SphereGeometry,
   TorusGeometry, TubeGeometry, Vector2, Vector3, type ColorRepresentation, type Object3D,
 } from 'three';
@@ -11,7 +11,7 @@ import { MAX_V2_RENDERED_MESHES, MAX_V2_TRIANGLES, type GeometryNodeV2, type Mat
 export type GeometryCompilerStats = { meshCount: number; triangleCount: number; geometryBytes: number; componentCount: number; nodeCount: number };
 export type CompiledSpatialPlanV2 = { root: Group; stats: GeometryCompilerStats };
 
-function createMaterial(spec: MaterialV2): MeshPhysicalMaterial {
+export function createMaterial(spec: MaterialV2): MeshPhysicalMaterial {
   const profile = spec.profile, values = materialValues(spec);
   const material = new MeshPhysicalMaterial({ color: spec.color as ColorRepresentation, metalness: values.metalness, roughness: values.roughness, clearcoat: values.clearcoat, ior: values.ior, transparent: values.transparent, opacity: values.opacity, depthWrite: values.depthWrite });
   if (values.sheen > 0) { material.sheen = values.sheen; material.sheenRoughness = 0.6; material.sheenColor.set(spec.color as ColorRepresentation); }
@@ -179,13 +179,18 @@ export function compileSpatialPlanV2(value: SpatialPlanV2 | unknown): CompiledSp
 function countTreeNodes(nodes: GeometryNodeV2[]): number { return nodes.reduce((sum, node) => sum + 1 + (node.type === 'group' ? countTreeNodes(node.children) : 0), 0); }
 
 export function disposeCompiledSpatialPlan(root: Group): void {
-  const geometries = new Set<BufferGeometry>(), materials = new Set<MeshPhysicalMaterial>();
+  // Any material (an external mesh brings MeshStandardMaterial) and any texture it holds: nothing a compiled plan owns may outlive it.
+  const geometries = new Set<BufferGeometry>(), materials = new Set<Material>(), textures = new Set<Texture>();
   root.traverse((object) => {
     if (!(object instanceof Mesh)) return;
     geometries.add(object.geometry);
-    for (const material of Array.isArray(object.material) ? object.material : [object.material]) if (material instanceof MeshPhysicalMaterial) materials.add(material);
+    for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
+      materials.add(material);
+      for (const value of Object.values(material)) if (value && (value as Texture).isTexture) textures.add(value as Texture);
+    }
   });
   for (const geometry of geometries) geometry.dispose();
   for (const material of materials) material.dispose();
+  for (const texture of textures) texture.dispose();
   root.clear();
 }

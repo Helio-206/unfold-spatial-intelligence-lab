@@ -62,7 +62,8 @@ export class PlanSpaceLayer implements SpaceLayer {
   private authorised = false;
   stats: ReturnType<typeof compileSpatialPlanV2>['stats'];
 
-  constructor(plan: SpatialPlanV2, private readonly host: SpaceLayerHost) {
+  /** `compile` is the geometry seam: default is the V2 compiler. The V3 router has the same call shape (`compileWithRouter`). It must not write the plan. */
+  constructor(plan: SpatialPlanV2, private readonly host: SpaceLayerHost, private readonly compile: (plan: SpatialPlanV2) => ReturnType<typeof compileSpatialPlanV2> = compileSpatialPlanV2) {
     this.root.name = 'space-layer';
     this.plan = plan;
     this.stats = this.build();
@@ -87,7 +88,7 @@ export class PlanSpaceLayer implements SpaceLayer {
 
   private build(): ReturnType<typeof compileSpatialPlanV2>['stats'] {
     this.release();
-    const compiled = compileSpatialPlanV2(this.plan);
+    const compiled = this.compile(this.plan);
     this.compiled = compiled.root;
     if (!this.fixed) {
       const presentation = normalizeForPresentation(compiled.root, SPACE_PRESENTATION_SIZE);
