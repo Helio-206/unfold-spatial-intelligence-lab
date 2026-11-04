@@ -73,3 +73,17 @@ export async function evaluateSpatialPlanV2(input: { sessionId: string; baseRevi
   if (reply.contract !== 'unfold.spatial-evaluation.v1' || !reply.evaluation) throw new SpatialApiError(502, 'INVALID_SPATIAL_V2_EVALUATION_REPLY', 'Unknown spatial evaluation contract.');
   return { ...reply, evaluation: parseSpatialEvaluationV2(reply.evaluation, plan) };
 }
+
+export type SpatialProposalV2Reply = { contract: 'unfold.spatial-v2-proposal.v1'; sessionId: string; revision: number; operation: SpatialOperationV2; applied: false; meta?: Record<string, unknown>; limitation?: string };
+
+/** Turns a plan a person has reviewed into a server session (local, not paid), so typed edits, undo and the paid proposals work on exactly that plan. */
+export async function adoptSpatialPlanV2(input: { plan: SpatialPlanV2; instruction?: string }, fetchImpl: typeof fetch = fetch): Promise<SpatialMutationV2Reply> {
+  return validSpatialPlanV2Reply(await post<SpatialMutationV2Reply>('/api/spatial/v2/adopt', input, fetchImpl)) as SpatialMutationV2Reply;
+}
+
+/** Paid. Muse Spark proposes one typed operation; nothing is applied. A person previews it and submits it through `applySpatialPlanV2Operation`. */
+export async function proposeSpatialEditV2(input: { sessionId: string; baseRevision: number; instruction: string }, fetchImpl: typeof fetch = fetch): Promise<SpatialProposalV2Reply> {
+  const reply = await post<SpatialProposalV2Reply>('/api/spatial/v2/edit', { ...input, propose: true }, fetchImpl);
+  if (reply.contract !== 'unfold.spatial-v2-proposal.v1' || reply.applied !== false || !reply.operation) throw new SpatialApiError(502, 'INVALID_SPATIAL_V2_PROPOSAL_REPLY', 'Unknown spatial proposal contract.');
+  return reply;
+}

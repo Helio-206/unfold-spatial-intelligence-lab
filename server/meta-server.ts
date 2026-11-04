@@ -87,8 +87,8 @@ export const PAID_ROUTES = [
   '/api/spatial/v2/evaluate',
 ] as const;
 const PAID_ROUTE_SET: ReadonlySet<string> = new Set(PAID_ROUTES);
-const LOCAL_SPATIAL_ROUTES = new Set(['/api/spatial/operation', '/api/spatial/edit', '/api/spatial/undo', '/api/spatial/v2/operation', '/api/spatial/v2/refine', '/api/spatial/v2/undo']);
-const NO_META_SPATIAL_ROUTES = new Set(['/api/spatial/operation', '/api/spatial/undo', '/api/spatial/v2/operation', '/api/spatial/v2/refine', '/api/spatial/v2/undo']);
+const LOCAL_SPATIAL_ROUTES = new Set(['/api/spatial/operation', '/api/spatial/edit', '/api/spatial/undo', '/api/spatial/v2/adopt', '/api/spatial/v2/operation', '/api/spatial/v2/refine', '/api/spatial/v2/undo']);
+const NO_META_SPATIAL_ROUTES = new Set(['/api/spatial/operation', '/api/spatial/undo', '/api/spatial/v2/adopt', '/api/spatial/v2/operation', '/api/spatial/v2/refine', '/api/spatial/v2/undo']);
 const ROUTE_SET: ReadonlySet<string> = new Set([...PAID_ROUTE_SET, ...LOCAL_SPATIAL_ROUTES]);
 
 type GuardRejection = { status: number; code: string; message: string; allow?: string };
@@ -461,6 +461,7 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
           ? MAX_IMAGE_BODY_BYTES
           : request.url === '/api/experiments/preview' || request.url === '/api/conversation'
             ? MAX_PREVIEW_BODY_BYTES
+            : request.url === '/api/spatial/v2/adopt' ? 256 * 1024
             : request.url === '/api/spatial-agent' || request.url?.startsWith('/api/spatial/')
               ? MAX_SPATIAL_AGENT_BODY_BYTES
             : MAX_BODY_BYTES,
@@ -469,19 +470,20 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
         const route = request.url;
         const allowedKeys: Record<string, string[]> = {
           '/api/spatial/v2/plan': ['sourceKind', 'instruction', 'imageDataUrl', 'mode', 'maxRefinements'],
-          '/api/spatial/v2/edit': ['sessionId', 'baseRevision', 'instruction'],
+          '/api/spatial/v2/adopt': ['plan', 'instruction'],
+          '/api/spatial/v2/edit': ['sessionId', 'baseRevision', 'instruction', 'propose'],
           '/api/spatial/v2/operation': ['sessionId', 'baseRevision', 'operation'],
           '/api/spatial/v2/refine': ['sessionId', 'baseRevision'],
           '/api/spatial/v2/undo': ['sessionId', 'baseRevision'],
           '/api/spatial/v2/evaluate': ['sessionId', 'baseRevision', 'imageDataUrl'],
         };
         const requiredKeys: Record<string, string[]> = {
-          '/api/spatial/v2/plan': ['sourceKind'], '/api/spatial/v2/edit': ['sessionId', 'baseRevision', 'instruction'],
+          '/api/spatial/v2/plan': ['sourceKind'], '/api/spatial/v2/adopt': ['plan'], '/api/spatial/v2/edit': ['sessionId', 'baseRevision', 'instruction'],
           '/api/spatial/v2/operation': ['sessionId', 'baseRevision', 'operation'], '/api/spatial/v2/refine': ['sessionId', 'baseRevision'],
           '/api/spatial/v2/undo': ['sessionId', 'baseRevision'], '/api/spatial/v2/evaluate': ['sessionId', 'baseRevision', 'imageDataUrl'],
         };
         if (!body || typeof body !== 'object' || Array.isArray(body) || !allowedKeys[route] || Object.keys(body).some((key) => !allowedKeys[route]!.includes(key)) || !requiredKeys[route]!.every((key) => Object.hasOwn(body, key))) { writeJson(response, 400, { error: { code: 'INVALID_SPATIAL_V2_REQUEST', message: 'Corpo V2 inválido, incompleto ou com campos desconhecidos.' } }, origin); return; }
-        const candidate = body as { sessionId?: unknown; baseRevision?: unknown; instruction?: unknown; imageDataUrl?: unknown; sourceKind?: unknown; mode?: unknown; maxRefinements?: unknown; operation?: unknown };
+        const candidate = body as { sessionId?: unknown; baseRevision?: unknown; instruction?: unknown; imageDataUrl?: unknown; sourceKind?: unknown; mode?: unknown; maxRefinements?: unknown; operation?: unknown; plan?: unknown; propose?: unknown };
         if ((route === '/api/spatial/v2/evaluate' || route === '/api/spatial/v2/plan' && candidate.sourceKind === 'image')) {
           const peer = request.socket.remoteAddress ?? 'unknown', key = `spatial-v2-image:${peer}`, now = Date.now();
           for (const [entry, timestamps] of imageRequests) if (!timestamps.some((time) => now - time < 60_000)) imageRequests.delete(entry);
@@ -492,13 +494,25 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
         const refreshV2Expiry = (session: { expires: number }) => { session.expires = Date.now() + SPATIAL_SESSION_TTL_MS; };
         const v2Session = () => typeof candidate.sessionId === 'string' ? spatialV2Sessions.get(candidate.sessionId) : undefined;
         const revisionConflict = (session: { revision: number }) => !Number.isSafeInteger(candidate.baseRevision) || candidate.baseRevision !== session.revision;
-        const session = route === '/api/spatial/v2/plan' ? undefined : v2Session();
-        if (route !== '/api/spatial/v2/plan' && (!session || session.expires < Date.now())) {
+        const sessionless = route === '/api/spatial/v2/plan' || route === '/api/spatial/v2/adopt';
+        const session = sessionless ? undefined : v2Session();
+        if (!sessionless && (!session || session.expires < Date.now())) {
           writeJson(response, 404, { error: { code: 'SPATIAL_V2_SESSION_NOT_FOUND', message: 'Sessão espacial V2 ausente ou expirada.' } }, origin); return;
         }
         if (session && revisionConflict(session)) { writeJson(response, 409, { error: { code: 'SPATIAL_V2_REVISION_CONFLICT', message: 'A revisão base está desactualizada.', currentRevision: session.revision } }, origin); return; }
         if (session) refreshV2Expiry(session);
         try {
+          if (route === '/api/spatial/v2/adopt') {
+            // A person-reviewed plan becomes a session so that typed edits, undo and the paid proposals work on exactly what is on screen. It is validated like every plan and costs nothing.
+            let adopted: SpatialPlanV2;
+            try { adopted = validateSpatialPlanV2(candidate.plan); } catch { writeJson(response, 400, { error: { code: 'INVALID_SPATIAL_V2_PLAN', message: 'O plano não passou na validação.' } }, origin); return; }
+            const text = typeof candidate.instruction === 'string' && candidate.instruction.trim() ? candidate.instruction.slice(0, 1_000) : `Reviewed space: ${adopted.title}`;
+            const now = Date.now(); for (const [id, current] of spatialV2Sessions) if (current.expires < now) spatialV2Sessions.delete(id);
+            if (spatialV2Sessions.size >= MAX_SPATIAL_SESSION_COUNT) { writeJson(response, 503, { error: { code: 'SPATIAL_V2_SESSION_CAPACITY', message: 'Limite de sessões espaciais V2 atingido.' } }, origin); return; }
+            const sessionId = randomUUID(); spatialV2Sessions.set(sessionId, { plan: adopted, revision: 0, history: [], expires: now + SPATIAL_SESSION_TTL_MS, instruction: text, sourceKind: adopted.source.kind, refinementsUsed: 0, maxRefinements: 1 });
+            const compiled = compileSpatialPlanV2(adopted); const constraintReport = evaluateSpatialConstraintsV2(adopted, compiled.root); disposeCompiledSpatialPlan(compiled.root);
+            writeJson(response, 200, { contract: 'unfold.spatial-v2-review.v1', sessionId, revision: 0, plan: adopted, constraintReport, review: { status: 'adopted', actorEvidence: 'client_asserted_unverified', authenticatedReviewer: false } }, origin); return;
+          }
           if (route === '/api/spatial/v2/undo') {
             const current = session!; const previous = current.history.pop();
             if (!previous) { writeJson(response, 409, { error: { code: 'SPATIAL_V2_UNDO_EMPTY', message: 'Não há operação V2 para desfazer.' } }, origin); return; }
@@ -521,6 +535,11 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
             } else {
               if (!candidate.operation || typeof candidate.operation !== 'object') { writeJson(response, 400, { error: { code: 'INVALID_SPATIAL_V2_OPERATION', message: 'operation tipada é obrigatória.' } }, origin); return; }
               operation = candidate.operation as SpatialOperationV2;
+            }
+            if (route === '/api/spatial/v2/edit' && candidate.propose === true) {
+              // Proposal mode: validated against a copy, never applied. A person submits the operation through /operation after previewing it.
+              applySpatialOperationV2(current.plan, operation, { origin: 'inferred', evidence: `Muse Spark proposed operation ${operation.operationId}; not applied.` });
+              writeJson(response, 200, { contract: 'unfold.spatial-v2-proposal.v1', sessionId: candidate.sessionId, revision: current.revision, operation, applied: false, ...(meta ? { meta } : {}), limitation: 'A proposta é uma hipótese do modelo e só se aplica depois de autorizada por uma pessoa.' }, origin); return;
             }
             const originKind = route === '/api/spatial/v2/refine' || route === '/api/spatial/v2/edit' ? 'inferred' : 'user_provided';
             const next = applySpatialOperationV2(current.plan, operation, { origin: originKind, evidence: route === '/api/spatial/v2/refine' ? `Meta visual evaluation proposed operation ${operation.operationId}; model score is a hypothesis.` : route === '/api/spatial/v2/edit' ? `Muse Spark proposed operation ${operation.operationId}; user instruction is unverified.` : `Client-submitted operation ${operation.operationId}; human identity/review is unverified.` });
