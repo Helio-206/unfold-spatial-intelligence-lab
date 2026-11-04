@@ -19,9 +19,6 @@ switch (window.location.pathname) {
   case '/universal-spatial':
     void import('./universal-spatial/harness').then(({ mountUniversalSpatialHarness }) => mountUniversalSpatialHarness(app));
     break;
-  case '/universal-spatial-v2':
-    void import('./universal-spatial/harness-v2').then(({ mountUniversalSpatialV2Harness }) => mountUniversalSpatialV2Harness(app));
-    break;
   case '/phase-4a':
     void import('./phase4a');
     break;

@@ -1,0 +1,504 @@
+{
+  "generatedBy": "scripts/benchmark/v4-fit.ts",
+  "summary": {
+    "lungs-like": {
+      "origin": "hand-authored reproduction",
+      "groundTruth": "the plan itself, rendered to calibrated silhouettes",
+      "degradation": "seeded synthetic: scale x0.72-1.30 and shift up to +-10 % of span on every root component",
+      "heldOutViews": 10,
+      "rows": [
+        {
+          "fitViews": 3,
+          "fitIouBefore": 0.585,
+          "fitIouAfter": 0.899,
+          "heldOutIouDegraded": 0.606,
+          "heldOutIouFitted": 0.861,
+          "meanPositionErrPctSpan": {
+            "before": 9.886,
+            "after": 6.471
+          },
+          "meanScaleErrLog": {
+            "before": 0.151,
+            "after": 0.128
+          },
+          "ms": 537,
+          "evaluations": 225,
+          "idsPreserved": true,
+          "sourceHashPreserved": true,
+          "perComponent": [
+            {
+              "id": "trachea",
+              "scaleErrLogBefore": 0.27,
+              "scaleErrLogAfter": 0.237,
+              "positionErrPctSpanBefore": 11.5,
+              "positionErrPctSpanAfter": 19.2
+            },
+            {
+              "id": "trachea-ring",
+              "scaleErrLogBefore": 0.052,
+              "scaleErrLogAfter": 0.003,
+              "positionErrPctSpanBefore": 12.2,
+              "positionErrPctSpanAfter": 2.7
+            },
+            {
+              "id": "carina",
+              "scaleErrLogBefore": 0.147,
+              "scaleErrLogAfter": 0.146,
+              "positionErrPctSpanBefore": 13.5,
+              "positionErrPctSpanAfter": 13.2
+            },
+            {
+              "id": "lung-left",
+              "scaleErrLogBefore": 0.007,
+              "scaleErrLogAfter": 0.014,
+              "positionErrPctSpanBefore": 9.9,
+              "positionErrPctSpanAfter": 1
+            },
+            {
+              "id": "lung-right",
+              "scaleErrLogBefore": 0.167,
+              "scaleErrLogAfter": 0.01,
+              "positionErrPctSpanBefore": 8,
+              "positionErrPctSpanAfter": 0.5
+            },
+            {
+              "id": "branches-left",
+              "scaleErrLogBefore": 0.275,
+              "scaleErrLogAfter": 0.347,
+              "positionErrPctSpanBefore": 8.9,
+              "positionErrPctSpanAfter": 3.5
+            },
+            {
+              "id": "branches-right",
+              "scaleErrLogBefore": 0.142,
+              "scaleErrLogAfter": 0.142,
+              "positionErrPctSpanBefore": 5.2,
+              "positionErrPctSpanAfter": 5.2
+            }
+          ]
+        },
+        {
+          "fitViews": 6,
+          "fitIouBefore": 0.628,
+          "fitIouAfter": 0.932,
+          "heldOutIouDegraded": 0.606,
+          "heldOutIouFitted": 0.922,
+          "meanPositionErrPctSpan": {
+            "before": 9.886,
+            "after": 5.629
+          },
+          "meanScaleErrLog": {
+            "before": 0.151,
+            "after": 0.145
+          },
+          "ms": 1127,
+          "evaluations": 225,
+          "idsPreserved": true,
+          "sourceHashPreserved": true,
+          "perComponent": [
+            {
+              "id": "trachea",
+              "scaleErrLogBefore": 0.27,
+              "scaleErrLogAfter": 0.269,
+              "positionErrPctSpanBefore": 11.5,
+              "positionErrPctSpanAfter": 1.2
+            },
+            {
+              "id": "trachea-ring",
+              "scaleErrLogBefore": 0.052,
+              "scaleErrLogAfter": 0.133,
+              "positionErrPctSpanBefore": 12.2,
+              "positionErrPctSpanAfter": 5.9
+            },
+            {
+              "id": "carina",
+              "scaleErrLogBefore": 0.147,
+              "scaleErrLogAfter": 0.204,
+              "positionErrPctSpanBefore": 13.5,
+              "positionErrPctSpanAfter": 16.2
+            },
+            {
+              "id": "lung-left",
+              "scaleErrLogBefore": 0.007,
+              "scaleErrLogAfter": 0.007,
+              "positionErrPctSpanBefore": 9.9,
+              "positionErrPctSpanAfter": 0.5
+            },
+            {
+              "id": "lung-right",
+              "scaleErrLogBefore": 0.167,
+              "scaleErrLogAfter": 0.002,
+              "positionErrPctSpanBefore": 8,
+              "positionErrPctSpanAfter": 1.1
+            },
+            {
+              "id": "branches-left",
+              "scaleErrLogBefore": 0.275,
+              "scaleErrLogAfter": 0.38,
+              "positionErrPctSpanBefore": 8.9,
+              "positionErrPctSpanAfter": 9.3
+            },
+            {
+              "id": "branches-right",
+              "scaleErrLogBefore": 0.142,
+              "scaleErrLogAfter": 0.022,
+              "positionErrPctSpanBefore": 5.2,
+              "positionErrPctSpanAfter": 5.2
+            }
+          ]
+        },
+        {
+          "fitViews": 12,
+          "fitIouBefore": 0.617,
+          "fitIouAfter": 0.941,
+          "heldOutIouDegraded": 0.606,
+          "heldOutIouFitted": 0.942,
+          "meanPositionErrPctSpan": {
+            "before": 9.886,
+            "after": 3.786
+          },
+          "meanScaleErrLog": {
+            "before": 0.151,
+            "after": 0.106
+          },
+          "ms": 2129,
+          "evaluations": 225,
+          "idsPreserved": true,
+          "sourceHashPreserved": true,
+          "perComponent": [
+            {
+              "id": "trachea",
+              "scaleErrLogBefore": 0.27,
+              "scaleErrLogAfter": 0.164,
+              "positionErrPctSpanBefore": 11.5,
+              "positionErrPctSpanAfter": 1.1
+            },
+            {
+              "id": "trachea-ring",
+              "scaleErrLogBefore": 0.052,
+              "scaleErrLogAfter": 0.001,
+              "positionErrPctSpanBefore": 12.2,
+              "positionErrPctSpanAfter": 7.2
+            },
+            {
+              "id": "carina",
+              "scaleErrLogBefore": 0.147,
+              "scaleErrLogAfter": 0.046,
+              "positionErrPctSpanBefore": 13.5,
+              "positionErrPctSpanAfter": 6.2
+            },
+            {
+              "id": "lung-left",
+              "scaleErrLogBefore": 0.007,
+              "scaleErrLogAfter": 0.007,
+              "positionErrPctSpanBefore": 9.9,
+              "positionErrPctSpanAfter": 0.5
+            },
+            {
+              "id": "lung-right",
+              "scaleErrLogBefore": 0.167,
+              "scaleErrLogAfter": 0.01,
+              "positionErrPctSpanBefore": 8,
+              "positionErrPctSpanAfter": 0.8
+            },
+            {
+              "id": "branches-left",
+              "scaleErrLogBefore": 0.275,
+              "scaleErrLogAfter": 0.399,
+              "positionErrPctSpanBefore": 8.9,
+              "positionErrPctSpanAfter": 4.9
+            },
+            {
+              "id": "branches-right",
+              "scaleErrLogBefore": 0.142,
+              "scaleErrLogAfter": 0.117,
+              "positionErrPctSpanBefore": 5.2,
+              "positionErrPctSpanAfter": 5.8
+            }
+          ]
+        }
+      ]
+    },
+    "microscope-like": {
+      "origin": "hand-authored reproduction",
+      "groundTruth": "the plan itself, rendered to calibrated silhouettes",
+      "degradation": "seeded synthetic: scale x0.72-1.30 and shift up to +-10 % of span on every root component",
+      "heldOutViews": 10,
+      "rows": [
+        {
+          "fitViews": 3,
+          "fitIouBefore": 0.444,
+          "fitIouAfter": 0.79,
+          "heldOutIouDegraded": 0.534,
+          "heldOutIouFitted": 0.786,
+          "meanPositionErrPctSpan": {
+            "before": 9.75,
+            "after": 3.98
+          },
+          "meanScaleErrLog": {
+            "before": 0.128,
+            "after": 0.092
+          },
+          "ms": 253,
+          "evaluations": 321,
+          "idsPreserved": true,
+          "sourceHashPreserved": true,
+          "perComponent": [
+            {
+              "id": "base",
+              "scaleErrLogBefore": 0.178,
+              "scaleErrLogAfter": 0.047,
+              "positionErrPctSpanBefore": 6.6,
+              "positionErrPctSpanAfter": 1.3
+            },
+            {
+              "id": "column",
+              "scaleErrLogBefore": 0.008,
+              "scaleErrLogAfter": 0.165,
+              "positionErrPctSpanBefore": 11.9,
+              "positionErrPctSpanAfter": 16.8
+            },
+            {
+              "id": "arm",
+              "scaleErrLogBefore": 0.165,
+              "scaleErrLogAfter": 0.021,
+              "positionErrPctSpanBefore": 7.1,
+              "positionErrPctSpanAfter": 4
+            },
+            {
+              "id": "stage",
+              "scaleErrLogBefore": 0.059,
+              "scaleErrLogAfter": 0.08,
+              "positionErrPctSpanBefore": 12,
+              "positionErrPctSpanAfter": 1.1
+            },
+            {
+              "id": "ocular-tube",
+              "scaleErrLogBefore": 0.057,
+              "scaleErrLogAfter": 0.101,
+              "positionErrPctSpanBefore": 9.8,
+              "positionErrPctSpanAfter": 1.7
+            },
+            {
+              "id": "eyepiece",
+              "scaleErrLogBefore": 0.123,
+              "scaleErrLogAfter": 0.018,
+              "positionErrPctSpanBefore": 8.4,
+              "positionErrPctSpanAfter": 1.1
+            },
+            {
+              "id": "revolver",
+              "scaleErrLogBefore": 0.226,
+              "scaleErrLogAfter": 0.12,
+              "positionErrPctSpanBefore": 9.7,
+              "positionErrPctSpanAfter": 1.9
+            },
+            {
+              "id": "objectives",
+              "scaleErrLogBefore": 0.143,
+              "scaleErrLogAfter": 0.078,
+              "positionErrPctSpanBefore": 8.4,
+              "positionErrPctSpanAfter": 1.8
+            },
+            {
+              "id": "focus",
+              "scaleErrLogBefore": 0.096,
+              "scaleErrLogAfter": 0.253,
+              "positionErrPctSpanBefore": 12.2,
+              "positionErrPctSpanAfter": 2.1
+            },
+            {
+              "id": "illuminator",
+              "scaleErrLogBefore": 0.224,
+              "scaleErrLogAfter": 0.033,
+              "positionErrPctSpanBefore": 11.4,
+              "positionErrPctSpanAfter": 8
+            }
+          ]
+        },
+        {
+          "fitViews": 6,
+          "fitIouBefore": 0.521,
+          "fitIouAfter": 0.914,
+          "heldOutIouDegraded": 0.534,
+          "heldOutIouFitted": 0.908,
+          "meanPositionErrPctSpan": {
+            "before": 9.75,
+            "after": 1.63
+          },
+          "meanScaleErrLog": {
+            "before": 0.128,
+            "after": 0.081
+          },
+          "ms": 563,
+          "evaluations": 321,
+          "idsPreserved": true,
+          "sourceHashPreserved": true,
+          "perComponent": [
+            {
+              "id": "base",
+              "scaleErrLogBefore": 0.178,
+              "scaleErrLogAfter": 0.014,
+              "positionErrPctSpanBefore": 6.6,
+              "positionErrPctSpanAfter": 0.7
+            },
+            {
+              "id": "column",
+              "scaleErrLogBefore": 0.008,
+              "scaleErrLogAfter": 0.107,
+              "positionErrPctSpanBefore": 11.9,
+              "positionErrPctSpanAfter": 1.9
+            },
+            {
+              "id": "arm",
+              "scaleErrLogBefore": 0.165,
+              "scaleErrLogAfter": 0.037,
+              "positionErrPctSpanBefore": 7.1,
+              "positionErrPctSpanAfter": 1.4
+            },
+            {
+              "id": "stage",
+              "scaleErrLogBefore": 0.059,
+              "scaleErrLogAfter": 0.058,
+              "positionErrPctSpanBefore": 12,
+              "positionErrPctSpanAfter": 0.9
+            },
+            {
+              "id": "ocular-tube",
+              "scaleErrLogBefore": 0.057,
+              "scaleErrLogAfter": 0.041,
+              "positionErrPctSpanBefore": 9.8,
+              "positionErrPctSpanAfter": 0.9
+            },
+            {
+              "id": "eyepiece",
+              "scaleErrLogBefore": 0.123,
+              "scaleErrLogAfter": 0.043,
+              "positionErrPctSpanBefore": 8.4,
+              "positionErrPctSpanAfter": 0.6
+            },
+            {
+              "id": "revolver",
+              "scaleErrLogBefore": 0.226,
+              "scaleErrLogAfter": 0.01,
+              "positionErrPctSpanBefore": 9.7,
+              "positionErrPctSpanAfter": 1
+            },
+            {
+              "id": "objectives",
+              "scaleErrLogBefore": 0.143,
+              "scaleErrLogAfter": 0.087,
+              "positionErrPctSpanBefore": 8.4,
+              "positionErrPctSpanAfter": 0.8
+            },
+            {
+              "id": "focus",
+              "scaleErrLogBefore": 0.096,
+              "scaleErrLogAfter": 0.253,
+              "positionErrPctSpanBefore": 12.2,
+              "positionErrPctSpanAfter": 2.1
+            },
+            {
+              "id": "illuminator",
+              "scaleErrLogBefore": 0.224,
+              "scaleErrLogAfter": 0.164,
+              "positionErrPctSpanBefore": 11.4,
+              "positionErrPctSpanAfter": 6
+            }
+          ]
+        },
+        {
+          "fitViews": 12,
+          "fitIouBefore": 0.54,
+          "fitIouAfter": 0.92,
+          "heldOutIouDegraded": 0.534,
+          "heldOutIouFitted": 0.908,
+          "meanPositionErrPctSpan": {
+            "before": 9.75,
+            "after": 1.73
+          },
+          "meanScaleErrLog": {
+            "before": 0.128,
+            "after": 0.08
+          },
+          "ms": 1092,
+          "evaluations": 321,
+          "idsPreserved": true,
+          "sourceHashPreserved": true,
+          "perComponent": [
+            {
+              "id": "base",
+              "scaleErrLogBefore": 0.178,
+              "scaleErrLogAfter": 0.004,
+              "positionErrPctSpanBefore": 6.6,
+              "positionErrPctSpanAfter": 0.7
+            },
+            {
+              "id": "column",
+              "scaleErrLogBefore": 0.008,
+              "scaleErrLogAfter": 0.087,
+              "positionErrPctSpanBefore": 11.9,
+              "positionErrPctSpanAfter": 2.3
+            },
+            {
+              "id": "arm",
+              "scaleErrLogBefore": 0.165,
+              "scaleErrLogAfter": 0.021,
+              "positionErrPctSpanBefore": 7.1,
+              "positionErrPctSpanAfter": 0.7
+            },
+            {
+              "id": "stage",
+              "scaleErrLogBefore": 0.059,
+              "scaleErrLogAfter": 0.014,
+              "positionErrPctSpanBefore": 12,
+              "positionErrPctSpanAfter": 0.9
+            },
+            {
+              "id": "ocular-tube",
+              "scaleErrLogBefore": 0.057,
+              "scaleErrLogAfter": 0.096,
+              "positionErrPctSpanBefore": 9.8,
+              "positionErrPctSpanAfter": 1.5
+            },
+            {
+              "id": "eyepiece",
+              "scaleErrLogBefore": 0.123,
+              "scaleErrLogAfter": 0.043,
+              "positionErrPctSpanBefore": 8.4,
+              "positionErrPctSpanAfter": 0.8
+            },
+            {
+              "id": "revolver",
+              "scaleErrLogBefore": 0.226,
+              "scaleErrLogAfter": 0.035,
+              "positionErrPctSpanBefore": 9.7,
+              "positionErrPctSpanAfter": 0.9
+            },
+            {
+              "id": "objectives",
+              "scaleErrLogBefore": 0.143,
+              "scaleErrLogAfter": 0.144,
+              "positionErrPctSpanBefore": 8.4,
+              "positionErrPctSpanAfter": 1.6
+            },
+            {
+              "id": "focus",
+              "scaleErrLogBefore": 0.096,
+              "scaleErrLogAfter": 0.262,
+              "positionErrPctSpanBefore": 12.2,
+              "positionErrPctSpanAfter": 1.1
+            },
+            {
+              "id": "illuminator",
+              "scaleErrLogBefore": 0.224,
+              "scaleErrLogAfter": 0.092,
+              "positionErrPctSpanBefore": 11.4,
+              "positionErrPctSpanAfter": 6.8
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
