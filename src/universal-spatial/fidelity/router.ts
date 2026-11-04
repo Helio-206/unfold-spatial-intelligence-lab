@@ -26,6 +26,8 @@ export type RouterOptions = {
   approvals?: AssetApproval[];
   /** Off-main-thread computation with a cache. Without it the continuous surfaces are computed inline, synchronously. With it a cache miss draws V2 now and `service.onReady` tells the host to rebuild. */
   service?: ContinuousService;
+  /** Optional product-only cooperative scheduling limits. A component is atomic and cannot be preempted. */
+  upgradeBudget?: { maxWorkMs: number; maxComponentTriangles: number };
 };
 /**
  * `upgrade()` is the only thing that happens after `compileWithRouter` returns. It looks in the service's cache for the components that were drawn by V2
@@ -88,6 +90,12 @@ export function compileWithRouter(plan: SpatialPlanV2, options: RouterOptions = 
       else { decision.reason = 'Stays on V2 for now: continuous surface is being computed off the main thread.'; decision.pending = true; pendingIds.push(c.id); waiting.push({ componentId: c.id, group: groups.get(c.id)!, job, decision, curved, ms: 0 }); }
       continue;
     }
+    // Product cache hits use the same cooperative path as fresh worker results.
+    if (options.service && options.upgradeBudget) {
+      decision.reason = 'Stays on V2 until the cached surface is scheduled.'; decision.pending = true;
+      pendingIds.push(c.id); waiting.push({ componentId: c.id, group: groups.get(c.id)!, job, decision, curved, ms: 0 });
+      continue;
+    }
     if (!result.ok) { decision.reason = `Stays on V2: ${result.code.toLowerCase().replace(/_/g, ' ')}.`; decision.fallback = { from: 'continuous_surface', code: result.code }; continue; }
     const curvedNote = curved, g = groups.get(c.id)!, old = g.children[0]!, oldM = measure(old), next = assembleContinuous(result, c.id, c.geometry.key);
     decision.used = 'continuous_surface'; decision.triangles = result.triangles; decision.deviation = result.deviation; decision.blendedWith = result.blendedWith; decision.computed = origin;
@@ -142,13 +150,22 @@ export function compileWithRouter(plan: SpatialPlanV2, options: RouterOptions = 
   let retired = false;
   const upgrade = (budgetTriangles = Infinity): string[] => {
     if (retired || !options.service || !waiting.length) return [];
-    const changed: string[] = []; let spent = 0;
+    const changed: string[] = []; let spent = 0; const sliceStart = performance.now(); let processed = 0;
     for (const w of [...waiting]) {
       if (spent >= budgetTriangles) break;
+      if (processed > 0 && options.upgradeBudget && performance.now() - sliceStart >= options.upgradeBudget.maxWorkMs) break;
       const result = options.service.get(w.job.key); if (!result) continue;
       waiting.splice(waiting.indexOf(w), 1); pendingIds.splice(pendingIds.indexOf(w.componentId), 1); delete w.decision.pending;
+      processed++;
       const c = byId.get(w.componentId)!;
       if (!result.ok) { w.decision.reason = `Stays on V2: ${result.code.toLowerCase().replace(/_/g, ' ')}.`; w.decision.fallback = { from: 'continuous_surface', code: result.code }; continue; }
+      if (options.upgradeBudget && result.triangles > options.upgradeBudget.maxComponentTriangles) {
+        w.decision.reason = 'Stays on V2: the component exceeds the atomic upgrade triangle budget.';
+        w.decision.fallback = { from: 'continuous_surface', code: 'UPGRADE_BUDGET' }; continue;
+      }
+      if (options.upgradeBudget && spent > 0 && spent + result.triangles > budgetTriangles) {
+        waiting.push(w); pendingIds.push(w.componentId); w.decision.pending = true; break;
+      }
       const old = w.group.children[0]!, oldM = measure(old), next = assembleContinuous(result, c.id, c.geometry.key), now = measure(root);
       if (now.triangles + result.triangles - oldM.triangles > limits.maxTriangles || now.meshes + next.children.length - oldM.meshes > limits.maxMeshes || now.bytes + result.bytes - oldM.bytes > limits.maxGeometryBytes) {
         disposeObject(next); w.decision.fallback = { from: 'continuous_surface', code: 'SCENE_BUDGET' }; w.decision.reason = 'Stays on V2: the scene would exceed its triangle, mesh or memory budget.'; continue;

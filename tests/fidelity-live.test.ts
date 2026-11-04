@@ -95,4 +95,14 @@ describe('V3 geometry arrives later without rebuilding the Space', () => {
   it('upgradeGeometry after dispose does nothing', async () => {
     const { service, layer } = live(); layer.dispose(); expect(layer.upgradeGeometry()).toEqual([]); service.dispose();
   });
+
+  it('rejects oversized atomic upgrades without blocking the ready queue', async () => {
+    const service = new ContinuousService({ poolSize: 2, createWorker: () => createInlineWorker() });
+    const routed = compileWithRouter(plan(), { service, limits: { maxGridCells: 40 }, upgradeBudget: { maxWorkMs: 4, maxComponentTriangles: 1 } });
+    for (let i = 0; i < 400 && service.stats().completed < 3; i++) await new Promise((r) => setTimeout(r, 2));
+    for (let i = 0; i < 10 && routed.report.pending.length; i++) routed.upgrade(12000);
+    expect(routed.report.pending).toEqual([]);
+    expect(routed.report.decisions.every(d => d.used === 'procedural_v2' && d.fallback?.code === 'UPGRADE_BUDGET')).toBe(true);
+    routed.retire(); service.dispose();
+  });
 });

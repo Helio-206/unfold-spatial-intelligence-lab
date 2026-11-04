@@ -59,6 +59,16 @@ const openEdit = () => page.evaluate(() => document.querySelector('.sp-edit')?.s
 try {
   await page.goto(`${base}/living?debug-living&rm=1`, { waitUntil: 'networkidle' });
   await page.waitForSelector('[data-space="open"]');
+  // Test-only profiling: RAF cadence and renderer main-thread call time are separate samples.
+  await page.evaluate(() => {
+    const w = window.__workspace, renderer = w.foundry;
+    const profile = window.__temporal = { phase: 'setup', samples: [], raf: [], requests: [], lastRaf: null };
+    const render = renderer.renderNow.bind(renderer), request = renderer.requestRender.bind(renderer);
+    renderer.renderNow = () => { const phase = profile.phase, t = performance.now(); try { return render(); } finally { profile.samples.push({ phase, ms: performance.now() - t }); } };
+    renderer.requestRender = () => { if (profile.phase === 'idle') profile.requests.push({ at: performance.now(), stack: new Error().stack }); return request(); };
+    const tick = (t) => { if (profile.lastRaf !== null && profile.phase !== 'setup') profile.raf.push({ phase: profile.phase, ms: t - profile.lastRaf }); profile.lastRaf = t; requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  });
   steps.entry = await shot('01-entry');
   const gpuBefore = await page.evaluate(() => { const st = window.__workspace.stats(); return { geometries: st.geometries, textures: st.textures, programs: st.programs }; });
 
@@ -98,8 +108,10 @@ try {
   await page.check('#sp-ack');
   assert.equal(await page.isDisabled('[data-sp="build"]'), false);
   steps.reviewed = await shot('05-reviewed');
+  await page.evaluate(() => { window.__temporal.phase = 'construction'; });
   await page.click('[data-sp="build"]');
   await page.waitForFunction(() => window.__workspace.spaceActive);
+  await page.evaluate(() => { window.__temporal.phase = 'arrival'; });
   await page.waitForTimeout(800);
   steps.built = await shot('06-built');
   const builtIds = await page.evaluate(() => window.__space.layer.currentPlan.components.map((c) => c.id));
@@ -153,6 +165,7 @@ try {
   steps.preview = await shot('09-edit-preview');
   const needsAuth = await page.locator('[data-auth]').count();
   if (needsAuth) await page.check('[data-auth]');
+  await page.evaluate(() => { window.__temporal.phase = 'edit'; });
   await page.click('[data-apply]');
   await page.waitForTimeout(400);
   const edited = await page.evaluate((i) => { const c = window.__space.layer.currentPlan.components.find((x) => x.id === i); return { position: c.transform.position, origin: c.provenance.transform }; }, id);
@@ -160,6 +173,7 @@ try {
   assert.equal(edited.origin, 'user_provided');
   steps.edited = await shot('10-edited');
   assert.equal(await page.evaluate(() => window.__workspace.selectedSpaceId), id, 'selection survives an edit');
+  await page.evaluate(() => { window.__temporal.phase = 'undo'; });
   await page.click('[data-undo]');
   await page.waitForTimeout(400);
   const restored = await page.evaluate((i) => window.__space.layer.currentPlan.components.find((c) => c.id === i).transform.position, id);
@@ -175,7 +189,10 @@ try {
   // the renderer idles: with nothing moving, no frames are drawn
   await page.waitForFunction(() => window.__space.layer.presentation?.phase !== 'entering' && (window.__space.layer.geometryReport?.pending.length ?? 0) === 0, null, { timeout: 120000 });
   await page.waitForTimeout(1500);
+  await page.evaluate(() => { window.__temporal.phase = 'idle'; });
   const idleFrames = await page.evaluate(async () => { const a = window.__workspace.stats().frames; await new Promise((r) => setTimeout(r, 2000)); return window.__workspace.stats().frames - a; });
+  const temporal = await page.evaluate(() => window.__temporal);
+  await writeFile(resolve(out, 'temporal.json'), JSON.stringify({ ...temporal, idleFrames }, null, 2));
   assert.ok(idleFrames <= 2, `an idle Space must not keep rendering (${idleFrames} frames in 2 s)`);
   // evidence
   await page.click('[data-el="toolMore"]'); await page.click('[data-el="toolEvidence"]'); await page.waitForTimeout(300); steps.evidence = await shot('14-evidence');

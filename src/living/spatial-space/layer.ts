@@ -121,6 +121,8 @@ export class PlanSpaceLayer implements SpaceLayer {
     this.analysisCache = null;
     this.director?.rebind({ plan: this.plan, root: this.wrapper });
     this.applyPaint();
+    // Cache hits do not emit onReady; schedule them after this build has returned.
+    if ((this.routed.readyCount?.() ?? 0) > 0) this.scheduleGeometryUpgrade(12_000);
     return compiled.stats;
   }
 
@@ -138,11 +140,18 @@ export class PlanSpaceLayer implements SpaceLayer {
       this.applyPaint(); this.director?.refreshComponents(ids); this.host.redraw();
     }
     // a big arrival is uploaded to the GPU on the next render: what did not fit in this call follows on the next frames, so no single frame carries it all
-    if ((this.routed?.readyCount?.() ?? 0) > 0 && !this.continuation) {
-      const routedNow = this.routed, step = () => { this.continuation = null; this.frameHandle = null; if (this.disposed || this.routed !== routedNow) return; this.upgradeGeometry(budgetTriangles); };
-      this.continuation = step; const g = globalThis as { requestAnimationFrame?: (cb: () => void) => number }; this.frameHandle = g.requestAnimationFrame ? g.requestAnimationFrame(step) : setTimeout(step, 16);
-    }
+    if ((this.routed?.readyCount?.() ?? 0) > 0) this.scheduleGeometryUpgrade(budgetTriangles);
     return ids;
+  }
+
+  /** Coalesce worker arrivals into one cooperative slice per animation frame. */
+  scheduleGeometryUpgrade(budgetTriangles = UPGRADE_TRIANGLES_PER_CALL): void {
+    if (this.disposed || this.continuation) return;
+    const routedNow = this.routed;
+    const step = () => { this.continuation = null; this.frameHandle = null; if (!this.disposed && this.routed === routedNow) this.upgradeGeometry(budgetTriangles); };
+    this.continuation = step;
+    const g = globalThis as { requestAnimationFrame?: (cb: () => void) => number };
+    this.frameHandle = g.requestAnimationFrame ? g.requestAnimationFrame(step) : setTimeout(step, 16);
   }
 
   private cancelContinuation(): void {

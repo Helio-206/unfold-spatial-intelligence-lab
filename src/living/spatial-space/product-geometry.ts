@@ -27,7 +27,7 @@ export class ProductGeometry {
   compile = (plan: SpatialPlanV2): ReturnType<typeof compileSpatialPlanV2> => {
     if (!this.service || this.closed || this.failure) return this.fallback(plan, this.failure ?? 'WORKER_UNAVAILABLE');
     try {
-      this.current = compileWithRouter(plan, { service: this.service, policy: 'auto', requests: productGeometryRequests(plan), limits: { maxTriangles: 160_000, maxGeometryBytes: 16 * 1024 * 1024, maxGridCells: 64 } });
+      this.current = compileWithRouter(plan, { service: this.service, policy: 'auto', requests: productGeometryRequests(plan), upgradeBudget: { maxWorkMs: 4, maxComponentTriangles: 12_000 }, limits: { maxTriangles: 160_000, maxGeometryBytes: 16 * 1024 * 1024, maxGridCells: 64 } });
       return this.current;
     } catch {
       this.failure = 'ROUTER_ERROR'; this.service.dispose(); this.current = null;

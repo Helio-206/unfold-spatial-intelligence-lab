@@ -272,7 +272,7 @@ export class SpaceFlow {
     layer.reveal(!cinematic || this.reducedMotion);
     // Commit the initial V2 frame before a worker completion may upgrade any component.
     workspace.renderNow();
-    geometry.attach(() => layer.upgradeGeometry(12_000));
+    geometry.attach(() => layer.scheduleGeometryUpgrade(12_000));
     this.updateComposer();
     void this.adopt(plan);
   }
