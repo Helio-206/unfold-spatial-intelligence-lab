@@ -1,0 +1,207 @@
+{
+  "mode": "mock",
+  "url": "http://127.0.0.1:5191/living",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "browser": "Chromium (system) + SwiftShader",
+  "at": "2026-11-04T07:38:49.109Z",
+  "input": {
+    "kind": "text",
+    "prompt": "Um relógio de pêndulo de pé: caixa alta de madeira, mostrador redondo com ponteiros, pêndulo com disco de latão e pés.",
+    "promptSha256": "d794a4a285889fd88d558f8691340296ba4a917043a57bb1d94ec4ae20d3a8ae"
+  },
+  "latencyMsToReview": 2326,
+  "review": {
+    "components": 7,
+    "title": "Single-storey house floor plan massing - 880 unit width",
+    "rejected": null,
+    "built": [
+      "base-slab",
+      "outer-walls",
+      "interior-walls",
+      "verandas",
+      "wc-fixtures",
+      "kitchen-block",
+      "dining-table"
+    ]
+  },
+  "meta": {
+    "model": "replay-of-stored-run",
+    "requestId": "6708a264-69eb-40a2-93f5-6d4187870c1b",
+    "latencyMs": 48525,
+    "estimatedCostUsd": 0,
+    "rawResponseSha256": null,
+    "rawResponseStored": false
+  },
+  "normalizedPlan": {
+    "title": "Single-storey house floor plan massing - 880 unit width",
+    "units": "unitless",
+    "components": [
+      {
+        "id": "base-slab",
+        "label": "Foundation floor slab",
+        "parentId": null,
+        "origin": "inferred"
+      },
+      {
+        "id": "outer-walls",
+        "label": "Outer perimeter walls",
+        "parentId": "base-slab",
+        "origin": "observed"
+      },
+      {
+        "id": "interior-walls",
+        "label": "Interior room partitions",
+        "parentId": "base-slab",
+        "origin": "observed"
+      },
+      {
+        "id": "verandas",
+        "label": "Front and side verandas",
+        "parentId": "base-slab",
+        "origin": "observed"
+      },
+      {
+        "id": "wc-fixtures",
+        "label": "WC sanitary fixtures",
+        "parentId": "base-slab",
+        "origin": "inferred"
+      },
+      {
+        "id": "kitchen-block",
+        "label": "Kitchen counter block",
+        "parentId": "base-slab",
+        "origin": "inferred"
+      },
+      {
+        "id": "dining-table",
+        "label": "Dining room table marker",
+        "parentId": "base-slab",
+        "origin": "design_approximation"
+      }
+    ],
+    "unknowns": [
+      "True physical scale not visible - conceptual unitless dimensions retain plan proportions only",
+      "Wall heights, thicknesses, door/window openings and roof form not shown in 2D plan",
+      "Exact fixture types and kitchen layout hidden - blocks are placeholders",
+      "Front orientation (+Z) assumed toward VARANDA 880 side",
+      "Invalid Meta constraint proposals were omitted; no unvalidated constraints were applied.",
+      "Physical dimensions and absolute scale are unknown because no known reference was supplied."
+    ],
+    "sceneSummary": {
+      "componentCount": 6,
+      "geometryNodeCount": 33,
+      "operators": [
+        "torus",
+        "tube",
+        "cylinder",
+        "ellipsoid",
+        "box"
+      ],
+      "constraintReady": true
+    }
+  },
+  "coverage": {
+    "width": 1440,
+    "height": 900,
+    "objectFraction": 0.3262962962962963,
+    "meanLuma": 95.79853295307308,
+    "maxLuma": 252.42119999999997
+  },
+  "distinctSelectable": [
+    "outer-walls",
+    "interior-walls",
+    "verandas",
+    "base-slab"
+  ],
+  "edit": {
+    "componentId": "outer-walls",
+    "from": [
+      0,
+      0.7,
+      0
+    ],
+    "to": [
+      0.35,
+      0.7,
+      0
+    ],
+    "originAfter": "user_provided",
+    "undone": true
+  },
+  "gpu": {
+    "before": {
+      "geometries": 4,
+      "textures": 7,
+      "programs": 5
+    },
+    "afterLeaving": {
+      "geometries": 4,
+      "textures": 7,
+      "programs": 7
+    }
+  },
+  "idleFramesPer2sWindow": [
+    4,
+    4,
+    4,
+    4,
+    3,
+    0,
+    0
+  ],
+  "qualityChecksFailed": [],
+  "humanRecognition": null,
+  "apiCalls": [
+    "POST /api/spatial/v2/plan",
+    "POST /api/spatial/v2/adopt",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/edit",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/undo",
+    "POST /api/spatial/v2/evaluate",
+    "POST /api/spatial/v2/operation",
+    "POST /api/spatial/v2/adopt"
+  ],
+  "planRequest": {
+    "sourceKind": "text",
+    "hasInstruction": true,
+    "imageMime": null,
+    "maxRefinements": 0
+  },
+  "consoleErrors": [],
+  "screenshots": {
+    "entry": "01-entry.png",
+    "newSpace": "02-new-space.png",
+    "waiting": "03-waiting.png",
+    "review": "04-review.png",
+    "reviewed": "05-reviewed.png",
+    "built": "06-built.png",
+    "orbited": "07-orbited.png",
+    "selected": "08-selected.png",
+    "preview": "09-edit-preview.png",
+    "edited": "10-edited.png",
+    "recoloured": "11-recoloured.png",
+    "isolated": "12-isolated.png",
+    "framed": "13-framed.png",
+    "evidence": "14-evidence.png",
+    "exploded": "13b-exploded.png",
+    "proposal": "13c-meta-proposal.png",
+    "evaluated": "13d-visual-evaluation.png",
+    "leaving": "13e-leave-guard.png",
+    "library": "13f-my-spaces.png",
+    "reopened": "13g-reopened.png",
+    "back": "15-back-to-entry.png"
+  }
+}
