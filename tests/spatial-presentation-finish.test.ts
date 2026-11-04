@@ -43,7 +43,7 @@ describe('presentation PBR finish', () => {
   it('wood-like grain is deterministic, in range and directional (smoother along the fibre than across)', () => {
     const size = 64, one = grainPixels(size), two = grainPixels(size); expect(Buffer.from(one).equals(Buffer.from(two))).toBe(true);
     let along = 0, across = 0; for (let y = 0; y < size - 1; y++) for (let x = 0; x < size - 1; x++) { const v = one[(y * size + x) * 4]!; along += Math.abs(v - one[((y + 1) * size + x) * 4]!); across += Math.abs(v - one[(y * size + x + 1) * 4]!); }
-    expect(along).toBeLessThan(across * 0.6); for (let i = 0; i < one.length; i += 4) { expect(one[i]).toBeGreaterThanOrEqual(150); expect(one[i + 3]).toBe(255); }
+    expect(along).toBeLessThan(across * 0.6); for (let i = 0; i < one.length; i += 4) { expect(one[i]).toBeGreaterThanOrEqual(185); expect(one[i + 3]).toBe(255); }
   });
 
   it('lofted shapes carry UVs, so they receive a finish like every other operator', () => {

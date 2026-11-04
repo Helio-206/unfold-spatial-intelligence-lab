@@ -103,5 +103,12 @@ export function explodeOffsets(plan: SpatialPlanV2, m: Measures, amount: number,
     const dir = distance > span * 1e-6 ? delta.divideScalar(distance) : fallbackDir(c.id);
     out.set(c.id, dir.multiplyScalar(k * (0.25 + 0.75 * Math.min(1, distance / (0.5 * span)))));
   }
+  // Nothing may sink through the floor the assembly stood on: parts that sit below their parent would be pushed under it. If any would, the whole
+  // arrangement (every top-level part, so children follow) is lifted by exactly the needed amount. Linear in `amount`, so every intermediate amount is also safe.
+  const floorY = Math.min(...[...m.values()].map((c) => c.box.min.y)); let lowest = Infinity;
+  const worldOffsetY = (id: string): number => { let sum = 0, cursor: string | null = id; while (cursor) { sum += out.get(cursor)?.y ?? 0; cursor = plan.components.find((c) => c.id === cursor)?.parentId ?? null; } return sum; };
+  for (const [id, c] of m) lowest = Math.min(lowest, c.box.min.y + worldOffsetY(id));
+  const lift = Number.isFinite(lowest) ? Math.max(0, floorY - lowest) : 0;
+  if (lift > 0) for (const id of rootIds) out.get(id)!.y += lift;
   return out;
 }

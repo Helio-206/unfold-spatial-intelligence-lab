@@ -16,7 +16,7 @@ type Shape = Extract<GeometryNodeV2, { type: 'shape' }>;
 const shape = (key: string, operator: Shape['operator'], parameters: Record<string, unknown>, material: MaterialV2, transform = tf(), repeat: Shape['repeat'] = null): Shape => ({ type: 'shape', key, operator, parameters, transform, repeat, material });
 const group = (key: string, children: GeometryNodeV2[], transform = tf()): GeometryNodeV2 => ({ type: 'group', key, transform, repeat: null, children });
 const tube = (key: string, points: V3[], radius: number, material: MaterialV2, transform = tf()) => shape(key, 'tube', { points, radius, tubularSegments: Math.max(16, points.length * 12), radialSegments: 10 }, material, transform);
-const component = (id: string, label: string, geometry: GeometryNodeV2, transform = tf(), evidence = 'Hand-authored fixture standing in for a model plan.') => ({ id, label, parentId: null, geometry, transform, provenance: { geometry: 'design_approximation' as const, transform: 'design_approximation' as const, material: 'design_approximation' as const, evidence } });
+const component = (id: string, label: string, geometry: GeometryNodeV2, transform = tf(), evidence = 'Hand-authored fixture standing in for a model plan.', parentId: string | null = null) => ({ id, label, parentId, geometry, transform, provenance: { geometry: 'design_approximation' as const, transform: 'design_approximation' as const, material: 'design_approximation' as const, evidence } });
 
 function finish(title: string, instruction: string, components: ReturnType<typeof component>[], unknowns: string[]): SpatialPlanV2 {
   return validateSpatialPlanV2({ contract: 'unfold.spatial-plan.v2', source: { kind: 'text', sha256: createHash('sha256').update(instruction).digest('hex') }, title, units: 'unitless', presentationProfile: 'neutral', components, relations: [], constraints: [], unknowns: ['Hand-authored fixture, not a Meta response.', 'Physical dimensions are unknown; proportions are conceptual.', ...unknowns] });
@@ -86,4 +86,34 @@ export function bicycleReply() {
     ])),
   ];
   return replyFromPlan(finish('Bicycle (hand-authored fixture)', 'Build a bicycle.', components, ['Chain, brakes, cables and gears are not modelled.']));
+}
+
+/**
+ * A pendulum clock built ONLY from what the real Meta run of PR #25 contained: 8 components (case, crown, base, two pairs of feet, dial, hands,
+ * pendulum), the operators rounded_box, sphere, cylinder and tube, flat orange-brown wood colours, and the visible fault that the feet float off the plinth.
+ * That run's normalised plan was not committed, so this is a hand-authored reproduction to give the new presentation layer a comparable, primitive-only input.
+ * It is NOT the Meta output.
+ */
+export function clockLikeReply() {
+  const evidence = 'Hand-authored fixture that reproduces the component list, operators and visible faults of the real Meta run of PR #25 (its plan was not kept). Not Meta output.';
+  const wood = mat('organic', '#c9581f', 0.7, 0), dark = mat('organic', '#5c3b25', 0.7, 0), dialMat = mat('neutral', '#d9d9d6', 0.5, 0), black = mat('neutral', '#101010', 0.5, 0), brass = mat('metal', '#b8892b', 0.3, 0.9);
+  const rot = (x: number): V3 => [x, 0, 0];
+  const components = [
+    component('clock-case', 'tall wooden case body', shape('case-body', 'rounded_box', { dimensions: [1.5, 4.2, 1.0], bevelM: 0.05, segments: 3 }, wood), tf([0, 3.4, 0]), evidence),
+    component('clock-crown', 'top crown pediment', shape('crown-shape', 'rounded_box', { dimensions: [1.8, 0.45, 1.2], bevelM: 0.05, segments: 3 }, dark), tf([0, 2.3, 0]), evidence, 'clock-case'),
+    component('clock-base', 'bottom plinth base', shape('base-shape', 'rounded_box', { dimensions: [1.9, 0.5, 1.3], bevelM: 0.05, segments: 3 }, dark), tf([0, -1.95, 0]), evidence, 'clock-case'),
+    component('feet-front', 'front bun feet pair', shape('foot-front-shape', 'sphere', { radius: 0.15, widthSegments: 24, heightSegments: 16 }, dark, tf(), { kind: 'linear', count: 2, axis: 'x', spacingOrRadius: 1.3 }), tf([0, -2.5, 0.45]), evidence, 'clock-case'),
+    component('feet-back', 'back bun feet pair', shape('foot-back-shape', 'sphere', { radius: 0.15, widthSegments: 24, heightSegments: 16 }, dark, tf(), { kind: 'linear', count: 2, axis: 'x', spacingOrRadius: 1.3 }), tf([0, -2.5, -0.45]), evidence, 'clock-case'),
+    component('clock-dial', 'round clock dial', shape('dial-shape', 'cylinder', { radiusTop: 0.55, radiusBottom: 0.55, height: 0.08, radialSegments: 48 }, dialMat, tf([0, 0, 0], rot(Math.PI / 2))), tf([0, 1.3, 0.52]), evidence, 'clock-case'),
+    component('clock-hands', 'dial hands set', group('hands', [
+      shape('hour-hand', 'tube', { points: [[0, 0, 0.06], [0.12, 0.25, 0.06]], radius: 0.022, tubularSegments: 8, radialSegments: 8 }, black),
+      shape('minute-hand', 'tube', { points: [[0, 0, 0.08], [-0.05, 0.4, 0.08]], radius: 0.016, tubularSegments: 8, radialSegments: 8 }, black),
+      shape('hand-pin', 'sphere', { radius: 0.04, widthSegments: 16, heightSegments: 12 }, black, tf([0, 0, 0.08])),
+    ]), tf(), evidence, 'clock-dial'),
+    component('clock-pendulum', 'brass pendulum rod and disc', group('pendulum', [
+      shape('pendulum-rod', 'tube', { points: [[0, 0.7, 0.58], [0, -1.5, 0.58]], radius: 0.02, tubularSegments: 8, radialSegments: 8 }, brass),
+      shape('pendulum-bob', 'cylinder', { radiusTop: 0.28, radiusBottom: 0.28, height: 0.06, radialSegments: 40 }, brass, tf([0, -1.55, 0.58], rot(Math.PI / 2))),
+    ]), tf(), evidence, 'clock-case'),
+  ];
+  return replyFromPlan(finish('grandfather pendulum clock - conceptual (hand-authored reproduction)', 'A grandfather pendulum clock: tall wooden case, round dial with hands, brass pendulum disc, and feet.', components, ['The real Meta plan of PR #25 was not kept; this reproduces its structure.']));
 }

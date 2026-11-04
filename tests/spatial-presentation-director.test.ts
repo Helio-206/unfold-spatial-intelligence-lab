@@ -81,6 +81,16 @@ describe('presentation director: entrance', () => {
   });
 });
 
+describe('presentation director: on-demand rendering', () => {
+  it('asks for no frame while nothing animates, so the workspace can stay idle', () => {
+    const { director, render } = rig(); render.mockClear();
+    for (let i = 0; i < 50; i++) expect(director.update(16)).toBe(false);
+    expect(render).not.toHaveBeenCalled();
+    director.playEntrance(); render.mockClear(); director.update(16); expect(render).toHaveBeenCalled();
+    runUntil(director, () => director.state.phase !== 'entering'); render.mockClear(); for (let i = 0; i < 20; i++) director.update(16); expect(render).not.toHaveBeenCalled();
+  });
+});
+
 describe('presentation director: focus', () => {
   it('dims every other component, leaves the focused one, emits a focus cue, and restores colours exactly', () => {
     const { director, root, cues } = rig(), before = colours(root);

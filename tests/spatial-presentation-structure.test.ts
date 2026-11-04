@@ -87,6 +87,14 @@ describe('exploded view offsets', () => {
     expect(explodeOffsets(big, large.m, 0.6).get('cap')!.length() / explodeOffsets(a, small.m, 0.6).get('cap')!.length()).toBeCloseTo(100, 0); small.done(); large.done();
   });
 
+  it('never pushes any part below the floor the assembly stood on, at any amount (parts below their parent lift the whole arrangement)', () => {
+    const p = plan([part('case', [1.5, 4, 1], [0, 3, 0]), part('plinth', [2, 0.5, 1.4], [0, -2.2, 0], 'case'), part('foot', [0.3, 0.3, 0.3], [0.5, -2.65, 0], 'case')]);
+    const { m, done } = measured(p), floor = Math.min(...[...m.values()].map((c) => c.box.min.y));
+    const world = (id: string, offsets: Map<string, Vector3>) => { let sum = new Vector3(), cursor: string | null = id; while (cursor) { sum = sum.add(offsets.get(cursor) ?? new Vector3()); cursor = p.components.find((c) => c.id === cursor)?.parentId ?? null; } return sum; };
+    for (const amount of [0.25, 0.5, 1]) { const offsets = explodeOffsets(p, m, amount); for (const [id, c] of m) expect(c.box.min.y + world(id, offsets).y).toBeGreaterThanOrEqual(floor - 1e-9); }
+    expect(explodeOffsets(p, m, 0).get('case')!.length()).toBe(0); done();
+  });
+
   it('never returns NaN when a child sits exactly on its parent centre', () => {
     const p = plan([part('outer', [2, 2, 2], [0, 1, 0]), part('inner', [1, 1, 1], [0, 1, 0], 'outer')]), { m, done } = measured(p);
     for (const v of explodeOffsets(p, m, 1).values()) expect(Number.isFinite(v.x + v.y + v.z)).toBe(true);

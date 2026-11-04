@@ -1,0 +1,530 @@
+{
+  "browser": "Chromium (system) + SwiftShader",
+  "viewport": "1440x900",
+  "objects": {
+    "clock-like": {
+      "fixture": "clock-like",
+      "pr25": "pr25-clock-like.png",
+      "pr25Errors": [],
+      "sequence": [
+        {
+          "order": 0,
+          "id": "clock-case",
+          "reason": "Grounded start: the lowest of the top-level parts, the largest when level."
+        },
+        {
+          "order": 1,
+          "id": "clock-base",
+          "reason": "Child of tall wooden case body, built where it touches it."
+        },
+        {
+          "order": 2,
+          "id": "clock-crown",
+          "reason": "Child of tall wooden case body, built where it touches it."
+        },
+        {
+          "order": 3,
+          "id": "clock-dial",
+          "reason": "Child of tall wooden case body, built where it touches it."
+        },
+        {
+          "order": 4,
+          "id": "clock-pendulum",
+          "reason": "Child of tall wooden case body, built where it touches it."
+        },
+        {
+          "order": 5,
+          "id": "clock-hands",
+          "reason": "Child of round clock dial, built where it touches it."
+        },
+        {
+          "order": 6,
+          "id": "feet-back",
+          "reason": "Nearest remaining part to what is built (bottom plinth base)."
+        },
+        {
+          "order": 7,
+          "id": "feet-front",
+          "reason": "Nearest remaining part to what is built (bottom plinth base)."
+        }
+      ],
+      "pointsOfInterest": [
+        {
+          "id": "poi:overview",
+          "kind": "overview",
+          "label": "grandfather pendulum clock - conceptual (hand-authored reproduction)",
+          "why": "The whole assembly."
+        },
+        {
+          "id": "poi:clock-case",
+          "kind": "component",
+          "label": "tall wooden case body",
+          "why": "Carries 6 other parts."
+        },
+        {
+          "id": "poi:clock-base",
+          "kind": "component",
+          "label": "bottom plinth base",
+          "why": "One of the larger separate parts."
+        },
+        {
+          "id": "poi:clock-base+clock-case",
+          "kind": "joint",
+          "label": "bottom plinth base / tall wooden case body",
+          "why": "Where two related parts meet (their bounding boxes touch)."
+        },
+        {
+          "id": "poi:clock-crown+clock-case",
+          "kind": "joint",
+          "label": "top crown pediment / tall wooden case body",
+          "why": "Where two related parts meet (their bounding boxes touch)."
+        },
+        {
+          "id": "poi:clock-dial",
+          "kind": "component",
+          "label": "round clock dial",
+          "why": "One of the larger separate parts."
+        },
+        {
+          "id": "poi:feet-back",
+          "kind": "component",
+          "label": "back bun feet pair",
+          "why": "A group repeated 2 times."
+        },
+        {
+          "id": "poi:feet-front",
+          "kind": "component",
+          "label": "front bun feet pair",
+          "why": "A group repeated 2 times."
+        }
+      ],
+      "filmstrip": [
+        "new-clock-like-entrance-01.png",
+        "new-clock-like-entrance-03.png",
+        "new-clock-like-entrance-06.png",
+        "new-clock-like-entrance-08.png"
+      ],
+      "final": "new-clock-like-final.png",
+      "cues": [
+        {
+          "id": "establish:1",
+          "kind": "establish",
+          "durationMs": 1100,
+          "reason": "Opening shot: the object arrives into a wider frame."
+        },
+        {
+          "id": "follow:2",
+          "kind": "follow",
+          "durationMs": 1200,
+          "reason": "Follows the build: frames the parts placed so far."
+        },
+        {
+          "id": "overview:3",
+          "kind": "overview",
+          "durationMs": 1300,
+          "reason": "The last part is in place: settles on the hero view."
+        }
+      ],
+      "exploded": "new-clock-like-exploded.png",
+      "explodedState": {
+        "phase": "exploded",
+        "progress": 1,
+        "focusId": null,
+        "exploded": 1,
+        "poiIndex": null,
+        "shown": 8,
+        "total": 8,
+        "reducedMotion": false,
+        "notice": "Vista explodida · visualização. As peças foram afastadas só para as mostrar; o objecto não se move assim.",
+        "active": [
+          "exploded view",
+          "PBR finish"
+        ]
+      },
+      "afterExplodeNotice": null,
+      "focus": "new-clock-like-focus.png",
+      "tour": "new-clock-like-tour.png",
+      "tourState": {
+        "phase": "touring",
+        "progress": 1,
+        "focusId": null,
+        "exploded": 0,
+        "poiIndex": 2,
+        "shown": 8,
+        "total": 8,
+        "reducedMotion": false,
+        "notice": null,
+        "active": [
+          "dim",
+          "PBR finish"
+        ]
+      },
+      "editingPhase": "editing",
+      "gpu": {
+        "before": {
+          "geometries": 15,
+          "textures": 10,
+          "programs": 11
+        },
+        "afterDispose": {
+          "geometries": 15,
+          "textures": 8,
+          "programs": 14
+        },
+        "note": "textures/geometries counted by the Foundry renderer; programs may grow (cached shader variants), they are not leaks"
+      },
+      "errors": [],
+      "reducedMotion": {
+        "result": "completed",
+        "phase": "exploring",
+        "cueDurations": [
+          0
+        ]
+      }
+    },
+    "bicycle": {
+      "fixture": "bicycle",
+      "pr25": "pr25-bicycle.png",
+      "pr25Errors": [],
+      "sequence": [
+        {
+          "order": 0,
+          "id": "front-wheel",
+          "reason": "Grounded start: the lowest of the top-level parts, the largest when level."
+        },
+        {
+          "order": 1,
+          "id": "frame",
+          "reason": "Touches Front wheel, which is already in place."
+        },
+        {
+          "order": 2,
+          "id": "fork",
+          "reason": "Touches Front wheel, which is already in place."
+        },
+        {
+          "order": 3,
+          "id": "rear-wheel",
+          "reason": "Touches Frame, which is already in place."
+        },
+        {
+          "order": 4,
+          "id": "drivetrain",
+          "reason": "Touches Frame, which is already in place."
+        },
+        {
+          "order": 5,
+          "id": "saddle",
+          "reason": "Touches Frame, which is already in place."
+        }
+      ],
+      "pointsOfInterest": [
+        {
+          "id": "poi:overview",
+          "kind": "overview",
+          "label": "Bicycle (hand-authored fixture)",
+          "why": "The whole assembly."
+        },
+        {
+          "id": "poi:front-wheel",
+          "kind": "component",
+          "label": "Front wheel",
+          "why": "A group repeated 28 times."
+        },
+        {
+          "id": "poi:frame",
+          "kind": "component",
+          "label": "Frame",
+          "why": "A large part (26% of the assembly's bounding volume)."
+        },
+        {
+          "id": "poi:fork",
+          "kind": "component",
+          "label": "Fork and steering",
+          "why": "A large part (23% of the assembly's bounding volume)."
+        },
+        {
+          "id": "poi:rear-wheel",
+          "kind": "component",
+          "label": "Rear wheel",
+          "why": "A group repeated 28 times."
+        },
+        {
+          "id": "poi:drivetrain",
+          "kind": "component",
+          "label": "Crank and pedals",
+          "why": "One of the larger separate parts."
+        }
+      ],
+      "filmstrip": [
+        "new-bicycle-entrance-01.png",
+        "new-bicycle-entrance-02.png",
+        "new-bicycle-entrance-04.png",
+        "new-bicycle-entrance-06.png"
+      ],
+      "final": "new-bicycle-final.png",
+      "cues": [
+        {
+          "id": "establish:1",
+          "kind": "establish",
+          "durationMs": 1100,
+          "reason": "Opening shot: the object arrives into a wider frame."
+        },
+        {
+          "id": "follow:2",
+          "kind": "follow",
+          "durationMs": 1200,
+          "reason": "Follows the build: frames the parts placed so far."
+        },
+        {
+          "id": "overview:3",
+          "kind": "overview",
+          "durationMs": 1300,
+          "reason": "The last part is in place: settles on the hero view."
+        }
+      ],
+      "exploded": "new-bicycle-exploded.png",
+      "explodedState": {
+        "phase": "exploded",
+        "progress": 1,
+        "focusId": null,
+        "exploded": 1,
+        "poiIndex": null,
+        "shown": 6,
+        "total": 6,
+        "reducedMotion": false,
+        "notice": "Vista explodida · visualização. As peças foram afastadas só para as mostrar; o objecto não se move assim.",
+        "active": [
+          "exploded view",
+          "PBR finish"
+        ]
+      },
+      "afterExplodeNotice": null,
+      "focus": "new-bicycle-focus.png",
+      "tour": "new-bicycle-tour.png",
+      "tourState": {
+        "phase": "touring",
+        "progress": 1,
+        "focusId": null,
+        "exploded": 0,
+        "poiIndex": 2,
+        "shown": 6,
+        "total": 6,
+        "reducedMotion": false,
+        "notice": null,
+        "active": [
+          "dim",
+          "PBR finish"
+        ]
+      },
+      "editingPhase": "editing",
+      "gpu": {
+        "before": {
+          "geometries": 31,
+          "textures": 12,
+          "programs": 13
+        },
+        "afterDispose": {
+          "geometries": 31,
+          "textures": 7,
+          "programs": 17
+        },
+        "note": "textures/geometries counted by the Foundry renderer; programs may grow (cached shader variants), they are not leaks"
+      },
+      "errors": [],
+      "reducedMotion": {
+        "result": "completed",
+        "phase": "exploring",
+        "cueDurations": [
+          0
+        ]
+      }
+    },
+    "jet-engine": {
+      "fixture": "jet-engine",
+      "pr25": "pr25-jet-engine.png",
+      "pr25Errors": [],
+      "sequence": [
+        {
+          "order": 0,
+          "id": "nacelle",
+          "reason": "Grounded start: the lowest of the top-level parts, the largest when level."
+        },
+        {
+          "order": 1,
+          "id": "core",
+          "reason": "Touches Nacelle (cowl), which is already in place."
+        },
+        {
+          "order": 2,
+          "id": "bypass-vanes",
+          "reason": "Touches Nacelle (cowl), which is already in place."
+        },
+        {
+          "order": 3,
+          "id": "fan-blades",
+          "reason": "Touches Nacelle (cowl), which is already in place."
+        },
+        {
+          "order": 4,
+          "id": "pylon",
+          "reason": "Touches Nacelle (cowl), which is already in place."
+        },
+        {
+          "order": 5,
+          "id": "inlet-lip",
+          "reason": "Touches Nacelle (cowl), which is already in place."
+        },
+        {
+          "order": 6,
+          "id": "spinner",
+          "reason": "Touches Nacelle (cowl), which is already in place."
+        },
+        {
+          "order": 7,
+          "id": "exhaust-cone",
+          "reason": "Touches Nacelle (cowl), which is already in place."
+        }
+      ],
+      "pointsOfInterest": [
+        {
+          "id": "poi:overview",
+          "kind": "overview",
+          "label": "Turbofan engine (hand-authored fixture)",
+          "why": "The whole assembly."
+        },
+        {
+          "id": "poi:nacelle",
+          "kind": "component",
+          "label": "Nacelle (cowl)",
+          "why": "A large part (75% of the assembly's bounding volume)."
+        },
+        {
+          "id": "poi:core",
+          "kind": "component",
+          "label": "Engine core",
+          "why": "One of the larger separate parts."
+        },
+        {
+          "id": "poi:bypass-vanes",
+          "kind": "component",
+          "label": "Outlet guide vanes",
+          "why": "A group repeated 14 times."
+        },
+        {
+          "id": "poi:fan-blades",
+          "kind": "component",
+          "label": "Fan blades",
+          "why": "A group repeated 18 times."
+        },
+        {
+          "id": "poi:pylon",
+          "kind": "component",
+          "label": "Pylon",
+          "why": "One of the larger separate parts."
+        }
+      ],
+      "filmstrip": [
+        "new-jet-engine-entrance-01.png",
+        "new-jet-engine-entrance-03.png",
+        "new-jet-engine-entrance-06.png",
+        "new-jet-engine-entrance-08.png"
+      ],
+      "final": "new-jet-engine-final.png",
+      "cues": [
+        {
+          "id": "establish:1",
+          "kind": "establish",
+          "durationMs": 1100,
+          "reason": "Opening shot: the object arrives into a wider frame."
+        },
+        {
+          "id": "follow:2",
+          "kind": "follow",
+          "durationMs": 1200,
+          "reason": "Follows the build: frames the parts placed so far."
+        },
+        {
+          "id": "overview:3",
+          "kind": "overview",
+          "durationMs": 1300,
+          "reason": "The last part is in place: settles on the hero view."
+        }
+      ],
+      "exploded": "new-jet-engine-exploded.png",
+      "explodedState": {
+        "phase": "exploded",
+        "progress": 1,
+        "focusId": null,
+        "exploded": 1,
+        "poiIndex": null,
+        "shown": 8,
+        "total": 8,
+        "reducedMotion": false,
+        "notice": "Vista explodida · visualização. As peças foram afastadas só para as mostrar; o objecto não se move assim.",
+        "active": [
+          "exploded view",
+          "PBR finish"
+        ]
+      },
+      "afterExplodeNotice": null,
+      "focus": "new-jet-engine-focus.png",
+      "tour": "new-jet-engine-tour.png",
+      "tourState": {
+        "phase": "touring",
+        "progress": 1,
+        "focusId": null,
+        "exploded": 0,
+        "poiIndex": 2,
+        "shown": 8,
+        "total": 8,
+        "reducedMotion": false,
+        "notice": null,
+        "active": [
+          "dim",
+          "PBR finish"
+        ]
+      },
+      "editingPhase": "editing",
+      "gpu": {
+        "before": {
+          "geometries": 12,
+          "textures": 11,
+          "programs": 11
+        },
+        "afterDispose": {
+          "geometries": 12,
+          "textures": 8,
+          "programs": 14
+        },
+        "note": "textures/geometries counted by the Foundry renderer; programs may grow (cached shader variants), they are not leaks"
+      },
+      "errors": [],
+      "reducedMotion": {
+        "result": "completed",
+        "phase": "exploring",
+        "cueDurations": [
+          0
+        ]
+      }
+    }
+  },
+  "foundryExcavator": "foundry-excavator.png",
+  "foundryErrors": [],
+  "excavatorRegression": {
+    "pr25Sha256": "fc373bc1fdff3e7d49c9e8808830cb18d124f4f2a6fba09b83b04719a7c9f0b2",
+    "thisBranchSha256": "fc373bc1fdff3e7d49c9e8808830cb18d124f4f2a6fba09b83b04719a7c9f0b2",
+    "identicalBytes": true
+  },
+  "mobile": {
+    "final": "mobile-clock-final.png",
+    "exploded": "mobile-clock-exploded.png",
+    "errors": []
+  },
+  "updateCost": {
+    "idleMsPerCall": 0.0001,
+    "entranceMsPerFrame": 0.1376,
+    "entranceSimulatedFrames": 340,
+    "components": 8
+  }
+}

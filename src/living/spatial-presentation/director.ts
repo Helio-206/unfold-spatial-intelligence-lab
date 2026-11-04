@@ -224,6 +224,8 @@ export function createPresentationDirector(options: PresentationOptions): Presen
     get sequence() { return bound.steps; },
     update(dtMs) {
       if (disposed || editing) return false;
+      // Nothing running: no work, no state publication, no render request (the workspace renders on demand and must be able to idle).
+      if (!entrance && !explodeRun && focusMix === focusTarget && !(tour && !tour.manual && tour.ctl)) return false;
       let active = false;
       if (entrance) { stepEntrance(dtMs); active = entrance !== null; }
       if (explodeRun) { explodeRun.t += dtMs; const u = clamp01(explodeRun.t / explodeRun.duration); explodeAmount = explodeRun.from + (explodeRun.to - explodeRun.from) * easeInOut(u); if (u >= 1) { explodeAmount = explodeRun.to; explodeRun = null; } applyTransforms(); active = active || explodeRun !== null; }
