@@ -164,7 +164,13 @@ function loadSessionStore(file: string | undefined): Map<string, StoredV2Session
     if (parsed.contract !== SPATIAL_SESSION_STORE_CONTRACT || !Array.isArray(parsed.sessions)) throw new Error('session store contract mismatch');
     const now = Date.now();
     for (const raw of parsed.sessions as StoredV2Session[]) {
-      if (!raw || typeof raw.id !== 'string' || !raw.plan || !Number.isSafeInteger(raw.revision) || !Array.isArray(raw.history) || !Array.isArray(raw.transactions)) throw new Error('stored session invalid');
+      if (!raw || typeof raw.id !== 'string' || !raw.plan || !Number.isSafeInteger(raw.revision) || !Array.isArray(raw.history) || !Array.isArray(raw.transactions) || !Array.isArray(raw.undoReceipts)) throw new Error('stored session invalid');
+      // Plans and receipts are validated against their actual contracts; anything else quarantines the whole document rather than loading a half-valid session.
+      validateSpatialPlanV2(raw.plan);
+      for (const entry of raw.history) validateSpatialPlanV2(entry);
+      for (const [key, record] of [...raw.transactions, ...raw.undoReceipts]) {
+        if (typeof key !== 'string' || !record || !/^[a-f0-9]{64}$/.test(record.fingerprint) || !record.body || typeof record.body !== 'object' || typeof (record.body as { contract?: unknown }).contract !== 'string') throw new Error('stored receipt invalid');
+      }
       if (raw.expires < now) continue; // expired while the server was down: not resurrected
       sessions.set(raw.id, { ...raw, policy: raw.policy?.mode === 'review_fenced' && typeof raw.policy.reviewId === 'string' ? raw.policy : { mode: 'legacy' } });
     }
@@ -789,7 +795,7 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
             try { transaction = parseSpatialTransactionV2(body); } catch (error) { writeJson(response, 400, { error: { code: error instanceof Error ? error.message : 'SPATIAL_V2_TRANSACTION_INVALID', message: 'Transacção espacial V2 inválida.' } }, origin); return; }
             if (current.policy.mode === 'review_fenced' && !transaction.reviewPrecondition) { writeJson(response, 403, { error: { code: 'SPATIAL_REVIEW_POLICY_REQUIRES_FENCE', message: 'Esta sessão é review_fenced: mutações exigem a precondição de revisão vinculada à sessão.', currentRevision: current.revision } }, origin); return; }
             if (current.policy.mode === 'review_fenced' && transaction.reviewPrecondition!.reviewId !== current.policy.reviewId) { writeJson(response, 409, { error: { code: 'SPATIAL_REVIEW_PRECONDITION_STALE', message: 'A revisão do fence não é a revisão vinculada a esta sessão.', currentRevision: current.revision } }, origin); return; }
-            const fingerprint = createHash('sha256').update(stableStringify({ baseRevision: transaction.baseRevision, operations: transaction.operations, provenance: transaction.provenance, reviewPrecondition: transaction.reviewPrecondition ?? null })).digest('hex');
+            const fingerprint = createHash('sha256').update(stableStringify({ baseRevision: transaction.baseRevision, operations: transaction.operations, provenance: transaction.provenance, reviewPrecondition: transaction.reviewPrecondition ?? null, approvalActor: transaction.approvalActor ?? null })).digest('hex');
             const existing = current.transactions.get(transaction.idempotencyKey);
             if (existing) {
               if (existing.fingerprint !== fingerprint) { writeJson(response, 409, { error: { code: 'SPATIAL_V2_IDEMPOTENCY_KEY_CONFLICT', message: 'A chave de idempotência já foi usada com outro conteúdo.', currentRevision: current.revision } }, origin); return; }
@@ -845,13 +851,18 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
               }
               if (revisionConflict(current)) { writeJson(response, 409, { error: { code: 'SPATIAL_V2_REVISION_CONFLICT', message: 'A revisão base está desactualizada.', currentRevision: current.revision } }, origin); return; }
             }
+            const undoSnapshot = { plan: current.plan, revision: current.revision, history: [...current.history], pendingRefinement: current.pendingRefinement };
             const previous = current.history.pop();
             if (!previous) { writeJson(response, 409, { error: { code: 'SPATIAL_V2_UNDO_EMPTY', message: 'Não há operação V2 para desfazer.' } }, origin); return; }
             current.plan = previous; current.revision += 1; current.pendingRefinement = undefined;
             const compiled = compileSpatialPlanV2(current.plan); const constraints = evaluateSpatialConstraintsV2(current.plan, compiled.root); disposeCompiledSpatialPlan(compiled.root);
             const receiptBody = { contract: 'unfold.spatial-v2-review.v1', sessionId: candidate.sessionId, revision: current.revision, plan: current.plan, constraintReport: constraints, replayed: false, review: { status: 'undone', actorEvidence: 'client_asserted_unverified', authenticatedReviewer: false } };
             if (hasKey) rememberBounded(current.undoReceipts, candidate.idempotencyKey as string, { fingerprint, status: 200, body: structuredClone(receiptBody) as unknown as Record<string, unknown> });
-            try { persistSessions(); } catch { console.info(JSON.stringify({ event: 'spatial.session.persist_failed', route })); }
+            try { persistSessions(); } catch {
+              current.plan = undoSnapshot.plan; current.revision = undoSnapshot.revision; current.history = undoSnapshot.history; current.pendingRefinement = undoSnapshot.pendingRefinement;
+              if (hasKey) current.undoReceipts.delete(candidate.idempotencyKey as string);
+              writeJson(response, 500, { error: { code: 'SPATIAL_SESSION_PERSISTENCE_FAILED', message: 'A gravação durável falhou; o undo não foi cometido.', currentRevision: current.revision } }, origin); return;
+            }
             writeJson(response, 200, receiptBody, origin); return;
           }
           if (route === '/api/spatial/v2/operation' || route === '/api/spatial/v2/refine' || route === '/api/spatial/v2/edit') {
@@ -887,9 +898,13 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
             const originKind = route === '/api/spatial/v2/refine' || route === '/api/spatial/v2/edit' ? 'inferred' : declared;
             const next = applySpatialOperationV2(current.plan, operation, { origin: originKind, evidence: route === '/api/spatial/v2/refine' ? `Meta visual evaluation proposed operation ${operation.operationId}; model score is a hypothesis.` : route === '/api/spatial/v2/edit' ? `Muse Spark proposed operation ${operation.operationId}; user instruction is unverified.` : `Client-submitted operation ${operation.operationId}; human identity/review is unverified.${declaredEvidence ? ` Client note: ${declaredEvidence}` : ''}` });
             const compiled = compileSpatialPlanV2(next); const constraintReport = evaluateSpatialConstraintsV2(next, compiled.root); disposeCompiledSpatialPlan(compiled.root);
+            const opSnapshot = { plan: current.plan, revision: current.revision, history: [...current.history], refinementsUsed: current.refinementsUsed, pendingRefinement: current.pendingRefinement };
             current.history.push(current.plan); if (current.history.length > 50) current.history.shift(); current.plan = next; current.revision += 1;
             if (route === '/api/spatial/v2/refine') { current.refinementsUsed += 1; current.pendingRefinement = undefined; }
-            try { persistSessions(); } catch { console.info(JSON.stringify({ event: 'spatial.session.persist_failed', route })); }
+            try { persistSessions(); } catch {
+              current.plan = opSnapshot.plan; current.revision = opSnapshot.revision; current.history = opSnapshot.history; current.refinementsUsed = opSnapshot.refinementsUsed; current.pendingRefinement = opSnapshot.pendingRefinement;
+              writeJson(response, 500, { error: { code: 'SPATIAL_SESSION_PERSISTENCE_FAILED', message: 'A gravação durável falhou; a operação não foi cometida.', currentRevision: current.revision } }, origin); return;
+            }
             writeJson(response, 200, { contract: 'unfold.spatial-v2-review.v1', sessionId: candidate.sessionId, revision: current.revision, plan: next, operation, constraintReport, review: { status: route === '/api/spatial/v2/refine' ? 'model_refinement_applied' : 'applied', actorEvidence: 'client_asserted_unverified', authenticatedReviewer: false, operationId: operation.operationId }, ...(meta ? { meta } : {}), limitation: 'This declarative edit is validated structurally; it is not human authentication, mechanical verification, or physical validation.' }, origin); return;
           }
           if (route === '/api/spatial/v2/evaluate') {
@@ -1031,7 +1046,7 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
             const rawResponseSha256 = createHash('sha256').update(result.text, 'utf8').digest('hex');
             const rawResponseStored = persistSpatialRunEvidence(upstreamEvidence, { route, source, requestId: result.log.requestId ?? null, model: result.log.model ?? null, latencyMs: result.log.latencyMs ?? null, usage: (result.log as Record<string, unknown>).usage ?? null, rawResponseSha256, rawResponseText: result.text, normalizationNotes, normalizedPlan: plan });
             const sessionId = randomUUID(); spatialV2Sessions.set(sessionId, { plan, revision: 0, history: [], expires: now + SPATIAL_SESSION_TTL_MS, instruction, sourceKind: source.kind, refinementsUsed: 0, maxRefinements: Number(maxRefinements), policy: { mode: 'legacy' as const }, transactions: new Map(), undoReceipts: new Map() });
-            try { persistSessions(); } catch { /* a plan reply must not be lost to a persistence failure; the session stays volatile in memory */ }
+            try { persistSessions(); } catch { spatialV2Sessions.delete(sessionId); writeJson(response, 500, { error: { code: 'SPATIAL_SESSION_PERSISTENCE_FAILED', message: 'A gravação durável falhou; a sessão não foi criada.' } }, origin); return; }
             const operators = new Set<string>(); let nodeCount = 0; const collect = (node: SpatialPlanV2['components'][number]['geometry']) => { nodeCount++; if (node.type === 'group') node.children.forEach(collect); else operators.add(node.operator); }; plan.components.forEach((component) => collect(component.geometry));
             writeJson(response, 200, { contract: SPATIAL_PLAN_V2_CONTRACT, sessionId, revision: 0, plan, sceneSummary: { componentCount: plan.components.length, geometryNodeCount: nodeCount, operators: [...operators], constraintReady: constraintReport.ready }, constraintReport, constructionEvents: [{ type: 'scene_created', at: 0 }, ...plan.components.map((component, index) => ({ type: 'component_placed', at: index + 1, entityId: component.id, transform: component.transform })), { type: 'assembly_ready', at: plan.components.length + 1 }, { type: 'scene_revealed', at: plan.components.length + 2 }], meta: { ...result.log, rawResponseSha256, rawResponseStored, normalizationNotes }, limitations: ['Composição conceptual gerada por operadores geométricos; não constitui reconstrução métrica ou validada.', ...(source.kind === 'image' ? ['A fotografia não fornece escala física; dimensões e escala permanecem desconhecidas.'] : []), 'Perfis de apresentação não alteram a proveniência nem validam materiais reais.'] }, origin); return;
           }
