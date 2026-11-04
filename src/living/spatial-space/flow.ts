@@ -5,7 +5,8 @@ import linkIcon from 'lucide-static/icons/link.svg?raw';
 import saveIcon from 'lucide-static/icons/save.svg?raw';
 import undoIcon from 'lucide-static/icons/undo-2.svg?raw';
 import './space.css';
-import { adoptSpatialPlanV2, applySpatialPlanV2Operation, applySpatialPlanV2Transaction, createSpatialPlanV2, evaluateSpatialPlanV2, proposeSpatialEditV2, SpatialApiError, SpatialTransactionUnresolvedError, undoSpatialPlanV2, type SpatialPlanV2Reply } from '../../universal-spatial/api-client';
+import { adoptSpatialPlanV2, applySpatialPlanV2Operation, applySpatialPlanV2Transaction, createSpatialPlanV2, createSpatialReview, decideSpatialReview, evaluateSpatialPlanV2, getSpatialReview, listSpatialReviews, proposeSpatialEditV2, SpatialApiError, SpatialTransactionUnresolvedError, undoSpatialPlanV2, type SpatialPlanV2Reply } from '../../universal-spatial/api-client';
+import { effectiveDecisions, reviewSolverGate, type SpatialReviewRecord } from '../../universal-spatial/review-v1';
 import type { SpatialOperationV2, SpatialPlanV2 } from '../../universal-spatial/contracts-v2';
 import { checkFile } from '../experience/intake';
 import { canvasTranscoder, prepareImage, TranscodeError, type Transcoder } from '../unified-workspace/image-transcode';
@@ -87,6 +88,10 @@ export class SpaceFlow {
   /** Server session mirroring the Space on stage. Null when it could not be created or was lost; the reason is in `syncNote`. */
   session: { id: string; revision: number } | null = null;
   syncNote: string | null = null;
+  /** Persistent human-review record for the Space on stage (V4 E1). Decisions live on the server. */
+  relationReview: SpatialReviewRecord | null = null;
+  private reviewName = '';
+  get currentReviewId(): string | null { return this.relationReview?.reviewId ?? null; }
   savedId: string | null = null;
   readonly store: SpaceStore;
   private geometry: ProductGeometry | null = null;
@@ -174,7 +179,7 @@ export class SpaceFlow {
   private dropScene(): void {
     this.geometry?.dispose(); this.geometry = null;
     if (this.layer || this.atlas) { this.layer = null; this.atlas = null; this.options.workspace.clearMachine({ brandLabel: 'laboratório vazio', notices: [], extraTools: [] }); }
-    this.session = null; this.syncNote = null; this.presentationNotice = null;
+    this.session = null; this.syncNote = null; this.presentationNotice = null; this.relationReview = null;
   }
 
   // ------------------------------------------------------------------------------------------------ source
@@ -327,6 +332,75 @@ export class SpaceFlow {
     this.refreshContext(); this.updateComposer(); this.options.workspace.spaceChanged();
   }
 
+  // ------------------------------------------------------------------------------------------------ human review of relations (V4 E1)
+  /**
+   * Opens the review for the Space on stage: the saved record for this exact source is reopened when
+   * one exists (decisions survive refresh and server restart), otherwise a record is created from
+   * the current plan. The panel is experimental and only exists while a Space is built.
+   */
+  async openRelationReview(): Promise<void> {
+    const layer = this.layer; if (!layer) return;
+    this.attach();
+    try {
+      const fetchImpl = this.options.fetchImpl;
+      const summaries = await listSpatialReviews(layer.currentPlan.source.sha256, fetchImpl);
+      if (summaries[0]) { this.relationReview = (await getSpatialReview(summaries[0].reviewId, fetchImpl)).review; }
+      else {
+        const source = this.source;
+        const sourceBytes = source?.kind === 'text' ? { kind: 'text' as const, text: source.text } : source?.kind === 'image' ? { kind: 'image' as const, imageDataUrl: source.dataUrl } : undefined;
+        this.relationReview = (await createSpatialReview({ plan: layer.currentPlan, planRevision: this.session?.revision ?? 0, ...(sourceBytes ? { sourceBytes } : {}) }, fetchImpl)).review;
+      }
+    } catch (error) {
+      this.note = `Revisão de relações indisponível (${error instanceof SpatialApiError ? error.code : 'sem ligação ao servidor'}). Nada foi decidido nem alterado.`;
+      this.refreshContext(); return;
+    }
+    this.renderRelationReview();
+  }
+
+  private renderRelationReview(): void {
+    const record = this.relationReview, layer = this.layer; if (!record || !layer) return;
+    this.panel.hidden = false; this.panel.dataset.phase = 'relation-review';
+    const gate = reviewSolverGate(record);
+    const chip = (text: string, uncertain = false) => `<span class="u-chip ${uncertain ? 'u-chip--uncertain' : ''}">${esc(text)}</span>`;
+    const subjects = effectiveDecisions(record).map(({ subject, decision }) => `
+      <li class="sp-comp" data-decided="${decision ? 'keep' : 'none'}">
+        <div class="sp-comp-head"><b>${esc(subject.original.fromId)} → ${esc(subject.original.toId)}</b><code class="u-label">${esc(subject.subjectId)}</code></div>
+        <p class="u-small">${esc(subject.original.kind)} · ${esc(subject.uncertainty)}</p>
+        <div class="sp-comp-foot">${chip(subject.statementClass.replaceAll('_', ' '), subject.statementClass !== 'observed_evidence')}${chip(`geometria: ${subject.geometrySupport}`, subject.geometrySupport !== 'supported')}${decision ? chip(`decisão: ${decision.decision} · ${esc(decision.reviewer.displayName)} (não autenticado)`) : chip('por decidir', true)}</div>
+        <div class="sp-comp-foot">
+          <select data-review-correct-for="${esc(subject.subjectId)}" aria-label="Tipo corrigido">${['attached_to', 'contains', 'adjacent_to', 'aligned_with', 'connected_to'].map((kind) => `<option value="${kind}" ${subject.original.kind === kind ? 'selected' : ''}>${kind}</option>`).join('')}</select>
+          ${(['confirm', 'correct', 'reject', 'defer'] as const).map((kind) => `<button type="button" class="uw-link" data-review-decide="${kind}" data-subject="${esc(subject.subjectId)}">${kind === 'confirm' ? 'confirmar' : kind === 'correct' ? 'corrigir' : kind === 'reject' ? 'rejeitar' : 'adiar'}</button>`).join('')}
+        </div>
+      </li>`).join('');
+    const history = [...record.decisions].reverse().map((d) => `<li><b>${esc(d.decision)}</b> ${esc(d.subjectId)} · ${esc(d.reviewer.displayName)} · identidade não autenticada · ${esc(d.at)} · revisão da revisão ${d.reviewRevision}${d.correctedValue ? ` · corrigido para ${esc(d.correctedValue.kind)}` : ''}${d.note ? ` · ${esc(d.note)}` : ''}</li>`).join('');
+    this.panel.innerHTML = `<div class="sp-card sp-card--review"><div class="sp-head"><h1 class="sp-h1">Rever relações</h1><p class="u-label">registo ${esc(record.reviewId.slice(0, 8))}… · revisão ${record.reviewRevision} · revisão do plano ${record.planRevision}</p></div>
+      <p class="u-small">Relações declaradas pelo modelo e hipóteses de contacto são <b>propostas</b>, não factos. Confirmar, corrigir, rejeitar ou adiar fica gravado no servidor e sobrevive a recarregar a página. O solver V4 só pode usar o que aqui estiver decidido. O nome do revisor é afirmado por si: <b>não há autenticação</b> neste produto.</p>
+      <p class="u-small">Fonte: sha256 ${esc(record.source.sha256.slice(0, 16))}… · bytes ${record.source.byteVerified ? 'verificados pelo servidor ao receber os bytes' : 'não fornecidos (hash declarado no plano, não verificado)'}. Um digest prova identidade dos bytes, não a verdade física da fonte.</p>
+      <label class="sp-field"><span class="u-label">o seu nome (afirmado, não autenticado)</span><input id="review-name" type="text" maxlength="80" value="${esc(this.reviewName)}"></label>
+      ${record.unknowns.length ? `<details class="sp-unknowns"><summary class="u-label">Desconhecidos declarados (${record.unknowns.length})</summary><ul>${record.unknowns.map((u) => `<li>${esc(u)}</li>`).join('')}</ul></details>` : ''}
+      <ul class="sp-list" aria-label="Relações para rever">${subjects || '<li class="sp-comp">Sem relações declaradas nem hipóteses de contacto neste plano.</li>'}</ul>
+      <div class="sp-unknowns"><p class="u-label">Elegibilidade do solver V4</p><p class="u-small">${gate.eligible ? 'Sem bloqueios por contradições por decidir.' : `Bloqueado: ${esc(gate.blockers.join(', '))}`}<br>Impostas: ${esc(gate.enforcedSubjectIds.join(', ') || 'nenhuma')} · rejeitadas: ${esc(gate.rejectedSubjectIds.join(', ') || 'nenhuma')} · adiadas: ${esc(gate.deferredSubjectIds.join(', ') || 'nenhuma')} · override de contraditas: ${gate.allowContradicted ? 'permitido por decisões registadas' : 'não'}</p></div>
+      ${history ? `<details class="sp-unknowns" open><summary class="u-label">Decisões anteriores (${record.decisions.length})</summary><ul>${history}</ul></details>` : '<p class="u-small">Ainda sem decisões.</p>'}
+      <div class="sp-row"><button class="u-btn u-btn--outline" type="button" data-review-close>Voltar ao Space</button></div></div>`;
+  }
+
+  private async decideRelation(subjectId: string, decision: 'confirm' | 'correct' | 'reject' | 'defer', root: HTMLElement): Promise<void> {
+    const record = this.relationReview, layer = this.layer; if (!record || !layer) return;
+    const name = (this.panel.querySelector<HTMLInputElement>('#review-name')?.value ?? '').trim();
+    if (!name) { this.note = 'Indique o seu nome (afirmado, não autenticado) antes de decidir.'; this.renderRelationReview(); return; }
+    this.reviewName = name;
+    const correctedValue = decision === 'correct' ? (() => { const kind = root.querySelector<HTMLSelectElement>(`[data-review-correct-for="${CSS.escape(subjectId)}"]`)?.value ?? 'adjacent_to'; const subject = record.subjects.find((item) => item.subjectId === subjectId)!; return { kind, fromId: subject.original.fromId, toId: subject.original.toId }; })() : null;
+    try {
+      this.relationReview = (await decideSpatialReview({ reviewId: record.reviewId, baseReviewRevision: record.reviewRevision, subjectId, decision, correctedValue, reviewerName: name, planRevision: this.session?.revision ?? record.planRevision }, this.options.fetchImpl)).review;
+    } catch (error) {
+      this.note = error instanceof SpatialApiError && error.status === 409 ? 'A revisão mudou entretanto; recarreguei o registo antes de decidir de novo.' : `Não foi possível gravar a decisão (${error instanceof SpatialApiError ? error.code : 'sem ligação'}).`;
+      if (error instanceof SpatialApiError && error.status === 409) { try { this.relationReview = (await getSpatialReview(record.reviewId, this.options.fetchImpl)).review; } catch { /* keep the stale panel; the note says why */ } }
+    }
+    this.renderRelationReview(); this.refreshContext();
+  }
+
+  closeRelationReview(): void { this.panel.hidden = true; this.panel.replaceChildren(); if (this.phase === 'built') this.updateComposer(); }
+
   // ------------------------------------------------------------------------------------------------ save
   async save(): Promise<boolean> {
     const layer = this.layer, run = this.run; if (!layer || !run) return false;
@@ -463,6 +537,7 @@ export class SpaceFlow {
       { id: 'space-eval', label: 'Avaliar vista', hint: this.session ? 'a Meta olha para a imagem (chamada paga; só uma hipótese)' : 'indisponível: sem sessão no servidor', icon: eyeIcon, run: () => void this.evaluateView() },
       { id: 'space-gaps', label: 'Fechar folgas', hint: 'o solver propõe posições; ficam como inferidas e desfazíveis', icon: linkIcon, run: () => void layer.closeGaps().then((r) => { this.note = r.applied ? `Solver: ${r.applied} folga(s) fechada(s) em ${r.iterations} iteração(ões). Posições marcadas como inferidas.` : 'Nada que o solver possa fechar.'; this.refreshContext(); }) },
       { id: 'space-undo', label: 'Desfazer', hint: layer.canUndo ? `${layer.editCount} edição(ões) para desfazer` : 'sem edições', icon: undoIcon, run: () => void layer.undo().then((ok) => { this.note = ok ? 'Última edição desfeita.' : 'Não há nada para desfazer.'; this.refreshContext(); }) },
+      { id: 'space-review', label: 'Rever relações', hint: 'decisões humanas persistentes; o solver só usa o que estiver decidido', icon: linkIcon, run: () => void this.openRelationReview() },
       { id: 'space-library', label: 'Os meus Spaces', hint: 'guardados neste navegador', icon: folderIcon, run: () => this.openLibrary() },
       { id: 'space-exit', label: 'Voltar ao laboratório', hint: 'sai dos espaços', icon: arrowLeftIcon, run: () => this.exit() },
     ];
@@ -556,6 +631,9 @@ export class SpaceFlow {
   // ------------------------------------------------------------------------------------------------ events
   private onClick(event: Event): void {
     const target = event.target as HTMLElement;
+    const reviewDecide = target.closest<HTMLElement>('[data-review-decide]');
+    if (reviewDecide) { void this.decideRelation(reviewDecide.dataset.subject!, reviewDecide.dataset.reviewDecide as 'confirm' | 'correct' | 'reject' | 'defer', this.panel); return; }
+    if (target.closest('[data-review-close]')) { this.closeRelationReview(); return; }
     const decideButton = target.closest<HTMLElement>('[data-sp-decide]');
     if (decideButton) { this.decide(decideButton.dataset.id!, decideButton.dataset.spDecide as 'keep' | 'reject'); return; }
     const open = target.closest<HTMLElement>('[data-sp-open]'); if (open) { void this.openRecord(open.dataset.spOpen!); return; }

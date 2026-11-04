@@ -24,11 +24,10 @@ try {
     const evidence=evidenceToJSON(renderedEvidence(truthPlan,6,64),'synthetic rendered evidence; not a photo');
     let ticks=0; const timer=setInterval(()=>ticks++,50);
     try {
-      let outcome=await window.__v4.run({sourceSha256:layer.currentPlan.source.sha256,evidence,allowContradicted:true});
+      let outcome=await window.__v4.run({sourceSha256:layer.currentPlan.source.sha256,evidence});
       const initial={status:outcome.status,refusals:outcome.refusals,hypotheses:outcome.hypotheses.map(h=>h.id)};
-      // Test-only simulated reviewer decision; the product never confirms hypotheses automatically.
-      const simulatedConfirmation=outcome.status==='refused' && outcome.hypotheses.length>0;
-      if(simulatedConfirmation) outcome=await window.__v4.run({sourceSha256:layer.currentPlan.source.sha256,evidence,allowContradicted:true,confirmed:initial.hypotheses});
+      // E1: no caller-supplied confirmation flags exist. Without a persistent review record the solver must not promote hypotheses, so a refusal here is correct product behaviour.
+       const simulatedConfirmation=false;
       return {initial,status:outcome.status,refusals:outcome.refusals,proposal:!!outcome.proposal,unchanged:before===JSON.stringify(layer.currentPlan),ticks,before,simulatedConfirmation};
     }
     finally {clearInterval(timer)}
@@ -39,7 +38,7 @@ try {
     const stale = await page.evaluate(async truthPlan => {
       const {renderedEvidence,evidenceToJSON}=await import('/src/universal-spatial/reconstruction/evidence.ts');
       const l=window.__space.layer,w=window.__workspace, evidence=evidenceToJSON(renderedEvidence(truthPlan,6,64),'synthetic fixture');
-      const pending=window.__v4.run({sourceSha256:l.currentPlan.source.sha256,evidence,allowContradicted:true}).then(()=> 'accepted', e=>e.message);
+      const pending=window.__v4.run({sourceSha256:l.currentPlan.source.sha256,evidence}).then(()=> 'accepted', e=>e.message);
       w.select(l.currentPlan.components[0].id); l.proposeEdit('x+'); l.authorise(true); await l.applyEdit();
       const status=await pending; await l.undo(); return status;
     }, truth.plan);

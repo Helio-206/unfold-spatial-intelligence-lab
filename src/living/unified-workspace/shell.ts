@@ -74,7 +74,7 @@ export function mountLivingShell(app: HTMLElement): void {
     onActive: (active) => { const root = experienceRoot(); if (root) root.hidden = active; },
     onExit: () => { const root = experienceRoot(); if (root) root.hidden = false; api?.restart(); },
   });
-  const experimentalV4 = debug && params.has('experimental-v4') ? new ExperimentalV4(() => space.layer, id => workspace.select(id)) : null;
+  const experimentalV4 = debug && params.has('experimental-v4') ? new ExperimentalV4(() => space.layer, id => workspace.select(id), () => space.currentReviewId) : null;
   if (debug) Object.assign(window, { __workspace: workspace, __foundry: { ready: !params.has('example') }, __unified: { port, gateway, lab }, __space: space, ...(experimentalV4 ? { __v4: experimentalV4 } : {}) });
   addEventListener('pagehide', (event) => { if (!(event as PageTransitionEvent).persisted) { experimentalV4?.dispose(); space.dispose(); workspace.dispose(); port.session.dispose(); } });
   void mountExperience(app, { port, handoff: asReviewHandoff(gateway), lab, example, space: { open: () => space.open() }, embedded }).then((experience) => {

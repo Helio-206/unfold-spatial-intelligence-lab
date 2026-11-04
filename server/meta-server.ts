@@ -42,6 +42,11 @@ import { repairModelPlanShapes } from '../src/universal-spatial/geometry-repair'
 import { SPATIAL_V2_GEOMETRY_GUIDANCE } from '../src/universal-spatial/spatial-prompt-v2';
 import { evaluateSpatialConstraintsV2 } from '../src/universal-spatial/constraints-v2';
 import { buildSpatialEvaluationV2Prompt, parseSpatialEvaluationV2, SPATIAL_EVALUATION_V2_JSON_SCHEMA } from '../src/universal-spatial/evaluation-v2';
+import { DIGEST_LIMITATION, MAX_REVIEW_DECISIONS, MAX_REVIEW_EVIDENCE_ITEMS, MAX_REVIEW_SUBJECTS, REVIEW_AUTHENTICATION_LIMITATION, SPATIAL_REVIEW_CONTRACT, reviewSolverGate, reviewSubjectsFromPlan, type ReviewDecisionKind, type ReviewEvidenceItem, type ReviewSubject, type SpatialReviewRecord } from '../src/universal-spatial/review-v1';
+import { classifyRelations } from '../src/universal-spatial/reconstruction/relations';
+import { meshWorldTriangles } from '../src/universal-spatial/reconstruction/mesh-triangles';
+import type { Tri } from '../src/universal-spatial/reconstruction/silhouette';
+import { Box3, Mesh, Vector3 } from 'three';
 import { observeHeartIllustration } from '../src/anatomy/muse';
 import { validateAnatomyImageDataUrl } from './anatomy-image';
 import { validateSpatialQuestion, parseSpatialAnswer, SPATIAL_ANSWER_SCHEMA } from '../src/living/spatial-voice/question';
@@ -92,8 +97,10 @@ export const PAID_ROUTES = [
   '/api/anatomy/observe',
 ] as const;
 const PAID_ROUTE_SET: ReadonlySet<string> = new Set(PAID_ROUTES);
-const LOCAL_SPATIAL_ROUTES = new Set(['/api/spatial/operation', '/api/spatial/edit', '/api/spatial/undo', '/api/spatial/v2/adopt', '/api/spatial/v2/operation', '/api/spatial/v2/refine', '/api/spatial/v2/undo', '/api/spatial/v2/transactions', '/api/spatial/v2/transactions/status']);
-const NO_META_SPATIAL_ROUTES = new Set(['/api/spatial/operation', '/api/spatial/undo', '/api/spatial/v2/adopt', '/api/spatial/v2/operation', '/api/spatial/v2/refine', '/api/spatial/v2/undo', '/api/spatial/v2/transactions', '/api/spatial/v2/transactions/status']);
+const REVIEW_ROUTES = ['/api/spatial/v2/reviews', '/api/spatial/v2/reviews/get', '/api/spatial/v2/reviews/list', '/api/spatial/v2/reviews/decide', '/api/spatial/v2/reviews/eligibility'];
+const LOCAL_SPATIAL_ROUTES = new Set(['/api/spatial/operation', '/api/spatial/edit', '/api/spatial/undo', '/api/spatial/v2/adopt', '/api/spatial/v2/operation', '/api/spatial/v2/refine', '/api/spatial/v2/undo', '/api/spatial/v2/transactions', '/api/spatial/v2/transactions/status', ...REVIEW_ROUTES]);
+const NO_META_SPATIAL_ROUTES = new Set(['/api/spatial/operation', '/api/spatial/undo', '/api/spatial/v2/adopt', '/api/spatial/v2/operation', '/api/spatial/v2/refine', '/api/spatial/v2/undo', '/api/spatial/v2/transactions', '/api/spatial/v2/transactions/status', ...REVIEW_ROUTES]);
+const MAX_REVIEW_RECORDS = 100;
 const MAX_IDEMPOTENCY_RECORDS_PER_SESSION = 64;
 
 function stableStringify(value: unknown): string {
@@ -106,6 +113,42 @@ function rememberBounded<K, V>(map: Map<K, V>, key: K, entry: V): void {
   while (map.size > MAX_IDEMPOTENCY_RECORDS_PER_SESSION) map.delete(map.keys().next().value as K);
 }
 type V2IdempotencyRecord = { fingerprint: string; status: number; body: Record<string, unknown> };
+
+/**
+ * Persistent human-review store (V4 E1). One JSON document, owned by the backend process:
+ * written atomically (temporary file with 0600, then rename) into a 0700 state directory, so a
+ * crash mid-write leaves the previous document intact. A document that does not parse or does not
+ * match the contract is quarantined next to the original (`<file>.corrupt-<timestamp>`) and the
+ * store starts empty: the server keeps running, the loss is logged, and no partial data is trusted.
+ * Bounded: at most MAX_REVIEW_RECORDS records (least recently updated evicted) and the contract's
+ * per-record decision/evidence caps are enforced at write time, never by dropping history.
+ * Without a file (unit tests, embedded use) the store is memory-only and nothing is claimed durable.
+ */
+function loadReviewStore(file: string | undefined): Map<string, SpatialReviewRecord> {
+  const records = new Map<string, SpatialReviewRecord>();
+  if (!file) return records;
+  try {
+    const parsed = JSON.parse(readFileSync(file, 'utf8')) as { contract?: unknown; records?: unknown };
+    if (parsed.contract !== SPATIAL_REVIEW_CONTRACT || !Array.isArray(parsed.records)) throw new Error('review store contract mismatch');
+    for (const raw of parsed.records as SpatialReviewRecord[]) {
+      if (!raw || raw.contract !== SPATIAL_REVIEW_CONTRACT || typeof raw.reviewId !== 'string' || !Array.isArray(raw.subjects) || !Array.isArray(raw.decisions)) throw new Error('review record invalid');
+      records.set(raw.reviewId, raw);
+    }
+  } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') return records;
+    try { renameSync(file, `${file}.corrupt-${Date.now()}`); } catch { /* quarantine is best effort; starting empty is the recovery */ }
+    console.info(JSON.stringify({ event: 'spatial.review.store_quarantined', file }));
+    return new Map();
+  }
+  return records;
+}
+function persistReviewStore(file: string | undefined, records: Map<string, SpatialReviewRecord>): void {
+  if (!file) return;
+  mkdirSync(dirname(file), { recursive: true, mode: 0o700 });
+  const temporaryFile = `${file}.${randomUUID()}.tmp`;
+  writeFileSync(temporaryFile, JSON.stringify({ contract: SPATIAL_REVIEW_CONTRACT, records: [...records.values()] }), { flag: 'wx', mode: 0o600 });
+  renameSync(temporaryFile, file);
+}
 const ROUTE_SET: ReadonlySet<string> = new Set([...PAID_ROUTE_SET, ...LOCAL_SPATIAL_ROUTES]);
 
 type GuardRejection = { status: number; code: string; message: string; allow?: string };
@@ -178,6 +221,8 @@ export type ServerOptions = {
   // Onde gravar o token para clientes sem Origin (scripts locais). Sem isto o token existe só em
   // memória e ninguém o consegue usar, ou seja, só entram pedidos de browser com Origin permitida.
   localTokenFile?: string;
+  /** Where human-review records persist (V4 E1). Without it reviews are memory-only. */
+  reviewStoreFile?: string;
   upstreamEvidence?: { enabled: boolean; directory: string; maxFiles?: number };
 };
 
@@ -345,6 +390,9 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
   const reconstructionSessions = new Map<string, { observation: ExcavatorObservationV1; mode: 'live' | 'offline'; expires: number }>();
   const spatialSessions = new Map<string, { plan: SpatialPlan; revision: number; history: SpatialPlan[]; expires: number }>();
   const spatialV2Sessions = new Map<string, { plan: SpatialPlanV2; revision: number; history: SpatialPlanV2[]; expires: number; instruction: string; sourceKind: 'text' | 'image'; refinementsUsed: number; maxRefinements: number; pendingRefinement?: SpatialOperationV2; transactions: Map<string, V2IdempotencyRecord>; undoReceipts: Map<string, V2IdempotencyRecord> }>();
+  const reviewStoreFile = options.reviewStoreFile ?? process.env.UNFOLD_REVIEW_STORE_FILE;
+  const reviewRecords = loadReviewStore(reviewStoreFile);
+  const persistReviews = () => persistReviewStore(reviewStoreFile, reviewRecords);
   const upstreamEvidence = evidenceOptions(options);
   const localTokenFile = options.localTokenFile ?? process.env.UNFOLD_LOCAL_TOKEN_FILE;
   const localToken = createLocalToken(localTokenFile);
@@ -479,7 +527,7 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
           ? MAX_IMAGE_BODY_BYTES
           : request.url === '/api/experiments/preview' || request.url === '/api/conversation'
             ? MAX_PREVIEW_BODY_BYTES
-            : request.url === '/api/spatial/v2/adopt' ? 256 * 1024
+            : request.url === '/api/spatial/v2/adopt' || request.url === '/api/spatial/v2/reviews' ? 4 * 1024 * 1024
             : request.url === '/api/spatial-agent' || request.url?.startsWith('/api/spatial/')
               ? MAX_SPATIAL_AGENT_BODY_BYTES
             : MAX_BODY_BYTES,
@@ -496,6 +544,11 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
           '/api/spatial/v2/evaluate': ['sessionId', 'baseRevision', 'imageDataUrl'],
           '/api/spatial/v2/transactions': ['contract', 'sessionId', 'baseRevision', 'idempotencyKey', 'operations', 'provenance'],
           '/api/spatial/v2/transactions/status': ['sessionId', 'idempotencyKey'],
+          '/api/spatial/v2/reviews': ['plan', 'planRevision', 'sourceBytes', 'evidence'],
+          '/api/spatial/v2/reviews/get': ['reviewId'],
+          '/api/spatial/v2/reviews/list': ['sourceSha256'],
+          '/api/spatial/v2/reviews/decide': ['reviewId', 'baseReviewRevision', 'subjectId', 'decision', 'correctedValue', 'reviewerName', 'note', 'planRevision', 'evidenceIds'],
+          '/api/spatial/v2/reviews/eligibility': ['reviewId', 'reviewRevision'],
         };
         const requiredKeys: Record<string, string[]> = {
           '/api/spatial/v2/plan': ['sourceKind'], '/api/spatial/v2/adopt': ['plan'], '/api/spatial/v2/edit': ['sessionId', 'baseRevision', 'instruction'],
@@ -503,6 +556,11 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
           '/api/spatial/v2/undo': ['sessionId', 'baseRevision'], '/api/spatial/v2/evaluate': ['sessionId', 'baseRevision', 'imageDataUrl'],
           '/api/spatial/v2/transactions': ['contract', 'sessionId', 'baseRevision', 'idempotencyKey', 'operations', 'provenance'],
           '/api/spatial/v2/transactions/status': ['sessionId', 'idempotencyKey'],
+          '/api/spatial/v2/reviews': ['plan'],
+          '/api/spatial/v2/reviews/get': ['reviewId'],
+          '/api/spatial/v2/reviews/list': ['sourceSha256'],
+          '/api/spatial/v2/reviews/decide': ['reviewId', 'baseReviewRevision', 'subjectId', 'decision', 'reviewerName'],
+          '/api/spatial/v2/reviews/eligibility': ['reviewId'],
         };
         if (!body || typeof body !== 'object' || Array.isArray(body) || !allowedKeys[route] || Object.keys(body).some((key) => !allowedKeys[route]!.includes(key)) || !requiredKeys[route]!.every((key) => Object.hasOwn(body, key))) { writeJson(response, 400, { error: { code: 'INVALID_SPATIAL_V2_REQUEST', message: 'Corpo V2 inválido, incompleto ou com campos desconhecidos.' } }, origin); return; }
         const candidate = body as { sessionId?: unknown; baseRevision?: unknown; instruction?: unknown; imageDataUrl?: unknown; sourceKind?: unknown; mode?: unknown; maxRefinements?: unknown; operation?: unknown; plan?: unknown; propose?: unknown; origin?: unknown; evidence?: unknown; idempotencyKey?: unknown; operations?: unknown; provenance?: unknown; contract?: unknown };
@@ -516,7 +574,7 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
         const refreshV2Expiry = (session: { expires: number }) => { session.expires = Date.now() + SPATIAL_SESSION_TTL_MS; };
         const v2Session = () => typeof candidate.sessionId === 'string' ? spatialV2Sessions.get(candidate.sessionId) : undefined;
         const revisionConflict = (session: { revision: number }) => !Number.isSafeInteger(candidate.baseRevision) || candidate.baseRevision !== session.revision;
-        const sessionless = route === '/api/spatial/v2/plan' || route === '/api/spatial/v2/adopt';
+        const sessionless = route === '/api/spatial/v2/plan' || route === '/api/spatial/v2/adopt' || REVIEW_ROUTES.includes(route);
         const session = sessionless ? undefined : v2Session();
         if (!sessionless && (!session || session.expires < Date.now())) {
           writeJson(response, 404, { error: { code: 'SPATIAL_V2_SESSION_NOT_FOUND', message: 'Sessão espacial V2 ausente ou expirada.' } }, origin); return;
@@ -527,6 +585,124 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
         if (session && !idempotencyFirst && revisionConflict(session)) { writeJson(response, 409, { error: { code: 'SPATIAL_V2_REVISION_CONFLICT', message: 'A revisão base está desactualizada.', currentRevision: session.revision } }, origin); return; }
         if (session) refreshV2Expiry(session);
         try {
+          if (REVIEW_ROUTES.includes(route)) {
+            // Human review (V4 E1): persistent records, not spatial sessions. All handling below is
+            // synchronous after the body is parsed, so a decision and its persistence cannot interleave.
+            const reviewBody = body as Record<string, unknown>;
+            const failReview = (status: number, code: string, message: string, extra: Record<string, unknown> = {}) => writeJson(response, status, { error: { code, message, ...extra } }, origin);
+            if (route === '/api/spatial/v2/reviews/list') {
+              if (typeof reviewBody.sourceSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(reviewBody.sourceSha256)) { failReview(400, 'SPATIAL_REVIEW_SOURCE_INVALID', 'sourceSha256 inválido.'); return; }
+              const summaries = [...reviewRecords.values()].filter((r) => r.source.sha256 === reviewBody.sourceSha256).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 20)
+                .map((r) => ({ reviewId: r.reviewId, reviewRevision: r.reviewRevision, planRevision: r.planRevision, planFingerprint: r.planFingerprint, sourceByteVerified: r.source.byteVerified, subjects: r.subjects.length, decisions: r.decisions.length, updatedAt: r.updatedAt }));
+              writeJson(response, 200, { contract: SPATIAL_REVIEW_CONTRACT, reviews: summaries }, origin); return;
+            }
+            if (route === '/api/spatial/v2/reviews/get' || route === '/api/spatial/v2/reviews/eligibility') {
+              const record = typeof reviewBody.reviewId === 'string' ? reviewRecords.get(reviewBody.reviewId) : undefined;
+              if (!record) { failReview(404, 'SPATIAL_REVIEW_NOT_FOUND', 'Revisão não encontrada.'); return; }
+              if (route === '/api/spatial/v2/reviews/eligibility' && reviewBody.reviewRevision !== undefined && reviewBody.reviewRevision !== record.reviewRevision) { failReview(409, 'SPATIAL_REVIEW_REVISION_CONFLICT', 'A revisão mudou desde a leitura.', { currentReviewRevision: record.reviewRevision }); return; }
+              writeJson(response, 200, { contract: SPATIAL_REVIEW_CONTRACT, review: record, gate: reviewSolverGate(record) }, origin); return;
+            }
+            if (route === '/api/spatial/v2/reviews/decide') {
+              const record = typeof reviewBody.reviewId === 'string' ? reviewRecords.get(reviewBody.reviewId) : undefined;
+              if (!record) { failReview(404, 'SPATIAL_REVIEW_NOT_FOUND', 'Revisão não encontrada.'); return; }
+              if (!Number.isSafeInteger(reviewBody.baseReviewRevision) || reviewBody.baseReviewRevision !== record.reviewRevision) { failReview(409, 'SPATIAL_REVIEW_REVISION_CONFLICT', 'A revisão mudou; recarregue antes de decidir.', { currentReviewRevision: record.reviewRevision }); return; }
+              const subject = record.subjects.find((item) => item.subjectId === reviewBody.subjectId);
+              if (!subject) { failReview(404, 'SPATIAL_REVIEW_SUBJECT_NOT_FOUND', 'Assunto de revisão não encontrado neste registo.'); return; }
+              const decision = reviewBody.decision as ReviewDecisionKind;
+              if (!['confirm', 'correct', 'reject', 'defer'].includes(decision)) { failReview(400, 'SPATIAL_REVIEW_DECISION_INVALID', 'decision deve ser confirm, correct, reject ou defer.'); return; }
+              if (typeof reviewBody.reviewerName !== 'string' || !reviewBody.reviewerName.trim() || reviewBody.reviewerName.length > 80) { failReview(400, 'SPATIAL_REVIEW_REVIEWER_INVALID', 'reviewerName (nome afirmado, não autenticado) de 1 a 80 caracteres é obrigatório.'); return; }
+              if (record.decisions.length >= MAX_REVIEW_DECISIONS) { failReview(409, 'SPATIAL_REVIEW_HISTORY_FULL', 'O histórico desta revisão atingiu o limite; nada foi sobrescrito.'); return; }
+              let correctedValue: SpatialReviewRecord['decisions'][number]['correctedValue'] = null;
+              if (decision === 'correct') {
+                const value = reviewBody.correctedValue as { kind?: unknown; fromId?: unknown; toId?: unknown } | null;
+                if (!value || !['attached_to', 'contains', 'adjacent_to', 'aligned_with', 'connected_to', 'detected_contact'].includes(String(value.kind)) || typeof value.fromId !== 'string' || typeof value.toId !== 'string' || value.fromId === value.toId || !record.componentIds.includes(value.fromId) || !record.componentIds.includes(value.toId)) { failReview(400, 'SPATIAL_REVIEW_CORRECTION_INVALID', 'correctedValue deve nomear um kind válido e dois componentes existentes e distintos.'); return; }
+                correctedValue = { kind: value.kind as string, fromId: value.fromId, toId: value.toId };
+              } else if (reviewBody.correctedValue !== undefined && reviewBody.correctedValue !== null) { failReview(400, 'SPATIAL_REVIEW_CORRECTION_INVALID', 'correctedValue só é aceite com decision=correct.'); return; }
+              const note = reviewBody.note === undefined ? '' : reviewBody.note;
+              if (typeof note !== 'string' || note.length > 500) { failReview(400, 'SPATIAL_REVIEW_NOTE_INVALID', 'note até 500 caracteres.'); return; }
+              const planRevision = reviewBody.planRevision === undefined ? record.planRevision : reviewBody.planRevision;
+              if (!Number.isSafeInteger(planRevision) || Number(planRevision) < 0) { failReview(400, 'SPATIAL_REVIEW_PLAN_REVISION_INVALID', 'planRevision inválido.'); return; }
+              const evidenceIds = reviewBody.evidenceIds === undefined ? subject.evidenceIds : reviewBody.evidenceIds;
+              if (!Array.isArray(evidenceIds) || evidenceIds.some((id) => typeof id !== 'string' || !record.evidence.some((item) => item.evidenceId === id))) { failReview(400, 'SPATIAL_REVIEW_EVIDENCE_NOT_IN_REVIEW', 'Toda a evidência citada tem de pertencer a esta revisão (sem substituição entre Spaces).'); return; }
+              const at = new Date().toISOString();
+              record.decisions.push({ decisionId: randomUUID(), subjectId: subject.subjectId, decision, correctedValue, planRevision: Number(planRevision), evidenceIds: evidenceIds as string[], reviewer: { displayName: (reviewBody.reviewerName as string).trim(), authenticated: false, attribution: 'client_asserted_unverified' }, at, reviewRevision: record.reviewRevision + 1, note });
+              record.reviewRevision += 1; record.updatedAt = at; record.planRevision = Number(planRevision);
+              persistReviews();
+              writeJson(response, 200, { contract: SPATIAL_REVIEW_CONTRACT, review: record, gate: reviewSolverGate(record) }, origin); return;
+            }
+            // POST /api/spatial/v2/reviews — create a record bound to one exact plan and source.
+            let plan: SpatialPlanV2;
+            try { plan = validateSpatialPlanV2(reviewBody.plan); } catch { failReview(400, 'INVALID_SPATIAL_V2_PLAN', 'O plano não passou na validação.'); return; }
+            const planRevision = reviewBody.planRevision === undefined ? 0 : reviewBody.planRevision;
+            if (!Number.isSafeInteger(planRevision) || Number(planRevision) < 0) { failReview(400, 'SPATIAL_REVIEW_PLAN_REVISION_INVALID', 'planRevision inválido.'); return; }
+            const planFingerprint = createHash('sha256').update(stableStringify(plan)).digest('hex');
+            let sourceByteVerified = false;
+            if (reviewBody.sourceBytes !== undefined) {
+              const sourceBytes = reviewBody.sourceBytes as { kind?: unknown; text?: unknown; imageDataUrl?: unknown };
+              try {
+                const bytes = sourceBytes.kind === 'text' && typeof sourceBytes.text === 'string' && sourceBytes.text.length <= 8_000
+                  ? Buffer.from(sourceBytes.text, 'utf8')
+                  : sourceBytes.kind === 'image' ? Buffer.from(validateImageDataUrl(sourceBytes.imageDataUrl).dataUrl.split(',')[1]!, 'base64') : null;
+                if (!bytes) throw new Error('sourceBytes');
+                const digest = createHash('sha256').update(bytes).digest('hex');
+                // The digest is computed from bytes received here, never trusted from the client.
+                if (sourceBytes.kind !== plan.source.kind || digest !== plan.source.sha256) { failReview(422, 'SPATIAL_REVIEW_SOURCE_HASH_MISMATCH', 'Os bytes da fonte não correspondem ao hash declarado no plano.', { computedSha256: digest, planSourceSha256: plan.source.sha256 }); return; }
+                sourceByteVerified = true;
+              } catch (error) { if (error instanceof Error && error.message.startsWith('SPATIAL')) throw error; failReview(400, 'SPATIAL_REVIEW_SOURCE_BYTES_INVALID', 'sourceBytes inválido.'); return; }
+            }
+            const evidence: ReviewEvidenceItem[] = [{ evidenceId: 'plan-geometry', kind: 'plan', sha256: planFingerprint, byteVerified: true, note: 'Digest computed by the server from the plan JSON as received. It identifies these bytes; it does not validate the plan.' }];
+            if (reviewBody.evidence !== undefined) {
+              if (!Array.isArray(reviewBody.evidence) || reviewBody.evidence.length > MAX_REVIEW_EVIDENCE_ITEMS) { failReview(400, 'SPATIAL_REVIEW_EVIDENCE_INVALID', 'evidence inválida ou acima do limite.'); return; }
+              for (const raw of reviewBody.evidence as Array<Record<string, unknown>>) {
+                if (!raw || typeof raw.evidenceId !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,63}$/.test(raw.evidenceId) || evidence.some((item) => item.evidenceId === raw.evidenceId) || !['source', 'silhouette_views', 'mask', 'note'].includes(String(raw.kind))) { failReview(400, 'SPATIAL_REVIEW_EVIDENCE_INVALID', 'Item de evidência inválido ou duplicado.'); return; }
+                let sha256 = typeof raw.sha256 === 'string' ? raw.sha256 : '', byteVerified = false;
+                if (raw.contentBase64 !== undefined) {
+                  if (typeof raw.contentBase64 !== 'string' || raw.contentBase64.length > 700_000) { failReview(400, 'SPATIAL_REVIEW_EVIDENCE_INVALID', 'contentBase64 acima do limite.'); return; }
+                  // Bytes are hashed and discarded: stored review data never includes source images.
+                  sha256 = createHash('sha256').update(Buffer.from(raw.contentBase64, 'base64')).digest('hex'); byteVerified = true;
+                  if (typeof raw.sha256 === 'string' && raw.sha256 !== sha256) { failReview(422, 'SPATIAL_REVIEW_EVIDENCE_HASH_MISMATCH', 'O hash declarado não corresponde aos bytes da evidência.', { computedSha256: sha256 }); return; }
+                }
+                if (!/^[a-f0-9]{64}$/.test(sha256)) { failReview(400, 'SPATIAL_REVIEW_EVIDENCE_INVALID', 'Evidência sem bytes precisa de um sha256 declarado válido (marcado como não verificado).'); return; }
+                evidence.push({ evidenceId: raw.evidenceId, kind: raw.kind as ReviewEvidenceItem['kind'], sha256, byteVerified, note: typeof raw.note === 'string' ? raw.note.slice(0, 300) : '' });
+              }
+            }
+            let subjects: ReviewSubject[];
+            try {
+              const compiled = compileSpatialPlanV2(plan);
+              const tris = new Map<string, Tri[]>();
+              compiled.root.updateMatrixWorld(true);
+              compiled.root.traverse((object) => { if (object instanceof Mesh && typeof object.userData.spatialEntityId === 'string') { const id = object.userData.spatialEntityId; tris.set(id, [...(tris.get(id) ?? []), ...meshWorldTriangles(object)]); } });
+              disposeCompiledSpatialPlan(compiled.root);
+              const box = new Box3(); for (const list of tris.values()) for (const tri of list) for (const point of tri) box.expandByPoint(point);
+              const span = Math.max(...box.getSize(new Vector3()).toArray(), 1e-9);
+              const findings = classifyRelations(plan, [...tris.entries()].map(([id, list]) => ({ id, tris: list })), { span });
+              subjects = findings.map((finding) => ({
+                subjectId: finding.id,
+                kind: finding.declaredKind ? 'relation' as const : 'hypothesis' as const,
+                original: finding.declaredKind ? { kind: finding.declaredKind, fromId: finding.a, toId: finding.b } : { kind: 'detected_contact', fromId: finding.a, toId: finding.b },
+                statementClass: finding.declaredKind ? (finding.origin === 'observed' ? 'observed_evidence' as const : finding.origin === 'user_provided' ? 'user_supplied' as const : finding.origin === 'inferred' ? 'model_inference' as const : 'unknown' as const) : 'detected_geometry' as const,
+                geometrySupport: finding.status === 'declared_contradicted' ? 'contradicted' as const : 'supported' as const,
+                uncertainty: finding.evidence.slice(0, 500),
+                evidenceIds: ['plan-geometry'],
+              }));
+              const covered = new Set(subjects.map((item) => item.subjectId));
+              for (const subject of reviewSubjectsFromPlan(plan)) if (!covered.has(subject.subjectId)) subjects.push(subject);
+            } catch { subjects = reviewSubjectsFromPlan(plan); }
+            if (subjects.length > MAX_REVIEW_SUBJECTS) { failReview(400, 'SPATIAL_REVIEW_SUBJECTS_EXCEEDED', 'Demasiados assuntos de revisão.'); return; }
+            const at = new Date().toISOString();
+            const record: SpatialReviewRecord = {
+              contract: SPATIAL_REVIEW_CONTRACT, reviewId: randomUUID(), createdAt: at, updatedAt: at, reviewRevision: 0,
+              source: { kind: plan.source.kind, sha256: plan.source.sha256, byteVerified: sourceByteVerified },
+              planFingerprint, planRevision: Number(planRevision), componentIds: plan.components.map((component) => component.id),
+              unknowns: plan.unknowns.slice(0, 100), subjects, evidence, decisions: [],
+              reviewerAuthentication: { authenticated: false, limitation: REVIEW_AUTHENTICATION_LIMITATION },
+              limitations: [DIGEST_LIMITATION, sourceByteVerified ? 'Source bytes were received and hashed by the server; the digest proves byte identity with the plan source only.' : 'Source bytes were not supplied: the source hash is the one declared by the plan and is marked unverified.', 'Geometry support is assessed from the plan as given; it is not a physical measurement.'],
+            };
+            reviewRecords.set(record.reviewId, record);
+            while (reviewRecords.size > MAX_REVIEW_RECORDS) { const oldest = [...reviewRecords.values()].sort((a, b) => a.updatedAt.localeCompare(b.updatedAt))[0]!; reviewRecords.delete(oldest.reviewId); }
+            persistReviews();
+            writeJson(response, 200, { contract: SPATIAL_REVIEW_CONTRACT, review: record, gate: reviewSolverGate(record) }, origin); return;
+          }
           if (route === '/api/spatial/v2/adopt') {
             // A person-reviewed plan becomes a session so that typed edits, undo and the paid proposals work on exactly what is on screen. It is validated like every plan and costs nothing.
             let adopted: SpatialPlanV2;

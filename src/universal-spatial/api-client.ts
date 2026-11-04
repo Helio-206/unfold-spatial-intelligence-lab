@@ -134,6 +134,41 @@ export async function evaluateSpatialPlanV2(input: { sessionId: string; baseRevi
   return { ...reply, evaluation: parseSpatialEvaluationV2(reply.evaluation, plan) };
 }
 
+import { SPATIAL_REVIEW_CONTRACT, type ReviewDecisionKind, type ReviewRelationValue, type ReviewSolverGate, type SpatialReviewRecord } from './review-v1';
+
+export type SpatialReviewReply = { contract: typeof SPATIAL_REVIEW_CONTRACT; review: SpatialReviewRecord; gate: ReviewSolverGate };
+export type SpatialReviewSummary = { reviewId: string; reviewRevision: number; planRevision: number; planFingerprint: string; sourceByteVerified: boolean; subjects: number; decisions: number; updatedAt: string };
+
+function validReviewReply(reply: SpatialReviewReply): SpatialReviewReply {
+  if (reply.contract !== SPATIAL_REVIEW_CONTRACT || !reply.review || reply.review.contract !== SPATIAL_REVIEW_CONTRACT || !reply.gate) throw new SpatialApiError(502, 'INVALID_SPATIAL_REVIEW_REPLY', 'Unknown spatial review response contract.');
+  return reply;
+}
+
+/** Creates a persistent review record for one exact plan. Source bytes, when supplied, are hashed by the server. */
+export async function createSpatialReview(input: { plan: SpatialPlanV2; planRevision?: number; sourceBytes?: { kind: 'text'; text: string } | { kind: 'image'; imageDataUrl: string }; evidence?: Array<{ evidenceId: string; kind: 'source' | 'silhouette_views' | 'mask' | 'note'; sha256?: string; contentBase64?: string; note?: string }> }, fetchImpl: typeof fetch = fetch): Promise<SpatialReviewReply> {
+  return validReviewReply(await post<SpatialReviewReply>('/api/spatial/v2/reviews', input, fetchImpl));
+}
+
+export async function getSpatialReview(reviewId: string, fetchImpl: typeof fetch = fetch): Promise<SpatialReviewReply> {
+  return validReviewReply(await post<SpatialReviewReply>('/api/spatial/v2/reviews/get', { reviewId }, fetchImpl));
+}
+
+export async function listSpatialReviews(sourceSha256: string, fetchImpl: typeof fetch = fetch): Promise<SpatialReviewSummary[]> {
+  const reply = await post<{ contract: typeof SPATIAL_REVIEW_CONTRACT; reviews: SpatialReviewSummary[] }>('/api/spatial/v2/reviews/list', { sourceSha256 }, fetchImpl);
+  if (reply.contract !== SPATIAL_REVIEW_CONTRACT || !Array.isArray(reply.reviews)) throw new SpatialApiError(502, 'INVALID_SPATIAL_REVIEW_REPLY', 'Unknown spatial review response contract.');
+  return reply.reviews;
+}
+
+/** Appends one human decision. Never edits earlier decisions; stale writers are rejected by revision. */
+export async function decideSpatialReview(input: { reviewId: string; baseReviewRevision: number; subjectId: string; decision: ReviewDecisionKind; correctedValue?: ReviewRelationValue | null; reviewerName: string; note?: string; planRevision?: number; evidenceIds?: string[] }, fetchImpl: typeof fetch = fetch): Promise<SpatialReviewReply> {
+  return validReviewReply(await post<SpatialReviewReply>('/api/spatial/v2/reviews/decide', input, fetchImpl));
+}
+
+/** The solver gate for a review, optionally pinned to the revision the caller read. */
+export async function getSpatialReviewEligibility(input: { reviewId: string; reviewRevision?: number }, fetchImpl: typeof fetch = fetch): Promise<SpatialReviewReply> {
+  return validReviewReply(await post<SpatialReviewReply>('/api/spatial/v2/reviews/eligibility', input, fetchImpl));
+}
+
 export type SpatialProposalV2Reply = { contract: 'unfold.spatial-v2-proposal.v1'; sessionId: string; revision: number; operation: SpatialOperationV2; applied: false; meta?: Record<string, unknown>; limitation?: string };
 
 /** Turns a plan a person has reviewed into a server session (local, not paid), so typed edits, undo and the paid proposals work on exactly that plan. */
