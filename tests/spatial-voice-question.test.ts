@@ -32,3 +32,16 @@ it('passes labelled relations and unknowns to the model as data and requests dis
     expect(reply.json.source).toBe('meta');
   });
 });
+
+it('rate limits spatial questions before upstream calls', async () => {
+  const { ALLOWED_ORIGIN, countingFetch, rawRequest, withGuardedServer } = await import('./helpers/paid-routes');
+  const upstream = countingFetch(JSON.stringify({ answer: 'Texto.', limitations: 'Não verificado.' }));
+  await withGuardedServer({ fetchImpl: upstream, maxMetaCalls: 25 }, async port => {
+    const headers = { origin: ALLOWED_ORIGIN, 'content-type': 'application/json' };
+    for (let i = 0; i < 20; i++) expect((await rawRequest(port, { path: '/api/spatial/question', headers, body: request })).status).toBe(200);
+    const limited = await rawRequest(port, { path: '/api/spatial/question', headers, body: request });
+    expect(limited.status).toBe(429);
+    expect(limited.json.error.code).toBe('RATE_LIMITED');
+    expect(upstream).toHaveBeenCalledTimes(20);
+  });
+});
