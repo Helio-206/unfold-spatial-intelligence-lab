@@ -38,6 +38,8 @@ export type FlowAction =
   | { type: 'open_lab' }
   | { type: 'lab_ready' }
   | { type: 'back_to_review' }
+  /** Embedded host: the example machine was opened straight from the empty lab. Nothing was reconstructed. */
+  | { type: 'enter_example' }
   | { type: 'restart' };
 
 export const initialFlow = (): FlowState => ({ phase: 'empty', input: null, problem: null, startedAt: null, observation: null, provenance: null, sessionId: null, message: null, failure: null });
@@ -61,6 +63,7 @@ export function reduceFlow(s: FlowState, a: FlowAction): FlowState {
     case 'open_lab': return s.phase === 'review' ? { ...s, phase: 'transition' } : s;
     case 'lab_ready': return s.phase === 'transition' ? { ...s, phase: 'lab' } : s;
     case 'back_to_review': return s.phase === 'lab' || s.phase === 'transition' ? { ...s, phase: 'review' } : s;
+    case 'enter_example': return s.phase === 'empty' || s.phase === 'selected' ? { ...initialFlow(), phase: 'lab' } : s;
     case 'restart': return initialFlow();
   }
 }

@@ -187,3 +187,8 @@
 .uw-notice-details p { margin: var(--space-2) 0 0; }
 /* On a phone the notices span the full width and sit on the brand; the brand yields while one is showing. */
 @media (max-width: 680px) { .uw-root:has(.uw-notices > *) .uw-brand { visibility: hidden; } }
+
+/* panels an integrator hosts inside the workspace (import, review); the container never takes the pointer, its panels do */
+.uw-flow { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.uw-flow > * { pointer-events: auto; }
+.uw-rail-extras { display: flex; flex-direction: column; gap: var(--space-1); }

@@ -63,6 +63,8 @@ export type WorkspaceOptions = {
   look?: 'standard' | 'premium';
   /** Builds the premium studio environment (PREMIUM_STUDIO.environment). Injected, because the workspace must not import the cinema; without it `premium` changes materials only. */
   premiumEnvironment?: (renderer: WebGLRenderer, panels: typeof PREMIUM_STUDIO.environment) => { texture: Texture; dispose(): void };
+  /** Start with the stage and the chrome but no machine shown (the assembly is only the hidden placeholder until `replaceAssembly`). */
+  startEmpty?: boolean;
   /** Extra buttons for the integrator, in their own group at the end of the tool rail. `icon` is a raw SVG string. */
   extraTools?: ReadonlyArray<{ id: string; label: string; hint: string; icon: string; run: () => void }>;
 };
@@ -76,22 +78,22 @@ const fmt = (v: number, d = 3) => v.toFixed(d);
 
 export class SpatialWorkspace {
   readonly root: HTMLElement;
-  readonly registry: ComponentRegistry;
+  registry!: ComponentRegistry;
   readonly arbiter = new CameraArbiter();
   private readonly foundry: FoundryRenderer;
-  private readonly lib: MaterialLibrary;
-  private readonly model: ExcavatorModel;
+  private lib!: MaterialLibrary;
+  private model!: ExcavatorModel;
   private readonly director: CameraDirector;
-  private readonly scene: SceneController;
-  private readonly hand: DigitalHand;
-  private readonly previews: FixturePreview[];
+  private scene!: SceneController;
+  private hand!: DigitalHand;
+  private previews!: FixturePreview[];
   private state: WorkspaceState = initialWorkspaceState();
   private history: HistoryItem[] = [];
   private selectedId: string | null = null;
   private inspectorOpen = false;
   private evidenceOpen = false;
   private poseLabel: 'reference' | 'fixture-preview' | 'engine' = 'reference';
-  private readonly engineering: WorkspaceEngineeringSession;
+  private engineering!: WorkspaceEngineeringSession;
   private engineProposal: { token: string; actuatorId: string; target: number; durationS: number } | null = null;
   private engineRaf = 0;
   private engineLast = 0;
@@ -114,14 +116,23 @@ export class SpatialWorkspace {
   readonly reducedMotion: boolean;
   readonly agentOptions: AgentClientOptions;
   private readonly el: Record<string, HTMLElement> = {};
-  private readonly options: WorkspaceOptions;
+  private options: WorkspaceOptions;
+  /** True while the stage is shown without a machine: nothing can be picked, selected, asked about or moved. */
+  private empty = false;
+  private placeholder: Assembly;
+  private contextNotices = new Set<string>();
+  private intake: { onText(text: string): void; onFile(file: File): void; placeholder: string; status: string; disabled?: boolean } | null = null;
+  private extraTools: ReadonlyArray<NonNullable<WorkspaceOptions['extraTools']>[number]> = [];
+  private revealTween: gsap.core.Tween | null = null;
+  private defaultPlaceholder = '';
+  private premiumShared: { environment: { texture: Texture; dispose(): void } | null; previous: { environment: Texture | null; intensity: number; exposure: number } } | null = null;
   private premium: { handle: PremiumLookHandle; environment: { texture: Texture; dispose(): void } | null; previous: { environment: Texture | null; intensity: number; exposure: number } } | null = null;
 
   constructor(host: HTMLElement, options: WorkspaceOptions) {
     this.options = { ...options, assembly: structuredClone(options.assembly) };
     options = this.options;
+    this.placeholder = this.options.assembly; this.empty = options.startEmpty === true; this.extraTools = options.extraTools ?? [];
     applyMotionTokens();
-    this.engineering = new WorkspaceEngineeringSession(options.assembly);
     this.reducedMotion = options.reducedMotion ?? globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     this.agentOptions = options.agent ?? { mode: 'auto' };
     this.root = document.createElement('div');
@@ -131,18 +142,10 @@ export class SpatialWorkspace {
     host.append(this.root);
     this.root.innerHTML = this.template();
     for (const n of this.root.querySelectorAll<HTMLElement>('[data-el]')) this.el[n.dataset.el!] = n;
+    this.defaultPlaceholder = (this.el.input as HTMLTextAreaElement).placeholder; this.renderExtraTools();
 
-    this.registry = buildComponentRegistry(options.assembly);
     this.foundry = new FoundryRenderer(this.el.stage!, options.profile ?? 'realtime', { preserveDrawingBuffer: options.preserveDrawingBuffer, pixelRatio: options.pixelRatio });
-    this.lib = createMaterialLibrary();
-    this.model = buildExcavator(options.assembly, this.lib);
-    this.foundry.scene.add(this.model.root);
-    // before the SceneController, so that isolating or ghosting parts starts from (and returns to) the premium materials
-    if (options.look === 'premium') this.premium = this.applyPremium();
-    this.scene = new SceneController(this.model, this.registry, () => this.foundry.requestRender(), () => this.foundry.studio.updateContactShadow(), '#FF5A1F', '#9AA0A8');
-    this.scene.reducedMotion = this.reducedMotion;
-    this.hand = new DigitalHand(this.registry, this.model.parts);
-    this.previews = [loadFixturePreview()];
+    this.buildMachine(options.assembly);
     this.director = new CameraDirector(this.foundry.camera, this.el.stage!, this.arbiter, () => this.foundry.requestRender());
     this.director.reducedMotion = this.reducedMotion;
     this.showEngineFrame();
@@ -169,7 +172,8 @@ export class SpatialWorkspace {
         <div class="uw-hand-label uw-surface" data-el="handLabel"></div>
       </div>
       <div class="uw-user-hand" data-el="userHand" hidden></div>
-      <header class="uw-brand" data-el="brand"><img src="${esc(this.options.logoSrc ?? '/design-system/logos/unfold-mark-on-dark.svg')}" alt="UNFOLD"><span class="u-label">${this.options.brandLabel !== undefined ? esc(this.options.brandLabel) : `${esc(this.options.assembly.id)}${this.options.assembly.provenance.origin === 'fixture' ? ' · montagem sintética' : ''}`}</span></header>
+      <div class="uw-flow" data-el="flow"></div>
+      <header class="uw-brand" data-el="brand"><img src="${esc(this.options.logoSrc ?? '/design-system/logos/unfold-mark-on-dark.svg')}" alt="UNFOLD"><span class="u-label" data-el="brandLabel">${this.options.brandLabel !== undefined ? esc(this.options.brandLabel) : `${esc(this.options.assembly.id)}${this.options.assembly.provenance.origin === 'fixture' ? ' · montagem sintética' : ''}`}</span></header>
       <nav class="uw-rail uw-surface" data-el="rail" aria-label="Ferramentas da cena">
         <div class="uw-rail-group">
           ${tool('toolFrame', focusIcon, 'Enquadrar', 'componente seleccionado ou máquina inteira')}
@@ -185,7 +189,7 @@ export class SpatialWorkspace {
         </div>
         <div class="uw-rail-sep" aria-hidden="true"></div>
         ${tool('toolFocus', maximizeIcon, 'Modo foco', 'só o objecto · F, Esc para sair', 'aria-pressed="false"')}
-        ${(this.options.extraTools ?? []).length ? `<div class="uw-rail-sep" aria-hidden="true"></div>${(this.options.extraTools ?? []).map((t) => tool(`extra_${t.id}`, t.icon, t.label, t.hint)).join('')}` : ''}
+        <div class="uw-rail-extras" data-el="railExtras"></div>
       </nav>
       <div class="uw-notices" data-el="notices" role="alert" aria-live="assertive"></div>
       <section class="uw-transient uw-surface" data-el="transient" role="status" aria-live="polite" hidden></section>
@@ -232,7 +236,7 @@ export class SpatialWorkspace {
       const map: Record<string, [number, number, number]> = { ArrowLeft: [-step, 0, 1], ArrowRight: [step, 0, 1], ArrowUp: [0, step, 1], ArrowDown: [0, -step, 1], '+': [0, 0, 0.9], '=': [0, 0, 0.9], '-': [0, 0, 1.1] };
       const m = map[e.key];
       if (m) { e.preventDefault(); this.director.nudge(m[0], m[1], m[2]); }
-      if (e.key === 'Enter' && this.hand.targetId) this.select(this.hand.targetId);
+      if (e.key === 'Enter' && !this.empty && this.hand.targetId) this.select(this.hand.targetId);
     });
     on(window, 'keydown', (e: KeyboardEvent) => {
       const typing = (e.target as HTMLElement)?.closest?.('textarea, input');
@@ -252,7 +256,7 @@ export class SpatialWorkspace {
       this.enginePausedByPage = false;
     });
     // rail
-    for (const t of this.options.extraTools ?? []) on(this.el[`extra_${t.id}`]!, 'click', () => t.run());
+    on(this.el.railExtras!, 'click', (e: Event) => { const b = (e.target as HTMLElement).closest<HTMLElement>('[data-extra]'); if (b) this.extraTools.find((t) => t.id === b.dataset.extra)?.run(); });
     on(this.el.toolFrame!, 'click', () => this.frameSelection());
     on(this.el.toolIsolate!, 'click', () => this.toggleIsolate());
     on(this.el.toolExplode!, 'click', () => { const exploded = !this.scene.exploded; this.scene.setExploded(exploded); this.notice('explode', exploded ? 'Vista explodida · deslocamento só visual, não é uma pose do motor.' : null, 'info'); this.renderRail(); });
@@ -425,6 +429,9 @@ export class SpatialWorkspace {
   }
 
   private renderRail(): void {
+    // with no machine on stage the machine tools are shown but unavailable, so the rail never changes shape under the person
+    for (const id of ['toolFrame', 'toolIsolate', 'toolExplode', 'toolSimulate', 'toolMore', 'toolEvidence', 'toolReset', 'toolHand', 'toolFocus']) { const b = this.el[id] as HTMLButtonElement | undefined; if (b) { b.disabled = this.empty; b.setAttribute('aria-disabled', String(this.empty)); } }
+    if (this.empty) return;
     const sel = this.selectedId ? this.registry.get(this.selectedId) : null;
     (this.el.toolIsolate as HTMLButtonElement).disabled = !sel;
     this.el.toolIsolate!.setAttribute('aria-pressed', String(!!this.scene.isolatedId));
@@ -534,6 +541,7 @@ export class SpatialWorkspace {
 
   // ---------------------------------------------------------------------------------------------- selection & hand
   private pickAt(clientX: number, clientY: number): void {
+    if (this.empty) return;
     const rect = this.el.stage!.getBoundingClientRect();
     const ndc = new Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
     const c = this.scene.pick(ndc, this.foundry.camera);
@@ -541,6 +549,7 @@ export class SpatialWorkspace {
   }
 
   select(id: string): void {
+    if (this.empty) return;
     const c = this.registry.get(id);
     if (!c) { this.hand.attend(id, 'blocked'); this.updateHandOverlay(); return; }
     this.setSelectedComponent(c, true);
@@ -641,6 +650,8 @@ export class SpatialWorkspace {
   private submit(): void {
     const input = this.el.input as HTMLTextAreaElement;
     const text = input.value.trim();
+    if (this.intake) { if (!text) return; input.value = ''; this.autoGrow(); (this.el.send as HTMLButtonElement).disabled = true; this.intake.onText(text); return; }
+    if (this.empty) return; // nothing to ask about yet
     if (!text && !this.attachment) return;
     input.value = ''; this.autoGrow(); (this.el.send as HTMLButtonElement).disabled = true;
     void this.ask(text || 'Imagem de referência anexada.');
@@ -648,6 +659,7 @@ export class SpatialWorkspace {
 
   private async readAttachment(): Promise<void> {
     const file = (this.el.file as HTMLInputElement).files?.[0]; if (!file) return;
+    if (this.intake) { (this.el.file as HTMLInputElement).value = ''; this.intake.onFile(file); return; } // the experience validates the source
     if (!['image/png', 'image/jpeg'].includes(file.type) || file.size > 10_000_000) { this.setComposerState('ERROR', 'Só PNG ou JPEG até 10 MB.'); return; }
     const dataUrl = await new Promise<string>((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result)); r.onerror = () => rej(r.error); r.readAsDataURL(file); });
     this.attachment = { name: file.name, size: file.size, dataUrl };
@@ -906,7 +918,7 @@ export class SpatialWorkspace {
       this.renderNotices(visibility(this.state)); this.approvedRunning = false;
       this.engineCompletion?.('cancelled'); this.engineCompletion = null; this.foundry.requestRender(); return false;
     }
-    this.model.root.visible = frame.parts.length > 0;
+    this.model.root.visible = !this.empty && frame.parts.length > 0;
     if (frame.parts.length) {
       this.scene.setPoses(frame.parts);
       if (this.handHiddenForMissingPose && this.selectedId) this.hand.attend(this.selectedId, 'select');
@@ -986,9 +998,23 @@ export class SpatialWorkspace {
     if (this.voice.status === 'LISTENING') this.voice.stop(); else this.voice.start();
   }
 
+  /**
+   * Ends webcam hand control completely: the tracker stops (which also ends the capture's video tracks, even if the permission is
+   * granted only later), the tracker is forgotten BEFORE it is stopped so that every late callback finds it is no longer current,
+   * and the person's hand is cleared from the screen. Idempotent; safe on every exit from a machine.
+   */
+  private stopHandTracking(): void {
+    const tracker = this.handTracker; this.handTracker = null;
+    tracker?.stop();
+    this.arbiter.setHandTracking(false);
+    this.handModel.reset();
+    const cursor = this.el.userHand; if (cursor) { cursor.hidden = true; delete cursor.dataset.state; cursor.style.left = ''; cursor.style.top = ''; }
+    if (tracker) this.renderRail();
+  }
+
   /** Webcam hand control (existing module). Starts only on an explicit click; while active the assistant never moves the camera. */
   async toggleHandTracking(): Promise<void> {
-    if (this.handTracker) { this.handTracker.stop(); this.handTracker = null; this.arbiter.setHandTracking(false); this.el.userHand!.hidden = true; this.renderRail(); return; }
+    if (this.handTracker) { this.stopHandTracking(); return; }
     const video = this.el.video as HTMLVideoElement;
     let last: { x: number; y: number } | null = null;
     const tracker = new WebcamHandTracker({
@@ -1025,26 +1051,137 @@ export class SpatialWorkspace {
     return { ...this.foundry.stats(), modelMeshes: meshes, modelTriangles: Math.round(tris), modelMaterials: mats.size, libraryMaterials: this.lib.materials().length, libraryTextures: this.lib.textures().length };
   }
 
+  // ---------------------------------------------------------------------------------------------- machine lifecycle
+  /** Everything that depends on the assembly. Called once at construction and again by `replaceAssembly`. */
+  private buildMachine(assembly: Assembly): void {
+    this.options = { ...this.options, assembly };
+    this.engineering = new WorkspaceEngineeringSession(assembly);
+    this.registry = buildComponentRegistry(assembly);
+    this.lib = createMaterialLibrary();
+    this.model = buildExcavator(assembly, this.lib);
+    this.model.root.visible = !this.empty;
+    this.foundry.scene.add(this.model.root);
+    // before the SceneController, so that isolating or ghosting parts starts from (and returns to) the premium materials
+    if (this.options.look === 'premium') this.premium = this.applyPremium();
+    this.scene = new SceneController(this.model, this.registry, () => this.foundry.requestRender(), () => this.foundry.studio.updateContactShadow(), '#FF5A1F', '#9AA0A8');
+    this.scene.reducedMotion = this.reducedMotion;
+    this.hand = new DigitalHand(this.registry, this.model.parts);
+    this.previews = [loadFixturePreview()];
+  }
+
+  /** Stops everything that belongs to the current machine and frees it. The renderer, the canvas and the chrome stay. */
+  private teardownMachine(): void {
+    this.revealTween?.kill(); this.revealTween = null;
+    this.engineCompletion?.('cancelled'); this.engineCompletion = null; this.approvedRunning = false;
+    cancelAnimationFrame(this.engineRaf); this.engineRaf = 0; this.engineLast = 0;
+    this.playback?.cancel(); this.playback = null;
+    this.pending?.abort(); this.pending = null;
+    this.stopHandTracking(); // the camera belongs to a person looking at a machine: leaving the machine releases it
+    this.engineering.dispose();
+    this.scene.dispose();
+    this.releaseLook();
+    this.foundry.scene.remove(this.model.root);
+    this.model.dispose(); this.lib.dispose();
+  }
+
+  /** Nothing of the previous machine may survive into the next: selection, proposals, conversation and notices all start again. */
+  private resetForMachine(): void {
+    this.selectedId = null; this.inspectorOpen = false; this.evidenceOpen = false; this.engineProposal = null; this.engineMessageId = null;
+    this.poseLabel = 'reference'; this.handHiddenForMissingPose = false; this.lastHand = null; this.history = []; this.attachment = null;
+    this.state = initialWorkspaceState(); this.contextNotices.clear();
+  }
+
+  get isEmpty(): boolean { return this.empty; }
+  /** Where an integrator puts contextual panels (import, review): inside the workspace, above the stage, beside the same rail and composer. */
+  get panelHost(): HTMLElement { return this.el.flow!; }
+
+  /**
+   * Replaces the machine in place: the renderer, canvas, rail, composer and brand stay; engine session, component registry, scene,
+   * hand, selection and conversation are rebuilt from the new assembly. `empty` keeps the stage without showing it.
+   */
+  replaceAssembly(assembly: Assembly, options: { empty?: boolean; reveal?: boolean; brandLabel?: string; notices?: ReadonlyArray<{ id: string; text: string; detail?: string }>; extraTools?: WorkspaceOptions['extraTools'] } = {}): void {
+    if (this.disposed) return;
+    this.teardownMachine(); this.resetForMachine();
+    this.empty = options.empty === true;
+    this.buildMachine(structuredClone(assembly));
+    this.setContext({ brandLabel: options.brandLabel, notices: options.notices, extraTools: options.extraTools });
+    this.showEngineFrame(); this.frameHome(); this.foundry.studio.updateContactShadow();
+    this.render();
+    if (!this.empty && options.reveal) this.revealMachine();
+  }
+
+  /** Back to the empty stage; the machine that was shown is freed. */
+  clearMachine(context: Parameters<SpatialWorkspace['setContext']>[0] = {}): void { this.replaceAssembly(this.placeholder, { empty: true, ...context }); }
+
+  /** The machine rises into the stage (instant with reduced motion). */
+  private revealMachine(): void {
+    const root = this.model.root; const from = { k: 0 };
+    const base = { y: root.position.y, sx: root.scale.x, sy: root.scale.y, sz: root.scale.z };
+    const apply = (k: number) => { root.position.y = base.y - (1 - k) * 0.35; root.scale.set(base.sx * (0.94 + 0.06 * k), base.sy * (0.94 + 0.06 * k), base.sz * (0.94 + 0.06 * k)); this.foundry.studio.updateContactShadow(); this.foundry.markMotion(); this.foundry.requestRender(); };
+    if (this.reducedMotion) { apply(1); return; }
+    apply(0);
+    this.revealTween = gsap.to(from, { k: 1, duration: DURATION.slow, ease: EASE.out, onUpdate: () => apply(from.k), onComplete: () => { apply(1); this.revealTween = null; } });
+  }
+
+  /** What the chrome says about the machine on stage: the brand label, the notices that came with it, and the integrator's rail tools. */
+  setContext(context: { brandLabel?: string; notices?: ReadonlyArray<{ id: string; text: string; detail?: string }>; extraTools?: WorkspaceOptions['extraTools'] } = {}): void {
+    if (context.brandLabel !== undefined) this.options = { ...this.options, brandLabel: context.brandLabel };
+    const label = this.el.brandLabel; if (label) label.textContent = this.options.brandLabel !== undefined ? this.options.brandLabel : `${this.options.assembly.id}${this.options.assembly.provenance.origin === 'fixture' ? ' · montagem sintética' : ''}`;
+    for (const id of this.contextNotices) this.notice(id, null); this.contextNotices.clear();
+    for (const n of context.notices ?? []) { this.notice(n.id, n.text, 'info', n.detail); this.contextNotices.add(n.id); }
+    if (context.extraTools !== undefined) { this.extraTools = context.extraTools ?? []; this.renderExtraTools(); }
+  }
+
+  private renderExtraTools(): void {
+    const host = this.el.railExtras; if (!host) return;
+    host.innerHTML = this.extraTools.length ? `<div class="uw-rail-sep" aria-hidden="true"></div>${this.extraTools.map((t) => `<button class="uw-tool" type="button" data-el="extra_${esc(t.id)}" data-extra="${esc(t.id)}" aria-label="${esc(t.label)}">${icon(t.icon)}<span class="uw-tip" aria-hidden="true">${esc(t.label)}<small>${esc(t.hint)}</small></span></button>`).join('')}` : '';
+    for (const key of Object.keys(this.el)) if (key.startsWith('extra_')) delete this.el[key];
+    for (const n of host.querySelectorAll<HTMLElement>('[data-el]')) this.el[n.dataset.el!] = n;
+  }
+
+  /**
+   * The composer as the way in: while an intake is set, the text and the paperclip describe or attach a SOURCE (a description,
+   * a photograph) instead of asking the assistant about a machine. Setting null returns the composer to the assistant.
+   */
+  setComposerIntake(intake: { onText(text: string): void; onFile(file: File): void; placeholder: string; status: string; disabled?: boolean } | null): void {
+    this.intake = intake;
+    const input = this.el.input as HTMLTextAreaElement | undefined; if (!input) return;
+    input.placeholder = intake?.placeholder ?? this.defaultPlaceholder;
+    (this.el.file as HTMLInputElement).accept = intake ? 'image/png,image/jpeg,image/webp' : 'image/png,image/jpeg';
+    this.el.attach!.setAttribute('aria-label', intake ? 'Anexar fotografia ou desenho' : 'Anexar imagem de referência');
+    const off = intake?.disabled === true; input.disabled = off; (this.el.attach as HTMLButtonElement).disabled = off; if (off) (this.el.send as HTMLButtonElement).disabled = true;
+    this.setComposerState('IDLE', intake?.status ?? 'Modo assistido.');
+  }
+
   get poseSource(): string { return this.poseLabel; }
   /** Which material profile is applied, and how many premium materials it owns (0 for the standard look). */
   get look(): { name: 'standard' | 'premium'; materials: number } { return { name: this.premium ? 'premium' : 'standard', materials: this.premium?.handle.materials.length ?? 0 }; }
 
+  /** The premium look is per machine; the studio environment is built once and shared by every machine this workspace shows. */
   private applyPremium(): NonNullable<SpatialWorkspace['premium']> {
     const renderer = this.foundry.renderer; const scene = this.foundry.scene;
-    const previous = { environment: scene.environment, intensity: scene.environmentIntensity, exposure: renderer.toneMappingExposure };
-    const handle = applyPremiumLook(this.model.root);
-    const environment = this.options.premiumEnvironment?.(renderer, PREMIUM_STUDIO.environment) ?? null;
-    if (environment) { scene.environment = environment.texture; scene.environmentIntensity = PREMIUM_STUDIO.environmentIntensity; }
-    renderer.toneMappingExposure = PREMIUM_STUDIO.grade.exposure;
-    return { handle, environment, previous };
+    if (!this.premiumShared) {
+      const previous = { environment: scene.environment, intensity: scene.environmentIntensity, exposure: renderer.toneMappingExposure };
+      const environment = this.options.premiumEnvironment?.(renderer, PREMIUM_STUDIO.environment) ?? null;
+      if (environment) { scene.environment = environment.texture; scene.environmentIntensity = PREMIUM_STUDIO.environmentIntensity; }
+      renderer.toneMappingExposure = PREMIUM_STUDIO.grade.exposure;
+      this.premiumShared = { environment, previous };
+    }
+    return { handle: applyPremiumLook(this.model.root), environment: this.premiumShared.environment, previous: this.premiumShared.previous };
   }
 
-  /** Puts the Foundry's own materials, environment and exposure back and releases what the premium look created. Idempotent. */
-  private releasePremium(): void {
+  /** Gives the machine its own materials back. The shared environment stays for the next machine. */
+  private releaseLook(): void {
     const premium = this.premium; if (!premium) return; this.premium = null;
     premium.handle.revert();
-    this.foundry.scene.environment = premium.previous.environment; this.foundry.scene.environmentIntensity = premium.previous.intensity; this.foundry.renderer.toneMappingExposure = premium.previous.exposure;
-    premium.environment?.dispose();
+  }
+
+  /** Restores the Foundry's environment and exposure and frees the shared studio environment. Idempotent. */
+  private releasePremium(): void {
+    this.releaseLook();
+    const shared = this.premiumShared; if (!shared) return; this.premiumShared = null;
+    this.foundry.scene.environment = shared.previous.environment; this.foundry.scene.environmentIntensity = shared.previous.intensity; this.foundry.renderer.toneMappingExposure = shared.previous.exposure;
+    shared.environment?.dispose();
   }
   engineState() { return this.engineering.state(); }
   engineFrame() { return this.engineering.frame(); }
@@ -1062,13 +1199,14 @@ export class SpatialWorkspace {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.revealTween?.kill(); this.revealTween = null; // no animation may keep running on released objects
     this.engineCompletion?.('cancelled'); this.engineCompletion = null; this.approvedRunning = false;
     cancelAnimationFrame(this.engineRaf); this.engineRaf = 0; this.engineering.dispose();
     clearTimeout(this.transientTimer);
     this.pending?.abort();
     this.playback?.cancel();
     this.insetTween?.kill();
-    this.handTracker?.stop();
+    this.stopHandTracking();
     this.voice?.stop?.();
     for (const d of this.disposers.splice(0)) d();
     this.director.dispose();

@@ -34,6 +34,10 @@ export interface ReviewHandoff {
   /** Decisions that stay on this screen because the API has no field for them. */
   localNotes(ui: ReviewState): string[];
   submit(): Promise<HandoffResult>;
+  /** The server session is gone or timed out: nothing can be sent, so the person must start again. */
+  expired?(): boolean;
+  /** Epoch ms at which the session will expire, or null. Lets the interface react when it does, without a click. */
+  expiresAt?(): number | null;
   /** Back from the lab: the review becomes editable again with the same draft. */
   reopen(): void;
   /** Start over: forget the session. */
@@ -56,6 +60,26 @@ export interface LabHost {
 }
 
 /** A secondary way in that does not involve the person's source: open the reference machine, labelled as an example. */
-export interface ExampleEntry { run(): void }
+export interface ExampleEntry {
+  run(): void;
+  /** Called whenever the project starts over; the host removes the example machine from the stage. Idempotent. */
+  close?(): void;
+}
 
-export type ExperienceOptions = { port?: import('./intake').ReconstructionPort; handoff?: ReviewHandoff; lab?: LabHost; example?: ExampleEntry };
+/** What the person can do with the composer in each phase of the flow. */
+export type ComposerMode = 'intake' | 'busy' | 'review' | 'lab';
+export type IntakeApi = { text(text: string): void; file(file: File): void };
+
+/**
+ * Embedded mode: the experience does not own a stage. Its panels live inside the host workspace (beside the same rail,
+ * under the same brand, above the same composer) and the machine appears on the workspace's own stage.
+ */
+export interface EmbeddedHost {
+  readonly host: HTMLElement;
+  setComposer(mode: ComposerMode, api: IntakeApi): void;
+}
+
+/** What a host can drive from outside. */
+export type ExperienceApi = { takeText(text: string): void; takeFile(file: File): void; openExample(): void; restart(): void; phase(): string };
+
+export type ExperienceOptions = { port?: import('./intake').ReconstructionPort; handoff?: ReviewHandoff; lab?: LabHost; example?: ExampleEntry; embedded?: EmbeddedHost };

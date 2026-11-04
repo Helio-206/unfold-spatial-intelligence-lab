@@ -69,7 +69,14 @@ const overlap = (a: { x: number; y: number; width: number; height: number }, b: 
 async function geometry(page: Page, label: string, selectors: string[]) {
   const result = await page.evaluate((sel) => ({
     scrollW: document.documentElement.scrollWidth, innerW: innerWidth,
-    boxes: Object.fromEntries(sel.map((q) => { const el = document.querySelector(q); const r = el && (el as HTMLElement).offsetParent !== null || el?.getClientRects().length ? el!.getBoundingClientRect() : null; return [q, r ? { x: r.x, y: r.y, width: r.width, height: r.height } : null]; })),
+    boxes: Object.fromEntries(sel.map((q) => {
+      const el = document.querySelector(q); const r = el && (el as HTMLElement).offsetParent !== null || el?.getClientRects().length ? el!.getBoundingClientRect() : null;
+      if (!r) return [q, null];
+      // what the person sees: content that scrolls inside the review panel is cut at the panel's edge
+      const clip = el!.closest('.ux-main') ? document.querySelector('.ux-main')!.getBoundingClientRect() : null;
+      const x0 = clip ? Math.max(r.x, clip.x) : r.x, y0 = clip ? Math.max(r.y, clip.y) : r.y, x1 = clip ? Math.min(r.right, clip.right) : r.right, y1 = clip ? Math.min(r.bottom, clip.bottom) : r.bottom;
+      return [q, x1 > x0 && y1 > y0 ? { x: x0, y: y0, width: x1 - x0, height: y1 - y0 } : null];
+    })),
   }), selectors);
   assert.ok(result.scrollW <= result.innerW, `${label}: no horizontal scroll (${result.scrollW} > ${result.innerW})`);
   const named = selectors.filter((q) => result.boxes[q]);
@@ -79,15 +86,15 @@ async function geometry(page: Page, label: string, selectors: string[]) {
 
 async function journey(viewport: { width: number; height: number }, label: string) {
   const page = await open(viewport);
-  await geometry(page, `${label} empty`, ['.ux-brand', '#ux-intake']);
   await page.screenshot({ path: join(out, `${label}-01-empty.png`) });
+  await geometry(page, `${label} empty`, ['.uw-brand', '.uw-rail', '.uw-composer', '#ux-intake']);
   await page.locator('[data-kind="text"]').click();
   await page.locator('#ux-text').fill('Escavadora de rastos de 20 t com lança, braço e caçamba.');
   await page.locator('#ux-use-text').click();
   await page.locator('[data-flow="submit"]').click();
   await page.waitForFunction(() => (window as any).__experience.phase() === 'review', null, { timeout: 60000 });
-  await geometry(page, `${label} review`, ['.ux-brand', '.ux-sheet']);
   await page.screenshot({ path: join(out, `${label}-02-review.png`) });
+  await geometry(page, `${label} review`, ['.uw-brand', '.uw-rail', '.uw-composer', '.ux-sheet']);
   assert.equal(await page.locator('#ux-demo').count(), 0, 'no demonstration banner with the live port');
   assert.equal(await page.evaluate(() => (window as any).__experience.readiness().status), 'review_pending', 'hypotheses pending, not insufficient');
   assert.equal(await page.locator('#ux-enter').isDisabled(), true);
@@ -102,8 +109,8 @@ async function journey(viewport: { width: number; height: number }, label: strin
   assert.equal(await page.locator('#ux-enter').isDisabled(), true, 'nothing is pre-filled: the server step starts blocked');
   assert.equal(await page.locator('#gw-family').isChecked(), false); assert.equal(await page.locator('#gw-bucket').isChecked(), false);
   assert.equal(await page.inputValue('#gw-reviewer'), ''); assert.equal(await page.inputValue('#gw-width'), '');
-  await geometry(page, `${label} server step`, ['.ux-brand', '.ux-gw']);
   await page.screenshot({ path: join(out, `${label}-04-server-step.png`) });
+  await geometry(page, `${label} server step`, ['.uw-brand', '.uw-rail', '.uw-composer', '.ux-gw-card']);
   await page.fill('#gw-reviewer', 'revisor-e2e'); await page.check('#gw-family'); await page.check('#gw-bucket');
   await page.fill('#gw-width', '1.4'); await page.fill('#gw-basis', 'valor fictício do E2E');
   assert.equal(await page.locator('#ux-enter').isDisabled(), true, 'extras still undecided');
@@ -128,6 +135,9 @@ async function toServerStep(page: Page, width = '1.4') {
   await page.locator('[data-gw="extra-all"][data-decision="reject"]').click();
 }
 const phase = (page: Page) => page.evaluate(() => (window as any).__experience.phase());
+/** The stage is empty: one workspace, one canvas, and no machine shown, picked, selected or asked about. */
+const stageEmpty = (page: Page) => page.evaluate(() => { const ws = (window as any).__workspace; return { empty: ws.isEmpty, visible: ws.model.root.visible, canvases: document.querySelectorAll('.uw-stage canvas').length, workspaces: document.querySelectorAll('.uw-root').length }; });
+const EMPTY_STAGE = { empty: true, visible: false, canvases: 1, workspaces: 1 };
 
 try {
   for (const [viewport, label] of [[{ width: 1440, height: 900 }, '1440'], [{ width: 768, height: 1024 }, '768'], [{ width: 390, height: 844 }, '390']] as const) {
@@ -151,8 +161,10 @@ try {
     const noticeHeight = await page.evaluate(() => document.querySelector('.uw-notices')!.getBoundingClientRect().height);
     assert.ok(noticeHeight <= 96, `${label}: the provenance notice is compact when collapsed (${noticeHeight}px)`);
     await page.locator('.uw-notice-details summary').click();
-    const detail = await page.locator('.uw-notice-details p').innerText();
-    for (const phrase of [/não foram verificadas/, /malha 3D ainda não mostra/, /forward-kinematics@/, /não certifica segurança/, /1,40 m, antes 1,10 m/]) assert.match(detail, phrase);
+    const detail = (await page.locator('.uw-notice-details p').textContent()) ?? '';
+    // the Foundry draws the width the person gave; what stays true is that it is theirs, unmeasured, and the rest is synthetic
+    for (const phrase of [/malha 3D da caçamba segue a largura que indicou/, /não foi medida nem verificada pela Meta/, /forward-kinematics@/, /não certifica segurança/, /1,40 m, antes 1,10 m/, /resto da geometria é sintético/]) assert.match(detail, phrase);
+    assert.doesNotMatch(detail, /ainda não mostra|forma que vê é de demonstração/);
     await page.screenshot({ path: join(out, `${label}-07-lab-notice-expanded.png`) });
     await page.locator('.uw-notice-details summary').click();
     pass(`${label}: live flow reaches the real workspace through both gates, no overflow, no overlap`);
@@ -182,39 +194,39 @@ try {
     assert.deepEqual(await page.evaluate(() => (window as any).__workspace.getState().messages.at(-1)?.proposal?.kind), 'engine_move');
     pass('inside the lab: reconstructed assembly, engine move, Digital Hand and conversation work');
 
-    // back to the review from the rail: the old workspace is disposed, the decisions and the server fields are kept
-    const old = await page.evaluate(() => { const ws = (window as any).__workspace; (window as any).__oldWs = ws; return { canvases: document.querySelectorAll('.ux-workspace canvas').length }; });
-    assert.equal(old.canvases, 1);
+    // back to the review from the rail: the SAME workspace and canvas stay, the machine leaves the stage, decisions and fields are kept
+    const stageBefore = await page.evaluate(() => { const ws = (window as any).__workspace; Object.assign(window as any, { __oldWs: ws, __canvas: document.querySelector('.uw-stage canvas'), __engine: ws.engineering, __registry: ws.registry }); return { canvases: document.querySelectorAll('.uw-stage canvas').length, empty: ws.isEmpty }; });
+    assert.deepEqual(stageBefore, { canvases: 1, empty: false });
     await page.locator('[data-el="extra_review"]').click();
     await page.waitForFunction(() => (window as any).__experience.phase() === 'review', null, { timeout: 30000 });
-    assert.equal(await page.evaluate(() => document.querySelectorAll('.ux-workspace canvas').length), 0, 'the workspace canvas is gone');
-    assert.equal(await page.evaluate(() => (window as any).__workspace), null);
-    assert.equal(await page.evaluate(() => (window as any).__oldWs.disposed ?? true), true);
+    assert.deepEqual(await stageEmpty(page), EMPTY_STAGE, 'the machine left the stage; the workspace did not');
+    assert.equal(await page.evaluate(() => (window as any).__workspace === (window as any).__oldWs && document.querySelector('.uw-stage canvas') === (window as any).__canvas), true, 'same workspace, same canvas');
+    assert.equal(await page.evaluate(() => (window as any).__engine.disposed), true, 'the old engine session was closed');
     assert.equal(await page.evaluate(() => (window as any).__oldWs.engineRaf), 0, 'no engine loop left running');
-    assert.deepEqual(await page.evaluate(() => { const w = (window as any).__oldWs; return { premium: w.premium, look: w.look }; }), { premium: null, look: { name: 'standard', materials: 0 } }, 'the premium look and its environment were released with the workspace');
     assert.equal(await page.evaluate(() => (window as any).__experience.summary().confirmed), 14, 'review decisions are intact');
     assert.equal(await page.evaluate(() => (window as any).__unified.gateway.human().bucketWidthM), 1.4, 'server fields are intact');
-    pass('back to the review: workspace disposed, decisions and server fields kept');
+    pass('back to the review: same workspace and canvas, machine replaced by the empty stage, decisions and fields kept');
 
-    // change the width and open the lab again: a NEW workspace is built from the new assembly
+    // change the width and open the lab again: the machine is rebuilt on the same stage from the new assembly
     await page.locator('#ux-enter').click();
     await page.fill('#gw-width', '1.8');
     await page.locator('#ux-enter').click();
-    await page.waitForFunction(() => (window as any).__experience.phase() === 'lab' && (window as any).__workspace?.partPoses, null, { timeout: 60000 });
-    assert.equal(await page.evaluate(() => (window as any).__workspace !== (window as any).__oldWs), true, 'a fresh workspace instance');
+    await page.waitForFunction(() => (window as any).__experience.phase() === 'lab' && !(window as any).__workspace.isEmpty, null, { timeout: 60000 });
+    assert.equal(await page.evaluate(() => (window as any).__workspace === (window as any).__oldWs && document.querySelector('.uw-stage canvas') === (window as any).__canvas), true, 'still the same workspace and canvas');
+    assert.equal(await page.evaluate(() => { const ws = (window as any).__workspace; return ws.engineering !== (window as any).__engine && ws.registry !== (window as any).__registry; }), true, 'a new engine session and component registry');
     assert.equal(await page.evaluate(() => (window as any).__workspace.selection()), null, 'no selection carried over from the old assembly');
-    assert.equal(await page.evaluate(() => document.querySelectorAll('.ux-workspace canvas').length), 1, 'exactly one canvas');
+    assert.equal(await page.evaluate(() => document.querySelectorAll('.uw-stage canvas').length), 1, 'exactly one canvas');
     const widths = await page.evaluate(() => { const ws = (window as any).__workspace; const box = ws.options.assembly.parts.find((p: any) => p.role === 'bucket').shapes.find((x: any) => x.kind === 'box'); return box.halfExtentsM[2] * 2; });
-    assert.ok(Math.abs(widths - 1.8) < 1e-9, 'the new workspace carries the new width');
+    assert.ok(Math.abs(widths - 1.8) < 1e-9, 'the new machine carries the new width');
     assert.equal(providerCalls.length, 1, 'still a single provider call'); assert.equal(api.filter((a) => a.body.action === 'review').length, 2);
-    pass('opening the lab again rebuilds engine session, registry and scene from the new assembly');
+    pass('opening the lab again rebuilds engine session, registry and scene from the new assembly, on the same stage');
 
     // "Nova máquina" forgets everything
     await page.locator('[data-el="extra_restart"]').click();
     await page.waitForFunction(() => (window as any).__experience.phase() === 'empty', null, { timeout: 30000 });
     assert.equal(await page.evaluate(() => (window as any).__unified.port.session.state.phase), 'idle');
-    assert.equal(await page.evaluate(() => document.querySelectorAll('.ux-workspace canvas').length), 0);
-    pass('new machine: session forgotten, no workspace left');
+    assert.deepEqual(await stageEmpty(page), EMPTY_STAGE);
+    pass('new machine: session forgotten, empty stage, same workspace');
     await page.close();
   }
 
@@ -258,7 +270,7 @@ try {
     if (phaseExpected === 'failed') assert.match(await page.locator('#ux-intake').innerText(), new RegExp(code === 'RECONSTRUCTION_SCHEMA_INVALID' ? 'RECONSTRUCTION_SCHEMA_INVALID' : code));
     assert.equal(await page.locator('[data-flow="retry"]').count(), retry ? 1 : 0, `${code}: retry only when it can help`);
     assert.equal(await page.locator('[data-flow="restart"]').count() > 0, true, 'always a way to choose another source');
-    assert.equal(await page.evaluate(() => (window as any).__experience.runtime.stage.machineVisible), false); assert.equal(await page.locator('.uw-root').count(), 0);
+    assert.deepEqual(await stageEmpty(page), EMPTY_STAGE);
     assert.equal(await page.evaluate(() => (window as any).__unified.port.session.state.phase), phaseExpected === 'failed' ? 'proposal_failed' : 'proposal_failed');
     await page.close();
   }
@@ -280,6 +292,43 @@ try {
     await page.waitForFunction(() => /expirou/.test(document.querySelector('#ux-gw-msg')?.textContent ?? ''));
     assert.equal(await phase(page), 'review');
     pass('an expired server session is reported and the lab stays closed');
+    // the way on is explicit, and it works without reloading the page
+    assert.deepEqual(await page.locator('#ux-gw-msg [data-flow="restart"]').allTextContents(), ['Importar outra fonte', 'Novo projecto']);
+    await page.evaluate(() => { (window as any).__noReload = true; });
+    await page.locator('#ux-gw-msg [data-flow="restart"]', { hasText: 'Importar outra fonte' }).click();
+    assert.equal(await phase(page), 'empty'); assert.equal(await page.evaluate(() => (window as any).__noReload === true), true, 'no page reload');
+    assert.equal(await page.evaluate(() => (window as any).__unified.port.session.state.phase), 'idle');
+    assert.deepEqual(await stageEmpty(page), EMPTY_STAGE);
+    await page.locator('[data-kind="text"]').click(); await page.locator('#ux-text').fill('Escavadora de rastos de 20 t com lança, braço e caçamba.'); await page.locator('#ux-use-text').click();
+    assert.equal(await phase(page), 'selected', 'a new source can be imported straight away');
+    pass('after an expired session the person can import another source without reloading');
+    await page.close();
+  }
+
+  // local expiry (30 minutes), with the browser clock advanced: the interface reacts by itself and offers the same two ways on
+  await restartBackend(); providerCalls.length = 0; api.length = 0;
+  {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.route('**/api/living/reconstruction', async (route) => {
+      const request = route.request();
+      const response = await fetch(`http://127.0.0.1:${backendPort}/api/living/reconstruction`, { method: 'POST', headers: { 'content-type': 'application/json', origin: ALLOWED_ORIGIN }, body: request.postData() ?? '' });
+      await route.fulfill({ status: response.status, contentType: 'application/json', body: await response.text() });
+    });
+    await page.clock.install({ time: new Date() });
+    await page.goto(`http://127.0.0.1:${port}/living?debug-living=1&rm=1&agent=fixture`);
+    await page.waitForFunction(() => (window as any).__experience?.ready, null, { timeout: 120000 });
+    await toServerStep(page);
+    assert.equal(await page.locator('#ux-enter').isDisabled(), false);
+    await page.clock.fastForward('30:05');
+    await page.waitForFunction(() => /expirou/.test(document.querySelector('#ux-gw-msg')?.textContent ?? ''), null, { timeout: 10000 });
+    assert.equal(await page.locator('#ux-enter').isDisabled(), true, 'nothing can be sent any more');
+    assert.deepEqual(await page.locator('#ux-gw-msg [data-flow="restart"]').allTextContents(), ['Importar outra fonte', 'Novo projecto']);
+    assert.equal(api.filter((a) => a.body.action === 'review').length, 0, 'the server was never asked: the expiry is known locally');
+    await page.screenshot({ path: join(out, 'session-expired.png') });
+    await page.locator('#ux-gw-msg [data-flow="restart"]', { hasText: 'Novo projecto' }).click();
+    assert.equal(await phase(page), 'empty'); assert.deepEqual(await stageEmpty(page), EMPTY_STAGE);
+    pass('a session that expires locally is shown without a click, with both ways on, and "Novo projecto" starts over');
     await page.close();
   }
 
@@ -334,7 +383,7 @@ try {
     assert.match(await page.locator('#ux-gw-missing').innerText(), /0,60 a 2,40 m/);
     await page.screenshot({ path: join(out, `width-${bad}m-refused.png`) });
     assert.equal(api.filter((a) => a.body.action === 'review').length, 0, `${bad} m is never sent to the server`);
-    assert.equal(await page.evaluate(() => (window as any).__workspace ?? null), null); assert.equal(await page.locator('.uw-root').count(), 0);
+    assert.deepEqual(await stageEmpty(page), EMPTY_STAGE);
     await page.close();
   }
   pass('widths outside 0,60 a 2,40 m are refused with the reason; nothing is sent, adjusted or built');
@@ -350,8 +399,7 @@ try {
     const message = await page.locator('#ux-gw-msg').innerText();
     assert.match(message, /contrato é válido/); assert.match(message, /STROKE_OUT_OF_RANGE/);
     assert.match(await page.locator('#ux-side .ux-gates').innerText(), /bloqueada pelo motor[\s\S]*STROKE_OUT_OF_RANGE/, 'gate 2 shows the engine blocked it');
-    assert.equal(await phase(page), 'review'); assert.equal(await page.evaluate(() => document.querySelectorAll('.ux-workspace canvas').length), 0, 'no machine is shown that the engine cannot pose');
-    assert.equal(await page.evaluate(() => (window as any).__workspace ?? null), null);
+    assert.equal(await phase(page), 'review'); assert.deepEqual(await stageEmpty(page), EMPTY_STAGE, 'no machine is shown that the engine cannot pose');
     pass('structurally valid but unposable by the engine: gate 2 blocked, lab closed, reason shown');
     await page.locator('#ux-enter').click();
     await page.waitForFunction(() => (window as any).__experience.phase() === 'lab' && (window as any).__workspace?.partPoses, null, { timeout: 60000 });
@@ -386,67 +434,87 @@ try {
       await toServerStep(page);
       await page.locator('#ux-enter').click();
       await page.waitForFunction(() => (window as any).__experience.phase() === 'lab' && (window as any).__workspace?.partPoses, null, { timeout: 90000 });
-      await page.evaluate(() => { const ws = (window as any).__workspace; ws.select('boom_cylinder'); (window as any).__canvas = document.querySelector('.ux-workspace canvas'); (window as any).__shows = (window as any).__shows ?? []; addEventListener('pageshow', (e) => (window as any).__shows.push((e as PageTransitionEvent).persisted)); });
+      await page.evaluate(() => { const ws = (window as any).__workspace; ws.select('boom_cylinder'); (window as any).__canvas = document.querySelector('.uw-stage canvas'); (window as any).__shows = (window as any).__shows ?? []; addEventListener('pageshow', (e) => (window as any).__shows.push((e as PageTransitionEvent).persisted)); });
       for (let cycle = 1; cycle <= 2; cycle++) {
         await page.goto(`http://127.0.0.1:${port}/landing/`, { waitUntil: 'domcontentloaded' });
         await page.goBack({ waitUntil: 'commit' });
         await page.waitForFunction(() => (window as any).__experience?.ready, null, { timeout: 120000 });
-        const r = await page.evaluate(() => ({ persisted: (window as any).__shows.at(-1), phase: (window as any).__experience.phase(), stageCanvases: document.querySelectorAll('.ux-stage canvas').length, labCanvases: document.querySelectorAll('.ux-workspace canvas').length, same: (window as any).__canvas === document.querySelector('.ux-workspace canvas'), playing: (window as any).__workspace?.engineState().playing ?? null, selection: (window as any).__workspace?.selection()?.id ?? null, lost: (window as any).__workspace?.foundry.renderer.getContext().isContextLost() ?? null, look: (window as any).__workspace?.look.name ?? null }));
+        const r = await page.evaluate(() => ({ persisted: (window as any).__shows.at(-1), phase: (window as any).__experience.phase(), stageCanvases: document.querySelectorAll('.uw-stage canvas').length, labCanvases: document.querySelectorAll('.uw-stage canvas').length, same: (window as any).__canvas === document.querySelector('.uw-stage canvas'), empty: (window as any).__workspace?.isEmpty ?? null, playing: (window as any).__workspace?.engineState().playing ?? null, selection: (window as any).__workspace?.selection()?.id ?? null, lost: (window as any).__workspace?.foundry.renderer.getContext().isContextLost() ?? null, look: (window as any).__workspace?.look.name ?? null }));
         if (cache) { assert.equal(r.persisted, true); assert.equal(r.phase, 'lab'); assert.equal(r.labCanvases, 1); assert.equal(r.same, true); assert.equal(r.selection, 'boom_cylinder'); assert.equal(r.playing, false); assert.equal(r.lost, false); assert.equal(r.look, 'premium'); }
-        else { assert.equal(r.persisted, false); assert.equal(r.phase, 'empty', 'a fresh page starts from an empty lab, never from a half-restored one'); assert.equal(r.labCanvases, 0); assert.equal(r.stageCanvases, 1); }
+        else { assert.equal(r.persisted, false); assert.equal(r.phase, 'empty', 'a fresh page starts from an empty lab, never from a half-restored one'); assert.equal(r.empty, true); assert.equal(r.stageCanvases, 1); }
         pass(`history cycle=${cycle} cache=${cache} persisted=${r.persisted}`);
       }
       await page.close();
     } finally { await b.close(); }
   }
 
-  // first use: /living is an EMPTY lab; the example is a separate, openly labelled choice
+  // first use: /living is an EMPTY lab; the example is a separate, openly labelled choice, on the same stage
   await restartBackend(); providerCalls.length = 0; api.length = 0;
   {
     const page = await open({ width: 1440, height: 900 }, 'debug-living=1&rm=1&agent=fixture');
     assert.equal(await phase(page), 'empty');
-    assert.equal(await page.evaluate(() => (window as any).__experience.runtime.stage.machineVisible), false, 'no machine on the empty stage');
-    assert.equal(await page.evaluate(() => (window as any).__workspace ?? null), null);
-    assert.equal(await page.locator('.uw-root').count(), 0, 'no workspace is mounted before a source or an example');
-    assert.equal(await page.locator('.ux-root[data-demo], #ux-demo').count(), 0);
+    assert.deepEqual(await stageEmpty(page), EMPTY_STAGE, 'one workspace, one canvas, no machine');
+    assert.equal(await page.locator('#ux-demo').count(), 0);
+    const chrome = await page.evaluate(() => ({ rail: !!document.querySelector('.uw-rail'), composer: !!document.querySelector('.uw-composer'), brand: document.querySelector('.uw-brand')?.textContent, toolsDisabled: (document.querySelector('[data-el="toolFrame"]') as HTMLButtonElement).disabled, placeholder: (document.querySelector('[data-el="input"]') as HTMLTextAreaElement).placeholder }));
+    assert.ok(chrome.rail && chrome.composer); assert.match(chrome.brand ?? '', /laboratório vazio/); assert.equal(chrome.toolsDisabled, true, 'machine tools are present but unavailable');
+    assert.match(chrome.placeholder, /Descreva a máquina ou anexe uma fotografia/, 'the composer is the way in');
     const intake = await page.locator('#ux-intake').innerText();
     assert.match(intake, /PNG, JPEG ou WebP/); assert.match(intake, /10 MB/); assert.match(intake, /16 megapixéis/);
     assert.equal(await page.locator('[data-example="open"]').count(), 1); assert.equal(await page.locator('[data-example="open"]').textContent(), 'Abrir exemplo');
     assert.match(await page.locator('.ux-example-note').innerText(), /sintética[\s\S]*não vem de nenhuma fonte sua/);
     assert.equal(await page.locator('[data-flow="submit"]').isDisabled(), true, 'the primary action needs a source');
-    pass('/living opens as an empty lab with the formats, the limits and a separate "Abrir exemplo"');
+    pass('/living opens as one workspace with an empty stage, the formats, the limits and a separate "Abrir exemplo"');
+    await page.screenshot({ path: join(out, 'unified-01-empty.png') });
 
-    // choosing a file shows a preview; still no machine, no workspace
+    // the composer takes a description: it becomes the source, with a preview, on the same stage
+    await page.fill('[data-el="input"]', 'Escavadora de rastos de 20 t com lança, braço e caçamba.');
+    await page.locator('[data-el="send"]').click();
+    await page.locator('.ux-preview').waitFor();
+    assert.equal(await phase(page), 'selected'); assert.match(await page.locator('.ux-preview').innerText(), /Escavadora de rastos/);
+    assert.equal(await page.evaluate(() => (window as any).__workspace.getState().messages.length), 0, 'the text went to the import, not to the assistant');
+    await page.locator('[data-flow="clear"]').click();
+    // the paperclip takes a photograph
     const png = await page.evaluate(() => { const c = document.createElement('canvas'); c.width = 96; c.height = 48; c.getContext('2d')!.fillRect(0, 0, 96, 48); return c.toDataURL('image/png').split(',')[1]; });
-    await page.locator('[data-kind="image"]').click();
-    await page.setInputFiles('#ux-file', { name: 'minha-foto.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') });
+    await page.setInputFiles('[data-el="file"]', { name: 'minha-foto.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') });
     await page.locator('.ux-preview img').waitFor();
     assert.match(await page.locator('.ux-preview').innerText(), /minha-foto\.png/);
-    assert.equal(await page.evaluate(() => (window as any).__experience.runtime.stage.machineVisible), false); assert.equal(await page.locator('.uw-root').count(), 0);
+    assert.deepEqual(await stageEmpty(page), EMPTY_STAGE);
     await page.locator('[data-flow="submit"]').click();
     await page.waitForFunction(() => (window as any).__experience.phase() === 'review', null, { timeout: 60000 });
-    assert.equal(await page.evaluate(() => (window as any).__experience.runtime.stage.machineVisible), false, 'nothing appears on stage while importing and reviewing');
-    assert.equal(await page.locator('.uw-root').count(), 0);
-    pass('importing a photo never shows a machine before the lab opens');
+    assert.deepEqual(await stageEmpty(page), EMPTY_STAGE, 'nothing appears on stage while importing and reviewing');
+    const review = await page.evaluate(() => ({ disabled: (document.querySelector('[data-el="input"]') as HTMLTextAreaElement).disabled, placeholder: (document.querySelector('[data-el="input"]') as HTMLTextAreaElement).placeholder }));
+    assert.equal(review.disabled, true); assert.match(review.placeholder, /Termine a revisão/);
+    await page.screenshot({ path: join(out, 'unified-02-review.png') });
+    pass('the composer and the paperclip import a source; the stage stays empty through import and review');
 
-    // explicit example, in a new page, labelled as such
+    // the example opens on the same stage, labelled as an example, without leaving the page
     const fresh = await open({ width: 1440, height: 900 }, 'debug-living=1&rm=1&agent=fixture');
+    await fresh.evaluate(() => { (window as any).__canvas = document.querySelector('.uw-stage canvas'); (window as any).__oldWs = (window as any).__workspace; });
+    const urlBefore = await fresh.evaluate(() => location.href);
     await fresh.locator('[data-example="open"]').click();
-    await fresh.waitForFunction(() => (window as any).__workspace?.partPoses, null, { timeout: 120000 });
-    const example = await fresh.evaluate(() => { const ws = (window as any).__workspace; return { url: location.search, assembly: ws.options.assembly.id, brand: document.querySelector('.uw-brand')?.textContent, look: ws.look, notice: document.querySelector('.uw-notices')?.textContent }; });
-    assert.ok(example.url.includes('example=1') && example.url.includes('debug-living=1'), 'debug parameters are kept');
-    assert.equal(example.assembly, EXCAVATOR_ASSEMBLY_V1.id);
+    await fresh.waitForFunction(() => !(window as any).__workspace.isEmpty, null, { timeout: 60000 });
+    await fresh.waitForTimeout(1200);
+    const example = await fresh.evaluate(() => { const ws = (window as any).__workspace; return { same: ws === (window as any).__oldWs && document.querySelector('.uw-stage canvas') === (window as any).__canvas, url: location.href, assembly: ws.options.assembly.id, brand: document.querySelector('.uw-brand')?.textContent, look: ws.look, notice: document.querySelector('.uw-notices')?.textContent, phase: (window as any).__experience.phase(), panels: getComputedStyle(document.querySelector('.ux-root')!).display }; });
+    assert.equal(example.same, true, 'the same workspace and canvas'); assert.equal(example.url, urlBefore, 'no navigation');
+    assert.equal(example.assembly, EXCAVATOR_ASSEMBLY_V1.id); assert.equal(example.phase, 'lab'); assert.equal(example.panels, 'none', 'the import panels are gone');
     assert.match(example.brand ?? '', /exemplo/); assert.match(example.notice ?? '', /Exemplo[\s\S]*não foi reconstruída a partir de nenhuma fotografia/);
     assert.equal(example.look.name, 'premium'); assert.ok(example.look.materials > 0);
     assert.equal(await fresh.evaluate(() => { const ws = (window as any).__workspace; return ws.premium.environment !== null && ws.foundry.scene.environment === ws.premium.environment.texture; }), true, 'the premium studio environment is the one in the scene');
     assert.equal(await fresh.locator('[data-el="extra_new"]').count(), 1);
-    pass('"Abrir exemplo" opens the synthetic reference machine, labelled as an example, with the premium look');
+    await fresh.screenshot({ path: join(out, 'unified-03-example.png') });
+    pass('"Abrir exemplo" puts the synthetic reference machine on the same stage, labelled as an example, with the premium look');
     await fresh.locator('[data-el="extra_new"]').click();
-    await fresh.waitForFunction(() => (window as any).__experience?.ready, null, { timeout: 120000 });
-    assert.equal(await phase(fresh), 'empty'); assert.ok(!(await fresh.evaluate(() => location.search)).includes('example'));
-    assert.equal(await fresh.evaluate(() => (window as any).__workspace ?? null), null);
-    pass('"Novo projecto" returns to the empty lab');
-    await fresh.close(); await page.close();
+    await fresh.waitForFunction(() => (window as any).__experience.phase() === 'empty', null, { timeout: 30000 });
+    assert.deepEqual(await stageEmpty(fresh), EMPTY_STAGE);
+    assert.equal(await fresh.evaluate(() => (window as any).__workspace === (window as any).__oldWs), true);
+    pass('"Novo projecto" empties the stage again, in the same workspace');
+    await fresh.close();
+
+    // ?example=1 goes straight to the example
+    const deep = await open({ width: 1440, height: 900 }, 'example=1&debug-living=1&rm=1&agent=fixture');
+    await deep.waitForFunction(() => !(window as any).__workspace.isEmpty, null, { timeout: 60000 });
+    assert.match(await deep.evaluate(() => document.querySelector('.uw-brand')?.textContent ?? ''), /exemplo/);
+    await deep.close(); await page.close();
   }
 } finally { await browser.close(); await vite.close(); await new Promise<void>((r, j) => backend.close((e) => e ? j(e) : r())); }
 assert.deepEqual(errors, []);

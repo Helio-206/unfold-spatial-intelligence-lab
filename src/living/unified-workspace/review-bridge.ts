@@ -94,6 +94,11 @@ export class ReviewGateway {
   reopen(): void { this.session.reopen(); }
   reset(): void { this.session.reset(); }
 
+  /** The server session is gone (404) or its 30 minutes passed locally. A reset or no session is not an expiry. */
+  expired(): boolean { return this.session.state.phase === 'expired'; }
+  /** When the session will expire (epoch ms), or null when there is none to expire. */
+  expiresAt(): number | null { const s = this.session.state; return 'expiresAt' in s ? s.expiresAt : null; }
+
   /** Decisions that stay on this screen. Empty when the session has no observation. */
   localNotes(ui: ReviewState): string[] {
     const s = this.session.state;
