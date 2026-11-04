@@ -261,6 +261,8 @@ export class SpaceFlow {
       notify: (text) => { this.note = text; this.refreshContext(); this.expireNote(text); },
       syncLost: (reason) => { this.session = null; this.syncNote = `Sessão do servidor perdida (${reason}). As edições continuam locais; propostas da Meta e avaliação visual ficam bloqueadas.`; this.refreshContext(); this.updateComposer(); },
     });
+    // edits wait for the server session: one made before it exists would be unknown to it and later overwritten
+    layer.lockEditing('a preparar a sessão do servidor');
     this.layer = layer; this.phase = 'built'; this.panel.hidden = true; this.panel.replaceChildren();
     workspace.showSpace(layer, this.context());
     this.updateComposer();
@@ -277,7 +279,7 @@ export class SpaceFlow {
       if (this.layer !== layer) return;
       const session = { id: reply.sessionId, revision: reply.revision }; this.session = session; this.syncNote = null;
       const sync: LayerSync = {
-        apply: async (operation: SpatialOperationV2) => { const r = await this.api.operation({ sessionId: session.id, baseRevision: session.revision, operation }, fetchImpl); session.revision = r.revision; return r.plan; },
+        apply: async (operation: SpatialOperationV2, provenance) => { const r = await this.api.operation({ sessionId: session.id, baseRevision: session.revision, operation, origin: provenance.origin, evidence: provenance.evidence.slice(0, 300) }, fetchImpl); session.revision = r.revision; return r.plan; },
         undo: async () => { const r = await this.api.undo({ sessionId: session.id, baseRevision: session.revision }, fetchImpl); session.revision = r.revision; return r.plan; },
       };
       layer.attachSync(sync);
@@ -285,7 +287,8 @@ export class SpaceFlow {
       if (this.layer !== layer) return;
       this.session = null; this.syncNote = `Sem sessão no servidor (${error instanceof SpatialApiError ? error.code : 'sem ligação'}). Pode explorar e editar localmente; propostas da Meta e avaliação visual ficam indisponíveis.`;
     }
-    this.refreshContext(); this.updateComposer();
+    layer.unlockEditing(); // with a session (synchronised) or without one (declared local-only): either way the person's edits now have a defined home
+    this.refreshContext(); this.updateComposer(); this.options.workspace.spaceChanged();
   }
 
   // ------------------------------------------------------------------------------------------------ save

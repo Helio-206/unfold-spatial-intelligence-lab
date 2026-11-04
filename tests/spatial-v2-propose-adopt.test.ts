@@ -58,3 +58,30 @@ describe('Meta edit in proposal mode', () => {
     });
   });
 });
+
+describe('provenance of a synchronised operation (PR #27 review, P2)', () => {
+  const op = (value: unknown) => ({ contract: 'unfold.spatial-operation.v2', operationId: 'solver-1', kind: 'set-transform', componentId: 'top', nodeKey: null, value });
+  it('keeps the origin the client declares when it is not stronger than user_provided, so a solver result stays inferred', async () => {
+    await withGuardedServer({ fetchImpl: vi.fn<typeof fetch>() }, async (port) => {
+      const adopted = await rawRequest(port, { path: '/api/spatial/v2/adopt', headers, body: { plan } });
+      const r = await rawRequest(port, { path: '/api/spatial/v2/operation', headers, body: { sessionId: adopted.json.sessionId, baseRevision: 0, operation: op({ ...id3, position: [0, 2, 0] }), origin: 'inferred', evidence: 'Assembly solver proposed this position (bounding boxes).' } });
+      expect(r.status, r.text).toBe(200);
+      const top = r.json.plan.components.find((c: { id: string }) => c.id === 'top');
+      expect(top.provenance.transform).toBe('inferred');
+      expect(top.provenance.evidence).toMatch(/Assembly solver proposed/);
+    });
+  });
+  it('still records user_provided by default, and refuses origins that would promote a value (observed, unknown, anything else)', async () => {
+    await withGuardedServer({ fetchImpl: vi.fn<typeof fetch>() }, async (port) => {
+      const adopted = await rawRequest(port, { path: '/api/spatial/v2/adopt', headers, body: { plan } });
+      const sessionId = adopted.json.sessionId;
+      for (const origin of ['observed', 'unknown', 'design_approximation', 'god']) {
+        const bad = await rawRequest(port, { path: '/api/spatial/v2/operation', headers, body: { sessionId, baseRevision: 0, operation: op({ ...id3, position: [0, 2, 0] }), origin } });
+        expect(bad.status, origin).toBe(400);
+      }
+      const ok = await rawRequest(port, { path: '/api/spatial/v2/operation', headers, body: { sessionId, baseRevision: 0, operation: op({ ...id3, position: [0, 2, 0] }) } });
+      expect(ok.status).toBe(200);
+      expect(ok.json.plan.components.find((c: { id: string }) => c.id === 'top').provenance.transform).toBe('user_provided');
+    });
+  });
+});

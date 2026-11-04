@@ -476,7 +476,7 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
           '/api/spatial/v2/plan': ['sourceKind', 'instruction', 'imageDataUrl', 'mode', 'maxRefinements'],
           '/api/spatial/v2/adopt': ['plan', 'instruction'],
           '/api/spatial/v2/edit': ['sessionId', 'baseRevision', 'instruction', 'propose'],
-          '/api/spatial/v2/operation': ['sessionId', 'baseRevision', 'operation'],
+          '/api/spatial/v2/operation': ['sessionId', 'baseRevision', 'operation', 'origin', 'evidence'],
           '/api/spatial/v2/refine': ['sessionId', 'baseRevision'],
           '/api/spatial/v2/undo': ['sessionId', 'baseRevision'],
           '/api/spatial/v2/evaluate': ['sessionId', 'baseRevision', 'imageDataUrl'],
@@ -487,7 +487,7 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
           '/api/spatial/v2/undo': ['sessionId', 'baseRevision'], '/api/spatial/v2/evaluate': ['sessionId', 'baseRevision', 'imageDataUrl'],
         };
         if (!body || typeof body !== 'object' || Array.isArray(body) || !allowedKeys[route] || Object.keys(body).some((key) => !allowedKeys[route]!.includes(key)) || !requiredKeys[route]!.every((key) => Object.hasOwn(body, key))) { writeJson(response, 400, { error: { code: 'INVALID_SPATIAL_V2_REQUEST', message: 'Corpo V2 inválido, incompleto ou com campos desconhecidos.' } }, origin); return; }
-        const candidate = body as { sessionId?: unknown; baseRevision?: unknown; instruction?: unknown; imageDataUrl?: unknown; sourceKind?: unknown; mode?: unknown; maxRefinements?: unknown; operation?: unknown; plan?: unknown; propose?: unknown };
+        const candidate = body as { sessionId?: unknown; baseRevision?: unknown; instruction?: unknown; imageDataUrl?: unknown; sourceKind?: unknown; mode?: unknown; maxRefinements?: unknown; operation?: unknown; plan?: unknown; propose?: unknown; origin?: unknown; evidence?: unknown };
         if ((route === '/api/spatial/v2/evaluate' || route === '/api/spatial/v2/plan' && candidate.sourceKind === 'image')) {
           const peer = request.socket.remoteAddress ?? 'unknown', key = `spatial-v2-image:${peer}`, now = Date.now();
           for (const [entry, timestamps] of imageRequests) if (!timestamps.some((time) => now - time < 60_000)) imageRequests.delete(entry);
@@ -545,8 +545,15 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
               applySpatialOperationV2(current.plan, operation, { origin: 'inferred', evidence: `Muse Spark proposed operation ${operation.operationId}; not applied.` });
               writeJson(response, 200, { contract: 'unfold.spatial-v2-proposal.v1', sessionId: candidate.sessionId, revision: current.revision, operation, applied: false, ...(meta ? { meta } : {}), limitation: 'A proposta é uma hipótese do modelo e só se aplica depois de autorizada por uma pessoa.' }, origin); return;
             }
-            const originKind = route === '/api/spatial/v2/refine' || route === '/api/spatial/v2/edit' ? 'inferred' : 'user_provided';
-            const next = applySpatialOperationV2(current.plan, operation, { origin: originKind, evidence: route === '/api/spatial/v2/refine' ? `Meta visual evaluation proposed operation ${operation.operationId}; model score is a hypothesis.` : route === '/api/spatial/v2/edit' ? `Muse Spark proposed operation ${operation.operationId}; user instruction is unverified.` : `Client-submitted operation ${operation.operationId}; human identity/review is unverified.` });
+            // A client may say a submitted operation is only `inferred` (a solver result) so the plan does not promote it; it can never claim more than `user_provided`.
+            let declared: 'inferred' | 'user_provided' = 'user_provided', declaredEvidence: string | undefined;
+            if (route === '/api/spatial/v2/operation') {
+              if (candidate.origin !== undefined && candidate.origin !== 'inferred' && candidate.origin !== 'user_provided') { writeJson(response, 400, { error: { code: 'INVALID_SPATIAL_V2_ORIGIN', message: 'origin só pode ser inferred ou user_provided.' } }, origin); return; }
+              if (candidate.evidence !== undefined && (typeof candidate.evidence !== 'string' || !candidate.evidence.trim() || candidate.evidence.length > 300)) { writeJson(response, 400, { error: { code: 'INVALID_SPATIAL_V2_EVIDENCE', message: 'evidence deve ter entre 1 e 300 caracteres.' } }, origin); return; }
+              declared = candidate.origin === 'inferred' ? 'inferred' : 'user_provided'; declaredEvidence = candidate.evidence as string | undefined;
+            }
+            const originKind = route === '/api/spatial/v2/refine' || route === '/api/spatial/v2/edit' ? 'inferred' : declared;
+            const next = applySpatialOperationV2(current.plan, operation, { origin: originKind, evidence: route === '/api/spatial/v2/refine' ? `Meta visual evaluation proposed operation ${operation.operationId}; model score is a hypothesis.` : route === '/api/spatial/v2/edit' ? `Muse Spark proposed operation ${operation.operationId}; user instruction is unverified.` : `Client-submitted operation ${operation.operationId}; human identity/review is unverified.${declaredEvidence ? ` Client note: ${declaredEvidence}` : ''}` });
             const compiled = compileSpatialPlanV2(next); const constraintReport = evaluateSpatialConstraintsV2(next, compiled.root); disposeCompiledSpatialPlan(compiled.root);
             current.history.push(current.plan); if (current.history.length > 50) current.history.shift(); current.plan = next; current.revision += 1;
             if (route === '/api/spatial/v2/refine') { current.refinementsUsed += 1; current.pendingRefinement = undefined; }

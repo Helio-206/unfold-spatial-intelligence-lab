@@ -55,7 +55,7 @@ export async function editSpatialPlanV2(input: { sessionId: string; baseRevision
   return validSpatialPlanV2Reply(await post<SpatialMutationV2Reply>('/api/spatial/v2/edit', input, fetchImpl)) as SpatialMutationV2Reply;
 }
 
-export async function applySpatialPlanV2Operation(input: { sessionId: string; baseRevision: number; operation: SpatialOperationV2 }, fetchImpl: typeof fetch = fetch): Promise<SpatialMutationV2Reply> {
+export async function applySpatialPlanV2Operation(input: { sessionId: string; baseRevision: number; operation: SpatialOperationV2; origin?: 'inferred' | 'user_provided'; evidence?: string }, fetchImpl: typeof fetch = fetch): Promise<SpatialMutationV2Reply> {
   return validSpatialPlanV2Reply(await post<SpatialMutationV2Reply>('/api/spatial/v2/operation', input, fetchImpl)) as SpatialMutationV2Reply;
 }
 

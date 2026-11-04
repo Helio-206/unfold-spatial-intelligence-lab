@@ -16,6 +16,10 @@ const plan = (): SpatialPlanV2 => validateSpatialPlanV2({
   contract: 'unfold.spatial-plan.v2', source: { kind: 'text', sha256: 'a'.repeat(64) }, title: 'T', units: 'unitless', presentationProfile: 'neutral',
   components: [part('base', [0, 0.5, 0]), part('top', [0, 1.5, 0]), part('side', [1, 0.5, 0], 'user_provided')], relations: [], constraints: [], unknowns: [],
 });
+const floating = (): SpatialPlanV2 => validateSpatialPlanV2({
+  contract: 'unfold.spatial-plan.v2', source: { kind: 'text', sha256: 'a'.repeat(64) }, title: 'F', units: 'unitless', presentationProfile: 'neutral',
+  components: [part('base', [0, 0.5, 0]), part('top', [0, 4, 0])], relations: [], constraints: [], unknowns: [],
+});
 const host = () => ({ changed: vi.fn(), redraw: vi.fn(), notify: vi.fn(), syncLost: vi.fn() });
 
 describe('PlanSpaceLayer', () => {
@@ -165,6 +169,36 @@ describe('PlanSpaceLayer', () => {
     const floor = layer.box()!.min.y;
     layer.setExploded(true, true); for (let i = 0; i < 200 && layer.update(50); i++);
     expect(layer.box()!.min.y).toBeGreaterThanOrEqual(floor - 1e-6);
+    layer.dispose();
+  });
+
+  it('hands the provenance of every operation to the server session, so a solver result is not promoted to user_provided', async () => {
+    const seen: Array<{ origin: string; evidence: string }> = [];
+    const stack: SpatialPlanV2[] = []; let server = floating();
+    const sync: LayerSync = {
+      async apply(op: SpatialOperationV2, provenance) { seen.push(provenance); stack.push(server); server = applySpatialOperationV2(server, op, provenance); return server; },
+      async undo() { server = stack.pop()!; return server; },
+    };
+    const layer = new PlanSpaceLayer(floating(), host()); layer.attachSync(sync);
+    const closed = await layer.closeGaps();
+    expect(closed.applied).toBeGreaterThan(0);
+    expect(seen.length).toBeGreaterThan(0); expect(seen.every((p) => p.origin === 'inferred')).toBe(true);
+    expect(layer.currentPlan.components.find((c) => c.id === 'top')!.provenance.transform).toBe('inferred');
+    layer.highlight('base'); layer.proposeEdit('x+'); await layer.applyEdit();
+    expect(seen.at(-1)!.origin).toBe('user_provided');
+    layer.dispose();
+  });
+
+  it('refuses every edit while the server session is being prepared, and works once it is ready (PR #27 review, P2)', async () => {
+    const h = host(), layer = new PlanSpaceLayer(plan(), h);
+    layer.lockEditing('a preparar a sessão');
+    layer.highlight('base'); layer.proposeEdit('x+'); await layer.applyEdit();
+    expect(layer.canUndo).toBe(false); expect(layer.currentPlan.components.find((c) => c.id === 'base')!.transform.position).toEqual([0, 0.5, 0]);
+    expect(h.notify).toHaveBeenCalledWith(expect.stringMatching(/a preparar a sessão/));
+    expect(await layer.closeGaps()).toEqual({ applied: 0, iterations: 0 }); expect(await layer.undo()).toBe(false);
+    layer.unlockEditing();
+    layer.proposeEdit('x+'); await layer.applyEdit();
+    expect(layer.canUndo).toBe(true);
     layer.dispose();
   });
 });

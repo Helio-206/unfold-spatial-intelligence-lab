@@ -17,8 +17,10 @@ type Pending = { label: string; before: string; after: string; operations: Spati
 type Shape = Extract<GeometryNodeV2, { type: 'shape' }>;
 export type PendingEdit = Pending;
 /** Mirrors edits to the server session so that revisions agree. Throws when the server cannot confirm; the layer then carries on locally and says so. */
+export type OperationProvenance = { origin: 'user_provided' | 'inferred'; evidence: string };
 export type LayerSync = {
-  apply(operation: SpatialOperationV2): Promise<SpatialPlanV2>;
+  /** The provenance travels with the operation: a solver result stays `inferred` on the server too. */
+  apply(operation: SpatialOperationV2, provenance: OperationProvenance): Promise<SpatialPlanV2>;
   undo(): Promise<SpatialPlanV2>;
 };
 export type SpaceLayerHost = {
@@ -50,6 +52,8 @@ export class PlanSpaceLayer implements SpaceLayer {
   private plan: SpatialPlanV2;
   private readonly history: Array<{ plan: SpatialPlanV2; ops: number }> = [];
   private sync: LayerSync | null = null;
+  /** While set, no edit is applied (the server session is being prepared and would not know it). */
+  private lockReason: string | null = null;
   private busy = false;
   private director: PresentationDirector | null = null;
   presentation: PresentationState | null = null;
@@ -76,8 +80,10 @@ export class PlanSpaceLayer implements SpaceLayer {
   get currentPlan(): SpatialPlanV2 { return this.plan; }
   get pendingEdit(): Pending | null { return this.pending; }
   authorise(value: boolean): void { this.authorised = value; }
-  get canUndo(): boolean { return this.history.length > 0 && !this.busy; }
-  get isBusy(): boolean { return this.busy; }
+  get canUndo(): boolean { return this.history.length > 0 && !this.busy && this.lockReason === null; }
+  get isBusy(): boolean { return this.busy || this.lockReason !== null; }
+  lockEditing(reason: string): void { this.lockReason = reason; }
+  unlockEditing(): void { this.lockReason = null; }
   get synced(): boolean { return this.sync !== null; }
   attachSync(sync: LayerSync | null): void { this.sync = sync; }
   get isExploded(): boolean { return (this.director?.state.exploded ?? 0) > 0.5; }
@@ -192,7 +198,7 @@ export class PlanSpaceLayer implements SpaceLayer {
   private async commit(operations: SpatialOperationV2[], provenance: { origin: 'user_provided' | 'inferred'; evidence: string }, localPlan?: SpatialPlanV2): Promise<void> {
     const before = this.plan; let next = before;
     if (this.sync) {
-      try { for (const operation of operations) next = await this.sync.apply(operation); }
+      try { for (const operation of operations) next = await this.sync.apply(operation, provenance); }
       catch (error) { this.sync = null; this.host.syncLost?.(error instanceof Error ? error.message : 'sessão do servidor indisponível'); next = localPlan ?? this.applyLocal(before, operations, provenance); }
     } else next = localPlan ?? this.applyLocal(before, operations, provenance);
     this.history.push({ plan: before, ops: operations.length }); this.plan = next; this.pending = null; this.authorised = false; this.stats = this.build();
@@ -203,7 +209,7 @@ export class PlanSpaceLayer implements SpaceLayer {
 
   /** The bounded solver proposes `set-transform` operations only; they are marked inferred and can be undone. */
   async closeGaps(): Promise<{ applied: number; iterations: number }> {
-    if (this.busy) return { applied: 0, iterations: 0 };
+    if (this.busy || this.lockReason) { if (this.lockReason) this.host.notify(`Edição indisponível: ${this.lockReason}.`); return { applied: 0, iterations: 0 }; }
     const result = refineAssembly(this.plan);
     if (!result.applied.length) return { applied: 0, iterations: result.iterations };
     this.busy = true; this.director?.enterEditing();
@@ -213,6 +219,7 @@ export class PlanSpaceLayer implements SpaceLayer {
     return { applied: result.applied.length, iterations: result.iterations };
   }
   async undo(): Promise<boolean> {
+    if (this.lockReason) { this.host.notify(`Edição indisponível: ${this.lockReason}.`); return false; }
     const previous = this.history.pop(); if (!previous || this.busy) { if (previous) this.history.push(previous); return false; }
     this.busy = true; this.director?.enterEditing();
     try {
@@ -266,6 +273,7 @@ export class PlanSpaceLayer implements SpaceLayer {
 
   async applyEdit(): Promise<void> {
     const pending = this.pending; if (!pending || this.busy) return;
+    if (this.lockReason) { this.host.notify(`Edição indisponível: ${this.lockReason}.`); return; }
     if (pending.needsAuthorization && !this.authorised) { this.host.notify(pending.source === 'person' ? 'Esta edição toca num valor observado ou confirmado: marque a autorização primeiro.' : 'Uma alteração proposta pela IA só se aplica depois de a autorizar: marque a autorização.'); return; }
     this.busy = true; this.director?.enterEditing();
     try {
