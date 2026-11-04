@@ -150,4 +150,21 @@ describe('PlanSpaceLayer', () => {
     expect(layer.currentPlan.components.find((c) => c.id === 'base')!.transform.position[1]).toBeGreaterThan(0.5);
     layer.dispose();
   });
+
+  it('is idle at rest: the layer asks for no more frames once the entrance and the exploded view have finished', () => {
+    const layer = new PlanSpaceLayer(plan(), host());
+    layer.reveal(true);
+    expect(layer.update(16)).toBe(false);
+    layer.setExploded(true, true); for (let i = 0; i < 200 && layer.update(50); i++);
+    expect(layer.update(16)).toBe(false);
+    layer.dispose();
+  });
+
+  it('an exploded view never sinks a component below the floor the Space stood on', () => {
+    const layer = new PlanSpaceLayer(plan(), host());
+    const floor = layer.box()!.min.y;
+    layer.setExploded(true, true); for (let i = 0; i < 200 && layer.update(50); i++);
+    expect(layer.box()!.min.y).toBeGreaterThanOrEqual(floor - 1e-6);
+    layer.dispose();
+  });
 });

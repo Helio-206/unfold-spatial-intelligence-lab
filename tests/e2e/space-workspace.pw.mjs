@@ -172,6 +172,11 @@ try {
   // isolate + frame tools
   await page.click('[data-el="toolIsolate"]'); await page.waitForTimeout(500); steps.isolated = await shot('12-isolated');
   await page.click('[data-el="toolIsolate"]'); await page.click('[data-el="toolFrame"]'); await page.waitForTimeout(1200); steps.framed = await shot('13-framed');
+  // the renderer idles: with nothing moving, no frames are drawn
+  await page.waitForFunction(() => window.__space.layer.presentation?.phase !== 'entering', null, { timeout: 120000 });
+  await page.waitForTimeout(1500);
+  const idleFrames = await page.evaluate(async () => { const a = window.__workspace.stats().frames; await new Promise((r) => setTimeout(r, 2000)); return window.__workspace.stats().frames - a; });
+  assert.ok(idleFrames <= 2, `an idle Space must not keep rendering (${idleFrames} frames in 2 s)`);
   // evidence
   await page.click('[data-el="toolMore"]'); await page.click('[data-el="toolEvidence"]'); await page.waitForTimeout(300); steps.evidence = await shot('14-evidence');
   await page.click('[data-el="toolEvidence"]');

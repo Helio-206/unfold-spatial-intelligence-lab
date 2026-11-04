@@ -6,13 +6,13 @@
     "height": 844
   },
   "browser": "Chromium (system) + SwiftShader",
-  "at": "2026-11-04T03:04:43.578Z",
+  "at": "2026-11-04T07:07:07.463Z",
   "input": {
     "kind": "text",
     "prompt": "Um relógio de pêndulo de pé: caixa alta de madeira, mostrador redondo com ponteiros, pêndulo com disco de latão e pés.",
     "promptSha256": "d794a4a285889fd88d558f8691340296ba4a917043a57bb1d94ec4ae20d3a8ae"
   },
-  "latencyMsToReview": 1949,
+  "latencyMsToReview": 1929,
   "review": {
     "components": 5,
     "title": "Street lamp with curved arm",
@@ -89,7 +89,7 @@
   "coverage": {
     "width": 390,
     "height": 844,
-    "objectFraction": 0.07527949933163203,
+    "objectFraction": 0.06903025884068538,
     "meanLuma": 45.11943812084283,
     "maxLuma": 245.5026
   },
@@ -122,7 +122,7 @@
     "afterLeaving": {
       "geometries": 4,
       "textures": 7,
-      "programs": 8
+      "programs": 7
     }
   },
   "qualityChecksFailed": [],

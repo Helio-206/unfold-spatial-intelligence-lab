@@ -101,3 +101,11 @@ Prepared demo prompts (all tested at least once): «A grandfather pendulum clock
 ## Changes after the paid runs
 
 One composition fix touched `src/` after the live runs: in a Space the object is now framed below the stacked notices instead of behind them (visible on a phone with the atlas). It changes no request, prompt, validation or model-facing code. The evidence in `runs/atlas-*`, `runs/replay-*` and `runs/mock-fixture*` was produced after it; `runs/final-*` (the two real runs) was produced before it.
+
+## Merge gate follow-up (#26 final reconciled)
+
+The final #26 commit `bcbe3d7` was not an ancestor of this branch. It is now merged in (clean, no conflicts), which restores the idle-safe `update()` in `director.ts`, the floor-safe exploded view in `structure.ts`, the `finish.ts` grain change, the reference harness and their tests. The only other differences in that commit are reports, fixtures and scripts under `reports/presentation-director/`, `scripts/visual/` and `tests/harness/presentation/`.
+
+Added for this gate: a layer test that an idle Space asks for no more frames, a layer test that an exploded view never goes below the original floor, and an E2E check that an idle Space draws at most 2 frames in 2 s. Re-run after the merge: suite 132 files / 2 285 tests, build, `tsc`, `unified-living` (26) and `unified-lifecycle` (6), mock fixture, street-lamp replay and atlas at 1440×900 and 390×844 (resources return to the initial geometry and texture count). The exploded view stays above the floor on desktop. **Known limit:** on the 390×844 viewport with the inspector open, the exploded view is partly clipped at the top (the Director's cue does not yet account for the inspector card); it is cosmetic and was not addressed here to avoid new work.
+
+Base changed to `main`: `main` is still `e197d07`; a merge-tree of this head onto `main` has no conflicts.

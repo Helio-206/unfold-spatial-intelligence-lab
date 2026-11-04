@@ -6,13 +6,13 @@
     "height": 900
   },
   "browser": "Chromium (system) + SwiftShader",
-  "at": "2026-11-04T02:58:35.830Z",
+  "at": "2026-11-04T07:02:12.832Z",
   "input": {
     "kind": "text",
     "prompt": "Um relógio de pêndulo de pé: caixa alta de madeira, mostrador redondo com ponteiros, pêndulo com disco de latão e pés.",
     "promptSha256": "d794a4a285889fd88d558f8691340296ba4a917043a57bb1d94ec4ae20d3a8ae"
   },
-  "latencyMsToReview": 2287,
+  "latencyMsToReview": 2262,
   "review": {
     "components": 6,
     "title": "Bicycle (hand-authored fixture)",
@@ -95,8 +95,8 @@
   "coverage": {
     "width": 1440,
     "height": 900,
-    "objectFraction": 0.1314182098765432,
-    "meanLuma": 56.441875408627425,
+    "objectFraction": 0.1217067901234568,
+    "meanLuma": 56.4330695931957,
     "maxLuma": 254.0722
   },
   "distinctSelectable": [
@@ -128,7 +128,7 @@
     "afterLeaving": {
       "geometries": 4,
       "textures": 7,
-      "programs": 9
+      "programs": 8
     }
   },
   "qualityChecksFailed": [],
