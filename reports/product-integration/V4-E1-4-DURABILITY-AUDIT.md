@@ -1,6 +1,6 @@
 # V4 E1.4 — Auditoria de durabilidade, continuidade de política e exactly-once
 
-- Branch isolada: `audit/v4-e1-4-durability-policy-hardening`, a partir de `feat/v4-e1-3-durable-spatial-integrity@08f0d326fdf90a47c0d6cbb38d3378700990bd8b`. Commits por achado. Sem merge, sem V4 por defeito, sem tocar no E2.2 do Codex.
+- Branch isolada: `fix/v4-e1-4-review-binding-transition` (patch sobre `audit/v4-e1-4-durability-policy-hardening@5d1ce1a`). Commits por achado mais o commit do patch multi-revisão. Sem merge, sem V4 por defeito, sem tocar no E2.2 do Codex.
 - SHA final: ver `git log -1` nesta branch (o relatório entra no commit final).
 
 ## Achado 1 — Falhas de persistência reconhecidas como sucesso
@@ -47,6 +47,20 @@ Para qualquer mutação V2 respondida com sucesso: o estado foi validado, public
 - A sessão fenced nasce de uma re-adoção quando a revisão abre: durante a janela entre a adopção inicial legacy e a abertura da revisão, a sessão é legacy com fence por transacção (E1.2) — a política torna-se de sessão a partir daí, e nenhuma mutação revista pode ter sido cometida antes sem fence no cliente do produto.
 - Autenticação de revisor/aprovador continua inexistente e declarada.
 
+## Patch final — ciclo de vida multi-revisão (E1.4.1)
+
+**Defeito encontrado depois da auditoria:** `bindSessionPolicyToReview()` regressava de imediato se a sessão já fosse `review_fenced`. Depois de uma transacção revista com sucesso, a fingerprint do plano muda; abrir a revisão cria o registo B, mas a sessão continuava vinculada ao registo A — e o segundo commit legítimo, fenced com B, era rejeitado por incompatibilidade com o binding da sessão.
+
+**Reprodução:** `tests/spatial-review-binding-transition.test.ts` — review A → commit → plano alterado → review B → segundo commit — falhava antes (endpoint inexistente / binding preso a A) e o mesmo ciclo no browser falhava no segundo commit.
+
+**Correcção (a mais pequena e segura):**
+- Novo endpoint versionado `POST /api/spatial/v2/sessions/review-binding` (`unfold.spatial-session-policy.v1`): dentro do mesmo turno síncrono, exige a revisão base actual (a verificação genérica rejeita escritores obsoletos), valida que o novo registo pertence exactamente ao plano autoritativo actual da sessão (fingerprint calculada no servidor + fonte), e só então substitui `policy.reviewId`. Plano, revisão, história e todos os recibos de idempotência ficam intactos; a transição é persistida atomicamente e revertida se a gravação falhar (`500 SPATIAL_SESSION_PERSISTENCE_FAILED`, binding anterior intacto — testado com directório só de leitura).
+- O registo anterior nunca é modificado: o seu histórico fica consultável e as suas decisões intactas (testado).
+- O `SpaceFlow` passou a usar esta transição tanto para legacy→fenced como para fenced(A)→fenced(B), em vez da re-adoção que reiniciava a revisão; `sessionReviewId` acompanha o binding e as recuperações mantêm-no em sincronia. A transição é recusada no cliente enquanto houver transacção ou undo por reconciliar, e o servidor não tem estado por reconciliar escondido: a sua revisão é a autoridade contra a qual a transição se faz.
+- Rejeições: revisão base obsoleta (409 `SPATIAL_V2_REVISION_CONFLICT`), revisão de outro plano (409 `SPATIAL_SESSION_POLICY_BINDING_INVALID`), review inexistente (idem).
+
+**Evidência:** HTTP real — ciclo A→commit→B→commit com undo duplo e restart (binding a B e recibo durável sobrevivem; pedido sem fence continua 403); transição a partir de legacy preserva revisão 1 e a história (undo pré-transição funciona). Browser (`v4-e1-review-browser`, backend real): duas edições revistas consecutivas na mesma sessão — commit 1 vinculado a A, abertura da revisão cria B e a sessão transita sem reset, commit 2 vinculado a B, e os dois undos restauram exactamente o plano inicial (screenshot `/tmp/unfold-v4-e1-browser-*/two-reviewed-edits-undone.png`). O ensaio espaça o segundo ciclo pela janela do limite existente de 20 pedidos espaciais/minuto do servidor, sem o enfraquecer. Regressões E0 (browser atómico) verdes; suite por defeito: 2511 verdes e os mesmos 4 timeouts herdados, sem alterações a limites.
+
 ## GO/NO-GO para integrar com E2.2
 
-**GO.** Os quatro achados estão corrigidos com testes que os reproduziam: nenhuma mutação durável é reconhecida sem estar gravada, o undo fenced é exactamente-once para qualquer tamanho de lote, a política de sessão sobrevive a adopção, recuperação e restart sem downgrade, e a chave de idempotência identifica o pedido completo. O E2.2 deve submeter propostas com binding e esperar `SPATIAL_SESSION_PERSISTENCE_FAILED`/`SPATIAL_REVIEW_PRECONDITION_STALE` como recusas terminais daquela proposta.
+**GO.** Os quatro achados e o defeito do ciclo multi-revisão estão corrigidos com testes que os reproduziam: nenhuma mutação durável é reconhecida sem estar gravada, o undo fenced é exactamente-once para qualquer tamanho de lote, a política e o binding de sessão sobrevivem a adopção, transição, recuperação e restart sem downgrade nem reset, e a chave de idempotência identifica o pedido completo. O E2.2 deve submeter propostas com binding e esperar `SPATIAL_SESSION_PERSISTENCE_FAILED`/`SPATIAL_REVIEW_PRECONDITION_STALE` como recusas terminais daquela proposta. **A infraestrutura E1 fica fechada aqui; a prioridade seguinte é a integração com o Universal Visual Foundry, não expandir o E1.**
