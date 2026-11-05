@@ -18,17 +18,24 @@ const gr = (L: number, t: number) => -L / 2 + t * L; // t = 0 at the rear, 1 at 
 /** Hull sections: [t, bottom lift, top fraction, width fraction] relative to the hull height. */
 const HULL: Array<[number, number, number, number]> = [[0, 0.2, 0.7, 0.88], [0.03, 0.1, 0.9, 0.96], [0.1, 0, 0.97, 1], [0.35, 0, 1, 1], [0.7, 0, 1, 1], [0.9, 0, 0.94, 1], [0.97, 0.06, 0.82, 0.96], [1, 0.2, 0.62, 0.86]];
 
-function hull(L: number, hullH: number, W: number, y0: number): BufferGeometry {
-  const sections: Section[] = HULL.map(([t, lo, hi, w]) => ({ x: gr(L, t), y: y0 + ((lo + hi) / 2) * hullH, z: 0, h: (hi - lo) * hullH, w: w * W, p: 5.5 }));
+function hull(L: number, hullH: number, W: number, y0: number, hoodHeight = 1, tailHeight = 1, shoulderHeight = 1): BufferGeometry {
+  // hoodHeight/tailHeight/shoulderHeight: DOF de forma independentes — multiplicam o topo
+  // das secções do nariz (t≥0.9), da traseira (t≤0.1) e do ombro central. 1 = arquétipo.
+  const sections: Section[] = HULL.map(([t, lo, hi, w]) => {
+    const scaled = hi * (t >= 0.9 ? hoodHeight : t <= 0.1 ? tailHeight : shoulderHeight);
+    return { x: gr(L, t), y: y0 + ((lo + scaled) / 2) * hullH, z: 0, h: (scaled - lo) * hullH, w: w * W, p: 5.5 };
+  });
   return loftSections(sections, 36, 40);
 }
 
 /** Roof/glass volume sitting on the beltline. */
-function greenhouse(L: number, cabH: number, W: number, belt: number, start: number, end: number, slope: number): { glass: BufferGeometry; roof: BufferGeometry; pillars: BufferGeometry[] } {
+function greenhouse(L: number, cabH: number, W: number, belt: number, start: number, end: number, slope: number, roofFront = 1, roofRear = 1): { glass: BufferGeometry; roof: BufferGeometry; pillars: BufferGeometry[] } {
   const rear = start + (end - start) * (0.3 - 0.22 * slope), tailFall = start;
   const at4 = (t: number, hFrac: number, wFrac: number, p = 3.2): Section => ({ x: gr(L, t), y: belt + (cabH * hFrac) / 2 - 0.004, z: 0, h: cabH * hFrac, w: W * wFrac, p });
   const mid = (start + end) / 2;
-  const glassSecs = [at4(tailFall, 0.18, 0.86), at4(rear, 0.9, 0.78), at4(mid - 0.04, 1, 0.74), at4(mid + 0.1, 1, 0.74), at4(end - 0.1, 0.62, 0.78), at4(end, 0.12, 0.86)];
+  // roofFront/roofRear: altura das secções de vidro da frente/trás — a linha do tejadilho
+  // deixa de ser um perfil fixo do arquétipo (DOF onde o erro de silhueta se concentrava).
+  const glassSecs = [at4(tailFall, 0.18 * roofRear, 0.86), at4(rear, 0.9 * roofRear, 0.78), at4(mid - 0.04, 1, 0.74), at4(mid + 0.1, 1, 0.74), at4(end - 0.1, 0.62 * roofFront, 0.78), at4(end, 0.12 * roofFront, 0.86)];
   const glass = loftSections(glassSecs, 28, 50);
   const roofSecs = [rear + 0.04, mid - 0.04, mid + 0.1, end - 0.1].map((t, i) => ({ x: gr(L, t), y: belt + cabH * (i === 0 || i === 3 ? 0.9 : 1) - 0.012 + 0.01, z: 0, h: 0.03 + cabH * 0.06, w: W * (i === 0 || i === 3 ? 0.7 : 0.76), p: 4 }));
   const roof = loftSections(roofSecs, 24, 50);
@@ -46,12 +53,13 @@ function buildHull(ctx: PartContext, bucket: Bucket, withCabin: boolean): void {
   const f = frameOf(ctx), { L, H, W } = f, arch = ctx.archetype in ARCHETYPES ? ARCHETYPES[ctx.archetype]! : ARCHETYPES.sedan!;
   const paint = mat('paintedMetal', ctx.palette.primary), trim = mat('trim'), chrome = mat('chrome');
   const cabRatio = withCabin ? num(ctx, 'cabinHeight', arch.cabinHeight) : 0;
-  const hullH = H * (1 - cabRatio), y0 = -H / 2;
+  const bodyScale = num(ctx, 'bodyHeightScale', 1);
+  const hullH = H * bodyScale * (1 - cabRatio), y0 = -H / 2;
   const P = (g: BufferGeometry) => place(g, f);
-  bucket.add(P(hull(L, hullH, W, y0)), paint);
+  bucket.add(P(hull(L, hullH, W, y0, num(ctx, 'hoodHeight', 1), num(ctx, 'tailHeight', 1), num(ctx, 'shoulderHeight', 1))), paint);
   const belt = y0 + hullH;
   if (withCabin) {
-    const gh = greenhouse(L, H * cabRatio, W, belt, num(ctx, 'cabinStart', arch.cabinStart), num(ctx, 'cabinEnd', arch.cabinEnd), num(ctx, 'rearSlope', arch.rearSlope));
+    const gh = greenhouse(L, H * bodyScale * cabRatio * num(ctx, 'roofCurvature', 1), W, belt, num(ctx, 'cabinStart', arch.cabinStart), num(ctx, 'cabinEnd', arch.cabinEnd), num(ctx, 'rearSlope', arch.rearSlope), num(ctx, 'roofFront', 1), num(ctx, 'roofRear', 1));
     bucket.add(P(gh.glass), mat('glass')).add(P(gh.roof), paint);
     for (const p of gh.pillars) bucket.add(P(p), mat('trim'));
     // door mirrors at the base of the A pillar
@@ -77,14 +85,14 @@ function buildHull(ctx: PartContext, bucket: Bucket, withCabin: boolean): void {
   bucket.add(P(rbox(0.012, 0.11, 0.3, 0.004, 1).translate(-L / 2 + 0.005, y0 + hullH * 0.34, 0)), mat('plasticGloss', '#F2F0E6'));
   // wheel arches from the neighbouring wheels (never invented when the plan has none)
   if (flag(ctx, 'wheelArches', true)) for (const w of ctx.siblings.filter((s) => s.role === 'wheel')) {
-    const p = toFrame(ctx, f, w.centre), dims = [w.size.x, w.size.y, w.size.z].sort((a, b) => b - a), R = (dims[1]! / 2) * 1.13;
+    const p = toFrame(ctx, f, w.centre), dims = [w.size.x, w.size.y, w.size.z].sort((a, b) => b - a), R = (dims[1]! / 2) * num(ctx, 'wheelArchScale', 1.13);
     for (const s of [1, -1]) { const side = Math.sign(p.z) === s ? 1 : 0; if (!side && Math.abs(p.z) > 1e-3) continue; bucket.add(P(new TorusGeometry(R, Math.min(R * 0.035, 0.015), 8, 28, Math.PI).translate(p.x, p.y, s * (W / 2 - 0.004))), trim); }
     if (Math.abs(p.z) <= 1e-3) for (const s of [1, -1]) bucket.add(P(new TorusGeometry(R, Math.min(R * 0.035, 0.015), 8, 28, Math.PI).translate(p.x, p.y, s * (W / 2 - 0.004))), trim);
   }
 }
 
 function wheel(ctx: PartContext, bucket: Bucket): void {
-  const axle = thinAxis(ctx), dims = [ctx.size.x, ctx.size.y, ctx.size.z].sort((a, b) => b - a), R = dims[1]! / 2, w = Math.min(dims[2]!, R * 1.2), Rr = R * num(ctx, 'rimRatio', 0.62);
+  const axle = thinAxis(ctx), dims = [ctx.size.x, ctx.size.y, ctx.size.z].sort((a, b) => b - a), R = (dims[1]! / 2) * num(ctx, 'wheelScale', 1), w = Math.min(dims[2]!, R * 1.2), Rr = R * num(ctx, 'rimRatio', 0.62);
   const lod = ctx.lod, seg = lod.seg(48, 16), spokes = Math.round(num(ctx, 'spokes', 5));
   const orient = axle === 'x' ? at(0, 0, 0, 0, Math.PI / 2, 0) : axle === 'y' ? at(0, 0, 0, Math.PI / 2, 0, 0) : at();
   const into = (g: BufferGeometry) => g.applyMatrix4(orient).applyMatrix4(at(ctx.centre.x, ctx.centre.y, ctx.centre.z));
@@ -136,7 +144,16 @@ export const vehicleFamily: Family = {
     numSpec('cabinStart', 'Cabin start', 0.04, 0.4, a.cabinStart, 0.01, 'Where the rear glass begins along the length (0 = tail)'),
     numSpec('cabinEnd', 'Cabin end', 0.5, 0.9, a.cabinEnd, 0.01, 'Where the windscreen base sits along the length (1 = nose)'),
     numSpec('rearSlope', 'Rear slope', 0, 1, a.rearSlope, 0.05, '0 = notchback, 1 = upright tailgate'),
+    numSpec('hoodHeight', 'Hood height', 0.6, 1.05, 1, 0.01, 'Top of the front body sections relative to the archetype profile (independent front-shape DOF)'),
+    numSpec('tailHeight', 'Tail height', 0.6, 1.05, 1, 0.01, 'Top of the rear body sections relative to the archetype profile (independent rear-shape DOF)'),
+    numSpec('roofCurvature', 'Roof curvature', 0.85, 1.08, 1, 0.01, 'Greenhouse height multiplier: flatter or taller roof volume'),
+    numSpec('bodyHeightScale', 'Body height scale', 0.9, 1.1, 1, 0.01, 'Overall body height inside the plan bounds (length-to-height proportion DOF)'),
+    numSpec('wheelArchScale', 'Wheel arch scale', 1.0, 1.3, 1.13, 0.01, 'Wheel-arch radius relative to the wheel radius from the plan'),
+    numSpec('shoulderHeight', 'Shoulder height', 0.85, 1.05, 1, 0.01, 'Top of the central body sections (beltline/shoulder profile DOF)'),
+    numSpec('roofFront', 'Roof front height', 0.7, 1.15, 1, 0.01, 'Height of the front glass sections (windshield-top shape DOF)'),
+    numSpec('roofRear', 'Roof rear height', 0.7, 1.15, 1, 0.01, 'Height of the rear glass sections (rear-window shape DOF)'),
     numSpec('spokes', 'Wheel spokes', 3, 10, 5, 1, 'Spokes per rim'), numSpec('rimRatio', 'Rim ratio', 0.45, 0.8, 0.62, 0.01, 'Rim radius / tyre radius'),
+    numSpec('wheelScale', 'Wheel scale', 0.85, 1.15, 1, 0.01, 'Wheel radius inside its plan frame (silhouette wheel-size DOF; the plan position never moves)'),
     numSpec('grilleSlats', 'Grille slats', 2, 9, 5, 1, 'Horizontal slats in the front grille'), choiceSpec('doors', 'Doors', ['2', '4'], a.doors, 'Door count (cut lines)'), boolSpec('wheelArches', 'Wheel arches', true, 'Dark arches around the wheels the plan contains'),
   ]; },
   style: () => ({}),

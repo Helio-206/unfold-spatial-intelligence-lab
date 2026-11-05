@@ -1,0 +1,50 @@
+{
+  "car": {
+    "status": "fitted",
+    "baselineIoU": 0.654,
+    "fittedIoU": 0.708,
+    "relativeImprovement": 0.155,
+    "saturated": [],
+    "wheelScale": 1.009
+  },
+  "bus": {
+    "status": "fitted",
+    "baselineIoU": 0.671,
+    "fittedIoU": 0.731,
+    "relativeImprovement": 0.183,
+    "saturated": [],
+    "wheelScale": 1.027
+  },
+  "porsche-911": {
+    "status": "fitted",
+    "baselineIoU": 0.672,
+    "fittedIoU": 0.742,
+    "relativeImprovement": 0.213,
+    "saturated": [],
+    "wheelScale": 1.027
+  },
+  "skoda-kodiaq": {
+    "status": "fitted",
+    "baselineIoU": 0.647,
+    "fittedIoU": 0.713,
+    "relativeImprovement": 0.188,
+    "saturated": [],
+    "wheelScale": 1.027
+  },
+  "holdout-van": {
+    "status": "fitted",
+    "baselineIoU": 0.649,
+    "fittedIoU": 0.696,
+    "relativeImprovement": 0.136,
+    "saturated": [],
+    "wheelScale": 1.027
+  },
+  "holdout-coupe": {
+    "status": "fitted",
+    "baselineIoU": 0.643,
+    "fittedIoU": 0.717,
+    "relativeImprovement": 0.21,
+    "saturated": [],
+    "wheelScale": 1.027
+  }
+}

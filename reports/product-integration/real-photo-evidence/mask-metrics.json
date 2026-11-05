@@ -62,6 +62,64 @@
     },
     "heldOut": false
   },
+  "holdout-van": {
+    "iou": 0.479,
+    "correctedIou": 0.966,
+    "correctedBboxErrorPx": 1,
+    "bboxErrorPx": 46,
+    "extractedBbox": {
+      "x0": 0,
+      "y0": 2,
+      "x1": 159,
+      "y1": 104
+    },
+    "annotatedBbox": {
+      "x0": 15,
+      "y0": 15,
+      "x1": 113,
+      "y1": 93
+    },
+    "reliability": {
+      "reliable": true,
+      "reasons": [],
+      "metrics": {
+        "largestComponentShare": 1.042086481947943,
+        "bboxFill": 0.6024878640776699,
+        "borderBandShare": 0.07694631886393392,
+        "foregroundRatio": 0.5171354166666666
+      }
+    },
+    "heldOut": true
+  },
+  "holdout-coupe": {
+    "iou": 0.552,
+    "correctedIou": 0.973,
+    "correctedBboxErrorPx": 1,
+    "bboxErrorPx": 14,
+    "extractedBbox": {
+      "x0": 6,
+      "y0": 3,
+      "x1": 159,
+      "y1": 63
+    },
+    "annotatedBbox": {
+      "x0": 2,
+      "y0": 17,
+      "x1": 145,
+      "y1": 58
+    },
+    "reliability": {
+      "reliable": true,
+      "reasons": [],
+      "metrics": {
+        "largestComponentShare": 1.002212389380531,
+        "bboxFill": 0.6751117734724292,
+        "borderBandShare": 0.036896877956480605,
+        "foregroundRatio": 0.5744565217391304
+      }
+    },
+    "heldOut": true
+  },
   "skoda-kodiaq": {
     "iou": 0.291,
     "correctedIou": 0.962,

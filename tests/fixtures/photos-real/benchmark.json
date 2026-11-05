@@ -1,0 +1,25 @@
+{
+  "contract": "unfold.photo-benchmark.v1",
+  "frozenAt": "2026-11-05",
+  "status": "Frozen before holdout fitting runs. Development cases were used to calibrate gates and fitting; holdouts were not fitted, tuned against, or used for threshold decisions before this freeze. Annotations are single-annotator (implementer), not independently reviewed.",
+  "acceptanceTargets": {
+    "foregroundIoU": ">= 0.90 target (automatic disclosed separately from user-assisted)",
+    "bboxErrorPxAt160Width": "<= 5 target",
+    "shapeIoUDevelopment": ">= 0.88 target",
+    "shapeIoUHoldout": ">= 0.82 target",
+    "relativeImprovementOverBaseline": ">= 5% required to accept a fit at all"
+  },
+  "cases": [
+    { "id": "car", "file": "car.jpg", "sha256": "a4705cecb298ba521a46baeb4ba1acd7cf75bdf3500d1c927d45788aa55ac3ec", "license": "CC0", "source": "Wikimedia Commons (audit manifest)", "category": "vehicle/hatchback", "viewpoint": "three-quarter front", "split": "development", "template": "hatchback" },
+    { "id": "bus", "file": "bus.jpg", "sha256": "b98059c978b56795f3c6419b41e0b8bc276c3e65aaee1e57b7ad2e7cc47d86df", "license": "CC BY-SA 4.0", "source": "Wikimedia Commons (audit manifest)", "category": "vehicle/bus", "viewpoint": "side/rear three-quarter", "split": "development", "template": "suv (declared mismatch)" },
+    { "id": "porsche-911", "file": "porsche-911.jpg", "sha256": "7bc7fd8cdeb3f64914cefff0f2d25a4c65709a91fee10e20bd58a803c6750423", "license": "CC BY-SA 2.0", "source": "Wikimedia Commons", "category": "vehicle/sports", "viewpoint": "side", "split": "development (held-out only until e7dffb0 measurements)", "template": "sedan" },
+    { "id": "skoda-kodiaq", "file": "skoda-kodiaq.jpg", "sha256": "36f6299516b704e3c51563d8e32582125f219bf8572da4f7e6960be53e5954b5", "license": "CC BY 4.0", "source": "Wikimedia Commons", "category": "vehicle/suv", "viewpoint": "side", "split": "development (recovery round)", "template": "suv" },
+    { "id": "holdout-van", "file": "holdout-van.jpg", "sha256": "bc88a0ace930d9bca5a7d6c40d2e14a5118f1b1b68eeedf7bfe8f5ed19613c47", "license": "CC BY-SA 3.0", "source": "Wikimedia Commons: Ford Transit (2013) AMR Ambulance", "category": "vehicle/van", "viewpoint": "rear three-quarter", "split": "HOLDOUT", "template": "van via suv-declared-mismatch fallback" },
+    { "id": "holdout-coupe", "file": "holdout-coupe.jpg", "sha256": "d19587703112685e353f4477bdecc83cbf40de327efd5d7bc34d79f9a0885a7a", "license": "CC BY-SA 3.0", "source": "Wikimedia Commons: Rambler Marlin Fastback ca 1965", "category": "vehicle/fastback coupe", "viewpoint": "side/rear three-quarter", "split": "HOLDOUT", "template": "sedan" },
+    { "id": "excavator-photo", "file": "excavator.jpg", "sha256": "f9edf6e466a8ba2a2f59a3db22274ed1efa0603befe7d494a0917b419c8de112", "license": "CC BY-SA 2.0", "source": "Wikimedia Commons (audit manifest)", "category": "construction/mechanical", "viewpoint": "side", "split": "flagship-mechanical-reference", "template": "existing synthetic excavator assembly (separate regression demo)" },
+    { "id": "chair-photo", "file": "chair.jpg", "sha256": "21f1ba12e44829e4639353f5f642ef58fc296f1bb9d9733e129c18651db5eca9", "license": "CC BY-SA 4.0", "source": "Wikimedia Commons (audit manifest)", "category": "furniture/non-vehicle", "viewpoint": "three-quarter", "split": "flagship-nonvehicle-reference", "template": "foundry furniture family fixture" }
+  ],
+  "rejectedCandidates": [
+    { "file": "(geograph 'Van on the Other side')", "reason": "vehicle occupies a small fraction of a landscape frame; unusable as a vehicle benchmark case. Replaced before any fitting, recorded here instead of silently dropped." }
+  ]
+}

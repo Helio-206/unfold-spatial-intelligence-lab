@@ -1,16 +1,16 @@
 /**
- * Image-conditioned geometric fitting (first complete path, vehicle family only).
+ * Image-conditioned geometric fitting (vehicle family).
  *
- * Bounded, deterministic grid search over two declared Foundry parameters
- * (`cabinHeight`, `rearSlope`). The objective uses the actual photographic pixels:
- * the evidence mask's column-height profile and bounding-box aspect are compared with
- * the compiled geometry's side-projection profile for each candidate. Colour is never
- * part of the objective, so a colour-only change cannot move the geometry.
+ * v3: deterministic coarse-to-fine coordinate descent over eight interpretable shape
+ * parameters (cabin height/start/end, rear slope, hood height, tail height, roof
+ * curvature, body height scale) instead of the former two-parameter grid. The objective
+ * compares the compiled geometry's rasterized side-projection silhouette with the
+ * evidence mask (total IoU weighted with front/middle/rear regional IoU). Colour is
+ * never part of the objective, so a colour-only change cannot move the geometry.
  *
- * Camera hypothesis: the evidence is treated as a side view. A near-frontal silhouette
- * (high mirror symmetry with a narrow aspect) is rejected as insufficient evidence and
- * the caller falls back to the conceptual (plan-only) presentation. Nothing here is a
- * measured dimension: fitted values stay `inferred` parameters of the recipe.
+ * Camera hypotheses are explicit and bounded: `side`, `three-quarter` (projection is an
+ * approximation, declared in every summary) and `front-rear` (refused). Nothing here is
+ * a measured dimension: fitted values stay `inferred` parameters of the recipe.
  */
 import { Box3, type Object3D } from 'three';
 import type { SpatialPlanV2 } from '../../universal-spatial/contracts-v2';
@@ -60,7 +60,7 @@ export type FittingResult =
   | { status: 'aborted'; reason: string };
 
 /** Versão do algoritmo de fitting; faz parte da identidade de qualquer cache de fitting. */
-export const FITTING_VERSION = 2;
+export const FITTING_VERSION = 3;
 
 /**
  * Identidade normalizada da silhueta: hash determinístico sobre os bytes da máscara,
@@ -82,8 +82,7 @@ export function fittingCacheKey(planIdentity: string, evidence: ImageEvidence): 
   return `fit-v${FITTING_VERSION}|${planIdentity}|${evidenceMaskHash(evidence)}`;
 }
 
-const CABIN_HEIGHTS = [0.2, 0.28, 0.36, 0.44, 0.52];
-const REAR_SLOPES = [0, 0.25, 0.5, 0.75, 1];
+
 const COLUMNS = 24;
 
 /** Column-height profile (0..1) of the evidence mask inside its bounding box. */
@@ -195,52 +194,90 @@ export function gridIoU(a: Uint8Array, b: Uint8Array): number {
   return u ? i / u : 0;
 }
 
-type Candidate = { cabinHeight: number; rearSlope: number };
-const CANDIDATES: Candidate[] = CABIN_HEIGHTS.flatMap((cabinHeight) => REAR_SLOPES.map((rearSlope) => ({ cabinHeight, rearSlope })));
+/** Parâmetros de forma ajustáveis (gamas das ParamSpecs da família; defaults do arquétipo). */
+export const FITTING_PARAMS: Array<{ key: string; min: number; max: number }> = [
+  { key: 'cabinHeight', min: 0.2, max: 0.55 },
+  { key: 'cabinStart', min: 0.04, max: 0.4 },
+  { key: 'cabinEnd', min: 0.5, max: 0.9 },
+  { key: 'rearSlope', min: 0, max: 1 },
+  { key: 'hoodHeight', min: 0.6, max: 1.05 },
+  { key: 'tailHeight', min: 0.6, max: 1.05 },
+  { key: 'roofCurvature', min: 0.85, max: 1.08 },
+  { key: 'bodyHeightScale', min: 0.9, max: 1.1 },
+  { key: 'shoulderHeight', min: 0.85, max: 1.05 },
+  { key: 'roofFront', min: 0.7, max: 1.15 },
+  { key: 'roofRear', min: 0.7, max: 1.15 },
+  { key: 'wheelScale', min: 0.85, max: 1.15 },
+];
+const SEARCH_STEPS = [0.06, 0.03, 0.015];
 
-/** Objectivo = 1 − IoU entre a silhueta projectada dos triângulos e a máscara reamostrada. */
-function objectiveOf(plan: SpatialPlanV2, overrides: Record<string, number>, targetMask: Uint8Array, evidence: ImageEvidence): number | null {
+export type CameraHypothesis = 'side' | 'three-quarter' | 'front-rear';
+/**
+ * Hipótese de câmara limitada e declarada. Não estima calibração: classifica o que a
+ * silhueta permite assumir. `three-quarter` ajusta com a projecção lateral como
+ * aproximação declarada; `front-rear` é recusado.
+ */
+export function cameraHypothesis(evidence: ImageEvidence): { kind: CameraHypothesis; reason: string } {
+  if (evidence.symmetry > 0.72 && evidence.aspect < 1.7) return { kind: 'front-rear', reason: `simetria ${evidence.symmetry.toFixed(2)} com aspecto ${evidence.aspect.toFixed(2)}: vista frontal/traseira, sem perfil lateral para ajustar` };
+  if (evidence.aspect >= 2.35) return { kind: 'side', reason: `aspecto da silhueta ${evidence.aspect.toFixed(2)} compatível com perfil lateral aproximado` };
+  return { kind: 'three-quarter', reason: `aspecto da silhueta ${evidence.aspect.toFixed(2)}: provável vista de três-quartos; a projecção lateral é uma aproximação declarada, não uma medição do perfil` };
+}
+
+/** IoU por terços horizontais [frente(+X), meio, traseira] da grelha de silhueta. */
+export function regionalIoUs(projected: Uint8Array, target: Uint8Array): [number, number, number] {
+  const thirds: Array<[number, number, number]> = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+  for (let y = 0; y < SILHOUETTE_ROWS; y++) for (let x = 0; x < SILHOUETTE_COLS; x++) {
+    const t = Math.min(2, Math.floor(x / (SILHOUETTE_COLS / 3)));
+    const a = projected[y * SILHOUETTE_COLS + x]!, b = target[y * SILHOUETTE_COLS + x]!;
+    if (a && b) thirds[t]![0]++;
+    if (a || b) thirds[t]![1]++;
+  }
+  return thirds.map(([i, u]) => (u ? i / u : 0)) as [number, number, number];
+}
+
+type ObjectiveBreakdown = { objective: number; iou: number; regional: [number, number, number] };
+
+/** Objectivo ponderado e documentado: 0.55·IoU total + 0.45·média dos IoU regionais. */
+function objectiveOf(plan: SpatialPlanV2, overrides: Record<string, number>, targetMask: Uint8Array): ObjectiveBreakdown | null {
   const candidate = compileFoundry(plan, { overrides, lod: 0 });
   try {
     if (!candidate.root || !candidate.recipe) return null;
     candidate.buildAll(); // a silhueta mede a geometria gerada, nunca o placeholder V2
-    void evidence;
-    return 1 - gridIoU(projectedSilhouette(candidate.root), targetMask);
+    const projected = projectedSilhouette(candidate.root);
+    const iou = gridIoU(projected, targetMask);
+    const regional = regionalIoUs(projected, targetMask);
+    const score = 0.55 * iou + 0.45 * ((regional[0] + regional[1] + regional[2]) / 3);
+    return { objective: 1 - score, iou, regional };
   } finally { candidate.retire?.(); }
 }
 
 const MIN_RELATIVE_IMPROVEMENT = 0.05;
 
-/**
- * Conclusão com análise de graus de liberdade: se o melhor candidato da grelha limitada
- * melhora menos de 5% sobre o baseline genuíno, a geometria (2 parâmetros) não tem graus
- * de liberdade suficientes para esta silhueta — recusa honesta, não um número bonito.
- * Vencedor na fronteira da grelha é reportado como saturação, nunca escondido.
- */
-function conclude(best: { overrides: Record<string, number>; objective: number }, baselineObjective: number, evaluated: number): FittingResult {
-  const relativeImprovement = baselineObjective > 1e-9 ? (baselineObjective - best.objective) / baselineObjective : 0;
-  const gridSaturated = [
-    ...(best.overrides.cabinHeight === CABIN_HEIGHTS[0] || best.overrides.cabinHeight === CABIN_HEIGHTS[CABIN_HEIGHTS.length - 1] ? ['cabinHeight'] : []),
-    ...(best.overrides.rearSlope === REAR_SLOPES[0] || best.overrides.rearSlope === REAR_SLOPES[REAR_SLOPES.length - 1] ? ['rearSlope'] : []),
-  ];
+function conclude(best: { overrides: Record<string, number>; objective: number; iou: number; regional: [number, number, number] }, baseline: ObjectiveBreakdown, evaluated: number, camera: CameraHypothesis): FittingResult {
+  const relativeImprovement = baseline.objective > 1e-9 ? (baseline.objective - best.objective) / baseline.objective : 0;
+  const gridSaturated = FITTING_PARAMS.filter((p) => {
+    const v = best.overrides[p.key];
+    return v !== undefined && (Math.abs(v - p.min) < 1e-9 || Math.abs(v - p.max) < 1e-9);
+  }).map((p) => p.key);
   if (relativeImprovement < MIN_RELATIVE_IMPROVEMENT) {
     return {
       status: 'insufficient_evidence',
-      reason: `Graus de liberdade insuficientes: o melhor candidato melhora ${(relativeImprovement * 100).toFixed(1)}% sobre o baseline (IoU silhueta ${(1 - baselineObjective).toFixed(3)} → ${(1 - best.objective).toFixed(3)}, mínimo ${(MIN_RELATIVE_IMPROVEMENT * 100).toFixed(0)}%)${gridSaturated.length ? `, com saturação da grelha em ${gridSaturated.join(', ')}` : ''}. Dois parâmetros de cabina não reproduzem esta silhueta; apresentação conceptual sem fitting.`,
+      reason: `Graus de liberdade insuficientes: o melhor candidato melhora ${(relativeImprovement * 100).toFixed(1)}% sobre o baseline (IoU silhueta ${baseline.iou.toFixed(3)} → ${best.iou.toFixed(3)}, mínimo ${(MIN_RELATIVE_IMPROVEMENT * 100).toFixed(0)}%)${gridSaturated.length ? `, com saturação em ${gridSaturated.join(', ')}` : ''}. A representação actual não reproduz esta silhueta; apresentação conceptual sem fitting.`,
     };
   }
   return {
-    status: 'fitted', overrides: best.overrides, objective: best.objective, baselineObjective, candidates: evaluated,
-    silhouetteIou: 1 - best.objective, baselineSilhouetteIou: 1 - baselineObjective, gridSaturated, relativeImprovement,
-    summary: `Fitting por silhueta projectada v${FITTING_VERSION} (${evaluated} candidatos limitados): cabinHeight=${best.overrides.cabinHeight}, rearSlope=${best.overrides.rearSlope}; IoU de silhueta ${(1 - baselineObjective).toFixed(3)} → ${(1 - best.objective).toFixed(3)}${gridSaturated.length ? `; grelha saturada em ${gridSaturated.join(', ')} (fronteira — não estendida para embelezar)` : ''}. Parâmetros inferidos da imagem, não dimensões verificadas.`,
+    status: 'fitted', overrides: best.overrides, objective: best.objective, baselineObjective: baseline.objective, candidates: evaluated,
+    silhouetteIou: best.iou, baselineSilhouetteIou: baseline.iou, gridSaturated, relativeImprovement,
+    summary: `Fitting v${FITTING_VERSION} por descida de coordenadas (${evaluated} avaliações, câmara: ${camera}): IoU de silhueta ${baseline.iou.toFixed(3)} → ${best.iou.toFixed(3)} (regiões frente/meio/traseira ${best.regional.map((v) => v.toFixed(2)).join('/')}); parâmetros ${Object.entries(best.overrides).map(([k, v]) => `${k}=${+v.toFixed(3)}`).join(', ')}${gridSaturated.length ? `; saturação em ${gridSaturated.join(', ')} (fronteira declarada, não estendida)` : ''}. Parâmetros inferidos da imagem, não dimensões verificadas.`,
   };
 }
 
 function gateAndBaseline(plan: SpatialPlanV2, evidence: ImageEvidence, targetMask: Uint8Array):
-  | { ok: true; baselineObjective: number }
+  | { ok: true; baseline: ObjectiveBreakdown; defaults: Record<string, number>; camera: CameraHypothesis }
   | { ok: false; result: FittingResult } {
-  if (evidence.symmetry > 0.72 && evidence.aspect < 1.7) {
-    return { ok: false, result: { status: 'insufficient_evidence', reason: `Silhueta quase frontal (simetria ${evidence.symmetry.toFixed(2)}, aspecto ${evidence.aspect.toFixed(2)}): hipótese de câmara lateral não suportada; apresentação conceptual sem fitting.` } };
+  const camera = cameraHypothesis(evidence);
+  if (camera.kind === 'front-rear') {
+    return { ok: false, result: { status: 'insufficient_evidence', reason: `Hipótese de câmara recusada: ${camera.reason}. Apresentação conceptual sem fitting.` } };
   }
   if (evidence.foregroundRatio < 0.02) return { ok: false, result: { status: 'insufficient_evidence', reason: 'Primeiro plano demasiado pequeno na imagem para medir uma silhueta.' } };
   if (evidence.foregroundRatio > 0.8) return { ok: false, result: { status: 'insufficient_evidence', reason: `Máscara não credível: o primeiro plano cobre ${(evidence.foregroundRatio * 100).toFixed(0)}% da imagem (fundo e sujeito indistinguíveis); sem fitting a partir desta máscara.` } };
@@ -249,34 +286,60 @@ function gateAndBaseline(plan: SpatialPlanV2, evidence: ImageEvidence, targetMas
     return { ok: false, result: { status: 'insufficient_evidence', reason: `Silhueta não fiável (falha fechado): ${reliability.reasons.join('; ')}. Sem máscara de confiança não há fitting — uma recusa correcta vale mais que um modelo enganador.` } };
   }
   const probe = compileFoundry(plan, {});
+  let defaults: Record<string, number> = {};
   try {
     if (!probe.recipe) return { ok: false, result: { status: 'unsupported_family', reason: 'Plano sem receita Foundry reconhecida.' } };
     if (probe.recipe.category !== 'vehicle') return { ok: false, result: { status: 'unsupported_family', reason: `Fitting geométrico disponível apenas para a família vehicle (esta cena: ${probe.recipe.category}).` } };
+    defaults = Object.fromEntries(FITTING_PARAMS.map((p) => [p.key, Number(probe.recipe!.params[p.key] ?? p.min)]));
   } finally { probe.retire?.(); }
   // Baseline GENUÍNO: o objectivo da geometria compilada por omissão (overrides {}),
-  // calculado independentemente da grelha. Nunca é substituído pelo objectivo do vencedor.
-  const baselineObjective = objectiveOf(plan, {}, targetMask, evidence);
-  if (baselineObjective === null) return { ok: false, result: { status: 'insufficient_evidence', reason: 'A geometria por omissão não compilou; sem baseline não há fitting.' } };
-  return { ok: true, baselineObjective };
+  // calculado independentemente da procura. Nunca é substituído pelo objectivo do vencedor.
+  const baseline = objectiveOf(plan, {}, targetMask);
+  if (baseline === null) return { ok: false, result: { status: 'insufficient_evidence', reason: 'A geometria por omissão não compilou; sem baseline não há fitting.' } };
+  return { ok: true, baseline, defaults, camera: camera.kind };
+}
+
+type SearchState = {
+  current: Record<string, number>;
+  currentObjective: ObjectiveBreakdown;
+  evaluated: number;
+};
+
+/** Um parâmetro da descida: tenta ±passo e fica com a melhor melhoria. */
+function descentParam(plan: SpatialPlanV2, target: Uint8Array, state: SearchState, param: { key: string; min: number; max: number }, step: number, signal?: AbortSignal, budget = Number.POSITIVE_INFINITY): void {
+  for (const direction of [1, -1] as const) {
+    if (state.evaluated >= budget || signal?.aborted) break;
+    const value = Math.min(param.max, Math.max(param.min, state.current[param.key]! + direction * step * (param.max - param.min)));
+    if (Math.abs(value - state.current[param.key]!) < 1e-9) continue;
+    const candidate = { ...state.current, [param.key]: value };
+    state.evaluated++;
+    const result = objectiveOf(plan, candidate, target);
+    if (result && result.objective < state.currentObjective.objective - 1e-9) {
+      state.current = candidate; state.currentObjective = result;
+    }
+  }
+}
+
+/** Descida por coordenadas determinística (grosso→fino): um parâmetro de cada vez, ±passo. */
+function descentRound(plan: SpatialPlanV2, target: Uint8Array, state: SearchState, step: number, signal?: AbortSignal, budget = Number.POSITIVE_INFINITY): void {
+  for (const param of FITTING_PARAMS) {
+    if (state.evaluated >= budget || signal?.aborted) break;
+    descentParam(plan, target, state, param, step, signal, budget);
+  }
 }
 
 export function fitGeometryToEvidence(plan: SpatialPlanV2, evidence: ImageEvidence, opts: { signal?: AbortSignal; maxCandidates?: number } = {}): FittingResult {
   const target = resampleEvidenceMask(evidence);
   const gate = gateAndBaseline(plan, evidence, target);
   if (!gate.ok) return gate.result;
-  const maxCandidates = opts.maxCandidates ?? CANDIDATES.length;
-  let best: { overrides: Record<string, number>; objective: number } | null = null;
-  let evaluated = 0;
-  for (const candidate of CANDIDATES) {
-    if (evaluated >= maxCandidates) break;
+  const state: SearchState = { current: { ...gate.defaults }, currentObjective: gate.baseline, evaluated: 1 };
+  const budget = opts.maxCandidates ?? 80;
+  for (const step of SEARCH_STEPS) {
     if (opts.signal?.aborted) return { status: 'aborted', reason: 'Fitting cancelado; nenhum parâmetro foi aplicado.' };
-    evaluated++;
-    const objective = objectiveOf(plan, { cabinHeight: candidate.cabinHeight, rearSlope: candidate.rearSlope }, target, evidence);
-    if (objective === null) continue;
-    if (!best || objective < best.objective - 1e-9) best = { overrides: { cabinHeight: candidate.cabinHeight, rearSlope: candidate.rearSlope }, objective };
+    descentRound(plan, target, state, step, opts.signal, budget);
   }
-  if (!best) return { status: 'insufficient_evidence', reason: 'Nenhum candidato compilou dentro dos limites do fitting.' };
-  return conclude(best, gate.baselineObjective, evaluated);
+  if (opts.signal?.aborted) return { status: 'aborted', reason: 'Fitting cancelado; nenhum parâmetro foi aplicado.' };
+  return conclude({ overrides: { ...state.current }, objective: state.currentObjective.objective, iou: state.currentObjective.iou, regional: state.currentObjective.regional }, gate.baseline, state.evaluated, gate.camera);
 }
 
 export type FittingProgress = { evaluated: number; total: number };
@@ -296,22 +359,20 @@ export async function fitGeometryToEvidenceAsync(plan: SpatialPlanV2, evidence: 
   const target = resampleEvidenceMask(evidence);
   const gate = gateAndBaseline(plan, evidence, target);
   if (!gate.ok) return gate.result;
-  const chunkSize = Math.max(1, Math.min(5, opts.chunkSize ?? 2));
+  void opts.chunkSize;
   const yieldNow = opts.yieldBetweenChunks ?? (() => new Promise<void>((resolve) => setTimeout(resolve, 0)));
-  let best: { overrides: Record<string, number>; objective: number } | null = null;
-  let evaluated = 0;
-  for (let start = 0; start < CANDIDATES.length; start += chunkSize) {
+  const state: SearchState = { current: { ...gate.defaults }, currentObjective: gate.baseline, evaluated: 1 };
+  const totalBudget = FITTING_PARAMS.length * 2 * SEARCH_STEPS.length + 1;
+  for (const step of SEARCH_STEPS) {
     if (opts.signal?.aborted) return { status: 'aborted', reason: 'Fitting cancelado; nenhum parâmetro foi aplicado.' };
-    for (const candidate of CANDIDATES.slice(start, start + chunkSize)) {
-      evaluated++;
-      const objective = objectiveOf(plan, { cabinHeight: candidate.cabinHeight, rearSlope: candidate.rearSlope }, target, evidence);
-      if (objective === null) continue;
-      if (!best || objective < best.objective - 1e-9) best = { overrides: { cabinHeight: candidate.cabinHeight, rearSlope: candidate.rearSlope }, objective };
+    // descida em fatias: uma ronda parcial por cedência, com progresso entre parâmetros
+    for (const param of FITTING_PARAMS) {
+      if (opts.signal?.aborted) return { status: 'aborted', reason: 'Fitting cancelado; nenhum parâmetro foi aplicado.' };
+      descentParam(plan, target, state, param, step, opts.signal);
+      opts.onProgress?.({ evaluated: state.evaluated, total: totalBudget });
+      await yieldNow();
     }
-    opts.onProgress?.({ evaluated, total: CANDIDATES.length });
-    if (start + chunkSize < CANDIDATES.length) await yieldNow();
   }
   if (opts.signal?.aborted) return { status: 'aborted', reason: 'Fitting cancelado; nenhum parâmetro foi aplicado.' };
-  if (!best) return { status: 'insufficient_evidence', reason: 'Nenhum candidato compilou dentro dos limites do fitting.' };
-  return conclude(best, gate.baselineObjective, evaluated);
+  return conclude({ overrides: { ...state.current }, objective: state.currentObjective.objective, iou: state.currentObjective.iou, regional: state.currentObjective.regional }, gate.baseline, state.evaluated, gate.camera);
 }

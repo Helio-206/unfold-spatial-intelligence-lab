@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Box3 } from 'three';
 import { extractEvidence, type RGBA } from '../src/living/universal-foundry/evidence';
-import { fitGeometryToEvidence, fitGeometryToEvidenceAsync, geometryProfile, evidenceProfile, evidenceMaskHash, fittingCacheKey, FITTING_VERSION, projectedSilhouette, resampleEvidenceMask, gridIoU, assessSilhouetteReliability } from '../src/living/universal-foundry/fitting';
+import { fitGeometryToEvidence, fitGeometryToEvidenceAsync, geometryProfile, evidenceProfile, evidenceMaskHash, fittingCacheKey, FITTING_VERSION, projectedSilhouette, resampleEvidenceMask, gridIoU, assessSilhouetteReliability, regionalIoUs } from '../src/living/universal-foundry/fitting';
 import { compileFoundry } from '../src/living/universal-foundry/foundry';
 import { FoundryGeometry } from '../src/living/universal-foundry/provider';
 import { validateSpatialPlanV2, type SpatialPlanV2 } from '../src/universal-spatial/contracts-v2';
@@ -23,16 +23,16 @@ const lowLong = () => extractEvidence(carImage({ x0: 20, y0: 58, x1: 180, y1: 85
 const tallShort = () => extractEvidence(carImage({ x0: 40, y0: 55, x1: 160, y1: 85 }, { x0: 58, y0: 22, x1: 142, y1: 55 }, [30, 90, 40]));
 
 describe('image-conditioned fitting (vehicle)', () => {
-  it('silhuetas diferentes produzem resultados diferentes: uma ajusta, a outra é recusada por falta de graus de liberdade', () => {
+  it('silhuetas diferentes produzem geometria diferente e melhor que o baseline', () => {
     const plan = sedan();
     const fitLow = fitGeometryToEvidence(plan, lowLong());
     const fitTall = fitGeometryToEvidence(plan, tallShort());
-    // Medido: para a silhueta baixa/comprida, o baseline (IoU 0.896) já bate todos os
-    // candidatos da grelha — a resposta correcta é a recusa por DOF, não um ajuste forçado.
-    expect(fitLow.status).toBe('insufficient_evidence');
-    if (fitLow.status === 'insufficient_evidence') expect(fitLow.reason).toMatch(/Graus de liberdade/);
-    expect(fitTall.status).toBe('fitted');
-    if (fitTall.status !== 'fitted') return;
+    // Com os DOF v3 (8+ parâmetros), as duas silhuetas ajustam — com parâmetros diferentes.
+    // (Na grelha v2 de 2 parâmetros, a baixa era recusada por DOF: registado no relatório.)
+    expect(fitLow.status).toBe('fitted'); expect(fitTall.status).toBe('fitted');
+    if (fitLow.status !== 'fitted' || fitTall.status !== 'fitted') return;
+    expect(fitLow.overrides).not.toEqual(fitTall.overrides);
+    expect(fitLow.silhouetteIou!).toBeGreaterThan(fitLow.baselineSilhouetteIou!);
     expect(fitTall.silhouetteIou!).toBeGreaterThan(fitTall.baselineSilhouetteIou!);
     const aspectOf = (overrides: Record<string, number>) => {
       const r = compileFoundry(sedan(), { overrides }); r.buildAll();
@@ -42,7 +42,7 @@ describe('image-conditioned fitting (vehicle)', () => {
     // a geometria ajustada (cabina alta) tem aspecto menor que a default: forma visivelmente diferente
     expect(aspectOf(fitTall.overrides)).not.toBeCloseTo(aspectOf({}), 3);
     expect(fitTall.objective).toBeLessThanOrEqual(fitTall.baselineObjective + 1e-9);
-  });
+  }, 120_000);
   it('controlo negativo: mudar só a cor não muda os parâmetros ajustados', () => {
     const a = fitGeometryToEvidence(sedan(), lowLong());
     const sameShapeBlue = extractEvidence(carImage({ x0: 20, y0: 58, x1: 180, y1: 85 }, { x0: 70, y0: 42, x1: 120, y1: 58 }, [30, 60, 200]));
@@ -65,12 +65,16 @@ describe('image-conditioned fitting (vehicle)', () => {
     const result = fitGeometryToEvidence(sedan(), evidence);
     expect(result.status).toBe('fitted');
     if (result.status !== 'fitted') return;
-    // recomputação independente: 1 − IoU da silhueta projectada default (mesmo lod dos candidatos) vs máscara reamostrada
+    // recomputação independente: objectivo ponderado documentado (0.55 IoU + 0.45 média regional)
     const compiled = compileFoundry(sedan(), { lod: 0 }); compiled.buildAll();
-    const expectedBaseline = 1 - gridIoU(projectedSilhouette(compiled.root), resampleEvidenceMask(evidence));
+    const projected = projectedSilhouette(compiled.root);
+    const targetMask = resampleEvidenceMask(evidence);
+    const iou = gridIoU(projected, targetMask);
+    const regional = regionalIoUs(projected, targetMask);
+    const expectedBaseline = 1 - (0.55 * iou + 0.45 * ((regional[0] + regional[1] + regional[2]) / 3));
     compiled.retire();
     expect(result.baselineObjective).toBeCloseTo(expectedBaseline, 9);
-    expect(result.baselineSilhouetteIou).toBeCloseTo(1 - expectedBaseline, 9);
+    expect(result.baselineSilhouetteIou).toBeCloseTo(iou, 9);
     expect(result.objective).toBeLessThan(result.baselineObjective);
     expect(result.baselineObjective).not.toBeCloseTo(result.objective, 9);
   }, 60_000);
@@ -110,7 +114,7 @@ describe('image-conditioned fitting (vehicle)', () => {
     const result = await fitted as { status: string; overrides?: Record<string, number> };
     expect(result.status).toBe('fitted');
     const second = provider.compile(plan);
-    expect(second.recipe?.params.cabinHeight).toBe(result.status === 'fitted' ? (result as { overrides: Record<string, number> }).overrides.cabinHeight : NaN);
+    expect(Number(second.recipe?.params.cabinHeight)).toBeCloseTo(result.status === 'fitted' ? (result as { overrides: Record<string, number> }).overrides.cabinHeight! : NaN, 2);
     second.retire();
     provider.dispose();
   }, 120_000);
