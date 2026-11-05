@@ -116,24 +116,56 @@ try {
     });
     layer.authorise(true); await layer.applyEdit();
     const applied = { revision: flow.session.revision, provenance: layer.currentPlan.components[0].provenance.transform, evidence: layer.currentPlan.components[0].provenance.evidence };
-    const undone = await layer.undo();
-    return { proposed, before, revisionBefore, applied, undone, revisionAfterUndo: flow.session.revision, restored: JSON.stringify(layer.currentPlan) === before };
+    return { proposed, before, revisionBefore, applied, boundReviewId: flow.sessionReviewId };
   });
   assert.equal(fenced.proposed, true);
   assert.equal(fenced.applied.revision, fenced.revisionBefore + 1, 'one revision for the fenced transaction');
   assert.equal(fenced.applied.provenance, 'inferred', 'authorised solver geometry stays inferred');
   assert.match(fenced.applied.evidence, /Authorisation: a person authorised/);
-  assert.equal(fenced.undone, true);
-  assert.equal(fenced.restored, true);
-  // A stale fence is rejected by the server without mutation: replay the same binding after another decision.
-  const staleFence = await page.evaluate(async () => {
-    const flow = window.__space, layer = flow.layer;
-    const review = flow.relationReview;
-    const reply = await fetch('/api/spatial/v2/reviews/decide', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reviewId: review.reviewId, baseReviewRevision: review.reviewRevision, subjectId: review.subjects[0].subjectId, decision: 'defer', reviewerName: 'Revisora E2E' }) }).then((r) => r.json());
-    flow.relationReview = reply.review;
-    return { revision: flow.session.revision };
+  assert.equal(fenced.boundReviewId, reviewId, 'the first commit is bound to review A');
+
+  // Second reviewed edit (E1.4 patch): the plan changed, so opening review creates review B and the
+  // SAME fenced session transitions its binding (no re-adoption, no revision reset) before commit 2.
+  // The server's existing limit is 20 spatial requests/minute per peer and this run is already near
+  // it; pace the second review cycle into the next window instead of weakening that limit.
+  await page.waitForTimeout(65_000);
+  await page.click('[data-extra="space-review"]');
+  await page.waitForSelector('.sp-root[data-phase="relation-review"]');
+  await page.waitForFunction((a) => window.__space.relationReview && window.__space.relationReview.reviewId !== a && window.__space.sessionReviewId === window.__space.relationReview.reviewId, reviewId, { timeout: 20_000 });
+  const reviewBId = await page.evaluate(() => window.__space.relationReview.reviewId);
+  assert.notEqual(reviewBId, reviewId);
+  await page.evaluate(async () => {
+    const flow = window.__space;
+    for (const subject of flow.relationReview.subjects.filter((s) => s.geometrySupport === 'contradicted')) {
+      const reply = await fetch('/api/spatial/v2/reviews/decide', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reviewId: flow.relationReview.reviewId, baseReviewRevision: flow.relationReview.reviewRevision, subjectId: subject.subjectId, decision: 'confirm', reviewerName: 'Revisora E2E' }) }).then((r) => r.json());
+      flow.relationReview = reply.review;
+    }
+    flow.closeRelationReview();
   });
-  assert.ok(staleFence.revision >= 2);
+  const second = await page.evaluate(async () => {
+    const flow = window.__space, layer = flow.layer;
+    const { spatialPlanFingerprintV2 } = await import('/src/universal-spatial/api-client.ts');
+    const review = flow.relationReview;
+    const fingerprint = await spatialPlanFingerprintV2(layer.currentPlan);
+    const [a, b] = layer.currentPlan.components;
+    const move = (component, dx) => ({ contract: 'unfold.spatial-operation.v2', operationId: `e14-${component.id}`.slice(0, 80), kind: 'set-transform', componentId: component.id, nodeKey: null, value: { ...component.transform, position: [component.transform.position[0] + dx, component.transform.position[1], component.transform.position[2]] } });
+    const revisionBefore = flow.session.revision;
+    const proposed = layer.proposeSolverEdit([move(a, -0.1), move(b, 0.1)], 'E1.4 second fenced', 'Browser solver fixture (inferred).', {
+      reviewBinding: { reviewId: review.reviewId, reviewRevision: review.reviewRevision, planFingerprint: fingerprint, sourceSha256: layer.currentPlan.source.sha256 },
+    });
+    layer.authorise(true); await layer.applyEdit();
+    const afterSecond = flow.session.revision;
+    const undoneSecond = await layer.undo();
+    const undoneFirst = await layer.undo();
+    return { proposed, revisionBefore, afterSecond, undoneSecond, undoneFirst, finalRevision: flow.session.revision };
+  });
+  assert.equal(second.proposed, true);
+  assert.equal(second.afterSecond, second.revisionBefore + 1, 'second reviewed commit: one revision, same session');
+  assert.equal(second.undoneSecond, true, 'undo of the second reviewed edit');
+  assert.equal(second.undoneFirst, true, 'undo of the first reviewed edit still queued behind it');
+  const restoredAll = await page.evaluate((before) => JSON.stringify(window.__space.layer.currentPlan) === before, fenced.before);
+  assert.equal(restoredAll, true, 'both undos restore the exact pre-edit plan');
+  await page.screenshot({ path: `${out}/two-reviewed-edits-undone.png` });
   assert.deepEqual(errors, []);
   await page.screenshot({ path: `${out}/review-reopened.png` });
   process.stdout.write(`${JSON.stringify({ case: 'v4-e1-review-browser', reviewId: reviewId.slice(0, 8), subjects: subjectCount, reopened, errors }, null, 2)}\n`);

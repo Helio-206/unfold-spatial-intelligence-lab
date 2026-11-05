@@ -170,6 +170,13 @@ export async function decideSpatialReview(input: { reviewId: string; baseReviewR
   return validReviewReply(await post<SpatialReviewReply>('/api/spatial/v2/reviews/decide', input, fetchImpl));
 }
 
+/** Atomically moves a session's review binding to a review of its exact current plan, preserving revision, history and receipts. */
+export async function transitionSpatialReviewBinding(input: { sessionId: string; baseRevision: number; reviewId: string }, fetchImpl: typeof fetch = fetch): Promise<{ contract: 'unfold.spatial-session-policy.v1'; sessionId: string; revision: number; mutationPolicy: { mode: 'review_fenced'; reviewId: string }; sessionDurability?: 'file' | 'volatile' }> {
+  const reply = await post<{ contract: 'unfold.spatial-session-policy.v1'; sessionId: string; revision: number; mutationPolicy: { mode: 'review_fenced'; reviewId: string }; sessionDurability?: 'file' | 'volatile' }>('/api/spatial/v2/sessions/review-binding', input, fetchImpl);
+  if (reply.contract !== 'unfold.spatial-session-policy.v1' || reply.mutationPolicy?.mode !== 'review_fenced') throw new SpatialApiError(502, 'INVALID_SPATIAL_SESSION_POLICY_REPLY', 'Unknown spatial session policy response contract.');
+  return reply;
+}
+
 /** The solver gate for a review, optionally pinned to the revision and to the exact plan/source binding the caller expects. */
 export async function getSpatialReviewEligibility(input: { reviewId: string; reviewRevision?: number; planFingerprint?: string; sourceSha256?: string }, fetchImpl: typeof fetch = fetch): Promise<SpatialReviewReply> {
   return validReviewReply(await post<SpatialReviewReply>('/api/spatial/v2/reviews/eligibility', input, fetchImpl));
