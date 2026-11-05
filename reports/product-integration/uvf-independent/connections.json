@@ -1,0 +1,31 @@
+{
+  "fixture": "miniExcavator: hand-authored inferred proportions; units are not validated",
+  "method": "world-axis-aligned bounding boxes; overlap does not demonstrate contact or joint alignment",
+  "pairs": [
+    {
+      "a": "house",
+      "b": "boom",
+      "aabbSeparation": 0
+    },
+    {
+      "a": "boom",
+      "b": "stick",
+      "aabbSeparation": 0
+    },
+    {
+      "a": "stick",
+      "b": "bucket",
+      "aabbSeparation": 0
+    },
+    {
+      "a": "cyl-boom",
+      "b": "boom",
+      "aabbSeparation": 0.016000002622604342
+    },
+    {
+      "a": "cyl-boom",
+      "b": "house",
+      "aabbSeparation": 0.17255358175078617
+    }
+  ]
+}

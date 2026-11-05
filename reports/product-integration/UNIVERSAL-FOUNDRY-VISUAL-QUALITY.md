@@ -1,5 +1,7 @@
 # Universal Visual Foundry — independent quality gate
 
+> Historical pre-provider baseline. For the independent audit of the actual provider at `587854b`, see [Universal Foundry V1 audit](UNIVERSAL-FOUNDRY-V1-INDEPENDENT-AUDIT.md).
+
 **Decision: NO-GO.** This is an initial, independently isolated evaluation harness, not evidence that the Universal Visual Foundry meets the product goal. There is no captured Foundry output, no paired original photograph for the replayed plan, no independently signed human assessment, and no confidential held-out set. Do not infer an improvement over V2 from this report.
 
 ## Source and isolation
