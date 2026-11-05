@@ -40,12 +40,26 @@ try {
   await page.route('**/api/spatial/v2/plan', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(input) }));
 
   const buildSpace = async () => {
-    await page.goto(`http://127.0.0.1:${webPort}/living?debug-living&experimental-v4&rm=1`, { waitUntil: 'networkidle' });
+    await page.goto(`http://127.0.0.1:${webPort}/living?debug-living&experimental-v4&experimental-foundry&rm=1`, { waitUntil: 'networkidle' });
     await page.click('[data-space="open"]'); await page.fill('#sp-text', 'Experiência local E1 com servidor real.'); await page.click('[data-sp="submit"]');
     await page.waitForSelector('.sp-root[data-phase="review"]'); await page.click('[data-sp="keep-all"]'); await page.check('#sp-ack'); await page.click('[data-sp="build"]');
     await page.waitForFunction(() => window.__space.session && window.__space.layer && !window.__space.layer.isBusy, null, { timeout: 40_000 });
   };
   await buildSpace();
+
+  // Foundry visualisation (experimental flag): geometry is derived from the authoritative plan.
+  await page.waitForFunction(() => window.__foundry3d && window.__space.layer.geometryReport?.perFamily?.universal_foundry?.components > 0, null, { timeout: 40_000 });
+  const visualOnly = await page.evaluate(() => {
+    const layer = window.__space.layer, before = JSON.stringify(layer.currentPlan);
+    window.__foundry3d.set(layer.currentPlan, {}, 7); // a new visual seed: regeneration only
+    layer.regenerate();
+    for (let i = 0; i < 40 && (layer.geometryReport?.perFamily?.universal_foundry?.components ?? 0) === 0; i++) layer.upgradeGeometry(200_000);
+    return { planUnchanged: JSON.stringify(layer.currentPlan) === before, editCount: layer.editCount, family: window.__space.layer.geometryReport.perFamily.universal_foundry.components, panel: !!document.querySelector('[data-foundry-panel]') };
+  });
+  assert.equal(visualOnly.planUnchanged, true, 'visual regeneration must not write the plan');
+  assert.equal(visualOnly.editCount, 0);
+  assert.ok(visualOnly.family > 0, 'foundry family drew components');
+  await page.screenshot({ path: `${out}/foundry-visualisation.png` });
 
   // Open the human-review panel from the workspace tools and decide on the first subject.
   await page.click('[data-extra="space-review"]');
