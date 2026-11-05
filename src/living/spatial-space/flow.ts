@@ -51,7 +51,8 @@ export type SpaceFlowOptions = {
   /** Experimental (debug only): a geometry seam that replaces the V3 product geometry, e.g. the Universal Foundry. */
   geometry?: () => GeometrySeam;
   /** Experimental: receives the picture a Space is being made from (the same data URL the review shows) so local evidence can be extracted from it. */
-  onImage?: (dataUrl: string) => void;
+  onEvidenceInvalidated?: () => void;
+  onImage?: (image: { dataUrl: string; originalSha256: string; preparedSha256: string; preparation: string; plan: SpatialPlanV2; planFingerprint: string; generationId: string; signal: AbortSignal }) => Promise<void>;
 };
 export type GeometrySeam = { compile: (plan: SpatialPlanV2) => import('../../universal-spatial/geometry-compiler-v2').CompiledSpatialPlanV2; attach(onReady: () => void): void; report(): unknown; dispose(): void };
 
@@ -101,6 +102,7 @@ export class SpaceFlow {
   savedId: string | null = null;
   readonly store: SpaceStore;
   private geometry: GeometrySeam | null = null;
+  private sourceGeneration = 0;
   private savedPlanJson: string | null = null;
   private source: SpaceSource | null = null;
   private problem: string | null = null;
@@ -157,6 +159,7 @@ export class SpaceFlow {
   openLibrary(): void { this.guard(() => void this.showLibrary()); }
 
   private startIntake(): void {
+    this.sourceGeneration++; this.options.onEvidenceInvalidated?.();
     this.attach();
     this.dropScene(); this.abort?.abort(); clearInterval(this.tick);
     this.source = null; this.reply = null; this.failure = null; this.problem = null; this.review = initialSpaceReview(); this.note = null; this.run = null; this.session = null; this.syncNote = null; this.savedId = null; this.savedPlanJson = null;
@@ -164,12 +167,14 @@ export class SpaceFlow {
   }
 
   private async showLibrary(): Promise<void> {
+    this.sourceGeneration++; this.options.onEvidenceInvalidated?.();
     this.attach();
     this.dropScene(); this.abort?.abort(); clearInterval(this.tick);
     this.phase = 'library'; this.confirmDelete = null; this.listing = await this.store.list(); this.render();
   }
 
   close(): void {
+    this.sourceGeneration++; this.options.onEvidenceInvalidated?.();
     if (this.phase === 'closed') return;
     this.abort?.abort(); clearInterval(this.tick); this.dropScene();
     this.phase = 'closed'; this.panel.hidden = true; this.panel.replaceChildren(); this.pendingLeave = null;
@@ -180,7 +185,7 @@ export class SpaceFlow {
   /** Leaving for the laboratory: asks first when something unsaved is on stage. */
   exit(): void { this.guard(() => { this.close(); this.options.onExit(); }); }
 
-  dispose(): void { this.abort?.abort(); clearInterval(this.tick); this.geometry?.dispose(); this.geometry = null; this.layer = null; this.panel.remove(); }
+  dispose(): void { this.sourceGeneration++; this.options.onEvidenceInvalidated?.(); this.abort?.abort(); clearInterval(this.tick); this.geometry?.dispose(); this.geometry = null; this.layer = null; this.panel.remove(); }
 
   private dropScene(): void {
     this.geometry?.dispose(); this.geometry = null;
@@ -192,6 +197,7 @@ export class SpaceFlow {
   /** Text from the composer or the panel. */
   takeText(text: string): void {
     if (this.phase !== 'intake') return;
+    this.sourceGeneration++;
     const t = text.trim();
     if (t.length < SPACE_TEXT_LIMITS.min) { this.problem = `Descreva o objecto com pelo menos ${SPACE_TEXT_LIMITS.min} caracteres.`; this.source = null; }
     else if (t.length > SPACE_TEXT_LIMITS.max) { this.problem = `O texto tem ${t.length} caracteres; o máximo é ${SPACE_TEXT_LIMITS.max}.`; this.source = null; }
@@ -201,36 +207,45 @@ export class SpaceFlow {
 
   async takeFile(file: File): Promise<void> {
     if (this.phase !== 'intake') return;
+    const generation = ++this.sourceGeneration;
     const issue = checkFile(file);
     if (issue) { this.problem = issue.message; this.source = null; this.render(); return; }
     const dataUrl = await new Promise<string>((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(String(r.result)); r.onerror = () => reject(r.error); r.readAsDataURL(file); });
+    if (generation !== this.sourceGeneration || this.phase !== 'intake') return;
     this.problem = null; this.source = { kind: 'image', name: file.name, size: file.size, dataUrl }; this.render();
   }
 
   async submit(): Promise<void> {
     if (this.phase !== 'intake' || !this.source) return;
-    const source = this.source; this.abort?.abort(); const mine = this.abort = new AbortController();
+    const source = this.source; const generation = ++this.sourceGeneration; this.abort?.abort(); const mine = this.abort = new AbortController();
     this.phase = 'waiting'; this.startedAt = Date.now(); this.failure = null; this.render();
     clearInterval(this.tick); this.tick = window.setInterval(() => { if (this.phase === 'waiting') this.render(); }, 1000);
     const base = this.options.fetchImpl ?? fetch.bind(globalThis);
     const fetchImpl: typeof fetch = (input, init) => base(input, { ...init, signal: mine.signal });
     try {
-      this.options.onImage?.(source.kind === 'image' ? source.dataUrl : '');
+      const prepared = source.kind === 'image' ? await prepareImage(source.dataUrl, this.transcode, mine.signal) : null;
       const request = source.kind === 'text'
         ? { sourceKind: 'text' as const, instruction: source.text, maxRefinements: 0 }
-        : { sourceKind: 'image' as const, imageDataUrl: (await prepareImage(source.dataUrl, this.transcode, mine.signal)).dataUrl, maxRefinements: 0 };
+        : { sourceKind: 'image' as const, imageDataUrl: prepared!.dataUrl, maxRefinements: 0 };
       const reply = await this.create(request, fetchImpl);
-      if (this.abort !== mine) return;
+      if (this.abort !== mine || mine.signal.aborted || generation !== this.sourceGeneration) return;
+      if (source.kind === 'image' && prepared && this.options.onImage) {
+        const hashData = async (url: string) => { const bytes = Uint8Array.from(atob(url.slice(url.indexOf(',') + 1)), c => c.charCodeAt(0)); const digest = await crypto.subtle.digest('SHA-256', bytes); return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join(''); };
+        const [originalSha256, preparedSha256, planFingerprint] = await Promise.all([hashData(source.dataUrl), hashData(prepared.dataUrl), spatialPlanFingerprintV2(reply.plan)]);
+        if (this.abort !== mine || mine.signal.aborted || generation !== this.sourceGeneration) return;
+        if (reply.plan.source.kind === 'image' && reply.plan.source.sha256 === preparedSha256) await this.options.onImage({ dataUrl: source.dataUrl, originalSha256, preparedSha256, preparation: prepared.transcodedFrom ? `${prepared.transcodedFrom}->${prepared.mime}` : `identity:${prepared.mime}`, plan: reply.plan, planFingerprint, generationId: String(generation), signal: mine.signal });
+        if (this.abort !== mine || mine.signal.aborted || generation !== this.sourceGeneration) return;
+      }
       this.metaCalls += 1;
       this.reply = reply; this.review = initialSpaceReview(); this.phase = 'review';
     } catch (error) {
-      if (this.abort !== mine || (error as DOMException)?.name === 'AbortError') return;
+      if (this.abort !== mine || mine.signal.aborted || generation !== this.sourceGeneration || (error as DOMException)?.name === 'AbortError') return;
       this.failure = failureText(error); this.phase = 'failed';
     } finally { if (this.abort === mine) clearInterval(this.tick); }
     this.render();
   }
 
-  cancel(): void { if (this.phase !== 'waiting') return; this.abort?.abort(); clearInterval(this.tick); this.phase = 'intake'; this.render(); }
+  cancel(): void { if (this.phase !== 'waiting') return; this.sourceGeneration++; this.options.onEvidenceInvalidated?.(); this.abort?.abort(); clearInterval(this.tick); this.phase = 'intake'; this.render(); }
 
   // ------------------------------------------------------------------------------------------------ review → build
   decide(id: string, decision: 'keep' | 'reject'): void { if (this.phase === 'review') { this.review = decide(this.review, id, decision); this.render(); } }
@@ -253,7 +268,9 @@ export class SpaceFlow {
 
   /** A saved Space opens on stage as it was reviewed; it is not asked from the model again. */
   async openRecord(id: string): Promise<boolean> {
+    const generation = ++this.sourceGeneration; this.options.onEvidenceInvalidated?.(); this.abort?.abort();
     const opened = await this.store.open(id);
+    if (generation !== this.sourceGeneration) return false;
     if (!opened.ok) { this.note = `Não foi possível abrir este Space: ${PROBLEM_COPY[opened.problem.reason]}.`; this.listing = await this.store.list(); this.render(); return false; }
     const r = opened.record;
     this.run = { origin: 'reopened', model: r.run.model, requestId: r.run.requestId, latencyMs: null, estimatedCostUsd: r.run.estimatedCostUsd, rawResponseSha256: r.run.rawResponseSha256, rawResponseStored: false, sourceKind: r.run.sourceKind, sourceSha256: r.run.sourceSha256, limitations: ['Space reaberto do armazenamento local deste navegador; a resposta da Meta não é pedida de novo.'] };

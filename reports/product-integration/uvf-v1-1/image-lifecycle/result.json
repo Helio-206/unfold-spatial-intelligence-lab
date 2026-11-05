@@ -1,0 +1,73 @@
+{
+  "origin": "licensed photos with manually rebound hand-authored hatchback plan, not image inference",
+  "a": {
+    "recipe": {
+      "palette": {
+        "primary": "#060a12",
+        "secondary": "#b3302a",
+        "accent": "#515459",
+        "glass": "#3A4A57"
+      },
+      "paletteKnown": "evidence",
+      "evidence": {
+        "used": true,
+        "summary": "foreground 90%, aspect 1.95, symmetry 0.82, 4 dominant colours"
+      }
+    },
+    "saved": true,
+    "id": "5c25b5f0-9359-434e-92ca-62651373b730",
+    "source": {
+      "kind": "image",
+      "sha256": "a4705cecb298ba521a46baeb4ba1acd7cf75bdf3500d1c927d45788aa55ac3ec"
+    }
+  },
+  "b": {
+    "recipe": {
+      "palette": {
+        "primary": "#938e8e",
+        "secondary": "#b3302a",
+        "accent": "#b3b0b0",
+        "glass": "#3A4A57"
+      },
+      "paletteKnown": "evidence",
+      "evidence": {
+        "used": true,
+        "summary": "foreground 60%, aspect 1.86, symmetry 0.73, 4 dominant colours"
+      }
+    },
+    "saved": true,
+    "id": "a6c2576c-0dd6-4f0f-9514-41dd993d0de1",
+    "source": {
+      "kind": "image",
+      "sha256": "21f1ba12e44829e4639353f5f642ef58fc296f1bb9d9733e129c18651db5eca9"
+    }
+  },
+  "after": {
+    "palette": {
+      "primary": "#b3302a",
+      "secondary": "#1b1b1d",
+      "accent": "#ca6e6a",
+      "glass": "#3A4A57"
+    },
+    "paletteKnown": "plan",
+    "evidence": {
+      "used": false,
+      "summary": "no image evidence supplied"
+    },
+    "source": {
+      "kind": "image",
+      "sha256": "a4705cecb298ba521a46baeb4ba1acd7cf75bdf3500d1c927d45788aa55ac3ec"
+    }
+  },
+  "requests": [
+    {
+      "sha256": "a4705cecb298ba521a46baeb4ba1acd7cf75bdf3500d1c927d45788aa55ac3ec",
+      "bytes": 157437
+    },
+    {
+      "sha256": "21f1ba12e44829e4639353f5f642ef58fc296f1bb9d9733e129c18651db5eca9",
+      "bytes": 124493
+    }
+  ],
+  "changedAfterReopen": true
+}

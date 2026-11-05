@@ -75,7 +75,7 @@ export function mountLivingShell(app: HTMLElement): void {
   const foundry = debug && params.has('experimental-foundry') ? new FoundryGeometry() : null;
   const space = new SpaceFlow({
     workspace, host: workspace.panelHost,
-    ...(foundry ? { geometry: () => foundry, onImage: (dataUrl: string) => { if (!dataUrl) foundry.setEvidence(null); else void evidenceFromDataUrl(dataUrl).then((e) => foundry.setEvidence(e)); } } : {}),
+    ...(foundry ? { geometry: () => foundry, onEvidenceInvalidated: () => foundry.setEvidence(null), onImage: async (image) => { const evidence = await evidenceFromDataUrl(image.dataUrl); if (image.signal.aborted) return; await foundry.setEvidence(evidence, { plan: image.plan, planFingerprint: image.planFingerprint, sourceSha256: image.plan.source.sha256, originalSha256: image.originalSha256, preparedSha256: image.preparedSha256, preparation: image.preparation, generationId: image.generationId, recipeVersion: 1 }, image.signal); } } : {}),
     onActive: (active) => { const root = experienceRoot(); if (root) root.hidden = active; },
     onExit: () => { const root = experienceRoot(); if (root) root.hidden = false; api?.restart(); },
   });
