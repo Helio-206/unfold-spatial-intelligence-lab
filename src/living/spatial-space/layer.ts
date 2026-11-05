@@ -149,6 +149,9 @@ export class PlanSpaceLayer implements SpaceLayer {
   afterRender(): void { if (this.disposed) return; this.displayed = true; this.releaseRetiredMaterials(); }
   get editCount(): number { return this.history.length; }
 
+  /** Rebuilds the scene from the SAME plan (a setting of the geometry seam changed). The plan, its history and its provenance are untouched. */
+  regenerate(): void { if (this.disposed) return; this.stats = this.build(); this.host.redraw(); }
+
   private build(): ReturnType<typeof compileSpatialPlanV2>['stats'] {
     this.explanationVersion++;
     this.release();

@@ -1,3 +1,6 @@
+import { FoundryGeometry } from '../universal-foundry/provider';
+import { mountFoundryPanel } from '../universal-foundry/panel';
+import { evidenceFromDataUrl } from '../universal-foundry/browser';
 import { ExperimentalV4 } from '../spatial-space/experimental-v4';
 import './unified.css';
 import mark from '../../../design-system/logos/unfold-mark-on-dark.svg';
@@ -69,14 +72,17 @@ export function mountLivingShell(app: HTMLElement): void {
   };
   // New Space: any object, from text or a photograph, through Muse Spark and a human review, on this same stage. Its panels sit beside the experience's.
   const experienceRoot = () => workspace.panelHost.querySelector<HTMLElement>('.ux-root');
+  const foundry = debug && params.has('experimental-foundry') ? new FoundryGeometry() : null;
   const space = new SpaceFlow({
     workspace, host: workspace.panelHost,
+    ...(foundry ? { geometry: () => foundry, onImage: (dataUrl: string) => { if (!dataUrl) foundry.setEvidence(null); else void evidenceFromDataUrl(dataUrl).then((e) => foundry.setEvidence(e)); } } : {}),
     onActive: (active) => { const root = experienceRoot(); if (root) root.hidden = active; },
     onExit: () => { const root = experienceRoot(); if (root) root.hidden = false; api?.restart(); },
   });
+  const foundryPanel = foundry ? mountFoundryPanel(foundry, () => space.layer) : null;
   const experimentalV4 = debug && params.has('experimental-v4') ? new ExperimentalV4(() => space.layer, id => workspace.select(id), () => space.currentReviewId) : null;
-  if (debug) Object.assign(window, { __workspace: workspace, __foundry: { ready: !params.has('example') }, __unified: { port, gateway, lab }, __space: space, ...(experimentalV4 ? { __v4: experimentalV4 } : {}) });
-  addEventListener('pagehide', (event) => { if (!(event as PageTransitionEvent).persisted) { experimentalV4?.dispose(); space.dispose(); workspace.dispose(); port.session.dispose(); } });
+  if (debug) Object.assign(window, { __workspace: workspace, __foundry: { ready: !params.has('example') }, __unified: { port, gateway, lab }, __space: space, ...(experimentalV4 ? { __v4: experimentalV4 } : {}), ...(foundry ? { __foundry3d: foundry } : {}) });
+  addEventListener('pagehide', (event) => { if (!(event as PageTransitionEvent).persisted) { experimentalV4?.dispose(); foundryPanel?.dispose(); space.dispose(); workspace.dispose(); port.session.dispose(); } });
   void mountExperience(app, { port, handoff: asReviewHandoff(gateway), lab, example, space: { open: () => space.open() }, embedded }).then((experience) => {
     api = experience;
     if (params.has('example')) { experience.openExample(); if (debug) (window as unknown as { __foundry: { ready: boolean } }).__foundry.ready = true; }

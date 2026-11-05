@@ -48,7 +48,12 @@ export type SpaceFlowOptions = {
   fetchImpl?: typeof fetch;
   transcode?: Transcoder;
   reducedMotion?: boolean;
+  /** Experimental (debug only): a geometry seam that replaces the V3 product geometry, e.g. the Universal Foundry. */
+  geometry?: () => GeometrySeam;
+  /** Experimental: receives the picture a Space is being made from (the same data URL the review shows) so local evidence can be extracted from it. */
+  onImage?: (dataUrl: string) => void;
 };
+export type GeometrySeam = { compile: (plan: SpatialPlanV2) => import('../../universal-spatial/geometry-compiler-v2').CompiledSpatialPlanV2; attach(onReady: () => void): void; report(): unknown; dispose(): void };
 
 export const FAILURE_COPY: Record<string, string> = {
   META_CALL_BUDGET_EXHAUSTED: 'O orçamento de chamadas à Meta deste servidor esgotou-se. Nada foi construído.',
@@ -100,7 +105,7 @@ export class SpaceFlow {
   get currentReviewId(): string | null { return this.relationReview?.reviewId ?? null; }
   savedId: string | null = null;
   readonly store: SpaceStore;
-  private geometry: ProductGeometry | null = null;
+  private geometry: GeometrySeam | null = null;
   private savedPlanJson: string | null = null;
   private source: SpaceSource | null = null;
   private problem: string | null = null;
@@ -215,6 +220,7 @@ export class SpaceFlow {
     const base = this.options.fetchImpl ?? fetch.bind(globalThis);
     const fetchImpl: typeof fetch = (input, init) => base(input, { ...init, signal: mine.signal });
     try {
+      this.options.onImage?.(source.kind === 'image' ? source.dataUrl : '');
       const request = source.kind === 'text'
         ? { sourceKind: 'text' as const, instruction: source.text, maxRefinements: 0 }
         : { sourceKind: 'image' as const, imageDataUrl: (await prepareImage(source.dataUrl, this.transcode, mine.signal)).dataUrl, maxRefinements: 0 };
@@ -265,7 +271,7 @@ export class SpaceFlow {
 
   private show(plan: SpatialPlanV2, cinematic: boolean): void {
     const workspace = this.options.workspace;
-    const geometry = new ProductGeometry(); this.geometry = geometry;
+    const geometry: GeometrySeam = this.options.geometry ? this.options.geometry() : new ProductGeometry(); this.geometry = geometry;
     const layer = new PlanSpaceLayer(plan, {
       changed: () => { this.refreshContext(); workspace.spaceChanged(); },
       redraw: () => workspace.redraw(),
