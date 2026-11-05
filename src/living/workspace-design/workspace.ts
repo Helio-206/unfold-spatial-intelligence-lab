@@ -1340,6 +1340,11 @@ export class SpatialWorkspace {
   redraw(): void { if (this.explanationKey && this.explanationKey !== this.currentExplanationKey()) { this.invalidateExplanation(); this.renderInspector(); } this.foundry.markMotion(); this.foundry.studio.updateContactShadow(); this.foundry.requestRender(); }
 
   get spaceActive(): boolean { return this.space !== null; }
+
+  /** The stage triple an experimental rendering look may dress (and must restore). Nothing else about the stage is exposed. */
+  photorealStage(): { renderer: import('three').WebGLRenderer; scene: import('three').Scene; camera: import('three').Camera } {
+    return { renderer: this.foundry.renderer, scene: this.foundry.scene, camera: this.foundry.camera };
+  }
   get selectedSpaceId(): string | null { return this.space ? this.selectedId : null; }
 
   /** Leaves the space (frees its objects) without touching the machine slot. Idempotent. */

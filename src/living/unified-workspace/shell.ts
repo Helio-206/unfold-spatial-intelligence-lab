@@ -1,4 +1,6 @@
 import { FoundryGeometry } from '../universal-foundry/provider';
+import { PhotorealGeometry, applyPhotorealStage, type PhotorealStage } from '../photoreal/look';
+import { detectCapabilities, selectPhotorealPreset } from '../photoreal/presets';
 import { mountFoundryPanel } from '../universal-foundry/panel';
 import { evidenceFromDataUrl } from '../universal-foundry/browser';
 import { ExperimentalV4 } from '../spatial-space/experimental-v4';
@@ -73,15 +75,31 @@ export function mountLivingShell(app: HTMLElement): void {
   // New Space: any object, from text or a photograph, through Muse Spark and a human review, on this same stage. Its panels sit beside the experience's.
   const experienceRoot = () => workspace.panelHost.querySelector<HTMLElement>('.ux-root');
   const foundry = debug && params.has('experimental-foundry') ? new FoundryGeometry() : null;
+  // Experimental photoreal rendering: wraps the Foundry geometry seam (materials follow the
+  // authoritative plan on every compile) and dresses the stage once a Space is live. Without the
+  // flag, neither exists and the renderer behaves exactly as before.
+  // Capabilities are decided before any material is touched: an unsupported renderer keeps the
+  // original path completely (stock materials included), not just the stock stage.
+  const photorealPreset = foundry && params.has('experimental-photoreal') ? selectPhotorealPreset('balanced', detectCapabilities(workspace.photorealStage().renderer)) : null;
+  const photoreal = foundry && photorealPreset ? new PhotorealGeometry(foundry, { microdetail: photorealPreset.microdetail }) : null;
+  let photorealStage: PhotorealStage | null = null;
   const space = new SpaceFlow({
     workspace, host: workspace.panelHost,
-    ...(foundry ? { geometry: () => foundry, onImage: (dataUrl: string) => { if (!dataUrl) foundry.setEvidence(null); else void evidenceFromDataUrl(dataUrl).then((e) => foundry.setEvidence(e)); } } : {}),
+    ...(foundry ? { geometry: () => photoreal ?? foundry, onImage: (dataUrl: string) => { if (!dataUrl) foundry.setEvidence(null); else void evidenceFromDataUrl(dataUrl).then((e) => foundry.setEvidence(e)); } } : {}),
     onActive: (active) => { const root = experienceRoot(); if (root) root.hidden = active; },
     onExit: () => { const root = experienceRoot(); if (root) root.hidden = false; api?.restart(); },
   });
   const foundryPanel = foundry ? mountFoundryPanel(foundry, () => space.layer) : null;
   const experimentalV4 = debug && params.has('experimental-v4') ? new ExperimentalV4(() => space.layer, id => workspace.select(id), () => space.currentReviewId) : null;
-  if (debug) Object.assign(window, { __workspace: workspace, __foundry: { ready: !params.has('example') }, __unified: { port, gateway, lab }, __space: space, ...(experimentalV4 ? { __v4: experimentalV4 } : {}), ...(foundry ? { __foundry3d: foundry } : {}) });
+  if (debug) Object.assign(window, { __workspace: workspace, __foundry: { ready: !params.has('example') }, __unified: { port, gateway, lab }, __space: space, ...(experimentalV4 ? { __v4: experimentalV4 } : {}), ...(foundry ? { __foundry3d: foundry } : {}), ...(photoreal ? { __photoreal: { active: () => photorealStage !== null, stage: () => photorealStage } } : {}) });
+  if (photoreal) {
+    const dress = () => {
+      if (!photorealStage && workspace.spaceActive) { const stage = workspace.photorealStage(); photorealStage = applyPhotorealStage(stage.renderer, stage.scene, photorealPreset?.name ?? 'balanced'); }
+      if (photorealStage && !workspace.spaceActive) { photorealStage.dispose(); photorealStage = null; }
+    };
+    const timer = setInterval(dress, 400);
+    addEventListener('pagehide', () => { clearInterval(timer); photorealStage?.dispose(); photorealStage = null; });
+  }
   addEventListener('pagehide', (event) => { if (!(event as PageTransitionEvent).persisted) { experimentalV4?.dispose(); foundryPanel?.dispose(); space.dispose(); workspace.dispose(); port.session.dispose(); } });
   void mountExperience(app, { port, handoff: asReviewHandoff(gateway), lab, example, space: { open: () => space.open() }, embedded }).then((experience) => {
     api = experience;
