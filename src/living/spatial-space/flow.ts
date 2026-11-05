@@ -230,11 +230,16 @@ export class SpaceFlow {
       const reply = await this.create(request, fetchImpl);
       if (this.abort !== mine || mine.signal.aborted || generation !== this.sourceGeneration) return;
       if (source.kind === 'image' && prepared && this.options.onImage) {
-        const hashData = async (url: string) => { const bytes = Uint8Array.from(atob(url.slice(url.indexOf(',') + 1)), c => c.charCodeAt(0)); const digest = await crypto.subtle.digest('SHA-256', bytes); return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join(''); };
-        const [originalSha256, preparedSha256, planFingerprint] = await Promise.all([hashData(source.dataUrl), hashData(prepared.dataUrl), spatialPlanFingerprintV2(reply.plan)]);
-        if (this.abort !== mine || mine.signal.aborted || generation !== this.sourceGeneration) return;
-        if (reply.plan.source.kind === 'image' && reply.plan.source.sha256 === preparedSha256) await this.options.onImage({ dataUrl: source.dataUrl, originalSha256, preparedSha256, preparation: prepared.transcodedFrom ? `${prepared.transcodedFrom}->${prepared.mime}` : `identity:${prepared.mime}`, plan: reply.plan, planFingerprint, generationId: String(generation), signal: mine.signal });
-        if (this.abort !== mine || mine.signal.aborted || generation !== this.sourceGeneration) return;
+        try {
+          const hashData = async (url: string) => { const bytes = Uint8Array.from(atob(url.slice(url.indexOf(',') + 1)), c => c.charCodeAt(0)); const digest = await crypto.subtle.digest('SHA-256', bytes); return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join(''); };
+          const [originalSha256, preparedSha256, planFingerprint] = await Promise.all([hashData(source.dataUrl), hashData(prepared.dataUrl), spatialPlanFingerprintV2(reply.plan)]);
+          if (this.abort !== mine || mine.signal.aborted || generation !== this.sourceGeneration) return;
+          if (reply.plan.source.kind === 'image' && reply.plan.source.sha256 === preparedSha256) await this.options.onImage({ dataUrl: source.dataUrl, originalSha256, preparedSha256, preparation: prepared.transcodedFrom ? `${prepared.transcodedFrom}->${prepared.mime}` : `identity:${prepared.mime}`, plan: reply.plan, planFingerprint, generationId: String(generation), signal: mine.signal });
+          if (this.abort !== mine || mine.signal.aborted || generation !== this.sourceGeneration) return;
+        } catch {
+          if (this.abort !== mine || mine.signal.aborted || generation !== this.sourceGeneration) return;
+          this.options.onEvidenceInvalidated?.();
+        }
       }
       this.metaCalls += 1;
       this.reply = reply; this.review = initialSpaceReview(); this.phase = 'review';

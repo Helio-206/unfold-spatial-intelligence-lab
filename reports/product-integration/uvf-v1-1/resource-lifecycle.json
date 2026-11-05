@@ -1,0 +1,118 @@
+{
+  "fixture": "miniExcavator: hand-authored",
+  "cycles": [
+    {
+      "tracked": {
+        "geometries": 27,
+        "materials": 14
+      },
+      "before": {
+        "geometries": 31,
+        "textures": 13,
+        "programs": 13,
+        "heap": 71249285
+      },
+      "afterClose": {
+        "geometries": 4,
+        "textures": 7,
+        "programs": 7,
+        "heap": 118626718
+      },
+      "disposeEvents": {
+        "geometryEvents": 27,
+        "materialEvents": 14
+      },
+      "afterReopen": {
+        "geometries": 31,
+        "textures": 13,
+        "programs": 13,
+        "heap": 115612137
+      }
+    },
+    {
+      "tracked": {
+        "geometries": 27,
+        "materials": 14
+      },
+      "before": {
+        "geometries": 31,
+        "textures": 13,
+        "programs": 13,
+        "heap": 115612137
+      },
+      "afterClose": {
+        "geometries": 4,
+        "textures": 7,
+        "programs": 7,
+        "heap": 113783303
+      },
+      "disposeEvents": {
+        "geometryEvents": 27,
+        "materialEvents": 14
+      },
+      "afterReopen": {
+        "geometries": 31,
+        "textures": 13,
+        "programs": 13,
+        "heap": 87446541
+      }
+    },
+    {
+      "tracked": {
+        "geometries": 27,
+        "materials": 14
+      },
+      "before": {
+        "geometries": 31,
+        "textures": 13,
+        "programs": 13,
+        "heap": 87446541
+      },
+      "afterClose": {
+        "geometries": 4,
+        "textures": 7,
+        "programs": 7,
+        "heap": 100739247
+      },
+      "disposeEvents": {
+        "geometryEvents": 27,
+        "materialEvents": 14
+      },
+      "afterReopen": {
+        "geometries": 31,
+        "textures": 13,
+        "programs": 13,
+        "heap": 113168533
+      }
+    },
+    {
+      "tracked": {
+        "geometries": 27,
+        "materials": 14
+      },
+      "before": {
+        "geometries": 31,
+        "textures": 13,
+        "programs": 13,
+        "heap": 113168533
+      },
+      "afterClose": {
+        "geometries": 4,
+        "textures": 7,
+        "programs": 7,
+        "heap": 152606623
+      },
+      "disposeEvents": {
+        "geometryEvents": 27,
+        "materialEvents": 14
+      },
+      "afterReopen": {
+        "geometries": 31,
+        "textures": 13,
+        "programs": 13,
+        "heap": 118636465
+      }
+    }
+  ],
+  "note": "renderer.info is not GPU byte memory; four cycles cannot prove absence of leaks"
+}
