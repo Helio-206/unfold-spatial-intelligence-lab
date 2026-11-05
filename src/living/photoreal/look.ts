@@ -28,13 +28,20 @@ export const PHOTOREAL_PANELS = [
 
 export class PhotorealGeometry {
   private swap: PhotorealSwap | null = null;
-  constructor(private readonly inner: GeometrySeam) {}
+  /** When false, compiles pass through with the original materials (unsupported capabilities). */
+  enabled = true;
+  constructor(private readonly inner: GeometrySeam, private readonly options: { microdetail?: boolean } = {}) {}
   compile = (plan: Parameters<GeometrySeam['compile']>[0]): ReturnType<GeometrySeam['compile']> => {
     this.swap?.dispose(); this.swap = null;
     const compiled = this.inner.compile(plan);
-    this.swap = swapPhotorealMaterials(compiled.root);
+    if (this.enabled) this.swap = swapPhotorealMaterials(compiled.root, { microdetail: this.options.microdetail ?? true });
     return compiled;
   };
+  /** Disabling after materials were swapped restores the originals immediately. */
+  setEnabled(enabled: boolean): void {
+    this.enabled = enabled;
+    if (!enabled && this.swap) { this.swap.restore(); }
+  }
   attach(onReady: () => void): void { this.inner.attach(onReady); }
   report(): unknown { return this.inner.report(); }
   dispose(): void { this.swap?.dispose(); this.swap = null; this.inner.dispose(); }
@@ -42,12 +49,12 @@ export class PhotorealGeometry {
 
 export type PhotorealStage = { preset: PhotorealPreset; revert(): void; dispose(): void; stats(): { lights: number; shadowMapSize: number; softwareRendering: boolean } };
 
-export function applyPhotorealStage(renderer: WebGLRenderer, scene: Scene, requested: PhotorealPresetName = 'balanced'): PhotorealStage | null {
+export function applyPhotorealStage(renderer: WebGLRenderer, scene: Scene, requested: PhotorealPresetName = 'balanced', hooks: { createEnvironment?: (renderer: WebGLRenderer) => StudioEnvironment } = {}): PhotorealStage | null {
   const caps = detectCapabilities(renderer);
   const preset = selectPhotorealPreset(requested, caps);
   if (!preset) return null; // no safe path: the stock renderer stays exactly as it was
   const previous = { environment: scene.environment, environmentIntensity: scene.environmentIntensity, exposure: renderer.toneMappingExposure };
-  const studio: StudioEnvironment = createStudioEnvironment(renderer, [...PHOTOREAL_PANELS]);
+  const studio: StudioEnvironment = hooks.createEnvironment ? hooks.createEnvironment(renderer) : createStudioEnvironment(renderer, [...PHOTOREAL_PANELS]);
   scene.environment = studio.texture;
   scene.environmentIntensity = preset.envMapIntensityScale;
   renderer.toneMappingExposure = preset.exposure;
@@ -68,19 +75,20 @@ export function applyPhotorealStage(renderer: WebGLRenderer, scene: Scene, reque
     rig.add(ground);
   }
   scene.add(rig);
-  let disposed = false;
-  const removeRig = () => { scene.remove(rig); key.shadow.map?.dispose(); (ground?.material as ShadowMaterial | undefined)?.dispose(); ground?.geometry.dispose(); };
+  // Cleanup restores the stage exactly once, whichever entry point runs first. (A previous
+  // version set `disposed` before calling revert(), whose guard then made revert a no-op and the
+  // environment, exposure and rig leaked for the life of the page.)
+  let cleanedUp = false;
+  const cleanup = (withStudio: boolean) => {
+    if (cleanedUp) return; cleanedUp = true;
+    scene.environment = previous.environment; scene.environmentIntensity = previous.environmentIntensity; renderer.toneMappingExposure = previous.exposure;
+    scene.remove(rig); key.shadow.map?.dispose(); (ground?.material as ShadowMaterial | undefined)?.dispose(); ground?.geometry.dispose();
+    if (withStudio) studio.dispose();
+  };
   return {
     preset,
-    revert() {
-      if (disposed) return;
-      scene.environment = previous.environment; scene.environmentIntensity = previous.environmentIntensity; renderer.toneMappingExposure = previous.exposure;
-      removeRig();
-    },
-    dispose() {
-      if (disposed) return; disposed = true;
-      this.revert(); studio.dispose();
-    },
+    revert() { cleanup(false); },
+    dispose() { cleanup(true); },
     stats: () => ({ lights: 3, shadowMapSize: preset.shadowMapSize, softwareRendering: caps.softwareRendering }),
   };
 }

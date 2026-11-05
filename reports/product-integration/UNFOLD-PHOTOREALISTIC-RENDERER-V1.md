@@ -45,3 +45,15 @@ Medições do ensaio (Chromium + SwiftShader, **rendering por software — não 
 ## GO/NO-GO
 
 **GO experimental.** O subsistema está integrado atrás de flag, melhora mensuravelmente reflexos, vidro e contacto sem artefactos novos maiores, mantém todas as garantias transaccionais (o renderer nunca escreve estado autoritativo) e cai com segurança para o renderer stock. Não activar por defeito até haver medição em GPU real e revisão visual humana em mais categorias.
+
+## Patch final — correcções de ciclo de vida e fallback (V1.1)
+
+Screenshots reproduzíveis desta entrega, commitados em `reports/product-integration/photoreal/`: `before-stock.png`, `after-photoreal.png`, `material-spheres.png` (mesma geometria e câmara; gerados por `tests/e2e/photoreal-living.pw.mjs`).
+
+Três defeitos verificados, corrigidos com testes de regressão novos (13/13 em `tests/photoreal.test.ts`):
+
+1. **Dispose do stage não restaurava nada.** `dispose()` marcava `disposed = true` e depois chamava `revert()`, cujo guard regressava de imediato: ambiente, exposição e rig ficavam para sempre na página. A limpeza é agora uma única função idempotente (`cleanup`) partilhada por `revert()`/`dispose()`: repõe ambiente, `environmentIntensity` e exposição, remove o rig e as suas sombras, e dispõe o estúdio exactamente uma vez. Testado em 3 ciclos abrir/fechar com restauração verificada em cada um.
+2. **Capacidades não suportadas trocavam materiais na mesma.** O stage podia recusar (`null`), mas o wrapper de geometria já tinha trocado os materiais. Agora as capacidades são decididas no shell **antes** de qualquer material ser tocado: sem preset seguro, o wrapper nem é criado e o caminho original fica completo (materiais incluídos). O wrapper ganhou ainda `setEnabled(false)`, que repõe de imediato materiais já trocados.
+3. **`microdetail: false` era ignorado.** O preset performance declarava-o, mas os mapas procedurais eram gerados e atribuídos na mesma. `swapPhotorealMaterials(root, { microdetail })` e `createPhotorealMaterial` aceitam agora a ausência de mapas: com `false`, nenhum mapa é gerado nem atribuído (`normalMap`/`roughnessMap` nulos, zero conjuntos criados — testado) e o shell passa a flag do preset escolhido para o wrapper.
+
+Validação deste patch: testes focados 13/13, browser `photoreal-living` e `v4-e1-review-browser` verdes (garantias E1.4.1 intactas), build verde, suite por defeito com 2555 verdes e exactamente os 4 timeouts herdados da baseline (`rendering-lifecycle`, `universal-spatial-buried` ×2, `bucket-width`; «timed out in 5000ms», verdes isolados). **O trabalho no renderer photoreal termina aqui.**

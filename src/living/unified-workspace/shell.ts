@@ -1,5 +1,6 @@
 import { FoundryGeometry } from '../universal-foundry/provider';
 import { PhotorealGeometry, applyPhotorealStage, type PhotorealStage } from '../photoreal/look';
+import { detectCapabilities, selectPhotorealPreset } from '../photoreal/presets';
 import { mountFoundryPanel } from '../universal-foundry/panel';
 import { evidenceFromDataUrl } from '../universal-foundry/browser';
 import { ExperimentalV4 } from '../spatial-space/experimental-v4';
@@ -77,7 +78,10 @@ export function mountLivingShell(app: HTMLElement): void {
   // Experimental photoreal rendering: wraps the Foundry geometry seam (materials follow the
   // authoritative plan on every compile) and dresses the stage once a Space is live. Without the
   // flag, neither exists and the renderer behaves exactly as before.
-  const photoreal = foundry && params.has('experimental-photoreal') ? new PhotorealGeometry(foundry) : null;
+  // Capabilities are decided before any material is touched: an unsupported renderer keeps the
+  // original path completely (stock materials included), not just the stock stage.
+  const photorealPreset = foundry && params.has('experimental-photoreal') ? selectPhotorealPreset('balanced', detectCapabilities(workspace.photorealStage().renderer)) : null;
+  const photoreal = foundry && photorealPreset ? new PhotorealGeometry(foundry, { microdetail: photorealPreset.microdetail }) : null;
   let photorealStage: PhotorealStage | null = null;
   const space = new SpaceFlow({
     workspace, host: workspace.panelHost,
@@ -90,7 +94,7 @@ export function mountLivingShell(app: HTMLElement): void {
   if (debug) Object.assign(window, { __workspace: workspace, __foundry: { ready: !params.has('example') }, __unified: { port, gateway, lab }, __space: space, ...(experimentalV4 ? { __v4: experimentalV4 } : {}), ...(foundry ? { __foundry3d: foundry } : {}), ...(photoreal ? { __photoreal: { active: () => photorealStage !== null, stage: () => photorealStage } } : {}) });
   if (photoreal) {
     const dress = () => {
-      if (!photorealStage && workspace.spaceActive) { const stage = workspace.photorealStage(); photorealStage = applyPhotorealStage(stage.renderer, stage.scene, 'balanced'); }
+      if (!photorealStage && workspace.spaceActive) { const stage = workspace.photorealStage(); photorealStage = applyPhotorealStage(stage.renderer, stage.scene, photorealPreset?.name ?? 'balanced'); }
       if (photorealStage && !workspace.spaceActive) { photorealStage.dispose(); photorealStage = null; }
     };
     const timer = setInterval(dress, 400);

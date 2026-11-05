@@ -71,7 +71,7 @@ export function createMicrodetail(kind: PhotorealKind, seed = 7): MicrodetailSet
   return { normalMap: normalTexture, roughnessMap: roughnessTexture, dispose() { normalTexture.dispose(); roughnessTexture.dispose(); } };
 }
 
-export function createPhotorealMaterial(source: Material, microdetail: MicrodetailSet): MeshPhysicalMaterial {
+export function createPhotorealMaterial(source: Material, microdetail: MicrodetailSet | null): MeshPhysicalMaterial {
   const src = source as MeshPhysicalMaterial;
   const kind = photorealKindOf(source);
   const params = PHOTOREAL_PARAMS[kind];
@@ -87,16 +87,20 @@ export function createPhotorealMaterial(source: Material, microdetail: Microdeta
   material.userData = { ...src.userData, photoreal: true, photorealKind: kind };
   // Microdetail: tangent-space normal + roughness variation from local procedural maps. Where a
   // geometry has no UVs three.js ignores these maps (documented limitation, never an artefact).
-  material.normalMap = microdetail.normalMap;
-  material.normalScale.setScalar(params.microdetail * 0.35);
-  material.roughnessMap = microdetail.roughnessMap;
+  // With microdetail disabled (performance preset) no maps are generated or assigned at all.
+  if (microdetail) {
+    material.normalMap = microdetail.normalMap;
+    material.normalScale.setScalar(params.microdetail * 0.35);
+    material.roughnessMap = microdetail.roughnessMap;
+  }
   return material;
 }
 
 export type PhotorealSwap = { materials: MeshPhysicalMaterial[]; microdetail: MicrodetailSet[]; restore(): void; dispose(): void };
 
 /** Replaces every mesh material under `root` with a photoreal one. Restorable and disposable. */
-export function swapPhotorealMaterials(root: Object3D): PhotorealSwap {
+export function swapPhotorealMaterials(root: Object3D, options: { microdetail?: boolean } = {}): PhotorealSwap {
+  const useMicrodetail = options.microdetail ?? true;
   const originals = new Map<Mesh, Material | Material[]>();
   const microdetail: MicrodetailSet[] = [];
   const byKind = new Map<PhotorealKind, MicrodetailSet>();
@@ -107,8 +111,8 @@ export function swapPhotorealMaterials(root: Object3D): PhotorealSwap {
     originals.set(mesh, mesh.material);
     const replace = (material: Material): Material => {
       const kind = photorealKindOf(material);
-      if (!byKind.has(kind)) { const set = createMicrodetail(kind); byKind.set(kind, set); microdetail.push(set); }
-      const created = createPhotorealMaterial(material, byKind.get(kind)!);
+      if (useMicrodetail && !byKind.has(kind)) { const set = createMicrodetail(kind); byKind.set(kind, set); microdetail.push(set); }
+      const created = createPhotorealMaterial(material, useMicrodetail ? byKind.get(kind)! : null);
       swapped.push(created);
       return created;
     };

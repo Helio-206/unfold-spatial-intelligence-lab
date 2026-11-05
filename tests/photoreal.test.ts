@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Group, Mesh, BoxGeometry, MeshStandardMaterial } from 'three';
+import { Group, Mesh, BoxGeometry, MeshStandardMaterial, Scene } from 'three';
 import { cookTorrance, dielectricF0, effectiveRoughness, fresnelSchlick, ggxDistribution, smithJoint, PHOTOREAL_BRDF_GLSL } from '../src/living/photoreal/brdf';
 import { PHOTOREAL_PARAMS, photorealKindOf, swapPhotorealMaterials } from '../src/living/photoreal/materials';
 import { PHOTOREAL_PRESETS, selectPhotorealPreset } from '../src/living/photoreal/presets';
-import { PhotorealGeometry } from '../src/living/photoreal/look';
+import { PhotorealGeometry, applyPhotorealStage } from '../src/living/photoreal/look';
+import { Texture } from 'three';
 import { compileFoundry } from '../src/living/universal-foundry/foundry';
 import * as plans from '../src/living/universal-foundry/fixtures/plans';
 
@@ -49,6 +50,49 @@ describe('photoreal BRDF mathematics', () => {
   });
 });
 
+describe('photoreal stage cleanup and capability fallback', () => {
+  class FakeGL2 {}
+  const fakeRenderer = () => {
+    const gl = Object.create(FakeGL2.prototype) as Record<string, unknown>;
+    gl.MAX_TEXTURE_IMAGE_UNITS = 0x84e2;
+    gl.getExtension = () => null;
+    gl.getParameter = (p: unknown) => (p === 0x84e2 ? 16 : 'FakeGPU');
+    return { getContext: () => gl, toneMappingExposure: 1.25 } as never;
+  };
+  it('dispose restores environment, exposure and rig exactly once, across repeated open/close cycles', () => {
+    vi.stubGlobal('WebGL2RenderingContext', FakeGL2);
+    try {
+      for (let cycle = 0; cycle < 3; cycle++) {
+        const scene = new Scene();
+        const previousEnv = new Texture();
+        scene.environment = previousEnv; scene.environmentIntensity = 0.7;
+        const renderer = fakeRenderer();
+        const studioDispose = vi.fn();
+        const stage = applyPhotorealStage(renderer, scene, 'balanced', { createEnvironment: () => ({ texture: new Texture(), panels: [], dispose: studioDispose }) });
+        expect(stage).not.toBeNull();
+        expect(scene.environment).not.toBe(previousEnv);
+        expect(scene.children.some((c) => c.name === 'photoreal-studio-rig')).toBe(true);
+        stage!.dispose();
+        expect(scene.environment).toBe(previousEnv); // restored, not leaked
+        expect(scene.environmentIntensity).toBe(0.7);
+        expect((renderer as { toneMappingExposure: number }).toneMappingExposure).toBe(1.25);
+        expect(scene.children.some((c) => c.name === 'photoreal-studio-rig')).toBe(false);
+        expect(studioDispose).toHaveBeenCalledTimes(1);
+        stage!.dispose(); stage!.revert(); // idempotent: nothing happens twice
+        expect(studioDispose).toHaveBeenCalledTimes(1);
+        expect(scene.environment).toBe(previousEnv);
+      }
+    } finally { vi.unstubAllGlobals(); }
+  });
+  it('unsupported capabilities return null and touch nothing', () => {
+    const scene = new Scene();
+    const renderer = { getContext: () => ({ getExtension: () => null, getParameter: () => 0 }), toneMappingExposure: 1 } as never;
+    expect(applyPhotorealStage(renderer, scene, 'balanced')).toBeNull();
+    expect(scene.children).toHaveLength(0);
+    expect(scene.environment).toBeNull();
+  });
+});
+
 describe('photoreal materials and swap lifecycle', () => {
   it('classifies kinds from Foundry declarations before heuristics', () => {
     const glass = new MeshStandardMaterial(); glass.userData = { materialKey: 'glass' };
@@ -77,6 +121,42 @@ describe('photoreal materials and swap lifecycle', () => {
     expect(selectPhotorealPreset('cinematic', { webgl2: false, maxTextures: 16, softwareRendering: false, rendererInfo: 'x' })).toBeNull();
     expect(selectPhotorealPreset('cinematic', { webgl2: true, maxTextures: 16, softwareRendering: true, rendererInfo: 'SwiftShader' })?.name).toBe('performance');
     expect(selectPhotorealPreset('balanced', { webgl2: true, maxTextures: 16, softwareRendering: false, rendererInfo: 'GPU' })).toBe(PHOTOREAL_PRESETS.balanced);
+  });
+  it('microdetail:false generates and assigns no procedural maps (performance preset)', () => {
+    const root = new Group();
+    const mesh = new Mesh(new BoxGeometry(1, 1, 1), new MeshStandardMaterial({ color: '#888888', metalness: 0.8, roughness: 0.4 }));
+    root.add(mesh);
+    const swap = swapPhotorealMaterials(root, { microdetail: false });
+    const material = mesh.material as MeshStandardMaterial;
+    expect(material.userData.photoreal).toBe(true);
+    expect(material.normalMap).toBeNull();
+    expect(material.roughnessMap).toBeNull();
+    expect(swap.microdetail).toHaveLength(0);
+    swap.dispose();
+    const withDetail = swapPhotorealMaterials(root, { microdetail: true });
+    expect((mesh.material as MeshStandardMaterial).normalMap).not.toBeNull();
+    expect(withDetail.microdetail.length).toBeGreaterThan(0);
+    withDetail.dispose();
+  });
+  it('a disabled geometry wrapper preserves the original materials exactly, including after a swap', () => {
+    const plan = plans.sedan(), before = JSON.stringify(plan);
+    const inner = { compile: (p: typeof plan) => compileFoundry(p), attach: () => {}, report: () => null, dispose: () => {} };
+    const geometry = new PhotorealGeometry(inner as never);
+    geometry.setEnabled(false);
+    const compiled = geometry.compile(plan);
+    let photorealCount = 0;
+    compiled.root.traverse((o) => { if (o instanceof Mesh && (o.material as MeshStandardMaterial).userData?.photoreal) photorealCount++; });
+    expect(photorealCount).toBe(0);
+    geometry.setEnabled(true);
+    const second = geometry.compile(plan);
+    let swapped = 0; const originals = new Map<Mesh, unknown>();
+    second.root.traverse((o) => { if (o instanceof Mesh && (o.material as MeshStandardMaterial).userData?.photoreal) swapped++; });
+    expect(swapped).toBeGreaterThan(0);
+    geometry.setEnabled(false); // restores the currently swapped materials immediately
+    second.root.traverse((o) => { if (o instanceof Mesh) originals.set(o as Mesh, (o as Mesh).material); });
+    second.root.traverse((o) => { if (o instanceof Mesh) expect((o.material as MeshStandardMaterial).userData?.photoreal).toBeUndefined(); });
+    expect(JSON.stringify(plan)).toBe(before);
+    geometry.dispose();
   });
   it('the geometry wrapper swaps on every compile and the plan is never written', () => {
     const plan = plans.sedan();
