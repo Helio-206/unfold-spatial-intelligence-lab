@@ -140,7 +140,7 @@ export function compileWithRouter(plan: SpatialPlanV2, options: RouterOptions = 
 
   const msOf = new Map(pending.map((p) => [p.componentId, p.ms]));
   const summarise = (): Pick<RouterReport, 'totals' | 'perFamily' | 'fallbacks'> => {
-    const total = measure(root), perFamily: RouterReport['perFamily'] = { procedural_v2: { components: 0, triangles: 0, ms: 0 }, continuous_surface: { components: 0, triangles: 0, ms: 0 }, mesh_asset: { components: 0, triangles: 0, ms: 0 } };
+    const total = measure(root), perFamily: RouterReport['perFamily'] = { procedural_v2: { components: 0, triangles: 0, ms: 0 }, continuous_surface: { components: 0, triangles: 0, ms: 0 }, mesh_asset: { components: 0, triangles: 0, ms: 0 }, universal_foundry: { components: 0, triangles: 0, ms: 0 } };
     for (const d of decisions.values()) { const f = perFamily[d.used]; f.components++; f.triangles += d.triangles; f.ms += d.used === 'procedural_v2' ? 0 : msOf.get(d.componentId) ?? 0; }
     return { totals: { triangles: total.triangles, meshes: total.meshes, geometryBytes: total.bytes, ms: performance.now() - started }, perFamily, fallbacks: [...decisions.values()].filter((d) => d.fallback).length };
   };
