@@ -66,6 +66,8 @@ async function buildSpace(page: Page, photo: string, template: () => SpatialPlan
     return f !== null && f.status !== 'pending';
   }, null, { timeout: 120_000 });
   const planBefore = await page.evaluate(() => JSON.stringify((window as never as { __space: { layer: { currentPlan: unknown } } }).__space.layer.currentPlan));
+  // seleccionar ANTES de propor: highlight() na layer limpa propostas pendentes anteriores
+  await page.click('[data-space-entity="wheel-0"]');
   // os dois painéis experimentais sobrepõem-se à direita: despachar o clique no botão real
   await page.evaluate(() => { document.querySelector<HTMLButtonElement>('[data-proportions]')?.click(); });
   await page.waitForFunction(() => document.querySelector('[data-proportions-status]')?.textContent?.includes('Proposta tipada criada'), null, { timeout: 20_000 });
@@ -80,6 +82,23 @@ async function buildSpace(page: Page, photo: string, template: () => SpatialPlan
   assert.equal(pending.planUnchanged, true, 'propor não aplica: o plano autoritativo não mudou');
   pass('proposta de proporções criada como edição pendente tipada; plano intacto sem autorização');
   await page.screenshot({ path: resolve(out, 'skoda-01-proportions-proposed.png') });
+  // Integração autoritativa completa: aplicar pela UI do inspector (transacção E1.4.1 no
+  // backend real) → plano commitado muda → geometria regenera → undo restaura o original.
+  await page.waitForSelector('[data-apply]', { timeout: 20_000 });
+  await page.evaluate(() => { const box = document.querySelector<HTMLInputElement>('[data-auth]'); if (box && !box.checked) box.click(); });
+  await page.evaluate(() => { document.querySelector<HTMLButtonElement>('[data-apply]')?.click(); });
+  await page.waitForFunction((before) => JSON.stringify((window as never as { __space: { layer: { currentPlan: unknown } } }).__space.layer.currentPlan) !== before, planBefore, { timeout: 60_000 });
+  const planAfterApply = await page.evaluate(() => JSON.stringify((window as never as { __space: { layer: { currentPlan: unknown } } }).__space.layer.currentPlan));
+  assert.notEqual(planAfterApply, planBefore);
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: resolve(out, 'skoda-02-proportions-committed.png') });
+  pass('proposta aplicada pela transacção existente: SpatialPlanV2 commitado e geometria regenerada');
+  await page.click('[data-space-entity="wheel-0"]');
+  await page.waitForSelector('[data-undo]', { timeout: 20_000 });
+  await page.evaluate(() => { document.querySelector<HTMLButtonElement>('[data-undo]')?.click(); });
+  await page.waitForFunction((original) => JSON.stringify((window as never as { __space: { layer: { currentPlan: unknown } } }).__space.layer.currentPlan) === original, planBefore, { timeout: 60_000 });
+  pass('undo restaurou exactamente o plano original');
+  diagnostics.skodaCommitted = { appliedChangedPlan: true, undoRestored: true };
   assert.deepEqual(errors, [], errors.join(' | '));
   await page.close();
 }

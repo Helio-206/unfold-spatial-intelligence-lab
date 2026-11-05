@@ -16,6 +16,7 @@ import { Box3, type Object3D } from 'three';
 import type { SpatialPlanV2 } from '../../universal-spatial/contracts-v2';
 import { compileFoundry } from './foundry';
 import type { ImageEvidence } from './evidence';
+import { detectWheelLandmarks, estimateCamera } from './landmarks';
 
 export type SilhouetteReliability = {
   reliable: boolean; reasons: string[];
@@ -53,7 +54,7 @@ export function assessSilhouetteReliability(evidence: ImageEvidence): Silhouette
 }
 
 export type FittingResult =
-  | { status: 'fitted'; overrides: Record<string, number>; objective: number; baselineObjective: number; candidates: number; summary: string; silhouetteIou?: number; baselineSilhouetteIou?: number; gridSaturated?: string[]; relativeImprovement?: number }
+  | { status: 'fitted'; overrides: Record<string, number>; objective: number; baselineObjective: number; candidates: number; summary: string; silhouetteIou?: number; baselineSilhouetteIou?: number; gridSaturated?: string[]; relativeImprovement?: number; cameraAzimuthDeg?: number; cameraAmbiguous?: boolean }
   | { status: 'pending'; reason: string }
   | { status: 'insufficient_evidence'; reason: string }
   | { status: 'unsupported_family'; reason: string }
@@ -129,11 +130,19 @@ export const SILHOUETTE_ROWS = 36;
  * vista lateral ortográfica (X = comprimento, Y = altura; hipótese de câmara declarada),
  * numa grelha fixa. Substitui perfis de alturas de AABBs, que não viam a forma projectada.
  */
-export function projectedSilhouette(root: Object3D): Uint8Array {
+export function projectedSilhouette(root: Object3D, azimuthDeg = 0): Uint8Array {
   root.updateMatrixWorld(true);
   const total = new Box3().setFromObject(root);
   const grid = new Uint8Array(SILHOUETTE_COLS * SILHOUETTE_ROWS);
-  const sx = SILHOUETTE_COLS / Math.max(1e-9, total.max.x - total.min.x);
+  // Projecção ortográfica a partir do azimute estimado: X' = X·cosθ + Z·sinθ.
+  // A grelha abrange a bbox rodada (8 cantos), como a máscara abrange a sua bbox.
+  const cosA = Math.cos(azimuthDeg * Math.PI / 180), sinA = Math.sin(azimuthDeg * Math.PI / 180);
+  let rotMinX = Infinity, rotMaxX = -Infinity;
+  for (const cx of [total.min.x, total.max.x]) for (const cz of [total.min.z, total.max.z]) {
+    const xr = cx * cosA + cz * sinA;
+    rotMinX = Math.min(rotMinX, xr); rotMaxX = Math.max(rotMaxX, xr);
+  }
+  const sx = SILHOUETTE_COLS / Math.max(1e-9, rotMaxX - rotMinX);
   const sy = SILHOUETTE_ROWS / Math.max(1e-9, total.max.y - total.min.y);
   root.traverse((o) => {
     const mesh = o as { isMesh?: boolean; geometry?: { getAttribute(name: string): { count: number; getX(i: number): number; getY(i: number): number; getZ(i: number): number }; index?: { count: number; getX(i: number): number } | null }; matrixWorld?: { elements: number[] } };
@@ -144,9 +153,11 @@ export function projectedSilhouette(root: Object3D): Uint8Array {
     const triCount = index ? index.count / 3 : pos.count / 3;
     const point = (i: number): [number, number] => {
       const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+      const worldX = x * e[0]! + y * e[4]! + z * e[8]! + e[12]!;
       const worldY = x * e[1]! + y * e[5]! + z * e[9]! + e[13]!;
+      const worldZ = x * e[2]! + y * e[6]! + z * e[10]! + e[14]!;
       // grelha: linha 0 = topo (Y máximo), como nas linhas da imagem
-      return [((x * e[0]! + y * e[4]! + z * e[8]! + e[12]!) - total.min.x) * sx, (total.max.y - worldY) * sy];
+      return [(worldX * cosA + worldZ * sinA - rotMinX) * sx, (total.max.y - worldY) * sy];
     };
     for (let t = 0; t < triCount; t++) {
       const ia = index ? index.getX(t * 3) : t * 3, ib = index ? index.getX(t * 3 + 1) : t * 3 + 1, ic = index ? index.getX(t * 3 + 2) : t * 3 + 2;
@@ -238,12 +249,12 @@ export function regionalIoUs(projected: Uint8Array, target: Uint8Array): [number
 type ObjectiveBreakdown = { objective: number; iou: number; regional: [number, number, number] };
 
 /** Objectivo ponderado e documentado: 0.55·IoU total + 0.45·média dos IoU regionais. */
-function objectiveOf(plan: SpatialPlanV2, overrides: Record<string, number>, targetMask: Uint8Array): ObjectiveBreakdown | null {
+function objectiveOf(plan: SpatialPlanV2, overrides: Record<string, number>, targetMask: Uint8Array, azimuthDeg = 0): ObjectiveBreakdown | null {
   const candidate = compileFoundry(plan, { overrides, lod: 0 });
   try {
     if (!candidate.root || !candidate.recipe) return null;
     candidate.buildAll(); // a silhueta mede a geometria gerada, nunca o placeholder V2
-    const projected = projectedSilhouette(candidate.root);
+    const projected = projectedSilhouette(candidate.root, azimuthDeg);
     const iou = gridIoU(projected, targetMask);
     const regional = regionalIoUs(projected, targetMask);
     const score = 0.55 * iou + 0.45 * ((regional[0] + regional[1] + regional[2]) / 3);
@@ -253,7 +264,7 @@ function objectiveOf(plan: SpatialPlanV2, overrides: Record<string, number>, tar
 
 const MIN_RELATIVE_IMPROVEMENT = 0.05;
 
-function conclude(best: { overrides: Record<string, number>; objective: number; iou: number; regional: [number, number, number] }, baseline: ObjectiveBreakdown, evaluated: number, camera: CameraHypothesis): FittingResult {
+function conclude(best: { overrides: Record<string, number>; objective: number; iou: number; regional: [number, number, number] }, baseline: ObjectiveBreakdown, evaluated: number, camera: CameraHypothesis, azimuthDeg = 0, cameraAmbiguous = false): FittingResult {
   const relativeImprovement = baseline.objective > 1e-9 ? (baseline.objective - best.objective) / baseline.objective : 0;
   const gridSaturated = FITTING_PARAMS.filter((p) => {
     const v = best.overrides[p.key];
@@ -267,17 +278,18 @@ function conclude(best: { overrides: Record<string, number>; objective: number; 
   }
   return {
     status: 'fitted', overrides: best.overrides, objective: best.objective, baselineObjective: baseline.objective, candidates: evaluated,
-    silhouetteIou: best.iou, baselineSilhouetteIou: baseline.iou, gridSaturated, relativeImprovement,
-    summary: `Fitting v${FITTING_VERSION} por descida de coordenadas (${evaluated} avaliações, câmara: ${camera}): IoU de silhueta ${baseline.iou.toFixed(3)} → ${best.iou.toFixed(3)} (regiões frente/meio/traseira ${best.regional.map((v) => v.toFixed(2)).join('/')}); parâmetros ${Object.entries(best.overrides).map(([k, v]) => `${k}=${+v.toFixed(3)}`).join(', ')}${gridSaturated.length ? `; saturação em ${gridSaturated.join(', ')} (fronteira declarada, não estendida)` : ''}. Parâmetros inferidos da imagem, não dimensões verificadas.`,
+    silhouetteIou: best.iou, baselineSilhouetteIou: baseline.iou, gridSaturated, relativeImprovement, cameraAzimuthDeg: azimuthDeg, cameraAmbiguous,
+    summary: `Fitting v${FITTING_VERSION} por descida de coordenadas (${evaluated} avaliações, câmara: ${camera} a ${azimuthDeg.toFixed(0)}°${cameraAmbiguous ? ', ambígua — verificada também em perfil lateral' : ''}): IoU de silhueta ${baseline.iou.toFixed(3)} → ${best.iou.toFixed(3)} (regiões frente/meio/traseira ${best.regional.map((v) => v.toFixed(2)).join('/')}); parâmetros ${Object.entries(best.overrides).map(([k, v]) => `${k}=${+v.toFixed(3)}`).join(', ')}${gridSaturated.length ? `; saturação em ${gridSaturated.join(', ')} (fronteira declarada, não estendida)` : ''}. Parâmetros inferidos da imagem, não dimensões verificadas.`,
   };
 }
 
 function gateAndBaseline(plan: SpatialPlanV2, evidence: ImageEvidence, targetMask: Uint8Array):
-  | { ok: true; baseline: ObjectiveBreakdown; defaults: Record<string, number>; camera: CameraHypothesis }
+  | { ok: true; baseline: ObjectiveBreakdown; defaults: Record<string, number>; camera: CameraHypothesis; azimuthDeg: number; cameraAmbiguous: boolean }
   | { ok: false; result: FittingResult } {
-  const camera = cameraHypothesis(evidence);
-  if (camera.kind === 'front-rear') {
-    return { ok: false, result: { status: 'insufficient_evidence', reason: `Hipótese de câmara recusada: ${camera.reason}. Apresentação conceptual sem fitting.` } };
+  const estimate = estimateCamera(evidence, detectWheelLandmarks(evidence));
+  const camera = estimate.kind;
+  if (camera === 'front-rear') {
+    return { ok: false, result: { status: 'insufficient_evidence', reason: `Hipótese de câmara recusada: ${estimate.method}. Apresentação conceptual sem fitting.` } };
   }
   if (evidence.foregroundRatio < 0.02) return { ok: false, result: { status: 'insufficient_evidence', reason: 'Primeiro plano demasiado pequeno na imagem para medir uma silhueta.' } };
   if (evidence.foregroundRatio > 0.8) return { ok: false, result: { status: 'insufficient_evidence', reason: `Máscara não credível: o primeiro plano cobre ${(evidence.foregroundRatio * 100).toFixed(0)}% da imagem (fundo e sujeito indistinguíveis); sem fitting a partir desta máscara.` } };
@@ -294,9 +306,9 @@ function gateAndBaseline(plan: SpatialPlanV2, evidence: ImageEvidence, targetMas
   } finally { probe.retire?.(); }
   // Baseline GENUÍNO: o objectivo da geometria compilada por omissão (overrides {}),
   // calculado independentemente da procura. Nunca é substituído pelo objectivo do vencedor.
-  const baseline = objectiveOf(plan, {}, targetMask);
+  const baseline = objectiveOf(plan, {}, targetMask, estimate.azimuthDeg);
   if (baseline === null) return { ok: false, result: { status: 'insufficient_evidence', reason: 'A geometria por omissão não compilou; sem baseline não há fitting.' } };
-  return { ok: true, baseline, defaults, camera: camera.kind };
+  return { ok: true, baseline, defaults, camera, azimuthDeg: estimate.azimuthDeg, cameraAmbiguous: estimate.ambiguous };
 }
 
 type SearchState = {
@@ -306,14 +318,14 @@ type SearchState = {
 };
 
 /** Um parâmetro da descida: tenta ±passo e fica com a melhor melhoria. */
-function descentParam(plan: SpatialPlanV2, target: Uint8Array, state: SearchState, param: { key: string; min: number; max: number }, step: number, signal?: AbortSignal, budget = Number.POSITIVE_INFINITY): void {
+function descentParam(plan: SpatialPlanV2, target: Uint8Array, state: SearchState, param: { key: string; min: number; max: number }, step: number, signal?: AbortSignal, budget = Number.POSITIVE_INFINITY, azimuthDeg = 0): void {
   for (const direction of [1, -1] as const) {
     if (state.evaluated >= budget || signal?.aborted) break;
     const value = Math.min(param.max, Math.max(param.min, state.current[param.key]! + direction * step * (param.max - param.min)));
     if (Math.abs(value - state.current[param.key]!) < 1e-9) continue;
     const candidate = { ...state.current, [param.key]: value };
     state.evaluated++;
-    const result = objectiveOf(plan, candidate, target);
+    const result = objectiveOf(plan, candidate, target, azimuthDeg);
     if (result && result.objective < state.currentObjective.objective - 1e-9) {
       state.current = candidate; state.currentObjective = result;
     }
@@ -321,10 +333,10 @@ function descentParam(plan: SpatialPlanV2, target: Uint8Array, state: SearchStat
 }
 
 /** Descida por coordenadas determinística (grosso→fino): um parâmetro de cada vez, ±passo. */
-function descentRound(plan: SpatialPlanV2, target: Uint8Array, state: SearchState, step: number, signal?: AbortSignal, budget = Number.POSITIVE_INFINITY): void {
+function descentRound(plan: SpatialPlanV2, target: Uint8Array, state: SearchState, step: number, signal?: AbortSignal, budget = Number.POSITIVE_INFINITY, azimuthDeg = 0): void {
   for (const param of FITTING_PARAMS) {
     if (state.evaluated >= budget || signal?.aborted) break;
-    descentParam(plan, target, state, param, step, signal, budget);
+    descentParam(plan, target, state, param, step, signal, budget, azimuthDeg);
   }
 }
 
@@ -336,13 +348,30 @@ export function fitGeometryToEvidence(plan: SpatialPlanV2, evidence: ImageEviden
   const budget = opts.maxCandidates ?? 80;
   for (const step of SEARCH_STEPS) {
     if (opts.signal?.aborted) return { status: 'aborted', reason: 'Fitting cancelado; nenhum parâmetro foi aplicado.' };
-    descentRound(plan, target, state, step, opts.signal, budget);
+    descentRound(plan, target, state, step, opts.signal, budget, gate.azimuthDeg);
   }
   if (opts.signal?.aborted) return { status: 'aborted', reason: 'Fitting cancelado; nenhum parâmetro foi aplicado.' };
-  return conclude({ overrides: { ...state.current }, objective: state.currentObjective.objective, iou: state.currentObjective.iou, regional: state.currentObjective.regional }, gate.baseline, state.evaluated, gate.camera);
+  return concludeWithCameraCheck(plan, target, state, gate);
 }
 
 export type FittingProgress = { evaluated: number; total: number };
+
+/**
+ * Com câmara ambígua (só silhueta), a solução tem de continuar a melhorar em perfil
+ * lateral (0°): uma solução que só funciona no azimute assumido é rejeitada como
+ * ambígua em vez de deformar o objecto silenciosamente.
+ */
+function concludeWithCameraCheck(plan: SpatialPlanV2, target: Uint8Array, state: SearchState, gate: Extract<ReturnType<typeof gateAndBaseline>, { ok: true }>): FittingResult {
+  if (gate.cameraAmbiguous && gate.azimuthDeg !== 0) {
+    const baselineSide = objectiveOf(plan, gate.defaults, target, 0);
+    const fittedSide = objectiveOf(plan, state.current, target, 0);
+    state.evaluated += 2;
+    if (baselineSide && fittedSide && fittedSide.iou < baselineSide.iou - 0.01) {
+      return { status: 'insufficient_evidence', reason: `Câmara ambígua: a solução melhora no azimute assumido (${gate.azimuthDeg.toFixed(0)}°) mas degrada em perfil lateral (IoU ${baselineSide.iou.toFixed(3)} → ${fittedSide.iou.toFixed(3)}). Recusada em vez de deformar o objecto com uma hipótese incerta (incerteza ±${28}°).` };
+    }
+  }
+  return conclude({ overrides: { ...state.current }, objective: state.currentObjective.objective, iou: state.currentObjective.iou, regional: state.currentObjective.regional }, gate.baseline, state.evaluated, gate.camera, gate.azimuthDeg, gate.cameraAmbiguous);
+}
 
 /**
  * Fitting assíncrono e interrompível para o caminho interactivo: avalia candidatos em
@@ -368,11 +397,11 @@ export async function fitGeometryToEvidenceAsync(plan: SpatialPlanV2, evidence: 
     // descida em fatias: uma ronda parcial por cedência, com progresso entre parâmetros
     for (const param of FITTING_PARAMS) {
       if (opts.signal?.aborted) return { status: 'aborted', reason: 'Fitting cancelado; nenhum parâmetro foi aplicado.' };
-      descentParam(plan, target, state, param, step, opts.signal);
+      descentParam(plan, target, state, param, step, opts.signal, Number.POSITIVE_INFINITY, gate.azimuthDeg);
       opts.onProgress?.({ evaluated: state.evaluated, total: totalBudget });
       await yieldNow();
     }
   }
   if (opts.signal?.aborted) return { status: 'aborted', reason: 'Fitting cancelado; nenhum parâmetro foi aplicado.' };
-  return conclude({ overrides: { ...state.current }, objective: state.currentObjective.objective, iou: state.currentObjective.iou, regional: state.currentObjective.regional }, gate.baseline, state.evaluated, gate.camera);
+  return concludeWithCameraCheck(plan, target, state, gate);
 }

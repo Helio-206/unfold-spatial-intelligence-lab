@@ -4,6 +4,7 @@ import { extractEvidence, type RGBA } from '../src/living/universal-foundry/evid
 import { fitGeometryToEvidence, fitGeometryToEvidenceAsync, geometryProfile, evidenceProfile, evidenceMaskHash, fittingCacheKey, FITTING_VERSION, projectedSilhouette, resampleEvidenceMask, gridIoU, assessSilhouetteReliability, regionalIoUs } from '../src/living/universal-foundry/fitting';
 import { compileFoundry } from '../src/living/universal-foundry/foundry';
 import { FoundryGeometry } from '../src/living/universal-foundry/provider';
+import { detectWheelLandmarks, estimateCamera } from '../src/living/universal-foundry/landmarks';
 import { validateSpatialPlanV2, type SpatialPlanV2 } from '../src/universal-spatial/contracts-v2';
 import { spatialPlanFingerprintV2 } from '../src/universal-spatial/api-client';
 import { sedan } from '../src/living/universal-foundry/fixtures/plans';
@@ -65,9 +66,11 @@ describe('image-conditioned fitting (vehicle)', () => {
     const result = fitGeometryToEvidence(sedan(), evidence);
     expect(result.status).toBe('fitted');
     if (result.status !== 'fitted') return;
-    // recomputação independente: objectivo ponderado documentado (0.55 IoU + 0.45 média regional)
+    // recomputação independente: objectivo ponderado documentado (0.55 IoU + 0.45 média
+    // regional), projectado do azimute estimado para esta evidência
     const compiled = compileFoundry(sedan(), { lod: 0 }); compiled.buildAll();
-    const projected = projectedSilhouette(compiled.root);
+    const azimuth = estimateCamera(evidence, detectWheelLandmarks(evidence)).azimuthDeg;
+    const projected = projectedSilhouette(compiled.root, azimuth);
     const targetMask = resampleEvidenceMask(evidence);
     const iou = gridIoU(projected, targetMask);
     const regional = regionalIoUs(projected, targetMask);

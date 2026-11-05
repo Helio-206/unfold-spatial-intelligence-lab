@@ -4,6 +4,10 @@
     "operations": 4,
     "planUnchanged": true
   },
+  "skodaCommitted": {
+    "appliedChangedPlan": true,
+    "undoRestored": true
+  },
   "carMediapipe": {
     "fitting": {
       "status": "insufficient_evidence",

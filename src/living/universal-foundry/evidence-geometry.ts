@@ -7,6 +7,7 @@
  */
 import { applySpatialOperationV2, type SpatialOperationV2, type SpatialPlanV2 } from '../../universal-spatial/contracts-v2';
 import type { ImageEvidence } from './evidence';
+import { detectWheelLandmarks } from './landmarks';
 
 export type DerivedWheel = { componentId: string; centreXFraction: number; radiusFractionOfBboxHeight: number; confidence: 'estimated' };
 export type DerivedProportions = {
@@ -103,8 +104,9 @@ function radiusFromBottomDip(evidence: ImageEvidence, contacts: Array<{ centreXF
 export function deriveVehicleProportions(evidence: ImageEvidence, plan: SpatialPlanV2): ProportionsResult {
   const wheelComponents = plan.components.filter((c) => isWheel(c.label)).sort((a, b) => a.transform.position[0] - b.transform.position[0]);
   if (wheelComponents.length < 2) return { status: 'unavailable', reason: 'O plano não declara pelo menos duas rodas; proporções de rodas não são deriváveis.' };
-  const contacts = detectWheelContacts(evidence);
-  if (!contacts) return { status: 'unavailable', reason: 'Não detectei dois contactos de roda com a linha de chão na silhueta (vista ou máscara insuficientes); nada é proposto.' };
+  const landmarks = detectWheelLandmarks(evidence);
+  const contacts = landmarks.wheels.length >= 2 ? landmarks.wheels.map((w) => ({ centreXFraction: w.centreXFraction, widthFraction: w.radiusFractionOfBboxHeight })) : null;
+  if (!contacts) return { status: 'unavailable', reason: `Não detectei dois contactos de roda com a linha de chão na silhueta (${landmarks.missing.join('; ') || 'vista ou máscara insuficientes'}); nada é proposto.` };
   // Orientação: a foto pode estar espelhada face à projecção do plano (+X para a direita).
   // O centro de massa da metade superior da máscara (cabina) decide: compara com o centro
   // da cabina do arquétipo medido desde a traseira e desde a frente; fica o mais próximo.
