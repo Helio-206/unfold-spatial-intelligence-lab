@@ -1,0 +1,10 @@
+.li-panel{position:fixed;top:76px;right:16px;z-index:60;width:min(430px,calc(100vw - 32px));max-height:calc(100dvh - 160px);overflow:auto;background:rgba(12,14,18,.94);color:#eef1f5;border:1px solid rgba(255,255,255,.16);border-radius:16px;padding:14px;backdrop-filter:blur(14px);font:13px/1.45 system-ui,sans-serif}
+.li-head{display:flex;justify-content:space-between;align-items:center;gap:8px}.li-badge{font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.75}
+.li-modes,.li-demos,.li-controls,.li-walk{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.li-panel button,.li-panel select,.li-panel input{background:rgba(255,255,255,.08);color:inherit;border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:6px 10px;font:inherit}
+.li-panel button[aria-pressed="true"]{background:#f5c518;color:#111;border-color:#f5c518}
+.li-entities{display:flex;flex-wrap:wrap;gap:5px;max-height:96px;overflow:auto}.li-chip{font-size:11px;padding:4px 8px}
+.li-command{display:flex;gap:6px;align-items:end}.li-command label{flex:1;display:grid;gap:4px}.li-command input{border-radius:10px;width:100%}
+.li-output{white-space:pre-wrap;background:rgba(255,255,255,.06);border-radius:12px;padding:10px;min-height:72px;font:12px/1.5 system-ui,sans-serif}
+.li-note{opacity:.7;font-size:11px}.li-exp{border-top:1px solid rgba(255,255,255,.12);padding:8px 0}
+@media (prefers-reduced-motion:reduce){.li-panel{scroll-behavior:auto}}

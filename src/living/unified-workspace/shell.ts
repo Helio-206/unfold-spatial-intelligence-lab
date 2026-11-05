@@ -17,6 +17,7 @@ import { LiveReconstructionPort } from './live-port';
 import { asReviewHandoff, ReviewGateway } from './review-bridge';
 import { EMPTY_BRAND, newProjectIcon, WorkspaceStageHost } from './lab-host';
 import { SpaceFlow } from '../spatial-space/flow';
+import { mountLivingIntelligence, livingIntelligenceEnabled } from '../living-intelligence';
 
 const EXAMPLE_NOTICE = {
   id: 'example',
@@ -91,6 +92,7 @@ export function mountLivingShell(app: HTMLElement): void {
   });
   const foundryPanel = foundry ? mountFoundryPanel(foundry, () => space.layer) : null;
   const experimentalV4 = debug && params.has('experimental-v4') ? new ExperimentalV4(() => space.layer, id => workspace.select(id), () => space.currentReviewId) : null;
+  let livingIntelligence: ReturnType<typeof mountLivingIntelligence> | null = null;
   if (debug) Object.assign(window, { __workspace: workspace, __foundry: { ready: !params.has('example') }, __unified: { port, gateway, lab }, __space: space, ...(experimentalV4 ? { __v4: experimentalV4 } : {}), ...(foundry ? { __foundry3d: foundry } : {}), ...(photoreal ? { __photoreal: { active: () => photorealStage !== null, stage: () => photorealStage } } : {}) });
   if (photoreal) {
     const dress = () => {
@@ -100,9 +102,11 @@ export function mountLivingShell(app: HTMLElement): void {
     const timer = setInterval(dress, 400);
     addEventListener('pagehide', () => { clearInterval(timer); photorealStage?.dispose(); photorealStage = null; });
   }
-  addEventListener('pagehide', (event) => { if (!(event as PageTransitionEvent).persisted) { experimentalV4?.dispose(); foundryPanel?.dispose(); space.dispose(); workspace.dispose(); port.session.dispose(); } });
+  addEventListener('pagehide', (event) => { if (!(event as PageTransitionEvent).persisted) { livingIntelligence?.dispose(); experimentalV4?.dispose(); foundryPanel?.dispose(); space.dispose(); workspace.dispose(); port.session.dispose(); } });
   void mountExperience(app, { port, handoff: asReviewHandoff(gateway), lab, example, space: { open: () => space.open() }, embedded }).then((experience) => {
     api = experience;
     if (params.has('example')) { experience.openExample(); if (debug) (window as unknown as { __foundry: { ready: boolean } }).__foundry.ready = true; }
+    // Depois da experiência montar (ela reconstrói a app): o painel vivo entra por cima do mesmo palco, nunca como outra aplicação.
+    if (debug && livingIntelligenceEnabled(params)) { livingIntelligence = mountLivingIntelligence(app, workspace); if (debug) Object.assign(window, { __living: livingIntelligence }); }
   });
 }

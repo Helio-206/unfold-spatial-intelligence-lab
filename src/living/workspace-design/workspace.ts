@@ -652,6 +652,13 @@ export class SpatialWorkspace {
   /** Re-frames the whole machine for the current usable area (used after a resize or a visibility change). */
   frameAll(): void { this.frameHome(); }
 
+  /** Porta estreita do Living Intelligence: montagem actual (cópia), poses transitórias e selecção. Nunca escreve no plano. */
+  livingAssembly(): Assembly { return structuredClone(this.options.assembly); }
+  applyLivingFrame(parts: readonly PartPose[]): void {
+    if (this.disposed || this.empty || !parts.length) return;
+    this.scene.setPoses([...parts]); this.foundry.markMotion(); this.foundry.requestRender();
+  }
+
   setView(view: { target: [number, number, number]; azimuthDeg: number; elevationDeg: number; distance: number }): void {
     this.director.jumpTo({ target: new Vector3(...view.target), azimuth: (view.azimuthDeg * Math.PI) / 180, elevation: (view.elevationDeg * Math.PI) / 180, distance: view.distance });
   }
