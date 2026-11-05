@@ -109,7 +109,18 @@ export function mountLivingShell(app: HTMLElement): void {
         if (!pending || plan.source.kind !== 'image') return;
         const generation = pending.generation;
         void (async () => {
-          const evidence = await evidenceFromDataUrl(pending.dataUrl);
+          // Segmentação aprendida local (opcional): DeepLab v3 no browser; qualquer falha
+          // cai para a evidência clássica, e a proveniência regista qual foi usada.
+          let evidence = null as Awaited<ReturnType<typeof evidenceFromDataUrl>>;
+          let segmentation: 'automatic-classical' | 'model-mediapipe-deeplab-v3' = 'automatic-classical';
+          if (params.has('experimental-mediapipe')) {
+            try {
+              const { mediapipeVehicleEvidence } = await import('../universal-foundry/mediapipe-segmentation');
+              evidence = await mediapipeVehicleEvidence(pending.dataUrl);
+              if (evidence) segmentation = 'model-mediapipe-deeplab-v3';
+            } catch { evidence = null; }
+          }
+          if (!evidence) evidence = await evidenceFromDataUrl(pending.dataUrl);
           if (!evidence || generation !== imageGeneration) return;
           const bytes = await (await fetch(pending.dataUrl)).arrayBuffer();
           const digest = await crypto.subtle.digest('SHA-256', bytes);
@@ -119,7 +130,7 @@ export function mountLivingShell(app: HTMLElement): void {
           const correctedMask = pendingCorrected && pendingCorrected.sourceSha256 === plan.source.sha256
             ? { polygon: pendingCorrected.polygon, confirmedAt: new Date().toISOString() }
             : undefined;
-          await foundry.setEvidence(evidence, { plan, planFingerprint, sourceSha256: plan.source.sha256, originalSha256, preparedSha256: plan.source.sha256, preparation: 'workspace-image-submit', generationId: `${plan.source.sha256}:${generation}`, recipeVersion: 1, ...(correctedMask ? { correctedMask } : {}) });
+          await foundry.setEvidence(evidence, { plan, planFingerprint, sourceSha256: plan.source.sha256, originalSha256, preparedSha256: plan.source.sha256, preparation: 'workspace-image-submit', generationId: `${plan.source.sha256}:${generation}`, recipeVersion: 1, segmentation, ...(correctedMask ? { correctedMask } : {}) });
           if (generation === imageGeneration) space.layer?.regenerate();
         })();
       },

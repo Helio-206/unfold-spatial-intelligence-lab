@@ -43,3 +43,24 @@ Suite completa **2611/2611** (170 ficheiros, `--testTimeout=30000`), `tsc --noEm
 ## Veredicto global
 
 **NO-GO para aceitação completa do produto nos termos da secção 13 da missão.** O que está provado: pipeline honesto de ponta a ponta, recuperação de segmentação que funciona, fitting com DOF reais que melhora a forma de forma reprodutível (incluindo holdouts), e a experiência viva intacta. O que falta é da ordem de grandeza seguinte: proporções/distância entre eixos derivadas da evidência ao nível do plano e um perfil de loft mais rico — redesign da representação, identificado com números. Declarar GO seria repetir o erro que esta missão foi instruída a não cometer.
+
+## Correcção arquitectural (sobre `2b011ca`): proporções derivadas da evidência
+
+A limitação identificada foi corrigida na origem, sem acrescentar parâmetros ao `vehicle.ts`:
+
+1. **Derivação da evidência** (`evidence-geometry.ts`): contactos de roda com a linha de chão, emparelhamento por eixos, orientação (espelho) decidida pelo centróide da cabina, raio pelo mergulho da aresta inferior, e aspecto global — tudo a partir da silhueta confirmada, com método e incerteza declarados e falha fechada quando não há dois contactos (autocarro e van: indisponível, sem proposta).
+2. **Proposta tipada, nunca aplicação silenciosa:** `buildProportionsProposal` produz `SpatialOperationV2[]` validadas contra o contrato; no `/living`, o painel Foundry cria a proposta via `proposeSolverEdit` existente — demonstrado no browser: proposta pendente com 4 operações e o **plano autoritativo byte-a-byte intacto** até autorização humana pela transacção E1.4.1.
+3. **Decomposição de erros medida** (`proportions-effect.json`), separando erro semântico, de câmara e de representação:
+
+| Caso | Câmara | Baseline semântico | + proporções (baseline) | + fitting de receita |
+|---|---|---|---|---|
+| car | three-quarter | 0.654 | 0.630 (piora: mapping 3/4) | 0.668 (genérico: 0.708) |
+| porsche-911 | side | 0.672 | 0.743 | 0.753 (gate de melhoria recusa aplicar a receita) |
+| skoda-kodiaq | three-quarter | 0.647 | 0.731 | **0.766** |
+| holdout-coupe | three-quarter | 0.643 | 0.799 | **0.810** |
+| bus / holdout-van | three-quarter | — | indisponível (sem contactos) | fitting genérico mantém-se |
+
+Duas correcções dentro da própria derivação foram encontradas medindo, não presumindo: o emparelhamento inicial ignorava o espelho da fotografia (rodas trocadas) e o raio pela altura da coluna media o corpo inteiro; e a escala de corpo por aspecto só é proposta em vista lateral (em três-quartos corrompia: 0.654→0.564). A proposta mostra a medição e deixa a decisão à revisão humana — em três-quartos pode legitimamente ser rejeitada.
+4. **Reconstrução por modelos, avaliada com execução real:** MediaPipe ImageSegmenter (já era dependência) com DeepLab v3 local no browser: IoU automático **0.54–0.77** contra anotações (vs 0.20–0.27 clássico), integrado atrás de `experimental-mediapipe` com proveniência `model-mediapipe-deeplab-v3` e o mesmo gate de fiabilidade (no carro, a máscara do modelo cobre 71% e é **recusada fechado** — registado, não disfarçado). Modelos generativos de malha (tipo Trellis/Tripo): sem GPU local, sem pacote permissivo no repositório e com serviços pagos proibidos — bloqueio externo concreto para essa via; a via procedural+evidência é a executável aqui.
+
+**Veredicto actualizado:** a arquitectura já não congela proporções nos planos genéricos — deriva-as da evidência e propõe-nas com revisão. Os melhores resultados sobem para **0.77–0.81** nos casos favoráveis, ainda abaixo da meta de 0.82/0.88 na maioria dos casos. **NO-GO mantém-se para aceitação fotográfica completa**, agora com o gargalo correctamente localizado (mapeamento em três-quartos e cobertura de detecção de rodas), não na falta de parâmetros.

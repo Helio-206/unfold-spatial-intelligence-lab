@@ -12,10 +12,13 @@ import { canonicalPlanJson } from '../../universal-spatial/review-v1';
 import { spatialPlanFingerprintV2 } from '../../universal-spatial/api-client';
 import { fitGeometryToEvidenceAsync, fittingCacheKey, type FittingProgress, type FittingResult } from './fitting';
 import { correctedEvidence, type CorrectedMaskBinding } from './correction';
+import { deriveVehicleProportions, buildProportionsProposal, type ProportionsResult } from './evidence-geometry';
+import { cameraHypothesis } from './fitting';
+import type { SpatialOperationV2 } from '../../universal-spatial/contracts-v2';
 
 export type StorageLike = { getItem(k: string): string | null; setItem(k: string, v: string): void };
 const KEY = 'unfold.foundry.params.v2';
-export type EvidenceBinding = { plan: SpatialPlanV2; planFingerprint: string; sourceSha256: string; originalSha256: string; preparedSha256: string; preparation: string; generationId: string; recipeVersion: 1; correctedMask?: { polygon: Array<[number, number]>; confirmedAt: string } };
+export type EvidenceBinding = { plan: SpatialPlanV2; planFingerprint: string; sourceSha256: string; originalSha256: string; preparedSha256: string; preparation: string; generationId: string; recipeVersion: 1; correctedMask?: { polygon: Array<[number, number]>; confirmedAt: string }; segmentation?: 'automatic-classical' | 'model-mediapipe-deeplab-v3' };
 type BoundEvidence = { value: ImageEvidence; binding: EvidenceBinding; planIdentity: string };
 
 export class FoundryGeometry {
@@ -41,6 +44,24 @@ export class FoundryGeometry {
   private maskProvenanceValue: 'automatic' | 'user_confirmed' | null = null;
   /** De onde veio a máscara usada na última compilação: automática ou confirmada pela pessoa. */
   get maskProvenance(): 'automatic' | 'user_confirmed' | null { return this.maskProvenanceValue; }
+  private segmentationSourceValue: string | null = null;
+  /** Fonte da segmentação automática usada ('automatic-classical' ou o modelo local), quando aplicável. */
+  get segmentationSource(): string | null { return this.segmentationSourceValue; }
+  private lastEvidence: ImageEvidence | null = null;
+  private lastPlan: SpatialPlanV2 | null = null;
+
+  /**
+   * Proposta tipada de proporções derivadas da evidência actual (rodas, distância entre
+   * eixos, altura do corpo). NÃO aplica nada: devolve operações para o caminho de revisão
+   * existente (`proposeSolverEdit` → autorização → transacção E1.4.1).
+   */
+  proportionsProposal(): { derived: ProportionsResult; operations: SpatialOperationV2[] | null; camera: string } | null {
+    if (!this.lastEvidence || !this.lastPlan) return null;
+    const derived = deriveVehicleProportions(this.lastEvidence, this.lastPlan);
+    if (derived.status !== 'derived') return { derived, operations: null, camera: cameraHypothesis(this.lastEvidence).kind };
+    const camera = cameraHypothesis(this.lastEvidence).kind;
+    return { derived, operations: buildProportionsProposal(this.lastPlan, derived, camera), camera };
+  }
   get fittingProgress(): FittingProgress | null { return this.lastFittingProgress; }
   /** Chamado quando um fitting assíncrono termina e foi aplicado à cache (o chamador regenera). */
   onFitted(l: (result: FittingResult) => void): () => void { this.fittingListeners.add(l); return () => this.fittingListeners.delete(l); }
@@ -110,6 +131,9 @@ export class FoundryGeometry {
       : null;
     const evidence = rawEvidence && corrected ? correctedEvidence(rawEvidence, corrected) : rawEvidence;
     this.maskProvenanceValue = evidence ? (corrected ? 'user_confirmed' : 'automatic') : null;
+    this.segmentationSourceValue = evidence && !corrected ? (binding?.binding.segmentation ?? 'automatic-classical') : null;
+    this.lastEvidence = evidence;
+    this.lastPlan = plan;
     // Fitting NUNCA corre sincronamente aqui: compilar é o caminho de render interactivo.
     // Com resultado cacheado (identidade = versão + plano + hash da máscara) aplica já;
     // sem ele, agenda o fitting assíncrono e apresenta o conceptual até ele chegar.
@@ -128,6 +152,7 @@ export class FoundryGeometry {
     }
     this.result = compileFoundry(plan, { overrides: { ...fitted, ...this.overrides }, seed: this.seed, evidence });
     if (this.result.recipe && corrected) this.result.recipe.unknowns.push(`Contorno corrigido e confirmado pela pessoa em ${corrected.confirmedAt} (proveniência user_confirmed, ligado ao hash desta fonte; não é uma medição nem foi verificado por terceiros).`);
+    if (this.result.recipe && this.segmentationSourceValue === 'model-mediapipe-deeplab-v3') this.result.recipe.unknowns.push('Segmentação automática por modelo local MediaPipe DeepLab v3 (classes VOC bus/car), executado no browser; IoU medido 0.54–0.77 contra anotações — sujeito ao mesmo gate de fiabilidade, nunca "verificado".');
     if (this.result.recipe && this.lastFitting) {
       if (this.lastFitting.status === 'fitted') this.result.recipe.unknowns.push(this.lastFitting.summary);
       else if (this.lastFitting.status === 'pending') this.result.recipe.unknowns.push(this.lastFitting.reason);
