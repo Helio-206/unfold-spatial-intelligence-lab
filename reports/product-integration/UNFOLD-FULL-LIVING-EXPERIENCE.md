@@ -74,6 +74,32 @@ Melhoria medida do fitting nas fotografias reais é **pequena** (0.188→0.186; 
 
 **Revalidação:** suite completa **2602/2602** (168 ficheiros; inclui as transacções fenced E1.4.1 e o undo), `tsc` e `build` verdes, e2e de convergência (porta) e living-intelligence reexecutados verdes. Os fixtures raster desenhados continuam apenas como regressões determinísticas.
 
+## Correcção final de fidelidade fotográfica (sobre `bb8514d`)
+
+**Critérios de aceitação documentados antes do veredicto:** máscara com IoU ≥ 0.50 contra anotação manual e erro de bbox ≤ 8 px (a 160 px de largura); fitting aceite só com melhoria de IoU de silhueta projectada ≥ 5% relativa sobre o baseline genuíno, sem esconder saturação da grelha; melhoria visível nas comparações de câmara fixa. **Nenhuma das três fotografias reais cumpre os critérios de máscara. A fidelidade fotográfica NÃO está aceite (NO-GO)** — o que está aceite é o comportamento fail-closed do pipeline.
+
+**Máscaras medidas contra anotação manual** (`tests/fixtures/photos-real/annotations.json`, 1 anotador, não revisto; `gen-mask-comparisons.pw.ts` regenera `comparisons/*.png` e `mask-metrics.json`):
+
+| Fotografia | Vista real | IoU extraída vs anotação | Erro bbox | O que a máscara realmente capturou |
+|---|---|---|---|---|
+| `car.jpg` (CC0) | 3/4 frontal (o nome do ficheiro dizia «side view») | 0.199 | 29 px | fragmento superior (edifícios/outro carro) |
+| `bus.jpg` (CC BY-SA 4.0) | lateral 3/4 traseira | 0.222 | 14 px | corpo parcial + chão |
+| `porsche-911.jpg` held-out (CC BY-SA 2.0) | perfil lateral, camiões atrás | 0.263 | 20 px | faixa de sombra no chão sob o carro (visível na comparação) |
+
+Duas tentativas de melhoria foram medidas e rejeitadas com dados: flood-fill de fundo por gradiente local piorou o IoU para 0.01–0.12 (vaza por asfalto/sombra); clusters + maior componente + buracos fica em 0.20–0.27. Sem um segmentador aprendido (fora do âmbito e das regras desta missão), não há máscara de confiança para estas fotografias — e fingir o contrário foi exactamente o defeito das rondas anteriores.
+
+**Fail-closed calibrado.** `assessSilhouetteReliability` (maior componente ≥ 75%, preenchimento de bbox ≥ 55%, contaminação de borda ≤ 15%, rácio em [3%, 70%]). Um primeiro gate mais frouxo **aprovava as três máscaras más**; os limiares finais foram calibrados no conjunto anotado e recusam as três, mantendo aceites as silhuetas sintéticas limpas das regressões. No `/living`, as três fotografias terminam em `insufficient_evidence` com os motivos numéricos, parâmetros nos defaults (zero geometria enganadora aplicada), photoreal activo e a experiência (explicação, interacção transitória) funcional — `real-photo-fitting.pw.ts` actualizado para esperar e afirmar exactamente isto, incluindo o held-out.
+
+**Objectivo por silhueta projectada.** O objectivo já não é um perfil de alturas de AABBs: `projectedSilhouette` rasteriza os triângulos compilados em vista lateral ortográfica (72×36, hipótese de câmara declarada, atalho sub-célula por centróide) e o objectivo é `1 − IoU` contra a máscara reamostrada. Determinístico; baseline recomputado independentemente no teste (mesmo lod).
+
+**Saturação e graus de liberdade.** Medido: para uma silhueta sintética baixa/comprida, o baseline (IoU 0.896) bate **todos** os candidatos — a grelha nem inclui os defaults (0.38/0.70) e dois parâmetros de cabina não reproduzem a forma; a conclusão `insufficient_dof` dispara abaixo de 5% de melhoria relativa, e vencedores na fronteira são reportados em `gridSaturated` em vez de a grelha ser estendida para embelezar. Na silhueta alta sintética há ajuste genuíno (IoU 0.773 → 0.800, saturado nos dois parâmetros — declarado).
+
+**Responsividade medida.** Cada candidato custa ~300 ms em CPU (compilação+build+rasterização), muito acima de um frame de 16 ms. O fitting interactivo corre agora num **Web Worker** dedicado (`fitting.worker.ts`; o caminho de compilação não usa DOM — verificado), com timeout e fallback assíncrono por blocos; o transporte usado é observável (`fittingTransport: 'worker'` afirmado no e2e das três fotos) e o chunk do worker é emitido no build de produção.
+
+**Comparações de câmara fixa** em `real-photo-evidence/comparisons/` (input | máscara extraída | anotação | veredicto) para os três casos — todos insucessos, preservados como tal. O `side-by-side.png` da ronda anterior foi removido: mostrava um «fitted» que hoje seria uma recusa, e mantê-lo seria evidência enganadora. Os testes sintéticos determinísticos continuam como regressões do mecanismo.
+
+**Revalidação:** suite **2604/2604**, `tsc`/`build` verdes (inclui chunk do worker), e2e de convergência da porta verde, adopt real e transacções E1.4.1 cobertos como antes.
+
 ## GO/NO-GO
 
-**GO** para a experiência convergente atrás de flags, como base de avaliação do produto. **NO-GO** para produção, para fitting multi-família, e para apresentar movimento de Spaces ou dimensões ajustadas como verificados a partir de fotografias reais. Com o hardening acima, o caminho de fotografia real está provado de ponta a ponta numa família, com melhoria de objectivo pequena e máscaras imperfeitas declaradas — é esse o tamanho honesto do resultado.
+**GO** para a experiência convergente atrás de flags e para o comportamento fail-closed do pipeline fotográfico. **NO-GO** para produção e — explicitamente — **NO-GO para fidelidade fotográfica**: com o segmentador clássico actual, as máscaras de fotografias reais medidas têm IoU 0.20–0.27 contra anotação manual, e o sistema recusa correctamente em vez de ajustar. Aceitar reconstrução fotográfica exigiria um segmentador de outra classe, fora do âmbito desta correcção.

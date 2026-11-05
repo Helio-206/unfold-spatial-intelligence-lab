@@ -1,0 +1,91 @@
+{
+  "car": {
+    "iou": 0.199,
+    "bboxErrorPx": 29,
+    "extractedBbox": {
+      "x0": 0,
+      "y0": 0,
+      "x1": 142,
+      "y1": 42
+    },
+    "annotatedBbox": {
+      "x0": 5,
+      "y0": 2,
+      "x1": 157,
+      "y1": 71
+    },
+    "reliability": {
+      "reliable": false,
+      "reasons": [
+        "preenchimento da bbox implausível para uma silhueta de veículo (51% < 55%)",
+        "contaminação nas bordas (20% da máscara na faixa exterior > 15%)"
+      ],
+      "metrics": {
+        "largestComponentShare": 0.8927345537757437,
+        "bboxFill": 0.5075622052366239,
+        "borderBandShare": 0.19577058635052869,
+        "foregroundRatio": 0.2378810975609756
+      }
+    },
+    "heldOut": false
+  },
+  "bus": {
+    "iou": 0.222,
+    "bboxErrorPx": 14,
+    "extractedBbox": {
+      "x0": 7,
+      "y0": 22,
+      "x1": 159,
+      "y1": 82
+    },
+    "annotatedBbox": {
+      "x0": 2,
+      "y0": 15,
+      "x1": 149,
+      "y1": 68
+    },
+    "reliability": {
+      "reliable": false,
+      "reasons": [
+        "preenchimento da bbox implausível para uma silhueta de veículo (37% < 55%)"
+      ],
+      "metrics": {
+        "largestComponentShare": 0.8815991799077396,
+        "bboxFill": 0.3685845923068681,
+        "borderBandShare": 0.04970930232558139,
+        "foregroundRatio": 0.25595238095238093
+      }
+    },
+    "heldOut": false
+  },
+  "porsche-911": {
+    "iou": 0.263,
+    "bboxErrorPx": 20,
+    "extractedBbox": {
+      "x0": 18,
+      "y0": 55,
+      "x1": 136,
+      "y1": 79
+    },
+    "annotatedBbox": {
+      "x0": 13,
+      "y0": 35,
+      "x1": 151,
+      "y1": 85
+    },
+    "reliability": {
+      "reliable": false,
+      "reasons": [
+        "objecto fragmentado (maior componente 59% do primeiro plano < 75%)",
+        "preenchimento da bbox implausível para uma silhueta de veículo (50% < 55%)"
+      ],
+      "metrics": {
+        "largestComponentShare": 0.5904191616766467,
+        "bboxFill": 0.49714285714285716,
+        "borderBandShare": 0,
+        "foregroundRatio": 0.08639018691588785
+      }
+    },
+    "heldOut": true
+  }
+}

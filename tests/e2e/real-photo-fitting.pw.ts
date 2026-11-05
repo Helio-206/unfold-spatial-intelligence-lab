@@ -1,8 +1,9 @@
 /**
  * Fotografias reais de câmara em /living: upload → plano semântico offline rotulado como
  * fixture (casado por sha256 do pedido; NÃO é inferência Muse Spark) → fitting por
- * silhueta assíncrono → geometria ajustada mensurável → photoreal → explicação ancorada
- * → interacção transitória suportada. O backend local real serve adopt/sessão; a rota do
+ * silhueta projectada (Worker) → com as máscaras actuais, RECUSA FECHADA documentada
+ * (IoU 0.20–0.27 vs anotação manual) e geometria conceptual mantida → photoreal →
+ * explicação ancorada → interacção transitória suportada. O backend local real serve adopt/sessão; a rota do
  * plano é interceptada com o fixture e o duplo do provider conta chamadas (0 pagas).
  * Run: npx tsx tests/e2e/real-photo-fitting.pw.ts
  */
@@ -13,7 +14,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { createMetaServer } from '../../server/meta-server';
-import { hatchback, suv } from '../../src/living/universal-foundry/fixtures/plans';
+import { hatchback, suv, sedan } from '../../src/living/universal-foundry/fixtures/plans';
 import type { SpatialPlanV2 } from '../../src/universal-spatial/contracts-v2';
 
 const out = resolve(process.env.UNFOLD_RPF_OUT ?? 'reports/product-integration/real-photo-evidence');
@@ -29,7 +30,7 @@ await vite.listen();
 const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH ?? '/usr/bin/google-chrome', args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--no-sandbox'] });
 const envelope = JSON.parse(readFileSync(resolve('reports/visual-recovery/fixtures/bicycle.json'), 'utf8')) as Record<string, unknown>;
 const FLAGS = 'debug-living=1&experimental-foundry=1&experimental-living-intelligence=1&experimental-photoreal=1&rm=1';
-const pass = (m: string) => console.log(`PASS ${m}`);
+const pass = (m: string) => process.stdout.write(`PASS ${m}\n`);
 const diagnostics: Record<string, unknown> = {};
 
 async function runPhoto(page: Page, photo: string, template: () => SpatialPlanV2, tag: string): Promise<void> {
@@ -54,32 +55,37 @@ async function runPhoto(page: Page, photo: string, template: () => SpatialPlanV2
   await page.waitForFunction(() => (window as never as { __space: { layer: { synced: boolean } | null } }).__space.layer?.synced === true, null, { timeout: 60_000 });
   pass(`${tag}: adopt aceite pelo backend local real (sessão sincronizada)`);
   await page.waitForSelector('[data-li-space]', { timeout: 30_000 });
-  // fitting assíncrono: o palco responde já; os parâmetros chegam por onFitted → regenerate
-  await page.waitForFunction(() => (window as never as { __foundry3d: { fitting: { status: string } | null } }).__foundry3d.fitting?.status === 'fitted', null, { timeout: 90_000 });
+  // fitting assíncrono (Worker): o palco responde já; o resultado terminal chega por onFitted.
+  // Com as máscaras reais actuais (IoU 0.20–0.27 vs anotação manual), o resultado CORRECTO é
+  // a recusa fechada — nunca um ajuste enganador.
+  await page.waitForFunction(() => {
+    const f = (window as never as { __foundry3d: { fitting: { status: string } | null } }).__foundry3d.fitting;
+    return f !== null && f.status !== 'pending';
+  }, null, { timeout: 90_000 });
   const diag = await page.evaluate(async (dataUrl) => {
     // @ts-ignore — módulo carregado pelo Vite dentro da página, não resolvível pelo tsc do Node
     const { evidenceFromDataUrl } = await import('/src/living/universal-foundry/browser.ts');
     const ev = await evidenceFromDataUrl(dataUrl);
-    const foundry = (window as never as { __foundry3d: { fitting: unknown; recipe: { params: Record<string, unknown>; paramSpec: Array<{ key: string; default: unknown }> } | null } }).__foundry3d;
+    const foundry = (window as never as { __foundry3d: { fitting: unknown; fittingTransport: string | null; recipe: { params: Record<string, unknown>; paramSpec: Array<{ key: string; default: unknown }> } | null } }).__foundry3d;
     const defaults = Object.fromEntries((foundry.recipe?.paramSpec ?? []).map((s) => [s.key, s.default]));
     return {
-      evidence: ev ? { aspect: +ev.aspect.toFixed(2), symmetry: +ev.symmetry.toFixed(2), foregroundRatio: +ev.foregroundRatio.toFixed(3), bbox: ev.bbox } : null,
+      evidence: ev ? { aspect: +ev.aspect.toFixed(2), symmetry: +ev.symmetry.toFixed(2), foregroundRatio: +ev.foregroundRatio.toFixed(3), bbox: ev.bbox, largestComponentShare: +(ev.largestComponentShare ?? 0).toFixed(3) } : null,
       fitting: foundry.fitting,
+      fittingTransport: foundry.fittingTransport,
       params: { cabinHeight: foundry.recipe?.params.cabinHeight, rearSlope: foundry.recipe?.params.rearSlope },
       defaults: { cabinHeight: defaults.cabinHeight, rearSlope: defaults.rearSlope },
       photorealActive: ((window as never as { __photoreal?: { active(): boolean } }).__photoreal?.active() ?? false),
     };
   }, `data:image/jpeg;base64,${readFileSync(photoPath).toString('base64')}`);
   diagnostics[tag] = diag;
-  console.log(`DIAG ${tag}`, JSON.stringify(diag));
+  process.stdout.write(`DIAG ${tag} ${JSON.stringify(diag)}\n`);
   assert.equal(diag.evidence !== null, true);
-  assert.ok(diag.evidence!.foregroundRatio > 0.02 && diag.evidence!.foregroundRatio < 0.8, 'máscara credível');
-  const fitting = diag.fitting as { status: string; objective: number; baselineObjective: number; summary: string };
-  assert.equal(fitting.status, 'fitted');
-  assert.ok(fitting.objective <= fitting.baselineObjective + 1e-9, 'objectivo não pior que o baseline genuíno');
-  assert.notDeepEqual(diag.params, diag.defaults, 'a geometria ajustada difere dos defaults do arquétipo');
+  const fitting = diag.fitting as { status: string; reason?: string };
+  assert.equal(fitting.status, 'insufficient_evidence', `recusa fechada esperada: ${fitting.reason ?? ''}`);
+  assert.match(fitting.reason ?? '', /não fiável|Graus de liberdade|frontal|Máscara/);
+  assert.deepEqual(diag.params, diag.defaults, 'sem fitting aplicado: parâmetros ficam nos defaults (nada de geometria enganadora)');
   assert.equal(diag.photorealActive, true);
-  pass(`${tag}: fitting aplicado sobre fotografia real (objectivo ${fitting.baselineObjective.toFixed(3)} → ${fitting.objective.toFixed(3)}) com photoreal activo`);
+  pass(`${tag}: fitting recusado fechado (${(fitting.reason ?? '').slice(0, 90)}…) via ${diag.fittingTransport}; geometria conceptual mantida, photoreal activo`);
   await page.waitForTimeout(1200);
   await page.screenshot({ path: resolve(out, `${tag}-01-fitted-scene.png`) });
   // explicação ancorada + interacção transitória suportada (roda: rotação inferida declarada)
@@ -123,7 +129,7 @@ async function runPhoto(page: Page, photo: string, template: () => SpatialPlanV2
   await page.screenshot({ path: resolve(out, `${tag}-03-fitted-3d-clean.png`) });
 }
 
-for (const [photo, template, tag] of [['car.jpg', hatchback, 'car'], ['bus.jpg', suv, 'bus']] as const) {
+for (const [photo, template, tag] of [['car.jpg', hatchback, 'car'], ['bus.jpg', suv, 'bus'], ['porsche-911.jpg', sedan, 'porsche']] as const) {
   const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -137,4 +143,4 @@ pass('provider pago nunca chamado; adopt/sessão servidos pelo backend local rea
 await browser.close();
 await vite.close();
 await new Promise<void>((r) => backend.close(() => r()));
-console.log('REAL-PHOTO-FITTING-E2E OK');
+process.stdout.write('REAL-PHOTO-FITTING-E2E OK\n');

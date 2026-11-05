@@ -8,6 +8,12 @@ Copiadas do manifest de referências da auditoria visual
 |---|---|---|---|---|
 | `car.jpg` | `a4705cecb298ba521a46baeb4ba1acd7cf75bdf3500d1c927d45788aa55ac3ec` | OathOn | CC0 | Wikimedia Commons: 2015 Vauxhall Astra SRi hatchback, vista lateral |
 | `bus.jpg` | `b98059c978b56795f3c6419b41e0b8bc276c3e65aaee1e57b7ad2e7cc47d86df` | GK tramrunner RU | CC BY-SA 4.0 | Wikimedia Commons: Novabus LFS, vista lateral |
+| `porsche-911.jpg` (held-out) | `7bc7fd8cdeb3f64914cefff0f2d25a4c65709a91fee10e20bd58a803c6750423` | (Wikimedia Commons: «Silver 911 right side profile») | CC BY-SA 2.0 | Wikimedia Commons, perfil lateral verdadeiro com camiões atrás |
+
+`annotations.json` contém polígonos de silhueta desenhados manualmente pelo
+implementador (um só anotador, não revistos) para medir IoU e erro de bbox das
+máscaras extraídas. Resultado actual: IoU 0.20–0.27 nas três — abaixo de qualquer
+critério de confiança; o fitting recusa as três (fail-closed).
 
 Estado do manifest (honesto): «INCOMPLETE CANDIDATES: no frozen benchmark, no
 confidential holdout, annotations not independently reviewed». São fotografias de

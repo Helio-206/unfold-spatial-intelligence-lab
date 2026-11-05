@@ -1,0 +1,25 @@
+{
+  "contract": "unfold.photo-annotation.v1",
+  "status": "MANUAL SINGLE-ANNOTATOR polygons drawn by the implementing engineer from the displayed photographs; not independently reviewed. Coordinates are fractions of image width/height, polygon of the vehicle's outer silhouette (wheels included, ground shadow excluded).",
+  "cases": [
+    {
+      "id": "car",
+      "file": "car.jpg",
+      "viewpoint": "three-quarter front (despite the source file name claiming side view)",
+      "polygon": [[0.03, 0.52], [0.07, 0.38], [0.20, 0.31], [0.33, 0.09], [0.45, 0.04], [0.82, 0.03], [0.95, 0.10], [0.99, 0.32], [0.985, 0.60], [0.95, 0.72], [0.88, 0.86], [0.78, 0.87], [0.75, 0.74], [0.45, 0.76], [0.42, 0.88], [0.30, 0.88], [0.28, 0.74], [0.08, 0.72], [0.035, 0.62]]
+    },
+    {
+      "id": "bus",
+      "file": "bus.jpg",
+      "viewpoint": "side with rear three-quarter",
+      "polygon": [[0.015, 0.35], [0.03, 0.22], [0.10, 0.175], [0.75, 0.24], [0.90, 0.29], [0.935, 0.38], [0.93, 0.70], [0.88, 0.78], [0.80, 0.80], [0.78, 0.70], [0.40, 0.72], [0.38, 0.82], [0.27, 0.82], [0.25, 0.70], [0.05, 0.68], [0.015, 0.55]]
+    },
+    {
+      "id": "porsche-911",
+      "file": "porsche-911.jpg",
+      "viewpoint": "true side profile; trucks and a tarped vehicle behind",
+      "heldOut": true,
+      "polygon": [[0.08, 0.55], [0.10, 0.47], [0.20, 0.42], [0.28, 0.335], [0.38, 0.325], [0.52, 0.36], [0.62, 0.435], [0.80, 0.46], [0.92, 0.50], [0.95, 0.58], [0.93, 0.66], [0.83, 0.68], [0.80, 0.79], [0.68, 0.80], [0.65, 0.67], [0.32, 0.67], [0.29, 0.80], [0.17, 0.80], [0.15, 0.65], [0.085, 0.62]]
+    }
+  ]
+}

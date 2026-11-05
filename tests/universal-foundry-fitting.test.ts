@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Box3 } from 'three';
 import { extractEvidence, type RGBA } from '../src/living/universal-foundry/evidence';
-import { fitGeometryToEvidence, fitGeometryToEvidenceAsync, geometryProfile, evidenceProfile, evidenceMaskHash, fittingCacheKey, FITTING_VERSION } from '../src/living/universal-foundry/fitting';
+import { fitGeometryToEvidence, fitGeometryToEvidenceAsync, geometryProfile, evidenceProfile, evidenceMaskHash, fittingCacheKey, FITTING_VERSION, projectedSilhouette, resampleEvidenceMask, gridIoU, assessSilhouetteReliability } from '../src/living/universal-foundry/fitting';
 import { compileFoundry } from '../src/living/universal-foundry/foundry';
 import { FoundryGeometry } from '../src/living/universal-foundry/provider';
 import { validateSpatialPlanV2, type SpatialPlanV2 } from '../src/universal-spatial/contracts-v2';
@@ -23,23 +23,25 @@ const lowLong = () => extractEvidence(carImage({ x0: 20, y0: 58, x1: 180, y1: 85
 const tallShort = () => extractEvidence(carImage({ x0: 40, y0: 55, x1: 160, y1: 85 }, { x0: 58, y0: 22, x1: 142, y1: 55 }, [30, 90, 40]));
 
 describe('image-conditioned fitting (vehicle)', () => {
-  it('silhuetas diferentes produzem geometria diferente e mais próxima da evidência', () => {
+  it('silhuetas diferentes produzem resultados diferentes: uma ajusta, a outra é recusada por falta de graus de liberdade', () => {
     const plan = sedan();
     const fitLow = fitGeometryToEvidence(plan, lowLong());
     const fitTall = fitGeometryToEvidence(plan, tallShort());
-    expect(fitLow.status).toBe('fitted'); expect(fitTall.status).toBe('fitted');
-    if (fitLow.status !== 'fitted' || fitTall.status !== 'fitted') return;
-    expect(fitLow.overrides).not.toEqual(fitTall.overrides);
+    // Medido: para a silhueta baixa/comprida, o baseline (IoU 0.896) já bate todos os
+    // candidatos da grelha — a resposta correcta é a recusa por DOF, não um ajuste forçado.
+    expect(fitLow.status).toBe('insufficient_evidence');
+    if (fitLow.status === 'insufficient_evidence') expect(fitLow.reason).toMatch(/Graus de liberdade/);
+    expect(fitTall.status).toBe('fitted');
+    if (fitTall.status !== 'fitted') return;
+    expect(fitTall.silhouetteIou!).toBeGreaterThan(fitTall.baselineSilhouetteIou!);
     const aspectOf = (overrides: Record<string, number>) => {
       const r = compileFoundry(sedan(), { overrides }); r.buildAll();
       const b = new Box3().setFromObject(r.root); r.retire();
       return (b.max.x - b.min.x) / (b.max.y - b.min.y);
     };
-    const defaultAspect = aspectOf({});
-    // o carro baixo/comprido deve ficar mais baixo (aspecto maior) do que o alto/curto
-    expect(aspectOf(fitLow.overrides)).toBeGreaterThan(aspectOf(fitTall.overrides));
-    void defaultAspect;
-    if (fitLow.status === 'fitted') expect(fitLow.objective).toBeLessThanOrEqual(fitLow.baselineObjective + 1e-9);
+    // a geometria ajustada (cabina alta) tem aspecto menor que a default: forma visivelmente diferente
+    expect(aspectOf(fitTall.overrides)).not.toBeCloseTo(aspectOf({}), 3);
+    expect(fitTall.objective).toBeLessThanOrEqual(fitTall.baselineObjective + 1e-9);
   });
   it('controlo negativo: mudar só a cor não muda os parâmetros ajustados', () => {
     const a = fitGeometryToEvidence(sedan(), lowLong());
@@ -59,19 +61,18 @@ describe('image-conditioned fitting (vehicle)', () => {
     expect(fitGeometryToEvidence(sedan(), lowLong(), { signal: controller.signal })).toMatchObject({ status: 'aborted' });
   });
   it('baseline é genuíno: igual ao objectivo da geometria por omissão, nunca o do vencedor', () => {
-    const evidence = lowLong();
+    const evidence = tallShort();
     const result = fitGeometryToEvidence(sedan(), evidence);
     expect(result.status).toBe('fitted');
     if (result.status !== 'fitted') return;
-    // recomputação independente do baseline a partir da geometria default compilada
-    const compiled = compileFoundry(sedan(), {}); compiled.buildAll();
-    const target = evidenceProfile(evidence);
-    const geo = geometryProfile(compiled.root); compiled.retire();
-    const expectedBaseline = target.reduce((s, v, i) => s + Math.abs(v - (geo.profile[i] ?? 0)), 0) / target.length
-      + 0.5 * Math.abs(Math.log(geo.aspect / Math.max(0.2, evidence.aspect)));
+    // recomputação independente: 1 − IoU da silhueta projectada default (mesmo lod dos candidatos) vs máscara reamostrada
+    const compiled = compileFoundry(sedan(), { lod: 0 }); compiled.buildAll();
+    const expectedBaseline = 1 - gridIoU(projectedSilhouette(compiled.root), resampleEvidenceMask(evidence));
+    compiled.retire();
     expect(result.baselineObjective).toBeCloseTo(expectedBaseline, 9);
-    expect(result.objective).toBeLessThanOrEqual(result.baselineObjective + 1e-9);
-    if (result.objective < result.baselineObjective - 1e-9) expect(result.baselineObjective).not.toBeCloseTo(result.objective, 9);
+    expect(result.baselineSilhouetteIou).toBeCloseTo(1 - expectedBaseline, 9);
+    expect(result.objective).toBeLessThan(result.baselineObjective);
+    expect(result.baselineObjective).not.toBeCloseTo(result.objective, 9);
   }, 60_000);
   it('identidade de cache: silhuetas com aspecto/simetria/rácio iguais mas perfis diferentes não partilham chave', () => {
     const base = lowLong();
@@ -113,6 +114,25 @@ describe('image-conditioned fitting (vehicle)', () => {
     second.retire();
     provider.dispose();
   }, 120_000);
+  it('falha fechado: máscara fragmentada/contaminada é recusada antes de qualquer fitting', () => {
+    const mask = new Uint8Array(100 * 60);
+    for (let y = 0; y < 60; y += 6) for (let x = 0; x < 100; x += 6) for (let dy = 0; dy < 3; dy++) for (let dx = 0; dx < 3; dx++) mask[(y + dy) * 100 + (x + dx)] = 1;
+    const evidence = { width: 100, height: 60, foregroundRatio: 0.25, bbox: { x0: 0, y0: 0, x1: 99, y1: 59 }, aspect: 3, symmetry: 0.2, colours: [], mask, largestComponentShare: 0.02 };
+    expect(assessSilhouetteReliability(evidence).reliable).toBe(false);
+    const result = fitGeometryToEvidence(sedan(), evidence);
+    expect(result.status).toBe('insufficient_evidence');
+    if (result.status === 'insufficient_evidence') expect(result.reason).toMatch(/não fiável|fragmentado/);
+  });
+  it('silhueta projectada usa triângulos reais: IoU alto contra a própria projecção reamostrada', () => {
+    const r = compileFoundry(sedan(), {}); r.buildAll();
+    const projected = projectedSilhouette(r.root); r.retire();
+    expect(projected.some((v) => v === 1)).toBe(true);
+    expect(gridIoU(projected, projected)).toBe(1);
+    // a projecção tem de ter a forma de um carro: mais larga que alta e com massa na metade inferior
+    let top = 0, bottom = 0;
+    for (let y = 0; y < 36; y++) for (let x = 0; x < 72; x++) { if (y < 12) top += projected[y * 72 + x]!; else if (y >= 24) bottom += projected[y * 72 + x]!; }
+    expect(bottom).toBeGreaterThan(top);
+  });
   it('perfil geométrico é mensurável e finito', () => {
     const r = compileFoundry(sedan(), {}); r.buildAll();
     const g = geometryProfile(r.root); r.retire();

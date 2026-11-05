@@ -41,6 +41,27 @@ export class FoundryGeometry {
   /** Chamado quando um fitting assíncrono termina e foi aplicado à cache (o chamador regenera). */
   onFitted(l: (result: FittingResult) => void): () => void { this.fittingListeners.add(l); return () => this.fittingListeners.delete(l); }
 
+  private fittingTransportValue: 'worker' | 'async-fallback' | null = null;
+  /** Como o último fitting foi executado (transparência de desempenho). */
+  get fittingTransport(): 'worker' | 'async-fallback' | null { return this.fittingTransportValue; }
+
+  private runFittingInWorker(plan: SpatialPlanV2, evidence: ImageEvidence, signal: AbortSignal): Promise<FittingResult> {
+    return new Promise((resolve, reject) => {
+      const worker = new Worker(new URL('./fitting.worker.ts', import.meta.url), { type: 'module' });
+      const id = `fit-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const done = (fn: () => void) => { worker.terminate(); fn(); };
+      const timer = setTimeout(() => done(() => reject(new Error('WORKER_TIMEOUT'))), 60_000);
+      signal.addEventListener('abort', () => { clearTimeout(timer); done(() => reject(new Error('ABORTED'))); }, { once: true });
+      worker.onmessage = (e: MessageEvent<{ id: string; result?: FittingResult; error?: string }>) => {
+        if (e.data.id !== id) return;
+        clearTimeout(timer);
+        done(() => (e.data.result ? resolve(e.data.result) : reject(new Error(e.data.error ?? 'WORKER_ERROR'))));
+      };
+      worker.onerror = () => { clearTimeout(timer); done(() => reject(new Error('WORKER_ERROR'))); };
+      worker.postMessage({ id, plan, evidence: { ...evidence, mask: Array.from(evidence.mask) } });
+    });
+  }
+
   private scheduleFitting(plan: SpatialPlanV2, evidence: ImageEvidence, cacheKey: string): void {
     if (this.fittingInFlight.has(cacheKey)) return;
     this.fittingInFlight.add(cacheKey);
@@ -49,10 +70,7 @@ export class FoundryGeometry {
     this.fittingAbort?.abort();
     const controller = new AbortController();
     this.fittingAbort = controller;
-    void fitGeometryToEvidenceAsync(plan, evidence, {
-      signal: controller.signal,
-      onProgress: (progress) => { if (epoch === this.evidenceEpoch) this.lastFittingProgress = progress; },
-    }).then((result) => {
+    const finish = (result: FittingResult) => {
       this.fittingInFlight.delete(cacheKey);
       // Stale-result rejection: outra imagem/plano entretanto tornou este resultado obsoleto.
       if (controller.signal.aborted || epoch !== this.evidenceEpoch || this.loaded !== planIdentity) return;
@@ -61,7 +79,19 @@ export class FoundryGeometry {
       this.lastFitting = result;
       this.lastFittingProgress = null;
       this.fittingListeners.forEach((l) => l(result));
-    }).catch(() => { this.fittingInFlight.delete(cacheKey); /* erro inesperado: fica o fallback conceptual */ });
+    };
+    const runAsyncFallback = () => {
+      this.fittingTransportValue = 'async-fallback';
+      void fitGeometryToEvidenceAsync(plan, evidence, {
+        signal: controller.signal,
+        onProgress: (progress) => { if (epoch === this.evidenceEpoch) this.lastFittingProgress = progress; },
+      }).then(finish).catch(() => { this.fittingInFlight.delete(cacheKey); });
+    };
+    if (typeof Worker !== 'undefined') {
+      this.runFittingInWorker(plan, evidence, controller.signal)
+        .then((result) => { if (!controller.signal.aborted) this.fittingTransportValue = 'worker'; finish(result); })
+        .catch(() => { if (!controller.signal.aborted) runAsyncFallback(); else this.fittingInFlight.delete(cacheKey); });
+    } else runAsyncFallback();
   }
 
   compile = (plan: SpatialPlanV2): FoundryResult => {

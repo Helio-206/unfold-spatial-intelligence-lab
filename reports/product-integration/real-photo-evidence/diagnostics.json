@@ -1,30 +1,25 @@
 {
   "car": {
     "evidence": {
-      "aspect": 1.95,
-      "symmetry": 0.31,
-      "foregroundRatio": 0.261,
+      "aspect": 2.3,
+      "symmetry": 0.53,
+      "foregroundRatio": 0.184,
       "bbox": {
         "x0": 0,
         "y0": 0,
-        "x1": 159,
-        "y1": 81
-      }
+        "x1": 100,
+        "y1": 43
+      },
+      "largestComponentShare": 0.707
     },
     "fitting": {
-      "status": "fitted",
-      "overrides": {
-        "cabinHeight": 0.52,
-        "rearSlope": 0
-      },
-      "objective": 0.18571994844483886,
-      "baselineObjective": 0.18770509281518666,
-      "candidates": 25,
-      "summary": "Fitting por silhueta v2 (25 candidatos limitados): cabinHeight=0.52, rearSlope=0; erro de perfil 0.188 → 0.186. Parâmetros inferidos da imagem, não dimensões verificadas."
+      "status": "insufficient_evidence",
+      "reason": "Silhueta não fiável (falha fechado): objecto fragmentado (maior componente 71% do primeiro plano < 75%); preenchimento da bbox implausível para uma silhueta de veículo (54% < 55%); contaminação nas bordas (25% da máscara na faixa exterior > 15%). Sem máscara de confiança não há fitting — uma recusa correcta vale mais que um modelo enganador."
     },
+    "fittingTransport": "worker",
     "params": {
-      "cabinHeight": 0.52,
-      "rearSlope": 0
+      "cabinHeight": 0.38,
+      "rearSlope": 0.7
     },
     "defaults": {
       "cabinHeight": 0.38,
@@ -34,34 +29,57 @@
   },
   "bus": {
     "evidence": {
-      "aspect": 1.95,
-      "symmetry": 0.27,
-      "foregroundRatio": 0.256,
+      "aspect": 2.83,
+      "symmetry": 0.11,
+      "foregroundRatio": 0.139,
       "bbox": {
-        "x0": 0,
-        "y0": 0,
+        "x0": 7,
+        "y0": 22,
         "x1": 159,
-        "y1": 81
-      }
+        "y1": 75
+      },
+      "largestComponentShare": 0.543
     },
     "fitting": {
-      "status": "fitted",
-      "overrides": {
-        "cabinHeight": 0.52,
-        "rearSlope": 0
-      },
-      "objective": 0.43826954397199,
-      "baselineObjective": 0.4399589405736494,
-      "candidates": 25,
-      "summary": "Fitting por silhueta v2 (25 candidatos limitados): cabinHeight=0.52, rearSlope=0; erro de perfil 0.440 → 0.438. Parâmetros inferidos da imagem, não dimensões verificadas."
+      "status": "insufficient_evidence",
+      "reason": "Silhueta não fiável (falha fechado): objecto fragmentado (maior componente 54% do primeiro plano < 75%); preenchimento da bbox implausível para uma silhueta de veículo (23% < 55%). Sem máscara de confiança não há fitting — uma recusa correcta vale mais que um modelo enganador."
     },
+    "fittingTransport": "worker",
     "params": {
-      "cabinHeight": 0.52,
-      "rearSlope": 0
+      "cabinHeight": 0.4,
+      "rearSlope": 0.9
     },
     "defaults": {
       "cabinHeight": 0.4,
       "rearSlope": 0.9
+    },
+    "photorealActive": true
+  },
+  "porsche": {
+    "evidence": {
+      "aspect": 4.24,
+      "symmetry": 0.59,
+      "foregroundRatio": 0.088,
+      "bbox": {
+        "x0": 18,
+        "y0": 53,
+        "x1": 140,
+        "y1": 81
+      },
+      "largestComponentShare": 0.518
+    },
+    "fitting": {
+      "status": "insufficient_evidence",
+      "reason": "Silhueta não fiável (falha fechado): objecto fragmentado (maior componente 52% do primeiro plano < 75%); preenchimento da bbox implausível para uma silhueta de veículo (42% < 55%). Sem máscara de confiança não há fitting — uma recusa correcta vale mais que um modelo enganador."
+    },
+    "fittingTransport": "worker",
+    "params": {
+      "cabinHeight": 0.34,
+      "rearSlope": 0.45
+    },
+    "defaults": {
+      "cabinHeight": 0.34,
+      "rearSlope": 0.45
     },
     "photorealActive": true
   }
