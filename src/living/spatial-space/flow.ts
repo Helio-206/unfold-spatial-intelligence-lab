@@ -54,6 +54,8 @@ export type SpaceFlowOptions = {
   onImage?: (dataUrl: string) => void;
   /** Experimental: the exact reviewed plan that has just been put on stage (binds image evidence to this plan, never to a later one). */
   onPlanShown?: (plan: SpatialPlanV2) => void;
+  /** Experimental: the person corrected the foreground outline in review. Bound by the caller to this plan's source hash; stale after any new upload. */
+  onCorrectedMask?: (info: { polygon: Array<[number, number]>; sourceSha256: string }) => void;
 };
 export type GeometrySeam = { compile: (plan: SpatialPlanV2) => import('../../universal-spatial/geometry-compiler-v2').CompiledSpatialPlanV2; attach(onReady: () => void): void; report(): unknown; dispose(): void };
 
@@ -123,6 +125,12 @@ export class SpaceFlow {
   private listing: { spaces: SpaceListing[]; damaged: StoreProblem[] } = { spaces: [], damaged: [] };
   private confirmDelete: string | null = null;
   private pendingLeave: (() => void) | null = null;
+  // Contorno corrigido pela pessoa (revisão de fotografia): polígono em fracções da imagem.
+  private contourOpen = false;
+  private contourPoints: Array<[number, number]> = [];
+  private contourPreview = false;
+  private correctedPolygon: Array<[number, number]> | null = null;
+  private correctedForSha: string | null = null;
   private readonly panel: HTMLElement;
   private readonly create: Create;
   private readonly api: Api;
@@ -216,6 +224,8 @@ export class SpaceFlow {
 
   async submit(): Promise<void> {
     if (this.phase !== 'intake' || !this.source) return;
+    // Nova submissão: qualquer contorno corrigido anterior fica stale e é descartado.
+    this.correctedPolygon = null; this.correctedForSha = null; this.contourOpen = false; this.contourPoints = [];
     const source = this.source; this.abort?.abort(); const mine = this.abort = new AbortController();
     this.phase = 'waiting'; this.startedAt = Date.now(); this.failure = null; this.render();
     clearInterval(this.tick); this.tick = window.setInterval(() => { if (this.phase === 'waiting') this.render(); }, 1000);
@@ -650,7 +660,95 @@ export class SpaceFlow {
       w.setComposerIntake({ onText: (t) => this.takeText(t), onFile: (f) => void this.takeFile(f), placeholder: 'Descreva qualquer objecto, ou anexe uma fotografia', status: 'PNG, JPEG ou WebP · até 10 MB · a Meta propõe, você revê' });
     } else w.setComposerIntake({ onText: () => undefined, onFile: () => undefined, placeholder: this.phase === 'waiting' ? 'A aguardar o modelo…' : this.phase === 'library' ? 'Escolha um Space guardado ou comece um novo' : 'Termine este passo para continuar', status: this.phase === 'waiting' ? 'A pedir o plano; pode cancelar no painel.' : this.phase === 'review' ? 'A revisão é sua.' : 'Use o painel.', disabled: true });
     const keep = this.panel.querySelector<HTMLTextAreaElement>('#sp-text'); const typed = keep ? keep.value : undefined;
-    this.panel.innerHTML = this.phase === 'intake' ? this.intakeHtml(typed) : this.phase === 'library' ? this.libraryHtml() : this.phase === 'waiting' ? this.waitingHtml() : this.phase === 'failed' ? this.failedHtml() : this.phase === 'leaving' ? this.leavingHtml() : this.reviewHtml();
+    this.panel.innerHTML = this.contourOpen && this.phase === 'review' ? this.contourHtml() : this.phase === 'intake' ? this.intakeHtml(typed) : this.phase === 'library' ? this.libraryHtml() : this.phase === 'waiting' ? this.waitingHtml() : this.phase === 'failed' ? this.failedHtml() : this.phase === 'leaving' ? this.leavingHtml() : this.reviewHtml();
+    if (this.contourOpen && this.phase === 'review') this.wireContourCanvas();
+  }
+
+  // ------------------------------------------------------------------------------------------------ contour correction
+  private contourHtml(): string {
+    const source = this.source;
+    return `<div class="sp-card"><h1 class="sp-h1">Corrigir contorno</h1>
+      <p class="u-small">Arraste os pontos para o contorno coincidir com o objecto na fotografia. A máscara automática falhou a validação de silhueta; o contorno que confirmar fica registado como <b>corrigido por si</b> (proveniência distinta, ligada a esta fotografia) e só é usado para esta cena.</p>
+      ${source?.kind === 'image' ? `<canvas id="sp-contour" width="640" height="420" style="width:100%;height:auto;background:#000;border-radius:8px;touch-action:none" aria-label="Editor de contorno sobre a fotografia"></canvas>` : '<p class="sp-problem">Sem fotografia nesta fonte.</p>'}
+      <div class="sp-row"><button class="u-btn u-btn--outline" type="button" data-sp="contour-preview">${this.contourPreview ? 'Ver fotografia' : 'Pré-visualizar máscara'}</button><span class="sp-grow"></span><button class="u-btn u-btn--outline" type="button" data-sp="contour-cancel">Cancelar</button><button class="u-btn u-btn--primary" type="button" data-sp="contour-confirm">Confirmar contorno</button></div>
+      <p class="u-label">${this.contourPoints.length} pontos · arrastar para ajustar</p></div>`;
+  }
+
+  /** Define o contorno (fracções da imagem). O mesmo caminho usado pelo arrasto no canvas. */
+  setContourPoints(points: Array<[number, number]>): void {
+    this.contourPoints = points.map(([x, y]) => [Math.min(1, Math.max(0, x)), Math.min(1, Math.max(0, y))] as [number, number]);
+    if (this.contourOpen) this.drawContour();
+  }
+  get contourState(): { open: boolean; points: Array<[number, number]>; correctedForSha: string | null } {
+    return { open: this.contourOpen, points: this.contourPoints, correctedForSha: this.correctedForSha };
+  }
+
+  private async openContour(): Promise<void> {
+    const source = this.source;
+    if (source?.kind !== 'image' || !this.reply) return;
+    this.contourOpen = true; this.contourPreview = false; this.render();
+    try {
+      const { evidenceFromDataUrl } = await import('../universal-foundry/browser');
+      const { initialOutlineFromEvidence } = await import('../universal-foundry/correction');
+      const evidence = await evidenceFromDataUrl(source.dataUrl);
+      if (evidence && this.contourOpen) { this.contourPoints = initialOutlineFromEvidence(evidence); this.drawContour(); }
+    } catch { /* sem evidência local: fica o rectângulo inicial do editor */ }
+    if (!this.contourPoints.length) this.contourPoints = [[0.2, 0.3], [0.8, 0.3], [0.8, 0.75], [0.2, 0.75]];
+    this.drawContour();
+  }
+
+  private drawContour(): void {
+    const canvas = this.panel.querySelector<HTMLCanvasElement>('#sp-contour');
+    const source = this.source;
+    if (!canvas || source?.kind !== 'image') return;
+    const ctx = canvas.getContext('2d'); if (!ctx) return;
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+      const dw = img.width * scale, dh = img.height * scale, ox = (canvas.width - dw) / 2, oy = (canvas.height - dh) / 2;
+      canvas.dataset.ox = String(ox); canvas.dataset.oy = String(oy); canvas.dataset.dw = String(dw); canvas.dataset.dh = String(dh);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, ox, oy, dw, dh);
+      if (this.contourPoints.length > 2) {
+        ctx.beginPath();
+        this.contourPoints.forEach(([x, y], i) => { const px = ox + x * dw, py = oy + y * dh; if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py); });
+        ctx.closePath();
+        if (this.contourPreview) { ctx.fillStyle = 'rgba(46, 204, 113, 0.45)'; ctx.fill(); }
+        ctx.strokeStyle = '#f5c518'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = '#f5c518';
+        for (const [x, y] of this.contourPoints) { ctx.beginPath(); ctx.arc(ox + x * dw, oy + y * dh, 5, 0, 7); ctx.fill(); }
+      }
+    };
+    img.src = source.dataUrl;
+  }
+
+  private wireContourCanvas(): void {
+    const canvas = this.panel.querySelector<HTMLCanvasElement>('#sp-contour');
+    if (!canvas) return;
+    this.drawContour();
+    let dragging = -1;
+    const toFraction = (event: PointerEvent): [number, number] => {
+      const rect = canvas.getBoundingClientRect();
+      const ox = Number(canvas.dataset.ox ?? 0), oy = Number(canvas.dataset.oy ?? 0), dw = Number(canvas.dataset.dw ?? canvas.width), dh = Number(canvas.dataset.dh ?? canvas.height);
+      const cx = (event.clientX - rect.left) * (canvas.width / rect.width), cy = (event.clientY - rect.top) * (canvas.height / rect.height);
+      return [Math.min(1, Math.max(0, (cx - ox) / dw)), Math.min(1, Math.max(0, (cy - oy) / dh))];
+    };
+    canvas.addEventListener('pointerdown', (event) => {
+      const [fx, fy] = toFraction(event);
+      dragging = this.contourPoints.findIndex(([x, y]) => Math.hypot(x - fx, y - fy) < 0.045);
+      if (dragging >= 0) { canvas.setPointerCapture(event.pointerId); this.contourPoints[dragging] = [fx, fy]; this.drawContour(); }
+    });
+    canvas.addEventListener('pointermove', (event) => { if (dragging >= 0) { this.contourPoints[dragging] = toFraction(event); this.drawContour(); } });
+    canvas.addEventListener('pointerup', () => { dragging = -1; });
+  }
+
+  private confirmContour(): void {
+    if (!this.reply || this.contourPoints.length < 3) return;
+    this.correctedPolygon = [...this.contourPoints];
+    this.correctedForSha = this.reply.plan.source.sha256;
+    this.contourOpen = false;
+    this.options.onCorrectedMask?.({ polygon: this.correctedPolygon, sourceSha256: this.correctedForSha });
+    this.render();
   }
 
   private sourcePreview(): string {
@@ -720,6 +818,7 @@ export class SpaceFlow {
       <details class="sp-meaning"><summary class="u-label">O que significam as etiquetas</summary><dl class="sp-legend">${(['observed', 'inferred', 'design_approximation', 'unknown'] as const).map((k) => `<div><dt><span class="u-chip ${k === 'observed' ? '' : 'u-chip--uncertain'}">${ORIGIN_LABEL[k]}</span></dt><dd class="u-label">${esc(ORIGIN_MEANING[k])}</dd></div>`).join('')}</dl></details>
       <ul class="sp-list" aria-label="Componentes propostos">${rows}</ul>
       <details class="sp-unknowns" aria-label="Desconhecidos" ${plan.units !== 'm' && this.options.workspace.root.clientWidth > 760 ? 'open' : ''}><summary class="u-label">${plan.units === 'm' ? 'O que o modelo declarou desconhecido' : 'Escala física desconhecida · o que o modelo declarou desconhecido'} (${plan.unknowns.length})</summary>${plan.unknowns.length ? `<ul>${plan.unknowns.slice(0, 8).map((u) => `<li>${esc(u)}</li>`).join('')}</ul>${plan.unknowns.length > 8 ? `<p class="u-label">e mais ${plan.unknowns.length - 8}, no aviso da cena.</p>` : ''}` : '<p class="u-small">Nenhum declarado.</p>'}</details>
+      ${plan.source.kind === 'image' ? `<div class="sp-row"><span class="u-label">${this.correctedPolygon && this.correctedForSha === plan.source.sha256 ? 'Contorno: corrigido por si · confirmado para esta fotografia (não é uma medição)' : 'Contorno: automático · se a silhueta extraída não coincidir com o objecto, corrija antes de construir'}</span><span class="sp-grow"></span><button class="u-btn u-btn--outline" type="button" data-sp="correct-contour">Corrigir contorno</button></div>` : ''}
       <div class="sp-foot">
       <label class="sp-check"><input type="checkbox" id="sp-ack" ${this.review.acknowledged ? 'checked' : ''}> Percebo que isto é uma concepção gerada por IA, não uma medição nem uma reconstrução fiel.</label>
       <div class="sp-row"><button class="u-btn u-btn--outline" type="button" data-sp="discard">Descartar</button><span class="sp-grow"></span><span class="u-label sp-blockers" aria-live="polite">${blockers.length ? esc(blockers.join(' · ')) : 'pronto a construir'}</span><button class="u-btn u-btn--primary" type="button" data-sp="build" ${blockers.length ? 'disabled' : ''}>Construir em 3D</button></div></div></div>`;
@@ -750,6 +849,10 @@ export class SpaceFlow {
     else if (action === 'keep-all') this.decideAll('keep');
     else if (action === 'reject-all') this.decideAll('reject');
     else if (action === 'build') this.build();
+    else if (action === 'correct-contour') void this.openContour();
+    else if (action === 'contour-preview') { this.contourPreview = !this.contourPreview; this.render(); }
+    else if (action === 'contour-cancel') { this.contourOpen = false; this.render(); }
+    else if (action === 'contour-confirm') this.confirmContour();
     else if (action === 'stay') { this.pendingLeave = null; this.phase = 'built'; this.panel.hidden = true; this.panel.replaceChildren(); this.updateComposer(); }
     else if (action === 'leave') { const go = this.pendingLeave; this.pendingLeave = null; this.savedPlanJson = JSON.stringify(this.layer?.currentPlan ?? null); go?.(); }
     else if (action === 'save-leave') { const go = this.pendingLeave; this.pendingLeave = null; void this.save().then((ok) => { if (ok) go?.(); else { this.phase = 'built'; this.panel.hidden = true; this.panel.replaceChildren(); this.updateComposer(); } }); }

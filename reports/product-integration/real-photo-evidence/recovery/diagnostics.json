@@ -1,0 +1,52 @@
+{
+  "car": {
+    "correctedVsAnnotationIoU": 0.931,
+    "correctedBboxErrorPx": 3,
+    "maskProvenance": "user_confirmed",
+    "fittingTransport": "worker",
+    "fitting": {
+      "status": "fitted",
+      "overrides": {
+        "cabinHeight": 0.2,
+        "rearSlope": 0
+      },
+      "objective": 0.2779956427015251,
+      "baselineObjective": 0.3463241806908769,
+      "candidates": 25,
+      "silhouetteIou": 0.7220043572984749,
+      "baselineSilhouetteIou": 0.6536758193091231,
+      "gridSaturated": [
+        "cabinHeight",
+        "rearSlope"
+      ],
+      "relativeImprovement": 0.19729646902807715,
+      "summary": "Fitting por silhueta projectada v2 (25 candidatos limitados): cabinHeight=0.2, rearSlope=0; IoU de silhueta 0.654 → 0.722; grelha saturada em cabinHeight, rearSlope (fronteira — não estendida para embelezar). Parâmetros inferidos da imagem, não dimensões verificadas."
+    },
+    "photorealActive": true
+  },
+  "skoda-kodiaq": {
+    "correctedVsAnnotationIoU": 0.959,
+    "correctedBboxErrorPx": 1,
+    "maskProvenance": "user_confirmed",
+    "fittingTransport": "worker",
+    "fitting": {
+      "status": "fitted",
+      "overrides": {
+        "cabinHeight": 0.2,
+        "rearSlope": 1
+      },
+      "objective": 0.2579225352112676,
+      "baselineObjective": 0.3601937472479084,
+      "candidates": 25,
+      "silhouetteIou": 0.7420774647887324,
+      "baselineSilhouetteIou": 0.6398062527520916,
+      "gridSaturated": [
+        "cabinHeight",
+        "rearSlope"
+      ],
+      "relativeImprovement": 0.2839338906298426,
+      "summary": "Fitting por silhueta projectada v2 (25 candidatos limitados): cabinHeight=0.2, rearSlope=1; IoU de silhueta 0.640 → 0.742; grelha saturada em cabinHeight, rearSlope (fronteira — não estendida para embelezar). Parâmetros inferidos da imagem, não dimensões verificadas."
+    },
+    "photorealActive": true
+  }
+}

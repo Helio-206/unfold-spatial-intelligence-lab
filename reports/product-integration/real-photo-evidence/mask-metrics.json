@@ -1,6 +1,8 @@
 {
   "car": {
     "iou": 0.199,
+    "correctedIou": 0.935,
+    "correctedBboxErrorPx": 1,
     "bboxErrorPx": 29,
     "extractedBbox": {
       "x0": 0,
@@ -31,6 +33,8 @@
   },
   "bus": {
     "iou": 0.222,
+    "correctedIou": 0.935,
+    "correctedBboxErrorPx": 1,
     "bboxErrorPx": 14,
     "extractedBbox": {
       "x0": 7,
@@ -58,8 +62,39 @@
     },
     "heldOut": false
   },
+  "skoda-kodiaq": {
+    "iou": 0.291,
+    "correctedIou": 0.962,
+    "correctedBboxErrorPx": 1,
+    "bboxErrorPx": 21,
+    "extractedBbox": {
+      "x0": 0,
+      "y0": 45,
+      "x1": 155,
+      "y1": 93
+    },
+    "annotatedBbox": {
+      "x0": 11,
+      "y0": 24,
+      "x1": 153,
+      "y1": 90
+    },
+    "reliability": {
+      "reliable": true,
+      "reasons": [],
+      "metrics": {
+        "largestComponentShare": 0.9395719681074276,
+        "bboxFill": 0.5858189429618001,
+        "borderBandShare": 0.0482358195623046,
+        "foregroundRatio": 0.26156542056074766
+      }
+    },
+    "heldOut": true
+  },
   "porsche-911": {
     "iou": 0.263,
+    "correctedIou": 0.942,
+    "correctedBboxErrorPx": 1,
     "bboxErrorPx": 20,
     "extractedBbox": {
       "x0": 18,

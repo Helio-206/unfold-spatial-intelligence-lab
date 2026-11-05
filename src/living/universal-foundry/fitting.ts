@@ -45,7 +45,8 @@ export function assessSilhouetteReliability(evidence: ImageEvidence): Silhouette
   // frouxo (0.55/0.30/0.28) APROVAVA as três máscaras más — medido, não presumido.
   const reasons: string[] = [];
   if (metrics.largestComponentShare < 0.75) reasons.push(`objecto fragmentado (maior componente ${(metrics.largestComponentShare * 100).toFixed(0)}% do primeiro plano < 75%)`);
-  if (metrics.bboxFill < 0.55 || metrics.bboxFill > 0.92) reasons.push(`preenchimento da bbox implausível para uma silhueta de veículo (${(metrics.bboxFill * 100).toFixed(0)}% < 55%)`);
+  if (metrics.bboxFill < 0.55) reasons.push(`preenchimento da bbox implausível para uma silhueta de veículo (${(metrics.bboxFill * 100).toFixed(0)}% < 55%)`);
+  if (metrics.bboxFill > 0.92) reasons.push(`preenchimento da bbox implausível para uma silhueta de veículo (${(metrics.bboxFill * 100).toFixed(0)}% > 92%: rectângulo, não silhueta)`);
   if (metrics.borderBandShare > 0.15) reasons.push(`contaminação nas bordas (${(metrics.borderBandShare * 100).toFixed(0)}% da máscara na faixa exterior > 15%)`);
   if (metrics.foregroundRatio < 0.03 || metrics.foregroundRatio > 0.7) reasons.push(`primeiro plano fora do intervalo credível (${(metrics.foregroundRatio * 100).toFixed(0)}%)`);
   return { reliable: reasons.length === 0, reasons, metrics };

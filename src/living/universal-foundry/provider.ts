@@ -11,10 +11,11 @@ import { withParams } from './recipe';
 import { canonicalPlanJson } from '../../universal-spatial/review-v1';
 import { spatialPlanFingerprintV2 } from '../../universal-spatial/api-client';
 import { fitGeometryToEvidenceAsync, fittingCacheKey, type FittingProgress, type FittingResult } from './fitting';
+import { correctedEvidence, type CorrectedMaskBinding } from './correction';
 
 export type StorageLike = { getItem(k: string): string | null; setItem(k: string, v: string): void };
 const KEY = 'unfold.foundry.params.v2';
-export type EvidenceBinding = { plan: SpatialPlanV2; planFingerprint: string; sourceSha256: string; originalSha256: string; preparedSha256: string; preparation: string; generationId: string; recipeVersion: 1 };
+export type EvidenceBinding = { plan: SpatialPlanV2; planFingerprint: string; sourceSha256: string; originalSha256: string; preparedSha256: string; preparation: string; generationId: string; recipeVersion: 1; correctedMask?: { polygon: Array<[number, number]>; confirmedAt: string } };
 type BoundEvidence = { value: ImageEvidence; binding: EvidenceBinding; planIdentity: string };
 
 export class FoundryGeometry {
@@ -37,6 +38,9 @@ export class FoundryGeometry {
   private lastFittingProgress: FittingProgress | null = null;
   /** Resultado do fitting por silhueta da última compilação (null sem evidência ligada). */
   get fitting(): FittingResult | null { return this.lastFitting; }
+  private maskProvenanceValue: 'automatic' | 'user_confirmed' | null = null;
+  /** De onde veio a máscara usada na última compilação: automática ou confirmada pela pessoa. */
+  get maskProvenance(): 'automatic' | 'user_confirmed' | null { return this.maskProvenanceValue; }
   get fittingProgress(): FittingProgress | null { return this.lastFittingProgress; }
   /** Chamado quando um fitting assíncrono termina e foi aplicado à cache (o chamador regenera). */
   onFitted(l: (result: FittingResult) => void): () => void { this.fittingListeners.add(l); return () => this.fittingListeners.delete(l); }
@@ -98,7 +102,14 @@ export class FoundryGeometry {
     if (this.loaded !== this.keyFor(plan)) { if (this.loaded !== null) { this.evidenceEpoch++; this.evidence = null; } this.loaded = this.keyFor(plan); this.load(plan); }
     this.result?.retire();
     const binding = this.evidence;
-    const evidence = binding && binding.planIdentity === this.keyFor(plan) && plan.source.kind === 'image' && binding.binding.sourceSha256 === plan.source.sha256 && binding.binding.preparedSha256 === plan.source.sha256 ? binding.value : null;
+    const rawEvidence = binding && binding.planIdentity === this.keyFor(plan) && plan.source.kind === 'image' && binding.binding.sourceSha256 === plan.source.sha256 && binding.binding.preparedSha256 === plan.source.sha256 ? binding.value : null;
+    // Máscara corrigida pela pessoa: só com binding válido para ESTE plano/fonte (a mesma
+    // guarda anti-stale da evidência). Substitui a máscara automática e fica distinguível.
+    const corrected: CorrectedMaskBinding | null = rawEvidence && binding?.binding.correctedMask
+      ? { polygon: binding.binding.correctedMask.polygon, confirmedAt: binding.binding.correctedMask.confirmedAt, provenance: 'user_confirmed' }
+      : null;
+    const evidence = rawEvidence && corrected ? correctedEvidence(rawEvidence, corrected) : rawEvidence;
+    this.maskProvenanceValue = evidence ? (corrected ? 'user_confirmed' : 'automatic') : null;
     // Fitting NUNCA corre sincronamente aqui: compilar é o caminho de render interactivo.
     // Com resultado cacheado (identidade = versão + plano + hash da máscara) aplica já;
     // sem ele, agenda o fitting assíncrono e apresenta o conceptual até ele chegar.
@@ -116,6 +127,7 @@ export class FoundryGeometry {
       }
     }
     this.result = compileFoundry(plan, { overrides: { ...fitted, ...this.overrides }, seed: this.seed, evidence });
+    if (this.result.recipe && corrected) this.result.recipe.unknowns.push(`Contorno corrigido e confirmado pela pessoa em ${corrected.confirmedAt} (proveniência user_confirmed, ligado ao hash desta fonte; não é uma medição nem foi verificado por terceiros).`);
     if (this.result.recipe && this.lastFitting) {
       if (this.lastFitting.status === 'fitted') this.result.recipe.unknowns.push(this.lastFitting.summary);
       else if (this.lastFitting.status === 'pending') this.result.recipe.unknowns.push(this.lastFitting.reason);

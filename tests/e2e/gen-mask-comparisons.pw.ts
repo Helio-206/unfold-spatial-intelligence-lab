@@ -17,10 +17,12 @@ const browser = await chromium.launch({ executablePath: '/usr/bin/google-chrome'
 const page = await browser.newPage({ viewport: { width: 1500, height: 460 } });
 await page.goto('http://127.0.0.1:5369/living?debug-living=1', { waitUntil: 'domcontentloaded' });
 const annotations = JSON.parse(readFileSync(resolve('tests/fixtures/photos-real/annotations.json'), 'utf8')) as { cases: Array<{ id: string; file: string; polygon: Array<[number, number]>; heldOut?: boolean }> };
+const corrections = JSON.parse(readFileSync(resolve('tests/fixtures/photos-real/corrections.json'), 'utf8')) as { cases: Array<{ id: string; polygon: Array<[number, number]> }> };
 const metrics: Record<string, unknown> = {};
 for (const c of annotations.cases) {
   const dataUrl = `data:image/jpeg;base64,${readFileSync(resolve('tests/fixtures/photos-real', c.file)).toString('base64')}`;
-  const r = await page.evaluate(async ({ url, polygon }) => {
+  const corr = corrections.cases.find((x) => x.id === c.id)?.polygon;
+  const r = await page.evaluate(async ({ url, polygon, corr }) => {
     // @ts-ignore — módulos carregados pelo Vite dentro da página
     const { evidenceFromDataUrl } = await import('/src/living/universal-foundry/browser.ts');
     // @ts-ignore — idem
@@ -32,9 +34,10 @@ for (const c of annotations.cases) {
     const truth = ev2.polygonMask(polygon as Array<[number, number]>, ev.width, ev.height);
     const truthBox = ev2.maskBbox(truth, ev.width, ev.height);
     const reliability = fit.assessSilhouetteReliability(ev);
+    const corrected = corr ? ev2.polygonMask(corr as Array<[number, number]>, ev.width, ev.height) : null;
     // desenha os três painéis (sem funções nomeadas: o evaluate serializado não as tolera)
     const panels: Record<string, string> = {};
-    const variants: Array<[string, Uint8Array | null]> = [['input', null], ['extracted', ev.mask], ['annotated', truth]];
+    const variants: Array<[string, Uint8Array | null]> = [['input', null], ['extracted', ev.mask], ['annotated', truth], ['corrected', corrected]];
     for (const [name, mask] of variants) {
       const canvas = document.createElement('canvas'); canvas.width = ev.width * 3; canvas.height = ev.height * 3;
       const ctx = canvas.getContext('2d')!;
@@ -57,21 +60,24 @@ for (const c of annotations.cases) {
     return {
       metrics: {
         iou: +ev2.silhouetteIoU(ev.mask, truth).toFixed(3),
+        correctedIou: corrected ? +ev2.silhouetteIoU(corrected, truth).toFixed(3) : null,
+        correctedBboxErrorPx: corrected ? ev2.bboxErrorPx(ev2.maskBbox(corrected, ev.width, ev.height), truthBox) : null,
         bboxErrorPx: ev2.bboxErrorPx(ev.bbox, truthBox),
         extractedBbox: ev.bbox, annotatedBbox: truthBox,
         reliability,
       },
-      input: panels.input!, extracted: panels.extracted!, annotated: panels.annotated!,
+      input: panels.input!, extracted: panels.extracted!, annotated: panels.annotated!, corrected: panels.corrected!,
     };
-  }, { url: dataUrl, polygon: c.polygon });
+  }, { url: dataUrl, polygon: c.polygon, corr: corr ?? null });
   if (!r) continue;
   metrics[c.id] = { ...r.metrics, heldOut: !!c.heldOut };
   process.stdout.write(`${c.id} ${JSON.stringify(r.metrics)}\n`);
   await page.setContent(`<body style="margin:0;background:#111;color:#eee;font-family:system-ui">
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:6px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;padding:6px">
       <figure><img style="width:100%" src="${r.input}"><figcaption>INPUT ${c.file}${c.heldOut ? ' (held-out)' : ''}</figcaption></figure>
-      <figure><img style="width:100%" src="${r.extracted}"><figcaption>MÁSCARA EXTRAÍDA — IoU ${(r.metrics as { iou: number }).iou} vs anotação</figcaption></figure>
-      <figure><img style="width:100%" src="${r.annotated}"><figcaption>ANOTAÇÃO MANUAL (1 anotador, não revista)</figcaption></figure>
+      <figure><img style="width:100%" src="${r.extracted}"><figcaption>AUTOMÁTICA — IoU ${(r.metrics as { iou: number }).iou} vs referência</figcaption></figure>
+      <figure><img style="width:100%" src="${r.corrected}"><figcaption>CORRIGIDA PELO UTILIZADOR — IoU ${(r.metrics as { correctedIou: number | null }).correctedIou ?? '—'} vs referência</figcaption></figure>
+      <figure><img style="width:100%" src="${r.annotated}"><figcaption>REFERÊNCIA MANUAL (1 anotador, não revista)</figcaption></figure>
     </div>
     <p style="padding:0 10px">Veredicto: ${JSON.stringify((r.metrics as { reliability: { reliable: boolean; reasons: string[] } }).reliability)}</p></body>`);
   await page.waitForTimeout(500);

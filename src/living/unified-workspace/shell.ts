@@ -90,15 +90,20 @@ export function mountLivingShell(app: HTMLElement): void {
   // fingerprint and source hashes. A newer picture invalidates the pending one by generation.
   let pendingImage: { dataUrl: string; generation: number } | null = null;
   let imageGeneration = 0;
+  // Contorno corrigido na revisão: só vale para o sourceSha256 confirmado; qualquer
+  // upload novo o invalida antes de poder ser aplicado a outro plano/Space.
+  let pendingCorrected: { polygon: Array<[number, number]>; sourceSha256: string } | null = null;
   const space = new SpaceFlow({
     workspace, host: workspace.panelHost,
     ...(foundry ? {
       geometry: () => photoreal ?? foundry,
       onImage: (dataUrl: string) => {
         imageGeneration++;
+        pendingCorrected = null; // upload novo: contorno anterior fica stale de imediato
         if (!dataUrl) { pendingImage = null; void foundry.setEvidence(null); return; }
         pendingImage = { dataUrl, generation: imageGeneration };
       },
+      onCorrectedMask: (info) => { pendingCorrected = info; },
       onPlanShown: (plan) => {
         const pending = pendingImage;
         if (!pending || plan.source.kind !== 'image') return;
@@ -111,7 +116,10 @@ export function mountLivingShell(app: HTMLElement): void {
           const originalSha256 = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
           const planFingerprint = await spatialPlanFingerprintV2(plan);
           if (generation !== imageGeneration) return;
-          await foundry.setEvidence(evidence, { plan, planFingerprint, sourceSha256: plan.source.sha256, originalSha256, preparedSha256: plan.source.sha256, preparation: 'workspace-image-submit', generationId: `${plan.source.sha256}:${generation}`, recipeVersion: 1 });
+          const correctedMask = pendingCorrected && pendingCorrected.sourceSha256 === plan.source.sha256
+            ? { polygon: pendingCorrected.polygon, confirmedAt: new Date().toISOString() }
+            : undefined;
+          await foundry.setEvidence(evidence, { plan, planFingerprint, sourceSha256: plan.source.sha256, originalSha256, preparedSha256: plan.source.sha256, preparation: 'workspace-image-submit', generationId: `${plan.source.sha256}:${generation}`, recipeVersion: 1, ...(correctedMask ? { correctedMask } : {}) });
           if (generation === imageGeneration) space.layer?.regenerate();
         })();
       },

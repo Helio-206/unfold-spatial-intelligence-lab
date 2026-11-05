@@ -15,6 +15,14 @@
       "polygon": [[0.015, 0.35], [0.03, 0.22], [0.10, 0.175], [0.75, 0.24], [0.90, 0.29], [0.935, 0.38], [0.93, 0.70], [0.88, 0.78], [0.80, 0.80], [0.78, 0.70], [0.40, 0.72], [0.38, 0.82], [0.27, 0.82], [0.25, 0.70], [0.05, 0.68], [0.015, 0.55]]
     },
     {
+      "id": "skoda-kodiaq",
+      "file": "skoda-kodiaq.jpg",
+      "viewpoint": "true side profile, vegetation behind",
+      "heldOut": true,
+      "heldOutNote": "unseen during gate/threshold calibration; annotated only for this final measurement",
+      "polygon": [[0.075, 0.42], [0.085, 0.33], [0.13, 0.26], [0.30, 0.225], [0.55, 0.225], [0.72, 0.25], [0.85, 0.33], [0.945, 0.42], [0.965, 0.55], [0.95, 0.66], [0.88, 0.68], [0.86, 0.845], [0.74, 0.855], [0.72, 0.68], [0.30, 0.68], [0.285, 0.85], [0.165, 0.855], [0.15, 0.66], [0.085, 0.60], [0.07, 0.50]]
+    },
+    {
       "id": "porsche-911",
       "file": "porsche-911.jpg",
       "viewpoint": "true side profile; trucks and a tarped vehicle behind",

@@ -100,6 +100,33 @@ Duas tentativas de melhoria foram medidas e rejeitadas com dados: flood-fill de 
 
 **Revalidação:** suite **2604/2604**, `tsc`/`build` verdes (inclui chunk do worker), e2e de convergência da porta verde, adopt real e transacções E1.4.1 cobertos como antes.
 
+## Recuperação com contorno corrigido (sobre `e7dffb0`)
+
+**Pergunta desta correcção:** a segmentação manual chega? E com a silhueta certa, a geometria actual aproxima-a? As duas respostas foram medidas separadamente.
+
+**Recuperação (produto).** A revisão de fotografia em `/living` tem agora a acção discreta **«Corrigir contorno»**: editor sobre a fotografia original com o contorno automático como ponto de partida editável (arrastar pontos), pré-visualização da máscara e confirmação. A máscara confirmada tem proveniência `user_confirmed` em todo o sistema (provider, painel Foundry, unknowns da receita), está ligada ao `sourceSha256` do plano revisto + fingerprint + geração, e fica stale com qualquer upload novo ou substituição de Space (testes unitários de proveniência e de fuga entre evidências; o fluxo descarta a correcção em cada nova submissão). O fitting corre com a máscara confirmada no Worker, com os mesmos gates, cancelamento e isolamento autoritativo.
+
+**Medição 1 — a máscara corrigida isola o objecto?** Contra a referência (anotações da primeira passagem; correcções da segunda; mesmo anotador — limitação declarada, não é revisão independente):
+
+| Fotografia | IoU automática | IoU corrigida | Erro bbox corrigida |
+|---|---|---|---|
+| car.jpg | 0.199 | **0.935** | 3 px |
+| bus.jpg | 0.222 | **0.935** | (ver `mask-metrics.json`) |
+| porsche-911.jpg (held-out) | 0.263 | **0.962** | (ver `mask-metrics.json`) |
+| skoda-kodiaq.jpg (não vista até aqui, CC BY 4.0) | (recusada) | **0.942** | 1–3 px |
+
+A correcção manual resolve a segmentação nestes casos, com margem larga sobre o critério de 0.50.
+
+**Medição 2 — a geometria aproxima a silhueta certa?** Julgada só contra a máscara aceite (IoU de silhueta projectada, câmara fixa lateral): hatchback do carro **0.654 → 0.722** (+19.7% relativo); SUV do Skoda **0.640 → 0.742** (+28.4%). Há melhoria real e visível no objectivo, mas **os dois vencedores saturam as duas fronteiras da grelha** (cabinHeight no mínimo, rearSlope nos extremos): o óptimo quer sair do espaço de parâmetros. Erro por terços da silhueta (carro: frente 0.649 / meio 0.836 / traseira 0.671) mostra o resíduo concentrado onde os parâmetros não chegam.
+
+**DOF em falta, identificados (não escondidos):** inclinação do capot/frente e forma da traseira para lá do `rearSlope` grosseiro; proporção global comprimento:altura do corpo (acoplada ao arquétipo, sem parâmetro); posição/raio das rodas e distância entre eixos; curvatura da linha do tejadilho. Estender os intervalos actuais só perseguiria a fronteira — a representação precisa destes graus de liberdade novos, o que é uma alteração de receita/arquétipos, não um ajuste de grelha.
+
+**Experiência no browser** (`real-photo-recovery.pw.ts`, OK; screenshots em `real-photo-evidence/recovery/`): fotografia → revisão → editor de contorno (screenshot com pré-visualização a coincidir com o SUV) → confirmar → adopt real → fitting `user_confirmed` via Worker → veredicto geométrico separado → photoreal → explicação → interacção transitória. Planos semânticos continuam fixtures rotulados casados por sha256; 0 chamadas pagas.
+
+**Veredicto da recuperação:** segmentação manual **suficiente** (IoU ≥ 0.93 nas quatro); geometria **parcialmente capaz** (melhora 20–28% mas satura e fica em IoU 0.72–0.74). **GO** para o caminho de recuperação como está; **NO-GO** para declarar reconstrução 3D fotográfica aceite: falta à receita uma classe de graus de liberdade (proporções do corpo e forma frente/traseira), cuja adição é redesign da receita vehicle — fora desta correcção, e agora identificado com números em vez de presumido.
+
+**Revalidação:** suite **2607/2607** (169 ficheiros), `tsc`/`build` verdes, e2e de recusa automática (3 fotos), convergência da porta e living-intelligence reexecutados verdes; comportamento fail-closed automático inalterado.
+
 ## GO/NO-GO
 
-**GO** para a experiência convergente atrás de flags e para o comportamento fail-closed do pipeline fotográfico. **NO-GO** para produção e — explicitamente — **NO-GO para fidelidade fotográfica**: com o segmentador clássico actual, as máscaras de fotografias reais medidas têm IoU 0.20–0.27 contra anotação manual, e o sistema recusa correctamente em vez de ajustar. Aceitar reconstrução fotográfica exigiria um segmentador de outra classe, fora do âmbito desta correcção.
+**GO** para a experiência convergente atrás de flags, para o fail-closed automático e para o caminho de recuperação com contorno confirmado. **NO-GO** para produção e para reconstrução fotográfica aceite: mesmo com a silhueta certa, a geometria vehicle actual satura os seus dois parâmetros e fica a IoU 0.72–0.74 — o passo seguinte seria redesenhar os graus de liberdade da receita, decisão que fica registada e não executada nesta correcção.
