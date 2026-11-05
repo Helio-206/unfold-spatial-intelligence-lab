@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Group, Mesh, BoxGeometry, MeshStandardMaterial, PerspectiveCamera, Scene } from 'three';
+import { Group, Mesh, BoxGeometry, MeshStandardMaterial } from 'three';
 import { cookTorrance, dielectricF0, effectiveRoughness, fresnelSchlick, ggxDistribution, smithJoint, PHOTOREAL_BRDF_GLSL } from '../src/living/photoreal/brdf';
 import { PHOTOREAL_PARAMS, photorealKindOf, swapPhotorealMaterials } from '../src/living/photoreal/materials';
 import { PHOTOREAL_PRESETS, selectPhotorealPreset } from '../src/living/photoreal/presets';
