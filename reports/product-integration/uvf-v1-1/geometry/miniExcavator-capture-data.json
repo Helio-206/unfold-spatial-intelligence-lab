@@ -1,0 +1,250 @@
+{
+  "name": "miniExcavator",
+  "fixtureSha256": "fd3456712666e167601d9b06c61616732bafccb28e33db65d90c437fe9d4f519",
+  "v3": {
+    "triangles": 2196,
+    "meshes": 8,
+    "instances": 8,
+    "ids": {
+      "track-l": 1,
+      "track-r": 1,
+      "house": 1,
+      "cab": 1,
+      "boom": 1,
+      "stick": 1,
+      "bucket": 1,
+      "cyl-boom": 1
+    },
+    "decisions": [
+      {
+        "componentId": "track-l",
+        "requested": "procedural_v2",
+        "used": "procedural_v2",
+        "reason": "Requested: V2.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 300
+      },
+      {
+        "componentId": "track-r",
+        "requested": "procedural_v2",
+        "used": "procedural_v2",
+        "reason": "Requested: V2.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 300
+      },
+      {
+        "componentId": "house",
+        "requested": "procedural_v2",
+        "used": "procedural_v2",
+        "reason": "Requested: V2.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 300
+      },
+      {
+        "componentId": "cab",
+        "requested": "procedural_v2",
+        "used": "procedural_v2",
+        "reason": "Requested: V2.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 300
+      },
+      {
+        "componentId": "boom",
+        "requested": "procedural_v2",
+        "used": "procedural_v2",
+        "reason": "Requested: V2.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 300
+      },
+      {
+        "componentId": "stick",
+        "requested": "procedural_v2",
+        "used": "procedural_v2",
+        "reason": "Requested: V2.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 300
+      },
+      {
+        "componentId": "bucket",
+        "requested": "procedural_v2",
+        "used": "procedural_v2",
+        "reason": "Requested: V2.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 300
+      },
+      {
+        "componentId": "cyl-boom",
+        "requested": "procedural_v2",
+        "used": "procedural_v2",
+        "reason": "Requested: V2.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 96
+      }
+    ],
+    "camera": {
+      "target": [
+        -2.220446049250313e-16,
+        1.299435026231896,
+        0
+      ],
+      "azimuth": -2.234021442552742,
+      "elevation": 0.24434609527920614,
+      "distance": 10.81557306753848
+    },
+    "resources": {
+      "geometries": 12,
+      "textures": 8,
+      "programs": 8
+    },
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "heap": 96835236,
+    "readyMs": 876
+  },
+  "foundry": {
+    "triangles": 18640,
+    "meshes": 27,
+    "instances": 27,
+    "ids": {
+      "track-l": 4,
+      "track-r": 4,
+      "house": 4,
+      "cab": 4,
+      "boom": 3,
+      "stick": 3,
+      "bucket": 2,
+      "cyl-boom": 3
+    },
+    "decisions": [
+      {
+        "componentId": "track-l",
+        "requested": "universal_foundry",
+        "used": "universal_foundry",
+        "reason": "construction/excavator: track; details: track shoes, rollers, sprocket and idler.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 4644
+      },
+      {
+        "componentId": "track-r",
+        "requested": "universal_foundry",
+        "used": "universal_foundry",
+        "reason": "construction/excavator: track; details: track shoes, rollers, sprocket and idler.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 4644
+      },
+      {
+        "componentId": "house",
+        "requested": "universal_foundry",
+        "used": "universal_foundry",
+        "reason": "construction/excavator: house; details: engine hood, vents, exhaust, access panels, fasteners.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 3148
+      },
+      {
+        "componentId": "cab",
+        "requested": "universal_foundry",
+        "used": "universal_foundry",
+        "reason": "construction/excavator: cab; details: glazing, pillars, roof, work light.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 3372
+      },
+      {
+        "componentId": "boom",
+        "requested": "universal_foundry",
+        "used": "universal_foundry",
+        "reason": "construction/excavator: boom; details: tapered I-section, doubler plates, pivot pins.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 428
+      },
+      {
+        "componentId": "stick",
+        "requested": "universal_foundry",
+        "used": "universal_foundry",
+        "reason": "construction/excavator: boom; details: tapered I-section, doubler plates, pivot pins.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 428
+      },
+      {
+        "componentId": "bucket",
+        "requested": "universal_foundry",
+        "used": "universal_foundry",
+        "reason": "construction/excavator: bucket; details: bucket profile, teeth.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 608
+      },
+      {
+        "componentId": "cyl-boom",
+        "requested": "universal_foundry",
+        "used": "universal_foundry",
+        "reason": "construction/excavator: cylinder; details: barrel, chrome rod, clevis ends, inferred appearance; attachment not verified.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 1368
+      }
+    ],
+    "camera": {
+      "target": [
+        -2.220446049250313e-16,
+        1.299435026231896,
+        0
+      ],
+      "azimuth": -2.234021442552742,
+      "elevation": 0.24434609527920614,
+      "distance": 10.81557306753848
+    },
+    "resources": {
+      "geometries": 31,
+      "textures": 13,
+      "programs": 13
+    },
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "heap": 66743261,
+    "readyMs": 5792
+  }
+}

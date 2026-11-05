@@ -1,0 +1,106 @@
+{
+  "name": "wrench",
+  "fixtureSha256": "cd904a916245a69490afb2adcbd0532025dcb25a5bb46fd7023bd14b3b55ee48",
+  "v3": {
+    "triangles": 600,
+    "meshes": 2,
+    "instances": 2,
+    "ids": {
+      "handle": 1,
+      "head": 1
+    },
+    "decisions": [
+      {
+        "componentId": "handle",
+        "requested": "procedural_v2",
+        "used": "procedural_v2",
+        "reason": "Requested: V2.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 300
+      },
+      {
+        "componentId": "head",
+        "requested": "procedural_v2",
+        "used": "procedural_v2",
+        "reason": "Requested: V2.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 300
+      }
+    ],
+    "camera": {
+      "target": [
+        0,
+        0.5102040853563918,
+        0
+      ],
+      "azimuth": -0.6632251157578452,
+      "elevation": 0.24434609527920614,
+      "distance": 6.530640446037978
+    },
+    "resources": {
+      "geometries": 6,
+      "textures": 8,
+      "programs": 8
+    },
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "heap": 117718923,
+    "readyMs": 1264
+  },
+  "foundry": {
+    "triangles": 1704,
+    "meshes": 3,
+    "instances": 3,
+    "ids": {
+      "handle": 2,
+      "head": 1
+    },
+    "decisions": [
+      {
+        "componentId": "handle",
+        "requested": "universal_foundry",
+        "used": "universal_foundry",
+        "reason": "tool/wrench: handle; details: turned grip with rings, ferrule.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 1552
+      },
+      {
+        "componentId": "head",
+        "requested": "universal_foundry",
+        "used": "universal_foundry",
+        "reason": "tool/wrench: head; details: forged head with chamfers, hex opening (wrench) or face and claw (hammer).",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 152
+      }
+    ],
+    "camera": {
+      "target": [
+        0,
+        0.5102040853563918,
+        0
+      ],
+      "azimuth": -0.6632251157578452,
+      "elevation": 0.24434609527920614,
+      "distance": 6.530640446037978
+    },
+    "resources": {
+      "geometries": 7,
+      "textures": 11,
+      "programs": 9
+    },
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "heap": 119599466,
+    "readyMs": 1112
+  }
+}

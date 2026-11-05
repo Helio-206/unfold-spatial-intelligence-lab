@@ -1,0 +1,178 @@
+{
+  "name": "hatchback",
+  "fixtureSha256": "6290b5ac4b8c2ec0e85acade1440366124f6bc23153ee11b530e3af1fcfdbaf0",
+  "v3": {
+    "triangles": 684,
+    "meshes": 5,
+    "instances": 5,
+    "ids": {
+      "body": 1,
+      "wheel-0": 1,
+      "wheel-1": 1,
+      "wheel-2": 1,
+      "wheel-3": 1
+    },
+    "decisions": [
+      {
+        "componentId": "body",
+        "requested": "procedural_v2",
+        "used": "procedural_v2",
+        "reason": "Requested: V2.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 300
+      },
+      {
+        "componentId": "wheel-0",
+        "requested": "procedural_v2",
+        "used": "procedural_v2",
+        "reason": "Requested: V2.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 96
+      },
+      {
+        "componentId": "wheel-1",
+        "requested": "procedural_v2",
+        "used": "procedural_v2",
+        "reason": "Requested: V2.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 96
+      },
+      {
+        "componentId": "wheel-2",
+        "requested": "procedural_v2",
+        "used": "procedural_v2",
+        "reason": "Requested: V2.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 96
+      },
+      {
+        "componentId": "wheel-3",
+        "requested": "procedural_v2",
+        "used": "procedural_v2",
+        "reason": "Requested: V2.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 96
+      }
+    ],
+    "camera": {
+      "target": [
+        0,
+        0.9932432239990852,
+        0
+      ],
+      "azimuth": -2.234021442552742,
+      "elevation": 0.24434609527920614,
+      "distance": 9.59602851460113
+    },
+    "resources": {
+      "geometries": 9,
+      "textures": 8,
+      "programs": 8
+    },
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "heap": 84998744,
+    "readyMs": 1389
+  },
+  "foundry": {
+    "triangles": 47176,
+    "meshes": 25,
+    "instances": 25,
+    "ids": {
+      "body": 9,
+      "wheel-0": 4,
+      "wheel-1": 4,
+      "wheel-2": 4,
+      "wheel-3": 4
+    },
+    "decisions": [
+      {
+        "componentId": "body",
+        "requested": "universal_foundry",
+        "used": "universal_foundry",
+        "reason": "vehicle/hatchback: body; details: lofted hull, greenhouse glazing, roof panel and pillars, door cut lines and handles, headlights and tail lights, grille, bumpers, wheel arches from wheel siblings, mirrors.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 13672
+      },
+      {
+        "componentId": "wheel-0",
+        "requested": "universal_foundry",
+        "used": "universal_foundry",
+        "reason": "vehicle/hatchback: wheel; details: tyre sidewall and grooved tread, machined rim, spokes, hub and lug bolts, brake disc.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 8376
+      },
+      {
+        "componentId": "wheel-1",
+        "requested": "universal_foundry",
+        "used": "universal_foundry",
+        "reason": "vehicle/hatchback: wheel; details: tyre sidewall and grooved tread, machined rim, spokes, hub and lug bolts, brake disc.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 8376
+      },
+      {
+        "componentId": "wheel-2",
+        "requested": "universal_foundry",
+        "used": "universal_foundry",
+        "reason": "vehicle/hatchback: wheel; details: tyre sidewall and grooved tread, machined rim, spokes, hub and lug bolts, brake disc.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 8376
+      },
+      {
+        "componentId": "wheel-3",
+        "requested": "universal_foundry",
+        "used": "universal_foundry",
+        "reason": "vehicle/hatchback: wheel; details: tyre sidewall and grooved tread, machined rim, spokes, hub and lug bolts, brake disc.",
+        "fallback": null,
+        "planGeometryOrigin": "inferred",
+        "representation": "derived_from_plan",
+        "assetId": null,
+        "triangles": 8376
+      }
+    ],
+    "camera": {
+      "target": [
+        0,
+        0.9932432239990852,
+        0
+      ],
+      "azimuth": -2.234021442552742,
+      "elevation": 0.24434609527920614,
+      "distance": 9.59602851460113
+    },
+    "resources": {
+      "geometries": 29,
+      "textures": 15,
+      "programs": 14
+    },
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "heap": 72040698,
+    "readyMs": 7590
+  }
+}

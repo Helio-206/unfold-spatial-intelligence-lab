@@ -1,0 +1,652 @@
+[
+  {
+    "name": "wrench",
+    "fixture": "reports/product-integration/uvf/plans/wrench.json",
+    "fixtureSha256": "cd904a916245a69490afb2adcbd0532025dcb25a5bb46fd7023bd14b3b55ee48",
+    "origin": "hand-authored coarse plan fixture; no photograph and no Meta inference",
+    "v3": {
+      "triangles": 600,
+      "meshes": 2,
+      "instances": 2,
+      "ids": {
+        "handle": 1,
+        "head": 1
+      },
+      "decisions": [
+        {
+          "componentId": "handle",
+          "requested": "procedural_v2",
+          "used": "procedural_v2",
+          "reason": "Requested: V2.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 300
+        },
+        {
+          "componentId": "head",
+          "requested": "procedural_v2",
+          "used": "procedural_v2",
+          "reason": "Requested: V2.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 300
+        }
+      ],
+      "camera": {
+        "target": [
+          0,
+          0.5102040853563918,
+          0
+        ],
+        "azimuth": -0.6632251157578452,
+        "elevation": 0.24434609527920614,
+        "distance": 6.530640446037978
+      },
+      "resources": {
+        "geometries": 6,
+        "textures": 8,
+        "programs": 8
+      },
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "heap": 117718923,
+      "readyMs": 1264
+    },
+    "foundry": {
+      "triangles": 1704,
+      "meshes": 3,
+      "instances": 3,
+      "ids": {
+        "handle": 2,
+        "head": 1
+      },
+      "decisions": [
+        {
+          "componentId": "handle",
+          "requested": "universal_foundry",
+          "used": "universal_foundry",
+          "reason": "tool/wrench: handle; details: turned grip with rings, ferrule.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 1552
+        },
+        {
+          "componentId": "head",
+          "requested": "universal_foundry",
+          "used": "universal_foundry",
+          "reason": "tool/wrench: head; details: forged head with chamfers, hex opening (wrench) or face and claw (hammer).",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 152
+        }
+      ],
+      "camera": {
+        "target": [
+          0,
+          0.5102040853563918,
+          0
+        ],
+        "azimuth": -0.6632251157578452,
+        "elevation": 0.24434609527920614,
+        "distance": 6.530640446037978
+      },
+      "resources": {
+        "geometries": 7,
+        "textures": 11,
+        "programs": 9
+      },
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "heap": 119599466,
+      "readyMs": 1112
+    },
+    "selection": "handle",
+    "lifecycle": [],
+    "save": {
+      "saved": true,
+      "opened": true,
+      "samePlan": true,
+      "valuesBefore": {
+        "grip": "steel",
+        "gripRings": 5,
+        "teeth": 6
+      },
+      "valuesAfter": {
+        "grip": "steel",
+        "gripRings": 5,
+        "teeth": 6
+      },
+      "sameValues": true
+    },
+    "reopened": {
+      "geometries": 7,
+      "textures": 9,
+      "programs": 8
+    },
+    "errors": {
+      "v3": [
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+      ],
+      "foundry": [
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+      ]
+    }
+  },
+  {
+    "name": "hatchback",
+    "fixture": "reports/product-integration/uvf/plans/hatchback.json",
+    "fixtureSha256": "6290b5ac4b8c2ec0e85acade1440366124f6bc23153ee11b530e3af1fcfdbaf0",
+    "origin": "hand-authored coarse plan fixture; no photograph and no Meta inference",
+    "v3": {
+      "triangles": 684,
+      "meshes": 5,
+      "instances": 5,
+      "ids": {
+        "body": 1,
+        "wheel-0": 1,
+        "wheel-1": 1,
+        "wheel-2": 1,
+        "wheel-3": 1
+      },
+      "decisions": [
+        {
+          "componentId": "body",
+          "requested": "procedural_v2",
+          "used": "procedural_v2",
+          "reason": "Requested: V2.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 300
+        },
+        {
+          "componentId": "wheel-0",
+          "requested": "procedural_v2",
+          "used": "procedural_v2",
+          "reason": "Requested: V2.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 96
+        },
+        {
+          "componentId": "wheel-1",
+          "requested": "procedural_v2",
+          "used": "procedural_v2",
+          "reason": "Requested: V2.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 96
+        },
+        {
+          "componentId": "wheel-2",
+          "requested": "procedural_v2",
+          "used": "procedural_v2",
+          "reason": "Requested: V2.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 96
+        },
+        {
+          "componentId": "wheel-3",
+          "requested": "procedural_v2",
+          "used": "procedural_v2",
+          "reason": "Requested: V2.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 96
+        }
+      ],
+      "camera": {
+        "target": [
+          0,
+          0.9932432239990852,
+          0
+        ],
+        "azimuth": -2.234021442552742,
+        "elevation": 0.24434609527920614,
+        "distance": 9.59602851460113
+      },
+      "resources": {
+        "geometries": 9,
+        "textures": 8,
+        "programs": 8
+      },
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "heap": 84998744,
+      "readyMs": 1389
+    },
+    "foundry": {
+      "triangles": 47176,
+      "meshes": 25,
+      "instances": 25,
+      "ids": {
+        "body": 9,
+        "wheel-0": 4,
+        "wheel-1": 4,
+        "wheel-2": 4,
+        "wheel-3": 4
+      },
+      "decisions": [
+        {
+          "componentId": "body",
+          "requested": "universal_foundry",
+          "used": "universal_foundry",
+          "reason": "vehicle/hatchback: body; details: lofted hull, greenhouse glazing, roof panel and pillars, door cut lines and handles, headlights and tail lights, grille, bumpers, wheel arches from wheel siblings, mirrors.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 13672
+        },
+        {
+          "componentId": "wheel-0",
+          "requested": "universal_foundry",
+          "used": "universal_foundry",
+          "reason": "vehicle/hatchback: wheel; details: tyre sidewall and grooved tread, machined rim, spokes, hub and lug bolts, brake disc.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 8376
+        },
+        {
+          "componentId": "wheel-1",
+          "requested": "universal_foundry",
+          "used": "universal_foundry",
+          "reason": "vehicle/hatchback: wheel; details: tyre sidewall and grooved tread, machined rim, spokes, hub and lug bolts, brake disc.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 8376
+        },
+        {
+          "componentId": "wheel-2",
+          "requested": "universal_foundry",
+          "used": "universal_foundry",
+          "reason": "vehicle/hatchback: wheel; details: tyre sidewall and grooved tread, machined rim, spokes, hub and lug bolts, brake disc.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 8376
+        },
+        {
+          "componentId": "wheel-3",
+          "requested": "universal_foundry",
+          "used": "universal_foundry",
+          "reason": "vehicle/hatchback: wheel; details: tyre sidewall and grooved tread, machined rim, spokes, hub and lug bolts, brake disc.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 8376
+        }
+      ],
+      "camera": {
+        "target": [
+          0,
+          0.9932432239990852,
+          0
+        ],
+        "azimuth": -2.234021442552742,
+        "elevation": 0.24434609527920614,
+        "distance": 9.59602851460113
+      },
+      "resources": {
+        "geometries": 29,
+        "textures": 15,
+        "programs": 14
+      },
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "heap": 72040698,
+      "readyMs": 7590
+    },
+    "selection": "body",
+    "lifecycle": [],
+    "save": {
+      "saved": true,
+      "opened": true,
+      "samePlan": true,
+      "valuesBefore": {
+        "cabinHeight": 0.38,
+        "cabinStart": 0.12,
+        "cabinEnd": 0.66,
+        "rearSlope": 0.7,
+        "spokes": 5,
+        "rimRatio": 0.62,
+        "grilleSlats": 5,
+        "doors": "4",
+        "wheelArches": true
+      },
+      "valuesAfter": {
+        "cabinHeight": 0.38,
+        "cabinStart": 0.12,
+        "cabinEnd": 0.66,
+        "rearSlope": 0.7,
+        "spokes": 5,
+        "rimRatio": 0.62,
+        "grilleSlats": 5,
+        "doors": "4",
+        "wheelArches": true
+      },
+      "sameValues": true
+    },
+    "reopened": {
+      "geometries": 29,
+      "textures": 15,
+      "programs": 14
+    },
+    "errors": {
+      "v3": [
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+      ],
+      "foundry": [
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+      ]
+    }
+  },
+  {
+    "name": "miniExcavator",
+    "fixture": "reports/product-integration/uvf/plans/miniExcavator.json",
+    "fixtureSha256": "fd3456712666e167601d9b06c61616732bafccb28e33db65d90c437fe9d4f519",
+    "origin": "hand-authored coarse plan fixture; no photograph and no Meta inference",
+    "v3": {
+      "triangles": 2196,
+      "meshes": 8,
+      "instances": 8,
+      "ids": {
+        "track-l": 1,
+        "track-r": 1,
+        "house": 1,
+        "cab": 1,
+        "boom": 1,
+        "stick": 1,
+        "bucket": 1,
+        "cyl-boom": 1
+      },
+      "decisions": [
+        {
+          "componentId": "track-l",
+          "requested": "procedural_v2",
+          "used": "procedural_v2",
+          "reason": "Requested: V2.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 300
+        },
+        {
+          "componentId": "track-r",
+          "requested": "procedural_v2",
+          "used": "procedural_v2",
+          "reason": "Requested: V2.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 300
+        },
+        {
+          "componentId": "house",
+          "requested": "procedural_v2",
+          "used": "procedural_v2",
+          "reason": "Requested: V2.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 300
+        },
+        {
+          "componentId": "cab",
+          "requested": "procedural_v2",
+          "used": "procedural_v2",
+          "reason": "Requested: V2.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 300
+        },
+        {
+          "componentId": "boom",
+          "requested": "procedural_v2",
+          "used": "procedural_v2",
+          "reason": "Requested: V2.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 300
+        },
+        {
+          "componentId": "stick",
+          "requested": "procedural_v2",
+          "used": "procedural_v2",
+          "reason": "Requested: V2.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 300
+        },
+        {
+          "componentId": "bucket",
+          "requested": "procedural_v2",
+          "used": "procedural_v2",
+          "reason": "Requested: V2.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 300
+        },
+        {
+          "componentId": "cyl-boom",
+          "requested": "procedural_v2",
+          "used": "procedural_v2",
+          "reason": "Requested: V2.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 96
+        }
+      ],
+      "camera": {
+        "target": [
+          -2.220446049250313e-16,
+          1.299435026231896,
+          0
+        ],
+        "azimuth": -2.234021442552742,
+        "elevation": 0.24434609527920614,
+        "distance": 10.81557306753848
+      },
+      "resources": {
+        "geometries": 12,
+        "textures": 8,
+        "programs": 8
+      },
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "heap": 96835236,
+      "readyMs": 876
+    },
+    "foundry": {
+      "triangles": 18640,
+      "meshes": 27,
+      "instances": 27,
+      "ids": {
+        "track-l": 4,
+        "track-r": 4,
+        "house": 4,
+        "cab": 4,
+        "boom": 3,
+        "stick": 3,
+        "bucket": 2,
+        "cyl-boom": 3
+      },
+      "decisions": [
+        {
+          "componentId": "track-l",
+          "requested": "universal_foundry",
+          "used": "universal_foundry",
+          "reason": "construction/excavator: track; details: track shoes, rollers, sprocket and idler.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 4644
+        },
+        {
+          "componentId": "track-r",
+          "requested": "universal_foundry",
+          "used": "universal_foundry",
+          "reason": "construction/excavator: track; details: track shoes, rollers, sprocket and idler.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 4644
+        },
+        {
+          "componentId": "house",
+          "requested": "universal_foundry",
+          "used": "universal_foundry",
+          "reason": "construction/excavator: house; details: engine hood, vents, exhaust, access panels, fasteners.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 3148
+        },
+        {
+          "componentId": "cab",
+          "requested": "universal_foundry",
+          "used": "universal_foundry",
+          "reason": "construction/excavator: cab; details: glazing, pillars, roof, work light.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 3372
+        },
+        {
+          "componentId": "boom",
+          "requested": "universal_foundry",
+          "used": "universal_foundry",
+          "reason": "construction/excavator: boom; details: tapered I-section, doubler plates, pivot pins.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 428
+        },
+        {
+          "componentId": "stick",
+          "requested": "universal_foundry",
+          "used": "universal_foundry",
+          "reason": "construction/excavator: boom; details: tapered I-section, doubler plates, pivot pins.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 428
+        },
+        {
+          "componentId": "bucket",
+          "requested": "universal_foundry",
+          "used": "universal_foundry",
+          "reason": "construction/excavator: bucket; details: bucket profile, teeth.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 608
+        },
+        {
+          "componentId": "cyl-boom",
+          "requested": "universal_foundry",
+          "used": "universal_foundry",
+          "reason": "construction/excavator: cylinder; details: barrel, chrome rod, clevis ends, inferred appearance; attachment not verified.",
+          "fallback": null,
+          "planGeometryOrigin": "inferred",
+          "representation": "derived_from_plan",
+          "assetId": null,
+          "triangles": 1368
+        }
+      ],
+      "camera": {
+        "target": [
+          -2.220446049250313e-16,
+          1.299435026231896,
+          0
+        ],
+        "azimuth": -2.234021442552742,
+        "elevation": 0.24434609527920614,
+        "distance": 10.81557306753848
+      },
+      "resources": {
+        "geometries": 31,
+        "textures": 13,
+        "programs": 13
+      },
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "heap": 66743261,
+      "readyMs": 5792
+    },
+    "selection": "track-l",
+    "lifecycle": [],
+    "save": {
+      "saved": true,
+      "opened": true,
+      "samePlan": true,
+      "valuesBefore": {
+        "trackPads": 26,
+        "rollers": 5,
+        "teeth": 5,
+        "paint": "as plan"
+      },
+      "valuesAfter": {
+        "trackPads": 26,
+        "rollers": 5,
+        "teeth": 5,
+        "paint": "as plan"
+      },
+      "sameValues": true
+    },
+    "reopened": {
+      "geometries": 31,
+      "textures": 13,
+      "programs": 13
+    },
+    "errors": {
+      "v3": [
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+      ],
+      "foundry": [
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+      ]
+    }
+  }
+]

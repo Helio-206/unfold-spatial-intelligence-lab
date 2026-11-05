@@ -50,7 +50,7 @@ function bucket(ctx: PartContext, b: Bucket): void {
   for (let i = 0; i < teeth; i++) b.add(place(rbox(f.L * 0.18, f.H * 0.1, f.W / teeth * 0.5, 0.004, 1).rotateZ(-0.5).translate(f.L * 0.44, -f.H * 0.43, -f.W / 2 + (i + 0.5) * (f.W / teeth)), f), mat('steelMachined', '#8A8D92'));
 }
 function cylinder(ctx: PartContext, b: Bucket): void {
-  const f = frameOf(ctx), r = Math.min(f.H, f.W) / 2;
+  const f = frameOf(ctx, true), r = Math.min(f.H, f.W) / 2;
   b.add(place(new CylinderGeometry(r, r, f.L * 0.55, 28).rotateZ(Math.PI / 2).translate(-f.L * 0.22, 0, 0), f), paint(ctx));
   b.add(place(new CylinderGeometry(r * 0.5, r * 0.5, f.L * 0.6, 20).rotateZ(Math.PI / 2).translate(f.L * 0.2, 0, 0), f), mat('chrome'));
   for (const x of [-1, 1]) b.add(place(rbox(r * 1.6, r * 2.1, r * 2.4, r * 0.4, 3).translate(x * (f.L / 2 - r * 0.8), 0, 0), f), mat('steelMachined'));
@@ -66,5 +66,5 @@ export const constructionFamily: Family = {
   style: () => ({}),
   materialOf: (role, palette) => (role === 'track' || role === 'bucket' ? mat('steelBrushed', '#4A4D52') : role === 'cylinder' ? mat('chrome') : mat('paintedMetal', palette.primary)),
   build(role, ctx) { const b = new Bucket(); if (role === 'track') track(ctx, b); else if (role === 'cab') cab(ctx, b); else if (role === 'boom') boom(ctx, b); else if (role === 'bucket') bucket(ctx, b); else if (role === 'cylinder') cylinder(ctx, b); else house(ctx, b); return b; },
-  detailRules: (r) => ({ track: ['track shoes', 'rollers', 'sprocket and idler'], cab: ['glazing', 'pillars', 'roof', 'work light'], boom: ['tapered I-section', 'doubler plates', 'pivot pins'], bucket: ['bucket profile', 'teeth'], cylinder: ['barrel', 'chrome rod', 'clevis ends'], house: ['engine hood', 'vents', 'exhaust', 'access panels', 'fasteners'] } as Record<string, string[]>)[r] ?? ['painted steel solid'],
+  detailRules: (r) => ({ track: ['track shoes', 'rollers', 'sprocket and idler'], cab: ['glazing', 'pillars', 'roof', 'work light'], boom: ['tapered I-section', 'doubler plates', 'pivot pins'], bucket: ['bucket profile', 'teeth'], cylinder: ['barrel', 'chrome rod', 'clevis ends', 'inferred appearance; attachment not verified'], house: ['engine hood', 'vents', 'exhaust', 'access panels', 'fasteners'] } as Record<string, string[]>)[r] ?? ['painted steel solid'],
 };
