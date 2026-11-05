@@ -49,6 +49,7 @@ import { WorkspaceEngineeringSession } from './engineering-session';
 import { planExtendExperiment } from './experiments';
 import type { SpaceLayer } from './space-port';
 import { analyzeFrame, verifyFrame, type FrameAnalysis, type FrameVerdict, type RgbaFrame } from '../../universal-spatial/frame-analysis';
+import type { SpatialPlanV2 } from '../../universal-spatial/contracts-v2';
 import { initialWorkspaceState, reduceWorkspace, visibility, type Message, type WorkspaceAction, type WorkspaceState } from './workspace-state';
 
 export type WorkspaceOptions = {
@@ -1278,7 +1279,7 @@ export class SpatialWorkspace {
     this.teardownMachine(); this.resetForMachine();
     this.empty = true;
     this.buildMachine(structuredClone(this.placeholder));
-    this.space = layer; this.foundry.scene.add(layer.root); this.root.dataset.space = 'true';
+    this.space = layer; this.livingSpaceGeneration++; this.foundry.scene.add(layer.root); this.root.dataset.space = 'true';
     this.setContext({ brandLabel: context.brandLabel, notices: context.notices, extraTools: context.extraTools });
     this.syncInsets(false); this.frameHome(); this.foundry.studio.updateContactShadow(); this.render();
   }
@@ -1354,9 +1355,19 @@ export class SpatialWorkspace {
   }
   get selectedSpaceId(): string | null { return this.space ? this.selectedId : null; }
 
+  private livingSpaceGeneration = 0;
+  /** Incrementa sempre que o Space activo é mostrado ou removido: estado vivo de um Space anterior fica stale. */
+  get activeSpaceGeneration(): number { return this.livingSpaceGeneration; }
+  livingSpacePlan(): SpatialPlanV2 | null { return this.space?.currentPlan ?? null; }
+  applyLivingSpacePose(id: string, angleRad: number, axis: 'x' | 'y' | 'z'): boolean {
+    if (this.disposed || !this.space) return false;
+    return this.space.applyTransientRotation?.(id, angleRad, axis) ?? false;
+  }
+  clearLivingSpacePoses(): void { this.space?.clearTransientPoses?.(); }
+
   /** Leaves the space (frees its objects) without touching the machine slot. Idempotent. */
   private removeSpace(): void {
-    const layer = this.space; if (!layer) return; this.invalidateExplanation(); this.space = null; delete this.root.dataset.space;
+    const layer = this.space; if (!layer) return; this.invalidateExplanation(); this.space = null; this.livingSpaceGeneration++; delete this.root.dataset.space;
     this.foundry.scene.remove(layer.root); layer.dispose();
     this.selectedId = null; this.inspectorOpen = false; this.evidenceOpen = false;
   }

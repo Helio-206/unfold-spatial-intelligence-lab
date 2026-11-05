@@ -18,6 +18,7 @@ import { asReviewHandoff, ReviewGateway } from './review-bridge';
 import { EMPTY_BRAND, newProjectIcon, WorkspaceStageHost } from './lab-host';
 import { SpaceFlow } from '../spatial-space/flow';
 import { mountLivingIntelligence, livingIntelligenceEnabled } from '../living-intelligence';
+import { spatialPlanFingerprintV2 } from '../../universal-spatial/api-client';
 
 const EXAMPLE_NOTICE = {
   id: 'example',
@@ -84,9 +85,37 @@ export function mountLivingShell(app: HTMLElement): void {
   const photorealPreset = foundry && params.has('experimental-photoreal') ? selectPhotorealPreset('balanced', detectCapabilities(workspace.photorealStage().renderer)) : null;
   const photoreal = foundry && photorealPreset ? new PhotorealGeometry(foundry, { microdetail: photorealPreset.microdetail }) : null;
   let photorealStage: PhotorealStage | null = null;
+  // Image evidence is bound to the exact reviewed plan shown on stage (A/B/A isolation):
+  // the picture is remembered at submit, and only bound when that plan is shown, with its
+  // fingerprint and source hashes. A newer picture invalidates the pending one by generation.
+  let pendingImage: { dataUrl: string; generation: number } | null = null;
+  let imageGeneration = 0;
   const space = new SpaceFlow({
     workspace, host: workspace.panelHost,
-    ...(foundry ? { geometry: () => photoreal ?? foundry, onImage: (dataUrl: string) => { if (!dataUrl) foundry.setEvidence(null); else void evidenceFromDataUrl(dataUrl).then((e) => foundry.setEvidence(e)); } } : {}),
+    ...(foundry ? {
+      geometry: () => photoreal ?? foundry,
+      onImage: (dataUrl: string) => {
+        imageGeneration++;
+        if (!dataUrl) { pendingImage = null; void foundry.setEvidence(null); return; }
+        pendingImage = { dataUrl, generation: imageGeneration };
+      },
+      onPlanShown: (plan) => {
+        const pending = pendingImage;
+        if (!pending || plan.source.kind !== 'image') return;
+        const generation = pending.generation;
+        void (async () => {
+          const evidence = await evidenceFromDataUrl(pending.dataUrl);
+          if (!evidence || generation !== imageGeneration) return;
+          const bytes = await (await fetch(pending.dataUrl)).arrayBuffer();
+          const digest = await crypto.subtle.digest('SHA-256', bytes);
+          const originalSha256 = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+          const planFingerprint = await spatialPlanFingerprintV2(plan);
+          if (generation !== imageGeneration) return;
+          await foundry.setEvidence(evidence, { plan, planFingerprint, sourceSha256: plan.source.sha256, originalSha256, preparedSha256: plan.source.sha256, preparation: 'workspace-image-submit', generationId: `${plan.source.sha256}:${generation}`, recipeVersion: 1 });
+          if (generation === imageGeneration) space.layer?.regenerate();
+        })();
+      },
+    } : {}),
     onActive: (active) => { const root = experienceRoot(); if (root) root.hidden = active; },
     onExit: () => { const root = experienceRoot(); if (root) root.hidden = false; api?.restart(); },
   });
@@ -107,6 +136,22 @@ export function mountLivingShell(app: HTMLElement): void {
     api = experience;
     if (params.has('example')) { experience.openExample(); if (debug) (window as unknown as { __foundry: { ready: boolean } }).__foundry.ready = true; }
     // Depois da experiência montar (ela reconstrói a app): o painel vivo entra por cima do mesmo palco, nunca como outra aplicação.
-    if (debug && livingIntelligenceEnabled(params)) { livingIntelligence = mountLivingIntelligence(app, workspace); if (debug) Object.assign(window, { __living: livingIntelligence }); }
+    if (debug && livingIntelligenceEnabled(params)) {
+      livingIntelligence = mountLivingIntelligence(app, workspace);
+      if (debug) Object.assign(window, { __living: livingIntelligence });
+      // O Space activo muda por geração do workspace: ligar/desligar a ponte viva seguindo-o
+      // (mesmo padrão de polling do vestido photoreal; trocar de Space invalida o movimento anterior).
+      let seenGeneration = -1;
+      const syncSpace = () => {
+        const generation = workspace.activeSpaceGeneration;
+        if (generation === seenGeneration || !livingIntelligence) return;
+        seenGeneration = generation;
+        const plan = workspace.livingSpacePlan();
+        if (!plan) { livingIntelligence.attachSpace(null); return; }
+        void spatialPlanFingerprintV2(plan).then((fingerprint) => { if (workspace.activeSpaceGeneration === generation) livingIntelligence?.attachSpace(plan, fingerprint); });
+      };
+      const spaceTimer = setInterval(syncSpace, 500);
+      addEventListener('pagehide', () => clearInterval(spaceTimer), { once: true });
+    }
   });
 }

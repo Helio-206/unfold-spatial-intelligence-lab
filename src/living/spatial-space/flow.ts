@@ -52,6 +52,8 @@ export type SpaceFlowOptions = {
   geometry?: () => GeometrySeam;
   /** Experimental: receives the picture a Space is being made from (the same data URL the review shows) so local evidence can be extracted from it. */
   onImage?: (dataUrl: string) => void;
+  /** Experimental: the exact reviewed plan that has just been put on stage (binds image evidence to this plan, never to a later one). */
+  onPlanShown?: (plan: SpatialPlanV2) => void;
 };
 export type GeometrySeam = { compile: (plan: SpatialPlanV2) => import('../../universal-spatial/geometry-compiler-v2').CompiledSpatialPlanV2; attach(onReady: () => void): void; report(): unknown; dispose(): void };
 
@@ -291,6 +293,7 @@ export class SpaceFlow {
     workspace.renderNow();
     geometry.attach(() => layer.scheduleGeometryUpgrade(12_000));
     this.updateComposer();
+    this.options.onPlanShown?.(plan);
     void this.adopt(plan);
   }
 

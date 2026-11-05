@@ -1,4 +1,4 @@
-import { BufferGeometry, CylinderGeometry, Quaternion, Vector3 } from 'three';
+import { BufferGeometry, CylinderGeometry, Quaternion, TorusGeometry, Vector3 } from 'three';
 import { Bucket, at, boltCircle, grille, latheAxis, loftSections, merge, rbox, v3, type Section } from '../ops';
 import { mat } from '../materials';
 import { shade } from '../recipe';
@@ -78,8 +78,8 @@ function buildHull(ctx: PartContext, bucket: Bucket, withCabin: boolean): void {
   // wheel arches from the neighbouring wheels (never invented when the plan has none)
   if (flag(ctx, 'wheelArches', true)) for (const w of ctx.siblings.filter((s) => s.role === 'wheel')) {
     const p = toFrame(ctx, f, w.centre), dims = [w.size.x, w.size.y, w.size.z].sort((a, b) => b - a), R = (dims[1]! / 2) * 1.13;
-    for (const s of [1, -1]) { const side = Math.sign(p.z) === s ? 1 : 0; if (!side && Math.abs(p.z) > 1e-3) continue; bucket.add(P(new CylinderGeometry(R, R, 0.012, 28).rotateX(Math.PI / 2).translate(p.x, p.y, s * (W / 2 - 0.004))), trim); }
-    if (Math.abs(p.z) <= 1e-3) for (const s of [1, -1]) bucket.add(P(new CylinderGeometry(R, R, 0.012, 28).rotateX(Math.PI / 2).translate(p.x, p.y, s * (W / 2 - 0.004))), trim);
+    for (const s of [1, -1]) { const side = Math.sign(p.z) === s ? 1 : 0; if (!side && Math.abs(p.z) > 1e-3) continue; bucket.add(P(new TorusGeometry(R, Math.min(R * 0.035, 0.015), 8, 28, Math.PI).translate(p.x, p.y, s * (W / 2 - 0.004))), trim); }
+    if (Math.abs(p.z) <= 1e-3) for (const s of [1, -1]) bucket.add(P(new TorusGeometry(R, Math.min(R * 0.035, 0.015), 8, 28, Math.PI).translate(p.x, p.y, s * (W / 2 - 0.004))), trim);
   }
 }
 

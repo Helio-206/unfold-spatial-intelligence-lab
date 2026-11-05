@@ -23,6 +23,10 @@ export interface SpaceLayer {
   /** A successful renderer frame has completed. */
   afterRender?(): void;
   highlight(id: string | null): void;
+  /** Transient presentation pose of one component (Living Intelligence): rotation about the
+   * component group's own origin, in its parent space. Never a plan edit; cleared on rebuild. */
+  applyTransientRotation?(id: string, angleRad: number, axis: 'x' | 'y' | 'z'): boolean;
+  clearTransientPoses?(): void;
   /** Generic exploded view (display only). Absent when the layer cannot do it. */
   setExploded?(on: boolean): boolean;
   readonly isExploded?: boolean;

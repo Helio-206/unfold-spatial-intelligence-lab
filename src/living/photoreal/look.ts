@@ -75,20 +75,22 @@ export function applyPhotorealStage(renderer: WebGLRenderer, scene: Scene, reque
     rig.add(ground);
   }
   scene.add(rig);
-  // Cleanup restores the stage exactly once, whichever entry point runs first. (A previous
-  // version set `disposed` before calling revert(), whose guard then made revert a no-op and the
-  // environment, exposure and rig leaked for the life of the page.)
-  let cleanedUp = false;
-  const cleanup = (withStudio: boolean) => {
-    if (cleanedUp) return; cleanedUp = true;
+  // Restoring the stage and releasing the procedural environment are separate one-shot
+  // duties: revert() restores, dispose() restores (if needed) AND releases. A single shared
+  // guard made revert()->dispose() skip the studio dispose, leaking its texture for the
+  // life of the page.
+  let stageRestored = false;
+  let studioDisposed = false;
+  const restoreStage = () => {
+    if (stageRestored) return; stageRestored = true;
     scene.environment = previous.environment; scene.environmentIntensity = previous.environmentIntensity; renderer.toneMappingExposure = previous.exposure;
     scene.remove(rig); key.shadow.map?.dispose(); (ground?.material as ShadowMaterial | undefined)?.dispose(); ground?.geometry.dispose();
-    if (withStudio) studio.dispose();
   };
+  const disposeStudio = () => { if (studioDisposed) return; studioDisposed = true; studio.dispose(); };
   return {
     preset,
-    revert() { cleanup(false); },
-    dispose() { cleanup(true); },
+    revert() { restoreStage(); },
+    dispose() { restoreStage(); disposeStudio(); },
     stats: () => ({ lights: 3, shadowMapSize: preset.shadowMapSize, softwareRendering: caps.softwareRendering }),
   };
 }

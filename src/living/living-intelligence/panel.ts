@@ -11,6 +11,8 @@ import { explainEntity, whoMoves, buildWalkthrough, WalkthroughPlayer, type Expl
 import { excavatorExperiments, type Experiment } from './experiments';
 import { WHEEL_STEERING_ASSEMBLY, DOOR_ASSEMBLY, FIXTURE_PROVENANCE } from './fixtures';
 import { serializeScenario, parseScenario, scenarioStorageKey } from './scenario-store';
+import { buildSpaceLivingScene, explainSpaceComponent, SpaceMotionController, type SpaceLivingScene } from './space-bridge';
+import type { SpatialPlanV2 } from '../../universal-spatial/contracts-v2';
 import './living-intelligence.css';
 
 export type LivingWorkspacePort = {
@@ -20,6 +22,9 @@ export type LivingWorkspacePort = {
   pointAt(id: string, state: 'attention' | 'select', by: 'assistant', note?: string | null): { resolved: boolean };
   resetPose(): void;
   readonly reducedMotion?: boolean;
+  livingSpacePlan?(): SpatialPlanV2 | null;
+  applyLivingSpacePose?(id: string, angleRad: number, axis: 'x' | 'y' | 'z'): boolean;
+  clearLivingSpacePoses?(): void;
 };
 
 type Mode = 'explore' | 'understand' | 'animate' | 'experiment';
@@ -39,6 +44,11 @@ export class LivingIntelligencePanel {
   private experiments: Experiment[];
   private demoAssembly: Assembly;
   private demoEngine: LivingMotionEngine;
+  private spacePlan: SpatialPlanV2 | null = null;
+  private spaceScene: SpaceLivingScene | null = null;
+  private spaceMotion = new SpaceMotionController();
+  private spaceEntityId: string | null = null;
+  private spaceOpen = false;
 
   constructor(host: HTMLElement, private port: LivingWorkspacePort) {
     this.assembly = port.livingAssembly();
@@ -66,6 +76,42 @@ export class LivingIntelligencePanel {
   }
 
   private say(text: string) { this.output = text; this.render(); }
+
+  /** Space activo mudou (o shell chama por geração): todo o estado vivo anterior fica inválido. */
+  attachSpace(plan: SpatialPlanV2 | null, planFingerprint = ''): void {
+    if (this.disposed) return;
+    this.spaceMotion.cancel();
+    this.port.clearLivingSpacePoses?.();
+    this.spacePlan = plan;
+    this.spaceScene = plan ? buildSpaceLivingScene(plan, planFingerprint) : null;
+    this.spaceEntityId = this.spaceScene?.entities[0]?.id ?? null;
+    this.spaceOpen = false;
+    if (plan) this.say(`Space activo ligado ao motor vivo: ${plan.title}. ${this.spaceScene!.motionSupported ? 'Há componentes articulados inferidos do plano; o movimento é uma demonstração marcada como inferida.' : `Sem mecanismo declaratório suficiente para mover. Em falta: ${this.spaceScene!.missingForMotion.join('; ')}.`}`);
+    else this.render();
+  }
+
+  private runSpaceMotion(open: boolean): void {
+    const scene = this.spaceScene, id = this.spaceEntityId;
+    if (!scene || !id) return;
+    const entity = scene.entities.find((e) => e.id === id);
+    if (!entity || entity.capability.kind !== 'revolute') { this.say(`Sem movimento suportado para ${entity?.label ?? id}: ${entity?.capability.reason ?? 'componente desconhecido'}. Em falta: ${scene.missingForMotion.join('; ')}.`); return; }
+    const cap = entity.capability;
+    const target = open ? cap.demoRangeRad : 0;
+    const started = this.spaceMotion.start(target, cap.demoRangeRad, this.port.reducedMotion ?? false);
+    if (!started.ok) { this.say(started.message); return; }
+    this.spaceOpen = open;
+    this.say(`${open ? 'A abrir' : 'A fechar'} ${entity.label}: demonstração inferida em torno de ${cap.axis} até ${target.toFixed(2)} rad (amplitude conceptual, sem limites declarados no plano). Pose transitória — o plano autoritativo não muda.`);
+    const token = this.spaceMotion.token;
+    const t0 = performance.now();
+    let last = t0;
+    const tick = (now: number) => {
+      if (this.disposed || token !== this.spaceMotion.token) return;
+      const angle = this.spaceMotion.step(Math.min(0.05, (now - last) / 1000), token); last = now;
+      this.port.applyLivingSpacePose?.(id, angle, cap.axis);
+      if (this.spaceMotion.state === 'playing') requestAnimationFrame(tick); else this.render();
+    };
+    requestAnimationFrame(tick);
+  }
 
   private selectEntity(id: string) {
     this.selectedId = id;
@@ -169,6 +215,17 @@ export class LivingIntelligencePanel {
       <div class="li-demos" role="group" aria-label="Demonstrações">
         <button type="button" data-demo="excavator">Escavadora</button><button type="button" data-demo="wheel">Roda e direcção</button><button type="button" data-demo="door">Porta</button>
       </div>
+      ${this.spaceScene ? `<div class="li-space" data-li-space>
+        <p><strong>Space activo:</strong> ${esc(this.spaceScene.title)} <span class="li-badge">fonte ${esc(this.spaceScene.sourceKind)} · ${esc(this.spaceScene.sourceSha256.slice(0, 10))}…</span></p>
+        <div class="li-entities">${this.spaceScene.entities.map((e) => `<button type="button" class="li-chip" data-space-entity="${esc(e.id)}" aria-pressed="${e.id === this.spaceEntityId}">${esc(e.label)} · ${esc(e.capability.kind === 'revolute' ? 'rotação inferida' : e.capability.kind)}</button>`).join('')}</div>
+        <div class="li-controls">
+          <button type="button" data-space-explain>Explicar componente</button>
+          <button type="button" data-space-motion="open">Mover (demonstração inferida)</button>
+          <button type="button" data-space-motion="close">Fechar/Repor</button>
+          <button type="button" data-space-pause>Pausa/Continuar</button>
+        </div>
+        ${this.spaceScene.motionSupported ? '' : `<p class="li-note">Movimento indisponível neste Space. Em falta: ${esc(this.spaceScene.missingForMotion.join('; '))}. Interacções suportadas: identificar, explicar, seleccionar e enquadrar.</p>`}
+      </div>` : ''}
       <div class="li-entities">${entities}</div>
       <form class="li-command"><label>Comando ou pergunta<input data-li-input type="text" placeholder="O que faz o cilindro da lança?" autocomplete="off"></label><button type="submit" class="li-btn">Executar</button></form>
       <div class="li-controls" role="group" aria-label="Reprodução">
@@ -190,6 +247,20 @@ export class LivingIntelligencePanel {
   }
 
   private bind() {
+    this.root.querySelectorAll<HTMLElement>('[data-space-entity]').forEach(b => b.addEventListener('click', () => { this.spaceEntityId = b.dataset.spaceEntity!; this.port.select(this.spaceEntityId); this.render(); }));
+    this.root.querySelector<HTMLElement>('[data-space-explain]')?.addEventListener('click', () => {
+      if (!this.spaceScene || !this.spacePlan || !this.spaceEntityId) return;
+      this.port.select(this.spaceEntityId);
+      const text = explainSpaceComponent(this.spaceScene, this.spacePlan, this.spaceEntityId);
+      this.mode = 'understand';
+      this.say(text ?? 'Componente desconhecido neste Space.');
+    });
+    this.root.querySelectorAll<HTMLElement>('[data-space-motion]').forEach(b => b.addEventListener('click', () => this.runSpaceMotion(b.dataset.spaceMotion === 'open')));
+    this.root.querySelector<HTMLElement>('[data-space-pause]')?.addEventListener('click', () => {
+      if (this.spaceMotion.state === 'paused') { this.spaceMotion.resume(); this.runSpaceMotion(this.spaceOpen); }
+      else this.spaceMotion.pause();
+      this.render();
+    });
     this.root.querySelectorAll<HTMLElement>('[data-mode]').forEach(b => b.addEventListener('click', () => { this.mode = b.dataset.mode as Mode; this.render(); }));
     this.root.querySelectorAll<HTMLElement>('[data-entity]').forEach(b => b.addEventListener('click', () => this.selectEntity(b.dataset.entity!)));
     this.root.querySelector<HTMLElement>('[data-li-explain]')?.addEventListener('click', () => { if (this.selectedId) this.explain(this.selectedId); });
@@ -232,6 +303,7 @@ export class LivingIntelligencePanel {
 
   dispose() {
     this.disposed = true;
+    this.spaceMotion.cancel(); this.port.clearLivingSpacePoses?.();
     if (this.raf) cancelAnimationFrame(this.raf);
     this.raf = 0; this.engine.cancel(); this.engine.dispose(); this.demoEngine.dispose();
     this.root.remove();

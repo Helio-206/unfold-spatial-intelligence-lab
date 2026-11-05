@@ -84,6 +84,25 @@ describe('photoreal stage cleanup and capability fallback', () => {
       }
     } finally { vi.unstubAllGlobals(); }
   });
+  it('revert() before dispose() still disposes the procedural environment exactly once', () => {
+    vi.stubGlobal('WebGL2RenderingContext', FakeGL2);
+    try {
+      const scene = new Scene();
+      const previousEnv = new Texture();
+      scene.environment = previousEnv; scene.environmentIntensity = 0.7;
+      const renderer = fakeRenderer();
+      const studioDispose = vi.fn();
+      const stage = applyPhotorealStage(renderer, scene, 'balanced', { createEnvironment: () => ({ texture: new Texture(), panels: [], dispose: studioDispose }) });
+      expect(stage).not.toBeNull();
+      stage!.revert(); // undress first: stage restored, but the studio texture is still owned by this stage
+      expect(scene.environment).toBe(previousEnv);
+      expect(scene.children.some((c) => c.name === 'photoreal-studio-rig')).toBe(false);
+      stage!.dispose(); // must release the procedural environment even though revert already ran
+      expect(studioDispose).toHaveBeenCalledTimes(1);
+      stage!.dispose(); stage!.revert();
+      expect(studioDispose).toHaveBeenCalledTimes(1);
+    } finally { vi.unstubAllGlobals(); }
+  });
   it('unsupported capabilities return null and touch nothing', () => {
     const scene = new Scene();
     const renderer = { getContext: () => ({ getExtension: () => null, getParameter: () => 0 }), toneMappingExposure: 1 } as never;

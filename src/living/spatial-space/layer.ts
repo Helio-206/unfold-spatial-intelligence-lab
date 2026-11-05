@@ -1,4 +1,4 @@
-import { Box3, Color, Group, Mesh, Raycaster, type Camera, type Material, type Vector2 } from 'three';
+import { Box3, Color, Group, Mesh, Quaternion, Raycaster, Vector3, type Camera, type Material, type Object3D, type Vector2 } from 'three';
 import { analyzeAssembly, describeDefect, refineAssembly, type AssemblyAnalysis } from '../../universal-spatial/assembly-analysis';
 import { applySpatialOperationV2, type GeometryNodeV2, type SpatialOperationV2, type SpatialPlanV2, type SpatialReviewPrecondition } from '../../universal-spatial/contracts-v2';
 import { collectWorldPoints, heroAzimuth, normalizeForPresentation } from '../../universal-spatial/framing';
@@ -152,7 +152,37 @@ export class PlanSpaceLayer implements SpaceLayer {
   /** Rebuilds the scene from the SAME plan (a setting of the geometry seam changed). The plan, its history and its provenance are untouched. */
   regenerate(): void { if (this.disposed) return; this.stats = this.build(); this.host.redraw(); }
 
+  // -------------------------------------------------------------------------------- transient living poses
+  private transientOriginals = new Map<string, { target: Object3D; quaternion: Quaternion }>();
+
+  private componentGroup(id: string): Object3D | null {
+    let found: Object3D | null = null;
+    this.wrapper?.traverse((o) => { if (!found && o.userData.spatialComponentRoot && o.userData.spatialEntityId === id) found = o; });
+    return found;
+  }
+
+  /** Transient rotation of a real Space component about its own group origin. Presentation only:
+   * the plan, its revision and its history are never touched; rebuild/dispose restores exactly. */
+  applyTransientRotation(id: string, angleRad: number, axis: 'x' | 'y' | 'z'): boolean {
+    if (this.disposed || !Number.isFinite(angleRad)) return false;
+    const group = this.componentGroup(id);
+    if (!group) return false;
+    if (!this.transientOriginals.has(id)) this.transientOriginals.set(id, { target: group, quaternion: group.quaternion.clone() });
+    const original = this.transientOriginals.get(id)!.quaternion;
+    const delta = new Quaternion().setFromAxisAngle(new Vector3(axis === 'x' ? 1 : 0, axis === 'y' ? 1 : 0, axis === 'z' ? 1 : 0), angleRad);
+    group.quaternion.copy(delta.multiply(original));
+    this.host.redraw();
+    return true;
+  }
+
+  clearTransientPoses(): void {
+    for (const { target, quaternion } of this.transientOriginals.values()) target.quaternion.copy(quaternion);
+    this.transientOriginals.clear();
+    if (!this.disposed) this.host.redraw();
+  }
+
   private build(): ReturnType<typeof compileSpatialPlanV2>['stats'] {
+    this.transientOriginals.clear(); // groups are rebuilt below; transient poses never survive a rebuild
     this.explanationVersion++;
     this.release();
     this.routed?.retire?.(); this.cancelContinuation(); // results asked for by the previous plan version can no longer be used
@@ -573,7 +603,7 @@ export class PlanSpaceLayer implements SpaceLayer {
   }
 
   dispose(): void {
-    this.disposed = true; this.pending = null; this.routed?.retire?.(); this.routed = null; this.cancelContinuation();
+    this.disposed = true; this.clearTransientPoses(); this.pending = null; this.routed?.retire?.(); this.routed = null; this.cancelContinuation();
     this.director?.dispose(); this.director = null; this.release();
     this.releaseRetiredMaterials();
   }
