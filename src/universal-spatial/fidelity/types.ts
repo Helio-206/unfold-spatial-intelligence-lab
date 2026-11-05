@@ -6,7 +6,7 @@ import type { ValueOrigin } from '../contracts';
  * The reviewed V2 plan stays the single source of truth for WHAT the object is: components, hierarchy, relations, provenance, source hash and the human
  * review. A geometry family only decides HOW a component is drawn. The router never writes the plan and never changes which components exist.
  */
-export type GeometryFamily = 'procedural_v2' | 'continuous_surface' | 'mesh_asset';
+export type GeometryFamily = 'procedural_v2' | 'continuous_surface' | 'mesh_asset' | 'universal_foundry';
 
 export type RouterLimits = {
   /** triangles over the whole compiled scene */
