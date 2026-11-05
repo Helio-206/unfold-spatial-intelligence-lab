@@ -1,8 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { Box3 } from 'three';
 import { extractEvidence, type RGBA } from '../src/living/universal-foundry/evidence';
-import { fitGeometryToEvidence, geometryProfile } from '../src/living/universal-foundry/fitting';
+import { fitGeometryToEvidence, fitGeometryToEvidenceAsync, geometryProfile, evidenceProfile, evidenceMaskHash, fittingCacheKey, FITTING_VERSION } from '../src/living/universal-foundry/fitting';
 import { compileFoundry } from '../src/living/universal-foundry/foundry';
+import { FoundryGeometry } from '../src/living/universal-foundry/provider';
+import { validateSpatialPlanV2, type SpatialPlanV2 } from '../src/universal-spatial/contracts-v2';
+import { spatialPlanFingerprintV2 } from '../src/universal-spatial/api-client';
 import { sedan } from '../src/living/universal-foundry/fixtures/plans';
 
 /** Silhueta lateral de carro: corpo + cabina deslocada (assimétrica, como uma vista lateral real). */
@@ -55,6 +58,61 @@ describe('image-conditioned fitting (vehicle)', () => {
     const controller = new AbortController(); controller.abort();
     expect(fitGeometryToEvidence(sedan(), lowLong(), { signal: controller.signal })).toMatchObject({ status: 'aborted' });
   });
+  it('baseline é genuíno: igual ao objectivo da geometria por omissão, nunca o do vencedor', () => {
+    const evidence = lowLong();
+    const result = fitGeometryToEvidence(sedan(), evidence);
+    expect(result.status).toBe('fitted');
+    if (result.status !== 'fitted') return;
+    // recomputação independente do baseline a partir da geometria default compilada
+    const compiled = compileFoundry(sedan(), {}); compiled.buildAll();
+    const target = evidenceProfile(evidence);
+    const geo = geometryProfile(compiled.root); compiled.retire();
+    const expectedBaseline = target.reduce((s, v, i) => s + Math.abs(v - (geo.profile[i] ?? 0)), 0) / target.length
+      + 0.5 * Math.abs(Math.log(geo.aspect / Math.max(0.2, evidence.aspect)));
+    expect(result.baselineObjective).toBeCloseTo(expectedBaseline, 9);
+    expect(result.objective).toBeLessThanOrEqual(result.baselineObjective + 1e-9);
+    if (result.objective < result.baselineObjective - 1e-9) expect(result.baselineObjective).not.toBeCloseTo(result.objective, 9);
+  }, 60_000);
+  it('identidade de cache: silhuetas com aspecto/simetria/rácio iguais mas perfis diferentes não partilham chave', () => {
+    const base = lowLong();
+    // mesma bbox (logo mesmo aspecto e foregroundRatio) e simetria parecida, cabina noutro sítio → perfil diferente
+    const shifted = extractEvidence(carImage({ x0: 20, y0: 58, x1: 180, y1: 85 }, { x0: 105, y0: 42, x1: 155, y1: 58 }, [170, 30, 30]));
+    expect(shifted.aspect).toBeCloseTo(base.aspect, 6);
+    expect(shifted.foregroundRatio).toBeCloseTo(base.foregroundRatio, 6);
+    expect(evidenceProfile(shifted)).not.toEqual(evidenceProfile(base));
+    expect(evidenceMaskHash(shifted)).not.toBe(evidenceMaskHash(base));
+    expect(fittingCacheKey('plano-x', shifted)).not.toBe(fittingCacheKey('plano-x', base));
+    expect(fittingCacheKey('plano-x', base)).toContain(`fit-v${FITTING_VERSION}`);
+    expect(fittingCacheKey('plano-x', base)).toBe(fittingCacheKey('plano-x', base)); // determinística
+  });
+  it('assíncrono: progresso por blocos, resultado igual ao síncrono, cancelamento limpo', async () => {
+    const evidence = tallShort();
+    const progress: number[] = [];
+    const asyncResult = await fitGeometryToEvidenceAsync(sedan(), evidence, { onProgress: (p) => progress.push(p.evaluated) });
+    expect(progress.length).toBeGreaterThan(1);
+    expect(progress).toEqual([...progress].sort((a, b) => a - b));
+    expect(asyncResult).toEqual(fitGeometryToEvidence(sedan(), evidence));
+    const controller = new AbortController();
+    const pending = fitGeometryToEvidenceAsync(sedan(), evidence, { signal: controller.signal, onProgress: () => controller.abort() });
+    await expect(pending).resolves.toMatchObject({ status: 'aborted' });
+  }, 120_000);
+  it('provider: compile não bloqueia com fitting; resultado chega por onFitted e só então é aplicado', async () => {
+    const plan: SpatialPlanV2 = validateSpatialPlanV2({ ...sedan(), source: { kind: 'image', sha256: 'c'.repeat(64) } });
+    const provider = new FoundryGeometry(null);
+    const evidence = tallShort();
+    const fingerprint = await spatialPlanFingerprintV2(plan);
+    await provider.setEvidence(evidence, { plan, planFingerprint: fingerprint, sourceSha256: plan.source.sha256, originalSha256: 'd'.repeat(64), preparedSha256: plan.source.sha256, preparation: 'test', generationId: 'test-1', recipeVersion: 1 });
+    const fitted = new Promise<unknown>((resolve) => provider.onFitted(resolve));
+    const first = provider.compile(plan);
+    expect(provider.fitting).toMatchObject({ status: 'pending' }); // sem workload síncrono de fitting
+    first.retire();
+    const result = await fitted as { status: string; overrides?: Record<string, number> };
+    expect(result.status).toBe('fitted');
+    const second = provider.compile(plan);
+    expect(second.recipe?.params.cabinHeight).toBe(result.status === 'fitted' ? (result as { overrides: Record<string, number> }).overrides.cabinHeight : NaN);
+    second.retire();
+    provider.dispose();
+  }, 120_000);
   it('perfil geométrico é mensurável e finito', () => {
     const r = compileFoundry(sedan(), {}); r.buildAll();
     const g = geometryProfile(r.root); r.retire();

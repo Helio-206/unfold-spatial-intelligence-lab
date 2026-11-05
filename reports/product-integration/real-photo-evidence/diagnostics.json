@@ -1,0 +1,68 @@
+{
+  "car": {
+    "evidence": {
+      "aspect": 1.95,
+      "symmetry": 0.31,
+      "foregroundRatio": 0.261,
+      "bbox": {
+        "x0": 0,
+        "y0": 0,
+        "x1": 159,
+        "y1": 81
+      }
+    },
+    "fitting": {
+      "status": "fitted",
+      "overrides": {
+        "cabinHeight": 0.52,
+        "rearSlope": 0
+      },
+      "objective": 0.18571994844483886,
+      "baselineObjective": 0.18770509281518666,
+      "candidates": 25,
+      "summary": "Fitting por silhueta v2 (25 candidatos limitados): cabinHeight=0.52, rearSlope=0; erro de perfil 0.188 → 0.186. Parâmetros inferidos da imagem, não dimensões verificadas."
+    },
+    "params": {
+      "cabinHeight": 0.52,
+      "rearSlope": 0
+    },
+    "defaults": {
+      "cabinHeight": 0.38,
+      "rearSlope": 0.7
+    },
+    "photorealActive": true
+  },
+  "bus": {
+    "evidence": {
+      "aspect": 1.95,
+      "symmetry": 0.27,
+      "foregroundRatio": 0.256,
+      "bbox": {
+        "x0": 0,
+        "y0": 0,
+        "x1": 159,
+        "y1": 81
+      }
+    },
+    "fitting": {
+      "status": "fitted",
+      "overrides": {
+        "cabinHeight": 0.52,
+        "rearSlope": 0
+      },
+      "objective": 0.43826954397199,
+      "baselineObjective": 0.4399589405736494,
+      "candidates": 25,
+      "summary": "Fitting por silhueta v2 (25 candidatos limitados): cabinHeight=0.52, rearSlope=0; erro de perfil 0.440 → 0.438. Parâmetros inferidos da imagem, não dimensões verificadas."
+    },
+    "params": {
+      "cabinHeight": 0.52,
+      "rearSlope": 0
+    },
+    "defaults": {
+      "cabinHeight": 0.4,
+      "rearSlope": 0.9
+    },
+    "photorealActive": true
+  }
+}

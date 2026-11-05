@@ -119,6 +119,8 @@ export function mountLivingShell(app: HTMLElement): void {
     onActive: (active) => { const root = experienceRoot(); if (root) root.hidden = active; },
     onExit: () => { const root = experienceRoot(); if (root) root.hidden = false; api?.restart(); },
   });
+  // Fitting assíncrono terminou: regenerar o Space com os parâmetros ajustados (cache hit, sem workload síncrono).
+  foundry?.onFitted(() => { space.layer?.regenerate(); });
   const foundryPanel = foundry ? mountFoundryPanel(foundry, () => space.layer) : null;
   const experimentalV4 = debug && params.has('experimental-v4') ? new ExperimentalV4(() => space.layer, id => workspace.select(id), () => space.currentReviewId) : null;
   let livingIntelligence: ReturnType<typeof mountLivingIntelligence> | null = null;
