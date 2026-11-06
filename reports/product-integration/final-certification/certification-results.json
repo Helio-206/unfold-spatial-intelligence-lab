@@ -1,0 +1,102 @@
+[
+  {
+    "step": "A1 identidade fonte→plano",
+    "verdict": "PASS",
+    "detail": "source.sha256=afc6edd8cd4a… componentes=body,wheel-0,wheel-1,wheel-2,wheel-3"
+  },
+  {
+    "step": "A2 fitting com câmara dos píxeis (Worker)",
+    "verdict": "PASS",
+    "detail": "az=21.5° IoU 0.647→0.703 máscara=user_confirmed"
+  },
+  {
+    "step": "A3 componente real explicado",
+    "verdict": "PASS",
+    "detail": "wheel-0 existe no plano e a explicação o refere"
+  },
+  {
+    "step": "A4 proposta não altera o plano",
+    "verdict": "PASS",
+    "detail": "pendente tipada sem escrita autoritativa"
+  },
+  {
+    "step": "A5 commit muda o plano (transacção)",
+    "verdict": "PASS",
+    "detail": "SpatialPlanV2 commitado via inspector"
+  },
+  {
+    "step": "A6 undo restaura o original",
+    "verdict": "PASS",
+    "detail": "plano byte-idêntico após undo"
+  },
+  {
+    "step": "A7 guardar e reabrir preserva identidade",
+    "verdict": "PASS",
+    "detail": "save=true reopen=true id=d0c91e58…"
+  },
+  {
+    "step": "A8 sem erros de browser (A)",
+    "verdict": "PASS",
+    "detail": "limpo"
+  },
+  {
+    "step": "B1 explicação da lança (sintética, declarada)",
+    "verdict": "PASS",
+    "detail": "âncora na entidade boom da montagem verificada"
+  },
+  {
+    "step": "B2 movimento ligado com pausa",
+    "verdict": "PASS",
+    "detail": "cilindro→lança→descendentes pelo solver, fecho verificado"
+  },
+  {
+    "step": "B3 experiência repetível",
+    "verdict": "PASS",
+    "detail": "antes/depois calculados das poses do motor"
+  },
+  {
+    "step": "B4 sem erros de browser (B)",
+    "verdict": "PASS",
+    "detail": "limpo"
+  },
+  {
+    "step": "C1 porta: componente explicado (conceptual declarado)",
+    "verdict": "PASS",
+    "detail": "fixture rotulado; movimento inferido, não fitting de veículo"
+  },
+  {
+    "step": "C2 porta: interacção transitória visível",
+    "verdict": "PASS",
+    "detail": "rotação inferida em torno da dobradiça, plano intacto"
+  },
+  {
+    "step": "C3 sem erros de browser (C)",
+    "verdict": "PASS",
+    "detail": "limpo"
+  },
+  {
+    "step": "N1 vista frontal recusada",
+    "verdict": "PASS",
+    "detail": "Hipótese de câmara recusada: sem regiões de pneu: classe por"
+  },
+  {
+    "step": "N2 falha do modelo não bloqueia (fallback)",
+    "verdict": "PASS",
+    "detail": "mediapipeVehicleEvidence devolve null com entrada inválida"
+  },
+  {
+    "step": "N3 fitting cancelado sem aplicar",
+    "verdict": "PASS",
+    "detail": "estado=aborted"
+  },
+  {
+    "step": "N4 flags experimentais desligadas por omissão",
+    "verdict": "PASS",
+    "detail": "{\"living\":false,\"foundryPanel\":false}"
+  },
+  {
+    "step": "M1 mobile sem erros críticos",
+    "verdict": "PASS",
+    "detail": "limpo a 390×844"
+  }
+]

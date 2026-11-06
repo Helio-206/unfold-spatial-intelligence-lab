@@ -8,3 +8,6 @@
 .li-output{white-space:pre-wrap;background:rgba(255,255,255,.06);border-radius:12px;padding:10px;min-height:72px;font:12px/1.5 system-ui,sans-serif}
 .li-note{opacity:.7;font-size:11px}.li-exp{border-top:1px solid rgba(255,255,255,.12);padding:8px 0}
 @media (prefers-reduced-motion:reduce){.li-panel{scroll-behavior:auto}}
+/* Ecrãs estreitos: o painel não pode esconder a cena — fica uma folha inferior com scroll,
+   a máquina continua visível e tocável por cima. */
+@media (max-width:640px){.li-panel{top:auto;bottom:86px;left:8px;right:8px;width:auto;max-height:46dvh}}
