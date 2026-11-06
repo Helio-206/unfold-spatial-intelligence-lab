@@ -1,0 +1,184 @@
+{
+  "car": {
+    "iou": 0.199,
+    "correctedIou": 0.935,
+    "correctedBboxErrorPx": 1,
+    "bboxErrorPx": 29,
+    "extractedBbox": {
+      "x0": 0,
+      "y0": 0,
+      "x1": 142,
+      "y1": 42
+    },
+    "annotatedBbox": {
+      "x0": 5,
+      "y0": 2,
+      "x1": 157,
+      "y1": 71
+    },
+    "reliability": {
+      "reliable": false,
+      "reasons": [
+        "preenchimento da bbox implausível para uma silhueta de veículo (51% < 55%)",
+        "contaminação nas bordas (20% da máscara na faixa exterior > 15%)"
+      ],
+      "metrics": {
+        "largestComponentShare": 0.8927345537757437,
+        "bboxFill": 0.5075622052366239,
+        "borderBandShare": 0.19577058635052869,
+        "foregroundRatio": 0.2378810975609756
+      }
+    },
+    "heldOut": false
+  },
+  "bus": {
+    "iou": 0.222,
+    "correctedIou": 0.935,
+    "correctedBboxErrorPx": 1,
+    "bboxErrorPx": 14,
+    "extractedBbox": {
+      "x0": 7,
+      "y0": 22,
+      "x1": 159,
+      "y1": 82
+    },
+    "annotatedBbox": {
+      "x0": 2,
+      "y0": 15,
+      "x1": 149,
+      "y1": 68
+    },
+    "reliability": {
+      "reliable": false,
+      "reasons": [
+        "preenchimento da bbox implausível para uma silhueta de veículo (37% < 55%)"
+      ],
+      "metrics": {
+        "largestComponentShare": 0.8815991799077396,
+        "bboxFill": 0.3685845923068681,
+        "borderBandShare": 0.04970930232558139,
+        "foregroundRatio": 0.25595238095238093
+      }
+    },
+    "heldOut": false
+  },
+  "holdout-van": {
+    "iou": 0.479,
+    "correctedIou": 0.966,
+    "correctedBboxErrorPx": 1,
+    "bboxErrorPx": 46,
+    "extractedBbox": {
+      "x0": 0,
+      "y0": 2,
+      "x1": 159,
+      "y1": 104
+    },
+    "annotatedBbox": {
+      "x0": 15,
+      "y0": 15,
+      "x1": 113,
+      "y1": 93
+    },
+    "reliability": {
+      "reliable": true,
+      "reasons": [],
+      "metrics": {
+        "largestComponentShare": 1.042086481947943,
+        "bboxFill": 0.6024878640776699,
+        "borderBandShare": 0.07694631886393392,
+        "foregroundRatio": 0.5171354166666666
+      }
+    },
+    "heldOut": true
+  },
+  "holdout-coupe": {
+    "iou": 0.552,
+    "correctedIou": 0.973,
+    "correctedBboxErrorPx": 1,
+    "bboxErrorPx": 14,
+    "extractedBbox": {
+      "x0": 6,
+      "y0": 3,
+      "x1": 159,
+      "y1": 63
+    },
+    "annotatedBbox": {
+      "x0": 2,
+      "y0": 17,
+      "x1": 145,
+      "y1": 58
+    },
+    "reliability": {
+      "reliable": true,
+      "reasons": [],
+      "metrics": {
+        "largestComponentShare": 1.002212389380531,
+        "bboxFill": 0.6751117734724292,
+        "borderBandShare": 0.036896877956480605,
+        "foregroundRatio": 0.5744565217391304
+      }
+    },
+    "heldOut": true
+  },
+  "skoda-kodiaq": {
+    "iou": 0.291,
+    "correctedIou": 0.962,
+    "correctedBboxErrorPx": 1,
+    "bboxErrorPx": 21,
+    "extractedBbox": {
+      "x0": 0,
+      "y0": 45,
+      "x1": 155,
+      "y1": 93
+    },
+    "annotatedBbox": {
+      "x0": 11,
+      "y0": 24,
+      "x1": 153,
+      "y1": 90
+    },
+    "reliability": {
+      "reliable": true,
+      "reasons": [],
+      "metrics": {
+        "largestComponentShare": 0.9395719681074276,
+        "bboxFill": 0.5858189429618001,
+        "borderBandShare": 0.0482358195623046,
+        "foregroundRatio": 0.26156542056074766
+      }
+    },
+    "heldOut": true
+  },
+  "porsche-911": {
+    "iou": 0.263,
+    "correctedIou": 0.942,
+    "correctedBboxErrorPx": 1,
+    "bboxErrorPx": 20,
+    "extractedBbox": {
+      "x0": 18,
+      "y0": 55,
+      "x1": 136,
+      "y1": 79
+    },
+    "annotatedBbox": {
+      "x0": 13,
+      "y0": 35,
+      "x1": 151,
+      "y1": 85
+    },
+    "reliability": {
+      "reliable": false,
+      "reasons": [
+        "objecto fragmentado (maior componente 59% do primeiro plano < 75%)",
+        "preenchimento da bbox implausível para uma silhueta de veículo (50% < 55%)"
+      ],
+      "metrics": {
+        "largestComponentShare": 0.5904191616766467,
+        "bboxFill": 0.49714285714285716,
+        "borderBandShare": 0,
+        "foregroundRatio": 0.08639018691588785
+      }
+    },
+    "heldOut": true
+  }
+}

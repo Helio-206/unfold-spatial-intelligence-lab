@@ -1,0 +1,235 @@
+{
+  "contract": "unfold.spatial-plan.v2",
+  "sessionId": "00000000-0000-4000-8000-000000000000",
+  "revision": 0,
+  "plan": {
+    "contract": "unfold.spatial-plan.v2",
+    "source": {
+      "kind": "text",
+      "sha256": "ac2d5bd02db2da829418180125581078927d5fc13302841ecd34750dfbcda971"
+    },
+    "title": "Camera on a tripod - mesh path stand-in (hand-authored placeholder)",
+    "units": "unitless",
+    "presentationProfile": "neutral",
+    "components": [
+      {
+        "id": "camera",
+        "label": "Camera",
+        "parentId": null,
+        "geometry": {
+          "type": "shape",
+          "key": "camera-body",
+          "operator": "rounded_box",
+          "parameters": {
+            "dimensions": [
+              1.4,
+              1.1,
+              1.8
+            ],
+            "bevelM": 0.1,
+            "segments": 3
+          },
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": null,
+          "material": {
+            "profile": "metal",
+            "color": "#b08d57",
+            "roughness": 0.35,
+            "metalness": 0.8,
+            "clearcoat": 0
+          }
+        },
+        "transform": {
+          "position": [
+            0,
+            3.2,
+            0
+          ],
+          "rotationRad": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored two-component placeholder plan. The external CC0 mesh is offered for these components to exercise the approval path. Not Meta output."
+        }
+      },
+      {
+        "id": "tripod",
+        "label": "Tripod",
+        "parentId": null,
+        "geometry": {
+          "type": "shape",
+          "key": "tripod-legs",
+          "operator": "cone",
+          "parameters": {
+            "radius": 1.1,
+            "height": 3,
+            "radialSegments": 16
+          },
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": null,
+          "material": {
+            "profile": "organic",
+            "color": "#6b4a2a",
+            "roughness": 0.6,
+            "metalness": 0,
+            "clearcoat": 0
+          }
+        },
+        "transform": {
+          "position": [
+            0,
+            1.5,
+            0
+          ],
+          "rotationRad": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored two-component placeholder plan. The external CC0 mesh is offered for these components to exercise the approval path. Not Meta output."
+        }
+      }
+    ],
+    "relations": [],
+    "constraints": [],
+    "unknowns": [
+      "Hand-authored fixture, not a Meta response.",
+      "Physical dimensions are unknown; proportions are conceptual.",
+      "Placeholder plan for the external-mesh path."
+    ]
+  },
+  "sceneSummary": {
+    "componentCount": 2,
+    "geometryNodeCount": 2,
+    "operators": [
+      "rounded_box",
+      "cone"
+    ],
+    "constraintReady": true
+  },
+  "constraintReport": {
+    "ready": true,
+    "results": [],
+    "violatedIds": []
+  },
+  "constructionEvents": [
+    {
+      "type": "scene_created",
+      "at": 0
+    },
+    {
+      "type": "component_placed",
+      "at": 1,
+      "entityId": "camera",
+      "transform": {
+        "position": [
+          0,
+          3.2,
+          0
+        ],
+        "rotationRad": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "component_placed",
+      "at": 2,
+      "entityId": "tripod",
+      "transform": {
+        "position": [
+          0,
+          1.5,
+          0
+        ],
+        "rotationRad": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "assembly_ready",
+      "at": 3
+    },
+    {
+      "type": "scene_revealed",
+      "at": 4
+    }
+  ],
+  "meta": {
+    "model": "hand-authored-fixture",
+    "requestId": "none",
+    "latencyMs": 0,
+    "estimatedCostUsd": 0
+  },
+  "limitations": [
+    "Hand-authored fixture standing in for a model plan; not Meta output."
+  ]
+}

@@ -134,6 +134,8 @@ export interface PresentationDirector {
   resumeExploring(): void;
   /** The plan or the compiled objects changed (edit, undo, solver): drop saved state of the old objects, re-analyse, keep the phase sensible. */
   rebind(next: { plan: SpatialPlanV2; root: Object3D }): void;
+  /** The meshes inside these component groups were replaced (same groups, same plan). Re-reads them and re-applies the finish and the dimming; nothing else is reset: no sequence, focus or exploded state. */
+  refreshComponents(ids: readonly string[]): void;
 
   /** Stop any motion and restore everything to the planned state (does not dispose). */
   cancel(): void;

@@ -1,0 +1,194 @@
+[
+  {
+    "name": "excavator",
+    "category": "C+D mechanics on a saved Meta plan (no ground truth for the original photograph)",
+    "steps": {
+      "defaultRefusal": {
+        "refusals": [
+          {
+            "code": "CONTRADICTORY_RELATIONS",
+            "detail": "7 declared relation(s) disagree with the plan's own geometry: undercarriage~track-left, undercarriage~track-right, undercarriage~upper-frame, upper-frame~cab, upper-frame~boom, boom~stick, .... They need the assembly solver or a person before structure can be trusted."
+          }
+        ],
+        "relations": {
+          "declared_supported": 0,
+          "declared_contradicted": 7,
+          "detected_hypothesis": 5,
+          "human_confirmed": 0
+        },
+        "planUnchanged": true,
+        "ms": 720
+      },
+      "engineWithHumanOverride": {
+        "changed": [
+          "undercarriage",
+          "track-left",
+          "track-right",
+          "upper-frame",
+          "cab",
+          "engine-hood",
+          "boom",
+          "bucket",
+          "bucket-linkage",
+          "hydraulic-boom"
+        ],
+        "fitIou": [
+          0.6119312420955296,
+          0.9119952833122812
+        ],
+        "leftOutViews": {
+          "before": 0.5864536131647985,
+          "after": 0.9082305706911386
+        },
+        "checks": {
+          "transformConsistencyMax": 0,
+          "worldConsistencyAfterMax": 0.0000021650121024840985,
+          "idsPreserved": true,
+          "sourcePreserved": true,
+          "hierarchyPreserved": true,
+          "jointResidualMax": 0
+        },
+        "unresolved": [],
+        "ms": 3530,
+        "operations": 10
+      },
+      "cancel": {
+        "pendingAfter": false,
+        "planUnchanged": true
+      },
+      "confirmedApply": {
+        "componentsChanged": 10,
+        "of": 11,
+        "provenance": [
+          "user_provided"
+        ],
+        "families": [
+          "procedural_v2"
+        ],
+        "geometryReport": {
+          "triangles": 5148,
+          "meshes": 17,
+          "geometryBytes": 478592,
+          "ms": 5.700000000069849
+        }
+      },
+      "selection": {
+        "picked": "bucket-linkage",
+        "inspectorChips": "geometria · aproximação de desenho posição · introduzido por si material · aproximação de desenho"
+      },
+      "exploded": {
+        "on": true,
+        "planSame": true,
+        "off": true
+      },
+      "undo": {
+        "restoredExactly": true
+      },
+      "nonHierarchicalComparison": {
+        "operations": 1,
+        "undoExact": true
+      },
+      "dispose": {
+        "offered": false,
+        "pending": false,
+        "upgraded": []
+      }
+    }
+  },
+  {
+    "name": "harp",
+    "category": "C+D mechanics on a saved Meta plan (no ground truth for the original photograph)",
+    "steps": {
+      "defaultRefusal": {
+        "refusals": [
+          {
+            "code": "CONTRADICTORY_RELATIONS",
+            "detail": "4 declared relation(s) disagree with the plan's own geometry: harp-neck~harp-pillar, harp-neck~harp-soundbox, harp-neck~harp-strings, harp-pillar~harp-base. They need the assembly solver or a person before structure can be trusted."
+          }
+        ],
+        "relations": {
+          "declared_supported": 0,
+          "declared_contradicted": 4,
+          "detected_hypothesis": 1,
+          "human_confirmed": 0
+        },
+        "planUnchanged": true,
+        "ms": 143
+      },
+      "engineWithHumanOverride": {
+        "changed": [
+          "harp-pillar",
+          "harp-soundbox",
+          "harp-base",
+          "harp-pegs"
+        ],
+        "fitIou": [
+          0.5430097786235935,
+          0.8448048916595151
+        ],
+        "leftOutViews": {
+          "before": 0.6079869600651997,
+          "after": 0.8368421052631579
+        },
+        "checks": {
+          "transformConsistencyMax": 0,
+          "worldConsistencyAfterMax": 4.034166596889044e-7,
+          "idsPreserved": true,
+          "sourcePreserved": true,
+          "hierarchyPreserved": true,
+          "jointResidualMax": 0
+        },
+        "unresolved": [
+          {
+            "id": "harp-neck",
+            "reason": "too_thin_for_silhouette"
+          }
+        ],
+        "ms": 1227,
+        "operations": 4
+      },
+      "cancel": {
+        "pendingAfter": false,
+        "planUnchanged": true
+      },
+      "confirmedApply": {
+        "componentsChanged": 4,
+        "of": 7,
+        "provenance": [
+          "user_provided"
+        ],
+        "families": [
+          "procedural_v2",
+          "continuous_surface"
+        ],
+        "geometryReport": {
+          "triangles": 5184,
+          "meshes": 15,
+          "geometryBytes": 237456,
+          "ms": 4.700000000069849
+        }
+      },
+      "selection": {
+        "picked": "harp-pegs",
+        "inspectorChips": "geometria · aproximação de desenho posição · introduzido por si material · aproximação de desenho"
+      },
+      "exploded": {
+        "on": true,
+        "planSame": true,
+        "off": true
+      },
+      "undo": {
+        "restoredExactly": true
+      },
+      "nonHierarchicalComparison": {
+        "operations": 1,
+        "undoExact": true
+      },
+      "dispose": {
+        "offered": false,
+        "pending": false,
+        "upgraded": []
+      }
+    }
+  }
+]

@@ -1,0 +1,9 @@
+# Jornada real executada (browser, /living)
+
+**Veículo (Skoda, fotografia real CC BY 4.0):** upload da fotografia → revisão do plano fixture rotulado → «Corrigir contorno» sobre a fotografia → pré-visualizar máscara → confirmar (`user_confirmed`) → manter componentes + reconhecer → Construir → adopt no backend real (sessão sincronizada) → fitting assíncrono no Worker com câmara estimada dos píxeis (21,5°; IoU 0.647→0.703) → photoreal activo no mesmo palco → seleccionar `wheel-0` → explicação ancorada no componente → «Propor proporções derivadas da evidência» (plano intacto) → seleccionar componente → autorizar → **Aplicar** (transacção commitada; geometria regenera) → **Desfazer** (plano original restaurado byte a byte) → **Guardar** → **reabrir** o mesmo Space com a mesma identidade de fonte. Capturas: `captures/A-01…A-06`.
+
+**Máquina (escavadora sintética, rotulada como exemplo):** seleccionar a lança → «O que faz a lança?» (explicação ancorada) → «Estende o cilindro da lança» → movimento ligado pelo solver (cilindro→lança→braço→caçamba, fecho de laço) → Pausa → Experiência cilindro→lança com antes/depois → Repor. Capturas: `captures/B-01…B-03`. Não é reconstrução fotográfica — é a demonstração de cinemática verificada.
+
+**Não-automóvel (porta, fixture rotulado):** upload → revisão → construir → seleccionar a folha da porta → explicação (movimento inferido declarado) → abrir transitoriamente em torno da dobradiça → plano intacto. Captura: `captures/C-01`.
+
+**Identidade ao longo do percurso:** o mesmo `source.sha256` do upload ao plano reaberto; o mesmo grafo de componentes (`body`, `wheel-0..3` / `door-leaf`, `door-hinge`) na selecção, explicação, proposta e transacção. Zero chamadas pagas em toda a certificação (provider duplo contador = 0; planos são fixtures rotulados casados por sha256 — nunca apresentados como Muse Spark).

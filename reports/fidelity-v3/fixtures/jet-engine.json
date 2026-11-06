@@ -1,0 +1,944 @@
+{
+  "contract": "unfold.spatial-plan.v2",
+  "sessionId": "00000000-0000-4000-8000-000000000000",
+  "revision": 0,
+  "plan": {
+    "contract": "unfold.spatial-plan.v2",
+    "source": {
+      "kind": "text",
+      "sha256": "a46ac1d8b8cf01a70df232a3afdd6bc970c75fb8821eb36e21dc4a2ddc5379e7"
+    },
+    "title": "Turbofan engine (hand-authored fixture)",
+    "units": "unitless",
+    "presentationProfile": "neutral",
+    "components": [
+      {
+        "id": "nacelle",
+        "label": "Nacelle (cowl)",
+        "parentId": null,
+        "geometry": {
+          "type": "shape",
+          "key": "nacelle-shell",
+          "operator": "revolve",
+          "parameters": {
+            "profile": [
+              [
+                1.5,
+                -3.8
+              ],
+              [
+                1.64,
+                -3.55
+              ],
+              [
+                1.76,
+                -2.8
+              ],
+              [
+                1.76,
+                1
+              ],
+              [
+                1.42,
+                3.4
+              ],
+              [
+                1.22,
+                3.85
+              ],
+              [
+                1.12,
+                3.85
+              ],
+              [
+                1.3,
+                3.4
+              ],
+              [
+                1.52,
+                1
+              ],
+              [
+                1.52,
+                -2.8
+              ],
+              [
+                1.4,
+                -3.55
+              ],
+              [
+                1.5,
+                -3.8
+              ]
+            ],
+            "segments": 96
+          },
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": null,
+          "material": {
+            "profile": "industrial",
+            "color": "#c4cad1",
+            "roughness": 0.38,
+            "metalness": 0.35,
+            "clearcoat": 0.5
+          }
+        },
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotationRad": [
+            0,
+            0,
+            -1.5707963267948966
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored fixture standing in for a model plan."
+        }
+      },
+      {
+        "id": "inlet-lip",
+        "label": "Inlet lip",
+        "parentId": null,
+        "geometry": {
+          "type": "shape",
+          "key": "inlet-lip-ring",
+          "operator": "torus",
+          "parameters": {
+            "majorRadius": 1.5,
+            "tubeRadius": 0.1,
+            "radialSegments": 16,
+            "tubularSegments": 96
+          },
+          "transform": {
+            "position": [
+              -3.78,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              1.5707963267948966,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": null,
+          "material": {
+            "profile": "metal",
+            "color": "#e4e7eb",
+            "roughness": 0.22,
+            "metalness": 0.9,
+            "clearcoat": 0
+          }
+        },
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotationRad": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored fixture standing in for a model plan."
+        }
+      },
+      {
+        "id": "spinner",
+        "label": "Fan spinner",
+        "parentId": null,
+        "geometry": {
+          "type": "shape",
+          "key": "spinner-body",
+          "operator": "revolve",
+          "parameters": {
+            "profile": [
+              [
+                0,
+                -4.05
+              ],
+              [
+                0.18,
+                -3.9
+              ],
+              [
+                0.4,
+                -3.45
+              ],
+              [
+                0.54,
+                -2.95
+              ],
+              [
+                0.56,
+                -2.55
+              ],
+              [
+                0,
+                -2.55
+              ]
+            ],
+            "segments": 64
+          },
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": null,
+          "material": {
+            "profile": "accent",
+            "color": "#d8dce1",
+            "roughness": 0.25,
+            "metalness": 0.1,
+            "clearcoat": 0.7
+          }
+        },
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotationRad": [
+            0,
+            0,
+            -1.5707963267948966
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored fixture standing in for a model plan."
+        }
+      },
+      {
+        "id": "fan-blades",
+        "label": "Fan blades",
+        "parentId": null,
+        "geometry": {
+          "type": "group",
+          "key": "fan-blade-ring",
+          "transform": {
+            "position": [
+              -2.75,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": {
+            "kind": "radial",
+            "count": 18,
+            "axis": "x",
+            "spacingOrRadius": 0.5
+          },
+          "children": [
+            {
+              "type": "shape",
+              "key": "fan-blade",
+              "operator": "extrude",
+              "parameters": {
+                "profile": [
+                  [
+                    -0.3,
+                    -0.12
+                  ],
+                  [
+                    0.26,
+                    -0.08
+                  ],
+                  [
+                    0.34,
+                    0.55
+                  ],
+                  [
+                    0.24,
+                    0.92
+                  ],
+                  [
+                    -0.1,
+                    0.9
+                  ],
+                  [
+                    -0.22,
+                    0.45
+                  ]
+                ],
+                "depth": 0.05,
+                "bevelM": 0.012,
+                "curveSegments": 3
+              },
+              "transform": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationRad": [
+                  0,
+                  0.95,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "repeat": null,
+              "material": {
+                "profile": "metal",
+                "color": "#a9b2bc",
+                "roughness": 0.28,
+                "metalness": 0.9,
+                "clearcoat": 0
+              }
+            }
+          ]
+        },
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotationRad": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored fixture standing in for a model plan."
+        }
+      },
+      {
+        "id": "bypass-vanes",
+        "label": "Outlet guide vanes",
+        "parentId": null,
+        "geometry": {
+          "type": "shape",
+          "key": "guide-vane",
+          "operator": "box",
+          "parameters": {
+            "dimensions": [
+              0.55,
+              0.75,
+              0.04
+            ]
+          },
+          "transform": {
+            "position": [
+              1.5,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": {
+            "kind": "radial",
+            "count": 14,
+            "axis": "x",
+            "spacingOrRadius": 1.13
+          },
+          "material": {
+            "profile": "metal",
+            "color": "#79828c",
+            "roughness": 0.35,
+            "metalness": 0.88,
+            "clearcoat": 0
+          }
+        },
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotationRad": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored fixture standing in for a model plan."
+        }
+      },
+      {
+        "id": "core",
+        "label": "Engine core",
+        "parentId": null,
+        "geometry": {
+          "type": "shape",
+          "key": "core-casing",
+          "operator": "revolve",
+          "parameters": {
+            "profile": [
+              [
+                0.46,
+                -2.55
+              ],
+              [
+                0.72,
+                -1.9
+              ],
+              [
+                0.84,
+                -0.6
+              ],
+              [
+                0.84,
+                1.2
+              ],
+              [
+                0.7,
+                2.8
+              ],
+              [
+                0.5,
+                3.3
+              ],
+              [
+                0,
+                3.3
+              ]
+            ],
+            "segments": 80
+          },
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": null,
+          "material": {
+            "profile": "metal",
+            "color": "#59616b",
+            "roughness": 0.34,
+            "metalness": 0.9,
+            "clearcoat": 0
+          }
+        },
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotationRad": [
+            0,
+            0,
+            -1.5707963267948966
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored fixture standing in for a model plan."
+        }
+      },
+      {
+        "id": "exhaust-cone",
+        "label": "Exhaust cone",
+        "parentId": null,
+        "geometry": {
+          "type": "shape",
+          "key": "exhaust-cone-body",
+          "operator": "revolve",
+          "parameters": {
+            "profile": [
+              [
+                0.52,
+                3.2
+              ],
+              [
+                0.4,
+                3.55
+              ],
+              [
+                0.22,
+                4.05
+              ],
+              [
+                0,
+                4.45
+              ],
+              [
+                0,
+                3.2
+              ]
+            ],
+            "segments": 64
+          },
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": null,
+          "material": {
+            "profile": "metal",
+            "color": "#3a4046",
+            "roughness": 0.4,
+            "metalness": 0.85,
+            "clearcoat": 0
+          }
+        },
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotationRad": [
+            0,
+            0,
+            -1.5707963267948966
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored fixture standing in for a model plan."
+        }
+      },
+      {
+        "id": "pylon",
+        "label": "Pylon",
+        "parentId": null,
+        "geometry": {
+          "type": "shape",
+          "key": "pylon-plate",
+          "operator": "extrude",
+          "parameters": {
+            "profile": [
+              [
+                -1.7,
+                1.45
+              ],
+              [
+                1.9,
+                1.45
+              ],
+              [
+                1.3,
+                3
+              ],
+              [
+                -0.7,
+                3.1
+              ]
+            ],
+            "depth": 0.28,
+            "bevelM": 0.03,
+            "curveSegments": 3
+          },
+          "transform": {
+            "position": [
+              0,
+              0,
+              -0.14
+            ],
+            "rotationRad": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          "repeat": null,
+          "material": {
+            "profile": "industrial",
+            "color": "#8a9199",
+            "roughness": 0.45,
+            "metalness": 0.3,
+            "clearcoat": 0.3
+          }
+        },
+        "transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotationRad": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "provenance": {
+          "geometry": "design_approximation",
+          "transform": "design_approximation",
+          "material": "design_approximation",
+          "evidence": "Hand-authored fixture standing in for a model plan."
+        }
+      }
+    ],
+    "relations": [],
+    "constraints": [],
+    "unknowns": [
+      "Hand-authored fixture, not a Meta response.",
+      "Physical dimensions are unknown; proportions are conceptual.",
+      "Blade twist, internal compressor and turbine stages are not modelled."
+    ]
+  },
+  "sceneSummary": {
+    "componentCount": 8,
+    "geometryNodeCount": 9,
+    "operators": [
+      "revolve",
+      "torus",
+      "extrude",
+      "box"
+    ],
+    "constraintReady": true
+  },
+  "constraintReport": {
+    "ready": true,
+    "results": [],
+    "violatedIds": []
+  },
+  "constructionEvents": [
+    {
+      "type": "scene_created",
+      "at": 0
+    },
+    {
+      "type": "component_placed",
+      "at": 1,
+      "entityId": "nacelle",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationRad": [
+          0,
+          0,
+          -1.5707963267948966
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "component_placed",
+      "at": 2,
+      "entityId": "inlet-lip",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationRad": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "component_placed",
+      "at": 3,
+      "entityId": "spinner",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationRad": [
+          0,
+          0,
+          -1.5707963267948966
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "component_placed",
+      "at": 4,
+      "entityId": "fan-blades",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationRad": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "component_placed",
+      "at": 5,
+      "entityId": "bypass-vanes",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationRad": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "component_placed",
+      "at": 6,
+      "entityId": "core",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationRad": [
+          0,
+          0,
+          -1.5707963267948966
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "component_placed",
+      "at": 7,
+      "entityId": "exhaust-cone",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationRad": [
+          0,
+          0,
+          -1.5707963267948966
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "component_placed",
+      "at": 8,
+      "entityId": "pylon",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationRad": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "assembly_ready",
+      "at": 9
+    },
+    {
+      "type": "scene_revealed",
+      "at": 10
+    }
+  ],
+  "meta": {
+    "model": "hand-authored-fixture",
+    "requestId": "none",
+    "latencyMs": 0,
+    "estimatedCostUsd": 0
+  },
+  "limitations": [
+    "Hand-authored fixture standing in for a model plan; not Meta output."
+  ]
+}

@@ -1,0 +1,450 @@
+{
+ "contract": "unfold.spatial-plan.v2",
+ "sessionId": "00000000-0000-4000-8000-000000000000",
+ "revision": 0,
+ "plan": {
+  "contract": "unfold.spatial-plan.v2",
+  "source": {
+   "kind": "image",
+   "sha256": "a79458c4b02d695187a952f23a63b8bf278e7bc3d316a3c2a314f2d6974181f1"
+  },
+  "title": "Lamp post with hanging lantern (hand-built approximation)",
+  "units": "unitless",
+  "presentationProfile": "industrial",
+  "components": [
+   {
+    "id": "pole",
+    "label": "Pole",
+    "parentId": null,
+    "transform": {
+     "position": [
+      0,
+      13,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "geometry": {
+     "type": "shape",
+     "key": "pole-s",
+     "operator": "box",
+     "parameters": {
+      "dimensions": [
+       1.6,
+       25.4,
+       1.6
+      ]
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "neutral",
+      "color": "#4a4a4a",
+      "roughness": 0.55,
+      "metalness": 0.1,
+      "clearcoat": 0
+     }
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-built primitive approximation for the benchmark (category D); not Meta output."
+    }
+   },
+   {
+    "id": "base",
+    "label": "Base",
+    "parentId": null,
+    "transform": {
+     "position": [
+      0,
+      2.5,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "geometry": {
+     "type": "shape",
+     "key": "base-s",
+     "repeat": null,
+     "material": {
+      "profile": "neutral",
+      "color": "#4a4a4a",
+      "roughness": 0.55,
+      "metalness": 0.1,
+      "clearcoat": 0
+     },
+     "operator": "box",
+     "parameters": {
+      "dimensions": [
+       4.4,
+       4.6,
+       4.4
+      ]
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    "provenance": {
+     "geometry": "inferred",
+     "transform": "design_approximation",
+     "material": "inferred",
+     "evidence": "Primitive alternative: cylinder -> box, parameters from the part's own extent; silhouette agreement 0.757 -> 0.787 on 5 view(s), left-out views 0.753 -> 0.800. Same node, same transform and material, no component added. Basis: inferred."
+    }
+   },
+   {
+    "id": "arm",
+    "label": "Arm",
+    "parentId": null,
+    "transform": {
+     "position": [
+      3.8,
+      22.6,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "geometry": {
+     "type": "shape",
+     "key": "arm-s",
+     "operator": "box",
+     "parameters": {
+      "dimensions": [
+       15.4,
+       0.7,
+       0.9
+      ]
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "neutral",
+      "color": "#4a4a4a",
+      "roughness": 0.55,
+      "metalness": 0.1,
+      "clearcoat": 0
+     }
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-built primitive approximation for the benchmark (category D); not Meta output."
+    }
+   },
+   {
+    "id": "bracket",
+    "label": "Bracket",
+    "parentId": null,
+    "transform": {
+     "position": [
+      0,
+      0,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "geometry": {
+     "type": "shape",
+     "key": "bracket-s",
+     "operator": "tube",
+     "parameters": {
+      "points": [
+       [
+        0.3,
+        16,
+        0
+       ],
+       [
+        1.4,
+        20.2,
+        0
+       ],
+       [
+        4.2,
+        21.9,
+        0
+       ],
+       [
+        8,
+        22.3,
+        0
+       ]
+      ],
+      "radius": 0.28,
+      "tubularSegments": 36,
+      "radialSegments": 10
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "neutral",
+      "color": "#4a4a4a",
+      "roughness": 0.55,
+      "metalness": 0.1,
+      "clearcoat": 0
+     }
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-built primitive approximation for the benchmark (category D); not Meta output."
+    }
+   },
+   {
+    "id": "chain",
+    "label": "Chain",
+    "parentId": null,
+    "transform": {
+     "position": [
+      9.9,
+      21.35,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "geometry": {
+     "type": "shape",
+     "key": "chain-s",
+     "operator": "cylinder",
+     "parameters": {
+      "radiusTop": 0.1,
+      "radiusBottom": 0.1,
+      "height": 2.1,
+      "radialSegments": 10
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "neutral",
+      "color": "#777777",
+      "roughness": 0.55,
+      "metalness": 0.1,
+      "clearcoat": 0
+     }
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-built primitive approximation for the benchmark (category D); not Meta output."
+    }
+   },
+   {
+    "id": "lantern",
+    "label": "Lantern",
+    "parentId": null,
+    "transform": {
+     "position": [
+      9.9,
+      18.4,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "geometry": {
+     "type": "shape",
+     "key": "lantern-s",
+     "repeat": null,
+     "material": {
+      "profile": "neutral",
+      "color": "#c9c3a8",
+      "roughness": 0.55,
+      "metalness": 0.1,
+      "clearcoat": 0
+     },
+     "operator": "cone",
+     "parameters": {
+      "radius": 1.3,
+      "height": 5.6,
+      "radialSegments": 24
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    "provenance": {
+     "geometry": "inferred",
+     "transform": "design_approximation",
+     "material": "inferred",
+     "evidence": "Primitive alternative: box -> cone (axis y), parameters from the part's own extent; silhouette agreement 0.757 -> 0.779 on 5 view(s), left-out views 0.753 -> 0.769. Same node, same transform and material, no component added. Basis: inferred."
+    }
+   }
+  ],
+  "relations": [],
+  "constraints": [],
+  "unknowns": [
+   "Hand-built approximation of a CC0 asset; units are the asset's own.",
+   "Physical scale unknown."
+  ]
+ },
+ "sceneSummary": {
+  "componentCount": 6,
+  "geometryNodeCount": 6,
+  "operators": [
+   "box",
+   "tube",
+   "cylinder",
+   "cone"
+  ],
+  "constraintReady": false
+ },
+ "constraintReport": {
+  "ok": true,
+  "results": []
+ },
+ "constructionEvents": [],
+ "meta": {
+  "note": "local benchmark plan; not Meta output"
+ },
+ "limitations": []
+}

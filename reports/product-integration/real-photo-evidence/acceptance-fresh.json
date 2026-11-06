@@ -1,0 +1,68 @@
+{
+  "accept-mini": {
+    "camera": {
+      "kind": "three-quarter",
+      "azimuthDeg": 32,
+      "uncertaintyDeg": 28,
+      "ambiguous": true
+    },
+    "landmarks": {
+      "detected": [
+        {
+          "x": 0.134,
+          "r": 0.221,
+          "partial": false
+        },
+        {
+          "x": 0.844,
+          "r": 0.221,
+          "partial": false
+        }
+      ],
+      "centreErrorsFraction": [
+        0.006,
+        0.011
+      ],
+      "missing": []
+    },
+    "iou": {
+      "genericBaseline": 0.671,
+      "genericFitted": 0.722,
+      "proportionsBaseline": 0.726,
+      "proportionsFitted": 0.75
+    }
+  },
+  "accept-pickup": {
+    "camera": {
+      "kind": "three-quarter",
+      "azimuthDeg": 32,
+      "uncertaintyDeg": 28,
+      "ambiguous": true
+    },
+    "landmarks": {
+      "detected": [
+        {
+          "x": 0.178,
+          "r": 0.264,
+          "partial": false
+        },
+        {
+          "x": 0.795,
+          "r": 0.264,
+          "partial": false
+        }
+      ],
+      "centreErrorsFraction": [
+        0.014,
+        0.007
+      ],
+      "missing": []
+    },
+    "iou": {
+      "genericBaseline": 0.663,
+      "genericFitted": 0.693,
+      "proportionsBaseline": null,
+      "proportionsFitted": "insufficient_evidence"
+    }
+  }
+}

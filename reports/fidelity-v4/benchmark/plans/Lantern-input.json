@@ -1,0 +1,603 @@
+{
+ "contract": "unfold.spatial-plan.v2",
+ "sessionId": "00000000-0000-4000-8000-000000000000",
+ "revision": 0,
+ "plan": {
+  "contract": "unfold.spatial-plan.v2",
+  "source": {
+   "kind": "image",
+   "sha256": "a79458c4b02d695187a952f23a63b8bf278e7bc3d316a3c2a314f2d6974181f1"
+  },
+  "title": "Lamp post with hanging lantern (hand-built approximation)",
+  "units": "unitless",
+  "presentationProfile": "industrial",
+  "components": [
+   {
+    "id": "pole",
+    "label": "Pole",
+    "parentId": null,
+    "transform": {
+     "position": [
+      0,
+      13,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "geometry": {
+     "type": "shape",
+     "key": "pole-s",
+     "operator": "cylinder",
+     "parameters": {
+      "radiusTop": 0.35,
+      "radiusBottom": 0.8,
+      "height": 25.4,
+      "radialSegments": 24
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "neutral",
+      "color": "#4a4a4a",
+      "roughness": 0.55,
+      "metalness": 0.1,
+      "clearcoat": 0
+     }
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-built primitive approximation for the benchmark (category D); not Meta output."
+    }
+   },
+   {
+    "id": "base",
+    "label": "Base",
+    "parentId": null,
+    "transform": {
+     "position": [
+      0,
+      2.5,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "geometry": {
+     "type": "shape",
+     "key": "base-s",
+     "operator": "cylinder",
+     "parameters": {
+      "radiusTop": 1,
+      "radiusBottom": 2.2,
+      "height": 4.6,
+      "radialSegments": 24
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "neutral",
+      "color": "#4a4a4a",
+      "roughness": 0.55,
+      "metalness": 0.1,
+      "clearcoat": 0
+     }
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-built primitive approximation for the benchmark (category D); not Meta output."
+    }
+   },
+   {
+    "id": "arm",
+    "label": "Arm",
+    "parentId": null,
+    "transform": {
+     "position": [
+      3.8,
+      22.6,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "geometry": {
+     "type": "shape",
+     "key": "arm-s",
+     "operator": "box",
+     "parameters": {
+      "dimensions": [
+       15.4,
+       0.7,
+       0.9
+      ]
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "neutral",
+      "color": "#4a4a4a",
+      "roughness": 0.55,
+      "metalness": 0.1,
+      "clearcoat": 0
+     }
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-built primitive approximation for the benchmark (category D); not Meta output."
+    }
+   },
+   {
+    "id": "bracket",
+    "label": "Bracket",
+    "parentId": null,
+    "transform": {
+     "position": [
+      0,
+      0,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "geometry": {
+     "type": "shape",
+     "key": "bracket-s",
+     "operator": "tube",
+     "parameters": {
+      "points": [
+       [
+        0.3,
+        16,
+        0
+       ],
+       [
+        1.4,
+        20.2,
+        0
+       ],
+       [
+        4.2,
+        21.9,
+        0
+       ],
+       [
+        8,
+        22.3,
+        0
+       ]
+      ],
+      "radius": 0.28,
+      "tubularSegments": 36,
+      "radialSegments": 10
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "neutral",
+      "color": "#4a4a4a",
+      "roughness": 0.55,
+      "metalness": 0.1,
+      "clearcoat": 0
+     }
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-built primitive approximation for the benchmark (category D); not Meta output."
+    }
+   },
+   {
+    "id": "chain",
+    "label": "Chain",
+    "parentId": null,
+    "transform": {
+     "position": [
+      9.9,
+      21.35,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "geometry": {
+     "type": "shape",
+     "key": "chain-s",
+     "operator": "cylinder",
+     "parameters": {
+      "radiusTop": 0.1,
+      "radiusBottom": 0.1,
+      "height": 2.1,
+      "radialSegments": 10
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "neutral",
+      "color": "#777777",
+      "roughness": 0.55,
+      "metalness": 0.1,
+      "clearcoat": 0
+     }
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-built primitive approximation for the benchmark (category D); not Meta output."
+    }
+   },
+   {
+    "id": "lantern",
+    "label": "Lantern",
+    "parentId": null,
+    "transform": {
+     "position": [
+      9.9,
+      18.4,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "geometry": {
+     "type": "shape",
+     "key": "lantern-s",
+     "operator": "ellipsoid",
+     "parameters": {
+      "radii": [
+       1.3,
+       2.8,
+       1.3
+      ],
+      "widthSegments": 28,
+      "heightSegments": 20
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "neutral",
+      "color": "#c9c3a8",
+      "roughness": 0.55,
+      "metalness": 0.1,
+      "clearcoat": 0
+     }
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-built primitive approximation for the benchmark (category D); not Meta output."
+    }
+   }
+  ],
+  "relations": [],
+  "constraints": [],
+  "unknowns": [
+   "Hand-built approximation of a CC0 asset; units are the asset's own.",
+   "Physical scale unknown."
+  ]
+ },
+ "sceneSummary": {
+  "componentCount": 6,
+  "geometryNodeCount": 6,
+  "operators": [
+   "cylinder",
+   "box",
+   "tube",
+   "ellipsoid"
+  ],
+  "constraintReady": true
+ },
+ "constraintReport": {
+  "ready": true,
+  "results": [],
+  "violatedIds": []
+ },
+ "constructionEvents": [
+  {
+   "type": "scene_created",
+   "at": 0
+  },
+  {
+   "type": "component_placed",
+   "at": 1,
+   "entityId": "pole",
+   "transform": {
+    "position": [
+     0,
+     13,
+     0
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 2,
+   "entityId": "base",
+   "transform": {
+    "position": [
+     0,
+     2.5,
+     0
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 3,
+   "entityId": "arm",
+   "transform": {
+    "position": [
+     3.8,
+     22.6,
+     0
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 4,
+   "entityId": "bracket",
+   "transform": {
+    "position": [
+     0,
+     0,
+     0
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 5,
+   "entityId": "chain",
+   "transform": {
+    "position": [
+     9.9,
+     21.35,
+     0
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "component_placed",
+   "at": 6,
+   "entityId": "lantern",
+   "transform": {
+    "position": [
+     9.9,
+     18.4,
+     0
+    ],
+    "rotationRad": [
+     0,
+     0,
+     0
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "type": "assembly_ready",
+   "at": 7
+  },
+  {
+   "type": "scene_revealed",
+   "at": 8
+  }
+ ],
+ "meta": {
+  "model": "hand-authored-fixture",
+  "requestId": "none",
+  "latencyMs": 0,
+  "estimatedCostUsd": 0
+ },
+ "limitations": [
+  "Hand-authored fixture standing in for a model plan; not Meta output."
+ ]
+}

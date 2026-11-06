@@ -142,3 +142,5 @@ The full Foundry transfer analysis, asset strategy, checks and limitations are i
 ## Visual recovery additions
 
 Presentation (framing, verified captures, stage, assembly solver, material profiles, field-level parameter repair) is documented with measurements and limits in `reports/visual-recovery/RESULTS.md`. The compiled geometry and the plan contract are unchanged; presentation scale is applied by a wrapper and never written back to a plan. Solver and human edits go through `applySpatialOperationV2`.
+
+> Note (V4 branch): the `/universal-spatial-v2` Engine Lab page, its harness and e2e tests were removed. Visual validation runs in `/living`.

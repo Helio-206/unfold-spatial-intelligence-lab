@@ -5,12 +5,15 @@ import linkIcon from 'lucide-static/icons/link.svg?raw';
 import saveIcon from 'lucide-static/icons/save.svg?raw';
 import undoIcon from 'lucide-static/icons/undo-2.svg?raw';
 import './space.css';
-import { adoptSpatialPlanV2, applySpatialPlanV2Operation, createSpatialPlanV2, evaluateSpatialPlanV2, proposeSpatialEditV2, SpatialApiError, undoSpatialPlanV2, type SpatialPlanV2Reply } from '../../universal-spatial/api-client';
+import { adoptSpatialPlanV2, applySpatialPlanV2Operation, applySpatialPlanV2Transaction, createSpatialPlanV2, createSpatialReview, decideSpatialReview, transitionSpatialReviewBinding, evaluateSpatialPlanV2, getSpatialReview, listSpatialReviews, proposeSpatialEditV2, SpatialApiError, SpatialTransactionUnresolvedError, spatialPlanFingerprintV2, undoSpatialPlanV2, type SpatialPlanV2Reply } from '../../universal-spatial/api-client';
+import { effectiveDecisions, reviewSolverGate, type SpatialReviewRecord } from '../../universal-spatial/review-v1';
 import type { SpatialOperationV2, SpatialPlanV2 } from '../../universal-spatial/contracts-v2';
 import { checkFile } from '../experience/intake';
 import { canvasTranscoder, prepareImage, TranscodeError, type Transcoder } from '../unified-workspace/image-transcode';
 import type { SpatialWorkspace, WorkspaceOptions } from '../workspace-design/workspace';
-import { PlanSpaceLayer, type LayerSync } from './layer';
+import { PlanSpaceLayer, SpatialTransactionSessionRecoveredError, type LayerSync } from './layer';
+import type { SpatialReviewPrecondition } from '../../universal-spatial/contracts-v2';
+import { ProductGeometry } from './product-geometry';
 import { AtlasSpaceLayer, ATLAS_NOTICE } from './atlas-layer';
 import { decide, decideAll, initialSpaceReview, pruneSpatialPlan, removedIds, reviewBlockers, reviewRecord, type SpaceReview } from './review';
 import { browserStorage, SpaceStore, type SpaceListing, type SpaceRecord, type StoreProblem } from './store';
@@ -29,7 +32,7 @@ export type SpacePhase = 'closed' | 'intake' | 'library' | 'waiting' | 'failed' 
 /** What is known about the run that produced the Space on stage (from the server reply, or from the saved record). */
 export type RunInfo = { origin: 'meta' | 'reopened'; model: string | null; requestId: string | null; latencyMs: number | null; estimatedCostUsd: number | null; rawResponseSha256: string | null; rawResponseStored: boolean; sourceKind: 'text' | 'image'; sourceSha256: string; limitations: string[] };
 type Create = (input: Parameters<typeof createSpatialPlanV2>[0], fetchImpl?: typeof fetch) => Promise<SpatialPlanV2Reply>;
-type Api = { adopt: typeof adoptSpatialPlanV2; operation: typeof applySpatialPlanV2Operation; undo: typeof undoSpatialPlanV2; propose: typeof proposeSpatialEditV2; evaluate: typeof evaluateSpatialPlanV2 };
+type Api = { adopt: typeof adoptSpatialPlanV2; operation: typeof applySpatialPlanV2Operation; undo: typeof undoSpatialPlanV2; propose: typeof proposeSpatialEditV2; evaluate: typeof evaluateSpatialPlanV2; transaction: typeof applySpatialPlanV2Transaction };
 
 export type SpaceFlowOptions = {
   workspace: SpatialWorkspace;
@@ -45,7 +48,16 @@ export type SpaceFlowOptions = {
   fetchImpl?: typeof fetch;
   transcode?: Transcoder;
   reducedMotion?: boolean;
+  /** Experimental (debug only): a geometry seam that replaces the V3 product geometry, e.g. the Universal Foundry. */
+  geometry?: () => GeometrySeam;
+  /** Experimental: receives the picture a Space is being made from (the same data URL the review shows) so local evidence can be extracted from it. */
+  onImage?: (dataUrl: string) => void;
+  /** Experimental: the exact reviewed plan that has just been put on stage (binds image evidence to this plan, never to a later one). */
+  onPlanShown?: (plan: SpatialPlanV2) => void;
+  /** Experimental: the person corrected the foreground outline in review. Bound by the caller to this plan's source hash; stale after any new upload. */
+  onCorrectedMask?: (info: { polygon: Array<[number, number]>; sourceSha256: string }) => void;
 };
+export type GeometrySeam = { compile: (plan: SpatialPlanV2) => import('../../universal-spatial/geometry-compiler-v2').CompiledSpatialPlanV2; attach(onReady: () => void): void; report(): unknown; dispose(): void };
 
 export const FAILURE_COPY: Record<string, string> = {
   META_CALL_BUDGET_EXHAUSTED: 'O orçamento de chamadas à Meta deste servidor esgotou-se. Nada foi construído.',
@@ -86,8 +98,18 @@ export class SpaceFlow {
   /** Server session mirroring the Space on stage. Null when it could not be created or was lost; the reason is in `syncNote`. */
   session: { id: string; revision: number } | null = null;
   syncNote: string | null = null;
+  /** Persistent human-review record for the Space on stage (V4 E1). Decisions live on the server. */
+  relationReview: SpatialReviewRecord | null = null;
+  private reviewName = '';
+  /** Mutation policy of the current server session, as reported by the server (never assumed). */
+  sessionPolicy: 'legacy' | 'review_fenced' = 'legacy';
+  /** The review record the current session is bound to, when fenced. */
+  sessionReviewId: string | null = null;
+  sessionDurability: 'file' | 'volatile' | null = null;
+  get currentReviewId(): string | null { return this.relationReview?.reviewId ?? null; }
   savedId: string | null = null;
   readonly store: SpaceStore;
+  private geometry: GeometrySeam | null = null;
   private savedPlanJson: string | null = null;
   private source: SpaceSource | null = null;
   private problem: string | null = null;
@@ -103,6 +125,12 @@ export class SpaceFlow {
   private listing: { spaces: SpaceListing[]; damaged: StoreProblem[] } = { spaces: [], damaged: [] };
   private confirmDelete: string | null = null;
   private pendingLeave: (() => void) | null = null;
+  // Contorno corrigido pela pessoa (revisão de fotografia): polígono em fracções da imagem.
+  private contourOpen = false;
+  private contourPoints: Array<[number, number]> = [];
+  private contourPreview = false;
+  private correctedPolygon: Array<[number, number]> | null = null;
+  private correctedForSha: string | null = null;
   private readonly panel: HTMLElement;
   private readonly create: Create;
   private readonly api: Api;
@@ -111,7 +139,7 @@ export class SpaceFlow {
 
   constructor(private readonly options: SpaceFlowOptions) {
     this.create = options.create ?? createSpatialPlanV2;
-    this.api = { adopt: adoptSpatialPlanV2, operation: applySpatialPlanV2Operation, undo: undoSpatialPlanV2, propose: proposeSpatialEditV2, evaluate: evaluateSpatialPlanV2, ...options.api };
+    this.api = { adopt: adoptSpatialPlanV2, operation: applySpatialPlanV2Operation, undo: undoSpatialPlanV2, propose: proposeSpatialEditV2, evaluate: evaluateSpatialPlanV2, transaction: applySpatialPlanV2Transaction, ...options.api };
     this.store = options.store ?? new SpaceStore(browserStorage());
     this.transcode = options.transcode ?? canvasTranscoder;
     this.reducedMotion = options.reducedMotion ?? options.workspace.reducedMotion;
@@ -167,11 +195,12 @@ export class SpaceFlow {
   /** Leaving for the laboratory: asks first when something unsaved is on stage. */
   exit(): void { this.guard(() => { this.close(); this.options.onExit(); }); }
 
-  dispose(): void { this.abort?.abort(); clearInterval(this.tick); this.layer = null; this.panel.remove(); }
+  dispose(): void { this.abort?.abort(); clearInterval(this.tick); this.geometry?.dispose(); this.geometry = null; this.layer = null; this.panel.remove(); }
 
   private dropScene(): void {
+    this.geometry?.dispose(); this.geometry = null;
     if (this.layer || this.atlas) { this.layer = null; this.atlas = null; this.options.workspace.clearMachine({ brandLabel: 'laboratório vazio', notices: [], extraTools: [] }); }
-    this.session = null; this.syncNote = null; this.presentationNotice = null;
+    this.session = null; this.syncNote = null; this.presentationNotice = null; this.relationReview = null;
   }
 
   // ------------------------------------------------------------------------------------------------ source
@@ -195,12 +224,15 @@ export class SpaceFlow {
 
   async submit(): Promise<void> {
     if (this.phase !== 'intake' || !this.source) return;
+    // Nova submissão: qualquer contorno corrigido anterior fica stale e é descartado.
+    this.correctedPolygon = null; this.correctedForSha = null; this.contourOpen = false; this.contourPoints = [];
     const source = this.source; this.abort?.abort(); const mine = this.abort = new AbortController();
     this.phase = 'waiting'; this.startedAt = Date.now(); this.failure = null; this.render();
     clearInterval(this.tick); this.tick = window.setInterval(() => { if (this.phase === 'waiting') this.render(); }, 1000);
     const base = this.options.fetchImpl ?? fetch.bind(globalThis);
     const fetchImpl: typeof fetch = (input, init) => base(input, { ...init, signal: mine.signal });
     try {
+      this.options.onImage?.(source.kind === 'image' ? source.dataUrl : '');
       const request = source.kind === 'text'
         ? { sourceKind: 'text' as const, instruction: source.text, maxRefinements: 0 }
         : { sourceKind: 'image' as const, imageDataUrl: (await prepareImage(source.dataUrl, this.transcode, mine.signal)).dataUrl, maxRefinements: 0 };
@@ -251,6 +283,7 @@ export class SpaceFlow {
 
   private show(plan: SpatialPlanV2, cinematic: boolean): void {
     const workspace = this.options.workspace;
+    const geometry: GeometrySeam = this.options.geometry ? this.options.geometry() : new ProductGeometry(); this.geometry = geometry;
     const layer = new PlanSpaceLayer(plan, {
       changed: () => { this.refreshContext(); workspace.spaceChanged(); },
       redraw: () => workspace.redraw(),
@@ -260,13 +293,17 @@ export class SpaceFlow {
       viewContext: () => workspace.spaceViewContext(),
       notify: (text) => { this.note = text; this.refreshContext(); this.expireNote(text); },
       syncLost: (reason) => { this.session = null; this.syncNote = `Sessão do servidor perdida (${reason}). As edições continuam locais; propostas da Meta e avaliação visual ficam bloqueadas.`; this.refreshContext(); this.updateComposer(); },
-    });
+    }, geometry.compile);
     // edits wait for the server session: one made before it exists would be unknown to it and later overwritten
     layer.lockEditing('a preparar a sessão do servidor');
     this.layer = layer; this.phase = 'built'; this.panel.hidden = true; this.panel.replaceChildren();
     workspace.showSpace(layer, this.context());
-    this.updateComposer();
     layer.reveal(!cinematic || this.reducedMotion);
+    // Commit the initial V2 frame before a worker completion may upgrade any component.
+    workspace.renderNow();
+    geometry.attach(() => layer.scheduleGeometryUpgrade(12_000));
+    this.updateComposer();
+    this.options.onPlanShown?.(plan);
     void this.adopt(plan);
   }
 
@@ -278,9 +315,66 @@ export class SpaceFlow {
       const reply = await this.api.adopt({ plan, instruction: `Reviewed space: ${plan.title}` }, fetchImpl);
       if (this.layer !== layer) return;
       const session = { id: reply.sessionId, revision: reply.revision }; this.session = session; this.syncNote = null;
+      this.sessionPolicy = reply.mutationPolicy?.mode ?? 'legacy'; this.sessionReviewId = reply.mutationPolicy?.mode === 'review_fenced' ? reply.mutationPolicy.reviewId : null; this.sessionDurability = reply.sessionDurability ?? null;
+      // The exact transaction request (including the layer's stable idempotency key) is kept for the
+      // life of this session, so reconciliation resubmits/recovers the same transaction and no other.
+      let pendingTransaction: Parameters<typeof applySpatialPlanV2Transaction>[0] | null = null;
+      let pendingUndo: { key: string; baseRevision: number } | null = null;
       const sync: LayerSync = {
         apply: async (operation: SpatialOperationV2, provenance) => { const r = await this.api.operation({ sessionId: session.id, baseRevision: session.revision, operation, origin: provenance.origin, evidence: provenance.evidence.slice(0, 300) }, fetchImpl); session.revision = r.revision; return r.plan; },
         undo: async () => { const r = await this.api.undo({ sessionId: session.id, baseRevision: session.revision }, fetchImpl); session.revision = r.revision; return r.plan; },
+        applyTransaction: async (operations: SpatialOperationV2[], provenance, idempotencyKey: string, reviewPrecondition?: SpatialReviewPrecondition) => {
+          const request = { sessionId: session.id, baseRevision: session.revision, idempotencyKey, operations, provenance: { origin: provenance.origin, evidence: provenance.evidence.slice(0, 500) }, ...(reviewPrecondition ? { reviewPrecondition, approvalActor: this.reviewName || 'não identificado' } : {}) };
+          pendingTransaction = request;
+          try { const r = await this.api.transaction(request, fetchImpl); pendingTransaction = null; session.revision = r.revision; return r.plan; }
+          catch (error) { if (!(error instanceof SpatialTransactionUnresolvedError)) pendingTransaction = null; throw error; }
+        },
+        undoTransaction: async () => {
+            // One stable key per undo attempt: a retry after a lost response replays the server
+            // receipt instead of undoing a second history entry. If even the retry cannot produce
+            // an answer, the outcome is explicitly unresolved, never invented.
+            pendingUndo ??= { key: `undo-${globalThis.crypto.randomUUID()}`, baseRevision: session.revision };
+            const attempt = pendingUndo;
+            try { const r = await this.api.undo({ sessionId: session.id, baseRevision: attempt.baseRevision, idempotencyKey: attempt.key }, fetchImpl); pendingUndo = null; session.revision = r.revision; return r.plan; }
+            catch (error) {
+              if (error instanceof SpatialApiError) { pendingUndo = null; throw error; }
+              throw new SpatialTransactionUnresolvedError(session.id, attempt.key, 'response-and-recovery-failed', error);
+            }
+          },
+        reconcileUndo: async (idempotencyKey: string) => {
+            if (!pendingUndo || pendingUndo.key !== idempotencyKey) throw new SpatialTransactionUnresolvedError(session.id, idempotencyKey, 'response-and-recovery-failed');
+            try {
+              const r = await this.api.undo({ sessionId: session.id, baseRevision: pendingUndo.baseRevision, idempotencyKey }, fetchImpl);
+              pendingUndo = null; session.revision = r.revision; return r.plan;
+            } catch (error) {
+              const sessionGone = error instanceof SpatialTransactionUnresolvedError && error.reason === 'session-not-found' || error instanceof SpatialApiError && error.status === 404;
+              if (!sessionGone) throw error;
+              const current = this.layer?.currentPlan; if (!current || this.layer !== layer) throw error;
+              const recovered = await this.api.adopt(await this.recoveryAdopt(current), fetchImpl);
+              if (this.layer !== layer) throw error;
+              session.id = recovered.sessionId; session.revision = recovered.revision; this.sessionReviewId = recovered.mutationPolicy?.mode === 'review_fenced' ? recovered.mutationPolicy.reviewId : this.sessionReviewId; pendingUndo = null; this.syncNote = null;
+              throw new SpatialTransactionSessionRecoveredError();
+            }
+          },
+        reconcileTransaction: async (idempotencyKey: string) => {
+          if (!pendingTransaction || pendingTransaction.idempotencyKey !== idempotencyKey) throw new SpatialTransactionUnresolvedError(session.id, idempotencyKey, 'response-and-recovery-failed');
+          try {
+            // Same session, same key, same body: the server replays the committed receipt or commits
+            // exactly once; either way the reply is the authoritative result.
+            const r = await this.api.transaction({ ...pendingTransaction, sessionId: session.id }, fetchImpl);
+            pendingTransaction = null; session.revision = r.revision; return r.plan;
+          } catch (error) {
+            const sessionGone = error instanceof SpatialTransactionUnresolvedError && error.reason === 'session-not-found' || error instanceof SpatialApiError && error.status === 404;
+            if (!sessionGone) throw error;
+            // Explicit session recovery: re-adopt the local pre-transaction plan as a fresh session.
+            // The recovered session authoritatively does not contain the transaction.
+            const current = this.layer?.currentPlan; if (!current || this.layer !== layer) throw error;
+            const recovered = await this.api.adopt(await this.recoveryAdopt(current), fetchImpl);
+            if (this.layer !== layer) throw error;
+            session.id = recovered.sessionId; session.revision = recovered.revision; this.sessionReviewId = recovered.mutationPolicy?.mode === 'review_fenced' ? recovered.mutationPolicy.reviewId : this.sessionReviewId; pendingTransaction = null; this.syncNote = null;
+            throw new SpatialTransactionSessionRecoveredError();
+          }
+        },
       };
       layer.attachSync(sync);
     } catch (error) {
@@ -290,6 +384,129 @@ export class SpaceFlow {
     layer.unlockEditing(); // with a session (synchronised) or without one (declared local-only): either way the person's edits now have a defined home
     this.refreshContext(); this.updateComposer(); this.options.workspace.spaceChanged();
   }
+
+  // ------------------------------------------------------------------------------------------------ human review of relations (V4 E1)
+  /**
+   * Opens the review for the Space on stage: the saved record for this exact source is reopened when
+   * one exists (decisions survive refresh and server restart), otherwise a record is created from
+   * the current plan. The panel is experimental and only exists while a Space is built.
+   */
+  async openRelationReview(): Promise<void> {
+    const layer = this.layer; if (!layer) return;
+    this.attach();
+    try {
+      const fetchImpl = this.options.fetchImpl;
+      // Exact plan binding: a review is only reopened when it belongs to THIS plan fingerprint.
+      // The same source can produce different plans; their decisions are never reused across them.
+      const planFingerprint = await spatialPlanFingerprintV2(layer.currentPlan);
+      const summaries = await listSpatialReviews(layer.currentPlan.source.sha256, planFingerprint, fetchImpl);
+      const summary = summaries.find((item) => item.planFingerprint === planFingerprint);
+      if (summary) {
+        const fetched = (await getSpatialReview(summary.reviewId, fetchImpl)).review;
+        if (fetched.planFingerprint !== planFingerprint || fetched.source.sha256 !== layer.currentPlan.source.sha256) throw new SpatialApiError(409, 'SPATIAL_REVIEW_BINDING_MISMATCH', 'A revisão guardada pertence a outro plano.');
+        this.relationReview = fetched;
+      } else {
+        const source = this.source;
+        const sourceBytes = source?.kind === 'text' ? { kind: 'text' as const, text: source.text } : source?.kind === 'image' ? { kind: 'image' as const, imageDataUrl: source.dataUrl } : undefined;
+        this.relationReview = (await createSpatialReview({ plan: layer.currentPlan, planRevision: this.session?.revision ?? 0, ...(sourceBytes ? { sourceBytes } : {}) }, fetchImpl)).review;
+      }
+    } catch (error) {
+      this.note = `Revisão de relações indisponível (${error instanceof SpatialApiError ? error.code : 'sem ligação ao servidor'}). Nada foi decidido nem alterado.`;
+      this.refreshContext(); return;
+    }
+    await this.bindSessionPolicyToReview();
+    this.renderRelationReview();
+  }
+
+  /**
+   * Policy continuity (E1.4 + patch): the session's active review binding follows the review of the
+   * exact plan on stage through the server's binding transition, which preserves the session, its
+   * revision, history and receipts (no re-adoption, no reset). After a reviewed commit the plan
+   * fingerprint changes and a new review record is created for it; opening review again transitions
+   * the same fenced session to that record. The previous record is never modified.
+   * Refused while a transaction or undo is unresolved, and if the current plan cannot be bound to
+   * the review this fails closed instead of silently continuing as unrestricted legacy.
+   */
+  private async bindSessionPolicyToReview(): Promise<void> {
+    const layer = this.layer, review = this.relationReview, session = this.session;
+    if (!layer || !review || !session) return;
+    if (this.sessionPolicy === 'review_fenced' && this.sessionReviewId === review.reviewId) return;
+    if (layer.transactionUnresolved || layer.undoUnresolved) {
+      this.syncNote = 'A vinculação da revisão não muda enquanto houver uma transacção ou undo por reconciliar.';
+      return;
+    }
+    try {
+      const fingerprint = await spatialPlanFingerprintV2(layer.currentPlan);
+      if (review.planFingerprint !== fingerprint || review.source.sha256 !== layer.currentPlan.source.sha256) throw new Error('BINDING_MISMATCH');
+      const reply = await transitionSpatialReviewBinding({ sessionId: session.id, baseRevision: session.revision, reviewId: review.reviewId }, this.options.fetchImpl);
+      if (this.layer !== layer || this.session !== session) return;
+      session.revision = reply.revision;
+      this.sessionPolicy = 'review_fenced'; this.sessionReviewId = reply.mutationPolicy.reviewId;
+      this.sessionDurability = reply.sessionDurability ?? this.sessionDurability;
+      this.syncNote = null;
+    } catch {
+      // Fail closed: without a bindable review record there is no reviewed session to continue.
+      this.session = null; this.sessionPolicy = 'legacy'; this.sessionReviewId = null;
+      layer.attachSync(null);
+      this.syncNote = 'A sessão não pôde ser vinculada à revisão deste plano (fingerprint incompatível). As edições ficam locais e as propostas revistas ficam bloqueadas até criar uma nova revisão ou recuperar explicitamente a sessão.';
+    }
+  }
+
+  /** Adopt parameters that preserve the session policy across explicit recovery (never a downgrade to legacy). */
+  private async recoveryAdopt(reviewBoundPlan: SpatialPlanV2): Promise<Parameters<typeof adoptSpatialPlanV2>[0]> {
+    if (this.sessionPolicy !== 'review_fenced') return { plan: reviewBoundPlan, instruction: `Recovered space: ${reviewBoundPlan.title}` };
+    const review = this.relationReview;
+    const fingerprint = await spatialPlanFingerprintV2(reviewBoundPlan);
+    if (!review || review.planFingerprint !== fingerprint || review.source.sha256 !== reviewBoundPlan.source.sha256) {
+      // Fail closed: a fenced session is never recovered as unrestricted legacy.
+      throw new SpatialTransactionUnresolvedError(this.session?.id ?? 'unknown', 'policy-continuity', 'session-not-found');
+    }
+    return { plan: reviewBoundPlan, instruction: `Recovered space: ${reviewBoundPlan.title}`, mutationPolicy: 'review_fenced', reviewId: review.reviewId };
+  }
+
+  private renderRelationReview(): void {
+    const record = this.relationReview, layer = this.layer; if (!record || !layer) return;
+    this.panel.hidden = false; this.panel.dataset.phase = 'relation-review';
+    const gate = reviewSolverGate(record);
+    const chip = (text: string, uncertain = false) => `<span class="u-chip ${uncertain ? 'u-chip--uncertain' : ''}">${esc(text)}</span>`;
+    const subjects = effectiveDecisions(record).map(({ subject, decision }) => `
+      <li class="sp-comp" data-decided="${decision ? 'keep' : 'none'}">
+        <div class="sp-comp-head"><b>${esc(subject.original.fromId)} → ${esc(subject.original.toId)}</b><code class="u-label">${esc(subject.subjectId)}</code></div>
+        <p class="u-small">${esc(subject.original.kind)} · ${esc(subject.uncertainty)}</p>
+        <div class="sp-comp-foot">${chip(subject.statementClass.replaceAll('_', ' '), subject.statementClass !== 'observed_evidence')}${chip(`geometria: ${subject.geometrySupport}`, subject.geometrySupport !== 'supported')}${decision ? chip(`decisão: ${decision.decision} · ${esc(decision.reviewer.displayName)} (não autenticado)`) : chip('por decidir', true)}</div>
+        <div class="sp-comp-foot">
+          <select data-review-correct-for="${esc(subject.subjectId)}" aria-label="Tipo corrigido">${['attached_to', 'contains', 'adjacent_to', 'aligned_with', 'connected_to'].map((kind) => `<option value="${kind}" ${subject.original.kind === kind ? 'selected' : ''}>${kind}</option>`).join('')}</select>
+          ${(['confirm', 'correct', 'reject', 'defer'] as const).map((kind) => `<button type="button" class="uw-link" data-review-decide="${kind}" data-subject="${esc(subject.subjectId)}">${kind === 'confirm' ? 'confirmar' : kind === 'correct' ? 'corrigir' : kind === 'reject' ? 'rejeitar' : 'adiar'}</button>`).join('')}
+        </div>
+      </li>`).join('');
+    const history = [...record.decisions].reverse().map((d) => `<li><b>${esc(d.decision)}</b> ${esc(d.subjectId)} · ${esc(d.reviewer.displayName)} · identidade não autenticada · ${esc(d.at)} · revisão da revisão ${d.reviewRevision}${d.correctedValue ? ` · corrigido para ${esc(d.correctedValue.kind)}` : ''}${d.note ? ` · ${esc(d.note)}` : ''}</li>`).join('');
+    this.panel.innerHTML = `<div class="sp-card sp-card--review"><div class="sp-head"><h1 class="sp-h1">Rever relações</h1><p class="u-label">registo ${esc(record.reviewId.slice(0, 8))}… · revisão ${record.reviewRevision} · revisão do plano ${record.planRevision}</p></div>
+      <p class="u-small">Relações declaradas pelo modelo e hipóteses de contacto são <b>propostas</b>, não factos. Confirmar, corrigir, rejeitar ou adiar fica gravado no servidor e sobrevive a recarregar a página. O solver V4 só pode usar o que aqui estiver decidido. O nome do revisor é afirmado por si: <b>não há autenticação</b> neste produto.</p>
+      <p class="u-small">Fonte: sha256 ${esc(record.source.sha256.slice(0, 16))}… · bytes ${record.source.byteVerified ? 'verificados pelo servidor ao receber os bytes' : 'não fornecidos (hash declarado no plano, não verificado)'}. Um digest prova identidade dos bytes, não a verdade física da fonte.</p>
+      <label class="sp-field"><span class="u-label">o seu nome (afirmado, não autenticado)</span><input id="review-name" type="text" maxlength="80" value="${esc(this.reviewName)}"></label>
+      ${record.unknowns.length ? `<details class="sp-unknowns"><summary class="u-label">Desconhecidos declarados (${record.unknowns.length})</summary><ul>${record.unknowns.map((u) => `<li>${esc(u)}</li>`).join('')}</ul></details>` : ''}
+      <ul class="sp-list" aria-label="Relações para rever">${subjects || '<li class="sp-comp">Sem relações declaradas nem hipóteses de contacto neste plano.</li>'}</ul>
+      <div class="sp-unknowns"><p class="u-label">Elegibilidade do solver V4</p><p class="u-small">${gate.eligible ? 'Sem bloqueios por contradições por decidir.' : `Bloqueado: ${esc(gate.blockers.join(', '))}`}<br>Impostas: ${esc(gate.enforcedSubjectIds.join(', ') || 'nenhuma')} · rejeitadas: ${esc(gate.rejectedSubjectIds.join(', ') || 'nenhuma')} · adiadas: ${esc(gate.deferredSubjectIds.join(', ') || 'nenhuma')} · override de contraditas: ${gate.allowContradicted ? 'permitido por decisões registadas' : 'não'}</p></div>
+      ${history ? `<details class="sp-unknowns" open><summary class="u-label">Decisões anteriores (${record.decisions.length})</summary><ul>${history}</ul></details>` : '<p class="u-small">Ainda sem decisões.</p>'}
+      <div class="sp-row"><button class="u-btn u-btn--outline" type="button" data-review-close>Voltar ao Space</button></div></div>`;
+  }
+
+  private async decideRelation(subjectId: string, decision: 'confirm' | 'correct' | 'reject' | 'defer', root: HTMLElement): Promise<void> {
+    const record = this.relationReview, layer = this.layer; if (!record || !layer) return;
+    const name = (this.panel.querySelector<HTMLInputElement>('#review-name')?.value ?? '').trim();
+    if (!name) { this.note = 'Indique o seu nome (afirmado, não autenticado) antes de decidir.'; this.renderRelationReview(); return; }
+    this.reviewName = name;
+    const correctedValue = decision === 'correct' ? (() => { const kind = root.querySelector<HTMLSelectElement>(`[data-review-correct-for="${CSS.escape(subjectId)}"]`)?.value ?? 'adjacent_to'; const subject = record.subjects.find((item) => item.subjectId === subjectId)!; return { kind, fromId: subject.original.fromId, toId: subject.original.toId }; })() : null;
+    try {
+      this.relationReview = (await decideSpatialReview({ reviewId: record.reviewId, baseReviewRevision: record.reviewRevision, subjectId, decision, correctedValue, reviewerName: name, planRevision: this.session?.revision ?? record.planRevision }, this.options.fetchImpl)).review;
+    } catch (error) {
+      this.note = error instanceof SpatialApiError && error.status === 409 ? 'A revisão mudou entretanto; recarreguei o registo antes de decidir de novo.' : `Não foi possível gravar a decisão (${error instanceof SpatialApiError ? error.code : 'sem ligação'}).`;
+      if (error instanceof SpatialApiError && error.status === 409) { try { this.relationReview = (await getSpatialReview(record.reviewId, this.options.fetchImpl)).review; } catch { /* keep the stale panel; the note says why */ } }
+    }
+    this.renderRelationReview(); this.refreshContext();
+  }
+
+  closeRelationReview(): void { this.panel.hidden = true; this.panel.replaceChildren(); if (this.phase === 'built') this.updateComposer(); }
 
   // ------------------------------------------------------------------------------------------------ save
   async save(): Promise<boolean> {
@@ -422,10 +639,12 @@ export class SpaceFlow {
     if (this.presentationNotice) notices.push({ id: 'space-presentation', text: this.presentationNotice });
     if (status) notices.push({ id: 'space-note', text: status });
     const tools: NonNullable<WorkspaceOptions['extraTools']> = [
+      ...((layer.transactionUnresolved || layer.undoUnresolved) ? [{ id: 'space-reconcile', label: 'Reconciliar transacção', hint: 'o resultado remoto é desconhecido; as edições estão bloqueadas até reconciliar', icon: linkIcon, run: () => void layer.reconcileUnresolved().then((outcome) => { this.note = outcome === 'committed' ? 'Transacção reconciliada: o plano do servidor foi adoptado.' : outcome === 'recovered-not-committed' ? 'Sessão recuperada: a transacção não ficou aplicada.' : 'Ainda não foi possível reconciliar; as edições continuam bloqueadas.'; this.refreshContext(); this.updateComposer(); }) }] : []),
       { id: 'space-save', label: this.dirty ? 'Guardar' : 'Guardado', hint: 'guarda só neste navegador (não é cópia na nuvem)', icon: saveIcon, run: () => void this.save() },
       { id: 'space-eval', label: 'Avaliar vista', hint: this.session ? 'a Meta olha para a imagem (chamada paga; só uma hipótese)' : 'indisponível: sem sessão no servidor', icon: eyeIcon, run: () => void this.evaluateView() },
       { id: 'space-gaps', label: 'Fechar folgas', hint: 'o solver propõe posições; ficam como inferidas e desfazíveis', icon: linkIcon, run: () => void layer.closeGaps().then((r) => { this.note = r.applied ? `Solver: ${r.applied} folga(s) fechada(s) em ${r.iterations} iteração(ões). Posições marcadas como inferidas.` : 'Nada que o solver possa fechar.'; this.refreshContext(); }) },
       { id: 'space-undo', label: 'Desfazer', hint: layer.canUndo ? `${layer.editCount} edição(ões) para desfazer` : 'sem edições', icon: undoIcon, run: () => void layer.undo().then((ok) => { this.note = ok ? 'Última edição desfeita.' : 'Não há nada para desfazer.'; this.refreshContext(); }) },
+      { id: 'space-review', label: 'Rever relações', hint: 'decisões humanas persistentes; o solver só usa o que estiver decidido', icon: linkIcon, run: () => void this.openRelationReview() },
       { id: 'space-library', label: 'Os meus Spaces', hint: 'guardados neste navegador', icon: folderIcon, run: () => this.openLibrary() },
       { id: 'space-exit', label: 'Voltar ao laboratório', hint: 'sai dos espaços', icon: arrowLeftIcon, run: () => this.exit() },
     ];
@@ -441,7 +660,95 @@ export class SpaceFlow {
       w.setComposerIntake({ onText: (t) => this.takeText(t), onFile: (f) => void this.takeFile(f), placeholder: 'Descreva qualquer objecto, ou anexe uma fotografia', status: 'PNG, JPEG ou WebP · até 10 MB · a Meta propõe, você revê' });
     } else w.setComposerIntake({ onText: () => undefined, onFile: () => undefined, placeholder: this.phase === 'waiting' ? 'A aguardar o modelo…' : this.phase === 'library' ? 'Escolha um Space guardado ou comece um novo' : 'Termine este passo para continuar', status: this.phase === 'waiting' ? 'A pedir o plano; pode cancelar no painel.' : this.phase === 'review' ? 'A revisão é sua.' : 'Use o painel.', disabled: true });
     const keep = this.panel.querySelector<HTMLTextAreaElement>('#sp-text'); const typed = keep ? keep.value : undefined;
-    this.panel.innerHTML = this.phase === 'intake' ? this.intakeHtml(typed) : this.phase === 'library' ? this.libraryHtml() : this.phase === 'waiting' ? this.waitingHtml() : this.phase === 'failed' ? this.failedHtml() : this.phase === 'leaving' ? this.leavingHtml() : this.reviewHtml();
+    this.panel.innerHTML = this.contourOpen && this.phase === 'review' ? this.contourHtml() : this.phase === 'intake' ? this.intakeHtml(typed) : this.phase === 'library' ? this.libraryHtml() : this.phase === 'waiting' ? this.waitingHtml() : this.phase === 'failed' ? this.failedHtml() : this.phase === 'leaving' ? this.leavingHtml() : this.reviewHtml();
+    if (this.contourOpen && this.phase === 'review') this.wireContourCanvas();
+  }
+
+  // ------------------------------------------------------------------------------------------------ contour correction
+  private contourHtml(): string {
+    const source = this.source;
+    return `<div class="sp-card"><h1 class="sp-h1">Corrigir contorno</h1>
+      <p class="u-small">Arraste os pontos para o contorno coincidir com o objecto na fotografia. A máscara automática falhou a validação de silhueta; o contorno que confirmar fica registado como <b>corrigido por si</b> (proveniência distinta, ligada a esta fotografia) e só é usado para esta cena.</p>
+      ${source?.kind === 'image' ? `<canvas id="sp-contour" width="640" height="420" style="width:100%;height:auto;background:#000;border-radius:8px;touch-action:none" aria-label="Editor de contorno sobre a fotografia"></canvas>` : '<p class="sp-problem">Sem fotografia nesta fonte.</p>'}
+      <div class="sp-row"><button class="u-btn u-btn--outline" type="button" data-sp="contour-preview">${this.contourPreview ? 'Ver fotografia' : 'Pré-visualizar máscara'}</button><span class="sp-grow"></span><button class="u-btn u-btn--outline" type="button" data-sp="contour-cancel">Cancelar</button><button class="u-btn u-btn--primary" type="button" data-sp="contour-confirm">Confirmar contorno</button></div>
+      <p class="u-label">${this.contourPoints.length} pontos · arrastar para ajustar</p></div>`;
+  }
+
+  /** Define o contorno (fracções da imagem). O mesmo caminho usado pelo arrasto no canvas. */
+  setContourPoints(points: Array<[number, number]>): void {
+    this.contourPoints = points.map(([x, y]) => [Math.min(1, Math.max(0, x)), Math.min(1, Math.max(0, y))] as [number, number]);
+    if (this.contourOpen) this.drawContour();
+  }
+  get contourState(): { open: boolean; points: Array<[number, number]>; correctedForSha: string | null } {
+    return { open: this.contourOpen, points: this.contourPoints, correctedForSha: this.correctedForSha };
+  }
+
+  private async openContour(): Promise<void> {
+    const source = this.source;
+    if (source?.kind !== 'image' || !this.reply) return;
+    this.contourOpen = true; this.contourPreview = false; this.render();
+    try {
+      const { evidenceFromDataUrl } = await import('../universal-foundry/browser');
+      const { initialOutlineFromEvidence } = await import('../universal-foundry/correction');
+      const evidence = await evidenceFromDataUrl(source.dataUrl);
+      if (evidence && this.contourOpen) { this.contourPoints = initialOutlineFromEvidence(evidence); this.drawContour(); }
+    } catch { /* sem evidência local: fica o rectângulo inicial do editor */ }
+    if (!this.contourPoints.length) this.contourPoints = [[0.2, 0.3], [0.8, 0.3], [0.8, 0.75], [0.2, 0.75]];
+    this.drawContour();
+  }
+
+  private drawContour(): void {
+    const canvas = this.panel.querySelector<HTMLCanvasElement>('#sp-contour');
+    const source = this.source;
+    if (!canvas || source?.kind !== 'image') return;
+    const ctx = canvas.getContext('2d'); if (!ctx) return;
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+      const dw = img.width * scale, dh = img.height * scale, ox = (canvas.width - dw) / 2, oy = (canvas.height - dh) / 2;
+      canvas.dataset.ox = String(ox); canvas.dataset.oy = String(oy); canvas.dataset.dw = String(dw); canvas.dataset.dh = String(dh);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, ox, oy, dw, dh);
+      if (this.contourPoints.length > 2) {
+        ctx.beginPath();
+        this.contourPoints.forEach(([x, y], i) => { const px = ox + x * dw, py = oy + y * dh; if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py); });
+        ctx.closePath();
+        if (this.contourPreview) { ctx.fillStyle = 'rgba(46, 204, 113, 0.45)'; ctx.fill(); }
+        ctx.strokeStyle = '#f5c518'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = '#f5c518';
+        for (const [x, y] of this.contourPoints) { ctx.beginPath(); ctx.arc(ox + x * dw, oy + y * dh, 5, 0, 7); ctx.fill(); }
+      }
+    };
+    img.src = source.dataUrl;
+  }
+
+  private wireContourCanvas(): void {
+    const canvas = this.panel.querySelector<HTMLCanvasElement>('#sp-contour');
+    if (!canvas) return;
+    this.drawContour();
+    let dragging = -1;
+    const toFraction = (event: PointerEvent): [number, number] => {
+      const rect = canvas.getBoundingClientRect();
+      const ox = Number(canvas.dataset.ox ?? 0), oy = Number(canvas.dataset.oy ?? 0), dw = Number(canvas.dataset.dw ?? canvas.width), dh = Number(canvas.dataset.dh ?? canvas.height);
+      const cx = (event.clientX - rect.left) * (canvas.width / rect.width), cy = (event.clientY - rect.top) * (canvas.height / rect.height);
+      return [Math.min(1, Math.max(0, (cx - ox) / dw)), Math.min(1, Math.max(0, (cy - oy) / dh))];
+    };
+    canvas.addEventListener('pointerdown', (event) => {
+      const [fx, fy] = toFraction(event);
+      dragging = this.contourPoints.findIndex(([x, y]) => Math.hypot(x - fx, y - fy) < 0.045);
+      if (dragging >= 0) { canvas.setPointerCapture(event.pointerId); this.contourPoints[dragging] = [fx, fy]; this.drawContour(); }
+    });
+    canvas.addEventListener('pointermove', (event) => { if (dragging >= 0) { this.contourPoints[dragging] = toFraction(event); this.drawContour(); } });
+    canvas.addEventListener('pointerup', () => { dragging = -1; });
+  }
+
+  private confirmContour(): void {
+    if (!this.reply || this.contourPoints.length < 3) return;
+    this.correctedPolygon = [...this.contourPoints];
+    this.correctedForSha = this.reply.plan.source.sha256;
+    this.contourOpen = false;
+    this.options.onCorrectedMask?.({ polygon: this.correctedPolygon, sourceSha256: this.correctedForSha });
+    this.render();
   }
 
   private sourcePreview(): string {
@@ -511,6 +818,7 @@ export class SpaceFlow {
       <details class="sp-meaning"><summary class="u-label">O que significam as etiquetas</summary><dl class="sp-legend">${(['observed', 'inferred', 'design_approximation', 'unknown'] as const).map((k) => `<div><dt><span class="u-chip ${k === 'observed' ? '' : 'u-chip--uncertain'}">${ORIGIN_LABEL[k]}</span></dt><dd class="u-label">${esc(ORIGIN_MEANING[k])}</dd></div>`).join('')}</dl></details>
       <ul class="sp-list" aria-label="Componentes propostos">${rows}</ul>
       <details class="sp-unknowns" aria-label="Desconhecidos" ${plan.units !== 'm' && this.options.workspace.root.clientWidth > 760 ? 'open' : ''}><summary class="u-label">${plan.units === 'm' ? 'O que o modelo declarou desconhecido' : 'Escala física desconhecida · o que o modelo declarou desconhecido'} (${plan.unknowns.length})</summary>${plan.unknowns.length ? `<ul>${plan.unknowns.slice(0, 8).map((u) => `<li>${esc(u)}</li>`).join('')}</ul>${plan.unknowns.length > 8 ? `<p class="u-label">e mais ${plan.unknowns.length - 8}, no aviso da cena.</p>` : ''}` : '<p class="u-small">Nenhum declarado.</p>'}</details>
+      ${plan.source.kind === 'image' ? `<div class="sp-row"><span class="u-label">${this.correctedPolygon && this.correctedForSha === plan.source.sha256 ? 'Contorno: corrigido por si · confirmado para esta fotografia (não é uma medição)' : 'Contorno: automático · se a silhueta extraída não coincidir com o objecto, corrija antes de construir'}</span><span class="sp-grow"></span><button class="u-btn u-btn--outline" type="button" data-sp="correct-contour">Corrigir contorno</button></div>` : ''}
       <div class="sp-foot">
       <label class="sp-check"><input type="checkbox" id="sp-ack" ${this.review.acknowledged ? 'checked' : ''}> Percebo que isto é uma concepção gerada por IA, não uma medição nem uma reconstrução fiel.</label>
       <div class="sp-row"><button class="u-btn u-btn--outline" type="button" data-sp="discard">Descartar</button><span class="sp-grow"></span><span class="u-label sp-blockers" aria-live="polite">${blockers.length ? esc(blockers.join(' · ')) : 'pronto a construir'}</span><button class="u-btn u-btn--primary" type="button" data-sp="build" ${blockers.length ? 'disabled' : ''}>Construir em 3D</button></div></div></div>`;
@@ -519,6 +827,9 @@ export class SpaceFlow {
   // ------------------------------------------------------------------------------------------------ events
   private onClick(event: Event): void {
     const target = event.target as HTMLElement;
+    const reviewDecide = target.closest<HTMLElement>('[data-review-decide]');
+    if (reviewDecide) { void this.decideRelation(reviewDecide.dataset.subject!, reviewDecide.dataset.reviewDecide as 'confirm' | 'correct' | 'reject' | 'defer', this.panel); return; }
+    if (target.closest('[data-review-close]')) { this.closeRelationReview(); return; }
     const decideButton = target.closest<HTMLElement>('[data-sp-decide]');
     if (decideButton) { this.decide(decideButton.dataset.id!, decideButton.dataset.spDecide as 'keep' | 'reject'); return; }
     const open = target.closest<HTMLElement>('[data-sp-open]'); if (open) { void this.openRecord(open.dataset.spOpen!); return; }
@@ -538,6 +849,10 @@ export class SpaceFlow {
     else if (action === 'keep-all') this.decideAll('keep');
     else if (action === 'reject-all') this.decideAll('reject');
     else if (action === 'build') this.build();
+    else if (action === 'correct-contour') void this.openContour();
+    else if (action === 'contour-preview') { this.contourPreview = !this.contourPreview; this.render(); }
+    else if (action === 'contour-cancel') { this.contourOpen = false; this.render(); }
+    else if (action === 'contour-confirm') this.confirmContour();
     else if (action === 'stay') { this.pendingLeave = null; this.phase = 'built'; this.panel.hidden = true; this.panel.replaceChildren(); this.updateComposer(); }
     else if (action === 'leave') { const go = this.pendingLeave; this.pendingLeave = null; this.savedPlanJson = JSON.stringify(this.layer?.currentPlan ?? null); go?.(); }
     else if (action === 'save-leave') { const go = this.pendingLeave; this.pendingLeave = null; void this.save().then((ok) => { if (ok) go?.(); else { this.phase = 'built'; this.panel.hidden = true; this.panel.replaceChildren(); this.updateComposer(); } }); }

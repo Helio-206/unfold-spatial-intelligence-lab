@@ -1,10 +1,22 @@
-import { Box3, Color, Group, Mesh, Raycaster, type Camera, type Material, type Vector2 } from 'three';
+import { Box3, Color, Group, Mesh, Quaternion, Raycaster, Vector3, type Camera, type Material, type Object3D, type Vector2 } from 'three';
 import { analyzeAssembly, describeDefect, refineAssembly, type AssemblyAnalysis } from '../../universal-spatial/assembly-analysis';
-import { applySpatialOperationV2, type GeometryNodeV2, type SpatialOperationV2, type SpatialPlanV2 } from '../../universal-spatial/contracts-v2';
+import { applySpatialOperationV2, type GeometryNodeV2, type SpatialOperationV2, type SpatialPlanV2, type SpatialReviewPrecondition } from '../../universal-spatial/contracts-v2';
 import { collectWorldPoints, heroAzimuth, normalizeForPresentation } from '../../universal-spatial/framing';
 import { compileSpatialPlanV2, disposeCompiledSpatialPlan } from '../../universal-spatial/geometry-compiler-v2';
 import type { SpaceLayer } from '../workspace-design/space-port';
+import type { RouterReport } from '../../universal-spatial/fidelity/types';
 import { createPresentationDirector, type CameraCue, type PresentationDirector, type PresentationState, type ViewContext } from '../spatial-presentation';
+import { SpatialTransactionUnresolvedError } from '../../universal-spatial/api-client';
+
+/**
+ * Thrown by a sync's reconciliation when the server session was explicitly recovered (re-adopted
+ * from the local pre-transaction plan): the transaction is authoritatively absent from the new
+ * session. It is a recovery outcome, not a claim that the original submission reached the server.
+ */
+export class SpatialTransactionSessionRecoveredError extends Error {
+  readonly code = 'SPATIAL_V2_TRANSACTION_NOT_COMMITTED_SESSION_RECOVERED' as const;
+  constructor() { super('SPATIAL_V2_TRANSACTION_NOT_COMMITTED_SESSION_RECOVERED'); this.name = 'SpatialTransactionSessionRecoveredError'; }
+}
 
 /** Presentation size of the longest side, in stage units. The plan keeps its own units; the scale lives on a wrapper and is never written back. */
 export const SPACE_PRESENTATION_SIZE = 5;
@@ -13,7 +25,11 @@ const CONFIRMED = new Set(['observed', 'user_provided']);
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const fmt3 = (v: readonly number[]) => `[${v.map((n) => n.toFixed(3)).join(', ')}]`;
 
-type Pending = { label: string; before: string; after: string; operations: SpatialOperationV2[]; needsAuthorization: boolean; source: 'person' | 'meta' | 'meta-visual' };
+type Pending = { label: string; before: string; after: string; operations: SpatialOperationV2[]; needsAuthorization: boolean; source: 'person' | 'meta' | 'meta-visual' | 'solver'; /** what produced the proposal, recorded in the provenance when a person applies it */ evidence?: string; /** Revalidated at apply time; a false (or a throw) invalidates the proposal instead of applying it. */ authorisationGuard?: () => Promise<boolean>; /** The exact reviewed state this proposal was computed from; sent as the server-side transaction fence. */ reviewBinding?: SpatialReviewPrecondition };
+/** Triangles of arrived geometry swapped in per call (and so per frame): bounds the GPU upload one frame has to carry. */
+export const UPGRADE_TRIANGLES_PER_CALL = 60_000;
+/** A compile result that may finish later: geometry computed off the main thread arrives through `upgrade()`. V2's result has neither method. */
+type Upgradable = { upgrade?(budgetTriangles?: number): string[]; readyCount?(): number; retire?(): void; report?: RouterReport };
 type Shape = Extract<GeometryNodeV2, { type: 'shape' }>;
 export type PendingEdit = Pending;
 /** Mirrors edits to the server session so that revisions agree. Throws when the server cannot confirm; the layer then carries on locally and says so. */
@@ -22,6 +38,23 @@ export type LayerSync = {
   /** The provenance travels with the operation: a solver result stays `inferred` on the server too. */
   apply(operation: SpatialOperationV2, provenance: OperationProvenance): Promise<SpatialPlanV2>;
   undo(): Promise<SpatialPlanV2>;
+  /** Atomic multi-operation commit (V4 E0). When present, grouped edits use it instead of failing closed. The idempotency key is generated once by the layer and stays stable across reconciliation. */
+  applyTransaction?(operations: SpatialOperationV2[], provenance: OperationProvenance, idempotencyKey: string, reviewPrecondition?: SpatialReviewPrecondition): Promise<SpatialPlanV2>;
+  /** One grouped undo for one grouped commit. When present, grouped undo never falls back to repeated single undos. */
+  undoTransaction?(): Promise<SpatialPlanV2>;
+  /**
+   * Reconciles an unresolved transaction against the authoritative server result for the same
+   * idempotency key. Resolves with the authoritative plan when the transaction is committed;
+   * throws `SpatialTransactionSessionRecoveredError` when the session was explicitly recovered
+   * without it; any other throw keeps the unresolved state.
+   */
+  reconcileTransaction?(idempotencyKey: string): Promise<SpatialPlanV2>;
+  /**
+   * Reconciles an unresolved grouped undo with the same stable key. Resolves with the authoritative
+   * (undone) plan when the undo is committed on the server; throws
+   * `SpatialTransactionSessionRecoveredError` when the session was explicitly recovered without it.
+   */
+  reconcileUndo?(idempotencyKey: string): Promise<SpatialPlanV2>;
 };
 export type SpaceLayerHost = {
   /** A camera request from the Presentation Director. The workspace asks its arbiter; a person's input always wins. */
@@ -50,15 +83,33 @@ export class PlanSpaceLayer implements SpaceLayer {
   private compiled: Group | null = null;
   private fixed: { scale: number; position: [number, number, number] } | null = null;
   private plan: SpatialPlanV2;
-  private readonly history: Array<{ plan: SpatialPlanV2; ops: number }> = [];
+  private readonly history: Array<{ plan: SpatialPlanV2; ops: number; fenced?: boolean }> = [];
   private sync: LayerSync | null = null;
+  /**
+   * A grouped transaction whose outcome is unknown (the server may or may not have committed it).
+   * While set, every dependent edit and undo is blocked: the local plan is the pre-transaction plan
+   * and must not diverge further from a possibly-committed remote state.
+   */
+  private unresolvedTx: { key: string; before: SpatialPlanV2; ops: number; fenced?: boolean } | null = null;
+  /** A grouped undo whose remote outcome is unknown. The history entry is held here, not restored, so no second undo can consume another entry until this is reconciled. */
+  private unresolvedUndoState: { key: string; entry: { plan: SpatialPlanV2; ops: number } } | null = null;
   /** While set, no edit is applied (the server session is being prepared and would not know it). */
   private lockReason: string | null = null;
   private busy = false;
+  /** An applyEdit is between claim and commit (guard or network in flight): no second application may start. */
+  private applying = false;
   private director: PresentationDirector | null = null;
   presentation: PresentationState | null = null;
   private pending: Pending | null = null;
   private analysisCache: AssemblyAnalysis | null = null;
+  private routed: Upgradable | null = null;
+  private disposed = false;
+  private displayed = false;
+  private retiredMaterials: (() => void) | null = null;
+  private retirementTimer: ReturnType<typeof setTimeout> | null = null;
+  private continuation: (() => void) | null = null;
+  private frameHandle: unknown = null;
+  explanationVersion = 0;
   private selected: string | null = null;
   private isolated: string | null = null;
   private readonly emissive = new WeakMap<Material, { color: Color; intensity: number }>();
@@ -66,7 +117,8 @@ export class PlanSpaceLayer implements SpaceLayer {
   private authorised = false;
   stats: ReturnType<typeof compileSpatialPlanV2>['stats'];
 
-  constructor(plan: SpatialPlanV2, private readonly host: SpaceLayerHost) {
+  /** `compile` is the geometry seam: default is the V2 compiler. The V3 router has the same call shape (`compileWithRouter`). It must not write the plan. */
+  constructor(plan: SpatialPlanV2, private readonly host: SpaceLayerHost, private readonly compile: (plan: SpatialPlanV2) => ReturnType<typeof compileSpatialPlanV2> = compileSpatialPlanV2) {
     this.root.name = 'space-layer';
     this.plan = plan;
     this.stats = this.build();
@@ -78,10 +130,15 @@ export class PlanSpaceLayer implements SpaceLayer {
   }
 
   get currentPlan(): SpatialPlanV2 { return this.plan; }
+  get geometryReport(): RouterReport | null { return this.routed?.report ?? null; }
   get pendingEdit(): Pending | null { return this.pending; }
   authorise(value: boolean): void { this.authorised = value; }
-  get canUndo(): boolean { return this.history.length > 0 && !this.busy && this.lockReason === null; }
-  get isBusy(): boolean { return this.busy || this.lockReason !== null; }
+  get canUndo(): boolean { return this.history.length > 0 && !this.busy && this.lockReason === null && !this.unresolvedTx && !this.unresolvedUndoState; }
+  get isBusy(): boolean { return this.busy || this.lockReason !== null || this.unresolvedTx !== null || this.unresolvedUndoState !== null; }
+  /** True while a grouped transaction's remote outcome is unknown; dependent edits stay blocked. */
+  get transactionUnresolved(): boolean { return this.unresolvedTx !== null; }
+  get undoUnresolved(): boolean { return this.unresolvedUndoState !== null; }
+  get unresolvedTransactionKey(): string | null { return this.unresolvedTx?.key ?? null; }
   lockEditing(reason: string): void { this.lockReason = reason; }
   unlockEditing(): void { this.lockReason = null; }
   get synced(): boolean { return this.sync !== null; }
@@ -89,12 +146,48 @@ export class PlanSpaceLayer implements SpaceLayer {
   get isExploded(): boolean { return (this.director?.state.exploded ?? 0) > 0.5; }
   /** Called from the workspace frame loop with the real elapsed time; true while another frame is needed. */
   update(dtMs: number): boolean { return this.director?.update(dtMs) ?? false; }
+  afterRender(): void { if (this.disposed) return; this.displayed = true; this.releaseRetiredMaterials(); }
   get editCount(): number { return this.history.length; }
 
+  /** Rebuilds the scene from the SAME plan (a setting of the geometry seam changed). The plan, its history and its provenance are untouched. */
+  regenerate(): void { if (this.disposed) return; this.stats = this.build(); this.host.redraw(); }
+
+  // -------------------------------------------------------------------------------- transient living poses
+  private transientOriginals = new Map<string, { target: Object3D; quaternion: Quaternion }>();
+
+  private componentGroup(id: string): Object3D | null {
+    let found: Object3D | null = null;
+    this.wrapper?.traverse((o) => { if (!found && o.userData.spatialComponentRoot && o.userData.spatialEntityId === id) found = o; });
+    return found;
+  }
+
+  /** Transient rotation of a real Space component about its own group origin. Presentation only:
+   * the plan, its revision and its history are never touched; rebuild/dispose restores exactly. */
+  applyTransientRotation(id: string, angleRad: number, axis: 'x' | 'y' | 'z'): boolean {
+    if (this.disposed || !Number.isFinite(angleRad)) return false;
+    const group = this.componentGroup(id);
+    if (!group) return false;
+    if (!this.transientOriginals.has(id)) this.transientOriginals.set(id, { target: group, quaternion: group.quaternion.clone() });
+    const original = this.transientOriginals.get(id)!.quaternion;
+    const delta = new Quaternion().setFromAxisAngle(new Vector3(axis === 'x' ? 1 : 0, axis === 'y' ? 1 : 0, axis === 'z' ? 1 : 0), angleRad);
+    group.quaternion.copy(delta.multiply(original));
+    this.host.redraw();
+    return true;
+  }
+
+  clearTransientPoses(): void {
+    for (const { target, quaternion } of this.transientOriginals.values()) target.quaternion.copy(quaternion);
+    this.transientOriginals.clear();
+    if (!this.disposed) this.host.redraw();
+  }
+
   private build(): ReturnType<typeof compileSpatialPlanV2>['stats'] {
+    this.transientOriginals.clear(); // groups are rebuilt below; transient poses never survive a rebuild
+    this.explanationVersion++;
     this.release();
-    const compiled = compileSpatialPlanV2(this.plan);
-    this.compiled = compiled.root;
+    this.routed?.retire?.(); this.cancelContinuation(); // results asked for by the previous plan version can no longer be used
+    const compiled = this.compile(this.plan);
+    this.routed = compiled as Upgradable; this.compiled = compiled.root;
     if (!this.fixed) {
       const presentation = normalizeForPresentation(compiled.root, SPACE_PRESENTATION_SIZE);
       this.fixed = { scale: presentation.scale, position: presentation.wrapper.position.toArray() as [number, number, number] };
@@ -107,13 +200,63 @@ export class PlanSpaceLayer implements SpaceLayer {
     this.analysisCache = null;
     this.director?.rebind({ plan: this.plan, root: this.wrapper });
     this.applyPaint();
+    // Cache hits do not emit onReady; schedule them after this build has returned.
+    if ((this.routed.readyCount?.() ?? 0) > 0) this.scheduleGeometryUpgrade(12_000);
     return compiled.stats;
+  }
+
+  /**
+   * Swaps in geometry that finished computing after the Space was built. Only the meshes inside the affected component groups change; the plan, the groups,
+   * the selection, the isolation and the Director's state (entrance, focus, exploded view, tour) are untouched. Returns the component ids that changed.
+   */
+  upgradeGeometry(budgetTriangles = UPGRADE_TRIANGLES_PER_CALL): string[] {
+    if (this.disposed || !this.wrapper) return [];
+    const ids = this.routed?.upgrade?.(budgetTriangles) ?? [];
+    if (ids.length) {
+      this.explanationVersion++;
+      const totals = this.routed?.report?.totals; if (totals) this.stats = { ...this.stats, meshCount: totals.meshes, triangleCount: totals.triangles, geometryBytes: totals.geometryBytes };
+      this.root.updateMatrixWorld(true); this.analysisCache = null;
+      this.applyPaint(); this.director?.refreshComponents(ids); this.host.redraw();
+    }
+    // a big arrival is uploaded to the GPU on the next render: what did not fit in this call follows on the next frames, so no single frame carries it all
+    if ((this.routed?.readyCount?.() ?? 0) > 0) this.scheduleGeometryUpgrade(budgetTriangles);
+    return ids;
+  }
+
+  /** Coalesce worker arrivals into one cooperative slice per animation frame. */
+  scheduleGeometryUpgrade(budgetTriangles = UPGRADE_TRIANGLES_PER_CALL): void {
+    if (this.disposed || this.continuation) return;
+    const routedNow = this.routed;
+    const step = () => { this.continuation = null; this.frameHandle = null; if (!this.disposed && this.routed === routedNow) this.upgradeGeometry(budgetTriangles); };
+    this.continuation = step;
+    const g = globalThis as { requestAnimationFrame?: (cb: () => void) => number };
+    this.frameHandle = g.requestAnimationFrame ? g.requestAnimationFrame(step) : setTimeout(step, 16);
+  }
+
+  private cancelContinuation(): void {
+    if (this.frameHandle === null) { this.continuation = null; return; }
+    const g = globalThis as { cancelAnimationFrame?: (h: number) => void }; if (g.cancelAnimationFrame) g.cancelAnimationFrame(this.frameHandle as number); else clearTimeout(this.frameHandle as ReturnType<typeof setTimeout>);
+    this.frameHandle = null; this.continuation = null;
   }
 
   private release(): void {
     if (this.wrapper) this.root.remove(this.wrapper);
-    if (this.compiled) disposeCompiledSpatialPlan(this.compiled);
+    if (this.compiled) {
+      const defer = this.displayed && !this.disposed;
+      const releaseMaterials = disposeCompiledSpatialPlan(this.compiled, defer);
+      if (defer) {
+        this.releaseRetiredMaterials(); this.retiredMaterials = releaseMaterials;
+        // A hidden or stalled scene must not keep the previous materials indefinitely.
+        this.retirementTimer = setTimeout(() => this.releaseRetiredMaterials(), 1000);
+      }
+    }
+    this.displayed = false;
     this.wrapper = null; this.compiled = null;
+  }
+
+  private releaseRetiredMaterials(): void {
+    if (this.retirementTimer !== null) clearTimeout(this.retirementTimer);
+    this.retirementTimer = null; this.retiredMaterials?.(); this.retiredMaterials = null;
   }
 
   // ------------------------------------------------------------------------------------------------ SpaceLayer
@@ -195,13 +338,35 @@ export class PlanSpaceLayer implements SpaceLayer {
   get closableGaps(): boolean { return !!this.analysis()?.defects.some((defect) => defect.kind === 'floating' && !('blockedBy' in defect && defect.blockedBy)); }
 
   /** Applies operations in order, through the server session when there is one, so both sides keep the same revision. */
-  private async commit(operations: SpatialOperationV2[], provenance: { origin: 'user_provided' | 'inferred'; evidence: string }, localPlan?: SpatialPlanV2): Promise<void> {
+  private async commit(operations: SpatialOperationV2[], provenance: { origin: 'user_provided' | 'inferred'; evidence: string }, localPlan?: SpatialPlanV2, reviewPrecondition?: SpatialReviewPrecondition): Promise<void> {
+    if (this.unresolvedTx) throw new Error('SPATIAL_V2_TRANSACTION_UNRESOLVED');
+    if (this.unresolvedUndoState) throw new Error('SPATIAL_V2_UNDO_UNRESOLVED');
+    // Fail closed (E1.3): a review-bound proposal may only become authoritative through a server
+    // transaction that verifies the fence. Without a sync there is no such path, so it must never
+    // fall through to local application. Local-only edits that never claimed review authority are
+    // unaffected.
+    if (reviewPrecondition && !this.sync) throw new Error('REVIEW_FENCED_REQUIRES_SERVER_SESSION');
     const before = this.plan; let next = before;
-    if (this.sync) {
+    if (this.sync && (operations.length > 1 || reviewPrecondition)) {
+      // Grouped edits only ever commit through the atomic transaction endpoint. Without it, fail
+      // closed; with it, a failure leaves the local plan untouched (never a silent local commit).
+      // A review-fenced edit uses the transaction endpoint even for one operation, so the server
+      // can verify the fence in the same critical section as the commit.
+      if (!this.sync.applyTransaction) throw new Error(reviewPrecondition ? 'REVIEW_FENCED_TRANSACTION_UNAVAILABLE' : 'BATCH_REQUIRES_ATOMIC_SERVER');
+      const idempotencyKey = `txn-${globalThis.crypto.randomUUID()}`;
+      try { next = await this.sync.applyTransaction(operations, provenance, idempotencyKey, reviewPrecondition); }
+      catch (error) {
+        // Outcome unknown: keep the stable key and the pre-transaction plan, and block dependent
+        // edits until reconcileTransaction() settles this against the authoritative server result.
+        if (error instanceof SpatialTransactionUnresolvedError) { this.unresolvedTx = { key: idempotencyKey, before, ops: operations.length, ...(reviewPrecondition ? { fenced: true } : {}) }; }
+        throw error;
+      }
+    } else if (this.sync) {
       try { for (const operation of operations) next = await this.sync.apply(operation, provenance); }
-      catch (error) { this.sync = null; this.host.syncLost?.(error instanceof Error ? error.message : 'sessão do servidor indisponível'); next = localPlan ?? this.applyLocal(before, operations, provenance); }
+      catch (error) { if (this.disposed) throw new Error('SPACE_DISPOSED'); this.sync = null; this.host.syncLost?.(error instanceof Error ? error.message : 'sessão do servidor indisponível'); next = localPlan ?? this.applyLocal(before, operations, provenance); }
     } else next = localPlan ?? this.applyLocal(before, operations, provenance);
-    this.history.push({ plan: before, ops: operations.length }); this.plan = next; this.pending = null; this.authorised = false; this.stats = this.build();
+    if (this.disposed) throw new Error('SPACE_DISPOSED');
+    this.history.push({ plan: before, ops: operations.length, ...(reviewPrecondition ? { fenced: true } : {}) }); this.plan = next; this.pending = null; this.authorised = false; this.stats = this.build();
   }
   private applyLocal(plan: SpatialPlanV2, operations: SpatialOperationV2[], provenance: { origin: 'user_provided' | 'inferred'; evidence: string }): SpatialPlanV2 {
     let next = plan; for (const operation of operations) next = applySpatialOperationV2(next, operation, provenance); return next;
@@ -209,25 +374,108 @@ export class PlanSpaceLayer implements SpaceLayer {
 
   /** The bounded solver proposes `set-transform` operations only; they are marked inferred and can be undone. */
   async closeGaps(): Promise<{ applied: number; iterations: number }> {
+    if (this.disposed) return { applied: 0, iterations: 0 };
+    if (this.unresolvedTx) { this.host.notify('Edição bloqueada: há uma transacção por reconciliar (SPATIAL_V2_TRANSACTION_UNRESOLVED).'); return { applied: 0, iterations: 0 }; }
     if (this.busy || this.lockReason) { if (this.lockReason) this.host.notify(`Edição indisponível: ${this.lockReason}.`); return { applied: 0, iterations: 0 }; }
     const result = refineAssembly(this.plan);
     if (!result.applied.length) return { applied: 0, iterations: result.iterations };
     this.busy = true; this.director?.enterEditing();
-    try { await this.commit(result.applied.map((a) => a.operation), { origin: 'inferred', evidence: 'Assembly solver proposed a position that closes a gap (bounding boxes, not a contact proof).' }, this.sync ? undefined : result.plan); }
+    let committed = false;
+    try { await this.commit(result.applied.map((a) => a.operation), { origin: 'inferred', evidence: 'Assembly solver proposed a position that closes a gap (bounding boxes, not a contact proof).' }, this.sync ? undefined : result.plan); committed = true; }
+    catch (error) { if (!this.disposed) this.host.notify(`Edição bloqueada: ${error instanceof Error ? error.message : 'erro desconhecido'}`); }
     finally { this.busy = false; }
-    this.director?.resumeExploring(); this.host.changed();
-    return { applied: result.applied.length, iterations: result.iterations };
+    this.director?.resumeExploring(); if (!this.disposed) this.host.changed();
+    return { applied: committed ? result.applied.length : 0, iterations: result.iterations };
   }
   async undo(): Promise<boolean> {
+    if (this.disposed) return false;
+    if (this.unresolvedTx) { this.host.notify('Undo bloqueado: há uma transacção por reconciliar (SPATIAL_V2_TRANSACTION_UNRESOLVED).'); return false; }
+    if (this.unresolvedUndoState) { this.host.notify('Undo bloqueado: há um undo por reconciliar (SPATIAL_V2_UNDO_UNRESOLVED).'); return false; }
     if (this.lockReason) { this.host.notify(`Edição indisponível: ${this.lockReason}.`); return false; }
     const previous = this.history.pop(); if (!previous || this.busy) { if (previous) this.history.push(previous); return false; }
+    if (this.sync && (previous.ops > 1 || previous.fenced) && !this.sync.undoTransaction) { this.history.push(previous); this.host.notify('Undo agrupado indisponível: o servidor não oferece transacção atómica.'); return false; }
     this.busy = true; this.director?.enterEditing();
     try {
-      if (this.sync) { try { let restored = this.plan; for (let i = 0; i < previous.ops; i++) restored = await this.sync.undo(); this.plan = restored; } catch (error) { this.sync = null; this.host.syncLost?.(error instanceof Error ? error.message : 'sessão do servidor indisponível'); this.plan = previous.plan; } }
+      if (this.sync && (previous.ops > 1 || previous.fenced)) {
+        // One grouped undo for the whole transaction; on failure nothing changes locally.
+        try { const restored = await this.sync.undoTransaction!(); if (this.disposed) { this.history.push(previous); return false; } this.plan = restored; }
+        catch (error) {
+          if (error instanceof SpatialTransactionUnresolvedError) {
+            // Outcome unknown: hold the history entry here. It is neither restored (which would let
+            // another undo consume the next entry) nor consumed (which would invent the undo).
+            this.unresolvedUndoState = { key: error.idempotencyKey, entry: previous };
+            if (!this.disposed) this.host.notify('Undo por reconciliar: o resultado no servidor é desconhecido (SPATIAL_V2_UNDO_UNRESOLVED). As edições ficam bloqueadas até reconciliar.');
+            return false;
+          }
+          this.history.push(previous); if (!this.disposed) this.host.notify(`Undo agrupado bloqueado: ${error instanceof Error ? error.message : 'erro desconhecido'}`); return false;
+        }
+      }
+      else if (this.sync) { try { let restored = this.plan; for (let i = 0; i < previous.ops; i++) restored = await this.sync.undo(); if (this.disposed) return false; this.plan = restored; } catch (error) { if (this.disposed) return false; this.sync = null; this.host.syncLost?.(error instanceof Error ? error.message : 'sessão do servidor indisponível'); this.plan = previous.plan; } }
       else this.plan = previous.plan;
       this.pending = null; this.stats = this.build();
     } finally { this.busy = false; }
     this.director?.resumeExploring(); this.host.changed(); return true;
+  }
+
+  /** Reconciles whichever unresolved mutation is outstanding (transaction first, then undo). */
+  async reconcileUnresolved(): Promise<'committed' | 'recovered-not-committed' | 'still-unresolved'> {
+    if (this.unresolvedUndoState && !this.unresolvedTx) return this.reconcileUndo();
+    return this.reconcileTransaction();
+  }
+
+  /** Settles an unresolved grouped undo. The held history entry is consumed only on `committed`. */
+  async reconcileUndo(): Promise<'committed' | 'recovered-not-committed' | 'still-unresolved'> {
+    const pendingUndo = this.unresolvedUndoState;
+    if (this.disposed || !pendingUndo || this.busy) return 'still-unresolved';
+    if (!this.sync?.reconcileUndo) { this.host.notify('Reconciliação do undo indisponível nesta sessão.'); return 'still-unresolved'; }
+    this.busy = true; this.director?.enterEditing();
+    try {
+      const authoritative = await this.sync.reconcileUndo(pendingUndo.key);
+      if (this.disposed) return 'still-unresolved';
+      this.plan = authoritative; this.unresolvedUndoState = null; this.pending = null; this.authorised = false; this.stats = this.build();
+      this.host.notify('Undo reconciliado: o plano do servidor foi adoptado.');
+      return 'committed';
+    } catch (error) {
+      if (error instanceof SpatialTransactionSessionRecoveredError) {
+        if (this.disposed) return 'still-unresolved';
+        this.history.push(pendingUndo.entry); this.unresolvedUndoState = null;
+        this.host.notify('Sessão recuperada sem o undo por reconciliar: ele não ficou aplicado e a história foi reposta.');
+        return 'recovered-not-committed';
+      }
+      if (!this.disposed) this.host.notify('Reconciliação do undo ainda impossível. As edições continuam bloqueadas.');
+      return 'still-unresolved';
+    } finally { this.busy = false; this.director?.resumeExploring(); if (!this.disposed) this.host.changed(); }
+  }
+
+  /**
+   * Settles an unresolved grouped transaction against the authoritative server result.
+   * `committed`: the authoritative plan is adopted as one undoable history entry.
+   * `recovered-not-committed`: the session was explicitly recovered without the transaction; the
+   * local pre-transaction plan stands and editing resumes. `still-unresolved`: nothing was
+   * decided and the block stays. Never invents an outcome.
+   */
+  async reconcileTransaction(): Promise<'committed' | 'recovered-not-committed' | 'still-unresolved'> {
+    const pendingTx = this.unresolvedTx;
+    if (this.disposed || !pendingTx || this.busy) return 'still-unresolved';
+    if (!this.sync?.reconcileTransaction) { this.host.notify('Reconciliação indisponível: a sessão não oferece recuperação de transacções.'); return 'still-unresolved'; }
+    this.busy = true; this.director?.enterEditing();
+    try {
+      const authoritative = await this.sync.reconcileTransaction(pendingTx.key);
+      if (this.disposed) return 'still-unresolved';
+      this.history.push({ plan: pendingTx.before, ops: pendingTx.ops, ...(pendingTx.fenced ? { fenced: true } : {}) });
+      this.plan = authoritative; this.unresolvedTx = null; this.pending = null; this.authorised = false; this.stats = this.build();
+      this.host.notify('Transacção reconciliada: o plano do servidor foi adoptado.');
+      return 'committed';
+    } catch (error) {
+      if (error instanceof SpatialTransactionSessionRecoveredError) {
+        if (this.disposed) return 'still-unresolved';
+        this.unresolvedTx = null; this.pending = null;
+        this.host.notify('Sessão recuperada sem a transacção por reconciliar: ela não ficou aplicada e as edições reabriram sobre o plano actual.');
+        return 'recovered-not-committed';
+      }
+      if (!this.disposed) this.host.notify(`Reconciliação ainda impossível: ${error instanceof Error ? error.message : 'erro desconhecido'}. As edições continuam bloqueadas.`);
+      return 'still-unresolved';
+    } finally { this.busy = false; this.director?.resumeExploring(); if (!this.disposed) this.host.changed(); }
   }
 
   // ------------------------------------------------------------------------------------------------ editing
@@ -268,21 +516,62 @@ export class PlanSpaceLayer implements SpaceLayer {
     this.selected = component.id; this.pending = { label: `${label} · ${component.label}`, before: current, after: describe(operation), operations: [operation], needsAuthorization: true, source }; this.authorised = false;
     this.applyPaint(); this.host.changed(); return true;
   }
+  /**
+   * A result of a deterministic solver (V4 structural fit): several typed operations previewed as ONE step. Not an AI hypothesis and not a human value: it
+   * is applied only when a person authorises it, then recorded as that person's decision with the solver's evidence in the provenance. One undo reverts all of it.
+   */
+  proposeSolverEdit(operations: SpatialOperationV2[], label: string, evidence: string, options?: { authorisationGuard?: () => Promise<boolean>; reviewBinding?: SpatialReviewPrecondition }): boolean {
+    if (this.disposed || !operations.length || this.isBusy) return false;
+    try { let probe = this.plan; for (const operation of operations) probe = applySpatialOperationV2(probe, operation, { origin: 'inferred', evidence: 'preview' }); } catch { return false; }
+    const first = this.plan.components.find((item) => item.id === operations[0]!.componentId); if (!first) return false;
+    this.selected = this.selected && operations.some((op) => op.componentId === this.selected) ? this.selected : first.id;
+    this.pending = { label, before: 'colocação actual', after: `${new Set(operations.map((op) => op.componentId)).size} componentes: ${[...new Set(operations.map((op) => op.kind === 'set-geometry' ? 'geometria' : op.kind === 'set-transform' ? 'posição, rotação e escala' : op.kind === 'set-material' ? 'material' : 'padrão'))].join(', ')}`, operations, needsAuthorization: true, source: 'solver', evidence, ...(options?.authorisationGuard ? { authorisationGuard: options.authorisationGuard } : {}), ...(options?.reviewBinding ? { reviewBinding: options.reviewBinding } : {}) }; this.authorised = false;
+    this.applyPaint(); this.host.changed(); return true;
+  }
   cancelPending(): void { this.pending = null; this.authorised = false; this.host.changed(); }
   get selectedId(): string | null { return this.selected; }
 
   async applyEdit(): Promise<void> {
-    const pending = this.pending; if (!pending || this.busy) return;
+    const pending = this.pending; if (!pending || this.busy || this.applying) return;
     if (this.lockReason) { this.host.notify(`Edição indisponível: ${this.lockReason}.`); return; }
-    if (pending.needsAuthorization && !this.authorised) { this.host.notify(pending.source === 'person' ? 'Esta edição toca num valor observado ou confirmado: marque a autorização primeiro.' : 'Uma alteração proposta pela IA só se aplica depois de a autorizar: marque a autorização.'); return; }
-    this.busy = true; this.director?.enterEditing();
+    if (pending.needsAuthorization && !this.authorised) { this.host.notify(pending.source === 'person' ? 'Esta edição toca num valor observado ou confirmado: marque a autorização primeiro.' : pending.source === 'solver' ? 'Uma proposta do solver só se aplica depois de a autorizar: marque a autorização.' : 'Uma alteração proposta pela IA só se aplica depois de a autorizar: marque a autorização.'); return; }
+    // One application at a time, claimed synchronously before any await: a second applyEdit during
+    // the guard (or the commit) is a no-op, never a duplicate submission.
+    this.applying = true;
+    const planAtStart = this.plan, authorisedAtStart = this.authorised;
     try {
-      const evidence = pending.source === 'person' ? 'Editado por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).' : 'Proposta por Muse Spark (hipótese) e autorizada por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).';
-      await this.commit(pending.operations, { origin: 'user_provided', evidence });
-      this.host.notify(`Aplicado: ${pending.label}.${this.sync ? '' : ' Edição só local: a sessão do servidor não a conhece.'}`);
-    } catch (error) { this.pending = null; this.host.notify(`Edição bloqueada: ${error instanceof Error ? error.message : 'erro desconhecido'}`); }
-    finally { this.busy = false; }
-    this.director?.resumeExploring(); this.host.changed();
+      if (pending.authorisationGuard) {
+        // Bound to an external state (e.g. a review revision): revalidate now, fail closed on any doubt.
+        const valid = await pending.authorisationGuard().catch(() => false);
+        if (!valid) { if (this.pending === pending) { this.pending = null; this.authorised = false; } if (!this.disposed) { this.host.notify('Proposta invalidada: o estado revisto mudou ou não pôde ser revalidado. Nada foi aplicado.'); this.host.changed(); } return; }
+        // While the guard was awaiting the network, the world may have moved: only the exact same
+        // pending proposal, with the same authorisation, on the same plan, may proceed.
+        if (this.disposed) return;
+        if (this.pending !== pending || this.plan !== planAtStart || this.authorised !== authorisedAtStart || pending.needsAuthorization && !this.authorised) {
+          if (!this.disposed) { this.host.notify('Proposta invalidada: a proposta, a autorização ou o plano mudaram durante a revalidação. Nada foi aplicado.'); this.host.changed(); }
+          return;
+        }
+      }
+      this.busy = true; this.director?.enterEditing();
+      try {
+        // Three facts stay separate: who inferred the values (the provenance origin), that a person
+        // authorised applying them (recorded in the evidence text), and the server commit itself.
+        // Authorisation never promotes inferred geometry to user_provided.
+        const inferred = pending.source !== 'person';
+        const baseEvidence = pending.source === 'solver' ? (pending.evidence ?? 'Proposta do solver estrutural.') : pending.source === 'person' ? 'Editado por uma pessoa no workspace (afirmado pelo cliente, sem identidade verificada).' : 'Proposta pela IA (hipótese) no workspace (afirmado pelo cliente, sem identidade verificada).';
+        const authorisationNote = inferred ? ` Authorisation: a person authorised applying this inferred result in the workspace (client-asserted, reviewer identity not authenticated)${pending.reviewBinding ? `; review ${pending.reviewBinding.reviewId} revision ${pending.reviewBinding.reviewRevision}` : ''}.` : '';
+        const evidence = `${baseEvidence.slice(0, Math.max(0, 500 - authorisationNote.length))}${authorisationNote}`.slice(0, 500);
+        await this.commit(pending.operations, { origin: inferred ? 'inferred' : 'user_provided', evidence }, undefined, pending.reviewBinding);
+        this.host.notify(`Aplicado: ${pending.label}.${this.sync ? '' : ' Edição só local: a sessão do servidor não a conhece.'}`);
+      } catch (error) {
+        // A review-bound proposal is not silently discarded: it stays pending (the plan, history
+        // and revision are untouched) so it can be committed once an authoritative path exists.
+        if (this.pending === pending && !pending.reviewBinding) this.pending = null;
+        if (!this.disposed) this.host.notify(pending.reviewBinding ? `Proposta não cometida: ${error instanceof Error ? error.message : 'erro desconhecido'}. A proposta fica pendente e nada foi aplicado.` : `Edição bloqueada: ${error instanceof Error ? error.message : 'erro desconhecido'}`);
+      }
+      finally { this.busy = false; }
+      this.director?.resumeExploring(); if (!this.disposed) this.host.changed();
+    } finally { this.applying = false; }
   }
 
   renderInspector(host: HTMLElement, id: string, evidenceOpen: boolean): void {
@@ -292,9 +581,10 @@ export class PlanSpaceLayer implements SpaceLayer {
     const operators = [...new Set(keys.map((shape) => shape.operator))];
     const parent = component.parentId ? this.plan.components.find((item) => item.id === component.parentId)?.label ?? component.parentId : null;
     const pending = this.pending;
-    const evidence = evidenceOpen ? `<ul class="uw-evidence" aria-label="Evidência"><li>${esc(p.evidence)}</li>${keys.map((shape) => `<li><code>${esc(shape.key)}</code> · ${esc(shape.operator)}<br><code>${esc(JSON.stringify(shape.parameters).slice(0, 400))}</code></li>`).join('')}</ul>` : '';
-    const pendingHtml = pending ? `<div class="sp-pending" role="status" data-source="${pending.source}"><p class="u-label"><b>${pending.source === 'person' ? 'Pré-visualização' : pending.source === 'meta' ? 'Proposta da Meta · ainda não aplicada' : 'Proposta da avaliação visual · ainda não aplicada'}</b></p><p class="u-label">${esc(pending.label)}: ${esc(pending.before)} → ${esc(pending.after)}</p>
-        ${pending.needsAuthorization ? `<label class="sp-auth u-label"><input type="checkbox" data-auth ${this.authorised ? 'checked' : ''}> ${pending.source === 'person' ? 'Autorizo alterar um valor confirmado' : 'Autorizo aplicar esta alteração proposta pela IA'}</label>` : ''}
+    const route = this.geometryReport?.decisions.find(decision => decision.componentId === id);
+    const evidence = evidenceOpen ? `<ul class="uw-evidence" aria-label="Evidência"><li>${esc(p.evidence)}</li>${route ? `<li>Método de geometria: ${esc(route.used)} · ${esc(route.reason)}</li>` : '<li>Método de geometria: procedural_v2</li>'}${keys.map((shape) => `<li><code>${esc(shape.key)}</code> · ${esc(shape.operator)}<br><code>${esc(JSON.stringify(shape.parameters).slice(0, 400))}</code></li>`).join('')}</ul>` : '';
+    const pendingHtml = pending ? `<div class="sp-pending" role="status" data-source="${pending.source}"><p class="u-label"><b>${pending.source === 'person' ? 'Pré-visualização' : pending.source === 'meta' ? 'Proposta da Meta · ainda não aplicada' : pending.source === 'solver' ? 'Proposta do solver estrutural (resultado de optimização) · ainda não aplicada' : 'Proposta da avaliação visual · ainda não aplicada'}</b></p><p class="u-label">${esc(pending.label)}: ${esc(pending.before)} → ${esc(pending.after)}</p>
+        ${pending.needsAuthorization ? `<label class="sp-auth u-label"><input type="checkbox" data-auth ${this.authorised ? 'checked' : ''}> ${pending.source === 'person' ? 'Autorizo alterar um valor confirmado' : pending.source === 'solver' ? 'Autorizo aplicar esta proposta do solver' : 'Autorizo aplicar esta alteração proposta pela IA'}</label>` : ''}
         <div class="uw-inspector-actions"><button type="button" class="uw-link" data-apply ${this.busy ? 'disabled' : ''}>aplicar</button><button type="button" class="uw-link" data-cancel>cancelar</button></div></div>` : '';
     host.innerHTML = `${pendingHtml}<div class="uw-chips">${chip('geometria', p.geometry)}${chip('posição', p.transform)}${chip('material', p.material)}</div>
       <dl class="u-readout"><div><dt>Formas</dt><dd>${keys.length} · ${esc(operators.join(', '))}</dd></div><div><dt>Posição</dt><dd>${esc(fmt3(component.transform.position))}</dd></div><div><dt>Escala</dt><dd>${esc(fmt3(component.transform.scale))}</dd></div>${parent ? `<div><dt>Ligado a</dt><dd>${esc(parent)}</dd></div>` : ''}<div><dt>Unidades</dt><dd>${this.plan.units === 'm' ? 'metros (indicadas por si)' : 'sem unidade (escala desconhecida)'}</dd></div></dl>
@@ -313,6 +603,8 @@ export class PlanSpaceLayer implements SpaceLayer {
   }
 
   dispose(): void {
+    this.disposed = true; this.clearTransientPoses(); this.pending = null; this.routed?.retire?.(); this.routed = null; this.cancelContinuation();
     this.director?.dispose(); this.director = null; this.release();
+    this.releaseRetiredMaterials();
   }
 }

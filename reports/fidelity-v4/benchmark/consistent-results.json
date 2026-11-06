@@ -1,0 +1,114 @@
+{
+  "generatedBy": "scripts/benchmark/v4-consistent.ts",
+  "note": "Category D/D: ground truth is a hand-authored plan, inputs are synthetic. Not Meta output, not a real object.",
+  "results": {
+    "lungs-like": {
+      "consistent": {
+        "mode": "consistent",
+        "contactsInInput": 6,
+        "constraintSources": [
+          "detected"
+        ],
+        "notes": [],
+        "input": {
+          "heldOutIou": 0.597,
+          "relationErrPctSpan": 5.21,
+          "contactsBroken": 0
+        },
+        "silhouetteOnly": {
+          "heldOutIou": 0.941,
+          "relationErrPctSpan": 7.94,
+          "contactsBroken": 1
+        },
+        "structural": {
+          "heldOutIou": 0.928,
+          "relationErrPctSpan": 2.38,
+          "contactsBroken": 0
+        },
+        "structuralMs": 1417,
+        "frozen": [],
+        "maxJointResidualPctSpan": 0
+      },
+      "disjoint": {
+        "mode": "disjoint",
+        "contactsInInput": 2,
+        "constraintSources": [
+          "detected"
+        ],
+        "notes": [],
+        "input": {
+          "heldOutIou": 0.609,
+          "relationErrPctSpan": 15.89,
+          "contactsBroken": 0
+        },
+        "silhouetteOnly": {
+          "heldOutIou": 0.946,
+          "relationErrPctSpan": 11.22,
+          "contactsBroken": 0
+        },
+        "structural": {
+          "heldOutIou": 0.942,
+          "relationErrPctSpan": 16.2,
+          "contactsBroken": 0
+        },
+        "structuralMs": 1103,
+        "frozen": [],
+        "maxJointResidualPctSpan": 0
+      }
+    },
+    "microscope-like": {
+      "consistent": {
+        "mode": "consistent",
+        "contactsInInput": 8,
+        "constraintSources": [
+          "detected"
+        ],
+        "notes": [],
+        "input": {
+          "heldOutIou": 0.523,
+          "relationErrPctSpan": 7.72,
+          "contactsBroken": 0
+        },
+        "silhouetteOnly": {
+          "heldOutIou": 0.892,
+          "relationErrPctSpan": 7.19,
+          "contactsBroken": 0
+        },
+        "structural": {
+          "heldOutIou": 0.863,
+          "relationErrPctSpan": 4.02,
+          "contactsBroken": 0
+        },
+        "structuralMs": 602,
+        "frozen": [],
+        "maxJointResidualPctSpan": 0
+      },
+      "disjoint": {
+        "mode": "disjoint",
+        "contactsInInput": 5,
+        "constraintSources": [
+          "detected"
+        ],
+        "notes": [],
+        "input": {
+          "heldOutIou": 0.427,
+          "relationErrPctSpan": 13.77,
+          "contactsBroken": 0
+        },
+        "silhouetteOnly": {
+          "heldOutIou": 0.9,
+          "relationErrPctSpan": 4.09,
+          "contactsBroken": 0
+        },
+        "structural": {
+          "heldOutIou": 0.742,
+          "relationErrPctSpan": 6.83,
+          "contactsBroken": 0
+        },
+        "structuralMs": 640,
+        "frozen": [],
+        "maxJointResidualPctSpan": 0
+      }
+    }
+  }
+}

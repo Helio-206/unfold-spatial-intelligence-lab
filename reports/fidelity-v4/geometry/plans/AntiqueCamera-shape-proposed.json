@@ -1,0 +1,396 @@
+{
+ "contract": "unfold.spatial-plan.v2",
+ "sessionId": "00000000-0000-4000-8000-000000000000",
+ "revision": 0,
+ "plan": {
+  "contract": "unfold.spatial-plan.v2",
+  "source": {
+   "kind": "image",
+   "sha256": "ae89695479ad997f09ebea8060a5ad01312ad8fe7ffb92f73b4e895109feecd2"
+  },
+  "title": "Bellows camera on a tripod (hand-built approximation)",
+  "units": "unitless",
+  "presentationProfile": "industrial",
+  "components": [
+   {
+    "id": "camera",
+    "label": "Camera body",
+    "parentId": null,
+    "transform": {
+     "position": [
+      0,
+      6.4,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "geometry": {
+     "type": "shape",
+     "key": "camera-s",
+     "operator": "box",
+     "parameters": {
+      "dimensions": [
+       1.6,
+       2,
+       2.4
+      ]
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "neutral",
+      "color": "#2b2b2b",
+      "roughness": 0.55,
+      "metalness": 0.1,
+      "clearcoat": 0
+     }
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-built primitive approximation for the benchmark (category D); not Meta output."
+    }
+   },
+   {
+    "id": "head",
+    "label": "Tripod head",
+    "parentId": null,
+    "transform": {
+     "position": [
+      0,
+      5.2,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "geometry": {
+     "type": "shape",
+     "key": "head-s",
+     "operator": "box",
+     "parameters": {
+      "dimensions": [
+       0.9,
+       0.9,
+       0.9
+      ]
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "neutral",
+      "color": "#3a3a3a",
+      "roughness": 0.55,
+      "metalness": 0.1,
+      "clearcoat": 0
+     }
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-built primitive approximation for the benchmark (category D); not Meta output."
+    }
+   },
+   {
+    "id": "leg-a",
+    "label": "leg-a",
+    "parentId": null,
+    "transform": {
+     "position": [
+      0,
+      0,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "geometry": {
+     "type": "shape",
+     "key": "leg-a-s",
+     "operator": "tube",
+     "parameters": {
+      "points": [
+       [
+        0,
+        5.1,
+        0
+       ],
+       [
+        0.67,
+        0,
+        1.36
+       ]
+      ],
+      "radius": 0.13,
+      "tubularSegments": 12,
+      "radialSegments": 8
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "neutral",
+      "color": "#6b4a2b",
+      "roughness": 0.55,
+      "metalness": 0.1,
+      "clearcoat": 0
+     }
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-built primitive approximation for the benchmark (category D); not Meta output."
+    }
+   },
+   {
+    "id": "leg-b",
+    "label": "leg-b",
+    "parentId": null,
+    "transform": {
+     "position": [
+      0,
+      0,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "geometry": {
+     "type": "shape",
+     "key": "leg-b-s",
+     "operator": "tube",
+     "parameters": {
+      "points": [
+       [
+        0,
+        5.1,
+        0
+       ],
+       [
+        -1.51,
+        0,
+        0.04
+       ]
+      ],
+      "radius": 0.13,
+      "tubularSegments": 12,
+      "radialSegments": 8
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "neutral",
+      "color": "#6b4a2b",
+      "roughness": 0.55,
+      "metalness": 0.1,
+      "clearcoat": 0
+     }
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-built primitive approximation for the benchmark (category D); not Meta output."
+    }
+   },
+   {
+    "id": "leg-c",
+    "label": "leg-c",
+    "parentId": null,
+    "transform": {
+     "position": [
+      0,
+      0,
+      0
+     ],
+     "rotationRad": [
+      0,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ]
+    },
+    "geometry": {
+     "type": "shape",
+     "key": "leg-c-s",
+     "operator": "tube",
+     "parameters": {
+      "points": [
+       [
+        0,
+        5.1,
+        0
+       ],
+       [
+        0.56,
+        0,
+        -1.29
+       ]
+      ],
+      "radius": 0.13,
+      "tubularSegments": 12,
+      "radialSegments": 8
+     },
+     "transform": {
+      "position": [
+       0,
+       0,
+       0
+      ],
+      "rotationRad": [
+       0,
+       0,
+       0
+      ],
+      "scale": [
+       1,
+       1,
+       1
+      ]
+     },
+     "repeat": null,
+     "material": {
+      "profile": "neutral",
+      "color": "#6b4a2b",
+      "roughness": 0.55,
+      "metalness": 0.1,
+      "clearcoat": 0
+     }
+    },
+    "provenance": {
+     "geometry": "design_approximation",
+     "transform": "design_approximation",
+     "material": "design_approximation",
+     "evidence": "Hand-built primitive approximation for the benchmark (category D); not Meta output."
+    }
+   }
+  ],
+  "relations": [],
+  "constraints": [],
+  "unknowns": [
+   "Hand-built approximation of a CC0 asset; units are the asset's own.",
+   "Physical scale unknown."
+  ]
+ },
+ "sceneSummary": {
+  "componentCount": 5,
+  "geometryNodeCount": 5,
+  "operators": [
+   "box",
+   "tube"
+  ],
+  "constraintReady": false
+ },
+ "constraintReport": {
+  "ok": true,
+  "results": []
+ },
+ "constructionEvents": [],
+ "meta": {
+  "note": "local benchmark plan; not Meta output"
+ },
+ "limitations": []
+}

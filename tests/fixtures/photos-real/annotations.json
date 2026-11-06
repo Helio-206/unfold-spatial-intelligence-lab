@@ -1,0 +1,63 @@
+{
+  "contract": "unfold.photo-annotation.v1",
+  "status": "MANUAL SINGLE-ANNOTATOR polygons drawn by the implementing engineer from the displayed photographs; not independently reviewed. Coordinates are fractions of image width/height, polygon of the vehicle's outer silhouette (wheels included, ground shadow excluded).",
+  "cases": [
+    {
+      "id": "car",
+      "file": "car.jpg",
+      "viewpoint": "three-quarter front (despite the source file name claiming side view)",
+      "polygon": [[0.03, 0.52], [0.07, 0.38], [0.20, 0.31], [0.33, 0.09], [0.45, 0.04], [0.82, 0.03], [0.95, 0.10], [0.99, 0.32], [0.985, 0.60], [0.95, 0.72], [0.88, 0.86], [0.78, 0.87], [0.75, 0.74], [0.45, 0.76], [0.42, 0.88], [0.30, 0.88], [0.28, 0.74], [0.08, 0.72], [0.035, 0.62]]
+    },
+    {
+      "id": "bus",
+      "file": "bus.jpg",
+      "viewpoint": "side with rear three-quarter",
+      "polygon": [[0.015, 0.35], [0.03, 0.22], [0.10, 0.175], [0.75, 0.24], [0.90, 0.29], [0.935, 0.38], [0.93, 0.70], [0.88, 0.78], [0.80, 0.80], [0.78, 0.70], [0.40, 0.72], [0.38, 0.82], [0.27, 0.82], [0.25, 0.70], [0.05, 0.68], [0.015, 0.55]]
+    },
+    {
+      "id": "accept-mini",
+      "file": "accept-mini.jpg",
+      "viewpoint": "true side profile, house and vegetation behind",
+      "acceptance": "fresh unseen acceptance case (downloaded after all fitting calibration)",
+      "wheels": [{ "x": 0.795, "y": 0.725, "r": 0.125 }, { "x": 0.165, "y": 0.725, "r": 0.125 }],
+      "polygon": [[0.045, 0.42], [0.06, 0.30], [0.115, 0.185], [0.20, 0.155], [0.55, 0.15], [0.68, 0.19], [0.80, 0.28], [0.925, 0.38], [0.95, 0.50], [0.935, 0.66], [0.88, 0.70], [0.865, 0.845], [0.75, 0.855], [0.735, 0.70], [0.235, 0.70], [0.22, 0.845], [0.115, 0.85], [0.10, 0.68], [0.05, 0.58]]
+    },
+    {
+      "id": "accept-pickup",
+      "file": "accept-pickup.jpg",
+      "viewpoint": "true side profile, field and people behind",
+      "acceptance": "fresh unseen acceptance case (downloaded after all fitting calibration)",
+      "wheels": [{ "x": 0.645, "y": 0.715, "r": 0.095 }, { "x": 0.20, "y": 0.715, "r": 0.095 }],
+      "polygon": [[0.055, 0.52], [0.075, 0.44], [0.09, 0.425], [0.30, 0.415], [0.325, 0.315], [0.36, 0.27], [0.475, 0.265], [0.525, 0.285], [0.565, 0.42], [0.62, 0.44], [0.76, 0.445], [0.795, 0.52], [0.79, 0.635], [0.72, 0.66], [0.705, 0.79], [0.585, 0.80], [0.565, 0.66], [0.255, 0.66], [0.24, 0.795], [0.135, 0.80], [0.12, 0.64], [0.065, 0.60]]
+    },
+    {
+      "id": "holdout-van",
+      "file": "holdout-van.jpg",
+      "viewpoint": "rear three-quarter, vegetation and road behind",
+      "heldOut": true,
+      "polygon": [[0.10, 0.50], [0.13, 0.36], [0.19, 0.25], [0.30, 0.155], [0.45, 0.125], [0.62, 0.14], [0.695, 0.175], [0.71, 0.30], [0.70, 0.60], [0.65, 0.71], [0.575, 0.725], [0.56, 0.62], [0.335, 0.655], [0.315, 0.775], [0.205, 0.78], [0.19, 0.635], [0.12, 0.585], [0.095, 0.55]]
+    },
+    {
+      "id": "holdout-coupe",
+      "file": "holdout-coupe.jpg",
+      "viewpoint": "side/rear three-quarter fastback, crowd and other vehicles behind",
+      "heldOut": true,
+      "polygon": [[0.015, 0.56], [0.03, 0.47], [0.10, 0.42], [0.175, 0.315], [0.26, 0.255], [0.42, 0.245], [0.60, 0.28], [0.78, 0.36], [0.885, 0.44], [0.915, 0.52], [0.905, 0.64], [0.83, 0.68], [0.80, 0.855], [0.68, 0.86], [0.655, 0.68], [0.30, 0.685], [0.275, 0.855], [0.15, 0.855], [0.125, 0.66], [0.03, 0.63], [0.012, 0.60]]
+    },
+    {
+      "id": "skoda-kodiaq",
+      "file": "skoda-kodiaq.jpg",
+      "viewpoint": "true side profile, vegetation behind",
+      "heldOut": true,
+      "heldOutNote": "unseen during gate/threshold calibration; annotated only for this final measurement",
+      "polygon": [[0.075, 0.42], [0.085, 0.33], [0.13, 0.26], [0.30, 0.225], [0.55, 0.225], [0.72, 0.25], [0.85, 0.33], [0.945, 0.42], [0.965, 0.55], [0.95, 0.66], [0.88, 0.68], [0.86, 0.845], [0.74, 0.855], [0.72, 0.68], [0.30, 0.68], [0.285, 0.85], [0.165, 0.855], [0.15, 0.66], [0.085, 0.60], [0.07, 0.50]]
+    },
+    {
+      "id": "porsche-911",
+      "file": "porsche-911.jpg",
+      "viewpoint": "true side profile; trucks and a tarped vehicle behind",
+      "heldOut": true,
+      "polygon": [[0.08, 0.55], [0.10, 0.47], [0.20, 0.42], [0.28, 0.335], [0.38, 0.325], [0.52, 0.36], [0.62, 0.435], [0.80, 0.46], [0.92, 0.50], [0.95, 0.58], [0.93, 0.66], [0.83, 0.68], [0.80, 0.79], [0.68, 0.80], [0.65, 0.67], [0.32, 0.67], [0.29, 0.80], [0.17, 0.80], [0.15, 0.65], [0.085, 0.62]]
+    }
+  ]
+}

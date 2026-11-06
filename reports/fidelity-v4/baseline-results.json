@@ -1,0 +1,309 @@
+{
+  "generatedBy": "scripts/benchmark/v4-baseline.ts",
+  "results": {
+    "E1_lungs_vs_source_image": {
+      "note": "Source: reports/acceptance/inputs/lungs.webp (illustration). Plan: HAND-AUTHORED reproduction (not Meta output). Silhouette IoU after fitting by height; best of 91 views.",
+      "V2": {
+        "iou": 0.742,
+        "azDeg": -12,
+        "elDeg": 0
+      },
+      "V3": {
+        "iou": 0.744,
+        "azDeg": -18,
+        "elDeg": 0
+      }
+    },
+    "E2_visual_hull_vs_ground_truth": {
+      "lungs-like": {
+        "origin": "hand-authored reproduction",
+        "groundTruth": "the plan's own implicit solids (a plan is the ground truth here, NOT a photographed real object)",
+        "components": 7,
+        "skippedWithoutDistanceField": [],
+        "grid": 96,
+        "rows": [
+          {
+            "views": 1,
+            "volumeIoU": 0.316,
+            "excessVolumePct": 215.2,
+            "worstComponentRetained": {
+              "id": "trachea",
+              "retained": 0.979
+            },
+            "scoredComponents": 3
+          },
+          {
+            "views": 3,
+            "volumeIoU": 0.85,
+            "excessVolumePct": 16.4,
+            "worstComponentRetained": {
+              "id": "trachea",
+              "retained": 0.979
+            },
+            "scoredComponents": 3
+          },
+          {
+            "views": 6,
+            "volumeIoU": 0.908,
+            "excessVolumePct": 8.9,
+            "worstComponentRetained": {
+              "id": "lung-left",
+              "retained": 0.987
+            },
+            "scoredComponents": 3
+          },
+          {
+            "views": 12,
+            "volumeIoU": 0.947,
+            "excessVolumePct": 3.4,
+            "worstComponentRetained": {
+              "id": "trachea",
+              "retained": 0.909
+            },
+            "scoredComponents": 3
+          },
+          {
+            "views": 24,
+            "volumeIoU": 0.959,
+            "excessVolumePct": 1,
+            "worstComponentRetained": {
+              "id": "trachea",
+              "retained": 0.9
+            },
+            "scoredComponents": 3
+          }
+        ]
+      },
+      "microscope-like": {
+        "origin": "hand-authored reproduction",
+        "groundTruth": "the plan's own implicit solids (a plan is the ground truth here, NOT a photographed real object)",
+        "components": 10,
+        "skippedWithoutDistanceField": [],
+        "grid": 96,
+        "rows": [
+          {
+            "views": 1,
+            "volumeIoU": 0.143,
+            "excessVolumePct": 527.6,
+            "worstComponentRetained": {
+              "id": "revolver",
+              "retained": 0.793
+            },
+            "scoredComponents": 6
+          },
+          {
+            "views": 3,
+            "volumeIoU": 0.718,
+            "excessVolumePct": 18.1,
+            "worstComponentRetained": {
+              "id": "revolver",
+              "retained": 0.5
+            },
+            "scoredComponents": 6
+          },
+          {
+            "views": 6,
+            "volumeIoU": 0.654,
+            "excessVolumePct": 49.7,
+            "worstComponentRetained": {
+              "id": "base",
+              "retained": 0.989
+            },
+            "scoredComponents": 6
+          },
+          {
+            "views": 12,
+            "volumeIoU": 0.806,
+            "excessVolumePct": 19.9,
+            "worstComponentRetained": {
+              "id": "arm",
+              "retained": 0.905
+            },
+            "scoredComponents": 6
+          },
+          {
+            "views": 24,
+            "volumeIoU": 0.877,
+            "excessVolumePct": 8,
+            "worstComponentRetained": {
+              "id": "arm",
+              "retained": 0.929
+            },
+            "scoredComponents": 6
+          }
+        ]
+      },
+      "excavator (saved Meta plan)": {
+        "origin": "saved Meta plan, old repair step",
+        "groundTruth": "the plan's own implicit solids (a plan is the ground truth here, NOT a photographed real object)",
+        "components": 11,
+        "skippedWithoutDistanceField": [],
+        "grid": 96,
+        "rows": [
+          {
+            "views": 1,
+            "volumeIoU": 0.156,
+            "excessVolumePct": 529.2,
+            "worstComponentRetained": {
+              "id": "engine-hood",
+              "retained": 0.929
+            },
+            "scoredComponents": 11
+          },
+          {
+            "views": 3,
+            "volumeIoU": 0.624,
+            "excessVolumePct": 54.7,
+            "worstComponentRetained": {
+              "id": "engine-hood",
+              "retained": 0.91
+            },
+            "scoredComponents": 11
+          },
+          {
+            "views": 6,
+            "volumeIoU": 0.686,
+            "excessVolumePct": 45,
+            "worstComponentRetained": {
+              "id": "hydraulic-boom",
+              "retained": 0.988
+            },
+            "scoredComponents": 11
+          },
+          {
+            "views": 12,
+            "volumeIoU": 0.806,
+            "excessVolumePct": 22.9,
+            "worstComponentRetained": {
+              "id": "boom",
+              "retained": 0.977
+            },
+            "scoredComponents": 11
+          },
+          {
+            "views": 24,
+            "volumeIoU": 0.891,
+            "excessVolumePct": 10.5,
+            "worstComponentRetained": {
+              "id": "cab",
+              "retained": 0.965
+            },
+            "scoredComponents": 11
+          }
+        ]
+      },
+      "harp (saved Meta plan)": {
+        "origin": "saved Meta plan, old repair step",
+        "groundTruth": "the plan's own implicit solids (a plan is the ground truth here, NOT a photographed real object)",
+        "components": 7,
+        "skippedWithoutDistanceField": [
+          "harp-soundbox"
+        ],
+        "grid": 96,
+        "rows": [
+          {
+            "views": 1,
+            "volumeIoU": 0.12,
+            "excessVolumePct": 730,
+            "worstComponentRetained": {
+              "id": "harp-pegs",
+              "retained": 0.988
+            },
+            "scoredComponents": 5
+          },
+          {
+            "views": 3,
+            "volumeIoU": 0.855,
+            "excessVolumePct": 14.4,
+            "worstComponentRetained": {
+              "id": "harp-strings",
+              "retained": 0.935
+            },
+            "scoredComponents": 5
+          },
+          {
+            "views": 6,
+            "volumeIoU": 0.836,
+            "excessVolumePct": 18.6,
+            "worstComponentRetained": {
+              "id": "harp-pillar",
+              "retained": 0.978
+            },
+            "scoredComponents": 5
+          },
+          {
+            "views": 12,
+            "volumeIoU": 0.896,
+            "excessVolumePct": 10,
+            "worstComponentRetained": {
+              "id": "harp-pillar",
+              "retained": 0.978
+            },
+            "scoredComponents": 5
+          },
+          {
+            "views": 24,
+            "volumeIoU": 0.926,
+            "excessVolumePct": 5.7,
+            "worstComponentRetained": {
+              "id": "harp-strings",
+              "retained": 0.974
+            },
+            "scoredComponents": 5
+          }
+        ]
+      }
+    },
+    "E3_silhouette_refinement_lungs": {
+      "note": "Hypothesis-level proposal: moves/scales components in the image plane of the best view to fit the source silhouette. One view of one illustration under-constrains depth and parts hidden by others.",
+      "view": {
+        "iou": 0.742,
+        "azDeg": -12,
+        "elDeg": 0
+      },
+      "iouBefore": 0.742,
+      "iouAfter": 0.782,
+      "proposedChanges": {
+        "trachea": {
+          "scale": 0.9,
+          "dx": 0.02,
+          "dy": -0.02
+        },
+        "trachea-ring": {
+          "scale": 0.85,
+          "dx": 0.02,
+          "dy": 0
+        },
+        "carina": {
+          "scale": 1.3,
+          "dx": 0.02,
+          "dy": 0
+        },
+        "lung-left": {
+          "scale": 1.05,
+          "dx": 0.02,
+          "dy": 0.02
+        },
+        "lung-right": {
+          "scale": 1,
+          "dx": 0,
+          "dy": 0
+        },
+        "branches-left": {
+          "scale": 1,
+          "dx": 0,
+          "dy": 0
+        },
+        "branches-right": {
+          "scale": 1,
+          "dx": 0,
+          "dy": 0
+        }
+      },
+      "silhouetteDriftInOtherViews_1_minusIoU": [
+        0.118,
+        0.087
+      ]
+    }
+  }
+}

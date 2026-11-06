@@ -1,0 +1,72 @@
+{
+  "car": {
+    "correctedVsAnnotationIoU": 0.931,
+    "correctedBboxErrorPx": 3,
+    "maskProvenance": "user_confirmed",
+    "fittingTransport": "worker",
+    "fitting": {
+      "status": "fitted",
+      "overrides": {
+        "cabinHeight": 0.3485,
+        "cabinStart": 0.1578,
+        "cabinEnd": 0.6960000000000001,
+        "rearSlope": 0.6099999999999999,
+        "hoodHeight": 1.04725,
+        "tailHeight": 1.027,
+        "roofCurvature": 0.9862,
+        "bodyHeightScale": 0.994,
+        "shoulderHeight": 1.018,
+        "roofFront": 1,
+        "roofRear": 0.95275,
+        "wheelScale": 1.018
+      },
+      "objective": 0.2903242721002247,
+      "baselineObjective": 0.3374624922902768,
+      "candidates": 73,
+      "silhouetteIou": 0.7115559599636033,
+      "baselineSilhouetteIou": 0.6647243388614971,
+      "gridSaturated": [],
+      "relativeImprovement": 0.13968432423448404,
+      "cameraAzimuthDeg": 18.151272719176305,
+      "cameraAmbiguous": false,
+      "cameraMethod": "excentricidade das regiões de pneu (21/16° por roda)",
+      "summary": "Fitting v3 por descida de coordenadas (73 avaliações, câmara: three-quarter a 18°; método: excentricidade das regiões de pneu (21/16° por roda)): IoU de silhueta 0.665 → 0.712 (regiões frente/meio/traseira 0.72/0.84/0.56); parâmetros cabinHeight=0.348, cabinStart=0.158, cabinEnd=0.696, rearSlope=0.61, hoodHeight=1.047, tailHeight=1.027, roofCurvature=0.986, bodyHeightScale=0.994, shoulderHeight=1.018, roofFront=1, roofRear=0.953, wheelScale=1.018. Parâmetros inferidos da imagem, não dimensões verificadas."
+    },
+    "photorealActive": true
+  },
+  "skoda-kodiaq": {
+    "correctedVsAnnotationIoU": 0.959,
+    "correctedBboxErrorPx": 1,
+    "maskProvenance": "user_confirmed",
+    "fittingTransport": "worker",
+    "fitting": {
+      "status": "fitted",
+      "overrides": {
+        "cabinHeight": 0.36325,
+        "cabinStart": 0.06219999999999999,
+        "cabinEnd": 0.756,
+        "rearSlope": 0.99,
+        "hoodHeight": 1.0405,
+        "tailHeight": 1.0405,
+        "roofCurvature": 0.9965499999999999,
+        "bodyHeightScale": 0.994,
+        "shoulderHeight": 1.006,
+        "roofFront": 1.027,
+        "roofRear": 1,
+        "wheelScale": 1.018
+      },
+      "objective": 0.2989009593408267,
+      "baselineObjective": 0.3562923153956181,
+      "candidates": 73,
+      "silhouetteIou": 0.7033259423503326,
+      "baselineSilhouetteIou": 0.6468763845813026,
+      "gridSaturated": [],
+      "relativeImprovement": 0.16107941029001838,
+      "cameraAzimuthDeg": 21.487264830467545,
+      "cameraAmbiguous": false,
+      "cameraMethod": "excentricidade das regiões de pneu (26/17° por roda)",
+      "summary": "Fitting v3 por descida de coordenadas (73 avaliações, câmara: three-quarter a 21°; método: excentricidade das regiões de pneu (26/17° por roda)): IoU de silhueta 0.647 → 0.703 (regiões frente/meio/traseira 0.73/0.75/0.62); parâmetros cabinHeight=0.363, cabinStart=0.062, cabinEnd=0.756, rearSlope=0.99, hoodHeight=1.04, tailHeight=1.04, roofCurvature=0.997, bodyHeightScale=0.994, shoulderHeight=1.006, roofFront=1.027, roofRear=1, wheelScale=1.018. Parâmetros inferidos da imagem, não dimensões verificadas."
+    },
+    "photorealActive": true
+  }
+}

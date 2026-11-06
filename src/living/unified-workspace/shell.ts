@@ -1,3 +1,9 @@
+import { FoundryGeometry } from '../universal-foundry/provider';
+import { PhotorealGeometry, applyPhotorealStage, type PhotorealStage } from '../photoreal/look';
+import { detectCapabilities, selectPhotorealPreset } from '../photoreal/presets';
+import { mountFoundryPanel } from '../universal-foundry/panel';
+import { evidenceFromDataUrl } from '../universal-foundry/browser';
+import { ExperimentalV4 } from '../spatial-space/experimental-v4';
 import './unified.css';
 import mark from '../../../design-system/logos/unfold-mark-on-dark.svg';
 import { mountExperience } from '../experience/experience';
@@ -11,6 +17,8 @@ import { LiveReconstructionPort } from './live-port';
 import { asReviewHandoff, ReviewGateway } from './review-bridge';
 import { EMPTY_BRAND, newProjectIcon, WorkspaceStageHost } from './lab-host';
 import { SpaceFlow } from '../spatial-space/flow';
+import { mountLivingIntelligence, livingIntelligenceEnabled } from '../living-intelligence';
+import { spatialPlanFingerprintV2 } from '../../universal-spatial/api-client';
 
 const EXAMPLE_NOTICE = {
   id: 'example',
@@ -68,15 +76,103 @@ export function mountLivingShell(app: HTMLElement): void {
   };
   // New Space: any object, from text or a photograph, through Muse Spark and a human review, on this same stage. Its panels sit beside the experience's.
   const experienceRoot = () => workspace.panelHost.querySelector<HTMLElement>('.ux-root');
+  const foundry = debug && params.has('experimental-foundry') ? new FoundryGeometry() : null;
+  // Experimental photoreal rendering: wraps the Foundry geometry seam (materials follow the
+  // authoritative plan on every compile) and dresses the stage once a Space is live. Without the
+  // flag, neither exists and the renderer behaves exactly as before.
+  // Capabilities are decided before any material is touched: an unsupported renderer keeps the
+  // original path completely (stock materials included), not just the stock stage.
+  const photorealPreset = foundry && params.has('experimental-photoreal') ? selectPhotorealPreset('balanced', detectCapabilities(workspace.photorealStage().renderer)) : null;
+  const photoreal = foundry && photorealPreset ? new PhotorealGeometry(foundry, { microdetail: photorealPreset.microdetail }) : null;
+  let photorealStage: PhotorealStage | null = null;
+  // Image evidence is bound to the exact reviewed plan shown on stage (A/B/A isolation):
+  // the picture is remembered at submit, and only bound when that plan is shown, with its
+  // fingerprint and source hashes. A newer picture invalidates the pending one by generation.
+  let pendingImage: { dataUrl: string; generation: number } | null = null;
+  let imageGeneration = 0;
+  // Contorno corrigido na revisão: só vale para o sourceSha256 confirmado; qualquer
+  // upload novo o invalida antes de poder ser aplicado a outro plano/Space.
+  let pendingCorrected: { polygon: Array<[number, number]>; sourceSha256: string } | null = null;
   const space = new SpaceFlow({
     workspace, host: workspace.panelHost,
+    ...(foundry ? {
+      geometry: () => photoreal ?? foundry,
+      onImage: (dataUrl: string) => {
+        imageGeneration++;
+        pendingCorrected = null; // upload novo: contorno anterior fica stale de imediato
+        if (!dataUrl) { pendingImage = null; void foundry.setEvidence(null); return; }
+        pendingImage = { dataUrl, generation: imageGeneration };
+      },
+      onCorrectedMask: (info) => { pendingCorrected = info; },
+      onPlanShown: (plan) => {
+        const pending = pendingImage;
+        if (!pending || plan.source.kind !== 'image') return;
+        const generation = pending.generation;
+        void (async () => {
+          // Segmentação aprendida local (opcional): DeepLab v3 no browser; qualquer falha
+          // cai para a evidência clássica, e a proveniência regista qual foi usada.
+          let evidence = null as Awaited<ReturnType<typeof evidenceFromDataUrl>>;
+          let segmentation: 'automatic-classical' | 'model-mediapipe-deeplab-v3' = 'automatic-classical';
+          if (params.has('experimental-mediapipe')) {
+            try {
+              const { mediapipeVehicleEvidence } = await import('../universal-foundry/mediapipe-segmentation');
+              evidence = await mediapipeVehicleEvidence(pending.dataUrl);
+              if (evidence) segmentation = 'model-mediapipe-deeplab-v3';
+            } catch { evidence = null; }
+          }
+          if (!evidence) evidence = await evidenceFromDataUrl(pending.dataUrl);
+          if (!evidence || generation !== imageGeneration) return;
+          const bytes = await (await fetch(pending.dataUrl)).arrayBuffer();
+          const digest = await crypto.subtle.digest('SHA-256', bytes);
+          const originalSha256 = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+          const planFingerprint = await spatialPlanFingerprintV2(plan);
+          if (generation !== imageGeneration) return;
+          const correctedMask = pendingCorrected && pendingCorrected.sourceSha256 === plan.source.sha256
+            ? { polygon: pendingCorrected.polygon, confirmedAt: new Date().toISOString() }
+            : undefined;
+          await foundry.setEvidence(evidence, { plan, planFingerprint, sourceSha256: plan.source.sha256, originalSha256, preparedSha256: plan.source.sha256, preparation: 'workspace-image-submit', generationId: `${plan.source.sha256}:${generation}`, recipeVersion: 1, segmentation, ...(correctedMask ? { correctedMask } : {}) });
+          if (generation === imageGeneration) space.layer?.regenerate();
+        })();
+      },
+    } : {}),
     onActive: (active) => { const root = experienceRoot(); if (root) root.hidden = active; },
     onExit: () => { const root = experienceRoot(); if (root) root.hidden = false; api?.restart(); },
   });
-  if (debug) Object.assign(window, { __workspace: workspace, __foundry: { ready: !params.has('example') }, __unified: { port, gateway, lab }, __space: space });
-  addEventListener('pagehide', (event) => { if (!(event as PageTransitionEvent).persisted) { space.dispose(); workspace.dispose(); port.session.dispose(); } });
+  // Fitting assíncrono terminou: regenerar o Space com os parâmetros ajustados (cache hit, sem workload síncrono).
+  foundry?.onFitted(() => { space.layer?.regenerate(); });
+  const foundryPanel = foundry ? mountFoundryPanel(foundry, () => space.layer) : null;
+  const experimentalV4 = debug && params.has('experimental-v4') ? new ExperimentalV4(() => space.layer, id => workspace.select(id), () => space.currentReviewId) : null;
+  let livingIntelligence: ReturnType<typeof mountLivingIntelligence> | null = null;
+  if (debug) Object.assign(window, { __workspace: workspace, __foundry: { ready: !params.has('example') }, __unified: { port, gateway, lab }, __space: space, ...(experimentalV4 ? { __v4: experimentalV4 } : {}), ...(foundry ? { __foundry3d: foundry } : {}), ...(photoreal ? { __photoreal: { active: () => photorealStage !== null, stage: () => photorealStage } } : {}) });
+  if (photoreal) {
+    const dress = () => {
+      if (!photorealStage && workspace.spaceActive) { const stage = workspace.photorealStage(); photorealStage = applyPhotorealStage(stage.renderer, stage.scene, photorealPreset?.name ?? 'balanced'); }
+      if (photorealStage && !workspace.spaceActive) { photorealStage.dispose(); photorealStage = null; }
+    };
+    const timer = setInterval(dress, 400);
+    addEventListener('pagehide', () => { clearInterval(timer); photorealStage?.dispose(); photorealStage = null; });
+  }
+  addEventListener('pagehide', (event) => { if (!(event as PageTransitionEvent).persisted) { livingIntelligence?.dispose(); experimentalV4?.dispose(); foundryPanel?.dispose(); space.dispose(); workspace.dispose(); port.session.dispose(); } });
   void mountExperience(app, { port, handoff: asReviewHandoff(gateway), lab, example, space: { open: () => space.open() }, embedded }).then((experience) => {
     api = experience;
     if (params.has('example')) { experience.openExample(); if (debug) (window as unknown as { __foundry: { ready: boolean } }).__foundry.ready = true; }
+    // Depois da experiência montar (ela reconstrói a app): o painel vivo entra por cima do mesmo palco, nunca como outra aplicação.
+    if (debug && livingIntelligenceEnabled(params)) {
+      livingIntelligence = mountLivingIntelligence(app, workspace);
+      if (debug) Object.assign(window, { __living: livingIntelligence });
+      // O Space activo muda por geração do workspace: ligar/desligar a ponte viva seguindo-o
+      // (mesmo padrão de polling do vestido photoreal; trocar de Space invalida o movimento anterior).
+      let seenGeneration = -1;
+      const syncSpace = () => {
+        const generation = workspace.activeSpaceGeneration;
+        if (generation === seenGeneration || !livingIntelligence) return;
+        seenGeneration = generation;
+        const plan = workspace.livingSpacePlan();
+        if (!plan) { livingIntelligence.attachSpace(null); return; }
+        void spatialPlanFingerprintV2(plan).then((fingerprint) => { if (workspace.activeSpaceGeneration === generation) livingIntelligence?.attachSpace(plan, fingerprint); });
+      };
+      const spaceTimer = setInterval(syncSpace, 500);
+      addEventListener('pagehide', () => clearInterval(spaceTimer), { once: true });
+    }
   });
 }

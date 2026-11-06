@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Raycaster, Vector2, PerspectiveCamera } from 'three';
+import { Mesh, MeshPhysicalMaterial, Raycaster, Vector2, PerspectiveCamera } from 'three';
 import { validateSpatialPlanV2, type SpatialPlanV2 } from '../src/universal-spatial/contracts-v2';
 import type { SpatialOperationV2 } from '../src/universal-spatial/contracts-v2';
 import { applySpatialOperationV2 } from '../src/universal-spatial/contracts-v2';
-import { PlanSpaceLayer, type LayerSync } from '../src/living/spatial-space/layer';
+import { PlanSpaceLayer, SpatialTransactionSessionRecoveredError, type LayerSync } from '../src/living/spatial-space/layer';
+import { SpatialTransactionUnresolvedError } from '../src/universal-spatial/api-client';
 
 const id = { position: [0, 0, 0], rotationRad: [0, 0, 0], scale: [1, 1, 1] };
 const mat = (color: string) => ({ profile: 'metal', color, roughness: 0.4, metalness: 0.7, clearcoat: 0 });
@@ -23,6 +24,42 @@ const floating = (): SpatialPlanV2 => validateSpatialPlanV2({
 const host = () => ({ changed: vi.fn(), redraw: vi.fn(), notify: vi.fn(), syncLost: vi.fn() });
 
 describe('PlanSpaceLayer', () => {
+  it('keeps only the last displayed materials until a successful new frame and disposes everything on exit', async () => {
+    const layer = new PlanSpaceLayer(plan(), host());
+    const material = (id: string) => { let found: MeshPhysicalMaterial | null = null; layer.root.traverse(o => { if (o instanceof Mesh && o.userData.spatialEntityId === id) found = o.material as MeshPhysicalMaterial; }); return found!; };
+    const old = material('base'), other = material('top'); expect(old).not.toBe(other);
+    const oldDispose = vi.fn(); old.addEventListener('dispose', oldDispose);
+    layer.highlight('base'); layer.afterRender();
+    layer.proposeEdit('x+'); await layer.applyEdit();
+    expect(oldDispose).not.toHaveBeenCalled();
+    const intermediate = material('base'), intermediateDispose = vi.fn(); intermediate.addEventListener('dispose', intermediateDispose);
+    layer.proposeColour('#2d6cdf'); await layer.applyEdit();
+    expect(intermediateDispose).toHaveBeenCalledOnce(); expect(oldDispose).not.toHaveBeenCalled();
+    const current = material('base'), currentDispose = vi.fn(); current.addEventListener('dispose', currentDispose);
+    expect(current).not.toBe(material('top')); expect(current.color.getHexString()).toBe('2d6cdf');
+    expect(layer.selectedId).toBe('base'); layer.afterRender();
+    expect(oldDispose).toHaveBeenCalledOnce(); expect(currentDispose).not.toHaveBeenCalled();
+    layer.dispose(); expect(currentDispose).toHaveBeenCalledOnce();
+  });
+
+  it('releases deferred materials when the Space closes before another frame', async () => {
+    const layer = new PlanSpaceLayer(plan(), host()); let old: MeshPhysicalMaterial | null = null;
+    layer.root.traverse(o => { if (o instanceof Mesh && o.userData.spatialEntityId === 'base') old = o.material as MeshPhysicalMaterial; });
+    const disposed = vi.fn(); old!.addEventListener('dispose', disposed); layer.highlight('base'); layer.afterRender();
+    layer.proposeEdit('x+'); await layer.applyEdit(); expect(disposed).not.toHaveBeenCalled();
+    layer.dispose(); expect(disposed).toHaveBeenCalledOnce(); layer.afterRender(); expect(disposed).toHaveBeenCalledOnce();
+  });
+
+  it('releases deferred materials if no frame arrives', async () => {
+    vi.useFakeTimers();
+    try {
+      const layer = new PlanSpaceLayer(plan(), host()); let old: MeshPhysicalMaterial | null = null;
+      layer.root.traverse(o => { if (o instanceof Mesh && o.userData.spatialEntityId === 'base') old = o.material as MeshPhysicalMaterial; });
+      const disposed = vi.fn(); old!.addEventListener('dispose', disposed); layer.highlight('base'); layer.afterRender();
+      layer.proposeEdit('x+'); await layer.applyEdit(); expect(disposed).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1000); expect(disposed).toHaveBeenCalledOnce(); layer.dispose();
+    } finally { vi.useRealTimers(); }
+  });
   it('previews a nudge, applies it through the typed operation as user_provided, and undoes it', async () => {
     const h = host(), layer = new PlanSpaceLayer(plan(), h);
     layer.highlight('base');
@@ -98,6 +135,18 @@ describe('PlanSpaceLayer', () => {
     expect(await layer.undo()).toBe(true);
     expect(calls).toEqual([calls[0], 'undo']); expect(layer.currentPlan.components.find((c) => c.id === 'base')!.transform.position).toEqual([0, 0.5, 0]);
     layer.dispose();
+  });
+
+  it('does not rebuild after a delayed undo finishes on a disposed layer', async () => {
+    const layer = new PlanSpaceLayer(plan(), host()); layer.highlight('base'); layer.proposeEdit('x+'); await layer.applyEdit();
+    const before = layer.currentPlan; let release!: (p: SpatialPlanV2) => void;
+    layer.attachSync({ apply: async () => before, undo: () => new Promise(resolve => { release = resolve; }) });
+    const pending = layer.undo(); layer.dispose(); release(plan());
+    expect(await pending).toBe(false); expect(layer.root.children).toHaveLength(0); expect(layer.currentPlan).toBe(before);
+  });
+  it('does not undo or run a solver after disposal', async () => {
+    const layer = new PlanSpaceLayer(plan(), host()); layer.highlight('base'); layer.proposeEdit('x+'); await layer.applyEdit();
+    layer.dispose(); expect(await layer.undo()).toBe(false); expect((await layer.closeGaps()).applied).toBe(0); expect(layer.root.children).toHaveLength(0);
   });
 
   it('keeps editing locally when the server cannot confirm, and says the session was lost', async () => {
@@ -200,5 +249,261 @@ describe('PlanSpaceLayer', () => {
     layer.proposeEdit('x+'); await layer.applyEdit();
     expect(layer.canUndo).toBe(true);
     layer.dispose();
+  });
+
+  describe('solver proposals (V4 structural fit)', () => {
+    const ops = (): SpatialOperationV2[] => ['base', 'top'].map((cid, n) => ({ contract: 'unfold.spatial-operation.v2', operationId: `v4-test-${n}`, kind: 'set-transform', componentId: cid, nodeKey: null, value: { position: [0.4, n ? 1.7 : 0.5, 0], rotationRad: [0, 0, 0], scale: [1.2, 1.2, 1.2] } }));
+    it('does not start a non-atomic grouped server operation', async () => {
+      const h = host(), layer = new PlanSpaceLayer(plan(), h), before = layer.currentPlan;
+      const apply = vi.fn(async () => before); layer.attachSync({ apply, undo: async () => before });
+      expect(layer.proposeSolverEdit(ops(), 'batch', 'fixture')).toBe(true); layer.authorise(true); await layer.applyEdit();
+      expect(apply).not.toHaveBeenCalled(); expect(layer.currentPlan).toBe(before); expect(layer.editCount).toBe(0);
+      expect(h.notify).toHaveBeenCalledWith(expect.stringContaining('BATCH_REQUIRES_ATOMIC_SERVER')); layer.dispose();
+    });
+    it('does not partially undo a local group after a server session is attached', async () => {
+      const h = host(), layer = new PlanSpaceLayer(plan(), h); layer.proposeSolverEdit(ops(), 'batch', 'fixture'); layer.authorise(true); await layer.applyEdit();
+      const grouped = layer.currentPlan, undo = vi.fn(async () => grouped);
+      layer.attachSync({ apply: async () => grouped, undo });
+      expect(await layer.undo()).toBe(false); expect(undo).not.toHaveBeenCalled(); expect(layer.currentPlan).toBe(grouped); expect(layer.editCount).toBe(1); layer.dispose();
+    });
+    it('is only a preview: the plan does not change until a person authorises, and it says it is a solver result', async () => {
+      const h = host(), layer = new PlanSpaceLayer(plan(), h), before = layer.currentPlan;
+      expect(layer.proposeSolverEdit(ops(), 'Ajuste estrutural', 'Solver fitted 6 silhouettes.')).toBe(true);
+      expect(layer.pendingEdit?.source).toBe('solver'); expect(layer.currentPlan).toBe(before);
+      await layer.applyEdit(); expect(layer.currentPlan).toBe(before); expect(h.notify).toHaveBeenCalledWith(expect.stringMatching(/autoriz/i));
+    });
+    it('applies all operations as one undoable step, keeps ids, and records the solver evidence in the provenance', async () => {
+      const layer = new PlanSpaceLayer(plan(), host()); const ids = layer.currentPlan.components.map((c) => c.id);
+      layer.proposeSolverEdit(ops(), 'Ajuste estrutural', 'Solver fitted 6 silhouettes.'); layer.authorise(true); await layer.applyEdit();
+      const base = layer.currentPlan.components.find((c) => c.id === 'base')!; expect(base.transform.scale[0]).toBeCloseTo(1.2); expect(base.provenance.evidence).toMatch(/Solver fitted 6 silhouettes/); expect(layer.currentPlan.components.map((c) => c.id)).toEqual(ids);
+      expect(await layer.undo()).toBe(true); expect(layer.currentPlan.components.find((c) => c.id === 'base')!.transform.scale[0]).toBe(1);
+    });
+    it('keeps the provenance evidence inside the contract limit however long the solver text is', async () => {
+      const layer = new PlanSpaceLayer(plan(), host()); layer.proposeSolverEdit(ops(), 'x', 'e'.repeat(900)); layer.authorise(true); await layer.applyEdit();
+      expect(layer.editCount).toBe(1); expect(layer.currentPlan.components.find((c) => c.id === 'base')!.provenance.evidence.length).toBeLessThanOrEqual(500);
+    });
+    it('after dispose it offers nothing, and a pending proposal is dropped with the layer', () => {
+      const layer = new PlanSpaceLayer(plan(), host()); expect(layer.proposeSolverEdit(ops(), 'x', 'y')).toBe(true); layer.dispose();
+      expect(layer.proposeSolverEdit(ops(), 'x', 'y')).toBe(false); expect(layer.pendingEdit).toBeNull();
+    });
+    it('can be cancelled: the plan is unchanged and nothing stays pending', async () => {
+      const layer = new PlanSpaceLayer(plan(), host()), before = layer.currentPlan; layer.proposeSolverEdit(ops(), 'x', 'y'); layer.cancelPending();
+      expect(layer.pendingEdit).toBeNull(); await layer.applyEdit(); expect(layer.currentPlan).toBe(before); expect(layer.editCount).toBe(0);
+    });
+    it('refuses a proposal that does not apply to the plan', () => {
+      const layer = new PlanSpaceLayer(plan(), host()); expect(layer.proposeSolverEdit([{ ...ops()[0]!, componentId: 'ghost' }], 'x', 'y')).toBe(false); expect(layer.pendingEdit).toBeNull();
+    });
+    it('commits a solver group through one atomic transaction and undoes it through one grouped undo (V4 E0)', async () => {
+      let server = plan(); const stack: SpatialPlanV2[] = [];
+      const applyTransaction = vi.fn(async (operations: SpatialOperationV2[], provenance: { origin: 'user_provided' | 'inferred'; evidence: string }) => { stack.push(server); for (const operation of operations) server = applySpatialOperationV2(server, operation, provenance); return server; });
+      const undoTransaction = vi.fn(async () => { server = stack.pop()!; return server; });
+      const layer = new PlanSpaceLayer(plan(), host());
+      layer.attachSync({ apply: async () => { throw new Error('single-op path must not be used for a group'); }, undo: async () => { throw new Error('single undo must not be used for a group'); }, applyTransaction, undoTransaction });
+      expect(layer.proposeSolverEdit(ops(), 'Ajuste estrutural', 'Solver fixture.')).toBe(true); layer.authorise(true); await layer.applyEdit();
+      expect(applyTransaction).toHaveBeenCalledTimes(1); expect(layer.editCount).toBe(1);
+      expect(layer.currentPlan.components.find((c) => c.id === 'base')!.transform.scale[0]).toBeCloseTo(1.2);
+      expect(await layer.undo()).toBe(true); expect(undoTransaction).toHaveBeenCalledTimes(1);
+      expect(layer.currentPlan.components.find((c) => c.id === 'base')!.transform.scale[0]).toBe(1); layer.dispose();
+    });
+    it('a failed atomic transaction leaves the local plan and history unchanged', async () => {
+      const h = host(), layer = new PlanSpaceLayer(plan(), h), before = layer.currentPlan;
+      layer.attachSync({ apply: async () => before, undo: async () => before, applyTransaction: async () => { throw new Error('SPATIAL_V2_REVISION_CONFLICT'); } });
+      expect(layer.proposeSolverEdit(ops(), 'x', 'y')).toBe(true); layer.authorise(true); await layer.applyEdit();
+      expect(layer.currentPlan).toBe(before); expect(layer.editCount).toBe(0);
+      expect(h.notify).toHaveBeenCalledWith(expect.stringContaining('SPATIAL_V2_REVISION_CONFLICT')); layer.dispose();
+    });
+    it('an unresolved transaction blocks every dependent edit and undo until reconciliation adopts the authoritative plan (V4 E0 audit)', async () => {
+      const h = host(), layer = new PlanSpaceLayer(plan(), h), before = layer.currentPlan;
+      let server = plan(); const stack: SpatialPlanV2[] = [];
+      const apply = vi.fn(async (op: SpatialOperationV2, provenance: { origin: 'user_provided' | 'inferred'; evidence: string }) => applySpatialOperationV2(server, op, provenance));
+      const applyTransaction = vi.fn(async () => { throw new SpatialTransactionUnresolvedError('session-1', 'txn-fixed-key', 'response-and-recovery-failed'); });
+      const reconcileTransaction = vi.fn(async (key: string) => {
+        expect(key).toBe(layer.unresolvedTransactionKey);
+        stack.push(server); for (const operation of ops()) server = applySpatialOperationV2(server, operation, { origin: 'inferred', evidence: 'reconciled' });
+        return server;
+      });
+      const undoTransaction = vi.fn(async () => { server = stack.pop()!; return server; });
+      layer.attachSync({ apply, undo: async () => server, applyTransaction, undoTransaction, reconcileTransaction });
+      expect(layer.proposeSolverEdit(ops(), 'x', 'y')).toBe(true); layer.authorise(true); await layer.applyEdit();
+      expect(layer.transactionUnresolved).toBe(true); expect(layer.currentPlan).toBe(before); expect(layer.editCount).toBe(0);
+      expect(h.notify).toHaveBeenCalledWith(expect.stringContaining('SPATIAL_V2_TRANSACTION_UNRESOLVED'));
+      // Dependent edits and undo are blocked while local and remote state may differ.
+      layer.highlight('base'); layer.proposeEdit('x+'); await layer.applyEdit();
+      expect(apply).not.toHaveBeenCalled(); expect(layer.currentPlan).toBe(before);
+      expect(await layer.undo()).toBe(false); expect((await layer.closeGaps()).applied).toBe(0);
+      // Reconciliation adopts the authoritative plan as one undoable history entry.
+      expect(await layer.reconcileTransaction()).toBe('committed');
+      expect(layer.transactionUnresolved).toBe(false); expect(layer.editCount).toBe(1);
+      expect(layer.currentPlan.components.find((c) => c.id === 'base')!.transform.scale[0]).toBeCloseTo(1.2);
+      expect(await layer.undo()).toBe(true); expect(undoTransaction).toHaveBeenCalledTimes(1); layer.dispose();
+    });
+    it('repeated reconciliation failure keeps the unresolved state and the block; a later success clears it', async () => {
+      const layer = new PlanSpaceLayer(plan(), host()), before = layer.currentPlan;
+      let attempts = 0;
+      layer.attachSync({
+        apply: async () => before, undo: async () => before,
+        applyTransaction: async () => { throw new SpatialTransactionUnresolvedError('s', 'k', 'response-and-recovery-failed'); },
+        reconcileTransaction: async () => { attempts += 1; if (attempts < 3) throw new SpatialTransactionUnresolvedError('s', 'k', 'response-and-recovery-failed'); return before; },
+      });
+      expect(layer.proposeSolverEdit(ops(), 'x', 'y')).toBe(true); layer.authorise(true); await layer.applyEdit();
+      expect(await layer.reconcileTransaction()).toBe('still-unresolved'); expect(layer.transactionUnresolved).toBe(true);
+      expect(await layer.reconcileTransaction()).toBe('still-unresolved'); expect(layer.currentPlan).toBe(before);
+      expect(await layer.reconcileTransaction()).toBe('committed'); expect(layer.transactionUnresolved).toBe(false); layer.dispose();
+    });
+    it('explicit session recovery clears the block without inventing the transaction: the plan stays pre-transaction and editing resumes', async () => {
+      const layer = new PlanSpaceLayer(plan(), host()), before = layer.currentPlan;
+      layer.attachSync({
+        apply: async (op: SpatialOperationV2, provenance) => applySpatialOperationV2(before, op, provenance), undo: async () => before,
+        applyTransaction: async () => { throw new SpatialTransactionUnresolvedError('s', 'k', 'session-not-found'); },
+        reconcileTransaction: async () => { throw new SpatialTransactionSessionRecoveredError(); },
+      });
+      expect(layer.proposeSolverEdit(ops(), 'x', 'y')).toBe(true); layer.authorise(true); await layer.applyEdit();
+      expect(layer.transactionUnresolved).toBe(true);
+      expect(await layer.reconcileTransaction()).toBe('recovered-not-committed');
+      expect(layer.transactionUnresolved).toBe(false); expect(layer.currentPlan).toBe(before); expect(layer.editCount).toBe(0);
+      layer.highlight('base'); layer.proposeEdit('x+'); await layer.applyEdit();
+      expect(layer.currentPlan.components.find((c) => c.id === 'base')!.transform.position[0]).toBeGreaterThan(0); layer.dispose();
+    });
+    it('a review-bound proposal with no server session fails closed: never applied locally (E1.3 milestone A)', async () => {
+      const h = host(), layer = new PlanSpaceLayer(plan(), h), before = layer.currentPlan;
+      // No attachSync: there is no authoritative commit path for a review-bound proposal.
+      expect(layer.proposeSolverEdit(ops(), 'fenced', 'solver evidence', { reviewBinding: { reviewId: 'r1', reviewRevision: 2, planFingerprint: 'a'.repeat(64), sourceSha256: 'b'.repeat(64) } })).toBe(true);
+      layer.authorise(true); await layer.applyEdit();
+      expect(layer.currentPlan).toBe(before); expect(layer.editCount).toBe(0);
+      expect(layer.pendingEdit).not.toBeNull(); // not silently discarded
+      expect(h.notify).toHaveBeenCalledWith(expect.stringContaining('REVIEW_FENCED'));
+      // A session that appears later can still commit the same pending proposal.
+      let server = before;
+      layer.attachSync({ apply: async () => server, undo: async () => server, applyTransaction: async (operations: SpatialOperationV2[], provenance) => { for (const operation of operations) server = applySpatialOperationV2(server, operation, provenance); return server; } });
+      await layer.applyEdit();
+      expect(layer.editCount).toBe(1); layer.dispose();
+    });
+    it('a cancelled or replaced proposal never commits when its guard resolves late, and duplicate applies submit once (E1.2 milestone C)', async () => {
+      // Cancelled while the guard is in flight.
+      const layerA = new PlanSpaceLayer(plan(), host()), beforeA = layerA.currentPlan;
+      let releaseA!: (ok: boolean) => void;
+      const applyA = vi.fn(async () => beforeA);
+      layerA.attachSync({ apply: applyA, undo: async () => beforeA, applyTransaction: applyA as never });
+      expect(layerA.proposeSolverEdit(ops(), 'x', 'y', { authorisationGuard: () => new Promise<boolean>((r) => { releaseA = r; }) })).toBe(true);
+      layerA.authorise(true);
+      const pendingA = layerA.applyEdit();
+      layerA.cancelPending();
+      releaseA(true);
+      await pendingA;
+      expect(layerA.currentPlan).toBe(beforeA); expect(layerA.editCount).toBe(0); expect(applyA).not.toHaveBeenCalled(); layerA.dispose();
+
+      // Replaced while the guard is in flight: the old guard resolving must not commit the old ops.
+      const layerB = new PlanSpaceLayer(plan(), host()), beforeB = layerB.currentPlan;
+      let releaseB!: (ok: boolean) => void;
+      const txB = vi.fn(async (operations: SpatialOperationV2[], provenance: { origin: 'user_provided' | 'inferred'; evidence: string }) => { let next = beforeB; for (const operation of operations) next = applySpatialOperationV2(next, operation, provenance); return next; });
+      layerB.attachSync({ apply: async () => beforeB, undo: async () => beforeB, applyTransaction: txB as never });
+      expect(layerB.proposeSolverEdit(ops(), 'old', 'y', { authorisationGuard: () => new Promise<boolean>((r) => { releaseB = r; }) })).toBe(true);
+      layerB.authorise(true);
+      const pendingB = layerB.applyEdit();
+      expect(layerB.proposeSolverEdit(ops(), 'new', 'y')).toBe(true); // replaces the pending proposal mid-guard
+      releaseB(true);
+      await pendingB;
+      expect(txB).not.toHaveBeenCalled(); expect(layerB.currentPlan).toBe(beforeB);
+      expect(layerB.pendingEdit?.label).toBe('new'); // the replacement survives, unapplied
+      layerB.authorise(true); await layerB.applyEdit();
+      expect(txB).toHaveBeenCalledTimes(1); expect(layerB.editCount).toBe(1); layerB.dispose();
+
+      // Duplicate concurrent applies: one submission only.
+      const layerC = new PlanSpaceLayer(plan(), host());
+      let releaseC!: (ok: boolean) => void;
+      const txC = vi.fn(async (operations: SpatialOperationV2[], provenance: { origin: 'user_provided' | 'inferred'; evidence: string }) => { let next = layerC.currentPlan; for (const operation of operations) next = applySpatialOperationV2(next, operation, provenance); return next; });
+      layerC.attachSync({ apply: async () => layerC.currentPlan, undo: async () => layerC.currentPlan, applyTransaction: txC as never });
+      expect(layerC.proposeSolverEdit(ops(), 'x', 'y', { authorisationGuard: () => new Promise<boolean>((r) => { releaseC = r; }) })).toBe(true);
+      layerC.authorise(true);
+      const first = layerC.applyEdit(), second = layerC.applyEdit();
+      releaseC(true);
+      await Promise.all([first, second]);
+      expect(txC).toHaveBeenCalledTimes(1); expect(layerC.editCount).toBe(1); layerC.dispose();
+    });
+    it('an authorised solver proposal keeps inferred provenance and records authorisation separately (E1.2 milestone B)', async () => {
+      const seen: Array<{ origin: string; evidence: string }> = [];
+      const layer = new PlanSpaceLayer(plan(), host());
+      layer.attachSync({
+        apply: async (op: SpatialOperationV2, provenance) => { seen.push(provenance); return applySpatialOperationV2(layer.currentPlan, op, provenance); },
+        undo: async () => layer.currentPlan,
+        applyTransaction: async (operations: SpatialOperationV2[], provenance) => { seen.push(provenance); let next = layer.currentPlan; for (const operation of operations) next = applySpatialOperationV2(next, operation, provenance); return next; },
+      });
+      expect(layer.proposeSolverEdit(ops(), 'Ajuste', 'Solver fitted 6 silhouettes.')).toBe(true);
+      layer.authorise(true); await layer.applyEdit();
+      expect(seen[0]!.origin).toBe('inferred');
+      expect(seen[0]!.evidence).toMatch(/Solver fitted 6 silhouettes/);
+      expect(seen[0]!.evidence).toMatch(/Authorisation: a person authorised/);
+      expect(seen[0]!.evidence).toMatch(/not authenticated/i);
+      expect(layer.currentPlan.components.find((c) => c.id === 'base')!.provenance.transform).toBe('inferred');
+      layer.dispose();
+    });
+    it('an unresolved grouped undo holds its history entry and blocks everything until reconciled (E1.3 milestone D)', async () => {
+      const layer = new PlanSpaceLayer(plan(), host());
+      let server = plan(); const stack: SpatialPlanV2[] = [];
+      layer.attachSync({
+        apply: async (op: SpatialOperationV2, provenance) => applySpatialOperationV2(server, op, provenance),
+        undo: async () => server,
+        applyTransaction: async (operations: SpatialOperationV2[], provenance) => { stack.push(server); for (const operation of operations) server = applySpatialOperationV2(server, operation, provenance); return server; },
+        undoTransaction: async () => { throw new SpatialTransactionUnresolvedError('s', 'undo-stable-1', 'response-and-recovery-failed'); },
+        reconcileUndo: async (key: string) => { expect(key).toBe('undo-stable-1'); server = stack.pop()!; return server; },
+      });
+      expect(layer.proposeSolverEdit(ops(), 'x', 'y')).toBe(true); layer.authorise(true); await layer.applyEdit();
+      expect(layer.editCount).toBe(1);
+      expect(await layer.undo()).toBe(false);
+      expect(layer.undoUnresolved).toBe(true);
+      expect(layer.canUndo).toBe(false);
+      // Neither another undo nor a dependent edit may proceed, and no second entry can be consumed.
+      expect(await layer.undo()).toBe(false);
+      layer.highlight('base'); layer.proposeEdit('x+'); await layer.applyEdit();
+      expect(layer.editCount).toBe(0); // the entry is held by the unresolved undo, not lost and not duplicated
+      expect(await layer.reconcileUnresolved()).toBe('committed');
+      expect(layer.undoUnresolved).toBe(false); expect(layer.editCount).toBe(0);
+      expect(layer.currentPlan.components.find((c) => c.id === 'base')!.transform.scale[0]).toBe(1);
+      layer.dispose();
+    });
+    it('a single-operation fenced transaction undoes through the idempotent grouped path, never the legacy one (E1.4 finding 2)', async () => {
+      const layer = new PlanSpaceLayer(plan(), host());
+      let server = plan(); const stack: SpatialPlanV2[] = [];
+      const legacyUndo = vi.fn(async () => server);
+      layer.attachSync({
+        apply: async (op: SpatialOperationV2, provenance) => applySpatialOperationV2(server, op, provenance),
+        undo: legacyUndo,
+        applyTransaction: async (operations: SpatialOperationV2[], provenance) => { stack.push(server); for (const operation of operations) server = applySpatialOperationV2(server, operation, provenance); return server; },
+        undoTransaction: async () => { throw new SpatialTransactionUnresolvedError('s', 'undo-single-fenced', 'response-and-recovery-failed'); },
+        reconcileUndo: async () => { server = stack.pop()!; return server; },
+      });
+      const oneOp = [ops()[0]!];
+      expect(layer.proposeSolverEdit(oneOp, 'single fenced', 'evidence', { reviewBinding: { reviewId: 'r1', reviewRevision: 1, planFingerprint: 'a'.repeat(64), sourceSha256: 'b'.repeat(64) } })).toBe(true);
+      layer.authorise(true); await layer.applyEdit();
+      expect(layer.editCount).toBe(1);
+      expect(await layer.undo()).toBe(false); // unresolved, not a legacy local rollback
+      expect(legacyUndo).not.toHaveBeenCalled();
+      expect(layer.undoUnresolved).toBe(true);
+      expect(await layer.reconcileUnresolved()).toBe('committed');
+      expect(layer.currentPlan).toEqual(plan());
+      layer.dispose();
+    });
+    it('a proposal whose authorisation guard fails at apply time is never applied (review changed after preview, E1.1 test 7)', async () => {
+      const h = host(), layer = new PlanSpaceLayer(plan(), h), before = layer.currentPlan;
+      let guardOk = true;
+      expect(layer.proposeSolverEdit(ops(), 'x', 'y', { authorisationGuard: async () => guardOk })).toBe(true);
+      layer.authorise(true);
+      guardOk = false; // the review changed between preview and authorisation
+      await layer.applyEdit();
+      expect(layer.currentPlan).toBe(before); expect(layer.editCount).toBe(0);
+      expect(h.notify).toHaveBeenCalledWith(expect.stringContaining('invalidada'));
+      // With the guard passing, the same flow applies.
+      expect(layer.proposeSolverEdit(ops(), 'x', 'y', { authorisationGuard: async () => true })).toBe(true);
+      layer.authorise(true); await layer.applyEdit();
+      expect(layer.editCount).toBe(1); layer.dispose();
+    });
+    it('does not rebuild when disposed while a grouped transaction is pending', async () => {
+      const layer = new PlanSpaceLayer(plan(), host()); const before = layer.currentPlan;
+      let release!: (p: SpatialPlanV2) => void;
+      layer.attachSync({ apply: async () => before, undo: async () => before, applyTransaction: () => new Promise((resolve) => { release = resolve; }) });
+      expect(layer.proposeSolverEdit(ops(), 'x', 'y')).toBe(true); layer.authorise(true);
+      const pending = layer.applyEdit(); layer.dispose(); release(plan());
+      await pending; expect(layer.root.children).toHaveLength(0); expect(layer.currentPlan).toBe(before);
+    });
   });
 });

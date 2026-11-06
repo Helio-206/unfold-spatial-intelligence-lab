@@ -1,0 +1,135 @@
+{
+  "generatedBy": "scripts/benchmark/v4-hypotheses.ts",
+  "results": {
+    "lungs-like": {
+      "category": "D/D: synthetic input (joints kept), hand-authored ground truth",
+      "inputHeldOutIou": 0.597,
+      "default": {
+        "status": "refused",
+        "refusals": [
+          {
+            "code": "NO_STRUCTURAL_SUPPORT",
+            "detail": "no parent link and no enforced relation between 7 parts (6 contact hypothesis(es) await review): nothing says how they hold together, so fitting would move them freely"
+          }
+        ],
+        "relations": {
+          "declared_supported": 0,
+          "declared_contradicted": 0,
+          "detected_hypothesis": 6,
+          "human_confirmed": 0
+        },
+        "enforcedJoints": 0,
+        "hypothesesOpen": 6
+      },
+      "allConfirmed": {
+        "status": "proposal",
+        "refusals": [],
+        "relations": {
+          "declared_supported": 0,
+          "declared_contradicted": 0,
+          "detected_hypothesis": 0,
+          "human_confirmed": 6
+        },
+        "enforcedJoints": 6,
+        "hypothesesOpen": 0,
+        "heldOutIou": 0.935,
+        "checks": {
+          "transformConsistencyMax": 0,
+          "worldConsistencyAfterMax": 4.3817425553205336e-7,
+          "idsPreserved": true,
+          "sourcePreserved": true,
+          "hierarchyPreserved": true,
+          "jointResidualMax": 1.1230281704417902e-16
+        },
+        "changed": 7
+      },
+      "halfConfirmed": {
+        "status": "proposal",
+        "refusals": [],
+        "relations": {
+          "declared_supported": 0,
+          "declared_contradicted": 0,
+          "detected_hypothesis": 3,
+          "human_confirmed": 3
+        },
+        "enforcedJoints": 3,
+        "hypothesesOpen": 3,
+        "heldOutIou": 0.926,
+        "checks": {
+          "transformConsistencyMax": 0,
+          "worldConsistencyAfterMax": 4.5838095752426256e-7,
+          "idsPreserved": true,
+          "sourcePreserved": true,
+          "hierarchyPreserved": true,
+          "jointResidualMax": 2.759482884677432e-17
+        },
+        "changed": 6
+      }
+    },
+    "microscope-like": {
+      "category": "D/D: synthetic input (joints kept), hand-authored ground truth",
+      "inputHeldOutIou": 0.523,
+      "default": {
+        "status": "refused",
+        "refusals": [
+          {
+            "code": "NO_STRUCTURAL_SUPPORT",
+            "detail": "no parent link and no enforced relation between 10 parts (8 contact hypothesis(es) await review): nothing says how they hold together, so fitting would move them freely"
+          }
+        ],
+        "relations": {
+          "declared_supported": 0,
+          "declared_contradicted": 0,
+          "detected_hypothesis": 8,
+          "human_confirmed": 0
+        },
+        "enforcedJoints": 0,
+        "hypothesesOpen": 8
+      },
+      "allConfirmed": {
+        "status": "proposal",
+        "refusals": [],
+        "relations": {
+          "declared_supported": 0,
+          "declared_contradicted": 0,
+          "detected_hypothesis": 0,
+          "human_confirmed": 8
+        },
+        "enforcedJoints": 8,
+        "hypothesesOpen": 0,
+        "heldOutIou": 0.828,
+        "checks": {
+          "transformConsistencyMax": 0,
+          "worldConsistencyAfterMax": 4.791666667891548e-7,
+          "idsPreserved": true,
+          "sourcePreserved": true,
+          "hierarchyPreserved": true,
+          "jointResidualMax": 7.551023943015597e-17
+        },
+        "changed": 10
+      },
+      "halfConfirmed": {
+        "status": "proposal",
+        "refusals": [],
+        "relations": {
+          "declared_supported": 0,
+          "declared_contradicted": 0,
+          "detected_hypothesis": 4,
+          "human_confirmed": 4
+        },
+        "enforcedJoints": 4,
+        "hypothesesOpen": 4,
+        "heldOutIou": 0.81,
+        "checks": {
+          "transformConsistencyMax": 0,
+          "worldConsistencyAfterMax": 4.8395605523055e-7,
+          "idsPreserved": true,
+          "sourcePreserved": true,
+          "hierarchyPreserved": true,
+          "jointResidualMax": 7.510860579342918e-17
+        },
+        "changed": 9
+      }
+    }
+  }
+}

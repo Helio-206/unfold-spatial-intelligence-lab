@@ -27,7 +27,7 @@ const director = createPresentationDirector({ plan, root, requestRender, onCue, 
 4. Entrance: `director.playEntrance()` replaces `layer.reveal(...)` (do not call both: both toggle visibility). The handle's `cancel()` is safe at any time; `done` always resolves (`'completed' | 'cancelled'`).
 5. Selection: untouched. `director.focus(id)` is a presentation spotlight (dims the rest, emits a focus cue); `focus(null)` clears.
 6. Exploded view: `toggleExploded()` / `setExploded(0..1)`. While `state.notice !== null` the host **must** show it.
-7. Editing: before the inspector applies an edit, the solver or an undo, call `director.enterEditing()` (restores planned transforms and colours exactly). After the layer rebuilds, call `director.rebind({ plan, root })`, then `resumeExploring()`.
+7. Editing: before the inspector applies an edit, the solver or an undo, call `director.enterEditing()` (restores planned transforms and colours exactly). After the layer rebuilds, call `director.rebind({ plan, root })`, then `resumeExploring()`. If only the MESHES inside existing component groups were swapped (for instance a better geometry arriving later), call `director.refreshComponents(ids)` instead: it does not reset the entrance, focus, exploded view or tour.
 8. Teardown: `director.dispose()`. Idempotent. After it no callback, listener, texture or render request remains.
 
 `cueToViewSpec(cue)` converts a cue into the workspace's `ViewSpec` (`Vector3`, radians). The cue's azimuth is already in the workspace director's convention (the mirror of the Cinema's), identical to `SpatialWorkspace.setView`.

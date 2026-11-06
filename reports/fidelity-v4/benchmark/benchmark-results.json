@@ -1,0 +1,3034 @@
+{
+  "generatedBy": "scripts/benchmark/v4-benchmark.ts",
+  "categories": {
+    "A": "known geometry rendered to calibrated silhouettes (CC0 meshes)",
+    "B": "real multi-view photographs: NONE available",
+    "C": "Meta-produced plans: no ground truth, not used for fidelity",
+    "D": "hand-built / degraded plans"
+  },
+  "scenes": {
+    "Lantern": {
+      "category": "A (ground truth: independent CC0 mesh) + D (hand-built plan)",
+      "licence": "CC0-1.0 (Khronos glTF-Sample-Assets/Models/Lantern, artist sbtron, owner Microsoft)",
+      "glbSha256": "a79458c4b02d695187a952f23a63b8bf278e7bc3d316a3c2a314f2d6974181f1",
+      "components": 6,
+      "kSweep": [
+        {
+          "tag": "k1",
+          "fitViews": 1,
+          "components": [
+            "pole",
+            "base",
+            "arm",
+            "bracket",
+            "chain",
+            "lantern"
+          ],
+          "constraints": {
+            "attach": [
+              {
+                "id": "contact-pole-base",
+                "a": "pole",
+                "b": "base",
+                "source": "detected",
+                "gapPctSpan": 0.39
+              },
+              {
+                "id": "contact-pole-bracket",
+                "a": "pole",
+                "b": "bracket",
+                "source": "detected",
+                "gapPctSpan": 0.28
+              },
+              {
+                "id": "contact-arm-bracket",
+                "a": "arm",
+                "b": "bracket",
+                "source": "detected",
+                "gapPctSpan": 0.17
+              },
+              {
+                "id": "contact-arm-chain",
+                "a": "arm",
+                "b": "chain",
+                "source": "detected",
+                "gapPctSpan": 0.92
+              },
+              {
+                "id": "contact-chain-lantern",
+                "a": "chain",
+                "b": "lantern",
+                "source": "detected",
+                "gapPctSpan": 0.41
+              }
+            ],
+            "notes": []
+          },
+          "input": {
+            "heldOutIouMean": 0.639,
+            "heldOutIouMin": 0.569,
+            "missedPct": 35,
+            "excessPct": 3.6,
+            "largestUncoveredBlobPct": 16.94,
+            "partErrors": [
+              {
+                "part": "Body",
+                "centreErrPctSpan": 0.27,
+                "sizeErrPct": 5
+              },
+              {
+                "part": "Chain",
+                "centreErrPctSpan": 1.74,
+                "sizeErrPct": 61
+              },
+              {
+                "part": "Lantern",
+                "centreErrPctSpan": 1.96,
+                "sizeErrPct": 25.7
+              }
+            ],
+            "meanCentreErrPctSpan": 1.32,
+            "contacts": [
+              {
+                "pair": "pole~base",
+                "gapBeforePctSpan": 0.39,
+                "gapAfterPctSpan": 0.39,
+                "broken": false
+              },
+              {
+                "pair": "pole~bracket",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.28,
+                "broken": false
+              },
+              {
+                "pair": "arm~bracket",
+                "gapBeforePctSpan": 0.17,
+                "gapAfterPctSpan": 0.17,
+                "broken": false
+              },
+              {
+                "pair": "arm~chain",
+                "gapBeforePctSpan": 0.92,
+                "gapAfterPctSpan": 0.92,
+                "broken": false
+              },
+              {
+                "pair": "chain~lantern",
+                "gapBeforePctSpan": 0.41,
+                "gapAfterPctSpan": 0.41,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 1.5
+          },
+          "silhouetteOnly": {
+            "heldOutIouMean": 0.574,
+            "heldOutIouMin": 0.459,
+            "missedPct": 39.1,
+            "excessPct": 10,
+            "largestUncoveredBlobPct": 22.64,
+            "partErrors": [
+              {
+                "part": "Body",
+                "centreErrPctSpan": 2.63,
+                "sizeErrPct": 6
+              },
+              {
+                "part": "Chain",
+                "centreErrPctSpan": 4.99,
+                "sizeErrPct": 61
+              },
+              {
+                "part": "Lantern",
+                "centreErrPctSpan": 4.21,
+                "sizeErrPct": 7.5
+              }
+            ],
+            "meanCentreErrPctSpan": 3.94,
+            "contacts": [
+              {
+                "pair": "pole~base",
+                "gapBeforePctSpan": 0.39,
+                "gapAfterPctSpan": 0.66,
+                "broken": false
+              },
+              {
+                "pair": "pole~bracket",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.45,
+                "broken": false
+              },
+              {
+                "pair": "arm~bracket",
+                "gapBeforePctSpan": 0.17,
+                "gapAfterPctSpan": 0.26,
+                "broken": false
+              },
+              {
+                "pair": "arm~chain",
+                "gapBeforePctSpan": 0.92,
+                "gapAfterPctSpan": 1.88,
+                "broken": false
+              },
+              {
+                "pair": "chain~lantern",
+                "gapBeforePctSpan": 0.41,
+                "gapAfterPctSpan": 0.28,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 2.54,
+            "fitIouBefore": 0.731,
+            "fitIouAfter": 0.806,
+            "ms": 114
+          },
+          "structural": {
+            "heldOutIouMean": 0.448,
+            "heldOutIouMin": 0.349,
+            "missedPct": 45.2,
+            "excessPct": 31.4,
+            "largestUncoveredBlobPct": 31.18,
+            "partErrors": [
+              {
+                "part": "Body",
+                "centreErrPctSpan": 8.21,
+                "sizeErrPct": 24.3
+              },
+              {
+                "part": "Chain",
+                "centreErrPctSpan": 19.42,
+                "sizeErrPct": 61
+              },
+              {
+                "part": "Lantern",
+                "centreErrPctSpan": 19.6,
+                "sizeErrPct": 25.7
+              }
+            ],
+            "meanCentreErrPctSpan": 15.74,
+            "contacts": [
+              {
+                "pair": "pole~base",
+                "gapBeforePctSpan": 0.39,
+                "gapAfterPctSpan": 0.41,
+                "broken": false
+              },
+              {
+                "pair": "pole~bracket",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.36,
+                "broken": false
+              },
+              {
+                "pair": "arm~bracket",
+                "gapBeforePctSpan": 0.17,
+                "gapAfterPctSpan": 0.19,
+                "broken": false
+              },
+              {
+                "pair": "arm~chain",
+                "gapBeforePctSpan": 0.92,
+                "gapAfterPctSpan": 1.03,
+                "broken": false
+              },
+              {
+                "pair": "chain~lantern",
+                "gapBeforePctSpan": 0.41,
+                "gapAfterPctSpan": 0.41,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 9.42,
+            "fitIouBefore": 0.731,
+            "fitIouAfter": 0.766,
+            "ms": 96,
+            "evaluations": 65,
+            "roots": [
+              "pole"
+            ],
+            "free": [],
+            "cycleEdges": [],
+            "maxJointResidualPctSpan": 0,
+            "rssDeltaMB": 1.8,
+            "heapDeltaMB": 2.6
+          }
+        },
+        {
+          "tag": "k2",
+          "fitViews": 2,
+          "components": [
+            "pole",
+            "base",
+            "arm",
+            "bracket",
+            "chain",
+            "lantern"
+          ],
+          "constraints": {
+            "attach": [
+              {
+                "id": "contact-pole-base",
+                "a": "pole",
+                "b": "base",
+                "source": "detected",
+                "gapPctSpan": 0.39
+              },
+              {
+                "id": "contact-pole-bracket",
+                "a": "pole",
+                "b": "bracket",
+                "source": "detected",
+                "gapPctSpan": 0.28
+              },
+              {
+                "id": "contact-arm-bracket",
+                "a": "arm",
+                "b": "bracket",
+                "source": "detected",
+                "gapPctSpan": 0.17
+              },
+              {
+                "id": "contact-arm-chain",
+                "a": "arm",
+                "b": "chain",
+                "source": "detected",
+                "gapPctSpan": 0.92
+              },
+              {
+                "id": "contact-chain-lantern",
+                "a": "chain",
+                "b": "lantern",
+                "source": "detected",
+                "gapPctSpan": 0.41
+              }
+            ],
+            "notes": []
+          },
+          "input": {
+            "heldOutIouMean": 0.639,
+            "heldOutIouMin": 0.569,
+            "missedPct": 35,
+            "excessPct": 3.6,
+            "largestUncoveredBlobPct": 16.94,
+            "partErrors": [
+              {
+                "part": "Body",
+                "centreErrPctSpan": 0.27,
+                "sizeErrPct": 5
+              },
+              {
+                "part": "Chain",
+                "centreErrPctSpan": 1.74,
+                "sizeErrPct": 61
+              },
+              {
+                "part": "Lantern",
+                "centreErrPctSpan": 1.96,
+                "sizeErrPct": 25.7
+              }
+            ],
+            "meanCentreErrPctSpan": 1.32,
+            "contacts": [
+              {
+                "pair": "pole~base",
+                "gapBeforePctSpan": 0.39,
+                "gapAfterPctSpan": 0.39,
+                "broken": false
+              },
+              {
+                "pair": "pole~bracket",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.28,
+                "broken": false
+              },
+              {
+                "pair": "arm~bracket",
+                "gapBeforePctSpan": 0.17,
+                "gapAfterPctSpan": 0.17,
+                "broken": false
+              },
+              {
+                "pair": "arm~chain",
+                "gapBeforePctSpan": 0.92,
+                "gapAfterPctSpan": 0.92,
+                "broken": false
+              },
+              {
+                "pair": "chain~lantern",
+                "gapBeforePctSpan": 0.41,
+                "gapAfterPctSpan": 0.41,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 1.5
+          },
+          "silhouetteOnly": {
+            "heldOutIouMean": 0.638,
+            "heldOutIouMin": 0.548,
+            "missedPct": 31.2,
+            "excessPct": 10.1,
+            "largestUncoveredBlobPct": 19.26,
+            "partErrors": [
+              {
+                "part": "Body",
+                "centreErrPctSpan": 2.74,
+                "sizeErrPct": 9.7
+              },
+              {
+                "part": "Chain",
+                "centreErrPctSpan": 4.35,
+                "sizeErrPct": 61
+              },
+              {
+                "part": "Lantern",
+                "centreErrPctSpan": 1.86,
+                "sizeErrPct": 15.8
+              }
+            ],
+            "meanCentreErrPctSpan": 2.98,
+            "contacts": [
+              {
+                "pair": "pole~base",
+                "gapBeforePctSpan": 0.39,
+                "gapAfterPctSpan": 0.94,
+                "broken": false
+              },
+              {
+                "pair": "pole~bracket",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.23,
+                "broken": false
+              },
+              {
+                "pair": "arm~bracket",
+                "gapBeforePctSpan": 0.17,
+                "gapAfterPctSpan": 4.13,
+                "broken": true
+              },
+              {
+                "pair": "arm~chain",
+                "gapBeforePctSpan": 0.92,
+                "gapAfterPctSpan": 2.87,
+                "broken": true
+              },
+              {
+                "pair": "chain~lantern",
+                "gapBeforePctSpan": 0.41,
+                "gapAfterPctSpan": 2.65,
+                "broken": true
+              }
+            ],
+            "contactsBroken": 3,
+            "relationErrPctSpan": 3.84,
+            "fitIouBefore": 0.636,
+            "fitIouAfter": 0.754,
+            "ms": 138
+          },
+          "structural": {
+            "heldOutIouMean": 0.692,
+            "heldOutIouMin": 0.627,
+            "missedPct": 27.9,
+            "excessPct": 5.7,
+            "largestUncoveredBlobPct": 11.42,
+            "partErrors": [
+              {
+                "part": "Body",
+                "centreErrPctSpan": 2.8,
+                "sizeErrPct": 18.8
+              },
+              {
+                "part": "Chain",
+                "centreErrPctSpan": 1.33,
+                "sizeErrPct": 61
+              },
+              {
+                "part": "Lantern",
+                "centreErrPctSpan": 0.59,
+                "sizeErrPct": 15.2
+              }
+            ],
+            "meanCentreErrPctSpan": 1.57,
+            "contacts": [
+              {
+                "pair": "pole~base",
+                "gapBeforePctSpan": 0.39,
+                "gapAfterPctSpan": 0.44,
+                "broken": false
+              },
+              {
+                "pair": "pole~bracket",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.27,
+                "broken": false
+              },
+              {
+                "pair": "arm~bracket",
+                "gapBeforePctSpan": 0.17,
+                "gapAfterPctSpan": 0.16,
+                "broken": false
+              },
+              {
+                "pair": "arm~chain",
+                "gapBeforePctSpan": 0.92,
+                "gapAfterPctSpan": 0.95,
+                "broken": false
+              },
+              {
+                "pair": "chain~lantern",
+                "gapBeforePctSpan": 0.41,
+                "gapAfterPctSpan": 0.3,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 2.69,
+            "fitIouBefore": 0.636,
+            "fitIouAfter": 0.707,
+            "ms": 157,
+            "evaluations": 65,
+            "roots": [
+              "pole"
+            ],
+            "free": [],
+            "cycleEdges": [],
+            "maxJointResidualPctSpan": 0,
+            "rssDeltaMB": 2.6,
+            "heapDeltaMB": 1.8
+          }
+        },
+        {
+          "tag": "k3",
+          "fitViews": 3,
+          "components": [
+            "pole",
+            "base",
+            "arm",
+            "bracket",
+            "chain",
+            "lantern"
+          ],
+          "constraints": {
+            "attach": [
+              {
+                "id": "contact-pole-base",
+                "a": "pole",
+                "b": "base",
+                "source": "detected",
+                "gapPctSpan": 0.39
+              },
+              {
+                "id": "contact-pole-bracket",
+                "a": "pole",
+                "b": "bracket",
+                "source": "detected",
+                "gapPctSpan": 0.28
+              },
+              {
+                "id": "contact-arm-bracket",
+                "a": "arm",
+                "b": "bracket",
+                "source": "detected",
+                "gapPctSpan": 0.17
+              },
+              {
+                "id": "contact-arm-chain",
+                "a": "arm",
+                "b": "chain",
+                "source": "detected",
+                "gapPctSpan": 0.92
+              },
+              {
+                "id": "contact-chain-lantern",
+                "a": "chain",
+                "b": "lantern",
+                "source": "detected",
+                "gapPctSpan": 0.41
+              }
+            ],
+            "notes": []
+          },
+          "input": {
+            "heldOutIouMean": 0.639,
+            "heldOutIouMin": 0.569,
+            "missedPct": 35,
+            "excessPct": 3.6,
+            "largestUncoveredBlobPct": 16.94,
+            "partErrors": [
+              {
+                "part": "Body",
+                "centreErrPctSpan": 0.27,
+                "sizeErrPct": 5
+              },
+              {
+                "part": "Chain",
+                "centreErrPctSpan": 1.74,
+                "sizeErrPct": 61
+              },
+              {
+                "part": "Lantern",
+                "centreErrPctSpan": 1.96,
+                "sizeErrPct": 25.7
+              }
+            ],
+            "meanCentreErrPctSpan": 1.32,
+            "contacts": [
+              {
+                "pair": "pole~base",
+                "gapBeforePctSpan": 0.39,
+                "gapAfterPctSpan": 0.39,
+                "broken": false
+              },
+              {
+                "pair": "pole~bracket",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.28,
+                "broken": false
+              },
+              {
+                "pair": "arm~bracket",
+                "gapBeforePctSpan": 0.17,
+                "gapAfterPctSpan": 0.17,
+                "broken": false
+              },
+              {
+                "pair": "arm~chain",
+                "gapBeforePctSpan": 0.92,
+                "gapAfterPctSpan": 0.92,
+                "broken": false
+              },
+              {
+                "pair": "chain~lantern",
+                "gapBeforePctSpan": 0.41,
+                "gapAfterPctSpan": 0.41,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 1.5
+          },
+          "silhouetteOnly": {
+            "heldOutIouMean": 0.713,
+            "heldOutIouMin": 0.646,
+            "missedPct": 25.7,
+            "excessPct": 5.9,
+            "largestUncoveredBlobPct": 12.29,
+            "partErrors": [
+              {
+                "part": "Body",
+                "centreErrPctSpan": 9.43,
+                "sizeErrPct": 19
+              },
+              {
+                "part": "Chain",
+                "centreErrPctSpan": 5.34,
+                "sizeErrPct": 61
+              },
+              {
+                "part": "Lantern",
+                "centreErrPctSpan": 1.74,
+                "sizeErrPct": 7.5
+              }
+            ],
+            "meanCentreErrPctSpan": 5.5,
+            "contacts": [
+              {
+                "pair": "pole~base",
+                "gapBeforePctSpan": 0.39,
+                "gapAfterPctSpan": 0.75,
+                "broken": false
+              },
+              {
+                "pair": "pole~bracket",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.51,
+                "broken": false
+              },
+              {
+                "pair": "arm~bracket",
+                "gapBeforePctSpan": 0.17,
+                "gapAfterPctSpan": 0.27,
+                "broken": false
+              },
+              {
+                "pair": "arm~chain",
+                "gapBeforePctSpan": 0.92,
+                "gapAfterPctSpan": 1.23,
+                "broken": false
+              },
+              {
+                "pair": "chain~lantern",
+                "gapBeforePctSpan": 0.41,
+                "gapAfterPctSpan": 2.76,
+                "broken": true
+              }
+            ],
+            "contactsBroken": 1,
+            "relationErrPctSpan": 7.11,
+            "fitIouBefore": 0.733,
+            "fitIouAfter": 0.812,
+            "ms": 191
+          },
+          "structural": {
+            "heldOutIouMean": 0.677,
+            "heldOutIouMin": 0.607,
+            "missedPct": 31.3,
+            "excessPct": 3.1,
+            "largestUncoveredBlobPct": 10.92,
+            "partErrors": [
+              {
+                "part": "Body",
+                "centreErrPctSpan": 1.26,
+                "sizeErrPct": 12.6
+              },
+              {
+                "part": "Chain",
+                "centreErrPctSpan": 0.1,
+                "sizeErrPct": 61
+              },
+              {
+                "part": "Lantern",
+                "centreErrPctSpan": 1.98,
+                "sizeErrPct": 6.6
+              }
+            ],
+            "meanCentreErrPctSpan": 1.11,
+            "contacts": [
+              {
+                "pair": "pole~base",
+                "gapBeforePctSpan": 0.39,
+                "gapAfterPctSpan": 0.43,
+                "broken": false
+              },
+              {
+                "pair": "pole~bracket",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.28,
+                "broken": false
+              },
+              {
+                "pair": "arm~bracket",
+                "gapBeforePctSpan": 0.17,
+                "gapAfterPctSpan": 0.16,
+                "broken": false
+              },
+              {
+                "pair": "arm~chain",
+                "gapBeforePctSpan": 0.92,
+                "gapAfterPctSpan": 0.92,
+                "broken": false
+              },
+              {
+                "pair": "chain~lantern",
+                "gapBeforePctSpan": 0.41,
+                "gapAfterPctSpan": 0.21,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 1.99,
+            "fitIouBefore": 0.733,
+            "fitIouAfter": 0.771,
+            "ms": 234,
+            "evaluations": 65,
+            "roots": [
+              "pole"
+            ],
+            "free": [],
+            "cycleEdges": [],
+            "maxJointResidualPctSpan": 0,
+            "rssDeltaMB": 3.6,
+            "heapDeltaMB": 9.2
+          }
+        },
+        {
+          "tag": "k6",
+          "fitViews": 6,
+          "components": [
+            "pole",
+            "base",
+            "arm",
+            "bracket",
+            "chain",
+            "lantern"
+          ],
+          "constraints": {
+            "attach": [
+              {
+                "id": "contact-pole-base",
+                "a": "pole",
+                "b": "base",
+                "source": "detected",
+                "gapPctSpan": 0.39
+              },
+              {
+                "id": "contact-pole-bracket",
+                "a": "pole",
+                "b": "bracket",
+                "source": "detected",
+                "gapPctSpan": 0.28
+              },
+              {
+                "id": "contact-arm-bracket",
+                "a": "arm",
+                "b": "bracket",
+                "source": "detected",
+                "gapPctSpan": 0.17
+              },
+              {
+                "id": "contact-arm-chain",
+                "a": "arm",
+                "b": "chain",
+                "source": "detected",
+                "gapPctSpan": 0.92
+              },
+              {
+                "id": "contact-chain-lantern",
+                "a": "chain",
+                "b": "lantern",
+                "source": "detected",
+                "gapPctSpan": 0.41
+              }
+            ],
+            "notes": []
+          },
+          "input": {
+            "heldOutIouMean": 0.639,
+            "heldOutIouMin": 0.569,
+            "missedPct": 35,
+            "excessPct": 3.6,
+            "largestUncoveredBlobPct": 16.94,
+            "partErrors": [
+              {
+                "part": "Body",
+                "centreErrPctSpan": 0.27,
+                "sizeErrPct": 5
+              },
+              {
+                "part": "Chain",
+                "centreErrPctSpan": 1.74,
+                "sizeErrPct": 61
+              },
+              {
+                "part": "Lantern",
+                "centreErrPctSpan": 1.96,
+                "sizeErrPct": 25.7
+              }
+            ],
+            "meanCentreErrPctSpan": 1.32,
+            "contacts": [
+              {
+                "pair": "pole~base",
+                "gapBeforePctSpan": 0.39,
+                "gapAfterPctSpan": 0.39,
+                "broken": false
+              },
+              {
+                "pair": "pole~bracket",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.28,
+                "broken": false
+              },
+              {
+                "pair": "arm~bracket",
+                "gapBeforePctSpan": 0.17,
+                "gapAfterPctSpan": 0.17,
+                "broken": false
+              },
+              {
+                "pair": "arm~chain",
+                "gapBeforePctSpan": 0.92,
+                "gapAfterPctSpan": 0.92,
+                "broken": false
+              },
+              {
+                "pair": "chain~lantern",
+                "gapBeforePctSpan": 0.41,
+                "gapAfterPctSpan": 0.41,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 1.5
+          },
+          "silhouetteOnly": {
+            "heldOutIouMean": 0.737,
+            "heldOutIouMin": 0.676,
+            "missedPct": 19.8,
+            "excessPct": 9.8,
+            "largestUncoveredBlobPct": 12.24,
+            "partErrors": [
+              {
+                "part": "Body",
+                "centreErrPctSpan": 10.37,
+                "sizeErrPct": 21.1
+              },
+              {
+                "part": "Chain",
+                "centreErrPctSpan": 6.17,
+                "sizeErrPct": 51.7
+              },
+              {
+                "part": "Lantern",
+                "centreErrPctSpan": 1.29,
+                "sizeErrPct": 23.8
+              }
+            ],
+            "meanCentreErrPctSpan": 5.94,
+            "contacts": [
+              {
+                "pair": "pole~base",
+                "gapBeforePctSpan": 0.39,
+                "gapAfterPctSpan": 0.75,
+                "broken": false
+              },
+              {
+                "pair": "pole~bracket",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 1.17,
+                "broken": false
+              },
+              {
+                "pair": "arm~bracket",
+                "gapBeforePctSpan": 0.17,
+                "gapAfterPctSpan": 0.11,
+                "broken": false
+              },
+              {
+                "pair": "arm~chain",
+                "gapBeforePctSpan": 0.92,
+                "gapAfterPctSpan": 0.47,
+                "broken": false
+              },
+              {
+                "pair": "chain~lantern",
+                "gapBeforePctSpan": 0.41,
+                "gapAfterPctSpan": 3.99,
+                "broken": true
+              }
+            ],
+            "contactsBroken": 1,
+            "relationErrPctSpan": 7.97,
+            "fitIouBefore": 0.628,
+            "fitIouAfter": 0.749,
+            "ms": 446
+          },
+          "structural": {
+            "heldOutIouMean": 0.699,
+            "heldOutIouMin": 0.636,
+            "missedPct": 26.5,
+            "excessPct": 6.7,
+            "largestUncoveredBlobPct": 11.42,
+            "partErrors": [
+              {
+                "part": "Body",
+                "centreErrPctSpan": 2.15,
+                "sizeErrPct": 20.6
+              },
+              {
+                "part": "Chain",
+                "centreErrPctSpan": 1.27,
+                "sizeErrPct": 61
+              },
+              {
+                "part": "Lantern",
+                "centreErrPctSpan": 1.49,
+                "sizeErrPct": 25.7
+              }
+            ],
+            "meanCentreErrPctSpan": 1.64,
+            "contacts": [
+              {
+                "pair": "pole~base",
+                "gapBeforePctSpan": 0.39,
+                "gapAfterPctSpan": 0.44,
+                "broken": false
+              },
+              {
+                "pair": "pole~bracket",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.27,
+                "broken": false
+              },
+              {
+                "pair": "arm~bracket",
+                "gapBeforePctSpan": 0.17,
+                "gapAfterPctSpan": 0.17,
+                "broken": false
+              },
+              {
+                "pair": "arm~chain",
+                "gapBeforePctSpan": 0.92,
+                "gapAfterPctSpan": 0.94,
+                "broken": false
+              },
+              {
+                "pair": "chain~lantern",
+                "gapBeforePctSpan": 0.41,
+                "gapAfterPctSpan": 0.41,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 2.01,
+            "fitIouBefore": 0.628,
+            "fitIouAfter": 0.697,
+            "ms": 467,
+            "evaluations": 65,
+            "roots": [
+              "pole"
+            ],
+            "free": [],
+            "cycleEdges": [],
+            "maxJointResidualPctSpan": 0,
+            "rssDeltaMB": 7.3,
+            "heapDeltaMB": -1.2
+          }
+        },
+        {
+          "tag": "k12",
+          "fitViews": 12,
+          "components": [
+            "pole",
+            "base",
+            "arm",
+            "bracket",
+            "chain",
+            "lantern"
+          ],
+          "constraints": {
+            "attach": [
+              {
+                "id": "contact-pole-base",
+                "a": "pole",
+                "b": "base",
+                "source": "detected",
+                "gapPctSpan": 0.39
+              },
+              {
+                "id": "contact-pole-bracket",
+                "a": "pole",
+                "b": "bracket",
+                "source": "detected",
+                "gapPctSpan": 0.28
+              },
+              {
+                "id": "contact-arm-bracket",
+                "a": "arm",
+                "b": "bracket",
+                "source": "detected",
+                "gapPctSpan": 0.17
+              },
+              {
+                "id": "contact-arm-chain",
+                "a": "arm",
+                "b": "chain",
+                "source": "detected",
+                "gapPctSpan": 0.92
+              },
+              {
+                "id": "contact-chain-lantern",
+                "a": "chain",
+                "b": "lantern",
+                "source": "detected",
+                "gapPctSpan": 0.41
+              }
+            ],
+            "notes": []
+          },
+          "input": {
+            "heldOutIouMean": 0.639,
+            "heldOutIouMin": 0.569,
+            "missedPct": 35,
+            "excessPct": 3.6,
+            "largestUncoveredBlobPct": 16.94,
+            "partErrors": [
+              {
+                "part": "Body",
+                "centreErrPctSpan": 0.27,
+                "sizeErrPct": 5
+              },
+              {
+                "part": "Chain",
+                "centreErrPctSpan": 1.74,
+                "sizeErrPct": 61
+              },
+              {
+                "part": "Lantern",
+                "centreErrPctSpan": 1.96,
+                "sizeErrPct": 25.7
+              }
+            ],
+            "meanCentreErrPctSpan": 1.32,
+            "contacts": [
+              {
+                "pair": "pole~base",
+                "gapBeforePctSpan": 0.39,
+                "gapAfterPctSpan": 0.39,
+                "broken": false
+              },
+              {
+                "pair": "pole~bracket",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.28,
+                "broken": false
+              },
+              {
+                "pair": "arm~bracket",
+                "gapBeforePctSpan": 0.17,
+                "gapAfterPctSpan": 0.17,
+                "broken": false
+              },
+              {
+                "pair": "arm~chain",
+                "gapBeforePctSpan": 0.92,
+                "gapAfterPctSpan": 0.92,
+                "broken": false
+              },
+              {
+                "pair": "chain~lantern",
+                "gapBeforePctSpan": 0.41,
+                "gapAfterPctSpan": 0.41,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 1.5
+          },
+          "silhouetteOnly": {
+            "heldOutIouMean": 0.744,
+            "heldOutIouMin": 0.688,
+            "missedPct": 20.7,
+            "excessPct": 7.8,
+            "largestUncoveredBlobPct": 12.05,
+            "partErrors": [
+              {
+                "part": "Body",
+                "centreErrPctSpan": 10.35,
+                "sizeErrPct": 21.1
+              },
+              {
+                "part": "Chain",
+                "centreErrPctSpan": 4.47,
+                "sizeErrPct": 58
+              },
+              {
+                "part": "Lantern",
+                "centreErrPctSpan": 1.06,
+                "sizeErrPct": 16.4
+              }
+            ],
+            "meanCentreErrPctSpan": 5.29,
+            "contacts": [
+              {
+                "pair": "pole~base",
+                "gapBeforePctSpan": 0.39,
+                "gapAfterPctSpan": 0.75,
+                "broken": false
+              },
+              {
+                "pair": "pole~bracket",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.24,
+                "broken": false
+              },
+              {
+                "pair": "arm~bracket",
+                "gapBeforePctSpan": 0.17,
+                "gapAfterPctSpan": 0.98,
+                "broken": false
+              },
+              {
+                "pair": "arm~chain",
+                "gapBeforePctSpan": 0.92,
+                "gapAfterPctSpan": 0.6,
+                "broken": false
+              },
+              {
+                "pair": "chain~lantern",
+                "gapBeforePctSpan": 0.41,
+                "gapAfterPctSpan": 2.68,
+                "broken": true
+              }
+            ],
+            "contactsBroken": 1,
+            "relationErrPctSpan": 7.87,
+            "fitIouBefore": 0.626,
+            "fitIouAfter": 0.738,
+            "ms": 795
+          },
+          "structural": {
+            "heldOutIouMean": 0.699,
+            "heldOutIouMin": 0.65,
+            "missedPct": 24.8,
+            "excessPct": 8.8,
+            "largestUncoveredBlobPct": 11.22,
+            "partErrors": [
+              {
+                "part": "Body",
+                "centreErrPctSpan": 2.15,
+                "sizeErrPct": 28.7
+              },
+              {
+                "part": "Chain",
+                "centreErrPctSpan": 1.27,
+                "sizeErrPct": 61
+              },
+              {
+                "part": "Lantern",
+                "centreErrPctSpan": 1.49,
+                "sizeErrPct": 25.7
+              }
+            ],
+            "meanCentreErrPctSpan": 1.64,
+            "contacts": [
+              {
+                "pair": "pole~base",
+                "gapBeforePctSpan": 0.39,
+                "gapAfterPctSpan": 0.46,
+                "broken": false
+              },
+              {
+                "pair": "pole~bracket",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.27,
+                "broken": false
+              },
+              {
+                "pair": "arm~bracket",
+                "gapBeforePctSpan": 0.17,
+                "gapAfterPctSpan": 0.17,
+                "broken": false
+              },
+              {
+                "pair": "arm~chain",
+                "gapBeforePctSpan": 0.92,
+                "gapAfterPctSpan": 0.94,
+                "broken": false
+              },
+              {
+                "pair": "chain~lantern",
+                "gapBeforePctSpan": 0.41,
+                "gapAfterPctSpan": 0.41,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 2.01,
+            "fitIouBefore": 0.626,
+            "fitIouAfter": 0.695,
+            "ms": 904,
+            "evaluations": 65,
+            "roots": [
+              "pole"
+            ],
+            "free": [],
+            "cycleEdges": [],
+            "maxJointResidualPctSpan": 0,
+            "rssDeltaMB": 40.6,
+            "heapDeltaMB": -1.7
+          }
+        }
+      ],
+      "failureMissingComponent": {
+        "missing": "bracket",
+        "tag": "missing-bracket",
+        "fitViews": 6,
+        "components": [
+          "pole",
+          "base",
+          "arm",
+          "chain",
+          "lantern"
+        ],
+        "constraints": {
+          "attach": [
+            {
+              "id": "contact-pole-base",
+              "a": "pole",
+              "b": "base",
+              "source": "detected",
+              "gapPctSpan": 0.39
+            },
+            {
+              "id": "contact-arm-chain",
+              "a": "arm",
+              "b": "chain",
+              "source": "detected",
+              "gapPctSpan": 0.92
+            },
+            {
+              "id": "contact-chain-lantern",
+              "a": "chain",
+              "b": "lantern",
+              "source": "detected",
+              "gapPctSpan": 0.41
+            }
+          ],
+          "notes": []
+        },
+        "input": {
+          "heldOutIouMean": 0.618,
+          "heldOutIouMin": 0.537,
+          "missedPct": 37.5,
+          "excessPct": 3.5,
+          "largestUncoveredBlobPct": 21.02,
+          "partErrors": [
+            {
+              "part": "Body",
+              "centreErrPctSpan": 0.27,
+              "sizeErrPct": 5
+            },
+            {
+              "part": "Chain",
+              "centreErrPctSpan": 1.74,
+              "sizeErrPct": 61
+            },
+            {
+              "part": "Lantern",
+              "centreErrPctSpan": 1.96,
+              "sizeErrPct": 25.7
+            }
+          ],
+          "meanCentreErrPctSpan": 1.32,
+          "contacts": [
+            {
+              "pair": "pole~base",
+              "gapBeforePctSpan": 0.39,
+              "gapAfterPctSpan": 0.39,
+              "broken": false
+            },
+            {
+              "pair": "arm~chain",
+              "gapBeforePctSpan": 0.92,
+              "gapAfterPctSpan": 0.92,
+              "broken": false
+            },
+            {
+              "pair": "chain~lantern",
+              "gapBeforePctSpan": 0.41,
+              "gapAfterPctSpan": 0.41,
+              "broken": false
+            }
+          ],
+          "contactsBroken": 0,
+          "relationErrPctSpan": 1.5
+        },
+        "silhouetteOnly": {
+          "heldOutIouMean": 0.717,
+          "heldOutIouMin": 0.66,
+          "missedPct": 22.1,
+          "excessPct": 9.9,
+          "largestUncoveredBlobPct": 15.29,
+          "partErrors": [
+            {
+              "part": "Body",
+              "centreErrPctSpan": 10.5,
+              "sizeErrPct": 21.1
+            },
+            {
+              "part": "Chain",
+              "centreErrPctSpan": 6.17,
+              "sizeErrPct": 51.7
+            },
+            {
+              "part": "Lantern",
+              "centreErrPctSpan": 1.29,
+              "sizeErrPct": 23.8
+            }
+          ],
+          "meanCentreErrPctSpan": 5.99,
+          "contacts": [
+            {
+              "pair": "pole~base",
+              "gapBeforePctSpan": 0.39,
+              "gapAfterPctSpan": 0.75,
+              "broken": false
+            },
+            {
+              "pair": "arm~chain",
+              "gapBeforePctSpan": 0.92,
+              "gapAfterPctSpan": 0.24,
+              "broken": false
+            },
+            {
+              "pair": "chain~lantern",
+              "gapBeforePctSpan": 0.41,
+              "gapAfterPctSpan": 3.99,
+              "broken": true
+            }
+          ],
+          "contactsBroken": 1,
+          "relationErrPctSpan": 7.94,
+          "fitIouBefore": 0.607,
+          "fitIouAfter": 0.721,
+          "ms": 323
+        },
+        "structural": {
+          "heldOutIouMean": 0.685,
+          "heldOutIouMin": 0.625,
+          "missedPct": 26.5,
+          "excessPct": 8.7,
+          "largestUncoveredBlobPct": 12.3,
+          "partErrors": [
+            {
+              "part": "Body",
+              "centreErrPctSpan": 2.23,
+              "sizeErrPct": 28.7
+            },
+            {
+              "part": "Chain",
+              "centreErrPctSpan": 1.22,
+              "sizeErrPct": 61
+            },
+            {
+              "part": "Lantern",
+              "centreErrPctSpan": 1.12,
+              "sizeErrPct": 25.7
+            }
+          ],
+          "meanCentreErrPctSpan": 1.52,
+          "contacts": [
+            {
+              "pair": "pole~base",
+              "gapBeforePctSpan": 0.39,
+              "gapAfterPctSpan": 0.46,
+              "broken": false
+            },
+            {
+              "pair": "arm~chain",
+              "gapBeforePctSpan": 0.92,
+              "gapAfterPctSpan": 0.94,
+              "broken": false
+            },
+            {
+              "pair": "chain~lantern",
+              "gapBeforePctSpan": 0.41,
+              "gapAfterPctSpan": 0.41,
+              "broken": false
+            }
+          ],
+          "contactsBroken": 0,
+          "relationErrPctSpan": 2.34,
+          "fitIouBefore": 0.607,
+          "fitIouAfter": 0.683,
+          "ms": 292,
+          "evaluations": 81,
+          "roots": [
+            "pole",
+            "arm"
+          ],
+          "free": [],
+          "cycleEdges": [],
+          "maxJointResidualPctSpan": 0,
+          "rssDeltaMB": 0.1,
+          "heapDeltaMB": 5.4
+        }
+      }
+    },
+    "AntiqueCamera": {
+      "category": "A (ground truth: independent CC0 mesh) + D (hand-built plan)",
+      "licence": "CC0-1.0 (Khronos glTF-Sample-Assets/Models/AntiqueCamera, Maximillan Kamps / UX3D; UX3D logo excluded)",
+      "glbSha256": "ae89695479ad997f09ebea8060a5ad01312ad8fe7ffb92f73b4e895109feecd2",
+      "components": 5,
+      "kSweep": [
+        {
+          "tag": "k1",
+          "fitViews": 1,
+          "components": [
+            "camera",
+            "head",
+            "leg-a",
+            "leg-b",
+            "leg-c"
+          ],
+          "constraints": {
+            "attach": [
+              {
+                "id": "contact-camera-head",
+                "a": "camera",
+                "b": "head",
+                "source": "detected",
+                "gapPctSpan": 0.66
+              },
+              {
+                "id": "contact-head-leg-a",
+                "a": "head",
+                "b": "leg-a",
+                "source": "detected",
+                "gapPctSpan": 0.28
+              },
+              {
+                "id": "contact-head-leg-b",
+                "a": "head",
+                "b": "leg-b",
+                "source": "detected",
+                "gapPctSpan": 0.21
+              },
+              {
+                "id": "contact-head-leg-c",
+                "a": "head",
+                "b": "leg-c",
+                "source": "detected",
+                "gapPctSpan": 0.21
+              },
+              {
+                "id": "contact-leg-a-leg-b",
+                "a": "leg-a",
+                "b": "leg-b",
+                "source": "detected",
+                "gapPctSpan": 0.11
+              },
+              {
+                "id": "contact-leg-a-leg-c",
+                "a": "leg-a",
+                "b": "leg-c",
+                "source": "detected",
+                "gapPctSpan": 0.06
+              },
+              {
+                "id": "contact-leg-b-leg-c",
+                "a": "leg-b",
+                "b": "leg-c",
+                "source": "detected",
+                "gapPctSpan": 0.05
+              }
+            ],
+            "notes": []
+          },
+          "input": {
+            "heldOutIouMean": 0.584,
+            "heldOutIouMin": 0.528,
+            "missedPct": 24,
+            "excessPct": 30.4,
+            "largestUncoveredBlobPct": 16.26,
+            "partErrors": [
+              {
+                "part": "camera",
+                "centreErrPctSpan": 1.64,
+                "sizeErrPct": 16.9
+              },
+              {
+                "part": "tripod",
+                "centreErrPctSpan": 3.72,
+                "sizeErrPct": 14.5
+              }
+            ],
+            "meanCentreErrPctSpan": 2.68,
+            "contacts": [
+              {
+                "pair": "camera~head",
+                "gapBeforePctSpan": 0.66,
+                "gapAfterPctSpan": 0.66,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-a",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.27,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-b",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.33,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-c",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.47,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-b",
+                "gapBeforePctSpan": 0.11,
+                "gapAfterPctSpan": 0.06,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-c",
+                "gapBeforePctSpan": 0.06,
+                "gapAfterPctSpan": 0.08,
+                "broken": false
+              },
+              {
+                "pair": "leg-b~leg-c",
+                "gapBeforePctSpan": 0.05,
+                "gapAfterPctSpan": 0.06,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 3.47
+          },
+          "silhouetteOnly": {
+            "heldOutIouMean": 0.698,
+            "heldOutIouMin": 0.66,
+            "missedPct": 22,
+            "excessPct": 12,
+            "largestUncoveredBlobPct": 13.11,
+            "partErrors": [
+              {
+                "part": "camera",
+                "centreErrPctSpan": 5.24,
+                "sizeErrPct": 13
+              },
+              {
+                "part": "tripod",
+                "centreErrPctSpan": 3.5,
+                "sizeErrPct": 19.9
+              }
+            ],
+            "meanCentreErrPctSpan": 4.37,
+            "contacts": [
+              {
+                "pair": "camera~head",
+                "gapBeforePctSpan": 0.66,
+                "gapAfterPctSpan": 0.43,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-a",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.17,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-b",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.17,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-c",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.09,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-b",
+                "gapBeforePctSpan": 0.11,
+                "gapAfterPctSpan": 0.17,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-c",
+                "gapBeforePctSpan": 0.06,
+                "gapAfterPctSpan": 0.16,
+                "broken": false
+              },
+              {
+                "pair": "leg-b~leg-c",
+                "gapBeforePctSpan": 0.05,
+                "gapAfterPctSpan": 0.11,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 7.4,
+            "fitIouBefore": 0.524,
+            "fitIouAfter": 0.667,
+            "ms": 29
+          },
+          "structural": {
+            "heldOutIouMean": 0.636,
+            "heldOutIouMin": 0.556,
+            "missedPct": 24.1,
+            "excessPct": 19.8,
+            "largestUncoveredBlobPct": 20.92,
+            "partErrors": [
+              {
+                "part": "camera",
+                "centreErrPctSpan": 2.4,
+                "sizeErrPct": 12.3
+              },
+              {
+                "part": "tripod",
+                "centreErrPctSpan": 12.85,
+                "sizeErrPct": 37.8
+              }
+            ],
+            "meanCentreErrPctSpan": 7.63,
+            "contacts": [
+              {
+                "pair": "camera~head",
+                "gapBeforePctSpan": 0.66,
+                "gapAfterPctSpan": 0.11,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-a",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.29,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-b",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.16,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-c",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.41,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-b",
+                "gapBeforePctSpan": 0.11,
+                "gapAfterPctSpan": 0.11,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-c",
+                "gapBeforePctSpan": 0.06,
+                "gapAfterPctSpan": 0.11,
+                "broken": false
+              },
+              {
+                "pair": "leg-b~leg-c",
+                "gapBeforePctSpan": 0.05,
+                "gapAfterPctSpan": 0.25,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 10.75,
+            "fitIouBefore": 0.524,
+            "fitIouAfter": 0.604,
+            "ms": 30,
+            "evaluations": 65,
+            "roots": [
+              "leg-a"
+            ],
+            "free": [],
+            "cycleEdges": [
+              "contact-head-leg-b",
+              "contact-head-leg-c",
+              "contact-leg-b-leg-c"
+            ],
+            "maxJointResidualPctSpan": 0.7021,
+            "rssDeltaMB": 0,
+            "heapDeltaMB": 3.5
+          }
+        },
+        {
+          "tag": "k2",
+          "fitViews": 2,
+          "components": [
+            "camera",
+            "head",
+            "leg-a",
+            "leg-b",
+            "leg-c"
+          ],
+          "constraints": {
+            "attach": [
+              {
+                "id": "contact-camera-head",
+                "a": "camera",
+                "b": "head",
+                "source": "detected",
+                "gapPctSpan": 0.66
+              },
+              {
+                "id": "contact-head-leg-a",
+                "a": "head",
+                "b": "leg-a",
+                "source": "detected",
+                "gapPctSpan": 0.28
+              },
+              {
+                "id": "contact-head-leg-b",
+                "a": "head",
+                "b": "leg-b",
+                "source": "detected",
+                "gapPctSpan": 0.21
+              },
+              {
+                "id": "contact-head-leg-c",
+                "a": "head",
+                "b": "leg-c",
+                "source": "detected",
+                "gapPctSpan": 0.21
+              },
+              {
+                "id": "contact-leg-a-leg-b",
+                "a": "leg-a",
+                "b": "leg-b",
+                "source": "detected",
+                "gapPctSpan": 0.11
+              },
+              {
+                "id": "contact-leg-a-leg-c",
+                "a": "leg-a",
+                "b": "leg-c",
+                "source": "detected",
+                "gapPctSpan": 0.06
+              },
+              {
+                "id": "contact-leg-b-leg-c",
+                "a": "leg-b",
+                "b": "leg-c",
+                "source": "detected",
+                "gapPctSpan": 0.05
+              }
+            ],
+            "notes": []
+          },
+          "input": {
+            "heldOutIouMean": 0.584,
+            "heldOutIouMin": 0.528,
+            "missedPct": 24,
+            "excessPct": 30.4,
+            "largestUncoveredBlobPct": 16.26,
+            "partErrors": [
+              {
+                "part": "camera",
+                "centreErrPctSpan": 1.64,
+                "sizeErrPct": 16.9
+              },
+              {
+                "part": "tripod",
+                "centreErrPctSpan": 3.72,
+                "sizeErrPct": 14.5
+              }
+            ],
+            "meanCentreErrPctSpan": 2.68,
+            "contacts": [
+              {
+                "pair": "camera~head",
+                "gapBeforePctSpan": 0.66,
+                "gapAfterPctSpan": 0.66,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-a",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.27,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-b",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.33,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-c",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.47,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-b",
+                "gapBeforePctSpan": 0.11,
+                "gapAfterPctSpan": 0.06,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-c",
+                "gapBeforePctSpan": 0.06,
+                "gapAfterPctSpan": 0.08,
+                "broken": false
+              },
+              {
+                "pair": "leg-b~leg-c",
+                "gapBeforePctSpan": 0.05,
+                "gapAfterPctSpan": 0.06,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 3.47
+          },
+          "silhouetteOnly": {
+            "heldOutIouMean": 0.707,
+            "heldOutIouMin": 0.651,
+            "missedPct": 19.7,
+            "excessPct": 13.9,
+            "largestUncoveredBlobPct": 8.86,
+            "partErrors": [
+              {
+                "part": "camera",
+                "centreErrPctSpan": 4.15,
+                "sizeErrPct": 13
+              },
+              {
+                "part": "tripod",
+                "centreErrPctSpan": 4.6,
+                "sizeErrPct": 20.9
+              }
+            ],
+            "meanCentreErrPctSpan": 4.38,
+            "contacts": [
+              {
+                "pair": "camera~head",
+                "gapBeforePctSpan": 0.66,
+                "gapAfterPctSpan": 4.02,
+                "broken": true
+              },
+              {
+                "pair": "head~leg-a",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.12,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-b",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.12,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-c",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.09,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-b",
+                "gapBeforePctSpan": 0.11,
+                "gapAfterPctSpan": 0.15,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-c",
+                "gapBeforePctSpan": 0.06,
+                "gapAfterPctSpan": 0.12,
+                "broken": false
+              },
+              {
+                "pair": "leg-b~leg-c",
+                "gapBeforePctSpan": 0.05,
+                "gapAfterPctSpan": 0.14,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 1,
+            "relationErrPctSpan": 7.66,
+            "fitIouBefore": 0.573,
+            "fitIouAfter": 0.741,
+            "ms": 74
+          },
+          "structural": {
+            "heldOutIouMean": 0.636,
+            "heldOutIouMin": 0.573,
+            "missedPct": 27.4,
+            "excessPct": 15,
+            "largestUncoveredBlobPct": 17.84,
+            "partErrors": [
+              {
+                "part": "camera",
+                "centreErrPctSpan": 2.43,
+                "sizeErrPct": 8.9
+              },
+              {
+                "part": "tripod",
+                "centreErrPctSpan": 3.86,
+                "sizeErrPct": 14.5
+              }
+            ],
+            "meanCentreErrPctSpan": 3.15,
+            "contacts": [
+              {
+                "pair": "camera~head",
+                "gapBeforePctSpan": 0.66,
+                "gapAfterPctSpan": 0.19,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-a",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.27,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-b",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.33,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-c",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.47,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-b",
+                "gapBeforePctSpan": 0.11,
+                "gapAfterPctSpan": 0.07,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-c",
+                "gapBeforePctSpan": 0.06,
+                "gapAfterPctSpan": 0.08,
+                "broken": false
+              },
+              {
+                "pair": "leg-b~leg-c",
+                "gapBeforePctSpan": 0.05,
+                "gapAfterPctSpan": 0.07,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 3.74,
+            "fitIouBefore": 0.573,
+            "fitIouAfter": 0.642,
+            "ms": 71,
+            "evaluations": 65,
+            "roots": [
+              "leg-a"
+            ],
+            "free": [],
+            "cycleEdges": [
+              "contact-head-leg-b",
+              "contact-head-leg-c",
+              "contact-leg-b-leg-c"
+            ],
+            "maxJointResidualPctSpan": 0.0993,
+            "rssDeltaMB": -0.6,
+            "heapDeltaMB": 0.1
+          }
+        },
+        {
+          "tag": "k3",
+          "fitViews": 3,
+          "components": [
+            "camera",
+            "head",
+            "leg-a",
+            "leg-b",
+            "leg-c"
+          ],
+          "constraints": {
+            "attach": [
+              {
+                "id": "contact-camera-head",
+                "a": "camera",
+                "b": "head",
+                "source": "detected",
+                "gapPctSpan": 0.66
+              },
+              {
+                "id": "contact-head-leg-a",
+                "a": "head",
+                "b": "leg-a",
+                "source": "detected",
+                "gapPctSpan": 0.28
+              },
+              {
+                "id": "contact-head-leg-b",
+                "a": "head",
+                "b": "leg-b",
+                "source": "detected",
+                "gapPctSpan": 0.21
+              },
+              {
+                "id": "contact-head-leg-c",
+                "a": "head",
+                "b": "leg-c",
+                "source": "detected",
+                "gapPctSpan": 0.21
+              },
+              {
+                "id": "contact-leg-a-leg-b",
+                "a": "leg-a",
+                "b": "leg-b",
+                "source": "detected",
+                "gapPctSpan": 0.11
+              },
+              {
+                "id": "contact-leg-a-leg-c",
+                "a": "leg-a",
+                "b": "leg-c",
+                "source": "detected",
+                "gapPctSpan": 0.06
+              },
+              {
+                "id": "contact-leg-b-leg-c",
+                "a": "leg-b",
+                "b": "leg-c",
+                "source": "detected",
+                "gapPctSpan": 0.05
+              }
+            ],
+            "notes": []
+          },
+          "input": {
+            "heldOutIouMean": 0.584,
+            "heldOutIouMin": 0.528,
+            "missedPct": 24,
+            "excessPct": 30.4,
+            "largestUncoveredBlobPct": 16.26,
+            "partErrors": [
+              {
+                "part": "camera",
+                "centreErrPctSpan": 1.64,
+                "sizeErrPct": 16.9
+              },
+              {
+                "part": "tripod",
+                "centreErrPctSpan": 3.72,
+                "sizeErrPct": 14.5
+              }
+            ],
+            "meanCentreErrPctSpan": 2.68,
+            "contacts": [
+              {
+                "pair": "camera~head",
+                "gapBeforePctSpan": 0.66,
+                "gapAfterPctSpan": 0.66,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-a",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.27,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-b",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.33,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-c",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.47,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-b",
+                "gapBeforePctSpan": 0.11,
+                "gapAfterPctSpan": 0.06,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-c",
+                "gapBeforePctSpan": 0.06,
+                "gapAfterPctSpan": 0.08,
+                "broken": false
+              },
+              {
+                "pair": "leg-b~leg-c",
+                "gapBeforePctSpan": 0.05,
+                "gapAfterPctSpan": 0.06,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 3.47
+          },
+          "silhouetteOnly": {
+            "heldOutIouMean": 0.678,
+            "heldOutIouMin": 0.597,
+            "missedPct": 20.5,
+            "excessPct": 17.8,
+            "largestUncoveredBlobPct": 13.19,
+            "partErrors": [
+              {
+                "part": "camera",
+                "centreErrPctSpan": 0.86,
+                "sizeErrPct": 5.2
+              },
+              {
+                "part": "tripod",
+                "centreErrPctSpan": 3.92,
+                "sizeErrPct": 13.8
+              }
+            ],
+            "meanCentreErrPctSpan": 2.39,
+            "contacts": [
+              {
+                "pair": "camera~head",
+                "gapBeforePctSpan": 0.66,
+                "gapAfterPctSpan": 0.45,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-a",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.12,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-b",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.13,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-c",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.14,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-b",
+                "gapBeforePctSpan": 0.11,
+                "gapAfterPctSpan": 0.19,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-c",
+                "gapBeforePctSpan": 0.06,
+                "gapAfterPctSpan": 0.13,
+                "broken": false
+              },
+              {
+                "pair": "leg-b~leg-c",
+                "gapBeforePctSpan": 0.05,
+                "gapAfterPctSpan": 0.13,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 4.3,
+            "fitIouBefore": 0.639,
+            "fitIouAfter": 0.762,
+            "ms": 105
+          },
+          "structural": {
+            "heldOutIouMean": 0.645,
+            "heldOutIouMin": 0.579,
+            "missedPct": 25.3,
+            "excessPct": 16.4,
+            "largestUncoveredBlobPct": 17.02,
+            "partErrors": [
+              {
+                "part": "camera",
+                "centreErrPctSpan": 0.41,
+                "sizeErrPct": 5.5
+              },
+              {
+                "part": "tripod",
+                "centreErrPctSpan": 3.74,
+                "sizeErrPct": 14.5
+              }
+            ],
+            "meanCentreErrPctSpan": 2.08,
+            "contacts": [
+              {
+                "pair": "camera~head",
+                "gapBeforePctSpan": 0.66,
+                "gapAfterPctSpan": 0.64,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-a",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.16,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-b",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.27,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-c",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.23,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-b",
+                "gapBeforePctSpan": 0.11,
+                "gapAfterPctSpan": 0.04,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-c",
+                "gapBeforePctSpan": 0.06,
+                "gapAfterPctSpan": 0.08,
+                "broken": false
+              },
+              {
+                "pair": "leg-b~leg-c",
+                "gapBeforePctSpan": 0.05,
+                "gapAfterPctSpan": 0.06,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 3.78,
+            "fitIouBefore": 0.639,
+            "fitIouAfter": 0.7,
+            "ms": 87,
+            "evaluations": 65,
+            "roots": [
+              "leg-a"
+            ],
+            "free": [],
+            "cycleEdges": [
+              "contact-head-leg-b",
+              "contact-head-leg-c",
+              "contact-leg-b-leg-c"
+            ],
+            "maxJointResidualPctSpan": 0.2706,
+            "rssDeltaMB": -1.7,
+            "heapDeltaMB": 10.4
+          }
+        },
+        {
+          "tag": "k6",
+          "fitViews": 6,
+          "components": [
+            "camera",
+            "head",
+            "leg-a",
+            "leg-b",
+            "leg-c"
+          ],
+          "constraints": {
+            "attach": [
+              {
+                "id": "contact-camera-head",
+                "a": "camera",
+                "b": "head",
+                "source": "detected",
+                "gapPctSpan": 0.66
+              },
+              {
+                "id": "contact-head-leg-a",
+                "a": "head",
+                "b": "leg-a",
+                "source": "detected",
+                "gapPctSpan": 0.28
+              },
+              {
+                "id": "contact-head-leg-b",
+                "a": "head",
+                "b": "leg-b",
+                "source": "detected",
+                "gapPctSpan": 0.21
+              },
+              {
+                "id": "contact-head-leg-c",
+                "a": "head",
+                "b": "leg-c",
+                "source": "detected",
+                "gapPctSpan": 0.21
+              },
+              {
+                "id": "contact-leg-a-leg-b",
+                "a": "leg-a",
+                "b": "leg-b",
+                "source": "detected",
+                "gapPctSpan": 0.11
+              },
+              {
+                "id": "contact-leg-a-leg-c",
+                "a": "leg-a",
+                "b": "leg-c",
+                "source": "detected",
+                "gapPctSpan": 0.06
+              },
+              {
+                "id": "contact-leg-b-leg-c",
+                "a": "leg-b",
+                "b": "leg-c",
+                "source": "detected",
+                "gapPctSpan": 0.05
+              }
+            ],
+            "notes": []
+          },
+          "input": {
+            "heldOutIouMean": 0.584,
+            "heldOutIouMin": 0.528,
+            "missedPct": 24,
+            "excessPct": 30.4,
+            "largestUncoveredBlobPct": 16.26,
+            "partErrors": [
+              {
+                "part": "camera",
+                "centreErrPctSpan": 1.64,
+                "sizeErrPct": 16.9
+              },
+              {
+                "part": "tripod",
+                "centreErrPctSpan": 3.72,
+                "sizeErrPct": 14.5
+              }
+            ],
+            "meanCentreErrPctSpan": 2.68,
+            "contacts": [
+              {
+                "pair": "camera~head",
+                "gapBeforePctSpan": 0.66,
+                "gapAfterPctSpan": 0.66,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-a",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.27,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-b",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.33,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-c",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.47,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-b",
+                "gapBeforePctSpan": 0.11,
+                "gapAfterPctSpan": 0.06,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-c",
+                "gapBeforePctSpan": 0.06,
+                "gapAfterPctSpan": 0.08,
+                "broken": false
+              },
+              {
+                "pair": "leg-b~leg-c",
+                "gapBeforePctSpan": 0.05,
+                "gapAfterPctSpan": 0.06,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 3.47
+          },
+          "silhouetteOnly": {
+            "heldOutIouMean": 0.727,
+            "heldOutIouMin": 0.688,
+            "missedPct": 20,
+            "excessPct": 10.4,
+            "largestUncoveredBlobPct": 9.38,
+            "partErrors": [
+              {
+                "part": "camera",
+                "centreErrPctSpan": 3.55,
+                "sizeErrPct": 13
+              },
+              {
+                "part": "tripod",
+                "centreErrPctSpan": 4.24,
+                "sizeErrPct": 17.7
+              }
+            ],
+            "meanCentreErrPctSpan": 3.9,
+            "contacts": [
+              {
+                "pair": "camera~head",
+                "gapBeforePctSpan": 0.66,
+                "gapAfterPctSpan": 0.13,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-a",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.09,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-b",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.34,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-c",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.08,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-b",
+                "gapBeforePctSpan": 0.11,
+                "gapAfterPctSpan": 0.13,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-c",
+                "gapBeforePctSpan": 0.06,
+                "gapAfterPctSpan": 0.07,
+                "broken": false
+              },
+              {
+                "pair": "leg-b~leg-c",
+                "gapBeforePctSpan": 0.05,
+                "gapAfterPctSpan": 0.13,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 7.75,
+            "fitIouBefore": 0.597,
+            "fitIouAfter": 0.731,
+            "ms": 221
+          },
+          "structural": {
+            "heldOutIouMean": 0.654,
+            "heldOutIouMin": 0.606,
+            "missedPct": 26.7,
+            "excessPct": 12.6,
+            "largestUncoveredBlobPct": 16.05,
+            "partErrors": [
+              {
+                "part": "camera",
+                "centreErrPctSpan": 1.72,
+                "sizeErrPct": 8.9
+              },
+              {
+                "part": "tripod",
+                "centreErrPctSpan": 3.13,
+                "sizeErrPct": 14.5
+              }
+            ],
+            "meanCentreErrPctSpan": 2.42,
+            "contacts": [
+              {
+                "pair": "camera~head",
+                "gapBeforePctSpan": 0.66,
+                "gapAfterPctSpan": 0.63,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-a",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.16,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-b",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.23,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-c",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.32,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-b",
+                "gapBeforePctSpan": 0.11,
+                "gapAfterPctSpan": 0.06,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-c",
+                "gapBeforePctSpan": 0.06,
+                "gapAfterPctSpan": 0.08,
+                "broken": false
+              },
+              {
+                "pair": "leg-b~leg-c",
+                "gapBeforePctSpan": 0.05,
+                "gapAfterPctSpan": 0.06,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 4.18,
+            "fitIouBefore": 0.597,
+            "fitIouAfter": 0.661,
+            "ms": 181,
+            "evaluations": 65,
+            "roots": [
+              "leg-a"
+            ],
+            "free": [],
+            "cycleEdges": [
+              "contact-head-leg-b",
+              "contact-head-leg-c",
+              "contact-leg-b-leg-c"
+            ],
+            "maxJointResidualPctSpan": 0.359,
+            "rssDeltaMB": 0.1,
+            "heapDeltaMB": -0.2
+          }
+        },
+        {
+          "tag": "k12",
+          "fitViews": 12,
+          "components": [
+            "camera",
+            "head",
+            "leg-a",
+            "leg-b",
+            "leg-c"
+          ],
+          "constraints": {
+            "attach": [
+              {
+                "id": "contact-camera-head",
+                "a": "camera",
+                "b": "head",
+                "source": "detected",
+                "gapPctSpan": 0.66
+              },
+              {
+                "id": "contact-head-leg-a",
+                "a": "head",
+                "b": "leg-a",
+                "source": "detected",
+                "gapPctSpan": 0.28
+              },
+              {
+                "id": "contact-head-leg-b",
+                "a": "head",
+                "b": "leg-b",
+                "source": "detected",
+                "gapPctSpan": 0.21
+              },
+              {
+                "id": "contact-head-leg-c",
+                "a": "head",
+                "b": "leg-c",
+                "source": "detected",
+                "gapPctSpan": 0.21
+              },
+              {
+                "id": "contact-leg-a-leg-b",
+                "a": "leg-a",
+                "b": "leg-b",
+                "source": "detected",
+                "gapPctSpan": 0.11
+              },
+              {
+                "id": "contact-leg-a-leg-c",
+                "a": "leg-a",
+                "b": "leg-c",
+                "source": "detected",
+                "gapPctSpan": 0.06
+              },
+              {
+                "id": "contact-leg-b-leg-c",
+                "a": "leg-b",
+                "b": "leg-c",
+                "source": "detected",
+                "gapPctSpan": 0.05
+              }
+            ],
+            "notes": []
+          },
+          "input": {
+            "heldOutIouMean": 0.584,
+            "heldOutIouMin": 0.528,
+            "missedPct": 24,
+            "excessPct": 30.4,
+            "largestUncoveredBlobPct": 16.26,
+            "partErrors": [
+              {
+                "part": "camera",
+                "centreErrPctSpan": 1.64,
+                "sizeErrPct": 16.9
+              },
+              {
+                "part": "tripod",
+                "centreErrPctSpan": 3.72,
+                "sizeErrPct": 14.5
+              }
+            ],
+            "meanCentreErrPctSpan": 2.68,
+            "contacts": [
+              {
+                "pair": "camera~head",
+                "gapBeforePctSpan": 0.66,
+                "gapAfterPctSpan": 0.66,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-a",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.27,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-b",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.33,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-c",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.47,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-b",
+                "gapBeforePctSpan": 0.11,
+                "gapAfterPctSpan": 0.06,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-c",
+                "gapBeforePctSpan": 0.06,
+                "gapAfterPctSpan": 0.08,
+                "broken": false
+              },
+              {
+                "pair": "leg-b~leg-c",
+                "gapBeforePctSpan": 0.05,
+                "gapAfterPctSpan": 0.06,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 3.47
+          },
+          "silhouetteOnly": {
+            "heldOutIouMean": 0.725,
+            "heldOutIouMin": 0.672,
+            "missedPct": 18.9,
+            "excessPct": 12.1,
+            "largestUncoveredBlobPct": 10.14,
+            "partErrors": [
+              {
+                "part": "camera",
+                "centreErrPctSpan": 4.52,
+                "sizeErrPct": 13
+              },
+              {
+                "part": "tripod",
+                "centreErrPctSpan": 4.9,
+                "sizeErrPct": 25
+              }
+            ],
+            "meanCentreErrPctSpan": 4.71,
+            "contacts": [
+              {
+                "pair": "camera~head",
+                "gapBeforePctSpan": 0.66,
+                "gapAfterPctSpan": 4.08,
+                "broken": true
+              },
+              {
+                "pair": "head~leg-a",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.13,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-b",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.16,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-c",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.09,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-b",
+                "gapBeforePctSpan": 0.11,
+                "gapAfterPctSpan": 0.13,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-c",
+                "gapBeforePctSpan": 0.06,
+                "gapAfterPctSpan": 0.16,
+                "broken": false
+              },
+              {
+                "pair": "leg-b~leg-c",
+                "gapBeforePctSpan": 0.05,
+                "gapAfterPctSpan": 0.14,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 1,
+            "relationErrPctSpan": 9.36,
+            "fitIouBefore": 0.573,
+            "fitIouAfter": 0.727,
+            "ms": 483
+          },
+          "structural": {
+            "heldOutIouMean": 0.653,
+            "heldOutIouMin": 0.592,
+            "missedPct": 26,
+            "excessPct": 14.1,
+            "largestUncoveredBlobPct": 15.5,
+            "partErrors": [
+              {
+                "part": "camera",
+                "centreErrPctSpan": 1.81,
+                "sizeErrPct": 8.9
+              },
+              {
+                "part": "tripod",
+                "centreErrPctSpan": 3.08,
+                "sizeErrPct": 14.5
+              }
+            ],
+            "meanCentreErrPctSpan": 2.45,
+            "contacts": [
+              {
+                "pair": "camera~head",
+                "gapBeforePctSpan": 0.66,
+                "gapAfterPctSpan": 0.62,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-a",
+                "gapBeforePctSpan": 0.28,
+                "gapAfterPctSpan": 0.16,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-b",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.16,
+                "broken": false
+              },
+              {
+                "pair": "head~leg-c",
+                "gapBeforePctSpan": 0.21,
+                "gapAfterPctSpan": 0.29,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-b",
+                "gapBeforePctSpan": 0.11,
+                "gapAfterPctSpan": 0.04,
+                "broken": false
+              },
+              {
+                "pair": "leg-a~leg-c",
+                "gapBeforePctSpan": 0.06,
+                "gapAfterPctSpan": 0.08,
+                "broken": false
+              },
+              {
+                "pair": "leg-b~leg-c",
+                "gapBeforePctSpan": 0.05,
+                "gapAfterPctSpan": 0.13,
+                "broken": false
+              }
+            ],
+            "contactsBroken": 0,
+            "relationErrPctSpan": 4.14,
+            "fitIouBefore": 0.573,
+            "fitIouAfter": 0.649,
+            "ms": 381,
+            "evaluations": 65,
+            "roots": [
+              "leg-a"
+            ],
+            "free": [],
+            "cycleEdges": [
+              "contact-head-leg-b",
+              "contact-head-leg-c",
+              "contact-leg-b-leg-c"
+            ],
+            "maxJointResidualPctSpan": 0.3823,
+            "rssDeltaMB": 0,
+            "heapDeltaMB": -17.7
+          }
+        }
+      ],
+      "failureMissingComponent": {
+        "missing": "head",
+        "tag": "missing-head",
+        "fitViews": 6,
+        "components": [
+          "camera",
+          "leg-a",
+          "leg-b",
+          "leg-c"
+        ],
+        "constraints": {
+          "attach": [
+            {
+              "id": "contact-leg-a-leg-b",
+              "a": "leg-a",
+              "b": "leg-b",
+              "source": "detected",
+              "gapPctSpan": 0.11
+            },
+            {
+              "id": "contact-leg-a-leg-c",
+              "a": "leg-a",
+              "b": "leg-c",
+              "source": "detected",
+              "gapPctSpan": 0.06
+            },
+            {
+              "id": "contact-leg-b-leg-c",
+              "a": "leg-b",
+              "b": "leg-c",
+              "source": "detected",
+              "gapPctSpan": 0.05
+            }
+          ],
+          "notes": []
+        },
+        "input": {
+          "heldOutIouMean": 0.582,
+          "heldOutIouMin": 0.528,
+          "missedPct": 24.9,
+          "excessPct": 29.6,
+          "largestUncoveredBlobPct": 16.26,
+          "partErrors": [
+            {
+              "part": "camera",
+              "centreErrPctSpan": 1.64,
+              "sizeErrPct": 16.9
+            },
+            {
+              "part": "tripod",
+              "centreErrPctSpan": 4.1,
+              "sizeErrPct": 14.5
+            }
+          ],
+          "meanCentreErrPctSpan": 2.87,
+          "contacts": [
+            {
+              "pair": "leg-a~leg-b",
+              "gapBeforePctSpan": 0.11,
+              "gapAfterPctSpan": 0.06,
+              "broken": false
+            },
+            {
+              "pair": "leg-a~leg-c",
+              "gapBeforePctSpan": 0.06,
+              "gapAfterPctSpan": 0.08,
+              "broken": false
+            },
+            {
+              "pair": "leg-b~leg-c",
+              "gapBeforePctSpan": 0.05,
+              "gapAfterPctSpan": 0.06,
+              "broken": false
+            }
+          ],
+          "contactsBroken": 0,
+          "relationErrPctSpan": 5.17
+        },
+        "silhouetteOnly": {
+          "heldOutIouMean": 0.723,
+          "heldOutIouMin": 0.685,
+          "missedPct": 20.6,
+          "excessPct": 10,
+          "largestUncoveredBlobPct": 9.38,
+          "partErrors": [
+            {
+              "part": "camera",
+              "centreErrPctSpan": 3.55,
+              "sizeErrPct": 13
+            },
+            {
+              "part": "tripod",
+              "centreErrPctSpan": 4.24,
+              "sizeErrPct": 17.7
+            }
+          ],
+          "meanCentreErrPctSpan": 3.9,
+          "contacts": [
+            {
+              "pair": "leg-a~leg-b",
+              "gapBeforePctSpan": 0.11,
+              "gapAfterPctSpan": 0.13,
+              "broken": false
+            },
+            {
+              "pair": "leg-a~leg-c",
+              "gapBeforePctSpan": 0.06,
+              "gapAfterPctSpan": 0.07,
+              "broken": false
+            },
+            {
+              "pair": "leg-b~leg-c",
+              "gapBeforePctSpan": 0.05,
+              "gapAfterPctSpan": 0.13,
+              "broken": false
+            }
+          ],
+          "contactsBroken": 0,
+          "relationErrPctSpan": 7.75,
+          "fitIouBefore": 0.598,
+          "fitIouAfter": 0.728,
+          "ms": 188
+        },
+        "structural": {
+          "heldOutIouMean": 0.693,
+          "heldOutIouMin": 0.649,
+          "missedPct": 23.7,
+          "excessPct": 10.5,
+          "largestUncoveredBlobPct": 14.97,
+          "partErrors": [
+            {
+              "part": "camera",
+              "centreErrPctSpan": 3.6,
+              "sizeErrPct": 11.4
+            },
+            {
+              "part": "tripod",
+              "centreErrPctSpan": 2.8,
+              "sizeErrPct": 7.4
+            }
+          ],
+          "meanCentreErrPctSpan": 3.2,
+          "contacts": [
+            {
+              "pair": "leg-a~leg-b",
+              "gapBeforePctSpan": 0.11,
+              "gapAfterPctSpan": 0.07,
+              "broken": false
+            },
+            {
+              "pair": "leg-a~leg-c",
+              "gapBeforePctSpan": 0.06,
+              "gapAfterPctSpan": 0.09,
+              "broken": false
+            },
+            {
+              "pair": "leg-b~leg-c",
+              "gapBeforePctSpan": 0.05,
+              "gapAfterPctSpan": 0.06,
+              "broken": false
+            }
+          ],
+          "contactsBroken": 0,
+          "relationErrPctSpan": 5.59,
+          "fitIouBefore": 0.598,
+          "fitIouAfter": 0.699,
+          "ms": 158,
+          "evaluations": 81,
+          "roots": [
+            "leg-a"
+          ],
+          "free": [
+            "camera"
+          ],
+          "cycleEdges": [
+            "contact-leg-b-leg-c"
+          ],
+          "maxJointResidualPctSpan": 0,
+          "rssDeltaMB": 0,
+          "heapDeltaMB": -9.2
+        }
+      }
+    }
+  }
+}

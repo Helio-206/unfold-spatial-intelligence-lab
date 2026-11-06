@@ -1,0 +1,612 @@
+[
+  {
+    "name": "hatchback",
+    "v3": {
+      "tri": 684,
+      "meshes": 5,
+      "families": {
+        "procedural_v2": 5
+      },
+      "gpu": {
+        "geometries": 9,
+        "textures": 8,
+        "programs": 8
+      },
+      "ids": [
+        "body",
+        "wheel-0",
+        "wheel-1",
+        "wheel-2",
+        "wheel-3"
+      ],
+      "plan": "{\"contract\":\"unfold.spatial-plan.v2\",\"source\":{\"kind\":\"text\",\"sha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"},\"title\":\"Compact hatchback\",\"units\":\"m\",\"presentationProfile\":\"neutral\",\"components\":[{\"id\":\"body\",\"label\":\"Hatchback body\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"body-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[3.7,1.42,1.7]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#b3302a\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[0,0.76,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"wheel-0\",\"label\":\"Wheel 1\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"wheel-0-shape\",\"operator\":\"cylinder\",\"parameters\":{\"radiusTop\":0.3,\"radiusBottom\":0.3,\"height\":0.2,\"radialSegments\":24},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#1b1b1d\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[1.147,0.3,0.77],\"rotationRad\":[1.5707963267948966,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"wheel-1\",\"label\":\"Wheel 2\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"wheel-1-shape\",\"operator\":\"cylinder\",\"parameters\":{\"radiusTop\":0.3,\"radiusBottom\":0.3,\"height\":0.2,\"radialSegments\":24},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#1b1b1d\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[1.147,0.3,-0.77],\"rotationRad\":[1.5707963267948966,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"wheel-2\",\"label\":\"Wheel 3\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"wheel-2-shape\",\"operator\":\"cylinder\",\"parameters\":{\"radiusTop\":0.3,\"radiusBottom\":0.3,\"height\":0.2,\"radialSegments\":24},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#1b1b1d\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[-1.147,0.3,0.77],\"rotationRad\":[1.5707963267948966,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"wheel-3\",\"label\":\"Wheel 4\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"wheel-3-shape\",\"operator\":\"cylinder\",\"parameters\":{\"radiusTop\":0.3,\"radiusBottom\":0.3,\"height\":0.2,\"radialSegments\":24},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#1b1b1d\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[-1.147,0.3,-0.77],\"rotationRad\":[1.5707963267948966,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}}],\"relations\":[],\"constraints\":[],\"unknowns\":[\"exact proportions are estimated\"]}",
+      "count": {
+        "tri": 684,
+        "meshes": 5
+      }
+    },
+    "buildToReadyMs": 2177,
+    "foundry": {
+      "tri": 45832,
+      "meshes": 25,
+      "families": {
+        "universal_foundry": 5
+      },
+      "gpu": {
+        "geometries": 29,
+        "textures": 15,
+        "programs": 14
+      },
+      "ids": [
+        "body",
+        "wheel-0",
+        "wheel-1",
+        "wheel-2",
+        "wheel-3"
+      ],
+      "count": {
+        "tri": 45832,
+        "meshes": 25
+      }
+    },
+    "regeneration": {
+      "param": "cabinHeight",
+      "before": {
+        "tri": 45832,
+        "meshes": 25
+      },
+      "after": {
+        "tri": 45832,
+        "meshes": 25
+      }
+    },
+    "panelVisible": true,
+    "reopened": {
+      "count": {
+        "tri": 45832,
+        "meshes": 25
+      },
+      "sameTriangles": true
+    },
+    "gpuAfter": {
+      "geometries": 29,
+      "textures": 15,
+      "programs": 14
+    },
+    "errors": []
+  },
+  {
+    "name": "sofa",
+    "v3": {
+      "tri": 3000,
+      "meshes": 10,
+      "families": {
+        "procedural_v2": 10
+      },
+      "gpu": {
+        "geometries": 14,
+        "textures": 8,
+        "programs": 8
+      },
+      "ids": [
+        "seat-a",
+        "seat-b",
+        "seat-c",
+        "back",
+        "arm-l",
+        "arm-r",
+        "leg-0",
+        "leg-1",
+        "leg-2",
+        "leg-3"
+      ],
+      "plan": "{\"contract\":\"unfold.spatial-plan.v2\",\"source\":{\"kind\":\"text\",\"sha256\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"},\"title\":\"Three-seat sofa\",\"units\":\"m\",\"presentationProfile\":\"neutral\",\"components\":[{\"id\":\"seat-a\",\"label\":\"Seat cushion left\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"seat-a-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[0.7,0.18,0.8]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#4a5d70\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[-0.7,0.34,0.05],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"seat-b\",\"label\":\"Seat cushion middle\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"seat-b-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[0.7,0.18,0.8]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#4a5d70\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[0,0.34,0.05],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"seat-c\",\"label\":\"Seat cushion right\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"seat-c-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[0.7,0.18,0.8]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#4a5d70\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[0.7,0.34,0.05],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"back\",\"label\":\"Backrest\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"back-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[2.2,0.5,0.22]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#4a5d70\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[0,0.68,-0.36],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"arm-l\",\"label\":\"Arm left\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"arm-l-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[0.2,0.3,0.9]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#4a5d70\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[-1.18,0.5,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"arm-r\",\"label\":\"Arm right\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"arm-r-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[0.2,0.3,0.9]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#4a5d70\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[1.18,0.5,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"leg-0\",\"label\":\"Leg 1\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"leg-0-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[0.06,0.16,0.06]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#2c2a28\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[1.1,0.08,0.4],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"leg-1\",\"label\":\"Leg 2\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"leg-1-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[0.06,0.16,0.06]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#2c2a28\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[1.1,0.08,-0.4],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"leg-2\",\"label\":\"Leg 3\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"leg-2-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[0.06,0.16,0.06]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#2c2a28\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[-1.1,0.08,0.4],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"leg-3\",\"label\":\"Leg 4\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"leg-3-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[0.06,0.16,0.06]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#2c2a28\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[-1.1,0.08,-0.4],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}}],\"relations\":[],\"constraints\":[],\"unknowns\":[\"exact proportions are estimated\"]}",
+      "count": {
+        "tri": 3000,
+        "meshes": 10
+      }
+    },
+    "buildToReadyMs": 1553,
+    "foundry": {
+      "tri": 18728,
+      "meshes": 21,
+      "families": {
+        "universal_foundry": 10
+      },
+      "gpu": {
+        "geometries": 25,
+        "textures": 16,
+        "programs": 10
+      },
+      "ids": [
+        "seat-a",
+        "seat-b",
+        "seat-c",
+        "back",
+        "arm-l",
+        "arm-r",
+        "leg-0",
+        "leg-1",
+        "leg-2",
+        "leg-3"
+      ],
+      "count": {
+        "tri": 18728,
+        "meshes": 21
+      }
+    },
+    "regeneration": {
+      "param": "puff",
+      "before": {
+        "tri": 18728,
+        "meshes": 21
+      },
+      "after": {
+        "tri": 18728,
+        "meshes": 21
+      }
+    },
+    "panelVisible": true,
+    "reopened": {
+      "count": {
+        "tri": 18728,
+        "meshes": 21
+      },
+      "sameTriangles": true
+    },
+    "gpuAfter": {
+      "geometries": 25,
+      "textures": 16,
+      "programs": 10
+    },
+    "errors": []
+  },
+  {
+    "name": "washer",
+    "v3": {
+      "tri": 900,
+      "meshes": 3,
+      "families": {
+        "procedural_v2": 3
+      },
+      "gpu": {
+        "geometries": 7,
+        "textures": 8,
+        "programs": 8
+      },
+      "ids": [
+        "body",
+        "door",
+        "panel"
+      ],
+      "plan": "{\"contract\":\"unfold.spatial-plan.v2\",\"source\":{\"kind\":\"text\",\"sha256\":\"3333333333333333333333333333333333333333333333333333333333333333\"},\"title\":\"Washing machine\",\"units\":\"m\",\"presentationProfile\":\"neutral\",\"components\":[{\"id\":\"body\",\"label\":\"Washer cabinet\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"body-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[0.6,0.85,0.6]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#f1f2f3\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[0,0.425,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"door\",\"label\":\"Washer door\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"door-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[0.46,0.46,0.05]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#f1f2f3\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[0,0.42,0.32],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"panel\",\"label\":\"Control panel\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"panel-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[0.58,0.1,0.03]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#2a2c30\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[0,0.78,0.31],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}}],\"relations\":[],\"constraints\":[],\"unknowns\":[\"exact proportions are estimated\"]}",
+      "count": {
+        "tri": 900,
+        "meshes": 3
+      }
+    },
+    "buildToReadyMs": 1493,
+    "foundry": {
+      "tri": 4760,
+      "meshes": 10,
+      "families": {
+        "universal_foundry": 3
+      },
+      "gpu": {
+        "geometries": 14,
+        "textures": 14,
+        "programs": 13
+      },
+      "ids": [
+        "body",
+        "door",
+        "panel"
+      ],
+      "count": {
+        "tri": 4760,
+        "meshes": 10
+      }
+    },
+    "regeneration": {
+      "param": "knobs",
+      "before": {
+        "tri": 4760,
+        "meshes": 10
+      },
+      "after": {
+        "tri": 5336,
+        "meshes": 10
+      }
+    },
+    "panelVisible": true,
+    "reopened": {
+      "count": {
+        "tri": 5336,
+        "meshes": 10
+      },
+      "sameTriangles": true
+    },
+    "gpuAfter": {
+      "geometries": 14,
+      "textures": 14,
+      "programs": 13
+    },
+    "errors": []
+  },
+  {
+    "name": "pavilion",
+    "v3": {
+      "tri": 1176,
+      "meshes": 8,
+      "families": {
+        "procedural_v2": 8
+      },
+      "gpu": {
+        "geometries": 12,
+        "textures": 8,
+        "programs": 8
+      },
+      "ids": [
+        "floor",
+        "column-0",
+        "column-1",
+        "column-2",
+        "column-3",
+        "column-4",
+        "column-5",
+        "roof"
+      ],
+      "plan": "{\"contract\":\"unfold.spatial-plan.v2\",\"source\":{\"kind\":\"text\",\"sha256\":\"5555555555555555555555555555555555555555555555555555555555555555\"},\"title\":\"Garden pavilion\",\"units\":\"m\",\"presentationProfile\":\"neutral\",\"components\":[{\"id\":\"floor\",\"label\":\"Floor slab\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"floor-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[6,0.25,4]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#a9a8a2\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[0,0.125,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"column-0\",\"label\":\"Column 1\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"column-0-shape\",\"operator\":\"cylinder\",\"parameters\":{\"radiusTop\":0.15,\"radiusBottom\":0.15,\"height\":3,\"radialSegments\":24},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#d8d4c8\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[2.6,1.75,1.6],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"column-1\",\"label\":\"Column 2\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"column-1-shape\",\"operator\":\"cylinder\",\"parameters\":{\"radiusTop\":0.15,\"radiusBottom\":0.15,\"height\":3,\"radialSegments\":24},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#d8d4c8\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[2.6,1.75,-1.6],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"column-2\",\"label\":\"Column 3\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"column-2-shape\",\"operator\":\"cylinder\",\"parameters\":{\"radiusTop\":0.15,\"radiusBottom\":0.15,\"height\":3,\"radialSegments\":24},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#d8d4c8\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[-2.6,1.75,1.6],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"column-3\",\"label\":\"Column 4\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"column-3-shape\",\"operator\":\"cylinder\",\"parameters\":{\"radiusTop\":0.15,\"radiusBottom\":0.15,\"height\":3,\"radialSegments\":24},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#d8d4c8\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[-2.6,1.75,-1.6],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"column-4\",\"label\":\"Column 5\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"column-4-shape\",\"operator\":\"cylinder\",\"parameters\":{\"radiusTop\":0.15,\"radiusBottom\":0.15,\"height\":3,\"radialSegments\":24},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#d8d4c8\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[0,1.75,1.6],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"column-5\",\"label\":\"Column 6\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"column-5-shape\",\"operator\":\"cylinder\",\"parameters\":{\"radiusTop\":0.15,\"radiusBottom\":0.15,\"height\":3,\"radialSegments\":24},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#d8d4c8\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[0,1.75,-1.6],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"roof\",\"label\":\"Flat roof slab\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"roof-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[6.4,0.35,4.4]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#8b8c88\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[0,3.425,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}}],\"relations\":[],\"constraints\":[],\"unknowns\":[\"exact proportions are estimated\"]}",
+      "count": {
+        "tri": 1176,
+        "meshes": 8
+      }
+    },
+    "buildToReadyMs": 2,
+    "foundry": {
+      "tri": 5544,
+      "meshes": 10,
+      "families": {
+        "universal_foundry": 8
+      },
+      "gpu": {
+        "geometries": 14,
+        "textures": 14,
+        "programs": 10
+      },
+      "ids": [
+        "floor",
+        "column-0",
+        "column-1",
+        "column-2",
+        "column-3",
+        "column-4",
+        "column-5",
+        "roof"
+      ],
+      "count": {
+        "tri": 5544,
+        "meshes": 10
+      }
+    },
+    "regeneration": {
+      "param": "windows",
+      "before": {
+        "tri": 5544,
+        "meshes": 10
+      },
+      "after": {
+        "tri": 5544,
+        "meshes": 10
+      }
+    },
+    "panelVisible": true,
+    "reopened": {
+      "count": {
+        "tri": 5544,
+        "meshes": 10
+      },
+      "sameTriangles": true
+    },
+    "gpuAfter": {
+      "geometries": 14,
+      "textures": 14,
+      "programs": 10
+    },
+    "errors": []
+  },
+  {
+    "name": "apple",
+    "v3": {
+      "tri": 816,
+      "meshes": 2,
+      "families": {
+        "procedural_v2": 2
+      },
+      "gpu": {
+        "geometries": 6,
+        "textures": 8,
+        "programs": 8
+      },
+      "ids": [
+        "body",
+        "stem"
+      ],
+      "plan": "{\"contract\":\"unfold.spatial-plan.v2\",\"source\":{\"kind\":\"text\",\"sha256\":\"9999999999999999999999999999999999999999999999999999999999999999\"},\"title\":\"Apple\",\"units\":\"m\",\"presentationProfile\":\"organic\",\"components\":[{\"id\":\"body\",\"label\":\"Apple fruit\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"body-shape\",\"operator\":\"ellipsoid\",\"parameters\":{\"radii\":[0.04,0.036,0.04],\"widthSegments\":24,\"heightSegments\":16},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#b52a2a\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[0,0.036,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"stem\",\"label\":\"Apple stem\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"stem-shape\",\"operator\":\"cylinder\",\"parameters\":{\"radiusTop\":0.003,\"radiusBottom\":0.003,\"height\":0.02,\"radialSegments\":24},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#5b4025\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[0,0.075,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}}],\"relations\":[],\"constraints\":[],\"unknowns\":[\"exact proportions are estimated\"]}",
+      "count": {
+        "tri": 816,
+        "meshes": 2
+      }
+    },
+    "buildToReadyMs": 2,
+    "foundry": {
+      "tri": 5668,
+      "meshes": 3,
+      "families": {
+        "universal_foundry": 2
+      },
+      "gpu": {
+        "geometries": 7,
+        "textures": 12,
+        "programs": 9
+      },
+      "ids": [
+        "body",
+        "stem"
+      ],
+      "count": {
+        "tri": 5668,
+        "meshes": 3
+      }
+    },
+    "regeneration": {
+      "param": "smoothness",
+      "before": {
+        "tri": 5668,
+        "meshes": 3
+      },
+      "after": {
+        "tri": 4636,
+        "meshes": 3
+      }
+    },
+    "panelVisible": true,
+    "reopened": {
+      "count": {
+        "tri": 4636,
+        "meshes": 3
+      },
+      "sameTriangles": true
+    },
+    "gpuAfter": {
+      "geometries": 7,
+      "textures": 12,
+      "programs": 9
+    },
+    "errors": []
+  },
+  {
+    "name": "wrench",
+    "v3": {
+      "tri": 600,
+      "meshes": 2,
+      "families": {
+        "procedural_v2": 2
+      },
+      "gpu": {
+        "geometries": 6,
+        "textures": 8,
+        "programs": 8
+      },
+      "ids": [
+        "handle",
+        "head"
+      ],
+      "plan": "{\"contract\":\"unfold.spatial-plan.v2\",\"source\":{\"kind\":\"text\",\"sha256\":\"7777777777777777777777777777777777777777777777777777777777777777\"},\"title\":\"Open-end spanner\",\"units\":\"m\",\"presentationProfile\":\"neutral\",\"components\":[{\"id\":\"handle\",\"label\":\"Wrench handle\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"handle-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[0.2,0.022,0.008]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#a8acb2\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"head\",\"label\":\"Wrench head\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"head-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[0.05,0.05,0.008]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#a8acb2\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[0.12,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}}],\"relations\":[],\"constraints\":[],\"unknowns\":[\"exact proportions are estimated\"]}",
+      "count": {
+        "tri": 600,
+        "meshes": 2
+      }
+    },
+    "buildToReadyMs": 2,
+    "foundry": {
+      "tri": 1960,
+      "meshes": 3,
+      "families": {
+        "universal_foundry": 2
+      },
+      "gpu": {
+        "geometries": 7,
+        "textures": 12,
+        "programs": 10
+      },
+      "ids": [
+        "handle",
+        "head"
+      ],
+      "count": {
+        "tri": 1960,
+        "meshes": 3
+      }
+    },
+    "regeneration": {
+      "param": "gripRings",
+      "before": {
+        "tri": 1960,
+        "meshes": 3
+      },
+      "after": {
+        "tri": 1960,
+        "meshes": 3
+      }
+    },
+    "panelVisible": true,
+    "reopened": {
+      "count": {
+        "tri": 1960,
+        "meshes": 3
+      },
+      "sameTriangles": true
+    },
+    "gpuAfter": {
+      "geometries": 7,
+      "textures": 12,
+      "programs": 10
+    },
+    "errors": []
+  },
+  {
+    "name": "monitor",
+    "v3": {
+      "tri": 900,
+      "meshes": 3,
+      "families": {
+        "procedural_v2": 3
+      },
+      "gpu": {
+        "geometries": 7,
+        "textures": 8,
+        "programs": 8
+      },
+      "ids": [
+        "screen",
+        "neck",
+        "foot"
+      ],
+      "plan": "{\"contract\":\"unfold.spatial-plan.v2\",\"source\":{\"kind\":\"text\",\"sha256\":\"1111111111111111111111111111111111111111111111111111111111111111\"},\"title\":\"Desktop monitor\",\"units\":\"m\",\"presentationProfile\":\"neutral\",\"components\":[{\"id\":\"screen\",\"label\":\"Monitor display\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"screen-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[0.62,0.37,0.025]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#202226\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[0,0.34,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"neck\",\"label\":\"Stand neck\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"neck-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[0.07,0.16,0.03]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#202226\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[0,0.075,-0.03],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"foot\",\"label\":\"Stand foot\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"foot-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[0.3,0.015,0.2]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#202226\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[0,0.0075,-0.02],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}}],\"relations\":[],\"constraints\":[],\"unknowns\":[\"exact proportions are estimated\"]}",
+      "count": {
+        "tri": 900,
+        "meshes": 3
+      }
+    },
+    "buildToReadyMs": 4,
+    "foundry": {
+      "tri": 3172,
+      "meshes": 6,
+      "families": {
+        "universal_foundry": 3
+      },
+      "gpu": {
+        "geometries": 10,
+        "textures": 10,
+        "programs": 11
+      },
+      "ids": [
+        "screen",
+        "neck",
+        "foot"
+      ],
+      "count": {
+        "tri": 3172,
+        "meshes": 6
+      }
+    },
+    "regeneration": {
+      "param": "keyRows",
+      "before": {
+        "tri": 3172,
+        "meshes": 6
+      },
+      "after": {
+        "tri": 3172,
+        "meshes": 6
+      }
+    },
+    "panelVisible": true,
+    "reopened": {
+      "count": {
+        "tri": 3172,
+        "meshes": 6
+      },
+      "sameTriangles": true
+    },
+    "gpuAfter": {
+      "geometries": 10,
+      "textures": 10,
+      "programs": 11
+    },
+    "errors": []
+  },
+  {
+    "name": "miniExcavator",
+    "v3": {
+      "tri": 2196,
+      "meshes": 8,
+      "families": {
+        "procedural_v2": 8
+      },
+      "gpu": {
+        "geometries": 12,
+        "textures": 8,
+        "programs": 8
+      },
+      "ids": [
+        "track-l",
+        "track-r",
+        "house",
+        "cab",
+        "boom",
+        "stick",
+        "bucket",
+        "cyl-boom"
+      ],
+      "plan": "{\"contract\":\"unfold.spatial-plan.v2\",\"source\":{\"kind\":\"text\",\"sha256\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"},\"title\":\"Mini excavator\",\"units\":\"m\",\"presentationProfile\":\"industrial\",\"components\":[{\"id\":\"track-l\",\"label\":\"Left track\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"track-l-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[1.9,0.5,0.45]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#2a2c30\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[0,0.25,-0.75],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"track-r\",\"label\":\"Right track\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"track-r-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[1.9,0.5,0.45]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#2a2c30\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[0,0.25,0.75],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"house\",\"label\":\"Upper body house\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"house-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[1.7,0.7,1.5]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#d9a21b\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[-0.1,0.85,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"cab\",\"label\":\"Operator cab\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"cab-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[0.9,1.1,0.8]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#d9a21b\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[0.2,1.75,0.25],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"boom\",\"label\":\"Boom\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"boom-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[2.3,0.35,0.3]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#d9a21b\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[1.5,1.4,-0.35],\"rotationRad\":[0,0,0.35],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"stick\",\"label\":\"Stick arm\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"stick-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[1.4,0.25,0.25]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#d9a21b\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[2.7,1.2,-0.35],\"rotationRad\":[0,0,-0.9],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"bucket\",\"label\":\"Bucket\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"bucket-shape\",\"operator\":\"box\",\"parameters\":{\"dimensions\":[0.55,0.45,0.5]},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#4a4d52\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[3.2,0.6,-0.35],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}},{\"id\":\"cyl-boom\",\"label\":\"Boom hydraulic cylinder\",\"parentId\":null,\"geometry\":{\"type\":\"shape\",\"key\":\"cyl-boom-shape\",\"operator\":\"cylinder\",\"parameters\":{\"radiusTop\":0.06,\"radiusBottom\":0.06,\"height\":1.2,\"radialSegments\":24},\"transform\":{\"position\":[0,0,0],\"rotationRad\":[0,0,0],\"scale\":[1,1,1]},\"repeat\":null,\"material\":{\"profile\":\"neutral\",\"color\":\"#cfd2d6\",\"roughness\":0.6,\"metalness\":0,\"clearcoat\":0}},\"transform\":{\"position\":[1,1.5,-0.1],\"rotationRad\":[0,0,1.2],\"scale\":[1,1,1]},\"provenance\":{\"geometry\":\"inferred\",\"transform\":\"inferred\",\"material\":\"inferred\",\"evidence\":\"coarse stand-in plan (fixture)\"}}],\"relations\":[],\"constraints\":[],\"unknowns\":[\"exact proportions are estimated\"]}",
+      "count": {
+        "tri": 2196,
+        "meshes": 8
+      }
+    },
+    "buildToReadyMs": 2440,
+    "foundry": {
+      "tri": 18640,
+      "meshes": 27,
+      "families": {
+        "universal_foundry": 8
+      },
+      "gpu": {
+        "geometries": 31,
+        "textures": 13,
+        "programs": 13
+      },
+      "ids": [
+        "track-l",
+        "track-r",
+        "house",
+        "cab",
+        "boom",
+        "stick",
+        "bucket",
+        "cyl-boom"
+      ],
+      "count": {
+        "tri": 18640,
+        "meshes": 27
+      }
+    },
+    "regeneration": {
+      "param": "trackPads",
+      "before": {
+        "tri": 18640,
+        "meshes": 27
+      },
+      "after": {
+        "tri": 21664,
+        "meshes": 27
+      }
+    },
+    "panelVisible": true,
+    "reopened": {
+      "count": {
+        "tri": 21664,
+        "meshes": 27
+      },
+      "sameTriangles": true
+    },
+    "gpuAfter": {
+      "geometries": 31,
+      "textures": 13,
+      "programs": 13
+    },
+    "errors": []
+  }
+]

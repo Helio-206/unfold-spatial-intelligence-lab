@@ -192,3 +192,11 @@
 .uw-flow { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
 .uw-flow > * { pointer-events: auto; }
 .uw-rail-extras { display: flex; flex-direction: column; gap: var(--space-1); }
+.uw-spatial-voice { border-block: 1px solid var(--line); margin: var(--space-3) 0; padding: var(--space-2) 0; }
+.uw-spatial-voice p { font-size: 12px; line-height: 1.5; }
+.uw-spatial-voice select, .uw-spatial-voice input { max-width: 100%; color: var(--ink); background: var(--surface); }
+.uw-spatial-voice input { width: 4.5em; }
+.uw-spatial-voice > label { display: block; margin-bottom: var(--space-2); color: var(--ink-muted); font-size: 12px; }
+.uw-spatial-voice [data-spatial-question] { display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 8px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: transparent; color: var(--ink); font: inherit; }
+.uw-spatial-voice > button + button { margin-left: var(--space-2); }
+.uw-spatial-voice details { margin-top: var(--space-2); }

@@ -1,0 +1,157 @@
+[
+  {
+    "name": "excavator-rotation",
+    "category": "C+D mechanics (saved Meta plan as geometry basis, synthetic local rotation errors on boom and bucket; no ground truth for the original photograph)",
+    "engine": {
+      "translationScaleOnly": {
+        "status": "proposal",
+        "fitIou": [
+          0.829650033489489,
+          0.9098459650860696
+        ],
+        "ops": 4
+      },
+      "withRotation": {
+        "status": "proposal",
+        "fitIou": [
+          0.829650033489489,
+          0.9843778317799713
+        ],
+        "ops": 4,
+        "checks": {
+          "transformConsistencyMax": 0,
+          "worldConsistencyAfterMax": 0.0000016318621982591708,
+          "idsPreserved": true,
+          "sourcePreserved": true,
+          "hierarchyPreserved": true,
+          "jointResidualMax": 0
+        },
+        "rotatedParts": [
+          "boom",
+          "stick",
+          "bucket",
+          "bucket-linkage"
+        ],
+        "unexplainedCandidates": 0,
+        "unresolved": []
+      }
+    },
+    "translationScaleOnly": {
+      "pendingText": "Proposta do solver estrutural (resultado de optimização) · ainda não aplicada Ajuste estrutural (translação e escala): colocação actual → 4 componentes: posição, rotação e escala Autorizo aplicar esta proposta do solver ",
+      "changed": [
+        {
+          "id": "boom",
+          "transformProv": "user_provided",
+          "geometryProv": "design_approximation"
+        },
+        {
+          "id": "stick",
+          "transformProv": "user_provided",
+          "geometryProv": "design_approximation"
+        },
+        {
+          "id": "bucket",
+          "transformProv": "user_provided",
+          "geometryProv": "design_approximation"
+        },
+        {
+          "id": "bucket-linkage",
+          "transformProv": "user_provided",
+          "geometryProv": "design_approximation"
+        }
+      ],
+      "families": [
+        "procedural_v2"
+      ],
+      "triangles": 5148,
+      "undoExact": true
+    },
+    "withRotation": {
+      "pendingText": "Proposta do solver estrutural (resultado de optimização) · ainda não aplicada Ajuste estrutural com rotação local: colocação actual → 4 componentes: posição, rotação e escala Autorizo aplicar esta proposta do solver apli",
+      "changed": [
+        {
+          "id": "boom",
+          "transformProv": "user_provided",
+          "geometryProv": "design_approximation"
+        },
+        {
+          "id": "stick",
+          "transformProv": "user_provided",
+          "geometryProv": "design_approximation"
+        },
+        {
+          "id": "bucket",
+          "transformProv": "user_provided",
+          "geometryProv": "design_approximation"
+        },
+        {
+          "id": "bucket-linkage",
+          "transformProv": "user_provided",
+          "geometryProv": "design_approximation"
+        }
+      ],
+      "families": [
+        "procedural_v2"
+      ],
+      "triangles": 5148,
+      "undoExact": true
+    }
+  },
+  {
+    "name": "lantern-primitives",
+    "category": "A (independent CC0 mesh as evidence, replayed from stored silhouettes) + D (hand-built plan, two primitives degraded by us)",
+    "table": [
+      {
+        "id": "pole",
+        "current": "box",
+        "proposed": null,
+        "reason": "no alternative primitive explains the evidence better"
+      },
+      {
+        "id": "base",
+        "current": "cylinder",
+        "proposed": "box",
+        "reason": "proposed"
+      },
+      {
+        "id": "arm",
+        "current": "box",
+        "proposed": null,
+        "reason": "no alternative primitive explains the evidence better"
+      },
+      {
+        "id": "chain",
+        "current": "cylinder",
+        "proposed": null,
+        "reason": "no alternative primitive explains the evidence better"
+      },
+      {
+        "id": "lantern",
+        "current": "box",
+        "proposed": "coney",
+        "reason": "proposed"
+      }
+    ],
+    "geometryProposal": {
+      "pendingText": "Proposta do solver estrutural (resultado de optimização) · ainda não aplicada Primitivas alternativas: colocação actual → 2 componentes: geometria Autorizo aplicar esta proposta do solver aplicar cancelar",
+      "changed": [
+        {
+          "id": "base",
+          "transformProv": "design_approximation",
+          "geometryProv": "user_provided"
+        },
+        {
+          "id": "lantern",
+          "transformProv": "design_approximation",
+          "geometryProv": "user_provided"
+        }
+      ],
+      "families": [
+        "procedural_v2",
+        "continuous_surface"
+      ],
+      "triangles": 2777,
+      "undoExact": true
+    }
+  }
+]

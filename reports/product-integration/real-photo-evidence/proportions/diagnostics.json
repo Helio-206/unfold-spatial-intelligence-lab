@@ -1,0 +1,19 @@
+{
+  "skodaProportions": {
+    "pendingLabel": "Proporções derivadas da evidência",
+    "operations": 4,
+    "planUnchanged": true
+  },
+  "skodaCommitted": {
+    "appliedChangedPlan": true,
+    "undoRestored": true
+  },
+  "carMediapipe": {
+    "fitting": {
+      "status": "insufficient_evidence",
+      "reason": "Silhueta não fiável (falha fechado): primeiro plano fora do intervalo credível (71%). Sem máscara de confiança não há fitting — uma recusa correcta vale mais que um modelo enganador."
+    },
+    "maskProvenance": "automatic",
+    "segmentationSource": "model-mediapipe-deeplab-v3"
+  }
+}

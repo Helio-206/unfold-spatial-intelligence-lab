@@ -1,0 +1,1002 @@
+{
+  "generatedBy": "scripts/benchmark/v4-geometry.ts",
+  "rotation": {
+    "lungs-like": {
+      "category": "D/D artificial (hand-authored plan, synthetic rotation errors)",
+      "perturbed": [
+        "trachea local rotZ +0.5 rad",
+        "lung-left local rotZ +0.45 rad"
+      ],
+      "inputHeldOutIou": 0.875,
+      "translationScaleOnly": {
+        "status": "refused",
+        "refusals": [
+          "NO_GENERALISATION"
+        ],
+        "ms": 1106,
+        "evaluations": 81,
+        "rssDeltaMB": 14.8,
+        "unresolved": []
+      },
+      "withRotation": {
+        "status": "refused",
+        "refusals": [
+          "NO_GENERALISATION"
+        ],
+        "ms": 3197,
+        "evaluations": 455,
+        "rssDeltaMB": 16.2,
+        "unresolved": []
+      }
+    },
+    "microscope-like": {
+      "category": "D/D artificial (hand-authored plan, synthetic rotation errors)",
+      "perturbed": [
+        "arm local rotZ +0.5 rad",
+        "stage local rotZ -0.5 rad"
+      ],
+      "inputHeldOutIou": 0.919,
+      "translationScaleOnly": {
+        "status": "refused",
+        "refusals": [
+          "NO_GENERALISATION"
+        ],
+        "ms": 776,
+        "evaluations": 129,
+        "rssDeltaMB": 6.3,
+        "unresolved": []
+      },
+      "withRotation": {
+        "status": "proposal",
+        "refusals": [],
+        "ms": 4283,
+        "evaluations": 661,
+        "rssDeltaMB": 3.5,
+        "unresolved": [],
+        "heldOutIou": 0.978,
+        "fitIou": [
+          0.92,
+          0.974
+        ],
+        "changed": [
+          "stage"
+        ],
+        "rotationErrorRadPerturbedParts": {
+          "before": [
+            0.5,
+            0.5
+          ],
+          "after": [
+            0.5,
+            0.012
+          ]
+        },
+        "jointResidualMax": 7.410549701297013e-17,
+        "worldConsistencyAfterMax": 3.3331064768632457e-7,
+        "idsPreserved": true,
+        "hierarchyPreserved": true,
+        "enforcedJoints": 8,
+        "hypothesesLeftOpen": 0
+      }
+    },
+    "excavator": {
+      "category": "C+D mechanics (saved Meta plan as the geometry basis; synthetic rotation errors; NO ground truth for the original photograph)",
+      "perturbed": [
+        "boom local rotZ +0.5 rad",
+        "bucket local rotZ -0.5 rad"
+      ],
+      "inputHeldOutIou": 0.8,
+      "translationScaleOnly": {
+        "status": "proposal",
+        "refusals": [],
+        "ms": 3555,
+        "evaluations": 305,
+        "rssDeltaMB": 0.7,
+        "unresolved": [],
+        "heldOutIou": 0.875,
+        "fitIou": [
+          0.83,
+          0.91
+        ],
+        "changed": [
+          "boom",
+          "stick",
+          "bucket",
+          "bucket-linkage"
+        ],
+        "rotationErrorRadPerturbedParts": {
+          "before": [
+            0.5,
+            0.5
+          ],
+          "after": [
+            0.5,
+            0.5
+          ]
+        },
+        "jointResidualMax": 0,
+        "worldConsistencyAfterMax": 0.000001687515145842866,
+        "idsPreserved": true,
+        "hierarchyPreserved": true,
+        "enforcedJoints": 2,
+        "hypothesesLeftOpen": 5
+      },
+      "withRotation": {
+        "status": "proposal",
+        "refusals": [],
+        "ms": 8283,
+        "evaluations": 847,
+        "rssDeltaMB": -10.2,
+        "unresolved": [],
+        "heldOutIou": 0.984,
+        "fitIou": [
+          0.83,
+          0.984
+        ],
+        "changed": [
+          "boom",
+          "stick",
+          "bucket",
+          "bucket-linkage"
+        ],
+        "rotationErrorRadPerturbedParts": {
+          "before": [
+            0.5,
+            0.5
+          ],
+          "after": [
+            0.012,
+            0.574
+          ]
+        },
+        "jointResidualMax": 0,
+        "worldConsistencyAfterMax": 0.0000016318621971489478,
+        "idsPreserved": true,
+        "hierarchyPreserved": true,
+        "enforcedJoints": 2,
+        "hypothesesLeftOpen": 5
+      }
+    },
+    "harp": {
+      "category": "C+D mechanics (saved Meta plan as the geometry basis; synthetic rotation errors; NO ground truth for the original photograph)",
+      "perturbed": [
+        "harp-pillar local rotZ +0.5 rad",
+        "harp-base local rotZ -0.4 rad"
+      ],
+      "inputHeldOutIou": 0.846,
+      "translationScaleOnly": {
+        "status": "proposal",
+        "refusals": [],
+        "ms": 1223,
+        "evaluations": 193,
+        "rssDeltaMB": -1,
+        "unresolved": [
+          "harp-neck"
+        ],
+        "heldOutIou": 0.937,
+        "fitIou": [
+          0.859,
+          0.941
+        ],
+        "changed": [
+          "harp-pillar"
+        ],
+        "rotationErrorRadPerturbedParts": {
+          "before": [
+            0.5,
+            0.4
+          ],
+          "after": [
+            0.5,
+            0.4
+          ]
+        },
+        "jointResidualMax": 0,
+        "worldConsistencyAfterMax": 4.849863350919748e-7,
+        "idsPreserved": true,
+        "hierarchyPreserved": true,
+        "enforcedJoints": 0,
+        "hypothesesLeftOpen": 1
+      },
+      "withRotation": {
+        "status": "proposal",
+        "refusals": [],
+        "ms": 2518,
+        "evaluations": 501,
+        "rssDeltaMB": 0,
+        "unresolved": [
+          "harp-neck"
+        ],
+        "heldOutIou": 0.994,
+        "fitIou": [
+          0.859,
+          0.996
+        ],
+        "changed": [
+          "harp-pillar",
+          "harp-base"
+        ],
+        "rotationErrorRadPerturbedParts": {
+          "before": [
+            0.5,
+            0.4
+          ],
+          "after": [
+            0.079,
+            0.002
+          ]
+        },
+        "jointResidualMax": 0,
+        "worldConsistencyAfterMax": 3.3333287020680634e-7,
+        "idsPreserved": true,
+        "hierarchyPreserved": true,
+        "enforcedJoints": 0,
+        "hypothesesLeftOpen": 1
+      }
+    }
+  },
+  "rotationCC0": {
+    "category": "A (independent CC0 mesh as evidence) + D (hand-built plan, crossbar tilted +0.4 rad by us; relations confirmed in the script, simulating a person)",
+    "referenceCrossbarRotZ": 0,
+    "inputCrossbarRotZ": 0.4,
+    "inputHeldOutIou": 0.559,
+    "originalPlanHeldOutIou": 0.639,
+    "translationScaleOnly": {
+      "status": "proposal",
+      "refusals": [],
+      "evaluations": 89,
+      "ms": 575,
+      "heldOutIou": 0.612,
+      "fitIou": [
+        0.554,
+        0.63
+      ],
+      "crossbarRotZ": 0.4,
+      "jointResidualMax": 3.671146792764238e-17,
+      "changed": [
+        "pole",
+        "base",
+        "arm",
+        "bracket",
+        "chain",
+        "lantern"
+      ],
+      "hierarchyPreserved": true,
+      "idsPreserved": true
+    },
+    "withRotation": {
+      "status": "proposal",
+      "refusals": [],
+      "evaluations": 357,
+      "ms": 1792,
+      "heldOutIou": 0.63,
+      "fitIou": [
+        0.554,
+        0.651
+      ],
+      "crossbarRotZ": 0.291963,
+      "jointResidualMax": 0.002633279764650802,
+      "changed": [
+        "pole",
+        "base",
+        "arm",
+        "bracket",
+        "chain",
+        "lantern"
+      ],
+      "hierarchyPreserved": true,
+      "idsPreserved": true
+    }
+  },
+  "shapes": {
+    "Lantern": {
+      "category": "A (independent CC0 mesh as evidence) + D (hand-built plan, primitives degraded by us)",
+      "degradedComponents": [
+        "pole",
+        "lantern"
+      ],
+      "originalPrimitiveHeldOutIou": 0.639,
+      "degradedHeldOutIou": 0.745,
+      "afterProposalsHeldOutIou": 0.81,
+      "proposals": [
+        "base: cylinder -> box",
+        "lantern: box -> coney"
+      ],
+      "triangles": {
+        "degraded": 1756,
+        "after": 1708
+      },
+      "ms": 214,
+      "table": [
+        {
+          "id": "pole",
+          "current": "box",
+          "fit": 0.757,
+          "heldOut": 0.753,
+          "best": "box 0.757 | ellipsoid 0.662 | cylindery 0.719 | cylinderx 0.409 | cylinderz 0.503 | coney 0.566",
+          "proposed": null,
+          "reason": "no alternative primitive explains the evidence better"
+        },
+        {
+          "id": "base",
+          "current": "cylinder",
+          "fit": 0.757,
+          "heldOut": 0.753,
+          "best": "box 0.787 | ellipsoid 0.734 | cylindery 0.794 | cylinderx 0.772 | cylinderz 0.754 | coney 0.737",
+          "proposed": "box",
+          "reason": "proposed"
+        },
+        {
+          "id": "arm",
+          "current": "box",
+          "fit": 0.757,
+          "heldOut": 0.753,
+          "best": "box 0.757 | ellipsoid 0.728 | cylindery 0.628 | cylinderx 0.75 | cylinderz 0.661 | coney 0.639",
+          "proposed": null,
+          "reason": "no alternative primitive explains the evidence better"
+        },
+        {
+          "id": "chain",
+          "current": "cylinder",
+          "fit": 0.757,
+          "heldOut": 0.753,
+          "best": "box 0.757 | ellipsoid 0.757 | cylindery 0.757 | cylinderx 0.757 | cylinderz 0.757 | coney 0.756",
+          "proposed": null,
+          "reason": "no alternative primitive explains the evidence better"
+        },
+        {
+          "id": "lantern",
+          "current": "box",
+          "fit": 0.757,
+          "heldOut": 0.753,
+          "best": "box 0.757 | ellipsoid 0.774 | cylindery 0.769 | cylinderx 0.758 | cylinderz 0.747 | coney 0.779",
+          "proposed": "coney",
+          "reason": "proposed"
+        }
+      ]
+    },
+    "AntiqueCamera": {
+      "category": "A (independent CC0 mesh as evidence) + D (hand-built plan, primitives degraded by us)",
+      "degradedComponents": [
+        "head"
+      ],
+      "originalPrimitiveHeldOutIou": 0.584,
+      "degradedHeldOutIou": 0.583,
+      "afterProposalsHeldOutIou": 0.583,
+      "proposals": [],
+      "triangles": {
+        "degraded": 1176,
+        "after": 1176
+      },
+      "ms": 80,
+      "table": [
+        {
+          "id": "camera",
+          "current": "box",
+          "fit": 0.587,
+          "heldOut": 0.64,
+          "best": "box 0.587 | ellipsoid 0.602 | cylindery 0.584 | cylinderx 0.597 | cylinderz 0.601 | coney 0.59",
+          "proposed": null,
+          "reason": "better on the given views but worse on the views left out: not proposed"
+        },
+        {
+          "id": "head",
+          "current": "box",
+          "fit": 0.587,
+          "heldOut": 0.64,
+          "best": "box 0.587 | ellipsoid 0.59 | cylindery 0.589 | cylinderx 0.587 | cylinderz 0.589 | coney 0.59",
+          "proposed": null,
+          "reason": "no alternative primitive explains the evidence better"
+        }
+      ]
+    }
+  },
+  "missing": {
+    "lungs-like": {
+      "category": "D/D artificial",
+      "leavesTested": 7,
+      "recallTop1": "4/7",
+      "recallAny": "4/7",
+      "falseCandidatesOnCompletePlan": 0,
+      "rows": [
+        {
+          "removed": "trachea",
+          "sizePctOfSpan": 38.5,
+          "candidates": 1,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 4,
+            "areaPct": 6.54,
+            "confidence": "medium",
+            "nearest": [
+              "trachea-ring",
+              "carina"
+            ]
+          }
+        },
+        {
+          "removed": "trachea-ring",
+          "sizePctOfSpan": 16.2,
+          "candidates": 0,
+          "hitRank": null,
+          "top": null
+        },
+        {
+          "removed": "carina",
+          "sizePctOfSpan": 32.5,
+          "candidates": 1,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 4,
+            "areaPct": 1.38,
+            "confidence": "low",
+            "nearest": [
+              "trachea-ring",
+              "trachea"
+            ]
+          }
+        },
+        {
+          "removed": "lung-left",
+          "sizePctOfSpan": 79.1,
+          "candidates": 1,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 5,
+            "areaPct": 34.38,
+            "confidence": "medium",
+            "nearest": [
+              "branches-left",
+              "carina"
+            ]
+          }
+        },
+        {
+          "removed": "lung-right",
+          "sizePctOfSpan": 86.1,
+          "candidates": 1,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 6,
+            "areaPct": 45.59,
+            "confidence": "medium",
+            "nearest": [
+              "branches-right",
+              "carina"
+            ]
+          }
+        },
+        {
+          "removed": "branches-left",
+          "sizePctOfSpan": 57.2,
+          "candidates": 0,
+          "hitRank": null,
+          "top": null
+        },
+        {
+          "removed": "branches-right",
+          "sizePctOfSpan": 57.1,
+          "candidates": 0,
+          "hitRank": null,
+          "top": null
+        }
+      ]
+    },
+    "microscope-like": {
+      "category": "D/D artificial",
+      "leavesTested": 10,
+      "recallTop1": "7/10",
+      "recallAny": "7/10",
+      "falseCandidatesOnCompletePlan": 0,
+      "rows": [
+        {
+          "removed": "base",
+          "sizePctOfSpan": 60,
+          "candidates": 1,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 6,
+            "areaPct": 39.47,
+            "confidence": "medium",
+            "nearest": [
+              "column",
+              "illuminator"
+            ]
+          }
+        },
+        {
+          "removed": "column",
+          "sizePctOfSpan": 55,
+          "candidates": 2,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 4,
+            "areaPct": 7.5,
+            "confidence": "medium",
+            "nearest": [
+              "focus",
+              "stage"
+            ]
+          }
+        },
+        {
+          "removed": "arm",
+          "sizePctOfSpan": 32,
+          "candidates": 1,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 5,
+            "areaPct": 4.76,
+            "confidence": "medium",
+            "nearest": [
+              "revolver",
+              "column"
+            ]
+          }
+        },
+        {
+          "removed": "stage",
+          "sizePctOfSpan": 36.1,
+          "candidates": 1,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 3,
+            "areaPct": 8.9,
+            "confidence": "low",
+            "nearest": [
+              "illuminator",
+              "objectives"
+            ]
+          }
+        },
+        {
+          "removed": "ocular-tube",
+          "sizePctOfSpan": 32.1,
+          "candidates": 1,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 5,
+            "areaPct": 8.73,
+            "confidence": "medium",
+            "nearest": [
+              "eyepiece",
+              "arm"
+            ]
+          }
+        },
+        {
+          "removed": "eyepiece",
+          "sizePctOfSpan": 14.6,
+          "candidates": 1,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 5,
+            "areaPct": 2.73,
+            "confidence": "medium",
+            "nearest": [
+              "ocular-tube",
+              "arm"
+            ]
+          }
+        },
+        {
+          "removed": "revolver",
+          "sizePctOfSpan": 25.5,
+          "candidates": 1,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 5,
+            "areaPct": 2.68,
+            "confidence": "medium",
+            "nearest": [
+              "objectives",
+              "arm"
+            ]
+          }
+        },
+        {
+          "removed": "objectives",
+          "sizePctOfSpan": 10.7,
+          "candidates": 0,
+          "hitRank": null,
+          "top": null
+        },
+        {
+          "removed": "focus",
+          "sizePctOfSpan": 21.5,
+          "candidates": 0,
+          "hitRank": null,
+          "top": null
+        },
+        {
+          "removed": "illuminator",
+          "sizePctOfSpan": 20.7,
+          "candidates": 0,
+          "hitRank": null,
+          "top": null
+        }
+      ]
+    },
+    "excavator": {
+      "category": "C+D mechanics (saved Meta plan as the basis)",
+      "leavesTested": 7,
+      "recallTop1": "7/7",
+      "recallAny": "7/7",
+      "falseCandidatesOnCompletePlan": 0,
+      "rows": [
+        {
+          "removed": "track-left",
+          "sizePctOfSpan": 51.9,
+          "candidates": 4,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 4,
+            "areaPct": 14.93,
+            "confidence": "medium",
+            "nearest": [
+              "undercarriage",
+              "upper-frame"
+            ]
+          }
+        },
+        {
+          "removed": "track-right",
+          "sizePctOfSpan": 51.9,
+          "candidates": 1,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 4,
+            "areaPct": 12.7,
+            "confidence": "medium",
+            "nearest": [
+              "undercarriage",
+              "stick"
+            ]
+          }
+        },
+        {
+          "removed": "cab",
+          "sizePctOfSpan": 42.8,
+          "candidates": 1,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 5,
+            "areaPct": 13.12,
+            "confidence": "medium",
+            "nearest": [
+              "engine-hood",
+              "hydraulic-boom"
+            ]
+          }
+        },
+        {
+          "removed": "engine-hood",
+          "sizePctOfSpan": 31,
+          "candidates": 1,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 5,
+            "areaPct": 8.13,
+            "confidence": "medium",
+            "nearest": [
+              "cab",
+              "bucket-linkage"
+            ]
+          }
+        },
+        {
+          "removed": "bucket",
+          "sizePctOfSpan": 30.5,
+          "candidates": 1,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 6,
+            "areaPct": 2.48,
+            "confidence": "medium",
+            "nearest": [
+              "bucket-linkage",
+              "boom"
+            ]
+          }
+        },
+        {
+          "removed": "hydraulic-boom",
+          "sizePctOfSpan": 31.6,
+          "candidates": 1,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 5,
+            "areaPct": 2.37,
+            "confidence": "medium",
+            "nearest": [
+              "boom",
+              "bucket"
+            ]
+          }
+        },
+        {
+          "removed": "bucket-linkage",
+          "sizePctOfSpan": 38,
+          "candidates": 1,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 6,
+            "areaPct": 6.66,
+            "confidence": "medium",
+            "nearest": [
+              "bucket",
+              "hydraulic-boom"
+            ]
+          }
+        }
+      ]
+    },
+    "harp": {
+      "category": "C+D mechanics (saved Meta plan as the basis)",
+      "leavesTested": 6,
+      "recallTop1": "6/6",
+      "recallAny": "6/6",
+      "falseCandidatesOnCompletePlan": 0,
+      "rows": [
+        {
+          "removed": "harp-neck",
+          "sizePctOfSpan": 12.2,
+          "candidates": 1,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 4,
+            "areaPct": 1.83,
+            "confidence": "medium",
+            "nearest": [
+              "harp",
+              "harp-strings"
+            ]
+          }
+        },
+        {
+          "removed": "harp-pillar",
+          "sizePctOfSpan": 16.5,
+          "candidates": 1,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 5,
+            "areaPct": 11.13,
+            "confidence": "medium",
+            "nearest": [
+              "harp-neck",
+              "harp-strings"
+            ]
+          }
+        },
+        {
+          "removed": "harp-soundbox",
+          "sizePctOfSpan": 19.7,
+          "candidates": 1,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 5,
+            "areaPct": 7.56,
+            "confidence": "medium",
+            "nearest": [
+              "harp-neck",
+              "harp-base"
+            ]
+          }
+        },
+        {
+          "removed": "harp-base",
+          "sizePctOfSpan": 20.7,
+          "candidates": 1,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 6,
+            "areaPct": 19.93,
+            "confidence": "medium",
+            "nearest": [
+              "harp-soundbox",
+              "harp-neck"
+            ]
+          }
+        },
+        {
+          "removed": "harp-strings",
+          "sizePctOfSpan": 31.9,
+          "candidates": 2,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 4,
+            "areaPct": 8.73,
+            "confidence": "medium",
+            "nearest": [
+              "harp",
+              "harp-neck"
+            ]
+          }
+        },
+        {
+          "removed": "harp-pegs",
+          "sizePctOfSpan": 27.9,
+          "candidates": 1,
+          "hitRank": 1,
+          "top": {
+            "supportViews": 6,
+            "areaPct": 24.74,
+            "confidence": "medium",
+            "nearest": [
+              "harp-strings",
+              "harp"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "transformsCannotFix": {
+    "excavator": {
+      "category": "C: saved Meta plan, analysed from the plan alone (no evidence, no ground truth)",
+      "components": 11,
+      "declaredContradicted": 7,
+      "closableByTransform": 4,
+      "notClosableByTransform": 3,
+      "partsNeedingMoreThanTransforms": [
+        "boom",
+        "stick",
+        "bucket"
+      ],
+      "partsCorrectableByTransform": [
+        "track-left",
+        "track-right",
+        "upper-frame",
+        "cab"
+      ],
+      "diagnoses": [
+        {
+          "relation": "rel-rel-left-to-frame",
+          "a": "undercarriage",
+          "b": "track-left",
+          "declaredKind": "connected_to",
+          "gapPctSpan": 3.37,
+          "moves": "track-left",
+          "bestGapPctSpan": 0.04,
+          "verdict": "closable_by_transform",
+          "breaksOtherRelations": false,
+          "hint": "track-left (with its subtree) can meet undercarriage within the allowed scale, rotation and shift"
+        },
+        {
+          "relation": "rel-rel-right-to-frame",
+          "a": "undercarriage",
+          "b": "track-right",
+          "declaredKind": "connected_to",
+          "gapPctSpan": 3.37,
+          "moves": "track-right",
+          "bestGapPctSpan": 0.05,
+          "verdict": "closable_by_transform",
+          "breaksOtherRelations": false,
+          "hint": "track-right (with its subtree) can meet undercarriage within the allowed scale, rotation and shift"
+        },
+        {
+          "relation": "rel-rel-upper-on-lower",
+          "a": "undercarriage",
+          "b": "upper-frame",
+          "declaredKind": "attached_to",
+          "gapPctSpan": 4.49,
+          "moves": "upper-frame",
+          "bestGapPctSpan": 0.03,
+          "verdict": "closable_by_transform",
+          "breaksOtherRelations": false,
+          "hint": "upper-frame (with its subtree) can meet undercarriage within the allowed scale, rotation and shift"
+        },
+        {
+          "relation": "rel-rel-cab-on-upper",
+          "a": "upper-frame",
+          "b": "cab",
+          "declaredKind": "attached_to",
+          "gapPctSpan": 17.44,
+          "moves": "cab",
+          "bestGapPctSpan": 0.07,
+          "verdict": "closable_by_transform",
+          "breaksOtherRelations": false,
+          "hint": "cab (with its subtree) can meet upper-frame within the allowed scale, rotation and shift"
+        },
+        {
+          "relation": "rel-rel-boom-to-upper",
+          "a": "upper-frame",
+          "b": "boom",
+          "declaredKind": "connected_to",
+          "gapPctSpan": 31.39,
+          "moves": "boom",
+          "bestGapPctSpan": 6.21,
+          "verdict": "not_closable_by_transform",
+          "breaksOtherRelations": false,
+          "hint": "even the best allowed placement of boom leaves 6.2 % of the span between it and upper-frame: shape or size mismatch, or a connecting part is missing"
+        },
+        {
+          "relation": "rel-rel-stick-to-boom",
+          "a": "boom",
+          "b": "stick",
+          "declaredKind": "connected_to",
+          "gapPctSpan": 51.51,
+          "moves": "stick",
+          "bestGapPctSpan": 25.9,
+          "verdict": "not_closable_by_transform",
+          "breaksOtherRelations": false,
+          "hint": "even the best allowed placement of stick leaves 25.9 % of the span between it and boom: shape or size mismatch, or a connecting part is missing"
+        },
+        {
+          "relation": "rel-rel-bucket-to-stick",
+          "a": "stick",
+          "b": "bucket",
+          "declaredKind": "connected_to",
+          "gapPctSpan": 52.29,
+          "moves": "bucket",
+          "bestGapPctSpan": 35.34,
+          "verdict": "not_closable_by_transform",
+          "breaksOtherRelations": false,
+          "hint": "even the best allowed placement of bucket leaves 35.3 % of the span between it and stick: shape or size mismatch, or a connecting part is missing"
+        }
+      ]
+    },
+    "harp": {
+      "category": "C: saved Meta plan, analysed from the plan alone (no evidence, no ground truth)",
+      "components": 7,
+      "declaredContradicted": 4,
+      "closableByTransform": 4,
+      "notClosableByTransform": 0,
+      "partsNeedingMoreThanTransforms": [],
+      "partsCorrectableByTransform": [
+        "harp-neck",
+        "harp-pillar"
+      ],
+      "diagnoses": [
+        {
+          "relation": "rel-neck-to-pillar",
+          "a": "harp-neck",
+          "b": "harp-pillar",
+          "declaredKind": "connected_to",
+          "gapPctSpan": 10.47,
+          "moves": "harp-neck",
+          "bestGapPctSpan": 0.03,
+          "verdict": "closable_by_transform",
+          "breaksOtherRelations": false,
+          "hint": "harp-neck (with its subtree) can meet harp-pillar within the allowed scale, rotation and shift"
+        },
+        {
+          "relation": "rel-neck-to-soundbox",
+          "a": "harp-neck",
+          "b": "harp-soundbox",
+          "declaredKind": "connected_to",
+          "gapPctSpan": 10.5,
+          "moves": "harp-neck",
+          "bestGapPctSpan": 0.02,
+          "verdict": "closable_by_transform",
+          "breaksOtherRelations": false,
+          "hint": "harp-neck (with its subtree) can meet harp-soundbox within the allowed scale, rotation and shift"
+        },
+        {
+          "relation": "rel-strings-between",
+          "a": "harp-neck",
+          "b": "harp-strings",
+          "declaredKind": "attached_to",
+          "gapPctSpan": 9.34,
+          "moves": "harp-neck",
+          "bestGapPctSpan": 0.03,
+          "verdict": "closable_by_transform",
+          "breaksOtherRelations": false,
+          "hint": "harp-neck (with its subtree) can meet harp-strings within the allowed scale, rotation and shift"
+        },
+        {
+          "relation": "rel-pillar-on-base",
+          "a": "harp-pillar",
+          "b": "harp-base",
+          "declaredKind": "attached_to",
+          "gapPctSpan": 18.49,
+          "moves": "harp-pillar",
+          "bestGapPctSpan": 0.03,
+          "verdict": "closable_by_transform",
+          "breaksOtherRelations": false,
+          "hint": "harp-pillar (with its subtree) can meet harp-base within the allowed scale, rotation and shift"
+        }
+      ]
+    }
+  }
+}
