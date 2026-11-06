@@ -12,6 +12,12 @@ export type ImageEvidence = {
   aspect: number; symmetry: number; colours: Array<{ hex: string; share: number }>; mask: Uint8Array;
   /** Share of foreground pixels belonging to the largest connected component (1 = one coherent object). */
   largestComponentShare?: number;
+  /**
+   * Píxeis decodificados que produziram esta evidência (quando existem). Necessários para
+   * landmarks visuais (pneus escuros) e para a estimativa de câmara no Worker. Nunca
+   * entram em chaves de cache nem em proveniência serializada — são dados de trabalho.
+   */
+  rgba?: RGBA;
 };
 
 /**

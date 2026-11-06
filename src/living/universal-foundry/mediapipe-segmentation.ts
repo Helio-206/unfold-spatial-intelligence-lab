@@ -59,6 +59,7 @@ export function evidenceWithModelMask(rgba: RGBA, labels: Uint8Array, labelWidth
     aspect: (x1 - x0 + 1) / Math.max(1, y1 - y0 + 1),
     foregroundRatio: total / (w * h),
     largestComponentShare: 1,
+    rgba,
   };
 }
 

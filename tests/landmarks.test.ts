@@ -34,7 +34,8 @@ describe('landmarks de rodas e câmara', () => {
     const img = sideCarRgba();
     const ev = extractEvidence(img);
     const lm = detectWheelLandmarks(ev, img);
-    const cam = estimateCamera(ev, lm, [{ widthPx: 33, heightPx: 34 }, { widthPx: 33, heightPx: 34 }]);
+    expect(lm.wheelRegions?.length).toBe(2);
+    const cam = estimateCamera(ev, lm);
     expect(cam.azimuthDeg).toBeLessThan(20);
     expect(cam.kind).toBe('side');
     const silhouetteOnly = estimateCamera(ev, detectWheelLandmarks(ev));

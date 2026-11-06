@@ -1,0 +1,134 @@
+{
+  "car": {
+    "azimuthDeg": 0,
+    "uncertaintyDeg": 10,
+    "kind": "side",
+    "ambiguous": false,
+    "method": "excentricidade das regiões de pneu (0/0° por roda)",
+    "wheels": [
+      {
+        "x": 0.18,
+        "r": 0.243,
+        "partial": false
+      },
+      {
+        "x": 0.514,
+        "r": 0.243,
+        "partial": false
+      }
+    ],
+    "regions": [
+      {
+        "widthPx": 33,
+        "heightPx": 35
+      },
+      {
+        "widthPx": 33,
+        "heightPx": 35
+      }
+    ],
+    "missing": [],
+    "foregroundRatio": 0.707
+  },
+  "bus": {
+    "azimuthDeg": 0,
+    "uncertaintyDeg": 10,
+    "kind": "side",
+    "ambiguous": false,
+    "method": "excentricidade das regiões de pneu (0/0° por roda)",
+    "wheels": [
+      {
+        "x": 0.26,
+        "r": 0.241,
+        "partial": false
+      },
+      {
+        "x": 0.398,
+        "r": 0.259,
+        "partial": false
+      }
+    ],
+    "regions": [
+      {
+        "widthPx": 32,
+        "heightPx": 26
+      },
+      {
+        "widthPx": 33,
+        "heightPx": 28
+      }
+    ],
+    "missing": [],
+    "foregroundRatio": 0.487
+  },
+  "porsche-911": {
+    "azimuthDeg": 0,
+    "uncertaintyDeg": 28,
+    "kind": "side",
+    "ambiguous": true,
+    "method": "sem regiões de pneu: classe por aspecto/simetria da silhueta; magnitude do azimute não identificável a partir do polígono",
+    "wheels": [],
+    "regions": null,
+    "missing": [
+      "sem dois contactos de roda com a linha de chão na silhueta"
+    ],
+    "foregroundRatio": 0.294
+  },
+  "skoda-kodiaq": {
+    "azimuthDeg": 0,
+    "uncertaintyDeg": 10,
+    "kind": "side",
+    "ambiguous": false,
+    "method": "excentricidade das regiões de pneu (0/0° por roda)",
+    "wheels": [
+      {
+        "x": 0.202,
+        "r": 0.25,
+        "partial": false
+      },
+      {
+        "x": 0.839,
+        "r": 0.259,
+        "partial": false
+      }
+    ],
+    "regions": [
+      {
+        "widthPx": 31,
+        "heightPx": 29
+      },
+      {
+        "widthPx": 31,
+        "heightPx": 30
+      }
+    ],
+    "missing": [],
+    "foregroundRatio": 0.362
+  },
+  "accept-mini": {
+    "azimuthDeg": 0,
+    "uncertaintyDeg": 28,
+    "kind": "side",
+    "ambiguous": true,
+    "method": "sem regiões de pneu: classe por aspecto/simetria da silhueta; magnitude do azimute não identificável a partir do polígono",
+    "wheels": [],
+    "regions": null,
+    "missing": [
+      "sem dois contactos de roda com a linha de chão na silhueta"
+    ],
+    "foregroundRatio": 0.49
+  },
+  "accept-pickup": {
+    "azimuthDeg": 0,
+    "uncertaintyDeg": 28,
+    "kind": "side",
+    "ambiguous": true,
+    "method": "sem regiões de pneu: classe por aspecto/simetria da silhueta; magnitude do azimute não identificável a partir do polígono",
+    "wheels": [],
+    "regions": null,
+    "missing": [
+      "sem dois contactos de roda com a linha de chão na silhueta"
+    ],
+    "foregroundRatio": 0.207
+  }
+}

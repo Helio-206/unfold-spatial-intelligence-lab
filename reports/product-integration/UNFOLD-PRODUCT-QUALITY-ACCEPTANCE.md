@@ -73,3 +73,18 @@ Duas correcções dentro da própria derivação foram encontradas medindo, não
 4. **Reconciliação de números:** os IoU desta ronda diferem dos anteriores porque o objectivo mudou (projecção por azimute + landmarks v2): são séries distintas, identificadas pela versão (`FITTING_VERSION=3`, `fitting-v3-results.json` vs `proportions-effect.json` vs `acceptance-fresh.json`); nenhuma foi misturada.
 
 **Veredicto:** a ligação fotografia→câmara/landmarks→proposta→revisão→transacção→undo está provada de ponta a ponta no `/living` real. A qualidade geométrica absoluta (0.69–0.81 conforme o caso e a etapa) continua abaixo das metas de 0.82/0.88 na maioria dos casos — **NO-GO mantém-se para aceitação fotográfica completa**, com a falha agora localizada e reproduzível (mapeamento em três-quartos, cobertura de landmarks sem píxeis, e granularidade do loft), não em infraestrutura por ligar.
+
+## Correcção da integração de câmara (auditoria sobre `733cd31`)
+
+A auditoria tinha razão: o fitting chamava `estimateCamera` sem RGBA nem dimensões das regiões — todas as fotos caíam no heurístico 32°±28°. Corrigido de ponta a ponta:
+
+- `ImageEvidence.rgba`: os píxeis decodificados viajam com a evidência (clássica e MediaPipe) e atravessam a fronteira do Worker (serializados com a máscara, reconstruídos dentro do Worker). Chaves de cache e proveniência serializada não os incluem.
+- Landmarks identificam centros pelos contactos da silhueta e medem a elipse escura do pneu numa janela de píxeis à volta de cada centro (um ramo por erosão que produzia centros errados foi **removido**, não escondido).
+- No fluxo real do `/living` (Worker): carro **18,2°** (21/16° por roda), Skoda **21,5°** (26/17°) — estimativas individuais dos píxeis com método registado no resultado (`cameraMethod`), em vez de 32° para todos. Na sonda com máscaras DeepLab a 160 px os valores são mais grosseiros (0° em três casos por janelas largas) — limite de resolução declarado em `camera-azimuth.json`.
+- Soluções ambíguas continuam recusadas (verificação em perfil lateral), e a proveniência/revisão/undo não mudaram.
+
+## Âmbito demonstrável (versão com âmbito, sem anúncio universal)
+
+**Suportado e demonstrado:** veículos em vista lateral ou três-quartos com máscara confirmada pelo utilizador (ou segmentação por modelo que passe o gate de fiabilidade), fitting por câmara estimada com incerteza declarada, proporções tipadas com revisão humana e transacção/undo, explicação e interacção transitória sobre componentes reais do Space, escavadora sintética com cinemática verificada, e objectos não-veículo por exploração de componentes. **Não suportado:** vistas frontais/traseiras (recusadas), segmentação automática fiável em fundos complexos (recusada), reconstrução a partir de uma foto sem correcção quando a máscara falha, física validada, e interpretação Muse Spark ao vivo (não verificada, sem credenciais autorizadas nos testes).
+
+**Decisão final: GO para a versão experimental com o âmbito acima, atrás das flags existentes. NO-GO para reconstrução fotográfica universal ou para activação por omissão.** As metas absolutas de IoU (0.82/0.88) continuam por atingir na maioria dos casos (0.69–0.81 por etapa); o produto demonstrável é o âmbito declarado, não mais do que isso.

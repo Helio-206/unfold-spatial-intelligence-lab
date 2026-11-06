@@ -54,7 +54,7 @@ export function assessSilhouetteReliability(evidence: ImageEvidence): Silhouette
 }
 
 export type FittingResult =
-  | { status: 'fitted'; overrides: Record<string, number>; objective: number; baselineObjective: number; candidates: number; summary: string; silhouetteIou?: number; baselineSilhouetteIou?: number; gridSaturated?: string[]; relativeImprovement?: number; cameraAzimuthDeg?: number; cameraAmbiguous?: boolean }
+  | { status: 'fitted'; overrides: Record<string, number>; objective: number; baselineObjective: number; candidates: number; summary: string; silhouetteIou?: number; baselineSilhouetteIou?: number; gridSaturated?: string[]; relativeImprovement?: number; cameraAzimuthDeg?: number; cameraAmbiguous?: boolean; cameraMethod?: string }
   | { status: 'pending'; reason: string }
   | { status: 'insufficient_evidence'; reason: string }
   | { status: 'unsupported_family'; reason: string }
@@ -264,7 +264,7 @@ function objectiveOf(plan: SpatialPlanV2, overrides: Record<string, number>, tar
 
 const MIN_RELATIVE_IMPROVEMENT = 0.05;
 
-function conclude(best: { overrides: Record<string, number>; objective: number; iou: number; regional: [number, number, number] }, baseline: ObjectiveBreakdown, evaluated: number, camera: CameraHypothesis, azimuthDeg = 0, cameraAmbiguous = false): FittingResult {
+function conclude(best: { overrides: Record<string, number>; objective: number; iou: number; regional: [number, number, number] }, baseline: ObjectiveBreakdown, evaluated: number, camera: CameraHypothesis, azimuthDeg = 0, cameraAmbiguous = false, cameraMethod = ''): FittingResult {
   const relativeImprovement = baseline.objective > 1e-9 ? (baseline.objective - best.objective) / baseline.objective : 0;
   const gridSaturated = FITTING_PARAMS.filter((p) => {
     const v = best.overrides[p.key];
@@ -278,15 +278,17 @@ function conclude(best: { overrides: Record<string, number>; objective: number; 
   }
   return {
     status: 'fitted', overrides: best.overrides, objective: best.objective, baselineObjective: baseline.objective, candidates: evaluated,
-    silhouetteIou: best.iou, baselineSilhouetteIou: baseline.iou, gridSaturated, relativeImprovement, cameraAzimuthDeg: azimuthDeg, cameraAmbiguous,
-    summary: `Fitting v${FITTING_VERSION} por descida de coordenadas (${evaluated} avaliações, câmara: ${camera} a ${azimuthDeg.toFixed(0)}°${cameraAmbiguous ? ', ambígua — verificada também em perfil lateral' : ''}): IoU de silhueta ${baseline.iou.toFixed(3)} → ${best.iou.toFixed(3)} (regiões frente/meio/traseira ${best.regional.map((v) => v.toFixed(2)).join('/')}); parâmetros ${Object.entries(best.overrides).map(([k, v]) => `${k}=${+v.toFixed(3)}`).join(', ')}${gridSaturated.length ? `; saturação em ${gridSaturated.join(', ')} (fronteira declarada, não estendida)` : ''}. Parâmetros inferidos da imagem, não dimensões verificadas.`,
+    silhouetteIou: best.iou, baselineSilhouetteIou: baseline.iou, gridSaturated, relativeImprovement, cameraAzimuthDeg: azimuthDeg, cameraAmbiguous, cameraMethod,
+    summary: `Fitting v${FITTING_VERSION} por descida de coordenadas (${evaluated} avaliações, câmara: ${camera} a ${azimuthDeg.toFixed(0)}°${cameraAmbiguous ? ', ambígua — verificada também em perfil lateral' : ''}; método: ${cameraMethod}): IoU de silhueta ${baseline.iou.toFixed(3)} → ${best.iou.toFixed(3)} (regiões frente/meio/traseira ${best.regional.map((v) => v.toFixed(2)).join('/')}); parâmetros ${Object.entries(best.overrides).map(([k, v]) => `${k}=${+v.toFixed(3)}`).join(', ')}${gridSaturated.length ? `; saturação em ${gridSaturated.join(', ')} (fronteira declarada, não estendida)` : ''}. Parâmetros inferidos da imagem, não dimensões verificadas.`,
   };
 }
 
 function gateAndBaseline(plan: SpatialPlanV2, evidence: ImageEvidence, targetMask: Uint8Array):
-  | { ok: true; baseline: ObjectiveBreakdown; defaults: Record<string, number>; camera: CameraHypothesis; azimuthDeg: number; cameraAmbiguous: boolean }
+  | { ok: true; baseline: ObjectiveBreakdown; defaults: Record<string, number>; camera: CameraHypothesis; azimuthDeg: number; cameraAmbiguous: boolean; cameraMethod: string }
   | { ok: false; result: FittingResult } {
-  const estimate = estimateCamera(evidence, detectWheelLandmarks(evidence));
+  // Landmarks com píxeis quando a evidência os transporta (decodificação ou modelo);
+  // sem RGBA, o fallback por contactos declara a câmara ambígua em vez de a presumir.
+  const estimate = estimateCamera(evidence, detectWheelLandmarks(evidence, evidence.rgba));
   const camera = estimate.kind;
   if (camera === 'front-rear') {
     return { ok: false, result: { status: 'insufficient_evidence', reason: `Hipótese de câmara recusada: ${estimate.method}. Apresentação conceptual sem fitting.` } };
@@ -308,7 +310,7 @@ function gateAndBaseline(plan: SpatialPlanV2, evidence: ImageEvidence, targetMas
   // calculado independentemente da procura. Nunca é substituído pelo objectivo do vencedor.
   const baseline = objectiveOf(plan, {}, targetMask, estimate.azimuthDeg);
   if (baseline === null) return { ok: false, result: { status: 'insufficient_evidence', reason: 'A geometria por omissão não compilou; sem baseline não há fitting.' } };
-  return { ok: true, baseline, defaults, camera, azimuthDeg: estimate.azimuthDeg, cameraAmbiguous: estimate.ambiguous };
+  return { ok: true, baseline, defaults, camera, azimuthDeg: estimate.azimuthDeg, cameraAmbiguous: estimate.ambiguous, cameraMethod: estimate.method };
 }
 
 type SearchState = {
@@ -370,7 +372,7 @@ function concludeWithCameraCheck(plan: SpatialPlanV2, target: Uint8Array, state:
       return { status: 'insufficient_evidence', reason: `Câmara ambígua: a solução melhora no azimute assumido (${gate.azimuthDeg.toFixed(0)}°) mas degrada em perfil lateral (IoU ${baselineSide.iou.toFixed(3)} → ${fittedSide.iou.toFixed(3)}). Recusada em vez de deformar o objecto com uma hipótese incerta (incerteza ±${28}°).` };
     }
   }
-  return conclude({ overrides: { ...state.current }, objective: state.currentObjective.objective, iou: state.currentObjective.iou, regional: state.currentObjective.regional }, gate.baseline, state.evaluated, gate.camera, gate.azimuthDeg, gate.cameraAmbiguous);
+  return conclude({ overrides: { ...state.current }, objective: state.currentObjective.objective, iou: state.currentObjective.iou, regional: state.currentObjective.regional }, gate.baseline, state.evaluated, gate.camera, gate.azimuthDeg, gate.cameraAmbiguous, gate.cameraMethod);
 }
 
 /**

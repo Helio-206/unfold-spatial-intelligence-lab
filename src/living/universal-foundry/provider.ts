@@ -83,7 +83,7 @@ export class FoundryGeometry {
         done(() => (e.data.result ? resolve(e.data.result) : reject(new Error(e.data.error ?? 'WORKER_ERROR'))));
       };
       worker.onerror = () => { clearTimeout(timer); done(() => reject(new Error('WORKER_ERROR'))); };
-      worker.postMessage({ id, plan, evidence: { ...evidence, mask: Array.from(evidence.mask) } });
+      worker.postMessage({ id, plan, evidence: { ...evidence, mask: Array.from(evidence.mask), ...(evidence.rgba ? { rgba: { width: evidence.rgba.width, height: evidence.rgba.height, data: evidence.rgba.data } } : {}) } });
     });
   }
 
