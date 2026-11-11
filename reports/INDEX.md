@@ -11,3 +11,5 @@
 | other folders | Earlier phases (living, cinema, benchmark, …) | Historical |
 
 Not versioned on purpose: raw Meta responses (`reports/**/raw/`, owner-only files on the machine that ran the paid calls), credentials (`.env`), private evidence folders. Files in `runs/*/e2e-result.json` carry request ids, hashes and plan summaries only.
+
+| `reality-engine/` | Fase 01 (Reality Engine): auditoria, contratos, benchmark contra 3D, percurso `/living`, relatório consolidado (`REPORT.md`) | **NO-GO** da fase; multivista certificada só como "parcialmente verificada" no âmbito restrito |

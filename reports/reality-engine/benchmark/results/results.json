@@ -4,7 +4,7 @@
   "res": 160,
   "cells": 96,
   "points": 6000,
-  "peakRssMB": 415,
+  "peakRssMB": 421,
   "results": [
     {
       "id": "ToyCar",
@@ -32,7 +32,7 @@
           "depthObserved": false,
           "clipped": true,
           "triangles": 34010,
-          "ms": 292
+          "ms": 328
         },
         "2-view": {
           "looIoUMean": null,
@@ -52,7 +52,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 20556,
-          "ms": 365
+          "ms": 373
         },
         "3-view-ortho": {
           "looIoUMean": 0.5905,
@@ -72,7 +72,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 18710,
-          "ms": 268
+          "ms": 290
         },
         "6-view": {
           "looIoUMean": 0.857,
@@ -92,7 +92,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 18796,
-          "ms": 379
+          "ms": 338
         },
         "12-view": {
           "looIoUMean": 0.8655,
@@ -112,7 +112,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 19060,
-          "ms": 444
+          "ms": 503
         }
       },
       "pose": {
@@ -121,7 +121,7 @@
         "consistencyBefore": 0.8197,
         "consistencyAfter": 0.8358,
         "identifiableViews": 8,
-        "ms": 976,
+        "ms": 928,
         "notes": 0
       }
     },
@@ -151,7 +151,7 @@
           "depthObserved": false,
           "clipped": true,
           "triangles": 61940,
-          "ms": 310
+          "ms": 238
         },
         "2-view": {
           "looIoUMean": null,
@@ -171,7 +171,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 6556,
-          "ms": 226
+          "ms": 277
         },
         "3-view-ortho": {
           "looIoUMean": 0.4562,
@@ -191,7 +191,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 6348,
-          "ms": 247
+          "ms": 198
         },
         "6-view": {
           "looIoUMean": 0.7498,
@@ -211,7 +211,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 6500,
-          "ms": 289
+          "ms": 237
         },
         "12-view": {
           "looIoUMean": 0.7825,
@@ -231,7 +231,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 6636,
-          "ms": 489
+          "ms": 393
         }
       },
       "pose": {
@@ -240,7 +240,7 @@
         "consistencyBefore": 0.6809,
         "consistencyAfter": 0.8027,
         "identifiableViews": 8,
-        "ms": 690,
+        "ms": 612,
         "notes": 0
       }
     },
@@ -270,7 +270,7 @@
           "depthObserved": false,
           "clipped": true,
           "triangles": 57760,
-          "ms": 232
+          "ms": 191
         },
         "2-view": {
           "looIoUMean": null,
@@ -290,7 +290,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 27912,
-          "ms": 176
+          "ms": 183
         },
         "3-view-ortho": {
           "looIoUMean": 0.7126,
@@ -310,7 +310,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 26776,
-          "ms": 204
+          "ms": 207
         },
         "6-view": {
           "looIoUMean": 0.8609,
@@ -330,7 +330,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 26308,
-          "ms": 275
+          "ms": 294
         },
         "12-view": {
           "looIoUMean": 0.8786,
@@ -350,7 +350,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 25996,
-          "ms": 485
+          "ms": 416
         }
       },
       "pose": {
@@ -359,7 +359,7 @@
         "consistencyBefore": 0.8406,
         "consistencyAfter": 0.8532,
         "identifiableViews": 6,
-        "ms": 1119,
+        "ms": 1005,
         "notes": 2
       }
     },
@@ -389,7 +389,7 @@
           "depthObserved": false,
           "clipped": true,
           "triangles": 44080,
-          "ms": 202
+          "ms": 175
         },
         "2-view": {
           "looIoUMean": null,
@@ -409,7 +409,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 21964,
-          "ms": 167
+          "ms": 189
         },
         "3-view-ortho": {
           "looIoUMean": 0.7112,
@@ -429,7 +429,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 20060,
-          "ms": 170
+          "ms": 172
         },
         "6-view": {
           "looIoUMean": 0.8516,
@@ -449,7 +449,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 21068,
-          "ms": 332
+          "ms": 269
         },
         "12-view": {
           "looIoUMean": 0.8894,
@@ -469,7 +469,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 20468,
-          "ms": 426
+          "ms": 436
         }
       },
       "pose": {
@@ -478,7 +478,7 @@
         "consistencyBefore": 0.8799,
         "consistencyAfter": 0.8799,
         "identifiableViews": 0,
-        "ms": 100,
+        "ms": 101,
         "notes": 8
       }
     },
@@ -508,7 +508,7 @@
           "depthObserved": false,
           "clipped": true,
           "triangles": 82080,
-          "ms": 169
+          "ms": 260
         },
         "2-view": {
           "looIoUMean": null,
@@ -528,7 +528,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 25220,
-          "ms": 208
+          "ms": 166
         },
         "3-view-ortho": {
           "looIoUMean": 0.5734,
@@ -548,7 +548,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 24132,
-          "ms": 216
+          "ms": 176
         },
         "6-view": {
           "looIoUMean": 0.8068,
@@ -568,7 +568,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 21702,
-          "ms": 320
+          "ms": 327
         },
         "12-view": {
           "looIoUMean": 0.8235,
@@ -588,7 +588,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 22694,
-          "ms": 455
+          "ms": 496
         }
       },
       "pose": {
@@ -597,7 +597,7 @@
         "consistencyBefore": 0.7417,
         "consistencyAfter": 0.8066,
         "identifiableViews": 8,
-        "ms": 996,
+        "ms": 785,
         "notes": 0
       }
     },
@@ -605,7 +605,7 @@
       "id": "CesiumMilkTruck",
       "kind": "vehicle",
       "category": "mechanical",
-      "split": "acceptance",
+      "split": "development",
       "triangles": 3624,
       "diagonal": 6.178,
       "sets": {
@@ -627,7 +627,7 @@
           "depthObserved": false,
           "clipped": true,
           "triangles": 33820,
-          "ms": 158
+          "ms": 166
         },
         "2-view": {
           "looIoUMean": null,
@@ -647,7 +647,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 25904,
-          "ms": 189
+          "ms": 162
         },
         "3-view-ortho": {
           "looIoUMean": 0.7673,
@@ -667,7 +667,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 22180,
-          "ms": 211
+          "ms": 255
         },
         "6-view": {
           "looIoUMean": 0.9499,
@@ -687,7 +687,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 22088,
-          "ms": 269
+          "ms": 274
         },
         "12-view": {
           "looIoUMean": 0.9453,
@@ -707,7 +707,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 26596,
-          "ms": 559
+          "ms": 492
         }
       },
       "pose": {
@@ -716,7 +716,7 @@
         "consistencyBefore": 0.8331,
         "consistencyAfter": 0.9269,
         "identifiableViews": 8,
-        "ms": 998,
+        "ms": 1076,
         "notes": 0
       }
     },
@@ -746,7 +746,7 @@
           "depthObserved": false,
           "clipped": true,
           "triangles": 61180,
-          "ms": 219
+          "ms": 174
         },
         "2-view": {
           "looIoUMean": null,
@@ -766,7 +766,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 16972,
-          "ms": 234
+          "ms": 185
         },
         "3-view-ortho": {
           "looIoUMean": 0.4154,
@@ -786,7 +786,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 13899,
-          "ms": 241
+          "ms": 204
         },
         "6-view": {
           "looIoUMean": 0.7369,
@@ -806,7 +806,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 14021,
-          "ms": 310
+          "ms": 321
         },
         "12-view": {
           "looIoUMean": 0.7566,
@@ -826,7 +826,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 11688,
-          "ms": 522
+          "ms": 455
         }
       },
       "pose": {
@@ -835,7 +835,7 @@
         "consistencyBefore": 0.7125,
         "consistencyAfter": 0.7464,
         "identifiableViews": 8,
-        "ms": 652,
+        "ms": 800,
         "notes": 0
       }
     },
@@ -865,7 +865,7 @@
           "depthObserved": false,
           "clipped": true,
           "triangles": 44460,
-          "ms": 179
+          "ms": 172
         },
         "2-view": {
           "looIoUMean": null,
@@ -885,7 +885,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 19980,
-          "ms": 195
+          "ms": 153
         },
         "3-view-ortho": {
           "looIoUMean": 0.6226,
@@ -905,7 +905,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 18068,
-          "ms": 217
+          "ms": 194
         },
         "6-view": {
           "looIoUMean": 0.866,
@@ -925,7 +925,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 19036,
-          "ms": 313
+          "ms": 374
         },
         "12-view": {
           "looIoUMean": 0.8774,
@@ -945,7 +945,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 18772,
-          "ms": 539
+          "ms": 511
         }
       },
       "pose": {
@@ -954,7 +954,7 @@
         "consistencyBefore": 0.8598,
         "consistencyAfter": 0.879,
         "identifiableViews": 8,
-        "ms": 876,
+        "ms": 721,
         "notes": 0
       }
     },
@@ -984,7 +984,7 @@
           "depthObserved": false,
           "clipped": true,
           "triangles": 48260,
-          "ms": 203
+          "ms": 170
         },
         "2-view": {
           "looIoUMean": null,
@@ -1004,7 +1004,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 19996,
-          "ms": 300
+          "ms": 172
         },
         "3-view-ortho": {
           "looIoUMean": 0.5633,
@@ -1024,7 +1024,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 18436,
-          "ms": 188
+          "ms": 224
         },
         "6-view": {
           "looIoUMean": 0.867,
@@ -1044,7 +1044,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 18430,
-          "ms": 393
+          "ms": 292
         },
         "12-view": {
           "looIoUMean": 0.8623,
@@ -1064,7 +1064,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 18672,
-          "ms": 473
+          "ms": 388
         }
       },
       "pose": {
@@ -1073,7 +1073,7 @@
         "consistencyBefore": 0.8246,
         "consistencyAfter": 0.8501,
         "identifiableViews": 8,
-        "ms": 756,
+        "ms": 730,
         "notes": 0
       }
     },
@@ -1103,7 +1103,7 @@
           "depthObserved": false,
           "clipped": true,
           "triangles": 49400,
-          "ms": 148
+          "ms": 179
         },
         "2-view": {
           "looIoUMean": null,
@@ -1123,7 +1123,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 17960,
-          "ms": 184
+          "ms": 169
         },
         "3-view-ortho": {
           "looIoUMean": 0.5858,
@@ -1143,7 +1143,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 16056,
-          "ms": 206
+          "ms": 184
         },
         "6-view": {
           "looIoUMean": 0.828,
@@ -1163,7 +1163,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 16672,
-          "ms": 268
+          "ms": 245
         },
         "12-view": {
           "looIoUMean": 0.8535,
@@ -1183,7 +1183,7 @@
           "depthObserved": true,
           "clipped": false,
           "triangles": 16060,
-          "ms": 554
+          "ms": 500
         }
       },
       "pose": {
@@ -1192,8 +1192,484 @@
         "consistencyBefore": 0.8126,
         "consistencyAfter": 0.8346,
         "identifiableViews": 6,
-        "ms": 779,
+        "ms": 768,
         "notes": 2
+      }
+    },
+    {
+      "id": "GlamVelvetSofa",
+      "kind": "furniture",
+      "category": "non-mechanical",
+      "split": "acceptance",
+      "triangles": 4196,
+      "diagonal": 2.541,
+      "sets": {
+        "1-view": {
+          "looIoUMean": null,
+          "looIoUMeanWrongPoses": null,
+          "views": 1,
+          "accuracyPct": 15.443,
+          "completenessPct": 3.902,
+          "chamferPct": 9.672,
+          "p95AccuracyPct": 35.596,
+          "heldOutIoUMean": 0.3596,
+          "heldOutIoUMin": 0.2712,
+          "supportedFraction": 0,
+          "errorSupport1Pct": 15.588,
+          "errorSupport2PlusPct": null,
+          "nVertsSupport1": 24864,
+          "nVertsSupport2Plus": 0,
+          "depthObserved": false,
+          "clipped": true,
+          "triangles": 49590,
+          "ms": 184
+        },
+        "2-view": {
+          "looIoUMean": null,
+          "looIoUMeanWrongPoses": null,
+          "views": 2,
+          "accuracyPct": 3.807,
+          "completenessPct": 2.957,
+          "chamferPct": 3.382,
+          "p95AccuracyPct": 11.741,
+          "heldOutIoUMean": 0.7606,
+          "heldOutIoUMin": 0.618,
+          "supportedFraction": 0.5723,
+          "errorSupport1Pct": 4.649,
+          "errorSupport2PlusPct": 3.25,
+          "nVertsSupport1": 4366,
+          "nVertsSupport2Plus": 5842,
+          "depthObserved": true,
+          "clipped": false,
+          "triangles": 20314,
+          "ms": 184
+        },
+        "3-view-ortho": {
+          "looIoUMean": 0.626,
+          "looIoUMeanWrongPoses": 0.5806,
+          "views": 3,
+          "accuracyPct": 2.307,
+          "completenessPct": 2.23,
+          "chamferPct": 2.269,
+          "p95AccuracyPct": 9.144,
+          "heldOutIoUMean": 0.9048,
+          "heldOutIoUMin": 0.7082,
+          "supportedFraction": 0.7111,
+          "errorSupport1Pct": 3.446,
+          "errorSupport2PlusPct": 1.871,
+          "nVertsSupport1": 2497,
+          "nVertsSupport2Plus": 6146,
+          "depthObserved": true,
+          "clipped": false,
+          "triangles": 17234,
+          "ms": 193
+        },
+        "6-view": {
+          "looIoUMean": 0.8018,
+          "looIoUMeanWrongPoses": 0.772,
+          "views": 6,
+          "accuracyPct": 2.016,
+          "completenessPct": 2.199,
+          "chamferPct": 2.107,
+          "p95AccuracyPct": 7.75,
+          "heldOutIoUMean": 0.9058,
+          "heldOutIoUMin": 0.7764,
+          "supportedFraction": 0.8732,
+          "errorSupport1Pct": 2.895,
+          "errorSupport2PlusPct": 2.019,
+          "nVertsSupport1": 1152,
+          "nVertsSupport2Plus": 7935,
+          "depthObserved": true,
+          "clipped": false,
+          "triangles": 18108,
+          "ms": 280
+        },
+        "12-view": {
+          "looIoUMean": 0.8606,
+          "looIoUMeanWrongPoses": 0.7637,
+          "views": 12,
+          "accuracyPct": 1.25,
+          "completenessPct": 1.595,
+          "chamferPct": 1.422,
+          "p95AccuracyPct": 4.794,
+          "heldOutIoUMean": 0.9549,
+          "heldOutIoUMin": 0.9106,
+          "supportedFraction": 0.9761,
+          "errorSupport1Pct": 2.849,
+          "errorSupport2PlusPct": 1.293,
+          "nVertsSupport1": 196,
+          "nVertsSupport2Plus": 8003,
+          "depthObserved": true,
+          "clipped": false,
+          "triangles": 16396,
+          "ms": 530
+        }
+      },
+      "pose": {
+        "meanAzimuthErrorBeforeDeg": 6.5,
+        "meanAzimuthErrorAfterDeg": 4.19,
+        "consistencyBefore": 0.8001,
+        "consistencyAfter": 0.822,
+        "identifiableViews": 7,
+        "ms": 707,
+        "notes": 1
+      }
+    },
+    {
+      "id": "ChairDamaskPurplegold",
+      "kind": "furniture",
+      "category": "non-mechanical",
+      "split": "acceptance",
+      "triangles": 9984,
+      "diagonal": 1.219,
+      "sets": {
+        "1-view": {
+          "looIoUMean": null,
+          "looIoUMeanWrongPoses": null,
+          "views": 1,
+          "accuracyPct": 14.276,
+          "completenessPct": 3.386,
+          "chamferPct": 8.831,
+          "p95AccuracyPct": 31.859,
+          "heldOutIoUMean": 0.3172,
+          "heldOutIoUMin": 0.2174,
+          "supportedFraction": 0,
+          "errorSupport1Pct": 14.453,
+          "errorSupport2PlusPct": null,
+          "nVertsSupport1": 41280,
+          "nVertsSupport2Plus": 0,
+          "depthObserved": false,
+          "clipped": true,
+          "triangles": 81700,
+          "ms": 185
+        },
+        "2-view": {
+          "looIoUMean": null,
+          "looIoUMeanWrongPoses": null,
+          "views": 2,
+          "accuracyPct": 2.045,
+          "completenessPct": 1.569,
+          "chamferPct": 1.807,
+          "p95AccuracyPct": 5.978,
+          "heldOutIoUMean": 0.8102,
+          "heldOutIoUMin": 0.7644,
+          "supportedFraction": 0.6073,
+          "errorSupport1Pct": 1.59,
+          "errorSupport2PlusPct": 2.202,
+          "nVertsSupport1": 4884,
+          "nVertsSupport2Plus": 7554,
+          "depthObserved": true,
+          "clipped": false,
+          "triangles": 24880,
+          "ms": 193
+        },
+        "3-view-ortho": {
+          "looIoUMean": 0.5775,
+          "looIoUMeanWrongPoses": 0.5164,
+          "views": 3,
+          "accuracyPct": 1.811,
+          "completenessPct": 1.5,
+          "chamferPct": 1.656,
+          "p95AccuracyPct": 5.461,
+          "heldOutIoUMean": 0.8456,
+          "heldOutIoUMin": 0.7956,
+          "supportedFraction": 0.7412,
+          "errorSupport1Pct": 1.515,
+          "errorSupport2PlusPct": 1.857,
+          "nVertsSupport1": 3100,
+          "nVertsSupport2Plus": 8878,
+          "depthObserved": true,
+          "clipped": false,
+          "triangles": 23960,
+          "ms": 205
+        },
+        "6-view": {
+          "looIoUMean": 0.8093,
+          "looIoUMeanWrongPoses": 0.7664,
+          "views": 6,
+          "accuracyPct": 1.349,
+          "completenessPct": 1.388,
+          "chamferPct": 1.369,
+          "p95AccuracyPct": 3.292,
+          "heldOutIoUMean": 0.9078,
+          "heldOutIoUMin": 0.8539,
+          "supportedFraction": 0.9992,
+          "errorSupport1Pct": 1.173,
+          "errorSupport2PlusPct": 1.352,
+          "nVertsSupport1": 9,
+          "nVertsSupport2Plus": 10819,
+          "depthObserved": true,
+          "clipped": false,
+          "triangles": 21646,
+          "ms": 362
+        },
+        "12-view": {
+          "looIoUMean": 0.8249,
+          "looIoUMeanWrongPoses": 0.7434,
+          "views": 12,
+          "accuracyPct": 1.461,
+          "completenessPct": 1.464,
+          "chamferPct": 1.463,
+          "p95AccuracyPct": 3.712,
+          "heldOutIoUMean": 0.9458,
+          "heldOutIoUMin": 0.9087,
+          "supportedFraction": 0.9608,
+          "errorSupport1Pct": 1.85,
+          "errorSupport2PlusPct": 1.468,
+          "nVertsSupport1": 450,
+          "nVertsSupport2Plus": 11016,
+          "depthObserved": true,
+          "clipped": false,
+          "triangles": 22990,
+          "ms": 546
+        }
+      },
+      "pose": {
+        "meanAzimuthErrorBeforeDeg": 6.5,
+        "meanAzimuthErrorAfterDeg": 1.75,
+        "consistencyBefore": 0.737,
+        "consistencyAfter": 0.8072,
+        "identifiableViews": 8,
+        "ms": 920,
+        "notes": 0
+      }
+    },
+    {
+      "id": "IridescenceLamp",
+      "kind": "fixture",
+      "category": "mechanical",
+      "split": "acceptance",
+      "triangles": 18866,
+      "diagonal": 0.637,
+      "sets": {
+        "1-view": {
+          "looIoUMean": null,
+          "looIoUMeanWrongPoses": null,
+          "views": 1,
+          "accuracyPct": 13.949,
+          "completenessPct": 5.121,
+          "chamferPct": 9.535,
+          "p95AccuracyPct": 33.015,
+          "heldOutIoUMean": 0.3912,
+          "heldOutIoUMin": 0.2751,
+          "supportedFraction": 0,
+          "errorSupport1Pct": 14.164,
+          "errorSupport2PlusPct": null,
+          "nVertsSupport1": 26112,
+          "nVertsSupport2Plus": 0,
+          "depthObserved": false,
+          "clipped": true,
+          "triangles": 51680,
+          "ms": 145
+        },
+        "2-view": {
+          "looIoUMean": null,
+          "looIoUMeanWrongPoses": null,
+          "views": 2,
+          "accuracyPct": 3.496,
+          "completenessPct": 2.659,
+          "chamferPct": 3.078,
+          "p95AccuracyPct": 8.844,
+          "heldOutIoUMean": 0.7705,
+          "heldOutIoUMin": 0.5931,
+          "supportedFraction": 0.4717,
+          "errorSupport1Pct": 2.64,
+          "errorSupport2PlusPct": 4.136,
+          "nVertsSupport1": 6924,
+          "nVertsSupport2Plus": 6182,
+          "depthObserved": true,
+          "clipped": false,
+          "triangles": 26208,
+          "ms": 197
+        },
+        "3-view-ortho": {
+          "looIoUMean": 0.6004,
+          "looIoUMeanWrongPoses": 0.5621,
+          "views": 3,
+          "accuracyPct": 2.722,
+          "completenessPct": 1.583,
+          "chamferPct": 2.152,
+          "p95AccuracyPct": 8.267,
+          "heldOutIoUMean": 0.891,
+          "heldOutIoUMin": 0.7018,
+          "supportedFraction": 0.4828,
+          "errorSupport1Pct": 3.363,
+          "errorSupport2PlusPct": 2.103,
+          "nVertsSupport1": 8732,
+          "nVertsSupport2Plus": 8152,
+          "depthObserved": true,
+          "clipped": false,
+          "triangles": 35340,
+          "ms": 226
+        },
+        "6-view": {
+          "looIoUMean": 0.8321,
+          "looIoUMeanWrongPoses": 0.81,
+          "views": 6,
+          "accuracyPct": 3.142,
+          "completenessPct": 1.774,
+          "chamferPct": 2.458,
+          "p95AccuracyPct": 7.999,
+          "heldOutIoUMean": 0.8797,
+          "heldOutIoUMin": 0.7012,
+          "supportedFraction": 0.643,
+          "errorSupport1Pct": 4.619,
+          "errorSupport2PlusPct": 2.629,
+          "nVertsSupport1": 7648,
+          "nVertsSupport2Plus": 13773,
+          "depthObserved": true,
+          "clipped": false,
+          "triangles": 42682,
+          "ms": 470
+        },
+        "12-view": {
+          "looIoUMean": 0.9091,
+          "looIoUMeanWrongPoses": 0.9013,
+          "views": 12,
+          "accuracyPct": 2.017,
+          "completenessPct": 1.519,
+          "chamferPct": 1.768,
+          "p95AccuracyPct": 7.79,
+          "heldOutIoUMean": 0.9356,
+          "heldOutIoUMin": 0.7488,
+          "supportedFraction": 1,
+          "errorSupport1Pct": null,
+          "errorSupport2PlusPct": 1.782,
+          "nVertsSupport1": 0,
+          "nVertsSupport2Plus": 12082,
+          "depthObserved": true,
+          "clipped": false,
+          "triangles": 24158,
+          "ms": 547
+        }
+      },
+      "pose": {
+        "meanAzimuthErrorBeforeDeg": 6.5,
+        "meanAzimuthErrorAfterDeg": 6.5,
+        "consistencyBefore": 0.8887,
+        "consistencyAfter": 0.8887,
+        "identifiableViews": 0,
+        "ms": 93,
+        "notes": 8
+      }
+    },
+    {
+      "id": "CarConcept",
+      "kind": "vehicle",
+      "category": "mechanical",
+      "split": "acceptance",
+      "triangles": 213347,
+      "diagonal": 5.174,
+      "sets": {
+        "1-view": {
+          "looIoUMean": null,
+          "looIoUMeanWrongPoses": null,
+          "views": 1,
+          "accuracyPct": 4.152,
+          "completenessPct": 3.772,
+          "chamferPct": 3.962,
+          "p95AccuracyPct": 12.671,
+          "heldOutIoUMean": 0.6479,
+          "heldOutIoUMin": 0.6082,
+          "supportedFraction": 0,
+          "errorSupport1Pct": 4.348,
+          "errorSupport2PlusPct": null,
+          "nVertsSupport1": 12864,
+          "nVertsSupport2Plus": 0,
+          "depthObserved": false,
+          "clipped": true,
+          "triangles": 25460,
+          "ms": 152
+        },
+        "2-view": {
+          "looIoUMean": null,
+          "looIoUMeanWrongPoses": null,
+          "views": 2,
+          "accuracyPct": 1.723,
+          "completenessPct": 2.6,
+          "chamferPct": 2.161,
+          "p95AccuracyPct": 3.853,
+          "heldOutIoUMean": 0.8845,
+          "heldOutIoUMin": 0.8624,
+          "supportedFraction": 0.5644,
+          "errorSupport1Pct": 1.956,
+          "errorSupport2PlusPct": 1.597,
+          "nVertsSupport1": 4859,
+          "nVertsSupport2Plus": 6297,
+          "depthObserved": true,
+          "clipped": false,
+          "triangles": 22400,
+          "ms": 148
+        },
+        "3-view-ortho": {
+          "looIoUMean": 0.8343,
+          "looIoUMeanWrongPoses": 0.738,
+          "views": 3,
+          "accuracyPct": 1.237,
+          "completenessPct": 2.269,
+          "chamferPct": 1.753,
+          "p95AccuracyPct": 2.511,
+          "heldOutIoUMean": 0.9433,
+          "heldOutIoUMin": 0.9261,
+          "supportedFraction": 0.7775,
+          "errorSupport1Pct": 1.216,
+          "errorSupport2PlusPct": 1.274,
+          "nVertsSupport1": 2294,
+          "nVertsSupport2Plus": 8014,
+          "depthObserved": true,
+          "clipped": false,
+          "triangles": 20692,
+          "ms": 170
+        },
+        "6-view": {
+          "looIoUMean": 0.8967,
+          "looIoUMeanWrongPoses": 0.8337,
+          "views": 6,
+          "accuracyPct": 1.219,
+          "completenessPct": 2.273,
+          "chamferPct": 1.746,
+          "p95AccuracyPct": 2.454,
+          "heldOutIoUMean": 0.9485,
+          "heldOutIoUMin": 0.9337,
+          "supportedFraction": 0.9986,
+          "errorSupport1Pct": 0.837,
+          "errorSupport2PlusPct": 1.251,
+          "nVertsSupport1": 15,
+          "nVertsSupport2Plus": 10435,
+          "depthObserved": true,
+          "clipped": false,
+          "triangles": 20976,
+          "ms": 311
+        },
+        "12-view": {
+          "looIoUMean": 0.896,
+          "looIoUMeanWrongPoses": 0.8535,
+          "views": 12,
+          "accuracyPct": 1.351,
+          "completenessPct": 2.353,
+          "chamferPct": 1.852,
+          "p95AccuracyPct": 3.101,
+          "heldOutIoUMean": 0.9689,
+          "heldOutIoUMin": 0.9437,
+          "supportedFraction": 0.9773,
+          "errorSupport1Pct": 1.365,
+          "errorSupport2PlusPct": 1.35,
+          "nVertsSupport1": 251,
+          "nVertsSupport2Plus": 10790,
+          "depthObserved": true,
+          "clipped": false,
+          "triangles": 22060,
+          "ms": 485
+        }
+      },
+      "pose": {
+        "meanAzimuthErrorBeforeDeg": 6.5,
+        "meanAzimuthErrorAfterDeg": 7.16,
+        "consistencyBefore": 0.8644,
+        "consistencyAfter": 0.8719,
+        "identifiableViews": 8,
+        "ms": 1050,
+        "notes": 0
       }
     }
   ]
