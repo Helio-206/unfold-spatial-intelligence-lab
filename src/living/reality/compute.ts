@@ -1,5 +1,7 @@
 import { Vector3 } from 'three';
 import type { RealityEvidence } from './evidence';
+import { segmentInteractive, type SegmentationHint } from './interactive-segmentation';
+import type { RGBA } from '../universal-foundry/evidence';
 import { buildModel, viewsOf, type RealityModel } from './model';
 import { refinePoses } from '../../universal-spatial/reconstruction/multiview';
 import { encodeMask, type StoredView } from './evidence';
@@ -31,7 +33,10 @@ export function refinePosesOf(evidence: RealityEvidence): PoseRefinement {
   return { evidence: { ...evidence, views: views2, assumptions: [...evidence.assumptions, `Azimutes assumidos refinados por consistência entre vistas: ${moved.length} vistas corrigidas (média ${mean.toFixed(1)}°), concordância ${(r.consistencyBefore * 100).toFixed(1)}% → ${(r.consistencyAfter * 100).toFixed(1)}%. Melhora a consistência; não é uma medição do ângulo.`].slice(0, 16) }, applied: true, note: '' };
 }
 
+export type SegmentRequest = { rgba: { width: number; height: number; data: Uint8ClampedArray }; hint: SegmentationHint };
 export type RealityCompute = {
+  /** interactive foreground segmentation (box + strokes); returns a full-resolution mask */
+  segment(request: SegmentRequest, signal?: AbortSignal): Promise<Uint8Array>;
   /** refines assumed poses (see refinePosesOf) */
   refinePoses(evidence: RealityEvidence, signal?: AbortSignal): Promise<PoseRefinement>;
   /** model of version `upTo` of a record, rebuilt by replaying the refinements in order */
@@ -48,6 +53,7 @@ export function replayInline(record: RealityRecord, upTo: number): RealityModel 
 }
 
 export const inlineCompute: RealityCompute = {
+  async segment(r) { return segmentInteractive(r.rgba as RGBA, r.hint).mask; },
   async refinePoses(evidence) { return refinePosesOf(evidence); },
   async replay(record, upTo) { return replayInline(record, upTo); },
   async refine(record, evidence) { return refineModel(replayInline(record, record.current), evidence); },
@@ -62,9 +68,9 @@ export function reviveModel<T extends RealityModel>(model: T): T {
   return model;
 }
 
-export type WorkerRequest = { id: number; op: 'poses'; evidence: RealityEvidence } | { id: number; op: 'replay'; record: RealityRecord; upTo: number } | { id: number; op: 'refine'; record: RealityRecord; evidence: RealityEvidence };
+export type WorkerRequest = { id: number; op: 'segment'; request: SegmentRequest } | { id: number; op: 'poses'; evidence: RealityEvidence } | { id: number; op: 'replay'; record: RealityRecord; upTo: number } | { id: number; op: 'refine'; record: RealityRecord; evidence: RealityEvidence };
 type NoId<T> = T extends unknown ? Omit<T, 'id'> : never;
-export type WorkerReply = { id: number; ok: true; model?: RealityModel; refinement?: Refinement; poses?: PoseRefinement } | { id: number; ok: false; error: string };
+export type WorkerReply = { id: number; ok: true; model?: RealityModel; refinement?: Refinement; poses?: PoseRefinement; mask?: Uint8Array } | { id: number; ok: false; error: string };
 
 /** Browser compute: one Worker, one job at a time (bounded concurrency), cancelled by terminating and recreating it. */
 export function workerCompute(create: () => Worker): RealityCompute {
@@ -83,6 +89,7 @@ export function workerCompute(create: () => Worker): RealityCompute {
     const result = tail.then(job, job); tail = result.catch(() => undefined); return result;
   };
   return {
+    segment: (request, signal) => run({ op: 'segment', request }, (r) => r.mask!, signal),
     refinePoses: (evidence, signal) => run({ op: 'poses', evidence }, (r) => r.poses!, signal),
     replay: (record, upTo, signal) => run({ op: 'replay', record, upTo }, (r) => reviveModel(r.model!), signal),
     refine: (record, evidence, signal) => run({ op: 'refine', record, evidence }, (r) => ({ ...r.refinement!, model: reviveModel(r.refinement!.model) }), signal),

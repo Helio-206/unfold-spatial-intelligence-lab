@@ -1,0 +1,101 @@
+{
+  "asset": "IridescenceLamp",
+  "results": [
+    {
+      "step": "0 entradas",
+      "verdict": "PASS",
+      "detail": "8 renders de IridescenceLamp (CC0/CC-BY), câmara a 20° de elevação"
+    },
+    {
+      "step": "1 intake local analisa 8 vistas (contornos visíveis, pressupostos escritos)",
+      "verdict": "PASS",
+      "detail": "0 recusas"
+    },
+    {
+      "step": "2 revisão ordinária do Space (sem IA)",
+      "verdict": "PASS",
+      "detail": "Rever «IridescenceLamp (reconstrução)» 2 componentes · reconstrução local a partir das suas vistas (sem IA) · ainda não "
+    },
+    {
+      "step": "3 Space construído com as malhas reconstruídas nos grupos do plano",
+      "verdict": "PASS",
+      "detail": "2 componentes, 21466 triângulos; fidelidade: partially_verified"
+    },
+    {
+      "step": "3b nunca \"fiel\" para vistas do próprio utilizador; sessão adoptada no servidor",
+      "verdict": "PASS",
+      "detail": "classe partially_verified"
+    },
+    {
+      "step": "4 comparação com a referência (IoU por vista)",
+      "verdict": "PASS",
+      "detail": "91% 91% 92% 91% 91% 91% 92% 91%"
+    },
+    {
+      "step": "5 pré-visualização de nova perspectiva (nada aplicado)",
+      "verdict": "PASS",
+      "detail": "veredicto informative"
+    },
+    {
+      "step": "6 refinamento aplicado sem tocar no plano (ids e transformações preservados)",
+      "verdict": "PASS",
+      "detail": "plano byte-idêntico; versão 2/2"
+    },
+    {
+      "step": "7 desfazer/refazer o refinamento",
+      "verdict": "PASS",
+      "detail": "versões 2/2 -> 1/2 -> 2/2"
+    },
+    {
+      "step": "8 edição tipada de uma parte pelo Spatial Core move a malha reconstruída",
+      "verdict": "PASS",
+      "detail": "centro X 0.0000 -> 0.2873"
+    },
+    {
+      "step": "8b undo repõe o plano byte a byte e a malha volta",
+      "verdict": "PASS",
+      "detail": "centro X 0.0000"
+    },
+    {
+      "step": "9 guardar e reabrir preserva identidade",
+      "verdict": "PASS",
+      "detail": "save=true reopen=true"
+    },
+    {
+      "step": "10 reaberto com as mesmas malhas (evidência guardada) e versão corrente",
+      "verdict": "PASS",
+      "detail": "triângulos 21198, versão 2/2"
+    },
+    {
+      "step": "G1 sair do Space liberta geometrias GPU da reconstrução",
+      "verdict": "PASS",
+      "detail": "geometrias 6 -> 4; triângulos desenhados no último frame 42401"
+    },
+    {
+      "step": "V1 vídeo: fotogramas-chave escolhidos e pressupostos de pose escritos",
+      "verdict": "PASS",
+      "detail": "8 vistas, 0 recusas"
+    },
+    {
+      "step": "V2 vídeo: Space construído no mesmo palco",
+      "verdict": "PASS",
+      "detail": "plano com fonte = hash da evidência"
+    },
+    {
+      "step": "N1 contorno não credível é recusado e nada é construído (fail-closed)",
+      "verdict": "PASS",
+      "detail": "código MASK_UNRELIABLE, Reconstruir desactivado=true"
+    },
+    {
+      "step": "11 nenhuma chamada paga nem pedido de plano ao modelo",
+      "verdict": "PASS",
+      "detail": "provider=0 plan=0"
+    },
+    {
+      "step": "12 sem erros de browser",
+      "verdict": "PASS",
+      "detail": "limpo"
+    }
+  ],
+  "providerCalls": 0
+}

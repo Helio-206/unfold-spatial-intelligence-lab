@@ -9,7 +9,7 @@ import type { Grid } from './silhouette';
  */
 export type Part = { id: string; label: number; voxels: number; centroid: Vector3; min: Vector3; max: Vector3; peakDistance: number };
 export type PartsResult = { labels: Uint16Array; parts: Part[]; adjacency: Array<[string, string]>; /** voxels of isolated specks below minVoxels, removed (reported, never hidden) */ discardedVoxels: number };
-export type PartOptions = { /** a neck must be this fraction shallower than the smaller peak to keep two parts apart */ persistence?: number; minVoxels?: number; maxParts?: number };
+export type PartOptions = { /** split thin limbs (legs, handles, pins) off thick masses by morphological opening at the scale that separates the most limbs (default OFF: on the ground-truth benchmark it did not improve component recovery and over-split single-piece objects; see reports/reality-engine/INVESTIGATION.md) */ limbs?: boolean; /** a neck must be this fraction shallower than the smaller peak to keep two parts apart */ persistence?: number; minVoxels?: number; maxParts?: number };
 
 const NEIGH: Array<[number, number, number, number]> = []; // dx, dy, dz, chamfer weight (3-4-5)
 for (let dz = -1; dz <= 1; dz++) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const n = Math.abs(dx) + Math.abs(dy) + Math.abs(dz); if (n) NEIGH.push([dx, dy, dz, n === 1 ? 3 : n === 2 ? 4 : 5]); }
@@ -35,6 +35,61 @@ function distanceTransform(occ: Uint8Array, [nx, ny, nz]: [number, number, numbe
   pass(true); pass(false);
   for (let i = 0; i < d.length; i++) d[i] = d[i]! / 3;
   return d;
+}
+
+
+/** Distance (voxel units, chamfer 3-4-5 / 3) from each voxel to the nearest voxel with `seed` = 1, over the whole grid. */
+function distanceFrom(seed: Uint8Array, [nx, ny, nz]: [number, number, number]): Float32Array {
+  const d = new Float32Array(seed.length), BIG = 1e9, id = (i: number, j: number, k: number) => i + nx * (j + ny * k);
+  for (let i = 0; i < seed.length; i++) d[i] = seed[i] ? 0 : BIG;
+  const pass = (forward: boolean) => {
+    const ks = forward ? [0, nz, 1] : [nz - 1, -1, -1], js = forward ? [0, ny, 1] : [ny - 1, -1, -1], is = forward ? [0, nx, 1] : [nx - 1, -1, -1];
+    for (let k = ks[0]!; k !== ks[1]; k += ks[2]!) for (let j = js[0]!; j !== js[1]; j += js[2]!) for (let i = is[0]!; i !== is[1]; i += is[2]!) {
+      const c = id(i, j, k); let best = d[c]!;
+      for (const [dx, dy, dz, w] of NEIGH) { const fwd = dz < 0 || (dz === 0 && (dy < 0 || (dy === 0 && dx < 0))); if (forward !== fwd) continue; const a = i + dx, b = j + dy, e = k + dz; if (a < 0 || b < 0 || e < 0 || a >= nx || b >= ny || e >= nz) continue; const v = d[id(a, b, e)]! + w; if (v < best) best = v; }
+      d[c] = best;
+    }
+  };
+  pass(true); pass(false); for (let i = 0; i < d.length; i++) d[i] = d[i]! / 3; return d;
+}
+
+/**
+ * Thin limbs on thick masses. The distance transform alone cannot separate a leg from a seat (a limb of constant thickness has no neck). Opening the solid
+ * with a ball of radius r removes everything thinner than r; what is removed, split into connected pieces, are the limbs. The radius that separates the most
+ * limbs wins. A limb must be elongated (so a rounded edge is not a limb) and substantial.
+ */
+function splitLimbs(occ: Uint8Array, labels: Uint16Array, dt: Float32Array, grid: Grid, minVoxels: number, maxParts: number): number {
+  const [nx, ny, nz] = grid.cells, total = occ.length; let maxDt = 0; for (let i = 0; i < total; i++) if (occ[i] && dt[i]! > maxDt) maxDt = dt[i]!;
+  if (maxDt < 3) return 0;
+  let hullTotal = 0; for (let i = 0; i < total; i++) hullTotal += occ[i]!;
+  const limbMin = Math.max(minVoxels, 60, Math.round(hullTotal * 0.005)), id = (i: number, j: number, k: number) => i + nx * (j + ny * k);
+  type Cand = { r: number; comps: number[][]; volume: number };
+  let best: Cand | null = null;
+  for (let r = 2; r <= Math.floor(maxDt * 0.6); r++) {
+    const core = new Uint8Array(total); for (let i = 0; i < total; i++) core[i] = occ[i] && dt[i]! >= r ? 1 : 0;
+    const reach = distanceFrom(core, grid.cells), seen = new Uint8Array(total), comps: number[][] = [];
+    for (let i0 = 0; i0 < total; i0++) {
+      if (!occ[i0] || seen[i0] || reach[i0]! <= r) continue; // inside the opening (within r of the core): not residue
+      const comp: number[] = [], stack = [i0]; seen[i0] = 1;
+      while (stack.length) { const v = stack.pop()!; comp.push(v); const x = v % nx, y = Math.floor(v / nx) % ny, z = Math.floor(v / (nx * ny)); for (const [dx, dy, dz] of [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]] as const) { const a = x + dx, b = y + dy, c = z + dz; if (a < 0 || b < 0 || c < 0 || a >= nx || b >= ny || c >= nz) continue; const u = id(a, b, c); if (occ[u] && !seen[u] && reach[u]! > r) { seen[u] = 1; stack.push(u); } } }
+      if (comp.length >= limbMin) comps.push(comp);
+    }
+    const limbs = comps.filter((comp) => {
+      // elongation from the covariance of the voxel centres: sqrt(l1 / mean(l2, l3))
+      let cx = 0, cy = 0, cz = 0; for (const v of comp) { cx += v % nx; cy += Math.floor(v / nx) % ny; cz += Math.floor(v / (nx * ny)); } cx /= comp.length; cy /= comp.length; cz /= comp.length;
+      let xx = 0, xy = 0, xz = 0, yy = 0, yz = 0, zz = 0; for (const v of comp) { const dx = (v % nx) - cx, dy = (Math.floor(v / nx) % ny) - cy, dz = Math.floor(v / (nx * ny)) - cz; xx += dx * dx; xy += dx * dy; xz += dx * dz; yy += dy * dy; yz += dy * dz; zz += dz * dz; }
+      let a = [1, 0.7, 0.3]; const nrm = Math.hypot(...a); a = a.map((q) => q / nrm); for (let it = 0; it < 25; it++) { const n = [xx * a[0]! + xy * a[1]! + xz * a[2]!, xy * a[0]! + yy * a[1]! + yz * a[2]!, xz * a[0]! + yz * a[1]! + zz * a[2]!], m = Math.hypot(...n) || 1; a = n.map((q) => q / m); }
+      const l1 = a[0]! * (xx * a[0]! + xy * a[1]! + xz * a[2]!) + a[1]! * (xy * a[0]! + yy * a[1]! + yz * a[2]!) + a[2]! * (xz * a[0]! + yz * a[1]! + zz * a[2]!), l23 = Math.max(1e-9, (xx + yy + zz - l1) / 2);
+      return Math.sqrt(Math.max(l1, 1e-9) / l23) >= 2;
+    });
+    let volume = 0; for (const c of limbs) volume += c.length; let hullVol = 0; for (let i = 0; i < total; i++) hullVol += occ[i]!;
+    if (limbs.length && volume <= 0.6 * hullVol && (!best || volume > best.volume * 1.02)) best = { r, comps: limbs, volume };
+  }
+  if (!best) return 0;
+  let next = 0; for (let i = 0; i < total; i++) if (labels[i]! > next) next = labels[i]!;
+  let added = 0; const used = new Set<number>(); for (let i = 0; i < total; i++) if (labels[i]) used.add(labels[i]!);
+  for (const comp of best.comps) { if (used.size >= maxParts) break; next++; if (next > 65000) break; for (const v of comp) labels[v] = next; used.add(next); added++; }
+  return added;
 }
 
 export function segmentParts(occ: Uint8Array, grid: Grid, options: PartOptions = {}): PartsResult {
@@ -97,6 +152,7 @@ export function segmentParts(occ: Uint8Array, grid: Grid, options: PartOptions =
     }
     for (let i = 0; i < total; i++) if (labels[i] === smallLabel) labels[i] = target;
   }
+  if (options.limbs === true) splitLimbs(occ, labels, dt, grid, minVoxels, maxParts);
   // stable ids ordered by position (x, then y, then z)
   const acc = collect(), ordered = [...acc.entries()].map(([l, a]) => ({ l, a, c: new Vector3(a.sx / a.n, a.sy / a.n, a.sz / a.n) }))
     .sort((p, q) => p.c.x - q.c.x || p.c.y - q.c.y || p.c.z - q.c.z || p.l - q.l);

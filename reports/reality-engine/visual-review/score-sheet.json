@@ -1,0 +1,115 @@
+{
+  "contract": "unfold.visual-review-sheet.v1",
+  "reviewer": {
+    "name": null,
+    "independentOfImplementation": null,
+    "date": null,
+    "declaration": "I did not write or tune this software and I scored each board on what I see, without reading the machine metrics first."
+  },
+  "scale": "1 = unacceptable, 3 = acceptable with visible flaws, 5 = convincing",
+  "criteria": {
+    "silhouetteMatch": "Does the outline of the reconstruction match the object in the input views?",
+    "surfacePlausibility": "Is the surface free of artefacts that are not in the object (tears, slabs, spikes)?",
+    "colourFidelity": "Are the colours those of the object, and are unseen regions clearly marked as hypothesis?",
+    "partStructure": "Are the parts it separated meaningful pieces of the object, or arbitrary slices?",
+    "honesty": "Does the interface avoid claiming more than it shows (fidelity label, uncertainty, hypothesis colour)?"
+  },
+  "boards": [
+    {
+      "asset": "ChairDamaskPurplegold",
+      "board": "board-ChairDamaskPurplegold.png",
+      "scores": {
+        "silhouetteMatch": null,
+        "surfacePlausibility": null,
+        "colourFidelity": null,
+        "partStructure": null,
+        "honesty": null
+      },
+      "comments": ""
+    },
+    {
+      "asset": "IridescenceLamp",
+      "board": "board-IridescenceLamp.png",
+      "scores": {
+        "silhouetteMatch": null,
+        "surfacePlausibility": null,
+        "colourFidelity": null,
+        "partStructure": null,
+        "honesty": null
+      },
+      "comments": ""
+    },
+    {
+      "asset": "AntiqueCamera",
+      "board": "board-AntiqueCamera.png",
+      "scores": {
+        "silhouetteMatch": null,
+        "surfacePlausibility": null,
+        "colourFidelity": null,
+        "partStructure": null,
+        "honesty": null
+      },
+      "comments": ""
+    },
+    {
+      "asset": "Corset",
+      "board": "board-Corset.png",
+      "scores": {
+        "silhouetteMatch": null,
+        "surfacePlausibility": null,
+        "colourFidelity": null,
+        "partStructure": null,
+        "honesty": null
+      },
+      "comments": ""
+    },
+    {
+      "asset": "BoomBox",
+      "board": "board-BoomBox.png",
+      "scores": {
+        "silhouetteMatch": null,
+        "surfacePlausibility": null,
+        "colourFidelity": null,
+        "partStructure": null,
+        "honesty": null
+      },
+      "comments": ""
+    },
+    {
+      "asset": "Avocado",
+      "board": "board-Avocado.png",
+      "scores": {
+        "silhouetteMatch": null,
+        "surfacePlausibility": null,
+        "colourFidelity": null,
+        "partStructure": null,
+        "honesty": null
+      },
+      "comments": ""
+    },
+    {
+      "asset": "CesiumMilkTruck",
+      "board": "board-CesiumMilkTruck.png",
+      "scores": {
+        "silhouetteMatch": null,
+        "surfacePlausibility": null,
+        "colourFidelity": null,
+        "partStructure": null,
+        "honesty": null
+      },
+      "comments": ""
+    },
+    {
+      "asset": "MaterialsVariantsShoe",
+      "board": "board-MaterialsVariantsShoe.png",
+      "scores": {
+        "silhouetteMatch": null,
+        "surfacePlausibility": null,
+        "colourFidelity": null,
+        "partStructure": null,
+        "honesty": null
+      },
+      "comments": ""
+    }
+  ]
+}

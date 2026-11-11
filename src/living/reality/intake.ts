@@ -6,6 +6,7 @@
  */
 import { leaveOneOutIoU, type SilhouetteView } from '../../universal-spatial/reconstruction/multiview';
 import type { RGBA } from '../universal-foundry/evidence';
+import { assessCapture, viewQuality, type CaptureAssessment, type CaptureView } from './capture-quality';
 import { Vector3 } from 'three';
 import { decodeMask, encodeColour, encodeMask, REALITY_LIMITS, type RealityEvidence, type StoredView } from './evidence';
 import { FRAME_HALF_PER_DIAGONAL } from './model';
@@ -14,7 +15,7 @@ export type IntakeImage = { name: string; rgba: RGBA; /** a mask the person conf
 export type RefusalCode = 'TOO_FEW_VIEWS' | 'TOO_MANY_VIEWS' | 'MASK_UNRELIABLE' | 'EMPTY_MASK' | 'DRAWING_INCONSISTENT' | 'POSE_COUNT_MISMATCH' | 'MISSING_DRAWING_VIEW';
 export type Refusal = { code: RefusalCode; detail: string; viewName?: string };
 export type ViewReport = { name: string; maskSource: 'confirmed' | 'automatic'; reliable: boolean; reasons: string[]; bbox: { x0: number; y0: number; x1: number; y1: number }; foregroundRatio: number };
-export type IntakeResult = { evidence: RealityEvidence | null; refusals: Refusal[]; views: ViewReport[] };
+export type IntakeResult = { evidence: RealityEvidence | null; refusals: Refusal[]; views: ViewReport[]; /** image quality, coverage and what to capture next (null for drawings) */ capture?: CaptureAssessment | null };
 export type IntakeOptions = { res?: number; colourRes?: number; cells?: number };
 
 const slug = (s: string, i: number) => (s.toLowerCase().replace(/\.[a-z0-9]+$/, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'view') + `-${i + 1}`;
@@ -166,7 +167,7 @@ export function intakeOrbit(images: readonly IntakeImage[], options: OrbitOption
       return [cx + u * ppu, cy - v * ppu];
     };
     const sampled = resample(p, res, colourRes, map);
-    return { id: slug(p.name, i), name: p.name, azimuthDeg: azimuths[i]!, elevationDeg: elevation, azimuthSource: assumed ? 'assumed' : 'given', maskRle: encodeMask(sampled.mask), colour: encodeColour(sampled.rgb, colourRes) };
+    return { id: slug(p.name, i), name: p.name, azimuthDeg: azimuths[i]!, elevationDeg: elevation, azimuthSource: assumed ? 'assumed' : 'given', outline: p.report.maskSource, maskRle: encodeMask(sampled.mask), colour: encodeColour(sampled.rgb, colourRes) };
   });
   // Turntable direction is not known from the order of the files. Wrong direction makes the cones inconsistent (the hull collapses), right direction is
   // consistent, so the sign is CHOSEN BY EVIDENCE; a symmetric object cannot tell and keeps the default, which is then harmless and declared.
@@ -182,7 +183,9 @@ export function intakeOrbit(images: readonly IntakeImage[], options: OrbitOption
     else assumptions.push(elevation === 0 ? 'Sentido da volta não identificável: a elevação 0° não distingue um objecto do seu espelho (e um objecto simétrico não precisa). A reconstrução pode estar espelhada (esquerda/direita trocadas); inverta a ordem das imagens se for o caso. Com a câmara elevada isto deixa de ser ambíguo.' : 'Sentido da volta não identificável a partir das silhuetas (objecto aproximadamente simétrico): mantido o sentido por defeito.');
   }
   const evidence: RealityEvidence = { contract: 'unfold.reality-evidence.v1', mode: options.mode === 'video' ? 'video' : turntable ? 'turntable' : 'orbit', res, colourRes, cells, frame: { centre: [0, 0, 0], half }, views: viewsOut, framing: { axisXFrac: axisX, cyFrac: assumed ? medianCy : null }, assumptions };
-  return { evidence, refusals: [], views };
+  // quality and coverage are assessed on the FINAL poses (direction already chosen) so the advice names the right sectors
+  const captureViews: CaptureView[] = ps.map((p, i) => ({ azimuthDeg: viewsOut[i]!.azimuthDeg, elevationDeg: viewsOut[i]!.elevationDeg, quality: viewQuality(p.rgba, p.mask), mask: p.mask, width: p.rgba.width, height: p.rgba.height, bboxSide: Math.max(p.report.bbox.x1 - p.report.bbox.x0 + 1, p.report.bbox.y1 - p.report.bbox.y0 + 1) }));
+  return { evidence, refusals: [], views, capture: assessCapture(captureViews) };
 }
 
 const spanOf = (az: number[]): number => { const s = [...az].map((a) => ((a % 360) + 360) % 360).sort((a, b) => a - b); let maxGap = 0; for (let i = 0; i < s.length; i++) maxGap = Math.max(maxGap, (s[(i + 1) % s.length]! - s[i]! + 360) % 360 || 360); return 360 - maxGap; };
@@ -273,6 +276,6 @@ export function intakeAddView(evidence: RealityEvidence, image: IntakeImage, pos
   const map = (X: number, Y: number, size: number): [number, number] => [cx + ((X / size) * 2 - 1) * half * hImg, cy - ((Y / size) * 2 - 1) * half * hImg];
   const sampled = resample(p, evidence.res, evidence.colourRes, map);
   const used = new Set(evidence.views.map((v) => v.id)); let id = slug(p.name, evidence.views.length); while (used.has(id)) id += 'x';
-  const view: StoredView = { id, name: p.name, azimuthDeg: pose.azimuthDeg, elevationDeg: pose.elevationDeg ?? 0, azimuthSource: 'given', maskRle: encodeMask(sampled.mask), colour: encodeColour(sampled.rgb, evidence.colourRes) };
+  const view: StoredView = { id, name: p.name, azimuthDeg: pose.azimuthDeg, elevationDeg: pose.elevationDeg ?? 0, azimuthSource: 'given', outline: p.report.maskSource, maskRle: encodeMask(sampled.mask), colour: encodeColour(sampled.rgb, evidence.colourRes) };
   return { evidence: { ...evidence, views: [...evidence.views, view], assumptions: [...evidence.assumptions, `Vista adicionada «${p.name}» com azimute ${pose.azimuthDeg}° indicado por si; não verificado.`].slice(0, REALITY_LIMITS.maxAssumptions) }, refusals: [], view: p.report };
 }

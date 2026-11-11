@@ -1,0 +1,90 @@
+[
+  {
+    "asset": "ChairDamaskPurplegold",
+    "split": "acceptance",
+    "category": "non-mechanical",
+    "board": "board-ChairDamaskPurplegold.png",
+    "machineMetrics": {
+      "chamferPct": 2.384,
+      "heldOutIoU": 0.86,
+      "fidelityClassShown": "partially_verified"
+    }
+  },
+  {
+    "asset": "IridescenceLamp",
+    "split": "acceptance",
+    "category": "mechanical",
+    "board": "board-IridescenceLamp.png",
+    "machineMetrics": {
+      "chamferPct": 3.617,
+      "heldOutIoU": 0.8526,
+      "fidelityClassShown": "partially_verified"
+    }
+  },
+  {
+    "asset": "AntiqueCamera",
+    "split": "acceptance",
+    "category": "mechanical",
+    "board": "board-AntiqueCamera.png",
+    "machineMetrics": {
+      "chamferPct": 1.822,
+      "heldOutIoU": 0.8273,
+      "fidelityClassShown": "partially_verified"
+    }
+  },
+  {
+    "asset": "Corset",
+    "split": "acceptance",
+    "category": "non-mechanical",
+    "board": "board-Corset.png",
+    "machineMetrics": {
+      "chamferPct": 2.732,
+      "heldOutIoU": 0.8861,
+      "fidelityClassShown": "partially_verified"
+    }
+  },
+  {
+    "asset": "BoomBox",
+    "split": "development",
+    "category": "mechanical",
+    "board": "board-BoomBox.png",
+    "machineMetrics": {
+      "chamferPct": 1.459,
+      "heldOutIoU": 0.8916,
+      "fidelityClassShown": "partially_verified"
+    }
+  },
+  {
+    "asset": "Avocado",
+    "split": "acceptance",
+    "category": "non-mechanical",
+    "board": "board-Avocado.png",
+    "machineMetrics": {
+      "chamferPct": 1.449,
+      "heldOutIoU": 0.9148,
+      "fidelityClassShown": "partially_verified"
+    }
+  },
+  {
+    "asset": "CesiumMilkTruck",
+    "split": "development",
+    "category": "mechanical",
+    "board": "board-CesiumMilkTruck.png",
+    "machineMetrics": {
+      "chamferPct": 3.102,
+      "heldOutIoU": 0.8867,
+      "fidelityClassShown": "partially_verified"
+    }
+  },
+  {
+    "asset": "MaterialsVariantsShoe",
+    "split": "acceptance",
+    "category": "non-mechanical",
+    "board": "board-MaterialsVariantsShoe.png",
+    "machineMetrics": {
+      "chamferPct": 2.203,
+      "heldOutIoU": 0.8895,
+      "fidelityClassShown": "partially_verified"
+    }
+  }
+]

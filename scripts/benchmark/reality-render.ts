@@ -6,8 +6,9 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 type Opts = { width?: number; height?: number; fovDeg?: number; elevationDeg?: number; fill?: number; background?: string };
 (window as unknown as { __render: unknown }).__render = async (url: string, azimuths: number[], opts: Opts = {}): Promise<string[]> => {
   const width = opts.width ?? 640, height = opts.height ?? 480, fov = opts.fovDeg ?? 12, el = ((opts.elevationDeg ?? 0) * Math.PI) / 180, fill = opts.fill ?? 0.55;
-  const renderer = new WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); renderer.setSize(width, height); renderer.setPixelRatio(1);
-  const scene = new Scene(); scene.background = new Color(opts.background ?? '#eeeeee');
+  const transparent = opts.background === 'transparent';
+  const renderer = new WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: transparent }); renderer.setSize(width, height); renderer.setPixelRatio(1); if (transparent) renderer.setClearColor(0x000000, 0);
+  const scene = new Scene(); if (!transparent) scene.background = new Color(opts.background ?? '#eeeeee');
   scene.add(new HemisphereLight(0xffffff, 0x8a8f99, 1.4)); const sun = new DirectionalLight(0xffffff, 2.2); sun.position.set(3, 5, 4); scene.add(sun);
   const gltf = await new GLTFLoader().loadAsync(url), model = gltf.scene;
   const box = new Box3().setFromObject(model), centre = box.getCenter(new Vector3()), size = box.getSize(new Vector3()), scale = 1 / size.y;

@@ -10,6 +10,8 @@ export const REALITY_LIMITS = { maxViews: 24, maxRes: 256, maxColourRes: 96, max
 
 export type StoredView = {
   id: string; name: string; azimuthDeg: number; elevationDeg: number; azimuthSource: 'given' | 'assumed';
+  /** where this outline came from: the automatic background segmentation or one the person drew/confirmed (absent in older evidence = unknown) */
+  outline?: 'automatic' | 'confirmed';
   /** run-length mask: alternating run lengths, starting with background, base-36, comma-separated */
   maskRle: string;
   /** RGB565 little-endian, colourRes x colourRes, base64; absent when the view carries no colour (masks only) */
@@ -77,6 +79,7 @@ export function validateRealityEvidence(value: unknown): RealityEvidence {
     if (!Number.isFinite(v.azimuthDeg) || !Number.isFinite(v.elevationDeg) || Math.abs(v.elevationDeg) > 90) fail('REALITY_POSE', 'invalid pose');
     if (v.azimuthSource !== 'given' && v.azimuthSource !== 'assumed') fail('REALITY_POSE_SOURCE', 'azimuthSource must be given or assumed');
     if (typeof v.maskRle !== 'string' || typeof v.name !== 'string') fail('REALITY_VIEW', 'invalid view');
+    if (v.outline !== undefined && v.outline !== 'automatic' && v.outline !== 'confirmed') fail('REALITY_OUTLINE', 'outline must be automatic or confirmed');
     try { decodeMask(v.maskRle, res * res); } catch { fail('REALITY_MASK_INVALID', v.id); }
     if (v.colour !== undefined) { try { decodeColour(v.colour, colourRes); } catch { fail('REALITY_COLOUR_INVALID', v.id); } }
   }

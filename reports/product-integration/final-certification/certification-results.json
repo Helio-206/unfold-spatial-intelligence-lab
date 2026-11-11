@@ -32,7 +32,7 @@
   {
     "step": "A7 guardar e reabrir preserva identidade",
     "verdict": "PASS",
-    "detail": "save=true reopen=true id=775935bc…"
+    "detail": "save=true reopen=true id=354d59d5…"
   },
   {
     "step": "A8 sem erros de browser (A)",

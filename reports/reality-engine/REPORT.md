@@ -1,4 +1,56 @@
-# UNFOLD — Fase 01: Reality Engine — relatório consolidado
+# UNFOLD — Fase 01: Reality Engine — avaliação consolidada (continuação integral)
+
+Branch `claude/unfold-fase-01-reality-engine-lvhbn9`, sem merge em `produto`. Esta avaliação **substitui** a anterior (preservada abaixo como histórico). Investigação: `INVESTIGATION.md`. Benchmark: `benchmark/README.md`. Revisão visual independente: `visual-review/README.md` (**por fazer**).
+
+## Estado final: **NO-GO** (Fase 01 integral). Fase 02 não iniciada.
+
+O produto deixou de depender de imagens sintéticas perfeitas: aceita fotografias com fundo complexo através de um editor de contorno interactivo, avisa o que falta capturar, escolhe e explica a estratégia, mede relações e oclusão entre partes, e continua a recusar o que não consegue sustentar. Continua **sem** validação em fotografias reais de objectos com 3D de referência, sem revisão visual independente e sem GPU real; por isso nenhuma categoria é "fiel" e o estado não sobe.
+
+### O que mudou nesta continuação (todo medido, ver números)
+| Área | Entrega | Evidência |
+|---|---|---|
+| Captura real | Segmentação interactiva (caixa + pincéis, corte mínimo, Worker), «Ajustar contorno» no intake | 8 fotografias reais de veículos: automática 0.298 IoU → caixa 0.535 → 3 rondas de correcções **0.866** (holdouts 0.884/0.876). Correcções simuladas com o polígono como oráculo; referência de um só anotador. |
+| Captura real | Pipeline completo sobre **fundos de fotografias reais** | Automática credível em **13/112 vistas (12%)**; com contorno ajustado **14/14 reconstruídos**; Chamfer médio 2.63% (dev, máx. 4.03) / 2.57% (aceitação, máx. 3.12); IoU retido 0.78 / 0.81; 3/14 ficam "não validados". |
+| Captura real | Qualidade de imagem (desfoque, exposição, resolução, objecto cortado), cobertura angular e de altura, vistas redundantes ou insuficientes, instruções em português | `capture-quality.ts`, 7 testes; limiares heurísticos declarados como não calibrados em fotografias reais. |
+| Estratégia | Selecção por tipo de entrada e evidência, com limites e "o que fazer", sem fallback silencioso | `strategy.ts`; mostrada no intake. Texto/foto única → IA (conceptual); foto única de veículo → ajuste existente; ≥2 vistas credíveis → casco; contorno não credível → «precisa de entrada»; desenho/planta → não certificados. |
+| Componentes | Estrutura **medida**: contactos, pares espelhados, eixos paralelos, visibilidade/oclusão por parte e vista; relações no plano como inferidas (não impostas) | `structure.ts`; vistas por parte < 2 declaradas como desconhecidas. Contra a estrutura de nós do ground truth: **7/9** (dev) e **7/25** (aceitação) partes significativas recuperadas — **o reconhecimento de peças continua a ser geometria, não compreensão**. |
+| Componentes | Separação de membros finos (`limbs`) | Funciona em sólidos sintéticos; **não melhorou** na referência real e sobre-segmentou → desligado por defeito (experiência registada). |
+| Visual | Cor por mediana robusta, verificação fotométrica em vistas novas, materiais assumidos declarados, regiões não vistas visíveis | Erro de cor em vistas novas 14–21/255 (camião 37); mediana melhor em 5/5 activos de desenvolvimento. Rugosidade/metal/normais finas **não inventadas**. |
+| Câmara | SfM (pycolmap) avaliado e **não integrado** | 8 vistas a 45°: 0 modelos; 24 vistas: 15/24 registadas, passos irregulares. Poses assumidas + refinamento por consistência (6.5° → 4.7°) mantêm-se. |
+| Certificação | Pacote de revisão visual independente + folha de pontuação; calibração de tolerâncias passa a distinguir contornos automáticos de ajustados à mão | `visual-review/`; `PRODUCT_PATH_ASSISTED_ERROR`. |
+
+## Critérios de aceitação
+| # | Critério | Estado |
+|---|---|---|
+| 1 | Percepção | **Parcial:** objecto único, fundos complexos com assistência, poses assumidas/refinadas, qualidade e cobertura, estratégia. Falta categoria semântica, landmarks genéricos, segmentação aprendida, leitura com Muse Spark (sem chave). |
+| 2 | Geometria | **Parcial:** medida contra 3D em renders (clean e fundo real); fotografias de câmara sem 3D de referência: **não validado**. |
+| 3 | Multivista | **Cumprido (âmbito restrito).** |
+| 4 | Arquitectura | **Cumprido:** Core → ledger → plano → seam; sem grafo paralelo. |
+| 5 | Visual | **Parcial:** sem mapas de normais/PBR por região sustentados por evidência, sem LOD, sem GPU real, sem revisão independente. |
+| 6 | Refinamento | **Cumprido (âmbito restrito);** linguagem natural via Meta não validada. |
+| 7 | Integração | **Cumprido:** 8 objectos × 19/19 E2E + captura em fundo complexo 7/7. |
+| 8 | Regressão | **Cumprido:** 2729 testes passam (3 falhas só como root); `final-certification` 20/20. |
+| 9 | Evidência | **Cumprido (reprodutível).** Revisão humana independente: **pendente**. |
+| 10 | Estabilidade | **Parcial** (sem longa duração nem GPU real). |
+
+## Categorias certificadas
+Nenhuma é "fiel". "Parcialmente verificada", âmbito exacto: multivista de objecto único, 8 vistas de volta de mesa, elevação declarada, **em renders** de activos licenciados; automático em fundo liso (aceitação 6/8 reconstruídos, Chamfer 1.45–3.62%) e com contornos ajustados à mão sobre fundos reais (aceitação 8/8, 1.96–3.12%, **protocolo de utilizador simulado**). Fotografia real de objecto, vídeo, desenho técnico, arquitectura, anatomia, imagem única não-veículo: **não certificadas**.
+
+## Bloqueios e verificações pendentes (não inventadas)
+1. Fotografias reais de objectos **com 3D de referência** (scan/CAD): inexistentes aqui; Wikimedia bloqueada pela rede.
+2. Revisão visual humana independente: pacote pronto (`visual-review/`), sem revisor.
+3. GPU real e FPS; dispositivos móveis.
+4. Muse Spark ao vivo (sem `MODEL_API_KEY`): leitura semântica e refinamento por linguagem natural não validados.
+5. Utilizadores reais no editor de contorno (o esforço medido é simulado com oráculo).
+6. SfM/MVS/neuronal em fotografias reais de objectos: não avaliados.
+Condições para a Fase 02: os itens 1, 2, 5 e a decisão sobre o significado das partes.
+
+## Testes e commits
++115 testes (2614 → 2729). E2E: BoomBox, CesiumMilkTruck, AntiqueCamera, Avocado, Corset, MaterialsVariantsShoe, ChairDamaskPurplegold, IridescenceLamp (19/19 cada), captura em fundo complexo (7/7), `final-certification` (20/20). Zero chamadas pagas.
+
+---
+# Histórico: avaliação anterior
+## (relatório anterior) Fase 01 — relatório consolidado
 
 Branch `claude/unfold-fase-01-reality-engine-lvhbn9` (sem merge em `produto`). Documentos anteriores: `CP0-AUDIT.md`, `CP1-ACCEPTANCE.md`. Benchmark e protocolo: `benchmark/README.md`.
 

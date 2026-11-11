@@ -1,5 +1,7 @@
 import { FIDELITY_LABEL, EVIDENCE_LABEL } from '../../core';
 import type { SpatialPlanV2 } from '../../universal-spatial/contracts-v2';
+import { analyseStructure } from './structure';
+import { assessCoverage } from './capture-quality';
 import { hullSilhouette } from '../../universal-spatial/reconstruction/multiview';
 import { decodeMask, type RealityEvidence } from './evidence';
 import { decodeImageFile } from './intake-panel';
@@ -47,7 +49,9 @@ export function mountRealityReview(deps: RealityReviewDeps): { refresh(): void; 
       <details><summary>O que ninguém verificou</summary><ul style="padding-left:16px">${f.unvalidatable.map((s) => `<li>${esc(s)}</li>`).join('')}${f.blockers.map((s) => `<li>${esc(s)}</li>`).join('')}</ul></details>
       <div style="display:flex;gap:6px;align-items:center;margin:6px 0"><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${swatch}"></span> região nenhuma vista viu: hipótese</div>
       <details open><summary>Comparar com a referência (azul = referência, laranja = previsto)</summary><div style="display:flex;flex-wrap:wrap;gap:6px">${compare}</div></details>
+      <details data-rr-structure><summary>Estrutura medida (relações e oclusão)</summary>${(() => { const st = analyseStructure(m); return `<ul style="padding-left:16px"><li>Contactos: ${st.contacts.length ? st.contacts.map((c) => `${esc(c.a)}–${esc(c.b)} (${(c.areaFraction * 100).toFixed(0)}%)`).join(', ') : 'nenhum'}</li><li>Pares espelhados: ${st.symmetries.length ? st.symmetries.map((x) => `${esc(x.a)}≈${esc(x.b)} (${x.axis}, ${(x.iou * 100).toFixed(0)}%)`).join(', ') : 'nenhum'}</li><li>Eixos paralelos: ${st.alignments.length ? st.alignments.map((x) => `${esc(x.a)}∥${esc(x.b)} (${x.angleDeg}°)`).join(', ') : 'nenhum'}</li>${st.visibility.map((v) => `<li>${esc(v.partId)}: ${v.status === 'observed' ? 'vista' : v.status === 'weakly_observed' ? 'pouco observada' : 'não observada'} por ${v.observedViews} vista(s)</li>`).join('')}</ul><small>Relações medidas no casco; não são restrições impostas nem dizem o que a parte é.</small>`; })()}</details>
       <details><summary>Evidência por componente</summary><ul style="padding-left:16px">${comps}</ul></details>
+      <details data-rr-guidance open><summary>O que fotografar a seguir</summary>${(() => { const g = assessCoverage(viewsOf(ev)); return g.issues.length ? `<ul style="padding-left:16px">${g.issues.map((i) => `<li data-rr-issue="${i.code}">${esc(i.message)} <b>${esc(i.advice)}</b></li>`).join('')}</ul>` : '<p>Cobertura angular e de altura sem lacunas evidentes.</p>'; })()}</details>
       <hr><div><b>Acrescentar uma perspectiva</b><br><label>azimute (°) <input data-rr-az type="number" value="${esc(azimuth)}" min="-360" max="360" step="1" style="width:70px"></label><br><input data-rr-file type="file" accept="image/png,image/jpeg,image/webp" ${busy ? 'disabled' : ''}>
         ${problem ? `<p role="alert" style="color:#ffb4a8">${esc(problem)}</p>` : ''}${diff}</div>
       <hr><div><b>Versões</b> ${ev.views.length} vistas · <span data-rr-version>${entry.record.current + 1}/${entry.record.versions.length}</span><br>${entry.record.versions.map((v, i) => `<div>${i === entry.record.current ? '▶' : '·'} ${esc(v.note)}</div>`).join('')}

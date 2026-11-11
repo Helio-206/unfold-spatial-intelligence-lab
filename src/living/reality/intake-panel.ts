@@ -1,7 +1,9 @@
 import type { SpatialPlanV2 } from '../../universal-spatial/contracts-v2';
 import { checkFile } from '../experience/intake';
+import { selectStrategy, type StrategyInput } from './strategy';
 import { decodeMask, REALITY_LIMITS } from './evidence';
 import type { RealityHost } from './host';
+import type { Point, SegmentationHint } from './interactive-segmentation';
 import { intakeDrawing, intakeOrbit, segmentGeneric, selectKeyFrames, type IntakeImage, type IntakeResult, type Refusal } from './intake';
 
 /**
@@ -19,6 +21,7 @@ export type RealityIntakeDeps = {
 type Mode = 'turntable' | 'orbit' | 'video' | 'drawing';
 type Slot = { key: string; label: string; image: IntakeImage | null; azimuth: string; thumb: string };
 const MAX_SIDE = 640;
+const EDIT_W = 560, EDIT_H = (im: IntakeImage) => Math.max(1, Math.round((EDIT_W * im.rgba.height) / im.rgba.width));
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const REFUSAL_COPY: Record<Refusal['code'], string> = {
   TOO_FEW_VIEWS: 'São precisas pelo menos 2 vistas do mesmo objecto para observar profundidade. Uma só fotografia segue o caminho de interpretação por IA.',
@@ -95,12 +98,33 @@ export async function decodeVideoFile(file: File): Promise<VideoFrames> {
 
 export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDeps): { dispose(): void } {
   const decode = deps.decode ?? decodeImageFile;
-  let abort: AbortController | null = null, videoTimes: number[] = [], videoDuration = 0, mode: Mode = 'turntable', elevation = '', slots: Slot[] = [], problem: string | null = null, result: IntakeResult | null = null, busy = false, disposed = false;
+  type Editor = { index: number; tool: 'box' | 'fg' | 'bg'; box: { x0: number; y0: number; x1: number; y1: number } | null; fg: Point[]; bg: Point[]; mask: Uint8Array | null; busy: boolean; note: string | null; canvas: HTMLCanvasElement | null; dragging: boolean; scale: number };
+  let editor: Editor | null = null, abort: AbortController | null = null, videoTimes: number[] = [], videoDuration = 0, mode: Mode = 'turntable', elevation = '', slots: Slot[] = [], problem: string | null = null, result: IntakeResult | null = null, busy = false, disposed = false;
   const drawingSlots = (): Slot[] => [{ key: 'front', label: 'Frente', image: null, azimuth: '', thumb: '' }, { key: 'side', label: 'Lado direito', image: null, azimuth: '', thumb: '' }, { key: 'top', label: 'Topo', image: null, azimuth: '', thumb: '' }];
   const title = () => (container.querySelector<HTMLInputElement>('#rl-title')?.value.trim() || 'Objecto reconstruído de várias vistas').slice(0, 100);
 
   const thumbs = (r: IntakeResult | null) => (r ? r.views : []).map((v, i) => `<li class="sp-comp" data-rl-view="${i}"><div class="sp-comp-head"><b>${esc(v.name)}</b><span class="u-label">contorno ${v.maskSource === 'confirmed' ? 'confirmado' : 'automático'} · ${v.reliable ? 'credível' : 'NÃO credível'} · ${(v.foregroundRatio * 100).toFixed(0)}% da imagem</span></div>${v.reasons.length ? `<p class="u-small">${esc(v.reasons.join('; '))}</p>` : ''}<canvas data-rl-canvas="${i}" width="120" height="90" aria-label="Contorno extraído de ${esc(v.name)}"></canvas></li>`).join('');
-  const html = () => `<div class="sp-card sp-card--review" data-reality-intake>
+  const editorHtml = (e: Editor) => `<div class="sp-card sp-card--review" data-reality-intake data-rl-editor>
+    <div class="sp-head"><h1 class="sp-h1">Ajustar o contorno · ${esc(slots[e.index]?.image?.name ?? '')}</h1><p class="u-label">segmentação interactiva · local · nada sai do seu navegador</p></div>
+    <p class="u-small">Desenhe uma <b>caixa</b> à volta do objecto, depois marque com o pincel <b>objecto</b> (verde) o que falta e <b>fundo</b> (vermelho) o que sobra, e calcule. Repita até o contorno estar certo. O contorno que confirmar fica registado como confirmado por si, não como medição.</p>
+    <fieldset class="sp-field"><legend class="u-label">ferramenta</legend>
+      <label><input type="radio" name="rl-tool" value="box" ${e.tool === 'box' ? 'checked' : ''}> caixa</label>
+      <label><input type="radio" name="rl-tool" value="fg" ${e.tool === 'fg' ? 'checked' : ''}> pincel objecto</label>
+      <label><input type="radio" name="rl-tool" value="bg" ${e.tool === 'bg' ? 'checked' : ''}> pincel fundo</label></fieldset>
+    <canvas data-rl-edit-canvas width="${EDIT_W}" height="${EDIT_H(slots[e.index]!.image!)}" style="max-width:100%;touch-action:none;cursor:crosshair;border:1px solid var(--line)" aria-label="Imagem para ajustar o contorno"></canvas>
+    ${e.note ? `<p class="u-small" role="status">${esc(e.note)}</p>` : ''}
+    <div class="sp-row"><button class="u-btn u-btn--outline" type="button" data-rl="edit-cancel">Cancelar</button><button class="u-btn u-btn--outline" type="button" data-rl="edit-clear">Limpar traços</button><span class="sp-grow"></span>
+      <button class="u-btn u-btn--outline" type="button" data-rl="edit-run" ${e.busy ? 'disabled' : ''}>${e.busy ? 'a calcular…' : 'Calcular contorno'}</button>
+      <button class="u-btn u-btn--primary" type="button" data-rl="edit-accept" ${e.mask && !e.busy ? '' : 'disabled'}>Usar este contorno</button></div></div>`;
+  const strategyHtml = (r: IntakeResult | null) => {
+    if (!r) return '';
+    const kind: StrategyInput['kind'] = mode === 'drawing' ? 'drawing-3view' : mode === 'video' ? 'video' : 'multi-image';
+    const credible = !r.refusals.some((x) => x.code === 'MASK_UNRELIABLE' || x.code === 'EMPTY_MASK');
+    const st = selectStrategy({ kind, views: r.views.length, outlinesCredible: credible, capture: r.capture ?? null, posesDeclared: mode === 'orbit' });
+    return `<div data-rl-strategy="${st.id}"><p class="u-label">Estratégia escolhida: <b>${st.id}</b> · tecto de fidelidade: ${st.ceiling}${st.certified ? ' · configuração medida no benchmark' : ' · não certificada'}</p><ul>${[...st.reasons, ...st.limits].map((t) => `<li class="u-small">${esc(t)}</li>`).join('')}</ul>${st.requires.length ? `<p class="u-small"><b>Para melhorar:</b> ${st.requires.map(esc).join(' ')}</p>` : ''}</div>`;
+  };
+  const qualityHtml = (r: IntakeResult | null) => !r?.capture ? '' : `<div data-rl-capture><p class="u-label">Cobertura: ${r.capture.coverage.views} vistas · maior sector sem vista ${r.capture.coverage.azimuthMaxGapDeg.toFixed(0)}° · elevação ${r.capture.coverage.elevationMinDeg.toFixed(0)}° a ${r.capture.coverage.elevationMaxDeg.toFixed(0)}°</p>${r.capture.issues.length ? `<ul class="sp-list" aria-label="Qualidade e cobertura">${r.capture.issues.map((i) => `<li class="sp-comp" data-rl-issue="${i.code}" data-severity="${i.severity}"><div class="sp-comp-head"><b>${esc(i.message)}</b></div><p class="u-small">${esc(i.advice)}</p></li>`).join('')}</ul>` : '<p class="u-small">Sem avisos de qualidade ou cobertura. (Limiares heurísticos, não calibrados em fotografias reais.)</p>'}</div>`;
+  const html = () => editor ? editorHtml(editor) : `<div class="sp-card sp-card--review" data-reality-intake>
     <div class="sp-head"><h1 class="sp-h1">Reconstruir a partir de várias vistas</h1><p class="u-label">reconstrução local · sem chamada à IA · nada sai do seu navegador</p></div>
     <p class="u-small">Dê várias imagens do mesmo objecto. O UNFOLD extrai o contorno de cada uma, cruza-os e constrói o sólido que todas permitem — um <b>limite superior</b> da forma. Concavidades e o que nenhuma vista mostra ficam como hipótese, e o que foi preciso assumir fica escrito.</p>
     <fieldset class="sp-field"><legend class="u-label">tipo de entrada</legend>
@@ -116,7 +140,10 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
       : `<label class="sp-drop"><input id="rl-files" type="file" multiple accept="image/png,image/jpeg,image/webp"><span>${slots.length ? `${slots.length} vista(s) · escolher outras` : '<u>escolha 2 a 24 imagens</u>'}</span><span class="u-label">PNG, JPEG ou WebP · fundo liso ou transparente · mesma distância e zoom</span></label>
          <label class="u-label">elevação da câmara (°) — deixe vazio se não sabe (assume-se 0° e fica registado) <input id="rl-elev" type="number" min="-90" max="90" step="1" value="${esc(elevation)}" style="width:84px"></label>
          ${mode === 'orbit' ? `<ul class="sp-list">${slots.map((s, i) => `<li class="sp-comp"><div class="sp-comp-head"><b>${esc(s.image?.name ?? s.label)}</b><label class="u-label">azimute (°) <input type="number" data-rl-az="${i}" value="${esc(s.azimuth)}" min="-360" max="360" step="1" style="width:84px"></label></div></li>`).join('')}</ul>` : ''}`}
+    ${mode !== 'drawing' && slots.length ? `<ul class="sp-list" aria-label="Imagens">${slots.map((sl, i) => `<li class="sp-comp"><div class="sp-comp-head"><b>${esc(sl.image?.name ?? sl.label)}</b><span class="u-label">${sl.image?.mask ? 'contorno confirmado por si' : 'contorno automático'}</span><button class="uw-link" type="button" data-rl-edit="${i}">Ajustar contorno</button></div></li>`).join('')}</ul>` : ''}
     ${problem ? `<p class="sp-problem" role="alert">${esc(problem)}</p>` : ''}
+    ${qualityHtml(result)}
+    ${strategyHtml(result)}
     ${result ? `<ul class="sp-list" aria-label="Contornos extraídos">${thumbs(result)}</ul>${result.refusals.map((r) => `<p class="sp-problem" role="alert" data-rl-refusal="${r.code}">${esc(REFUSAL_COPY[r.code])}${r.viewName ? ` (${esc(r.viewName)})` : ''} <span class="u-label">${esc(r.detail)}</span></p>`).join('')}${result.evidence ? `<details open><summary class="u-label">O que foi assumido</summary><ul>${result.evidence.assumptions.map((a) => `<li class="u-small">${esc(a)}</li>`).join('')}</ul></details>` : ''}` : ''}
     <div class="sp-row"><button class="u-btn u-btn--outline" type="button" data-rl="cancel">Voltar</button><span class="sp-grow"></span>
       <button class="u-btn u-btn--outline" type="button" data-rl="analyse" ${busy ? 'disabled' : ''}>Analisar vistas</button>
@@ -128,7 +155,23 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
     container.innerHTML = html();
     const input = container.querySelector<HTMLInputElement>('#rl-title'); if (input) input.value = keepTitle;
     result?.views.forEach((_, i) => drawMask(container.querySelector<HTMLCanvasElement>(`[data-rl-canvas="${i}"]`), i));
+    if (editor) { editor.canvas = container.querySelector<HTMLCanvasElement>('[data-rl-edit-canvas]'); drawEditor(); }
   };
+  const brush = (im: IntakeImage) => Math.max(3, Math.round(0.0146 * Math.max(im.rgba.width, im.rgba.height)));
+  const drawEditor = () => {
+    const e = editor; if (!e?.canvas) return; const im = slots[e.index]!.image!, c = e.canvas, ctx = c.getContext('2d')!, { width: w, height: h, data } = im.rgba;
+    const scale = w / c.width, out = ctx.createImageData(c.width, c.height); e.scale = scale;
+    for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x++) { const sx = Math.min(w - 1, Math.floor(x * scale)), sy = Math.min(h - 1, Math.floor(y * scale)), si = (sy * w + sx) * 4, o = (y * c.width + x) * 4, on = e.mask ? e.mask[sy * w + sx]! : 0; out.data[o] = on ? data[si]! * 0.55 + 40 : data[si]!; out.data[o + 1] = on ? data[si + 1]! * 0.55 + 110 : data[si + 1]!; out.data[o + 2] = on ? data[si + 2]! * 0.55 + 120 : data[si + 2]!; out.data[o + 3] = 255; }
+    ctx.putImageData(out, 0, 0);
+    if (e.box) { ctx.strokeStyle = '#ffd24d'; ctx.lineWidth = 2; ctx.strokeRect(e.box.x0 / scale, e.box.y0 / scale, (e.box.x1 - e.box.x0) / scale, (e.box.y1 - e.box.y0) / scale); }
+    const r = brush(im) / scale; for (const [p, col] of [[e.fg, '#2ecc71'], [e.bg, '#ff5a4d']] as const) { ctx.fillStyle = col; for (const [x, y] of p) { ctx.beginPath(); ctx.arc(x / scale, y / scale, r, 0, Math.PI * 2); ctx.fill(); } }
+  };
+  const toImage = (ev: PointerEvent, e: Editor): Point => { const r = e.canvas!.getBoundingClientRect(); return [((ev.clientX - r.left) / r.width) * e.canvas!.width * e.scale, ((ev.clientY - r.top) / r.height) * e.canvas!.height * e.scale]; };
+  let boxStart: Point | null = null;
+  const onPointerDown = (ev: PointerEvent) => { const e = editor; if (!e?.canvas || ev.target !== e.canvas) return; e.dragging = true; e.canvas.setPointerCapture?.(ev.pointerId); const p = toImage(ev, e); if (e.tool === 'box') { boxStart = p; e.box = { x0: p[0], y0: p[1], x1: p[0], y1: p[1] }; } else (e.tool === 'fg' ? e.fg : e.bg).push(p); drawEditor(); };
+  const onPointerMove = (ev: PointerEvent) => { const e = editor; if (!e?.dragging || !e.canvas) return; const p = toImage(ev, e); if (e.tool === 'box' && boxStart) e.box = { x0: Math.min(boxStart[0], p[0]), y0: Math.min(boxStart[1], p[1]), x1: Math.max(boxStart[0], p[0]), y1: Math.max(boxStart[1], p[1]) }; else if (e.tool !== 'box') { const list = e.tool === 'fg' ? e.fg : e.bg, last = list.at(-1); if (!last || Math.hypot(last[0] - p[0], last[1] - p[1]) >= brush(slots[e.index]!.image!) * 0.6) list.push(p); } drawEditor(); };
+  const onPointerUp = () => { if (editor) editor.dragging = false; boxStart = null; };
+  container.addEventListener('pointerdown', onPointerDown); container.addEventListener('pointermove', onPointerMove); container.addEventListener('pointerup', onPointerUp);
   const drawMask = (canvas: HTMLCanvasElement | null, i: number) => {
     const ev = result?.evidence; if (!canvas || !ev) return;
     const v = ev.views[i]; if (!v) return; const m = decodeMask(v.maskRle, ev.res * ev.res), ctx = canvas.getContext('2d')!, img = ctx.createImageData(canvas.width, canvas.height);
@@ -181,11 +224,24 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
     return result;
   };
 
+  const runEditor = () => {
+    const e = editor; if (!e || e.busy) return; const im = slots[e.index]!.image!;
+    if (!e.box && !e.fg.length) { e.note = 'Desenhe primeiro uma caixa à volta do objecto.'; paint(); return; }
+    e.busy = true; e.note = 'A calcular o contorno…'; paint();
+    const hint: SegmentationHint = { ...(e.box ? { box: e.box } : {}), foreground: e.fg, background: e.bg, brushRadius: brush(im) };
+    void deps.host.segment({ rgba: { width: im.rgba.width, height: im.rgba.height, data: im.rgba.data as Uint8ClampedArray }, hint }).then((mask) => { if (!editor || disposed) return; editor.mask = mask; editor.busy = false; let on = 0; for (const v of mask) on += v; editor.note = `Contorno calculado (${((on / mask.length) * 100).toFixed(0)}% da imagem). Corrija com os pincéis e volte a calcular, ou use-o.`; paint(); }).catch(() => { if (editor) { editor.busy = false; editor.note = 'Não foi possível calcular o contorno.'; paint(); } });
+  };
   const onClick = (event: Event) => {
+    const ed = (event.target as HTMLElement).closest<HTMLElement>('[data-rl-edit]');
+    if (ed) { event.stopPropagation(); const i = Number(ed.dataset.rlEdit); if (slots[i]?.image) { editor = { index: i, tool: 'box', box: null, fg: [], bg: [], mask: slots[i]!.image!.mask ?? null, busy: false, note: null, canvas: null, dragging: false, scale: 1 }; paint(); } return; }
     const b = (event.target as HTMLElement).closest<HTMLElement>('[data-rl]'); if (!b) return;
     event.stopPropagation();
     const act = b.dataset.rl;
-    if (act === 'cancel') { abort?.abort(); deps.onCancel(); }
+    if (act === 'edit-cancel') { editor = null; paint(); }
+    else if (act === 'edit-clear' && editor) { editor.fg = []; editor.bg = []; editor.box = null; editor.mask = slots[editor.index]!.image!.mask ?? null; paint(); }
+    else if (act === 'edit-run') runEditor();
+    else if (act === 'edit-accept' && editor?.mask) { const sl = slots[editor.index]!; sl.image = { ...sl.image!, mask: editor.mask }; editor = null; result = null; paint(); }
+    else if (act === 'cancel') { abort?.abort(); deps.onCancel(); }
     else if (act === 'analyse') { analyse(); paint(); }
     else if (act === 'build' && result?.evidence && !busy) {
       busy = true; paint();
@@ -195,6 +251,7 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
   };
   const onChange = (event: Event) => {
     const t = event.target as HTMLInputElement;
+    if (t.name === 'rl-tool' && editor) { editor.tool = t.value as Editor['tool']; return; }
     if (t.name === 'rl-mode') { mode = t.value as Mode; slots = mode === 'drawing' ? drawingSlots() : []; result = null; problem = null; paint(); }
     else if (t.id === 'rl-files' && t.files) void take([...t.files]);
     else if (t.id === 'rl-video' && t.files?.[0]) void takeVideo(t.files[0]);
@@ -204,5 +261,5 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
   };
   container.addEventListener('click', onClick); container.addEventListener('change', onChange);
   paint();
-  return { dispose() { disposed = true; abort?.abort(); container.removeEventListener('click', onClick); container.removeEventListener('change', onChange); } };
+  return { dispose() { disposed = true; abort?.abort(); container.removeEventListener('click', onClick); container.removeEventListener('change', onChange); container.removeEventListener('pointerdown', onPointerDown); container.removeEventListener('pointermove', onPointerMove); container.removeEventListener('pointerup', onPointerUp); } };
 }

@@ -105,8 +105,12 @@
       "heldOutViews": 4,
       "observedFraction": 0.9096,
       "looIoUMean": 0.7411,
+      "photometricMeanAbsError": {
+        "weightedMean": 20.8,
+        "robustMedian": 20.8
+      },
       "fidelityClass": "partially_verified",
-      "computeMs": 1560
+      "computeMs": 1594
     },
     {
       "id": "BoomBox",
@@ -130,8 +134,12 @@
       "heldOutViews": 4,
       "observedFraction": 0.8803,
       "looIoUMean": 0.8447,
+      "photometricMeanAbsError": {
+        "weightedMean": 15.8,
+        "robustMedian": 15.8
+      },
       "fidelityClass": "partially_verified",
-      "computeMs": 1709
+      "computeMs": 1701
     },
     {
       "id": "WaterBottle",
@@ -155,8 +163,12 @@
       "heldOutViews": 4,
       "observedFraction": 0.9173,
       "looIoUMean": 0.9023,
+      "photometricMeanAbsError": {
+        "weightedMean": 17.43,
+        "robustMedian": 17.43
+      },
       "fidelityClass": "partially_verified",
-      "computeMs": 1370
+      "computeMs": 1395
     },
     {
       "id": "SheenChair",
@@ -180,8 +192,12 @@
       "heldOutViews": 4,
       "observedFraction": 0.7732,
       "looIoUMean": 0.7797,
+      "photometricMeanAbsError": {
+        "weightedMean": 13.76,
+        "robustMedian": 13.76
+      },
       "fidelityClass": "partially_verified",
-      "computeMs": 1683
+      "computeMs": 1549
     },
     {
       "id": "CesiumMilkTruck",
@@ -205,8 +221,12 @@
       "heldOutViews": 4,
       "observedFraction": 0.413,
       "looIoUMean": 0.8177,
+      "photometricMeanAbsError": {
+        "weightedMean": 36.73,
+        "robustMedian": 36.73
+      },
       "fidelityClass": "partially_verified",
-      "computeMs": 1915
+      "computeMs": 2067
     },
     {
       "id": "AntiqueCamera",
@@ -230,8 +250,12 @@
       "heldOutViews": 4,
       "observedFraction": 0.8778,
       "looIoUMean": 0.7659,
+      "photometricMeanAbsError": {
+        "weightedMean": 27.57,
+        "robustMedian": 27.57
+      },
       "fidelityClass": "partially_verified",
-      "computeMs": 1577
+      "computeMs": 1298
     },
     {
       "id": "Avocado",
@@ -255,8 +279,12 @@
       "heldOutViews": 4,
       "observedFraction": 0.9583,
       "looIoUMean": 0.857,
+      "photometricMeanAbsError": {
+        "weightedMean": 14.91,
+        "robustMedian": 14.91
+      },
       "fidelityClass": "partially_verified",
-      "computeMs": 1605
+      "computeMs": 1665
     },
     {
       "id": "Corset",
@@ -280,8 +308,12 @@
       "heldOutViews": 4,
       "observedFraction": 0.8064,
       "looIoUMean": 0.8316,
+      "photometricMeanAbsError": {
+        "weightedMean": 19.08,
+        "robustMedian": 19.08
+      },
       "fidelityClass": "partially_verified",
-      "computeMs": 1509
+      "computeMs": 1721
     },
     {
       "id": "MaterialsVariantsShoe",
@@ -305,8 +337,12 @@
       "heldOutViews": 4,
       "observedFraction": 0.7947,
       "looIoUMean": 0.8013,
+      "photometricMeanAbsError": {
+        "weightedMean": 17.72,
+        "robustMedian": 17.72
+      },
       "fidelityClass": "partially_verified",
-      "computeMs": 1316
+      "computeMs": 1324
     },
     {
       "id": "GlamVelvetSofa",
@@ -391,8 +427,12 @@
       "heldOutViews": 4,
       "observedFraction": 0.767,
       "looIoUMean": 0.78,
+      "photometricMeanAbsError": {
+        "weightedMean": 23.49,
+        "robustMedian": 23.49
+      },
       "fidelityClass": "partially_verified",
-      "computeMs": 1514
+      "computeMs": 1421
     },
     {
       "id": "IridescenceLamp",
@@ -416,8 +456,12 @@
       "heldOutViews": 4,
       "observedFraction": 0.779,
       "looIoUMean": 0.856,
+      "photometricMeanAbsError": {
+        "weightedMean": 9.44,
+        "robustMedian": 9.44
+      },
       "fidelityClass": "partially_verified",
-      "computeMs": 1383
+      "computeMs": 1533
     },
     {
       "id": "CarConcept",

@@ -40,5 +40,14 @@ export const PRODUCT_PATH_ERROR = {
   "accuracyPctMax": 4.08,
   "heldOutIoUMin": 0.859
 } as const;
+/** Same, but with outlines the person fixed by hand over REAL photograph backgrounds (assisted segmentation; the simulated person uses the exact render alpha as oracle). */
+export const PRODUCT_PATH_ASSISTED_ERROR = {
+  "views": 8,
+  "assets": 6,
+  "chamferPctMedian": 2.57,
+  "chamferPctMax": 4.03,
+  "accuracyPctMax": 4.35,
+  "heldOutIoUMin": 0.551
+} as const;
 export const CONSISTENCY_THRESHOLD = 0.69;
 export const CALIBRATION_SOURCE = 'development split, rendered views, benchmark manifest v1';

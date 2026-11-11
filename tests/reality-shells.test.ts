@@ -6,7 +6,7 @@ import { reconstructHull } from '../src/universal-spatial/reconstruction/multivi
 import { viewsOf } from '../src/living/reality/model';
 import { evidenceFromRenders, trisOf } from './helpers/reality-fixtures';
 
-// halteres: duas esferas ligadas por um pescoço fino; duas partes verdadeiras
+// halteres: duas esferas ligadas por uma haste fina; (a haste só se separa com `limbs`)
 const dumbbell = () => [...trisOf(new SphereGeometry(0.4, 28, 20), new Vector3(-0.65, 0, 0)), ...trisOf(new SphereGeometry(0.4, 28, 20), new Vector3(0.65, 0, 0)), ...trisOf(new CylinderGeometry(0.07, 0.07, 0.9, 12).rotateZ(Math.PI / 2))];
 const POSES: Array<[number, number]> = [[0, 0], [45, 0], [90, 0], [135, 0], [180, 0], [225, 0], [270, 0], [315, 0], [0, 40], [120, 40], [240, 40]];
 

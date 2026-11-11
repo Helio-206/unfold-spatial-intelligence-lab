@@ -22,6 +22,7 @@ export class RealityHost {
   readonly store: RealityStore;
   constructor(storage: StorageLike | null, private readonly compute: RealityCompute = inlineCompute) { this.store = new RealityStore(storage); }
   dispose(): void { this.compute.dispose(); }
+  segment(request: Parameters<RealityCompute['segment']>[0], signal?: AbortSignal): Promise<Uint8Array> { return this.compute.segment(request, signal); }
 
   modelFor = (sourceSha256: string): RealityModel | null => this.entries.get(sourceSha256)?.model ?? null;
   entry(sourceSha256: string): RealityEntry | null { return this.entries.get(sourceSha256) ?? null; }

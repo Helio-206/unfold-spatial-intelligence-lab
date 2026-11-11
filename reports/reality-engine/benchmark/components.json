@@ -1,0 +1,159 @@
+{
+  "note": "Reconstruction parts vs the GT glTF node structure, ortho 14 views, known cameras. ARI = adjusted Rand index over hull voxels; recovered = GT parts (>=3% of voxels) matched with IoU >= 0.5.",
+  "rows": [
+    {
+      "id": "ToyCar",
+      "split": "development",
+      "gtParts": 3,
+      "gtSignificantParts": 2,
+      "ourParts": 2,
+      "ari": 0.85,
+      "weightedBestIoU": 0.957,
+      "gtPartsRecovered": 2,
+      "purity": 0.976
+    },
+    {
+      "id": "Lantern",
+      "split": "development",
+      "gtParts": 3,
+      "gtSignificantParts": 2,
+      "ourParts": 2,
+      "ari": 1,
+      "weightedBestIoU": 1,
+      "gtPartsRecovered": 2,
+      "purity": 1
+    },
+    {
+      "id": "BoomBox",
+      "split": "development",
+      "gtParts": 1,
+      "gtSignificantParts": 1,
+      "ourParts": 2,
+      "ari": 0,
+      "weightedBestIoU": 0.999,
+      "gtPartsRecovered": 1,
+      "purity": 1
+    },
+    {
+      "id": "WaterBottle",
+      "split": "development",
+      "gtParts": 1,
+      "gtSignificantParts": 1,
+      "ourParts": 1,
+      "ari": 1,
+      "weightedBestIoU": 1,
+      "gtPartsRecovered": 1,
+      "purity": 1
+    },
+    {
+      "id": "SheenChair",
+      "split": "development",
+      "gtParts": 4,
+      "gtSignificantParts": 2,
+      "ourParts": 3,
+      "ari": -0.006,
+      "weightedBestIoU": 0.388,
+      "gtPartsRecovered": 0,
+      "purity": 0.539
+    },
+    {
+      "id": "CesiumMilkTruck",
+      "split": "development",
+      "gtParts": 3,
+      "gtSignificantParts": 1,
+      "ourParts": 1,
+      "ari": 0,
+      "weightedBestIoU": 0.958,
+      "gtPartsRecovered": 1,
+      "purity": 0.958
+    },
+    {
+      "id": "AntiqueCamera",
+      "split": "acceptance",
+      "gtParts": 2,
+      "gtSignificantParts": 2,
+      "ourParts": 3,
+      "ari": 0.476,
+      "weightedBestIoU": 0.668,
+      "gtPartsRecovered": 1,
+      "purity": 0.867
+    },
+    {
+      "id": "Avocado",
+      "split": "acceptance",
+      "gtParts": 1,
+      "gtSignificantParts": 1,
+      "ourParts": 1,
+      "ari": 1,
+      "weightedBestIoU": 1,
+      "gtPartsRecovered": 1,
+      "purity": 1
+    },
+    {
+      "id": "Corset",
+      "split": "acceptance",
+      "gtParts": 1,
+      "gtSignificantParts": 1,
+      "ourParts": 1,
+      "ari": 1,
+      "weightedBestIoU": 1,
+      "gtPartsRecovered": 1,
+      "purity": 1
+    },
+    {
+      "id": "MaterialsVariantsShoe",
+      "split": "acceptance",
+      "gtParts": 1,
+      "gtSignificantParts": 1,
+      "ourParts": 1,
+      "ari": 1,
+      "weightedBestIoU": 1,
+      "gtPartsRecovered": 1,
+      "purity": 1
+    },
+    {
+      "id": "GlamVelvetSofa",
+      "split": "acceptance",
+      "gtParts": 3,
+      "gtSignificantParts": 1,
+      "ourParts": 1,
+      "ari": 0,
+      "weightedBestIoU": 0.994,
+      "gtPartsRecovered": 1,
+      "purity": 0.994
+    },
+    {
+      "id": "ChairDamaskPurplegold",
+      "split": "acceptance",
+      "gtParts": 11,
+      "gtSignificantParts": 5,
+      "ourParts": 3,
+      "ari": 0.299,
+      "weightedBestIoU": 0.389,
+      "gtPartsRecovered": 1,
+      "purity": 0.509
+    },
+    {
+      "id": "IridescenceLamp",
+      "split": "acceptance",
+      "gtParts": 3,
+      "gtSignificantParts": 3,
+      "ourParts": 8,
+      "ari": 0.339,
+      "weightedBestIoU": 0.475,
+      "gtPartsRecovered": 1,
+      "purity": 0.757
+    },
+    {
+      "id": "CarConcept",
+      "split": "acceptance",
+      "gtParts": 97,
+      "gtSignificantParts": 11,
+      "ourParts": 1,
+      "ari": 0,
+      "weightedBestIoU": 0.058,
+      "gtPartsRecovered": 0,
+      "purity": 0.08
+    }
+  ]
+}

@@ -42,7 +42,9 @@ export function viewsOf(evidence: RealityEvidence): SilhouetteView[] {
   return evidence.views.map((v) => ({ id: v.id, res: evidence.res, mask: decodeMask(v.maskRle, evidence.res * evidence.res), azimuthDeg: v.azimuthDeg, elevationDeg: v.elevationDeg, azimuthSource: v.azimuthSource }));
 }
 
-export function buildModel(input: RealityEvidence, options: { parts?: PartOptions; /** force a grid (a refinement must use the grid of the solid it is compared with) */ cells?: number; maxTriangles?: number } = {}): RealityModel {
+/** default 'robust-median': measured on the development assets it lowers the novel-view colour error on every asset (reports/reality-engine/benchmark) */
+export type ColourMode = 'weighted-mean' | 'robust-median';
+export function buildModel(input: RealityEvidence, options: { colour?: ColourMode; parts?: PartOptions; /** force a grid (a refinement must use the grid of the solid it is compared with) */ cells?: number; maxTriangles?: number } = {}): RealityModel {
   const model = buildModelAt(validateRealityEvidence(input), options.cells ?? undefined, options);
   const budget = options.maxTriangles ?? MODEL_TRIANGLE_BUDGET, total = model.parts.reduce((n, p) => n + p.indices.length / 3, 0);
   if (options.cells !== undefined || total <= budget) return model;
@@ -57,7 +59,7 @@ export function buildModel(input: RealityEvidence, options: { parts?: PartOption
   best.degraded = { fromCells: model.evidence.cells, toCells: cells, triangles: best.parts.reduce((n, p) => n + p.indices.length / 3, 0) }; return best;
 }
 
-function buildModelAt(evidence: RealityEvidence, cellsOverride: number | undefined, options: { parts?: PartOptions }): RealityModel {
+function buildModelAt(evidence: RealityEvidence, cellsOverride: number | undefined, options: { colour?: ColourMode; parts?: PartOptions }): RealityModel {
   const frame: Frame = { centre: new Vector3(...evidence.frame.centre), half: evidence.frame.half };
   const views = viewsOf(evidence);
   const hull = reconstructHull(views, { frame, cells: cellsOverride ?? evidence.cells });
@@ -128,7 +130,7 @@ function buildModelAt(evidence: RealityEvidence, cellsOverride: number | undefin
       p.set(pos.getX(i), pos.getY(i), pos.getZ(i)); n.set(nor.getX(i), nor.getY(i), nor.getZ(i)).normalize();
       positions[i * 3] = p.x - origin.x; positions[i * 3 + 1] = p.y - origin.y; positions[i * 3 + 2] = p.z - origin.z;
       normals[i * 3] = n.x; normals[i * 3 + 1] = n.y; normals[i * 3 + 2] = n.z;
-      let wsum = 0, r = 0, gg = 0, b = 0, any = false;
+      let any = false; const samples: Array<{ w: number; c: [number, number, number] }> = [];
       for (let v = 0; v < views.length; v++) {
         if (!visible(p, n, v)) continue;
         any = true;
@@ -139,8 +141,15 @@ function buildModelAt(evidence: RealityEvidence, cellsOverride: number | undefin
         if (sdf[v]![mw * evidence.res + mu]! > -COLOUR_MARGIN_PX) continue;
         const cu = Math.min(evidence.colourRes - 1, Math.max(0, Math.floor((u / evidence.res) * evidence.colourRes))), cw = Math.min(evidence.colourRes - 1, Math.max(0, Math.floor((w / evidence.res) * evidence.colourRes)));
         const q = (cw * evidence.colourRes + cu) * 3, weight = Math.pow(Math.max(0, n.dot(dirs[v]!)), 4);
-        r += rgb[q]! * weight; gg += rgb[q + 1]! * weight; b += rgb[q + 2]! * weight; wsum += weight;
+        if (weight > 0) samples.push({ w: weight, c: [rgb[q]!, rgb[q + 1]!, rgb[q + 2]!] });
       }
+      let wsum = 0, r = 0, gg = 0, b = 0;
+      if ((options.colour ?? 'robust-median') === 'robust-median' && samples.length >= 3) {
+        // specular highlights and shadows are view dependent; the weighted median of the three best-facing views ignores a single outlier
+        const top = samples.sort((a, c) => c.w - a.w).slice(0, 3), med = (ch: 0 | 1 | 2) => top.map((x) => x.c[ch]).sort((x, y) => x - y)[1]!;
+        r = med(0); gg = med(1); b = med(2); wsum = 1;
+        r *= wsum; gg *= wsum; b *= wsum;
+      } else for (const x of samples) { r += x.c[0] * x.w; gg += x.c[1] * x.w; b += x.c[2] * x.w; wsum += x.w; }
       observed[i] = any ? 1 : 0; total++; if (any) seen++;
       if (wsum > 0) { colourOut[i * 3] = r / wsum / 255; colourOut[i * 3 + 1] = gg / wsum / 255; colourOut[i * 3 + 2] = b / wsum / 255; }
       else if (any) { colourOut[i * 3] = 0.72; colourOut[i * 3 + 1] = 0.72; colourOut[i * 3 + 2] = 0.72; } // seen in a mask-only view: shape observed, appearance unknown

@@ -1,0 +1,10 @@
+import { chromium } from 'playwright-core'; import { createServer } from 'vite'; import { mkdirSync, writeFileSync } from 'node:fs'; import { resolve } from 'node:path';
+const [asset, n, fill, outDir] = [process.argv[2]!, Number(process.argv[3]), Number(process.argv[4]), process.argv[5]!];
+mkdirSync(resolve(outDir, 'images'), { recursive: true });
+const vite = await createServer({ server: { host: '127.0.0.1', port: 5397, strictPort: true }, logLevel: 'error' }); await vite.listen();
+const browser = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--no-sandbox'] });
+const page = await browser.newPage(); await page.goto('http://127.0.0.1:5397/scripts/benchmark/reality-render.html'); await page.waitForFunction(() => (window as any).__renderReady, null, { timeout: 60000 });
+const az = Array.from({ length: n }, (_, i) => (360 * i) / n);
+const urls: string[] = await page.evaluate(([u, a, f]) => (window as any).__render(u, a, { width: 1280, height: 960, elevationDeg: 20, fill: f, fovDeg: 25 }), [`/reports/reality-engine/benchmark/assets/${asset}/${asset}.glb`, az, fill] as const);
+urls.forEach((u, i) => writeFileSync(resolve(outDir, 'images', `v${String(i).padStart(2, '0')}.png`), Buffer.from(u.split(',')[1]!, 'base64')));
+writeFileSync(resolve(outDir, 'azimuths.json'), JSON.stringify(az)); await browser.close(); await vite.close();

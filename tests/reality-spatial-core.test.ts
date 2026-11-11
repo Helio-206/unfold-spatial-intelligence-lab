@@ -64,6 +64,14 @@ describe('avaliação honesta', () => {
     const few = evidenceFromRenders(gt, ORBIT6), mf = buildModel(few), shaF = await evidenceSha256(few);
     expect(assessReconstruction(planFromModel(mf, shaF, 'T'), mf, shaF).benchmarkTolerance).toBeNull(); // 6 vistas fotográficas: sem medição, erro desconhecido (não se extrapola)
   }, 120_000);
+  it('contornos confirmados à mão usam a medição assistida (mais larga) e dizem-no; automáticos usam a do caminho automático', async () => {
+    const base = evidenceFromRenders(gt, Array.from({ length: 8 }, (_, i) => [i * 45, i % 2 ? 40 : 0] as [number, number]), { cells: 48, res: 128 });
+    const hand = { ...base, mode: 'turntable' as const, views: base.views.map((v) => ({ ...v, outline: 'confirmed' as const })) }, auto = { ...base, mode: 'turntable' as const, views: base.views.map((v) => ({ ...v, outline: 'automatic' as const })) };
+    const t = async (ev: typeof base) => { const m = buildModel(ev), sha = await evidenceSha256(ev); return assessReconstruction(planFromModel(m, sha, 'T'), m, sha).benchmarkTolerance!; };
+    const a = await t(hand), b = await t(auto);
+    expect(a.source).toMatch(/ajustados à mão/); expect(b.source).toMatch(/contornos automáticos/);
+    expect(a.chamferPctMax).toBeGreaterThanOrEqual(b.chamferPctMax);
+  }, 120_000);
   it('um ledger de outra reconstrução (hash diferente) é ignorado', async () => {
     const ev = evidenceFromRenders(gt, ORBIT6), model = buildModel(ev), sha = await evidenceSha256(ev), plan = planFromModel(model, sha, 'T');
     const wrong = assessReconstruction(plan, model, 'f'.repeat(64));

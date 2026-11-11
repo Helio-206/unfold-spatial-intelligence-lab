@@ -1,0 +1,180 @@
+{
+  "note": "REAL photographs, single-annotator polygons (not independent). Interactive = rough box + simulated corrections.",
+  "summary": {
+    "cases": 8,
+    "classicalMean": 0.298,
+    "boxOnlyMean": 0.535,
+    "afterThreeRoundsMean": 0.866,
+    "classicalCredibleCount": 2
+  },
+  "rows": [
+    {
+      "id": "car",
+      "size": [
+        960,
+        490
+      ],
+      "classicalIoU": 0.091,
+      "classicalCredible": false,
+      "boxOnlyIoU": 0.667,
+      "afterCorrections": [
+        0.828,
+        0.887,
+        0.932
+      ],
+      "strokesUsed": {
+        "fg": 36,
+        "bg": 36
+      },
+      "msBoxOnly": 550,
+      "iterations": 3
+    },
+    {
+      "id": "bus",
+      "size": [
+        960,
+        502
+      ],
+      "classicalIoU": 0.22,
+      "classicalCredible": false,
+      "boxOnlyIoU": 0.512,
+      "afterCorrections": [
+        0.717,
+        0.841,
+        0.902
+      ],
+      "strokesUsed": {
+        "fg": 36,
+        "bg": 36
+      },
+      "msBoxOnly": 1135,
+      "iterations": 5
+    },
+    {
+      "id": "accept-mini",
+      "size": [
+        960,
+        486
+      ],
+      "classicalIoU": 0.239,
+      "classicalCredible": false,
+      "boxOnlyIoU": 0.382,
+      "afterCorrections": [
+        0.397,
+        0.684,
+        0.826
+      ],
+      "strokesUsed": {
+        "fg": 36,
+        "bg": 36
+      },
+      "msBoxOnly": 1265,
+      "iterations": 5
+    },
+    {
+      "id": "accept-pickup",
+      "size": [
+        960,
+        619
+      ],
+      "classicalIoU": 0.335,
+      "classicalCredible": true,
+      "boxOnlyIoU": 0.453,
+      "afterCorrections": [
+        0.574,
+        0.745,
+        0.844
+      ],
+      "strokesUsed": {
+        "fg": 36,
+        "bg": 36
+      },
+      "msBoxOnly": 1516,
+      "iterations": 5
+    },
+    {
+      "id": "holdout-van",
+      "size": [
+        960,
+        717
+      ],
+      "classicalIoU": 0.468,
+      "classicalCredible": false,
+      "boxOnlyIoU": 0.526,
+      "afterCorrections": [
+        0.663,
+        0.786,
+        0.884
+      ],
+      "strokesUsed": {
+        "fg": 36,
+        "bg": 36
+      },
+      "msBoxOnly": 1536,
+      "iterations": 5
+    },
+    {
+      "id": "holdout-coupe",
+      "size": [
+        960,
+        414
+      ],
+      "classicalIoU": 0.525,
+      "classicalCredible": true,
+      "boxOnlyIoU": 0.65,
+      "afterCorrections": [
+        0.764,
+        0.86,
+        0.876
+      ],
+      "strokesUsed": {
+        "fg": 36,
+        "bg": 36
+      },
+      "msBoxOnly": 885,
+      "iterations": 5
+    },
+    {
+      "id": "skoda-kodiaq",
+      "size": [
+        960,
+        640
+      ],
+      "classicalIoU": 0.292,
+      "classicalCredible": false,
+      "boxOnlyIoU": 0.537,
+      "afterCorrections": [
+        0.628,
+        0.83,
+        0.791
+      ],
+      "strokesUsed": {
+        "fg": 36,
+        "bg": 36
+      },
+      "msBoxOnly": 959,
+      "iterations": 5
+    },
+    {
+      "id": "porsche-911",
+      "size": [
+        960,
+        643
+      ],
+      "classicalIoU": 0.212,
+      "classicalCredible": false,
+      "boxOnlyIoU": 0.557,
+      "afterCorrections": [
+        0.565,
+        0.776,
+        0.87
+      ],
+      "strokesUsed": {
+        "fg": 36,
+        "bg": 36
+      },
+      "msBoxOnly": 2288,
+      "iterations": 5
+    }
+  ]
+}

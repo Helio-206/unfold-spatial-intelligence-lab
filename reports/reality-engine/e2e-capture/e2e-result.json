@@ -1,0 +1,41 @@
+{
+  "asset": "BoomBox",
+  "background": "bus.jpg",
+  "results": [
+    {
+      "step": "0 entradas",
+      "verdict": "PASS",
+      "detail": "8 renders de BoomBox sobre a fotografia real bus.jpg"
+    },
+    {
+      "step": "1 contorno automático recusado em fundo real (fail-closed) e a estratégia pede «Ajustar contorno»",
+      "verdict": "PASS",
+      "detail": "8 vistas recusadas, estratégia needs-input"
+    },
+    {
+      "step": "2 contornos ajustados à mão (caixa + pincéis, calculados no Worker) nas 8 vistas",
+      "verdict": "PASS",
+      "detail": "8/8 confirmados"
+    },
+    {
+      "step": "3 depois do ajuste: sem recusas, estratégia casco, orientação de captura presente",
+      "verdict": "PASS",
+      "detail": "recusas 0, estratégia silhouette-hull, avisos [BLURRY,NO_ELEVATION_VARIETY], contornos confirmados 8"
+    },
+    {
+      "step": "4 Space construído; revisão mostra o que fotografar a seguir e a estrutura medida; nunca \"fiel\"",
+      "verdict": "PASS",
+      "detail": "fidelidade partially_verified"
+    },
+    {
+      "step": "5 nenhuma chamada paga",
+      "verdict": "PASS",
+      "detail": "provider=0"
+    },
+    {
+      "step": "6 sem erros de browser",
+      "verdict": "PASS",
+      "detail": "limpo"
+    }
+  ]
+}

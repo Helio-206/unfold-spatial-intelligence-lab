@@ -43,6 +43,11 @@ describe('segmentação em partes (watershed com persistência)', () => {
     const t = segmentParts(tiny, grid, { minVoxels: 40 });
     expect(t.parts.length).toBe(1); expect(t.discardedVoxels).toBeGreaterThan(0); // removido e declarado
   });
+  it('limbs (opcional): um assento espesso e quatro pernas finas separam-se por abertura morfológica, e só se pedido', () => {
+    const stool = solid((x, y, z) => (Math.abs(x) < 0.7 && Math.abs(y - 0.35) < 0.18 && Math.abs(z) < 0.5) || ([[-0.55, -0.35], [0.55, -0.35], [-0.55, 0.35], [0.55, 0.35]] as const).some(([lx, lz]) => Math.hypot(x - lx, z - lz) < 0.09 && y < 0.25 && y > -0.6));
+    expect(segmentParts(stool, grid).parts.length).toBe(1); // a espessura sozinha não separa membros de espessura constante
+    expect(segmentParts(stool, grid, { limbs: true }).parts.length).toBe(5);
+  });
   it('vazio devolve zero partes sem lançar', () => {
     expect(segmentParts(new Uint8Array(N * N * N), grid).parts).toEqual([]);
   });
