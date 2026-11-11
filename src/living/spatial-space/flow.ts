@@ -16,6 +16,10 @@ import type { SpatialReviewPrecondition } from '../../universal-spatial/contract
 import { ProductGeometry } from './product-geometry';
 import { AtlasSpaceLayer, ATLAS_NOTICE } from './atlas-layer';
 import { decide, decideAll, initialSpaceReview, pruneSpatialPlan, removedIds, reviewBlockers, reviewRecord, type SpaceReview } from './review';
+import type { RealityHost } from '../reality/host';
+import { RealityGeometry } from '../reality/geometry';
+import { mountRealityIntake } from '../reality/intake-panel';
+import { mountRealityReview } from '../reality/review-panel';
 import { browserStorage, SpaceStore, type SpaceListing, type SpaceRecord, type StoreProblem } from './store';
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -30,7 +34,7 @@ export const ORIGIN_MEANING: Record<keyof typeof ORIGIN_LABEL, string> = {
 export type SpaceSource = { kind: 'text'; text: string } | { kind: 'image'; name: string; size: number; dataUrl: string };
 export type SpacePhase = 'closed' | 'intake' | 'library' | 'waiting' | 'failed' | 'review' | 'built' | 'leaving';
 /** What is known about the run that produced the Space on stage (from the server reply, or from the saved record). */
-export type RunInfo = { origin: 'meta' | 'reopened'; model: string | null; requestId: string | null; latencyMs: number | null; estimatedCostUsd: number | null; rawResponseSha256: string | null; rawResponseStored: boolean; sourceKind: 'text' | 'image'; sourceSha256: string; limitations: string[] };
+export type RunInfo = { origin: 'meta' | 'reopened' | 'reality'; model: string | null; requestId: string | null; latencyMs: number | null; estimatedCostUsd: number | null; rawResponseSha256: string | null; rawResponseStored: boolean; sourceKind: 'text' | 'image'; sourceSha256: string; limitations: string[] };
 type Create = (input: Parameters<typeof createSpatialPlanV2>[0], fetchImpl?: typeof fetch) => Promise<SpatialPlanV2Reply>;
 type Api = { adopt: typeof adoptSpatialPlanV2; operation: typeof applySpatialPlanV2Operation; undo: typeof undoSpatialPlanV2; propose: typeof proposeSpatialEditV2; evaluate: typeof evaluateSpatialPlanV2; transaction: typeof applySpatialPlanV2Transaction };
 
@@ -56,7 +60,11 @@ export type SpaceFlowOptions = {
   onPlanShown?: (plan: SpatialPlanV2) => void;
   /** Experimental: the person corrected the foreground outline in review. Bound by the caller to this plan's source hash; stale after any new upload. */
   onCorrectedMask?: (info: { polygon: Array<[number, number]>; sourceSha256: string }) => void;
+  /** Reality Engine: several views of one object become a Space without a model call. Absent = the entry is not offered. */
+  reality?: RealityHost;
 };
+/** Marker stored in the Space record's `run.model` for Spaces made by the Reality Engine (an engine id, not a model). */
+export const REALITY_RUN_MODEL = 'reality-engine.v1';
 export type GeometrySeam = { compile: (plan: SpatialPlanV2) => import('../../universal-spatial/geometry-compiler-v2').CompiledSpatialPlanV2; attach(onReady: () => void): void; report(): unknown; dispose(): void };
 
 export const FAILURE_COPY: Record<string, string> = {
@@ -110,6 +118,10 @@ export class SpaceFlow {
   savedId: string | null = null;
   readonly store: SpaceStore;
   private geometry: GeometrySeam | null = null;
+  private realityIntake: { dispose(): void } | null = null;
+  private realityReview: { refresh(): void; dispose(): void } | null = null;
+  /** The reply on review was produced by the Reality Engine (source hash = its evidence hash). */
+  private realityDraft: string | null = null;
   private savedPlanJson: string | null = null;
   private source: SpaceSource | null = null;
   private problem: string | null = null;
@@ -172,6 +184,7 @@ export class SpaceFlow {
   openLibrary(): void { this.guard(() => void this.showLibrary()); }
 
   private startIntake(): void {
+    this.realityIntake?.dispose(); this.realityIntake = null; this.realityDraft = null;
     this.attach();
     this.dropScene(); this.abort?.abort(); clearInterval(this.tick);
     this.source = null; this.reply = null; this.failure = null; this.problem = null; this.review = initialSpaceReview(); this.note = null; this.run = null; this.session = null; this.syncNote = null; this.savedId = null; this.savedPlanJson = null;
@@ -186,6 +199,7 @@ export class SpaceFlow {
 
   close(): void {
     if (this.phase === 'closed') return;
+    this.realityIntake?.dispose(); this.realityIntake = null;
     this.abort?.abort(); clearInterval(this.tick); this.dropScene();
     this.phase = 'closed'; this.panel.hidden = true; this.panel.replaceChildren(); this.pendingLeave = null;
     this.options.workspace.setComposerIntake(null);
@@ -198,6 +212,7 @@ export class SpaceFlow {
   dispose(): void { this.abort?.abort(); clearInterval(this.tick); this.geometry?.dispose(); this.geometry = null; this.layer = null; this.panel.remove(); }
 
   private dropScene(): void {
+    this.realityReview?.dispose(); this.realityReview = null;
     this.geometry?.dispose(); this.geometry = null;
     if (this.layer || this.atlas) { this.layer = null; this.atlas = null; this.options.workspace.clearMachine({ brandLabel: 'laboratório vazio', notices: [], extraTools: [] }); }
     this.session = null; this.syncNote = null; this.presentationNotice = null; this.relationReview = null;
@@ -247,6 +262,30 @@ export class SpaceFlow {
     this.render();
   }
 
+  /** Several views of one object -> reconstruction in the browser -> the ordinary review. No model call, no upload. */
+  openReality(): void {
+    const reality = this.options.reality; if (!reality || this.phase !== 'intake') return;
+    this.realityIntake?.dispose(); this.panel.replaceChildren(); this.panel.dataset.phase = 'reality';
+    this.realityIntake = mountRealityIntake(this.panel, {
+      host: reality,
+      onCancel: () => { this.realityIntake?.dispose(); this.realityIntake = null; this.render(); },
+      onDone: ({ sha256, plan }) => {
+        this.realityIntake?.dispose(); this.realityIntake = null;
+        const entry = reality.entry(sha256)!, views = entry.model.evidence.views.length;
+        this.realityDraft = sha256; this.source = null;
+        this.reply = {
+          contract: 'unfold.spatial-plan.v2', sessionId: 'local-reality', revision: 0, plan,
+          sceneSummary: { componentCount: plan.components.length, geometryNodeCount: plan.components.length, operators: ['box'], constraintReady: true },
+          constraintReport: { ready: true, results: [], violatedIds: [] }, constructionEvents: [],
+          meta: { model: null, engine: REALITY_RUN_MODEL, localReconstruction: true },
+          limitations: [`Reconstrução local a partir de ${views} vistas (limite superior da forma); não é uma medição.`],
+        } as unknown as typeof this.reply;
+        this.review = initialSpaceReview(); this.phase = 'review'; this.render();
+      },
+    });
+    this.updateComposer();
+  }
+
   cancel(): void { if (this.phase !== 'waiting') return; this.abort?.abort(); clearInterval(this.tick); this.phase = 'intake'; this.render(); }
 
   // ------------------------------------------------------------------------------------------------ review → build
@@ -261,8 +300,9 @@ export class SpaceFlow {
     let plan: SpatialPlanV2;
     try { plan = pruneSpatialPlan(reply.plan, removed); } catch (error) { this.failure = { code: 'REVIEW_PRUNE', message: `A revisão deixou um plano inválido (${error instanceof Error ? error.message : 'erro'}). Nada foi construído.` }; this.phase = 'failed'; this.render(); return false; }
     this.builtRecord = reviewRecord(reply.plan, this.review);
+    const reality = this.realityDraft !== null && this.options.reality?.has(this.realityDraft);
     const meta = reply.meta as Record<string, unknown>, num = (k: string) => (typeof meta[k] === 'number' ? (meta[k] as number) : null), str = (k: string) => (typeof meta[k] === 'string' ? (meta[k] as string) : null);
-    this.run = { origin: 'meta', model: str('model'), requestId: str('requestId'), latencyMs: num('latencyMs'), estimatedCostUsd: num('estimatedCostUsd'), rawResponseSha256: str('rawResponseSha256'), rawResponseStored: meta.rawResponseStored === true, sourceKind: plan.source.kind, sourceSha256: plan.source.sha256, limitations: reply.limitations };
+    this.run = reality ? { origin: 'reality', model: REALITY_RUN_MODEL, requestId: null, latencyMs: null, estimatedCostUsd: 0, rawResponseSha256: null, rawResponseStored: false, sourceKind: 'image', sourceSha256: this.realityDraft!, limitations: [...reply.limitations] } : { origin: 'meta', model: str('model'), requestId: str('requestId'), latencyMs: num('latencyMs'), estimatedCostUsd: num('estimatedCostUsd'), rawResponseSha256: str('rawResponseSha256'), rawResponseStored: meta.rawResponseStored === true, sourceKind: plan.source.kind, sourceSha256: plan.source.sha256, limitations: reply.limitations };
     this.savedId = null; this.savedPlanJson = null;
     this.show(plan, true);
     return true;
@@ -277,13 +317,18 @@ export class SpaceFlow {
     this.reply = null; this.builtRecord = { contract: 'unfold.space-review.v1', reviewer: 'client_asserted_unverified', acknowledgedConceptualPlan: true, kept: r.review.kept, rejected: r.review.rejected, removedWithAncestor: [] };
     this.attach(); this.dropScene();
     this.savedId = r.id; this.savedPlanJson = JSON.stringify(r.plan);
+    if (r.run.model === REALITY_RUN_MODEL && this.options.reality) {
+      const loaded = await this.options.reality.open(r.plan.source.sha256);
+      this.run = { ...this.run!, origin: 'reality', limitations: loaded.ok ? ['Reconstrução reaberta a partir da evidência guardada neste navegador (mesmas máscaras, poses e cores).'] : [`A evidência desta reconstrução não pôde ser carregada (${loaded.reason}); só os proxies editáveis são mostrados, não a forma reconstruída.`] };
+    }
     this.show(r.plan, false);
     return true;
   }
 
   private show(plan: SpatialPlanV2, cinematic: boolean): void {
     const workspace = this.options.workspace;
-    const geometry: GeometrySeam = this.options.geometry ? this.options.geometry() : new ProductGeometry(); this.geometry = geometry;
+    const reality = this.options.reality, realityHere = !!reality && plan.source.kind === 'image' && reality.has(plan.source.sha256);
+    const geometry: GeometrySeam = realityHere ? new RealityGeometry(reality!.modelFor) : this.options.geometry ? this.options.geometry() : new ProductGeometry(); this.geometry = geometry;
     const layer = new PlanSpaceLayer(plan, {
       changed: () => { this.refreshContext(); workspace.spaceChanged(); },
       redraw: () => workspace.redraw(),
@@ -304,6 +349,11 @@ export class SpaceFlow {
     geometry.attach(() => layer.scheduleGeometryUpgrade(12_000));
     this.updateComposer();
     this.options.onPlanShown?.(plan);
+    this.realityReview?.dispose(); this.realityReview = null;
+    if (realityHere) {
+      const sha = plan.source.sha256;
+      this.realityReview = mountRealityReview({ host: reality!, sourceSha256: sha, plan: () => layer.currentPlan, onChanged: () => { layer.regenerate(); workspace.spaceChanged(); this.refreshContext(); } });
+    }
     void this.adopt(plan);
   }
 
@@ -512,6 +562,7 @@ export class SpaceFlow {
   async save(): Promise<boolean> {
     const layer = this.layer, run = this.run; if (!layer || !run) return false;
     const plan = layer.currentPlan;
+    if (run.model === REALITY_RUN_MODEL && this.options.reality?.has(plan.source.sha256) && !(await this.options.reality.persist(plan.source.sha256))) { this.note = 'Não foi possível guardar a evidência desta reconstrução (armazenamento cheio ou indisponível). O Space não foi guardado.'; this.refreshContext(); return false; }
     const result = await this.store.save({
       id: this.savedId ?? undefined, plan,
       run: { model: run.model, requestId: run.requestId, estimatedCostUsd: run.estimatedCostUsd, rawResponseSha256: run.rawResponseSha256, sourceKind: run.sourceKind, sourceSha256: run.sourceSha256 },
@@ -623,12 +674,14 @@ export class SpaceFlow {
     const layer = this.layer!, run = this.run!, plan = layer.currentPlan;
     const val = (v: unknown) => (v === undefined || v === null ? 'não indicado' : String(v));
     const lines = layer.assemblyLines();
-    const origin = run.origin === 'meta'
+    const origin = run.origin === 'reality'
+      ? `Fonte: várias vistas do mesmo objecto, reconstruídas localmente neste navegador (sem modelo de IA, sem chamada paga). Evidência sha256 ${run.sourceSha256.slice(0, 16)}…`
+      : run.origin === 'meta'
       ? `Fonte: ${run.sourceKind === 'text' ? 'texto' : 'fotografia'}. Modelo: ${val(run.model)} · pedido ${val(run.requestId)} · ${val(run.latencyMs)} ms · custo estimado ${val(run.estimatedCostUsd)} USD. Resposta bruta da Meta: sha256 ${val(run.rawResponseSha256)} · ${run.rawResponseStored ? 'guardada no servidor (apenas leitura do dono)' : 'não guardada (evidência desligada neste servidor)'}.`
       : `Reaberto do armazenamento local deste navegador. Corrida original: modelo ${val(run.model)} · pedido ${val(run.requestId)} · custo estimado ${val(run.estimatedCostUsd)} USD.`;
     const notices: Array<{ id: string; text: string; detail?: string }> = [{
       id: 'space-origin',
-      text: `Concepção da IA · não é uma medição · revisão humana não verificada${lines.length ? ` · ${lines.length} aviso${lines.length > 1 ? 's' : ''} de montagem` : ''}`,
+      text: `${run.origin === 'reality' ? 'Reconstrução a partir das suas vistas · limite superior da forma · não é uma medição' : 'Concepção da IA · não é uma medição'} · revisão humana não verificada${lines.length ? ` · ${lines.length} aviso${lines.length > 1 ? 's' : ''} de montagem` : ''}`,
       detail: [origin, `Revisão: ${this.builtRecord?.kept.length ?? 0} mantidos, ${this.builtRecord?.rejected.length ?? 0} rejeitados; identidade do revisor não verificada.`,
         plan.units === 'm' ? 'Unidades: metros, indicadas no pedido.' : 'Unidades: sem unidade. A escala física é desconhecida.',
         `Chamadas pagas nesta sessão: ${this.metaCalls}.`,
@@ -654,6 +707,7 @@ export class SpaceFlow {
   // ------------------------------------------------------------------------------------------------ panels
   private render(): void {
     if (this.phase === 'closed' || this.phase === 'built') return;
+    if (this.realityIntake) { this.panel.hidden = false; return; } // the multi-view intake owns the panel until it finishes or is left
     this.panel.hidden = false; this.panel.dataset.phase = this.phase;
     const w = this.options.workspace;
     if (this.phase === 'intake') {
@@ -766,7 +820,7 @@ export class SpaceFlow {
       ${this.source?.kind === 'image' ? '' : `<label class="sp-field"><span class="u-label">descrição</span><textarea id="sp-text" rows="3" maxlength="${SPACE_TEXT_LIMITS.max}" placeholder="Ex.: uma harpa de concerto, ou uma turbina eólica de secretária com três pás (mínimo ${SPACE_TEXT_LIMITS.min} caracteres)">${esc(text)}</textarea></label>`}
       ${this.source?.kind === 'image' ? this.sourcePreview() : `<label class="sp-drop"><input id="sp-file" type="file" accept="image/png,image/jpeg,image/webp"><span>ou <u>escolha uma fotografia</u></span><span class="u-label">PNG, JPEG ou WebP · até 10 MB · sem escala física, a escala fica desconhecida</span></label>`}
       ${this.problem ? `<p class="sp-problem" role="alert">${esc(this.problem)}</p>` : ''}
-      <div class="sp-row">${this.source?.kind === 'image' ? '<button class="u-btn u-btn--outline" type="button" data-sp="clear">Remover fotografia</button>' : ''}${this.store.available ? `<button class="u-btn u-btn--outline" type="button" data-sp="library">Os meus Spaces (${saved})</button>` : ''}<span class="sp-grow"></span><button class="u-btn u-btn--outline" type="button" data-sp="atlas">Atlas do coração (educativo)</button><button class="u-btn u-btn--outline" type="button" data-sp="exit">Voltar</button><button class="u-btn u-btn--primary" type="button" data-sp="submit" ${this.source ? '' : 'disabled'}>Pedir à Meta</button></div></div>`;
+      <div class="sp-row">${this.source?.kind === 'image' ? '<button class="u-btn u-btn--outline" type="button" data-sp="clear">Remover fotografia</button>' : ''}${this.store.available ? `<button class="u-btn u-btn--outline" type="button" data-sp="library">Os meus Spaces (${saved})</button>` : ''}<span class="sp-grow"></span>${this.options.reality ? '<button class="u-btn u-btn--outline" type="button" data-sp="reality">Reconstruir de várias vistas</button>' : ''}<button class="u-btn u-btn--outline" type="button" data-sp="atlas">Atlas do coração (educativo)</button><button class="u-btn u-btn--outline" type="button" data-sp="exit">Voltar</button><button class="u-btn u-btn--primary" type="button" data-sp="submit" ${this.source ? '' : 'disabled'}>Pedir à Meta</button></div></div>`;
   }
 
   private libraryHtml(): string {
@@ -812,15 +866,15 @@ export class SpaceFlow {
         <p class="u-small">${esc(c.provenance.evidence)}</p>
         <div class="sp-comp-foot">${chip('forma', c.provenance.geometry)}${chip('posição', c.provenance.transform)}${chip('material', c.provenance.material)}<span class="sp-decide"><button type="button" class="uw-link" data-sp-decide="keep" data-id="${esc(c.id)}" aria-pressed="${d === 'keep'}">manter</button><button type="button" class="uw-link" data-sp-decide="reject" data-id="${esc(c.id)}" aria-pressed="${d === 'reject'}">rejeitar</button></span></div></li>`;
     }).join('');
-    return `<div class="sp-card sp-card--review"><div class="sp-head"><h1 class="sp-h1">Rever «${esc(plan.title)}»</h1><p class="u-label">${plan.components.length} componentes · ${esc(String(meta.model ?? 'modelo não indicado'))} · proposta da IA, ainda não construída</p></div>
-      <details class="sp-why" ${this.options.workspace.root.clientWidth > 760 ? 'open' : ''}><summary class="u-label">O que está a confirmar</summary><p class="u-small">Que estes componentes são uma boa <b>concepção</b> do que pediu. Manter não torna nenhum valor medido nem confirmado; só uma edição sua o faz. O que rejeitar leva consigo o que dele depende.</p></details>
+    return `<div class="sp-card sp-card--review"><div class="sp-head"><h1 class="sp-h1">Rever «${esc(plan.title)}»</h1><p class="u-label">${plan.components.length} componentes · ${this.realityDraft ? 'reconstrução local a partir das suas vistas (sem IA)' : esc(String(meta.model ?? 'modelo não indicado'))} · ${this.realityDraft ? 'ainda não construída' : 'proposta da IA, ainda não construída'}</p></div>
+      <details class="sp-why" ${this.options.workspace.root.clientWidth > 760 ? 'open' : ''}><summary class="u-label">O que está a confirmar</summary><p class="u-small">${this.realityDraft ? 'Que estas partes são uma boa <b>hipótese de estrutura</b> do objecto que fotografou. As partes foram separadas só pela forma; o que são e como se ligam não foi observado.' : 'Que estes componentes são uma boa <b>concepção</b> do que pediu.'} Manter não torna nenhum valor medido nem confirmado; só uma edição sua o faz. O que rejeitar leva consigo o que dele depende.</p></details>
       <div class="sp-row sp-tally" aria-label="Etiquetas nesta proposta">${(['observed', 'inferred', 'design_approximation', 'unknown'] as const).map((k) => `<span class="u-chip ${k === 'observed' ? '' : 'u-chip--uncertain'}" title="${esc(ORIGIN_MEANING[k])}">${ORIGIN_LABEL[k]} · ${counts[k] ?? 0}</span>`).join('')}<span class="sp-grow"></span><button class="uw-link" type="button" data-sp="keep-all">manter todos</button><button class="uw-link" type="button" data-sp="reject-all">rejeitar todos</button></div>
       <details class="sp-meaning"><summary class="u-label">O que significam as etiquetas</summary><dl class="sp-legend">${(['observed', 'inferred', 'design_approximation', 'unknown'] as const).map((k) => `<div><dt><span class="u-chip ${k === 'observed' ? '' : 'u-chip--uncertain'}">${ORIGIN_LABEL[k]}</span></dt><dd class="u-label">${esc(ORIGIN_MEANING[k])}</dd></div>`).join('')}</dl></details>
       <ul class="sp-list" aria-label="Componentes propostos">${rows}</ul>
       <details class="sp-unknowns" aria-label="Desconhecidos" ${plan.units !== 'm' && this.options.workspace.root.clientWidth > 760 ? 'open' : ''}><summary class="u-label">${plan.units === 'm' ? 'O que o modelo declarou desconhecido' : 'Escala física desconhecida · o que o modelo declarou desconhecido'} (${plan.unknowns.length})</summary>${plan.unknowns.length ? `<ul>${plan.unknowns.slice(0, 8).map((u) => `<li>${esc(u)}</li>`).join('')}</ul>${plan.unknowns.length > 8 ? `<p class="u-label">e mais ${plan.unknowns.length - 8}, no aviso da cena.</p>` : ''}` : '<p class="u-small">Nenhum declarado.</p>'}</details>
       ${plan.source.kind === 'image' ? `<div class="sp-row"><span class="u-label">${this.correctedPolygon && this.correctedForSha === plan.source.sha256 ? 'Contorno: corrigido por si · confirmado para esta fotografia (não é uma medição)' : 'Contorno: automático · se a silhueta extraída não coincidir com o objecto, corrija antes de construir'}</span><span class="sp-grow"></span><button class="u-btn u-btn--outline" type="button" data-sp="correct-contour">Corrigir contorno</button></div>` : ''}
       <div class="sp-foot">
-      <label class="sp-check"><input type="checkbox" id="sp-ack" ${this.review.acknowledged ? 'checked' : ''}> Percebo que isto é uma concepção gerada por IA, não uma medição nem uma reconstrução fiel.</label>
+      <label class="sp-check"><input type="checkbox" id="sp-ack" ${this.review.acknowledged ? 'checked' : ''}> ${this.realityDraft ? 'Percebo que isto é um limite superior da forma a partir das minhas vistas (as regiões que nenhuma vista mostra são hipótese), não uma medição.' : 'Percebo que isto é uma concepção gerada por IA, não uma medição nem uma reconstrução fiel.'}</label>
       <div class="sp-row"><button class="u-btn u-btn--outline" type="button" data-sp="discard">Descartar</button><span class="sp-grow"></span><span class="u-label sp-blockers" aria-live="polite">${blockers.length ? esc(blockers.join(' · ')) : 'pronto a construir'}</span><button class="u-btn u-btn--primary" type="button" data-sp="build" ${blockers.length ? 'disabled' : ''}>Construir em 3D</button></div></div></div>`;
   }
 
@@ -834,7 +888,7 @@ export class SpaceFlow {
     if (decideButton) { this.decide(decideButton.dataset.id!, decideButton.dataset.spDecide as 'keep' | 'reject'); return; }
     const open = target.closest<HTMLElement>('[data-sp-open]'); if (open) { void this.openRecord(open.dataset.spOpen!); return; }
     const ask = target.closest<HTMLElement>('[data-sp-ask-delete]'); if (ask) { this.confirmDelete = ask.dataset.spAskDelete!; this.render(); return; }
-    const del = target.closest<HTMLElement>('[data-sp-delete]'); if (del) { this.store.remove(del.dataset.spDelete!); this.confirmDelete = null; void this.store.list().then((l) => { this.listing = l; this.render(); }); return; }
+    const del = target.closest<HTMLElement>('[data-sp-delete]'); if (del) { void this.store.open(del.dataset.spDelete!).then((o) => { if (o.ok && o.record.run.model === REALITY_RUN_MODEL) this.options.reality?.remove(o.record.plan.source.sha256); }); this.store.remove(del.dataset.spDelete!); this.confirmDelete = null; void this.store.list().then((l) => { this.listing = l; this.render(); }); return; }
     const action = target.closest<HTMLElement>('[data-sp]')?.dataset.sp; if (!action) return;
     if (action === 'submit') void this.submit();
     else if (action === 'retry') { this.phase = 'intake'; this.render(); }
@@ -844,6 +898,7 @@ export class SpaceFlow {
     else if (action === 'discard') { this.startIntake(); }
     else if (action === 'library') void this.showLibrary();
     else if (action === 'atlas') void this.openAtlas();
+    else if (action === 'reality') this.openReality();
     else if (action === 'new') this.startIntake();
     else if (action === 'keep-space') { this.confirmDelete = null; this.render(); }
     else if (action === 'keep-all') this.decideAll('keep');

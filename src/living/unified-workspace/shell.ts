@@ -1,3 +1,6 @@
+import { workerCompute } from '../reality/compute';
+import { RealityHost } from '../reality/host';
+import { browserStorage } from '../spatial-space/store';
 import { FoundryGeometry } from '../universal-foundry/provider';
 import { PhotorealGeometry, applyPhotorealStage, type PhotorealStage } from '../photoreal/look';
 import { detectCapabilities, selectPhotorealPreset } from '../photoreal/presets';
@@ -95,6 +98,7 @@ export function mountLivingShell(app: HTMLElement): void {
   let pendingCorrected: { polygon: Array<[number, number]>; sourceSha256: string } | null = null;
   const space = new SpaceFlow({
     workspace, host: workspace.panelHost,
+    reality: new RealityHost(browserStorage(), typeof Worker === 'undefined' ? undefined : workerCompute(() => new Worker(new URL('../reality/reality.worker.ts', import.meta.url), { type: 'module' }))),
     ...(foundry ? {
       geometry: () => photoreal ?? foundry,
       onImage: (dataUrl: string) => {

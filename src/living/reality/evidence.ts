@@ -6,7 +6,7 @@
  * Masks are run-length encoded; colours are RGB565 at a small fixed resolution (an APPROXIMATED texture source, never presented as a scan).
  */
 export const REALITY_EVIDENCE_CONTRACT = 'unfold.reality-evidence.v1' as const;
-export const REALITY_LIMITS = { maxViews: 24, maxRes: 256, maxColourRes: 96, maxAssumptions: 16, maxBytes: 240_000 } as const;
+export const REALITY_LIMITS = { maxViews: 24, maxRes: 256, maxColourRes: 96, maxAssumptions: 16, maxBytes: 600_000 } as const;
 
 export type StoredView = {
   id: string; name: string; azimuthDeg: number; elevationDeg: number; azimuthSource: 'given' | 'assumed';
@@ -21,6 +21,8 @@ export type RealityEvidence = {
   res: number; colourRes: number; cells: number;
   frame: { centre: [number, number, number]; half: number };
   views: StoredView[];
+  /** how photographs were framed (so a later view can be framed identically); absent for drawings */
+  framing?: { axisXFrac: number | null; cyFrac: number | null };
   /** what the intake had to assume (equal turntable steps, shared zoom, rotation axis position...) in plain words */
   assumptions: string[];
 };
@@ -78,6 +80,7 @@ export function validateRealityEvidence(value: unknown): RealityEvidence {
     try { decodeMask(v.maskRle, res * res); } catch { fail('REALITY_MASK_INVALID', v.id); }
     if (v.colour !== undefined) { try { decodeColour(v.colour, colourRes); } catch { fail('REALITY_COLOUR_INVALID', v.id); } }
   }
+  if (e.framing !== undefined && (typeof e.framing !== 'object' || e.framing === null || !['number', 'object'].includes(typeof e.framing.axisXFrac) || !['number', 'object'].includes(typeof e.framing.cyFrac))) fail('REALITY_FRAMING', 'invalid framing');
   if (!Array.isArray(e.assumptions) || e.assumptions.length > REALITY_LIMITS.maxAssumptions || !e.assumptions.every((a) => typeof a === 'string' && a.length <= 300)) fail('REALITY_ASSUMPTIONS', 'invalid assumptions');
   if (JSON.stringify(e).length > REALITY_LIMITS.maxBytes) fail('REALITY_TOO_LARGE', 'evidence exceeds the size limit');
   return e as RealityEvidence;

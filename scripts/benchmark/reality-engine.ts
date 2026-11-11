@@ -13,7 +13,7 @@ import { chamfer, geometryPoints, nearestDistances, samplePoints } from '../../s
 const out = resolve(process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : 'reports/reality-engine/benchmark/results'), quick = process.argv.includes('--quick');
 await mkdir(out, { recursive: true });
 const manifest = JSON.parse(await readFile(resolve('reports/reality-engine/benchmark/manifest.json'), 'utf8')) as { assets: Array<{ id: string; kind: string; category: string; split: string; sha256: string; licence: string[] }> };
-const RES = 160, CELLS = quick ? 64 : 80, POINTS = 6000; // CELLS 80 = the product setting
+const RES = 160, CELLS = quick ? 64 : 96, POINTS = 6000; // CELLS 96 = the product setting
 const round = (n: number, d = 4) => +n.toFixed(d);
 const mean = (x: number[]) => (x.length ? x.reduce((s, v) => s + v, 0) / x.length : NaN);
 const iou = (a: Uint8Array, b: Uint8Array) => { let i = 0, u = 0; for (let k = 0; k < a.length; k++) { i += a[k]! & b[k]!; u += a[k]! | b[k]!; } return u ? i / u : 1; };

@@ -5,7 +5,7 @@ import { buildModel } from '../src/living/reality/model';
 import { displayScale, planFromModel } from '../src/living/reality/plan';
 import { RealityGeometry } from '../src/living/reality/geometry';
 import { assessReconstruction } from '../src/living/reality/assessment';
-import { RealityStore } from '../src/living/reality/store';
+import { RealityStore, newRecord, withVersion } from '../src/living/reality/store';
 import { evidenceSha256 } from '../src/living/reality/evidence';
 import { evidenceFromRenders, solid, ORBIT6 } from './helpers/reality-fixtures';
 
@@ -71,15 +71,27 @@ describe('avaliação honesta', () => {
 });
 
 describe('persistência da evidência', () => {
-  it('ida e volta reconstrói a mesma malha; adulteração e ausência são detectadas', async () => {
+  it('ida e volta reconstrói a mesma malha; versões e a corrente persistem; adulteração e ausência são detectadas', async () => {
     const ev = evidenceFromRenders(gt, ORBIT6), storage = mem(), store = new RealityStore(storage);
-    const saved = await store.save(ev); expect(saved.ok).toBe(true); if (!saved.ok) return;
-    const loaded = await store.load(saved.sha256); expect(loaded.ok).toBe(true); if (!loaded.ok) return;
-    const a = buildModel(ev), b = buildModel(loaded.evidence);
+    let rec = await newRecord(ev);
+    rec = await withVersion(rec, evidenceFromRenders(gt, [...ORBIT6, [30, 40]]), 'Vista adicionada');
+    rec = { ...rec, current: 0 }; // refinamento desfeito: a versão corrente volta à inicial, a história fica
+    expect((await store.save(rec)).ok).toBe(true);
+    const loaded = await store.load(rec.sourceSha256); expect(loaded.ok).toBe(true); if (!loaded.ok) return;
+    expect(loaded.record.versions.length).toBe(2); expect(loaded.record.current).toBe(0);
+    const a = buildModel(ev), b = buildModel(loaded.record.versions[loaded.record.current]!.evidence);
     expect(b.parts.map((p) => Buffer.from(p.positions.buffer).toString('base64'))).toEqual(a.parts.map((p) => Buffer.from(p.positions.buffer).toString('base64')));
     const key = [...storage.raw.keys()][0]!; storage.raw.set(key, storage.raw.get(key)!.replace('"azimuthDeg":60', '"azimuthDeg":61'));
-    expect((await store.load(saved.sha256))).toEqual({ ok: false, reason: 'checksum_mismatch' });
+    expect((await store.load(rec.sourceSha256))).toEqual({ ok: false, reason: 'checksum_mismatch' });
     expect(await store.load('0'.repeat(64))).toEqual({ ok: false, reason: 'missing' });
-    expect(await new RealityStore(null).save(ev)).toEqual({ ok: false, reason: 'storage_unavailable' });
+    expect(await new RealityStore(null).save(rec)).toEqual({ ok: false, reason: 'storage_unavailable' });
+  }, 60_000);
+  it('refinar depois de desfazer descarta as versões desfeitas e respeita o limite de versões', async () => {
+    let rec = await newRecord(evidenceFromRenders(gt, ORBIT6.slice(0, 3)));
+    rec = await withVersion(rec, evidenceFromRenders(gt, ORBIT6.slice(0, 4)), 'v2'); rec = { ...rec, current: 0 };
+    rec = await withVersion(rec, evidenceFromRenders(gt, ORBIT6.slice(0, 5)), 'v2b');
+    expect(rec.versions.map((v) => v.note)).toEqual(['Reconstrução inicial', 'v2b']);
+    for (let i = 0; i < 4; i++) rec = await withVersion(rec, evidenceFromRenders(gt, ORBIT6.slice(0, 3), { cells: 40 + i }), `x${i}`);
+    await expect(withVersion(rec, evidenceFromRenders(gt, ORBIT6.slice(0, 3), { cells: 70 }), 'overflow')).rejects.toThrow(/TOO_MANY/);
   }, 60_000);
 });

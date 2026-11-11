@@ -1,7 +1,7 @@
 import { BufferGeometry, Float32BufferAttribute, Uint32BufferAttribute, Vector3 } from 'three';
 import { surfaceNets } from '../../universal-spatial/fidelity/surface-nets';
-import { occupancyField } from '../../universal-spatial/reconstruction/silhouette';
-import { leaveOneOutIoU, orbitDirection, reconstructHull, type Frame, type HullStats, type SilhouetteView } from '../../universal-spatial/reconstruction/multiview';
+import { occupancyField, type Grid } from '../../universal-spatial/reconstruction/silhouette';
+import { hullField, leaveOneOutIoU, orbitDirection, reconstructHull, signedDistance2D, type Frame, type HullStats, type SilhouetteView } from '../../universal-spatial/reconstruction/multiview';
 import { segmentParts, type PartOptions } from '../../universal-spatial/reconstruction/parts';
 import { decodeColour, decodeMask, validateRealityEvidence, type RealityEvidence } from './evidence';
 
@@ -21,6 +21,8 @@ export type RealityModel = {
   parts: PartMesh[];
   adjacency: Array<[string, string]>;
   hull: HullStats;
+  /** the solid and its part labels, kept so a refinement can be compared with and matched to this one */
+  solid: { grid: Grid; occupancy: Uint8Array; labels: Uint16Array };
   discardedVoxels: number;
   /** IoU of each view's silhouette with the hull of the OTHER views (null when fewer than 3 views) */
   heldOutIoU: Array<{ viewId: string; iou: number }> | null;
@@ -46,7 +48,11 @@ export function buildModel(input: RealityEvidence, options: { parts?: PartOption
   const segmented = segmentParts(hull.occupancy, grid, options.parts);
   const dirs = views.map((v) => orbitDirection(v.azimuthDeg, v.elevationDeg));
   const colours = evidence.views.map((v) => (v.colour ? decodeColour(v.colour, evidence.colourRes) : null));
-  const s = evidence.res / (2 * frame.half);
+  const s = evidence.res / (2 * frame.half), exact = hullField(views, frame);
+  // A hull is larger than the object, so a surface point can project onto the BACKGROUND of a view. Colour is only taken where the point lands well
+  // inside that view's silhouette (>= COLOUR_MARGIN_PX from its edge); otherwise that view does not speak for the point's appearance.
+  const sdf = views.map((v) => signedDistance2D(v.mask, evidence.res));
+  const COLOUR_MARGIN_PX = 2.5;
   const bases = dirs.map((d) => {
     const worldUp = Math.abs(d.y) > 0.98 ? new Vector3(0, 0, 1) : new Vector3(0, 1, 0);
     const right = new Vector3().crossVectors(worldUp, d).normalize(), up = new Vector3().crossVectors(d, right).normalize();
@@ -66,9 +72,11 @@ export function buildModel(input: RealityEvidence, options: { parts?: PartOption
   const parts: PartMesh[] = [];
   let seen = 0, total = 0;
   for (const part of segmented.parts) {
-    const partOcc = new Uint8Array(hull.occupancy.length);
-    for (let i = 0; i < partOcc.length; i++) if (segmented.labels[i] === part.label) partOcc[i] = 1;
-    const field = occupancyField(grid, partOcc, 1);
+    // Closed shell of one part: the exact hull field outside, and the interface with the other parts (smoothed label boundary) inside.
+    const otherOcc = new Uint8Array(hull.occupancy.length);
+    for (let i = 0; i < otherOcc.length; i++) if (hull.occupancy[i] && segmented.labels[i] !== part.label) otherOcc[i] = 1;
+    const other = occupancyField(grid, otherOcc, 1), interfaceScale = 2 * grid.size * s;
+    const field = (x: number, y: number, z: number) => Math.max(exact(x, y, z), -other(x, y, z) * interfaceScale);
     const g = surfaceNets({ min: grid.min, cells: grid.cells, size: grid.size, field, maxTriangles: 120_000 });
     const pos = g.getAttribute('position'), nor = g.getAttribute('normal'), idx = g.index;
     if (!pos || !idx || !pos.count) continue;
@@ -86,6 +94,8 @@ export function buildModel(input: RealityEvidence, options: { parts?: PartOption
         const rgb = colours[v]; if (!rgb) continue;
         const base = bases[v]!, dx = p.x - frame.centre.x, dy = p.y - frame.centre.y, dz = p.z - frame.centre.z;
         const u = (dx * base.right.x + dy * base.right.y + dz * base.right.z + frame.half) * s, w = (dx * base.up.x + dy * base.up.y + dz * base.up.z + frame.half) * s;
+        const mu = Math.min(evidence.res - 1, Math.max(0, Math.floor(u))), mw = Math.min(evidence.res - 1, Math.max(0, Math.floor(w)));
+        if (sdf[v]![mw * evidence.res + mu]! > -COLOUR_MARGIN_PX) continue;
         const cu = Math.min(evidence.colourRes - 1, Math.max(0, Math.floor((u / evidence.res) * evidence.colourRes))), cw = Math.min(evidence.colourRes - 1, Math.max(0, Math.floor((w / evidence.res) * evidence.colourRes)));
         const q = (cw * evidence.colourRes + cu) * 3, weight = Math.pow(Math.max(0, n.dot(dirs[v]!)), 4);
         r += rgb[q]! * weight; gg += rgb[q + 1]! * weight; b += rgb[q + 2]! * weight; wsum += weight;
@@ -103,7 +113,7 @@ export function buildModel(input: RealityEvidence, options: { parts?: PartOption
   }
   const loo = leaveOneOutIoU(views, { frame, cells: Math.min(evidence.cells, 64) });
   return {
-    evidence, frame, parts, adjacency: segmented.adjacency, hull: hull.stats, discardedVoxels: segmented.discardedVoxels,
+    evidence, frame, parts, adjacency: segmented.adjacency, hull: hull.stats, solid: { grid: hull.grid, occupancy: hull.occupancy, labels: segmented.labels }, discardedVoxels: segmented.discardedVoxels,
     heldOutIoU: loo.length ? loo.map((value, i) => ({ viewId: views[i]!.id, iou: value })) : null,
     observedFraction: total ? seen / total : 0,
     diagonal: frame.half / FRAME_HALF_PER_DIAGONAL,

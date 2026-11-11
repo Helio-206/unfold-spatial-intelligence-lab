@@ -10,7 +10,7 @@ import { displayScale } from './plan';
  * the report says so: no silent fallback to a prettier object.
  */
 export const REALITY_TRIANGLE_BUDGET = 160_000;
-export type RealityReport = { engine: 'reality-engine'; status: 'shells' | 'proxies_no_evidence' | 'proxies_over_budget'; sourceSha256: string; components: Array<{ id: string; drawn: 'shell' | 'proxy'; triangles: number; observedFraction: number }>; triangles: number };
+export type RealityReport = { engine: 'reality-engine'; status: 'shells' | 'proxies_no_evidence' | 'proxies_over_budget'; sourceSha256: string; components: Array<{ id: string; drawn: 'shell' | 'proxy' | 'none'; triangles: number; observedFraction: number }>; triangles: number };
 
 export class RealityGeometry {
   private last: RealityReport | null = null;
@@ -30,6 +30,11 @@ export class RealityGeometry {
     let drawnTriangles = 0;
     for (const component of plan.components) {
       const group = groups.get(component.id), part = byId.get(component.id);
+      if (group && !part) {
+        // the refined evidence no longer supports this part: nothing is drawn for it (the component stays in the plan and is reported, not deleted)
+        const gone = group.children[0]!; group.remove(gone); disposeObject(gone); group.add(new Group()); group.children.splice(0, 0, group.children.pop()!);
+        report.push({ id: component.id, drawn: 'none', triangles: 0, observedFraction: 0 }); continue;
+      }
       if (!group || !part) { report.push({ id: component.id, drawn: 'proxy', triangles: 0, observedFraction: 0 }); continue; }
       const old = group.children[0]!;
       const geometry = partGeometry(part);

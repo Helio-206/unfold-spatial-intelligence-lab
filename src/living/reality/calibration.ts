@@ -4,27 +4,27 @@
 export const HULL_ERROR_BY_VIEW_COUNT = [
   {
     "views": 2,
-    "chamferPctMax": 2.6,
-    "chamferPctMedian": 1.84,
-    "p95AccuracyPctMax": 8.63
+    "chamferPctMax": 2.64,
+    "chamferPctMedian": 1.95,
+    "p95AccuracyPctMax": 9
   },
   {
     "views": 3,
-    "chamferPctMax": 2.27,
+    "chamferPctMax": 1.93,
     "chamferPctMedian": 1.62,
-    "p95AccuracyPctMax": 8.49
+    "p95AccuracyPctMax": 7.33
   },
   {
     "views": 6,
-    "chamferPctMax": 2.25,
-    "chamferPctMedian": 1.47,
-    "p95AccuracyPctMax": 8.65
+    "chamferPctMax": 1.91,
+    "chamferPctMedian": 1.33,
+    "p95AccuracyPctMax": 7.67
   },
   {
     "views": 12,
-    "chamferPctMax": 2.27,
-    "chamferPctMedian": 0.9,
-    "p95AccuracyPctMax": 8.7
+    "chamferPctMax": 1.84,
+    "chamferPctMedian": 0.91,
+    "p95AccuracyPctMax": 7.55
   }
 ] as const;
 /** Held-out (leave-one-out) silhouette agreement below this is reported as a failed consistency check: min over development sets with correct poses, minus 0.05. */

@@ -1,0 +1,180 @@
+import type { SpatialPlanV2 } from '../../universal-spatial/contracts-v2';
+import { checkFile } from '../experience/intake';
+import { decodeMask, REALITY_LIMITS } from './evidence';
+import type { RealityHost } from './host';
+import { extractEvidence } from '../universal-foundry/evidence';
+import { intakeDrawing, intakeOrbit, selectKeyFrames, type IntakeImage, type IntakeResult, type Refusal } from './intake';
+
+/**
+ * The /living intake for several views of one object (photographs around a turntable, photographs from declared angles, or three technical-drawing
+ * views). It runs entirely in the browser: no model call, no upload. The person SEES each extracted outline before anything is built, and every
+ * assumption the intake makes is written on screen. A refusal is shown as it is; nothing falls back to a generic object.
+ */
+export type RealityIntakeDeps = {
+  host: RealityHost;
+  /** test seam: decode a File to RGBA. Default decodes with the platform on a canvas, at most MAX_SIDE pixels on the long side. */
+  decode?: (file: File) => Promise<IntakeImage>;
+  onDone(result: { sha256: string; plan: SpatialPlanV2; title: string }): void;
+  onCancel(): void;
+};
+type Mode = 'turntable' | 'orbit' | 'video' | 'drawing';
+type Slot = { key: string; label: string; image: IntakeImage | null; azimuth: string; thumb: string };
+const MAX_SIDE = 640;
+const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+const REFUSAL_COPY: Record<Refusal['code'], string> = {
+  TOO_FEW_VIEWS: 'São precisas pelo menos 2 vistas do mesmo objecto para observar profundidade. Uma só fotografia segue o caminho de interpretação por IA.',
+  TOO_MANY_VIEWS: `No máximo ${REALITY_LIMITS.maxViews} vistas.`,
+  MASK_UNRELIABLE: 'O contorno automático não é credível nesta vista (fundo complexo, objecto cortado ou fragmentado). Use um fundo liso ou uma imagem PNG com fundo transparente.',
+  EMPTY_MASK: 'Não foi encontrado nenhum objecto nesta vista.',
+  DRAWING_INCONSISTENT: 'As três vistas do desenho não partilham as mesmas dimensões, por isso não descrevem um só objecto. Nada foi construído.',
+  POSE_COUNT_MISMATCH: 'Indique um ângulo para cada vista.',
+  MISSING_DRAWING_VIEW: 'Faltam vistas: o desenho precisa de frente, lado e topo.',
+};
+
+export async function decodeImageFile(file: File): Promise<IntakeImage> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height)), w = Math.max(1, Math.round(bitmap.width * scale)), h = Math.max(1, Math.round(bitmap.height * scale));
+  const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })!; ctx.drawImage(bitmap, 0, 0, w, h); bitmap.close?.();
+  const data = ctx.getImageData(0, 0, w, h);
+  return { name: file.name, rgba: { width: w, height: h, data: data.data } };
+}
+
+export const VIDEO_LIMITS = { maxBytes: 40_000_000, maxSeconds: 60, candidateFrames: 24, keyFrames: 8, types: ['video/mp4', 'video/webm'] } as const;
+export type VideoFrames = { frames: IntakeImage[]; times: number[]; duration: number };
+
+/** Samples `candidateFrames` evenly spaced frames of a video (at most MAX_SIDE pixels on the long side). A video of one slow turn of the object is assumed. */
+export async function decodeVideoFile(file: File): Promise<VideoFrames> {
+  if (!(VIDEO_LIMITS.types as readonly string[]).includes(file.type)) throw new Error(`«${file.name}» não é MP4 nem WebM.`);
+  if (file.size === 0 || file.size > VIDEO_LIMITS.maxBytes) throw new Error(`«${file.name}» tem de ter até ${VIDEO_LIMITS.maxBytes / 1e6} MB.`);
+  const url = URL.createObjectURL(file), video = document.createElement('video'); video.muted = true; video.preload = 'auto'; video.src = url;
+  try {
+    await new Promise<void>((ok, bad) => { video.onloadedmetadata = () => ok(); video.onerror = () => bad(new Error('Não foi possível ler o vídeo.')); });
+    if (!Number.isFinite(video.duration)) { // MediaRecorder WebM carries no duration until the end is reached
+      await new Promise<void>((ok) => { const done = () => { video.removeEventListener('timeupdate', done); ok(); }; video.addEventListener('timeupdate', done); video.currentTime = 1e7; });
+    }
+    const duration = video.duration; if (!(duration > 0.5) || duration > VIDEO_LIMITS.maxSeconds) throw new Error(`O vídeo tem de durar entre 0,5 s e ${VIDEO_LIMITS.maxSeconds} s.`);
+    const scale = Math.min(1, MAX_SIDE / Math.max(video.videoWidth, video.videoHeight)), w = Math.max(1, Math.round(video.videoWidth * scale)), h = Math.max(1, Math.round(video.videoHeight * scale));
+    const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+    const frames: IntakeImage[] = [], times: number[] = [];
+    for (let i = 0; i < VIDEO_LIMITS.candidateFrames; i++) {
+      const t = ((i + 0.5) / VIDEO_LIMITS.candidateFrames) * duration;
+      await new Promise<void>((ok, bad) => { video.onseeked = () => ok(); video.onerror = () => bad(new Error('Falha ao ler um fotograma.')); video.currentTime = t; });
+      ctx.drawImage(video, 0, 0, w, h); frames.push({ name: `${file.name}@${t.toFixed(2)}s`, rgba: { width: w, height: h, data: ctx.getImageData(0, 0, w, h).data } }); times.push(t);
+    }
+    return { frames, times, duration };
+  } finally { URL.revokeObjectURL(url); video.removeAttribute('src'); video.load(); }
+}
+
+export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDeps): { dispose(): void } {
+  const decode = deps.decode ?? decodeImageFile;
+  let videoTimes: number[] = [], videoDuration = 0, mode: Mode = 'turntable', elevation = '', slots: Slot[] = [], problem: string | null = null, result: IntakeResult | null = null, busy = false, disposed = false;
+  const drawingSlots = (): Slot[] => [{ key: 'front', label: 'Frente', image: null, azimuth: '', thumb: '' }, { key: 'side', label: 'Lado direito', image: null, azimuth: '', thumb: '' }, { key: 'top', label: 'Topo', image: null, azimuth: '', thumb: '' }];
+  const title = () => (container.querySelector<HTMLInputElement>('#rl-title')?.value.trim() || 'Objecto reconstruído de várias vistas').slice(0, 100);
+
+  const thumbs = (r: IntakeResult | null) => (r ? r.views : []).map((v, i) => `<li class="sp-comp" data-rl-view="${i}"><div class="sp-comp-head"><b>${esc(v.name)}</b><span class="u-label">contorno ${v.maskSource === 'confirmed' ? 'confirmado' : 'automático'} · ${v.reliable ? 'credível' : 'NÃO credível'} · ${(v.foregroundRatio * 100).toFixed(0)}% da imagem</span></div>${v.reasons.length ? `<p class="u-small">${esc(v.reasons.join('; '))}</p>` : ''}<canvas data-rl-canvas="${i}" width="120" height="90" aria-label="Contorno extraído de ${esc(v.name)}"></canvas></li>`).join('');
+  const html = () => `<div class="sp-card sp-card--review" data-reality-intake>
+    <div class="sp-head"><h1 class="sp-h1">Reconstruir a partir de várias vistas</h1><p class="u-label">reconstrução local · sem chamada à IA · nada sai do seu navegador</p></div>
+    <p class="u-small">Dê várias imagens do mesmo objecto. O UNFOLD extrai o contorno de cada uma, cruza-os e constrói o sólido que todas permitem — um <b>limite superior</b> da forma. Concavidades e o que nenhuma vista mostra ficam como hipótese, e o que foi preciso assumir fica escrito.</p>
+    <fieldset class="sp-field"><legend class="u-label">tipo de entrada</legend>
+      <label><input type="radio" name="rl-mode" value="turntable" ${mode === 'turntable' ? 'checked' : ''}> Volta de mesa: o objecto roda, a câmara está fixa. Ângulos iguais assumidos pela ordem.</label>
+      <label><input type="radio" name="rl-mode" value="orbit" ${mode === 'orbit' ? 'checked' : ''}> Ângulos que eu indico (graus, 0° = de frente)</label>
+      <label><input type="radio" name="rl-mode" value="video" ${mode === 'video' ? 'checked' : ''}> Vídeo de uma volta do objecto (câmara fixa, velocidade constante)</label>
+      <label><input type="radio" name="rl-mode" value="drawing" ${mode === 'drawing' ? 'checked' : ''}> Desenho técnico: frente, lado direito e topo, à mesma escala</label></fieldset>
+    <label class="sp-field"><span class="u-label">nome</span><input id="rl-title" type="text" maxlength="100" placeholder="Ex.: candeeiro de mesa"></label>
+    ${mode === 'drawing'
+      ? `<div class="sp-row">${slots.map((s, i) => `<label class="sp-drop"><input type="file" data-rl-file-slot="${i}" accept="image/png,image/jpeg,image/webp"><span>${esc(s.label)}${s.image ? ` · ${esc(s.image.name)}` : ''}</span></label>`).join('')}</div>`
+      : mode === 'video'
+      ? `<label class="sp-drop"><input id="rl-video" type="file" accept="video/mp4,video/webm"><span>${slots.length ? `${slots.length} fotogramas candidatos · escolher outro vídeo` : '<u>escolha um vídeo</u>'}</span><span class="u-label">MP4 ou WebM · até ${VIDEO_LIMITS.maxBytes / 1e6} MB e ${VIDEO_LIMITS.maxSeconds} s · uma volta completa · os ${VIDEO_LIMITS.keyFrames} fotogramas com silhuetas mais diferentes são usados</span></label><label class="u-label">elevação da câmara (°) <input id="rl-elev" type="number" min="-90" max="90" step="1" value="${esc(elevation)}" style="width:84px"></label>`
+      : `<label class="sp-drop"><input id="rl-files" type="file" multiple accept="image/png,image/jpeg,image/webp"><span>${slots.length ? `${slots.length} vista(s) · escolher outras` : '<u>escolha 2 a 24 imagens</u>'}</span><span class="u-label">PNG, JPEG ou WebP · fundo liso ou transparente · mesma distância e zoom</span></label>
+         <label class="u-label">elevação da câmara (°) — deixe vazio se não sabe (assume-se 0° e fica registado) <input id="rl-elev" type="number" min="-90" max="90" step="1" value="${esc(elevation)}" style="width:84px"></label>
+         ${mode === 'orbit' ? `<ul class="sp-list">${slots.map((s, i) => `<li class="sp-comp"><div class="sp-comp-head"><b>${esc(s.image?.name ?? s.label)}</b><label class="u-label">azimute (°) <input type="number" data-rl-az="${i}" value="${esc(s.azimuth)}" min="-360" max="360" step="1" style="width:84px"></label></div></li>`).join('')}</ul>` : ''}`}
+    ${problem ? `<p class="sp-problem" role="alert">${esc(problem)}</p>` : ''}
+    ${result ? `<ul class="sp-list" aria-label="Contornos extraídos">${thumbs(result)}</ul>${result.refusals.map((r) => `<p class="sp-problem" role="alert" data-rl-refusal="${r.code}">${esc(REFUSAL_COPY[r.code])}${r.viewName ? ` (${esc(r.viewName)})` : ''} <span class="u-label">${esc(r.detail)}</span></p>`).join('')}${result.evidence ? `<details open><summary class="u-label">O que foi assumido</summary><ul>${result.evidence.assumptions.map((a) => `<li class="u-small">${esc(a)}</li>`).join('')}</ul></details>` : ''}` : ''}
+    <div class="sp-row"><button class="u-btn u-btn--outline" type="button" data-rl="cancel">Voltar</button><span class="sp-grow"></span>
+      <button class="u-btn u-btn--outline" type="button" data-rl="analyse" ${busy ? 'disabled' : ''}>Analisar vistas</button>
+      <button class="u-btn u-btn--primary" type="button" data-rl="build" ${busy || !result?.evidence ? 'disabled' : ''}>Reconstruir</button></div></div>`;
+
+  const paint = () => {
+    if (disposed) return;
+    const keepTitle = container.querySelector<HTMLInputElement>('#rl-title')?.value ?? '';
+    container.innerHTML = html();
+    const input = container.querySelector<HTMLInputElement>('#rl-title'); if (input) input.value = keepTitle;
+    result?.views.forEach((_, i) => drawMask(container.querySelector<HTMLCanvasElement>(`[data-rl-canvas="${i}"]`), i));
+  };
+  const drawMask = (canvas: HTMLCanvasElement | null, i: number) => {
+    const ev = result?.evidence; if (!canvas || !ev) return;
+    const v = ev.views[i]; if (!v) return; const m = decodeMask(v.maskRle, ev.res * ev.res), ctx = canvas.getContext('2d')!, img = ctx.createImageData(canvas.width, canvas.height);
+    for (let y = 0; y < canvas.height; y++) for (let x = 0; x < canvas.width; x++) { const k = (y * canvas.width + x) * 4, on = m[Math.floor((canvas.height - 1 - y) / canvas.height * ev.res) * ev.res + Math.floor(x / canvas.width * ev.res)]; img.data[k] = on ? 80 : 20; img.data[k + 1] = on ? 190 : 24; img.data[k + 2] = on ? 255 : 30; img.data[k + 3] = 255; }
+    ctx.putImageData(img, 0, 0);
+  };
+
+  const take = async (files: File[], into?: number) => {
+    problem = null; result = null; busy = true; paint();
+    try {
+      const decoded: Slot[] = [];
+      for (const f of files) {
+        const bad = checkFile(f); if (bad) { problem = bad.message; break; }
+        decoded.push({ key: f.name, label: f.name, image: await decode(f), azimuth: '', thumb: '' });
+      }
+      if (!problem) {
+        if (into !== undefined) { slots = slots.map((s, i) => (i === into ? { ...s, image: decoded[0]!.image } : s)); }
+        else { if (decoded.length > REALITY_LIMITS.maxViews) problem = `No máximo ${REALITY_LIMITS.maxViews} vistas.`; else slots = decoded.map((s, i) => ({ ...s, azimuth: String(Math.round((360 * i) / decoded.length)) })); }
+      }
+    } catch { problem = 'Não foi possível ler uma das imagens.'; }
+    busy = false; paint();
+  };
+
+  const elev = (): { elevationDeg?: number } => { const e = elevation.trim() === '' ? NaN : Number(elevation); return Number.isFinite(e) ? { elevationDeg: Math.max(-90, Math.min(90, e)) } : {}; };
+  const takeVideo = async (file: File) => {
+    problem = null; result = null; busy = true; paint();
+    try { const v = await decodeVideoFile(file); slots = v.frames.map((f) => ({ key: f.name, label: f.name, image: f, azimuth: '', thumb: '' })); videoTimes = v.times; videoDuration = v.duration; }
+    catch (e) { problem = e instanceof Error ? e.message : 'Não foi possível ler o vídeo.'; slots = []; }
+    busy = false; paint();
+  };
+  const analyse = (): IntakeResult | null => {
+    problem = null;
+    if (mode === 'drawing') {
+      const [front, side, top] = slots.map((s) => s.image);
+      result = intakeDrawing({ ...(front ? { front } : {}), ...(side ? { side } : {}), ...(top ? { top } : {}) });
+    } else if (mode === 'video') {
+      // key frames by silhouette diversity; azimuth from the frame's time (constant angular speed over the whole clip) - assumed, not measured
+      const candidates = slots.map((s) => s.image!).filter(Boolean);
+      if (candidates.length < 2) { result = intakeOrbit(candidates); return result; }
+      const masks = candidates.map((im) => ({ mask: extractEvidence(im.rgba).mask })), picks = selectKeyFrames(masks, VIDEO_LIMITS.keyFrames);
+      result = intakeOrbit(picks.map((i) => candidates[i]!), { azimuthsDeg: picks.map((i) => 360 * (videoTimes[i]! / videoDuration)), azimuthsAssumed: true, mode: 'video', ...elev() });
+    } else {
+      const images = slots.map((s) => s.image!).filter(Boolean);
+      if (mode === 'orbit') {
+        const az = slots.map((s) => Number(s.azimuth));
+        if (az.some((a) => !Number.isFinite(a))) { problem = REFUSAL_COPY.POSE_COUNT_MISMATCH; result = null; return null; }
+        result = intakeOrbit(images, { azimuthsDeg: az, ...elev() });
+      } else result = intakeOrbit(images, elev());
+    }
+    return result;
+  };
+
+  const onClick = (event: Event) => {
+    const b = (event.target as HTMLElement).closest<HTMLElement>('[data-rl]'); if (!b) return;
+    event.stopPropagation();
+    const act = b.dataset.rl;
+    if (act === 'cancel') deps.onCancel();
+    else if (act === 'analyse') { analyse(); paint(); }
+    else if (act === 'build' && result?.evidence && !busy) {
+      busy = true; paint();
+      void deps.host.create(result.evidence, title()).then((r) => { if (!disposed) deps.onDone({ sha256: r.sha256, plan: r.plan, title: r.plan.title }); }).catch(() => { problem = 'A reconstrução falhou. Nada foi construído.'; busy = false; paint(); });
+    }
+  };
+  const onChange = (event: Event) => {
+    const t = event.target as HTMLInputElement;
+    if (t.name === 'rl-mode') { mode = t.value as Mode; slots = mode === 'drawing' ? drawingSlots() : []; result = null; problem = null; paint(); }
+    else if (t.id === 'rl-files' && t.files) void take([...t.files]);
+    else if (t.id === 'rl-video' && t.files?.[0]) void takeVideo(t.files[0]);
+    else if (t.dataset.rlFileSlot !== undefined && t.files?.[0]) void take([t.files[0]], Number(t.dataset.rlFileSlot));
+    else if (t.id === 'rl-elev') { elevation = t.value; result = null; }
+    else if (t.dataset.rlAz !== undefined) { slots[Number(t.dataset.rlAz)]!.azimuth = t.value; result = null; }
+  };
+  container.addEventListener('click', onClick); container.addEventListener('change', onChange);
+  paint();
+  return { dispose() { disposed = true; container.removeEventListener('click', onClick); container.removeEventListener('change', onChange); } };
+}

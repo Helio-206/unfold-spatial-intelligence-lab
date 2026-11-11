@@ -4,8 +4,10 @@
  * poses are 'given' only when the person declared them, otherwise 'assumed' (equal turntable steps) and open to refinement by consistency.
  * Fails closed: an unreliable segmentation, an inconsistent drawing or too few views is a coded refusal, never a quiet fallback.
  */
+import { leaveOneOutIoU, type SilhouetteView } from '../../universal-spatial/reconstruction/multiview';
 import { extractEvidence, type ImageEvidence, type RGBA } from '../universal-foundry/evidence';
-import { encodeColour, encodeMask, REALITY_LIMITS, type RealityEvidence, type StoredView } from './evidence';
+import { Vector3 } from 'three';
+import { decodeMask, encodeColour, encodeMask, REALITY_LIMITS, type RealityEvidence, type StoredView } from './evidence';
 import { FRAME_HALF_PER_DIAGONAL } from './model';
 
 export type IntakeImage = { name: string; rgba: RGBA; /** a mask the person confirmed (same size as rgba); skips automatic segmentation */ mask?: Uint8Array };
@@ -32,7 +34,7 @@ export function maskReliability(e: ImageEvidence): { reliable: boolean; reasons:
   if ((e.largestComponentShare ?? 0) < 0.75) reasons.push(`objecto fragmentado (maior componente ${(((e.largestComponentShare ?? 0)) * 100).toFixed(0)}% < 75%)`);
   if (total && band / total > 0.15) reasons.push(`contaminação nas bordas (${((band / total) * 100).toFixed(0)}% > 15%)`);
   if (e.foregroundRatio < 0.02 || e.foregroundRatio > 0.85) reasons.push(`primeiro plano fora do intervalo credível (${(e.foregroundRatio * 100).toFixed(0)}%)`);
-  if (fill < 0.12 || fill > 0.98) reasons.push(`preenchimento da caixa degenerado (${(fill * 100).toFixed(0)}%)`);
+  if (fill < 0.12) reasons.push(`preenchimento da caixa degenerado (${(fill * 100).toFixed(0)}%)`);
   return { reliable: reasons.length === 0, reasons };
 }
 
@@ -70,6 +72,10 @@ export type OrbitOptions = IntakeOptions & {
   azimuthsDeg?: number[];
   /** declared camera elevation in degrees. Absent: 0 and recorded as an assumption (elevation is never measured here). */
   elevationDeg?: number;
+  /** the azimuths were DERIVED (e.g. from video time at constant angular speed), not declared by the person: poses stay 'assumed' and the direction is chosen by evidence */
+  azimuthsAssumed?: boolean;
+  /** 'video' marks the evidence mode (frames of one turn of the object) */
+  mode?: 'video';
 };
 
 export function intakeOrbit(images: readonly IntakeImage[], options: OrbitOptions = {}): IntakeResult {
@@ -80,11 +86,11 @@ export function intakeOrbit(images: readonly IntakeImage[], options: OrbitOption
   const prepared = images.map((im) => prepare(im, refusals));
   const views = prepared.filter((p): p is Prepared => !!p).map((p) => p.report);
   if (refusals.length || prepared.some((p) => !p)) return { evidence: null, refusals, views };
-  const ps = prepared as Prepared[], res = options.res ?? 160, colourRes = options.colourRes ?? 64, cells = options.cells ?? 80;
+  const ps = prepared as Prepared[], res = options.res ?? 160, colourRes = options.colourRes ?? 80, cells = options.cells ?? 96;
   const elevation = options.elevationDeg ?? 0, assumptions: string[] = [];
-  const turntable = !options.azimuthsDeg;
+  const turntable = !options.azimuthsDeg, assumed = turntable || options.azimuthsAssumed === true;
   const azimuths = options.azimuthsDeg ?? ps.map((_, i) => (360 * i) / ps.length);
-  assumptions.push(turntable ? `Azimutes assumidos: passos iguais de ${(360 / ps.length).toFixed(1)}° na ordem enviada (volta completa). Não foram medidos.` : 'Azimutes indicados por si; não verificados.');
+  assumptions.push(options.azimuthsAssumed ? 'Azimutes derivados do instante de cada fotograma, a velocidade angular constante numa volta completa do vídeo. Não foram medidos.' : turntable ? `Azimutes assumidos: passos iguais de ${(360 / ps.length).toFixed(1)}° na ordem enviada (volta completa). Não foram medidos.` : 'Azimutes indicados por si; não verificados.');
   assumptions.push(options.elevationDeg === undefined ? 'Elevação da câmara desconhecida: assumida 0° (vista horizontal).' : `Elevação ${options.elevationDeg}° indicada por si; não verificada.`);
   assumptions.push('Mesma distância e zoom em todas as vistas (a escala é a mesma fracção da altura da imagem); projecção ortográfica aproximada.');
 
@@ -94,7 +100,7 @@ export function intakeOrbit(images: readonly IntakeImage[], options: OrbitOption
   const H = median(heightUnits), Wmax = Math.max(...widthUnits);
   const diag = Math.sqrt(H * H + 2 * Wmax * Wmax), half = FRAME_HALF_PER_DIAGONAL * diag * 1.0;
   // rotation axis: for a full orbit the mean of the bbox centres is the axis; for a partial orbit each bbox centre is used (declared as approximate)
-  const fullOrbit = turntable || spanOf(azimuths) >= 270;
+  const fullOrbit = turntable || spanOf(azimuths) >= 270 || (options.azimuthsAssumed === true && spanOf(azimuths) >= 200);
   const centresX = ps.map((p) => (p.report.bbox.x0 + p.report.bbox.x1 + 1) / 2);
   const axisX = fullOrbit ? centresX.map((c, i) => c / ps[i]!.rgba.height).reduce((a, b) => a + b, 0) / ps.length : null;
   assumptions.push(fullOrbit ? 'Eixo de rotação na média dos centros horizontais das silhuetas (órbita completa).' : 'Órbita parcial: eixo de rotação assumido no centro horizontal de cada silhueta (aproximação).');
@@ -102,15 +108,28 @@ export function intakeOrbit(images: readonly IntakeImage[], options: OrbitOption
   const storedViews: StoredView[] = ps.map((p, i) => {
     const hImg = p.rgba.height, ppu = hImg; // pixels per length unit of this image
     // fixed camera + rotating object (turntable): the axis and the vertical middle are the same in every view; otherwise each silhouette is centred on its own
-    const cx = (axisX === null ? centresX[i]! : axisX * hImg), cy = turntable ? medianCy * hImg : (p.report.bbox.y0 + p.report.bbox.y1 + 1) / 2;
+    const cx = (axisX === null ? centresX[i]! : axisX * hImg), cy = assumed ? medianCy * hImg : (p.report.bbox.y0 + p.report.bbox.y1 + 1) / 2;
     const map = (X: number, Y: number, size: number): [number, number] => {
       const u = ((X / size) * 2 - 1) * half, v = ((Y / size) * 2 - 1) * half; // v grows upward in the window
       return [cx + u * ppu, cy - v * ppu];
     };
     const sampled = resample(p, res, colourRes, map);
-    return { id: slug(p.name, i), name: p.name, azimuthDeg: azimuths[i]!, elevationDeg: elevation, azimuthSource: turntable ? 'assumed' : 'given', maskRle: encodeMask(sampled.mask), colour: encodeColour(sampled.rgb, colourRes) };
+    return { id: slug(p.name, i), name: p.name, azimuthDeg: azimuths[i]!, elevationDeg: elevation, azimuthSource: assumed ? 'assumed' : 'given', maskRle: encodeMask(sampled.mask), colour: encodeColour(sampled.rgb, colourRes) };
   });
-  const evidence: RealityEvidence = { contract: 'unfold.reality-evidence.v1', mode: turntable ? 'turntable' : 'orbit', res, colourRes, cells, frame: { centre: [0, 0, 0], half }, views: storedViews, assumptions };
+  // Turntable direction is not known from the order of the files. Wrong direction makes the cones inconsistent (the hull collapses), right direction is
+  // consistent, so the sign is CHOSEN BY EVIDENCE; a symmetric object cannot tell and keeps the default, which is then harmless and declared.
+  let viewsOut = storedViews;
+  if (assumed) {
+    const consistency = (sign: 1 | -1) => {
+      const vs: SilhouetteView[] = storedViews.map((v) => ({ id: v.id, res, mask: decodeMask(v.maskRle, res * res), azimuthDeg: sign * v.azimuthDeg, elevationDeg: v.elevationDeg, azimuthSource: 'assumed' }));
+      const l = leaveOneOutIoU(vs, { frame: { centre: new Vector3(0, 0, 0), half }, cells: 40 });
+      return l.length ? l.reduce((a, b) => a + b, 0) / l.length : 0;
+    }, plus = consistency(1), minus = consistency(-1);
+    if (minus > plus + 0.02) { viewsOut = storedViews.map((v) => ({ ...v, azimuthDeg: -v.azimuthDeg || 0 })); assumptions.push(`Sentido da volta escolhido pela evidência: o sentido contrário é mais coerente entre vistas (${(minus * 100).toFixed(0)}% contra ${(plus * 100).toFixed(0)}%).`); }
+    else if (plus > minus + 0.02) assumptions.push(`Sentido da volta escolhido pela evidência (${(plus * 100).toFixed(0)}% contra ${(minus * 100).toFixed(0)}% no sentido contrário).`);
+    else assumptions.push(elevation === 0 ? 'Sentido da volta não identificável: a elevação 0° não distingue um objecto do seu espelho (e um objecto simétrico não precisa). A reconstrução pode estar espelhada (esquerda/direita trocadas); inverta a ordem das imagens se for o caso. Com a câmara elevada isto deixa de ser ambíguo.' : 'Sentido da volta não identificável a partir das silhuetas (objecto aproximadamente simétrico): mantido o sentido por defeito.');
+  }
+  const evidence: RealityEvidence = { contract: 'unfold.reality-evidence.v1', mode: options.mode === 'video' ? 'video' : turntable ? 'turntable' : 'orbit', res, colourRes, cells, frame: { centre: [0, 0, 0], half }, views: viewsOut, framing: { axisXFrac: axisX, cyFrac: assumed ? medianCy : null }, assumptions };
   return { evidence, refusals: [], views };
 }
 
@@ -142,7 +161,7 @@ export function intakeDrawing(drawing: Partial<DrawingViews>, options: DrawingOp
   const pairs: Array<[string, number, number]> = [['height (front vs side)', f.h, s.h], ['width (front vs top)', f.w, t.w], ['depth (side vs top)', s.w, t.h]];
   const bad = pairs.filter(([, a, b]) => Math.abs(a - b) / Math.max(a, b) > tol);
   if (bad.length) return { evidence: null, refusals: [{ code: 'DRAWING_INCONSISTENT', detail: `the views do not share their dimensions: ${bad.map(([n, a, b]) => `${n} ${a} vs ${b} px`).join('; ')}` }], views: reports };
-  const res = options.res ?? 160, colourRes = options.colourRes ?? 64, cells = options.cells ?? 80;
+  const res = options.res ?? 160, colourRes = options.colourRes ?? 80, cells = options.cells ?? 96;
   const Wd = (f.w + t.w) / 2, Hd = (f.h + s.h) / 2, Dd = (s.w + t.h) / 2, scale = Math.max(Wd, Hd, Dd);
   const diag = Math.sqrt(Wd * Wd + Hd * Hd + Dd * Dd), half = FRAME_HALF_PER_DIAGONAL * diag;
   const cxOf = (p: Prepared) => (p.report.bbox.x0 + p.report.bbox.x1 + 1) / 2, cyOf = (p: Prepared) => (p.report.bbox.y0 + p.report.bbox.y1 + 1) / 2;
@@ -184,4 +203,24 @@ export function selectKeyFrames<T extends { mask: Uint8Array }>(frames: readonly
     picked.push(best); for (let i = 0; i < frames.length; i++) d[i] = Math.min(d[i]!, dist(frames[i]!.mask, frames[best]!.mask));
   }
   return picked.sort((a, b) => a - b);
+}
+
+export type AddViewResult = { evidence: RealityEvidence | null; refusals: Refusal[]; view: ViewReport | null };
+/**
+ * Frames ONE more photograph exactly as the original views were framed (same window, same scale convention, same axis), with a declared pose, so a new
+ * perspective can be integrated without redoing the others. Refuses drawings (no framing record) and unusable outlines.
+ */
+export function intakeAddView(evidence: RealityEvidence, image: IntakeImage, pose: { azimuthDeg: number; elevationDeg?: number }): AddViewResult {
+  const refusals: Refusal[] = [];
+  if (!evidence.framing) return { evidence: null, refusals: [{ code: 'POSE_COUNT_MISMATCH', detail: 'this reconstruction has no framing record (technical drawing): add views by redoing the drawing set' }], view: null };
+  if (evidence.views.length >= REALITY_LIMITS.maxViews) return { evidence: null, refusals: [{ code: 'TOO_MANY_VIEWS', detail: `at most ${REALITY_LIMITS.maxViews} views` }], view: null };
+  const p = prepare(image, refusals);
+  if (!p || refusals.length) return { evidence: null, refusals, view: p?.report ?? null };
+  const hImg = p.rgba.height, cx = evidence.framing.axisXFrac === null ? (p.report.bbox.x0 + p.report.bbox.x1 + 1) / 2 : evidence.framing.axisXFrac * hImg;
+  const cy = evidence.framing.cyFrac === null ? (p.report.bbox.y0 + p.report.bbox.y1 + 1) / 2 : evidence.framing.cyFrac * hImg, half = evidence.frame.half;
+  const map = (X: number, Y: number, size: number): [number, number] => [cx + ((X / size) * 2 - 1) * half * hImg, cy - ((Y / size) * 2 - 1) * half * hImg];
+  const sampled = resample(p, evidence.res, evidence.colourRes, map);
+  const used = new Set(evidence.views.map((v) => v.id)); let id = slug(p.name, evidence.views.length); while (used.has(id)) id += 'x';
+  const view: StoredView = { id, name: p.name, azimuthDeg: pose.azimuthDeg, elevationDeg: pose.elevationDeg ?? 0, azimuthSource: 'given', maskRle: encodeMask(sampled.mask), colour: encodeColour(sampled.rgb, evidence.colourRes) };
+  return { evidence: { ...evidence, views: [...evidence.views, view], assumptions: [...evidence.assumptions, `Vista adicionada «${p.name}» com azimute ${pose.azimuthDeg}° indicado por si; não verificado.`].slice(0, REALITY_LIMITS.maxAssumptions) }, refusals: [], view: p.report };
 }

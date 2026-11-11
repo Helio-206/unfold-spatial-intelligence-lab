@@ -1,6 +1,6 @@
 import { BufferGeometry, Vector3 } from 'three';
 import { surfaceNets } from '../fidelity/surface-nets';
-import { gridFor, makeView, occupancyField, type Grid, type View } from './silhouette';
+import { gridFor, makeView, type Grid, type View } from './silhouette';
 
 /**
  * Multi-view reconstruction from silhouettes (the product path for several photographs, a turntable video or orthographic technical views).
@@ -115,8 +115,9 @@ export function reconstructHull(views: readonly SilhouetteView[], options: HullO
   for (let k = 0; k < nz; k++) for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) if (occupancy[i + nx * (j + ny * k)]) { occupied++; if (i === 0 || j === 0 || k === 0 || i === nx - 1 || j === ny - 1 || k === nz - 1) clipped = true; }
   // O contorno toca a fronteira da janela: o casco seria cortado. Esvazia a casca exterior para manter a malha fechada, e declara-o.
   if (clipped) for (let k = 0; k < nz; k++) for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) if (i === 0 || j === 0 || k === 0 || i === nx - 1 || j === ny - 1 || k === nz - 1) occupancy[i + nx * (j + ny * k)] = 0;
-  const field = occupancyField(grid, occupancy, 1);
-  const geometry = occupied ? surfaceNets({ min: grid.min, cells: grid.cells, size: grid.size, field, maxTriangles: 400_000 }) : new BufferGeometry();
+  // The surface comes from the CONTINUOUS hull field (exact cone intersection), not from the voxel occupancy: measured on the development assets it lowers the
+  // surface error and raises held-out silhouette agreement (reports/reality-engine/benchmark), most on thin structures and planar faces.
+  const geometry = occupied ? surfaceNets({ min: grid.min, cells: grid.cells, size: grid.size, field: hullField(views, options.frame, options.dilatePx ?? 0), maxTriangles: 400_000 }) : new BufferGeometry();
   const pos = geometry.getAttribute('position'), vertexCount = pos ? pos.count : 0;
 
   const contours = bases.map((b) => contourOf(b.mask, b.res));
@@ -216,4 +217,63 @@ export function leaveOneOutIoU(views: readonly SilhouetteView[], options: { fram
   if (views.length < 3) return [];
   const grid = gridFor(options.frame.centre, options.frame.half, options.cells ?? 64), bases = views.map((v) => basisOf(viewOf(v, options.frame), v.mask));
   return views.map((v, i) => iou(v.mask, splat(grid, carveFast(grid, bases, i), bases[i]!)));
+}
+
+/** Silhouette of an occupancy grid as seen by a pose (voxel-footprint splat): what the current solid predicts for a view. */
+export function hullSilhouette(grid: Grid, occupancy: Uint8Array, pose: Pick<SilhouetteView, 'azimuthDeg' | 'elevationDeg' | 'res'>, frame: Frame): Uint8Array {
+  const v = makeView(orbitDirection(pose.azimuthDeg, pose.elevationDeg), frame.centre, frame.half, pose.res);
+  return splat(grid, occupancy, basisOf(v, new Uint8Array(pose.res * pose.res)));
+}
+export const maskIoUFast = iou;
+
+/** Exact 2D Euclidean distance transform (Felzenszwalb-Huttenlocher), squared distances to the nearest pixel with value `target`. */
+function edt(mask: Uint8Array, res: number, target: 0 | 1): Float32Array {
+  const INF = 1e12, f = new Float32Array(res * res), d = new Float32Array(res * res);
+  for (let i = 0; i < f.length; i++) f[i] = mask[i] === target ? 0 : INF;
+  const v = new Int32Array(res), z = new Float32Array(res + 1), col = new Float32Array(res), out = new Float32Array(res);
+  const pass = (get: (i: number) => number, set: (i: number, value: number) => void) => {
+    let k = 0; v[0] = 0; z[0] = -INF; z[1] = INF;
+    for (let q = 1; q < res; q++) {
+      let sIntersect: number;
+      for (;;) { const p = v[k]!; sIntersect = ((get(q) + q * q) - (get(p) + p * p)) / (2 * q - 2 * p); if (sIntersect <= z[k]! && k > 0) k--; else break; }
+      if (sIntersect <= z[k]!) { v[0] = q; z[0] = -INF; z[1] = INF; k = 0; continue; }
+      k++; v[k] = q; z[k] = sIntersect; z[k + 1] = INF;
+    }
+    k = 0; for (let q = 0; q < res; q++) { while (z[k + 1]! < q) k++; const p = v[k]!; set(q, (q - p) * (q - p) + get(p)); }
+  };
+  for (let x = 0; x < res; x++) { for (let y = 0; y < res; y++) col[y] = f[y * res + x]!; pass((i) => col[i]!, (i, val) => { out[i] = val; }); for (let y = 0; y < res; y++) d[y * res + x] = out[y]!; }
+  const row = new Float32Array(res);
+  for (let y = 0; y < res; y++) { for (let x = 0; x < res; x++) row[x] = d[y * res + x]!; pass((i) => row[i]!, (i, val) => { out[i] = val; }); for (let x = 0; x < res; x++) f[y * res + x] = out[x]!; }
+  return f;
+}
+/** Signed distance of a silhouette in pixels: negative inside, positive outside, zero on the boundary midway between pixel centres. */
+export function signedDistance2D(mask: Uint8Array, res: number): Float32Array {
+  const toOutside = edt(mask, res, 0), toInside = edt(mask, res, 1), out = new Float32Array(res * res);
+  for (let i = 0; i < out.length; i++) out[i] = mask[i] ? -(Math.sqrt(toOutside[i]!) - 0.5) : Math.sqrt(toInside[i]!) - 0.5;
+  return out;
+}
+
+/**
+ * The visual hull as a CONTINUOUS field: the largest of the per-view silhouette distances (negative = inside every cone). Its zero set is the exact
+ * intersection of the viewing cones, so planar faces and edges are kept where a voxel grid would stair-step and blur them.
+ */
+export function hullField(views: readonly SilhouetteView[], frame: Frame, dilatePx = 0): (x: number, y: number, z: number) => number {
+  validate(views);
+  const res = views[0]!.res, per = views.map((v) => { const b = basisOf(viewOf(v, frame), v.mask); return { b, sdf: signedDistance2D(dilateMask(v.mask, res, dilatePx), res) }; });
+  const at = (sdf: Float32Array, u: number, w: number): number => {
+    // bilinear in pixel-centre coordinates; outside the window the nearest border value plus the distance to it (always "outside" only if the border is outside)
+    const fx = Math.min(res - 1, Math.max(0, u - 0.5)), fy = Math.min(res - 1, Math.max(0, w - 0.5)), x0 = Math.floor(fx), y0 = Math.floor(fy), x1 = Math.min(res - 1, x0 + 1), y1 = Math.min(res - 1, y0 + 1), tx = fx - x0, ty = fy - y0;
+    const v = (sdf[y0 * res + x0]! * (1 - tx) + sdf[y0 * res + x1]! * tx) * (1 - ty) + (sdf[y1 * res + x0]! * (1 - tx) + sdf[y1 * res + x1]! * tx) * ty;
+    const ox = u < 0 ? -u : u > res ? u - res : 0, oy = w < 0 ? -w : w > res ? w - res : 0;
+    return ox || oy ? Math.max(v, 0) + Math.hypot(ox, oy) : v;
+  };
+  return (x, y, z) => {
+    let m = -Infinity;
+    for (const { b, sdf } of per) {
+      const dx = x - b.centre[0], dy = y - b.centre[1], dz = z - b.centre[2];
+      const value = at(sdf, (dx * b.right[0] + dy * b.right[1] + dz * b.right[2] + b.half) * b.s, (dx * b.up[0] + dy * b.up[1] + dz * b.up[2] + b.half) * b.s);
+      if (value > m) m = value;
+    }
+    return m;
+  };
 }

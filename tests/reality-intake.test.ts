@@ -57,6 +57,21 @@ describe('intake multivista de fotografias', () => {
     expect(model.observedFraction).toBeGreaterThan(0.5);
     expect(await evidenceSha256(ev)).toBe(await evidenceSha256(validateRealityEvidence(JSON.parse(JSON.stringify(ev))))); // sha estável
   }, 120_000);
+  it('sentido da volta: com câmara elevada é escolhido pela evidência; a 0° as silhuetas não distinguem o objecto do espelho e isso fica declarado', () => {
+    const chiral: Tri[] = [...trisOf(new BoxGeometry(1.2, 0.6, 0.5)), ...trisOf(new SphereGeometry(0.35, 24, 16), new Vector3(0.55, 0.4, 0.45)), ...trisOf(new CylinderGeometry(0.12, 0.12, 0.9, 16), new Vector3(-0.4, -0.5, -0.5)), ...trisOf(new BoxGeometry(0.3, 0.3, 0.6), new Vector3(0.1, 0.4, -0.45))];
+    const cb = bboxOf(chiral), ck = 0.5 / (cb.mx.y - cb.mn.y), reversed = [0, -45, -90, -135, -180, -225, -270, -315];
+    const raised = intakeOrbit(reversed.map((a) => photo(chiral, a, 30, ck)), { cells: 48, elevationDeg: undefined });
+    expect(raised.refusals).toEqual([]);
+    // sem elevação declarada o intake assume 0°: as imagens têm 30° reais, logo a evidência não é consistente em nenhum sentido sem a elevação certa
+    const declared = intakeOrbit(reversed.map((a) => photo(chiral, a, 30, ck)), { cells: 48, elevationDeg: 30 });
+    expect(declared.evidence!.views.map((v) => v.azimuthDeg + 0)).toEqual(reversed);
+    expect(declared.evidence!.assumptions.join(' ')).toMatch(/Sentido da volta escolhido pela evidência/);
+    const flat = intakeOrbit(reversed.map((a) => photo(chiral, a, 0, ck)), { cells: 48 });
+    expect(flat.evidence!.assumptions.join(' ')).toMatch(/não distingue um objecto do seu espelho/);
+    const model = buildModel(declared.evidence!);
+    const pts = model.parts.flatMap((p) => geometryPoints(partGeometry(p), 1500, 5).map((q) => q.add(new Vector3(...p.origin)))).map((q) => q.clone().divideScalar(ck).add(cb.c));
+    expect(chamfer(pts, samplePoints(chiral, 3000, 2)).symmetric / cb.diag).toBeLessThan(0.07);
+  }, 120_000);
   it('é determinístico: a mesma evidência dá a mesma malha, byte a byte', () => {
     const ev = intakeOrbit(azs.slice(0, 6).map((a) => photo(gt, a, 0, k)), { cells: 48 }).evidence!;
     const a = buildModel(ev), c = buildModel(JSON.parse(JSON.stringify(ev)));
@@ -74,6 +89,16 @@ describe('intake multivista de fotografias', () => {
     expect(r.evidence!.views.every((v) => v.azimuthSource === 'given' && v.elevationDeg === 20)).toBe(true);
     expect(r.evidence!.assumptions.join(' ')).toMatch(/Órbita parcial/);
   }, 60_000);
+  it('vídeo: azimutes derivados do tempo ficam "assumed", o modo é video e a reconstrução é coerente', () => {
+    const times = [0.05, 0.16, 0.27, 0.38, 0.5, 0.61, 0.72, 0.83].map((f) => f * 360);
+    const r = intakeOrbit(times.map((a) => photo(gt, a, 0, k)), { azimuthsDeg: times, azimuthsAssumed: true, mode: 'video', cells: 56 });
+    expect(r.refusals).toEqual([]);
+    expect(r.evidence!.mode).toBe('video'); expect(r.evidence!.views.every((v) => v.azimuthSource === 'assumed')).toBe(true);
+    expect(r.evidence!.assumptions.join(' ')).toMatch(/instante de cada fotograma/);
+    const model = buildModel(r.evidence!);
+    const pts = model.parts.flatMap((p) => geometryPoints(partGeometry(p), 1500, 5).map((q) => q.add(new Vector3(...p.origin)))).map((q) => q.clone().divideScalar(k).add(b.c));
+    expect(chamfer(pts, samplePoints(gt, 3000, 2)).symmetric / b.diag).toBeLessThan(0.06);
+  }, 120_000);
   it('selectKeyFrames escolhe frames diversos preservando a ordem temporal', () => {
     const frames = Array.from({ length: 30 }, (_, i) => ({ mask: rasterise(gt, makeView(orbitDirection(i * 12, 0), b.c, FRAME_HALF_PER_DIAGONAL * b.diag, 48)) }));
     const picks = selectKeyFrames(frames, 6);
