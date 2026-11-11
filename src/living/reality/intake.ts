@@ -11,10 +11,10 @@ import { Vector3 } from 'three';
 import { decodeMask, encodeColour, encodeMask, REALITY_LIMITS, type RealityEvidence, type StoredView } from './evidence';
 import { FRAME_HALF_PER_DIAGONAL } from './model';
 
-export type IntakeImage = { name: string; rgba: RGBA; /** a mask the person confirmed (same size as rgba); skips automatic segmentation */ mask?: Uint8Array };
+export type IntakeImage = { name: string; rgba: RGBA; /** a mask (same size as rgba) that skips the built-in segmentation; confirmed by the person unless `maskSource` says it came from an automatic strategy */ mask?: Uint8Array; maskSource?: 'automatic' | 'confirmed'; /** which automatic strategy produced `mask` (shown to the person) */ maskMethod?: string };
 export type RefusalCode = 'TOO_FEW_VIEWS' | 'TOO_MANY_VIEWS' | 'MASK_UNRELIABLE' | 'EMPTY_MASK' | 'DRAWING_INCONSISTENT' | 'POSE_COUNT_MISMATCH' | 'MISSING_DRAWING_VIEW';
 export type Refusal = { code: RefusalCode; detail: string; viewName?: string };
-export type ViewReport = { name: string; maskSource: 'confirmed' | 'automatic'; reliable: boolean; reasons: string[]; bbox: { x0: number; y0: number; x1: number; y1: number }; foregroundRatio: number };
+export type ViewReport = { name: string; maskSource: 'confirmed' | 'automatic'; maskMethod?: string; reliable: boolean; reasons: string[]; bbox: { x0: number; y0: number; x1: number; y1: number }; foregroundRatio: number };
 export type IntakeResult = { evidence: RealityEvidence | null; refusals: Refusal[]; views: ViewReport[]; /** image quality, coverage and what to capture next (null for drawings) */ capture?: CaptureAssessment | null };
 export type IntakeOptions = { res?: number; colourRes?: number; cells?: number };
 
@@ -96,7 +96,7 @@ function prepare(image: IntakeImage, refusals: Refusal[]): Prepared | null {
   let mask: Uint8Array, source: ViewReport['maskSource'], reasons: string[] = [], reliable = true;
   if (image.mask) {
     if (image.mask.length !== width * height) { refusals.push({ code: 'EMPTY_MASK', detail: 'confirmed mask size differs from the image', viewName: image.name }); return null; }
-    mask = image.mask; source = 'confirmed';
+    mask = image.mask; source = image.maskSource ?? 'confirmed';
   } else {
     const seg = segmentGeneric(image.rgba); mask = seg.mask; source = 'automatic';
     const r = segmentationCredibility(seg); reliable = r.reliable; reasons = r.reasons;
@@ -105,7 +105,7 @@ function prepare(image: IntakeImage, refusals: Refusal[]): Prepared | null {
   let x0 = width, y0 = height, x1 = -1, y1 = -1, count = 0;
   for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) if (mask[y * width + x]) { count++; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
   if (!count) { refusals.push({ code: 'EMPTY_MASK', detail: 'no foreground pixels', viewName: image.name }); return null; }
-  return { name: image.name, rgba: image.rgba, mask, report: { name: image.name, maskSource: source, reliable, reasons, bbox: { x0, y0, x1, y1 }, foregroundRatio: count / (width * height) } };
+  return { name: image.name, rgba: image.rgba, mask, report: { name: image.name, maskSource: source, ...(image.maskMethod ? { maskMethod: image.maskMethod } : {}), reliable, reasons, bbox: { x0, y0, x1, y1 }, foregroundRatio: count / (width * height) } };
 }
 
 /** Samples a prepared view into the shared orthographic window. `map(X, Y)` gives the source pixel (floating) for window pixel (X, Y). */

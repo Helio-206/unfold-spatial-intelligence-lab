@@ -191,3 +191,10 @@ Leitura honesta: BoomBox e AntiqueCamera são reconhecíveis (corpo, tripé, cor
 4. Decidir o destino das partes (nomear/fundir em revisão; hoje são só geometria).
 5. Medição em GPU real e orçamento de desempenho por dispositivo.
 O contrato estrutural (ids estáveis, transformações, proveniência, versões da evidência, pontos de preparação) está pronto para a Fase 02 consumir; nada de movimento funcional foi implementado.
+
+## Addendum — automatic-first intake (uncommitted-run record)
+
+- `analyse()` in the intake panel is now async: images without a person's outline get the best automatic one (`autoOutlines`: static background, salient network if `npm run models` fetched it, graph cut, colour), stored as `maskSource: 'automatic'` with the method and the cross-strategy agreement shown per view ("confirme visualmente"). The editor's "suggest" uses the same pipeline.
+- Integrated automatic-first evaluation on real-photo backgrounds (`BG=real AUTO=1`) crashed on the 8th asset (page navigation during render, not a pipeline result), so only 7 assets completed — log in `benchmark/product-eval-auto-partial.log`. Of those 7: 2 `partially_verified`, 5 `unvalidated`. The held-out check refuses to promote the bad ones, which is the intended failure mode, but automatic segmentation alone is NOT sufficient on complex real backgrounds; manual correction remains necessary. Not re-run to completion; a clean rerun is open.
+- `npm test`: 3 failures, all in `spatial-persistence-failures` / `spatial-review-binding-transition`; they fail identically on the stashed clean tree (container runs as root, so read-only-directory failure injection does not trigger). Unrelated to Reality.
+- Verdict unchanged: NO-GO.

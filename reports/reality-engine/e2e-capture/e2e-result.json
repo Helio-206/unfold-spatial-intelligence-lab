@@ -8,9 +8,14 @@
       "detail": "8 renders de BoomBox sobre a fotografia real bus.jpg"
     },
     {
-      "step": "1 contorno automático recusado em fundo real (fail-closed) e a estratégia pede «Ajustar contorno»",
+      "step": "1 contorno automático: ou recusado (fail-closed) com «Ajustar contorno», ou aceite e rotulado «automático» com método e «confirme visualmente»",
       "verdict": "PASS",
-      "detail": "8 vistas recusadas, estratégia needs-input"
+      "detail": "0 vistas recusadas, estratégia silhouette-hull, rotulado automático true"
+    },
+    {
+      "step": "2a editor: undo/redo, zoom e modos de visualização operam sem erros",
+      "verdict": "PASS",
+      "detail": "sobreposição, recorte, antes/depois, desfazer/refazer, zoom"
     },
     {
       "step": "2 contornos ajustados à mão (caixa + pincéis, calculados no Worker) nas 8 vistas",

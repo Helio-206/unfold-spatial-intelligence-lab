@@ -55,22 +55,37 @@ await page.waitForFunction(() => document.querySelector('#rl-files')?.closest('l
 await page.click('[data-rl="analyse"]'); await page.waitForSelector('[data-rl-strategy]', { timeout: 60_000 });
 const refusedAuto = await page.locator('[data-rl-refusal="MASK_UNRELIABLE"]').count(), strategyAuto = await page.getAttribute('[data-rl-strategy]', 'data-rl-strategy');
 await page.screenshot({ path: resolve(out, '01-auto-refused.png') });
-record('1 contorno automático recusado em fundo real (fail-closed) e a estratégia pede «Ajustar contorno»', refusedAuto >= 4 && strategyAuto === 'needs-input' && /Ajustar contorno/.test(await page.locator('[data-rl-strategy]').innerText()), `${refusedAuto} vistas recusadas, estratégia ${strategyAuto}`);
+const autoText = await page.locator('.rl-panel, [data-rl-strategy]').first().evaluate((el) => (el.closest('section,div')?.parentElement ?? document.body).innerText);
+const autoLabelled = /automático \(/.test(autoText) && /confirme visualmente/.test(autoText);
+record('1 contorno automático: ou recusado (fail-closed) com «Ajustar contorno», ou aceite e rotulado «automático» com método e «confirme visualmente»', (refusedAuto >= 4 && strategyAuto === 'needs-input' && /Ajustar contorno/.test(await page.locator('[data-rl-strategy]').innerText())) || (refusedAuto < 4 && autoLabelled), `${refusedAuto} vistas recusadas, estratégia ${strategyAuto}, rotulado automático ${autoLabelled}`);
 
 // 2. interactive editor on every view: box around the object, one brush stroke inside (object) and one outside (background), compute, accept
 let editedOk = 0;
 for (let i = 0; i < 8; i++) {
-  await page.click(`[data-rl-edit="${i}"]`); await page.waitForSelector('[data-rl-edit-canvas]');
-  const canvas = page.locator('[data-rl-edit-canvas]'), cb = (await canvas.boundingBox())!, b = made.boxes[i]!, sx = cb.width / 640, sy = cb.height / 480;
-  const px = (x: number, y: number) => ({ x: cb.x + x * sx, y: cb.y + y * sy });
-  await page.check('input[name="rl-tool"][value="box"]');
+  await page.click(`[data-rl-edit="${i}"]`); await page.waitForSelector('[data-rl-edit-canvas]'); await page.waitForTimeout(250);
+  const canvas = page.locator('[data-rl-edit-canvas]'), cb = (await canvas.boundingBox())!, b = made.boxes[i]!;
+  // the editor fits the 640x480 image in the stage with a 16 px margin; the same mapping places the mouse
+  const scale = Math.min((cb.width - 32) / 640, (cb.height - 32) / 480), tx = (cb.width - 640 * scale) / 2, ty = (cb.height - 480 * scale) / 2;
+  const px = (x: number, y: number) => ({ x: cb.x + tx + x * scale, y: cb.y + ty + y * scale });
+  await page.click('[data-tool="box"]');
   const p0 = px(b.x0 - 14, b.y0 - 14), p1 = px(b.x1 + 14, b.y1 + 14);
   await page.mouse.move(p0.x, p0.y); await page.mouse.down(); await page.mouse.move(p1.x, p1.y, { steps: 6 }); await page.mouse.up();
-  await page.check('input[name="rl-tool"][value="fg"]'); const c = px((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2); await page.mouse.move(c.x - 20 * sx, c.y); await page.mouse.down(); await page.mouse.move(c.x + 20 * sx, c.y, { steps: 6 }); await page.mouse.up();
-  await page.check('input[name="rl-tool"][value="bg"]'); const o = px(b.x0 - 8, b.y0 - 8); await page.mouse.move(o.x, o.y); await page.mouse.down(); await page.mouse.move(o.x + 30, o.y, { steps: 4 }); await page.mouse.up();
-  await page.click('[data-rl="edit-run"]'); await page.waitForFunction(() => !(document.querySelector('[data-rl="edit-accept"]') as HTMLButtonElement | null)?.disabled, null, { timeout: 120_000 });
-  if (i === 0) await page.screenshot({ path: resolve(out, '02-editor.png') });
-  await page.click('[data-rl="edit-accept"]'); editedOk++;
+  await page.click('[data-tool="fg"]'); const c = px((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2); await page.mouse.move(c.x - 20 * scale, c.y); await page.mouse.down(); await page.mouse.move(c.x + 20 * scale, c.y, { steps: 6 }); await page.mouse.up();
+  await page.click('[data-tool="bg"]'); const o = px(b.x0 - 8, b.y0 - 8); await page.mouse.move(o.x, o.y); await page.mouse.down(); await page.mouse.move(o.x + 30, o.y, { steps: 4 }); await page.mouse.up();
+  if (i === 0) await page.screenshot({ path: resolve(out, '02a-editor-marks.png') });
+  await page.click('[data-ed="run"]');
+  if (i === 0) { await page.waitForSelector('[data-busy]:not([hidden])', { timeout: 5_000 }).catch(() => undefined); await page.screenshot({ path: resolve(out, '02b-editor-computing.png') }); }
+  await page.waitForFunction(() => !(document.querySelector('[data-ed="accept"]') as HTMLButtonElement | null)?.disabled, null, { timeout: 120_000 });
+  if (i === 0) {
+    await page.screenshot({ path: resolve(out, '02c-editor-overlay.png') });
+    await page.check('input[name="rl-view-mode"][value="cutout"]', { force: true }); await page.screenshot({ path: resolve(out, '02d-editor-cutout.png') });
+    await page.check('input[name="rl-view-mode"][value="compare"]', { force: true }); await page.screenshot({ path: resolve(out, '02e-editor-compare.png') });
+    await page.check('input[name="rl-view-mode"][value="overlay"]', { force: true });
+    // undo/redo and zoom keep working
+    await page.click('[data-ed="undo"]'); await page.click('[data-ed="redo"]'); await page.click('[data-ed="zoom-in"]'); await page.click('[data-ed="fit"]');
+    record('2a editor: undo/redo, zoom e modos de visualização operam sem erros', true, 'sobreposição, recorte, antes/depois, desfazer/refazer, zoom');
+  }
+  await page.click('[data-ed="accept"]'); editedOk++;
 }
 record('2 contornos ajustados à mão (caixa + pincéis, calculados no Worker) nas 8 vistas', editedOk === 8, `${editedOk}/8 confirmados`);
 await page.click('[data-rl="analyse"]'); await page.waitForSelector('[data-rl-strategy]', { timeout: 60_000 });

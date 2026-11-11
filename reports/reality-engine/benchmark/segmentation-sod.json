@@ -1,0 +1,207 @@
+{
+  "note": "AUTOMATIC segmentation: classical colour vs salient-object networks (rembg release weights, Apache-2.0). Real photos: single-annotator polygons. Composites: renders over real photographs, exact alpha.",
+  "models": [
+    "u2netp",
+    "silueta"
+  ],
+  "summary": {
+    "classical": {
+      "realPhotos": 0.298,
+      "composites": 0.249,
+      "compositesDev": 0.257,
+      "compositesAcc": 0.244
+    },
+    "u2netp": {
+      "realPhotos": 0.643,
+      "composites": 0.571,
+      "compositesDev": 0.416,
+      "compositesAcc": 0.687
+    },
+    "silueta": {
+      "realPhotos": 0.612,
+      "composites": 0.57,
+      "compositesDev": 0.479,
+      "compositesAcc": 0.638
+    }
+  },
+  "realPhotographs": [
+    {
+      "id": "car",
+      "classical": 0.091,
+      "u2netp": 0.854,
+      "u2netpMs": 3133,
+      "silueta": 0.763,
+      "siluetaMs": 3356
+    },
+    {
+      "id": "bus",
+      "classical": 0.22,
+      "u2netp": 0.571,
+      "u2netpMs": 1374,
+      "silueta": 0.425,
+      "siluetaMs": 2803
+    },
+    {
+      "id": "accept-mini",
+      "classical": 0.239,
+      "u2netp": 0.633,
+      "u2netpMs": 1391,
+      "silueta": 0.637,
+      "siluetaMs": 2877
+    },
+    {
+      "id": "accept-pickup",
+      "classical": 0.335,
+      "u2netp": 0.528,
+      "u2netpMs": 1432,
+      "silueta": 0.52,
+      "siluetaMs": 2750
+    },
+    {
+      "id": "holdout-van",
+      "classical": 0.468,
+      "u2netp": 0.554,
+      "u2netpMs": 1430,
+      "silueta": 0.553,
+      "siluetaMs": 2676
+    },
+    {
+      "id": "holdout-coupe",
+      "classical": 0.525,
+      "u2netp": 0.704,
+      "u2netpMs": 1461,
+      "silueta": 0.706,
+      "siluetaMs": 2486
+    },
+    {
+      "id": "skoda-kodiaq",
+      "classical": 0.292,
+      "u2netp": 0.57,
+      "u2netpMs": 1470,
+      "silueta": 0.569,
+      "siluetaMs": 2763
+    },
+    {
+      "id": "porsche-911",
+      "classical": 0.212,
+      "u2netp": 0.729,
+      "u2netpMs": 1506,
+      "silueta": 0.726,
+      "siluetaMs": 3114
+    }
+  ],
+  "composites": [
+    {
+      "id": "ToyCar",
+      "split": "development",
+      "background": "car.jpg",
+      "classical": 0.044,
+      "u2netp": 0.198,
+      "silueta": 0.194
+    },
+    {
+      "id": "Lantern",
+      "split": "development",
+      "background": "chair.jpg",
+      "classical": 0.199,
+      "u2netp": 0.06,
+      "silueta": 0.078
+    },
+    {
+      "id": "BoomBox",
+      "split": "development",
+      "background": "bus.jpg",
+      "classical": 0.419,
+      "u2netp": 0.504,
+      "silueta": 0.838
+    },
+    {
+      "id": "WaterBottle",
+      "split": "development",
+      "background": "excavator.jpg",
+      "classical": 0.165,
+      "u2netp": 0.603,
+      "silueta": 0.615
+    },
+    {
+      "id": "SheenChair",
+      "split": "development",
+      "background": "porsche-911.jpg",
+      "classical": 0.531,
+      "u2netp": 0.453,
+      "silueta": 0.461
+    },
+    {
+      "id": "CesiumMilkTruck",
+      "split": "development",
+      "background": "skoda-kodiaq.jpg",
+      "classical": 0.181,
+      "u2netp": 0.677,
+      "silueta": 0.691
+    },
+    {
+      "id": "AntiqueCamera",
+      "split": "acceptance",
+      "background": "car.jpg",
+      "classical": 0,
+      "u2netp": 0.059,
+      "silueta": 0.049
+    },
+    {
+      "id": "Avocado",
+      "split": "acceptance",
+      "background": "chair.jpg",
+      "classical": 0.534,
+      "u2netp": 0.548,
+      "silueta": 0.57
+    },
+    {
+      "id": "Corset",
+      "split": "acceptance",
+      "background": "bus.jpg",
+      "classical": 0.227,
+      "u2netp": 0.875,
+      "silueta": 0.737
+    },
+    {
+      "id": "MaterialsVariantsShoe",
+      "split": "acceptance",
+      "background": "excavator.jpg",
+      "classical": 0.413,
+      "u2netp": 0.947,
+      "silueta": 0.886
+    },
+    {
+      "id": "GlamVelvetSofa",
+      "split": "acceptance",
+      "background": "porsche-911.jpg",
+      "classical": 0.266,
+      "u2netp": 0.917,
+      "silueta": 0.727
+    },
+    {
+      "id": "ChairDamaskPurplegold",
+      "split": "acceptance",
+      "background": "skoda-kodiaq.jpg",
+      "classical": 0.389,
+      "u2netp": 0.348,
+      "silueta": 0.33
+    },
+    {
+      "id": "IridescenceLamp",
+      "split": "acceptance",
+      "background": "car.jpg",
+      "classical": 0,
+      "u2netp": 0.87,
+      "silueta": 0.854
+    },
+    {
+      "id": "CarConcept",
+      "split": "acceptance",
+      "background": "chair.jpg",
+      "classical": 0.123,
+      "u2netp": 0.935,
+      "silueta": 0.951
+    }
+  ]
+}

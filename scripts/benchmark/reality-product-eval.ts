@@ -20,14 +20,16 @@ import { extractEvidence } from '../../src/living/universal-foundry/evidence';
 import { refinePosesOf } from '../../src/living/reality/compute';
 import { decodeMask } from '../../src/living/reality/evidence';
 import { intakeAddView, intakeOrbit, type IntakeImage } from '../../src/living/reality/intake';
+import { autoOutlines } from '../../src/living/reality/auto-segmentation';
+import type { SodRunner } from '../../src/living/reality/sod';
 import { photometricError } from '../../src/living/reality/photometric';
 import { buildModel, partGeometry, viewsOf } from '../../src/living/reality/model';
 import { assessReconstruction } from '../../src/living/reality/assessment';
 import { planFromModel } from '../../src/living/reality/plan';
 import { evidenceSha256 } from '../../src/living/reality/evidence';
 
-const REAL_BG = process.env.BG === 'real', BACKGROUNDS = ['car.jpg', 'chair.jpg', 'bus.jpg', 'excavator.jpg', 'porsche-911.jpg', 'skoda-kodiaq.jpg'];
-const argOut = process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : REAL_BG ? 'reports/reality-engine/benchmark/product-results-realbg' : 'reports/reality-engine/benchmark/product-results';
+const AUTO = process.env.AUTO === '1', REAL_BG = process.env.BG === 'real', BACKGROUNDS = ['car.jpg', 'chair.jpg', 'bus.jpg', 'excavator.jpg', 'porsche-911.jpg', 'skoda-kodiaq.jpg'];
+const argOut = process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : AUTO ? 'reports/reality-engine/benchmark/product-results-realbg-auto' : REAL_BG ? 'reports/reality-engine/benchmark/product-results-realbg' : 'reports/reality-engine/benchmark/product-results';
 const only = process.argv.includes('--assets') ? process.argv[process.argv.indexOf('--assets') + 1]!.split(',') : null;
 mkdirSync(resolve(argOut), { recursive: true });
 const manifest = JSON.parse(readFileSync(resolve('reports/reality-engine/benchmark/manifest.json'), 'utf8')) as { assets: Array<{ id: string; kind: string; category: string; split: string; sha256: string }> };
@@ -40,6 +42,13 @@ const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH 
 const page = await browser.newPage({ viewport: { width: 500, height: 400 } });
 await page.goto('http://127.0.0.1:5398/scripts/benchmark/reality-render.html');
 await page.waitForFunction(() => (window as never as { __renderReady?: boolean }).__renderReady === true, null, { timeout: 60_000 });
+const sodPage = AUTO ? await browser.newPage() : null;
+if (sodPage) { await sodPage.goto('http://127.0.0.1:5398/scripts/benchmark/sod.html'); await sodPage.waitForFunction(() => (window as any).__sodReady, null, { timeout: 60000 }); }
+const sodRunner: SodRunner = { available: async () => true, run: async (rgba) => {
+  const { width: W, height: H } = rgba, enc = jpeg.encode({ data: Buffer.from(rgba.data.buffer, rgba.data.byteOffset, rgba.data.byteLength), width: W, height: H }, 92);
+  const r = await sodPage!.evaluate(([m, u]) => (window as any).__sod(m, u), ['u2netp', `data:image/jpeg;base64,${Buffer.from(enc.data).toString('base64')}`] as const), a = Buffer.from(r.alpha, 'base64'), soft = new Float32Array(W * H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const fx = ((x + 0.5) / W) * r.w - 0.5, fy = ((y + 0.5) / H) * r.h - 0.5, x0 = Math.max(0, Math.floor(fx)), y0 = Math.max(0, Math.floor(fy)), x1 = Math.min(r.w - 1, x0 + 1), y1 = Math.min(r.h - 1, y0 + 1), tx = Math.min(1, Math.max(0, fx - x0)), ty = Math.min(1, Math.max(0, fy - y0)); soft[y * W + x] = ((a[y0 * r.w + x0]! * (1 - tx) + a[y0 * r.w + x1]! * tx) * (1 - ty) + (a[y1 * r.w + x0]! * (1 - tx) + a[y1 * r.w + x1]! * tx) * ty) / 255; }
+  return soft; } };
 const renderRaw = async (id: string, az: number[], transparent = false): Promise<IntakeImage[]> => {
   const r = await page.evaluate(([url, a, elev, fill, transp]) => (window as never as { __renderRaw: (u: string, a: number[], o: object) => Promise<{ width: number; height: number; rgba: string[] }> }).__renderRaw(url as string, a as number[], { width: 480, height: 360, elevationDeg: elev as number, fill: fill as number, ...(transp ? { background: 'transparent' } : {}) }), [`/reports/reality-engine/benchmark/assets/${id}/${id}.glb`, az, ELEV, FILL, transparent] as const);
   return r.rgba.map((b64, i) => ({ name: `${id}-${az[i]}.png`, rgba: { width: r.width, height: r.height, data: new Uint8ClampedArray(Buffer.from(b64, 'base64')) } }));
@@ -84,10 +93,19 @@ for (const asset of manifest.assets) {
     const bgFile = BACKGROUNDS[manifest.assets.indexOf(asset) % BACKGROUNDS.length]!, rawP = await renderRaw(asset.id, TURN, true), rawH = await renderRaw(asset.id, HELD, true);
     const comp = rawP.map((im) => composite(im, bgFile)), truths = rawP.map(gtMaskOf);
     const autoOk = comp.filter((im) => segmentationCredibility(segmentGeneric(im.rgba)).reliable).length;
+    if (AUTO) {
+      // automatic-first policy: the product's strategies decide; views with no credible outline go to the person (simulated with the oracle brush protocol and counted as manual)
+      const outs = await autoOutlines(comp.map((c) => c.rgba), { sod: sodRunner }), manual = new Set<number>(), masks: Uint8Array[] = [], ious: number[] = [];
+      for (let i = 0; i < comp.length; i++) { if (outs[i]!.mask) { masks.push(outs[i]!.mask!); ious.push(iou(outs[i]!.mask!, truths[i]!)); } else { manual.add(i); const m = assistedMask(comp[i]!, truths[i]!); masks.push(m.mask); ious.push(m.iou); } }
+      photos = comp.map((im, i) => ({ ...im, mask: masks[i]!, maskSource: manual.has(i) ? 'confirmed' as const : 'automatic' as const }));
+      row.background = bgFile; row.autoViews = comp.length - manual.size; row.manualViews = manual.size; row.autoWrongViews = outs.reduce((n, o, i) => n + (o.mask && iou(o.mask, truths[i]!) < 0.5 ? 1 : 0), 0); row.segmentationIoUMean = round(ious.reduce((a, b) => a + b, 0) / ious.length);
+      held = rawH.map((im) => ({ ...composite(im, bgFile), mask: gtMaskOf(im) }));
+    } else {
     const assisted = comp.map((im, i) => assistedMask(im, truths[i]!));
     photos = comp.map((im, i) => ({ ...im, mask: assisted[i]!.mask }));
     held = rawH.map((im) => ({ ...composite(im, bgFile), mask: gtMaskOf(im) })); // held-out references use the exact alpha
     row.background = bgFile; row.autoCredibleViews = autoOk; row.segmentationBoxOnlyIoU = round(assisted.reduce((a, b) => a + b.boxOnlyIoU, 0) / assisted.length); row.segmentationAssistedIoU = round(assisted.reduce((a, b) => a + b.iou, 0) / assisted.length);
+    }
   } else { photos = await renderRaw(asset.id, TURN); held = await renderRaw(asset.id, HELD); }
   const t0 = performance.now(), intake = intakeOrbit(photos, { elevationDeg: ELEV });
   if (!intake.evidence) { row.status = 'refused'; row.refusals = intake.refusals.map((r) => `${r.code}${r.viewName ? ` (${r.viewName})` : ''}`); row.reliability = intake.views.map((v) => ({ name: v.name, reliable: v.reliable, reasons: v.reasons })); results.push(row); console.log(asset.id, 'REFUSED', row.refusals); continue; }

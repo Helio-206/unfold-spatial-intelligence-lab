@@ -1,0 +1,179 @@
+{
+  "note": "Turntable renders (fixed camera) over REAL photograph backgrounds; exact alpha reference; automatic, no person.",
+  "summary": {
+    "classical": 0.271,
+    "static": 0.534,
+    "staticDev": 0.646,
+    "staticAcc": 0.45
+  },
+  "rows": [
+    {
+      "id": "ToyCar",
+      "split": "development",
+      "background": "car.jpg",
+      "classicalIoU": 0.023,
+      "classicalCredible": 0,
+      "staticApplicable": true,
+      "staticShare": 0.35,
+      "staticIoU": 0.865,
+      "staticMinIoU": 0.828,
+      "ms": 7193
+    },
+    {
+      "id": "Lantern",
+      "split": "development",
+      "background": "chair.jpg",
+      "classicalIoU": 0.236,
+      "classicalCredible": 0,
+      "staticApplicable": true,
+      "staticShare": 0.9,
+      "staticIoU": 0.595,
+      "staticMinIoU": 0.418,
+      "ms": 5452
+    },
+    {
+      "id": "BoomBox",
+      "split": "development",
+      "background": "bus.jpg",
+      "classicalIoU": 0.413,
+      "classicalCredible": 0,
+      "staticApplicable": true,
+      "staticShare": 0.78,
+      "staticIoU": 0.902,
+      "staticMinIoU": 0.808,
+      "ms": 5170
+    },
+    {
+      "id": "WaterBottle",
+      "split": "development",
+      "background": "excavator.jpg",
+      "classicalIoU": 0.168,
+      "classicalCredible": 0,
+      "staticApplicable": true,
+      "staticShare": 0.97,
+      "staticIoU": 0.03,
+      "staticMinIoU": 0.014,
+      "ms": 1401
+    },
+    {
+      "id": "SheenChair",
+      "split": "development",
+      "background": "porsche-911.jpg",
+      "classicalIoU": 0.532,
+      "classicalCredible": 8,
+      "staticApplicable": true,
+      "staticShare": 0.72,
+      "staticIoU": 0.71,
+      "staticMinIoU": 0.572,
+      "ms": 7483
+    },
+    {
+      "id": "CesiumMilkTruck",
+      "split": "development",
+      "background": "skoda-kodiaq.jpg",
+      "classicalIoU": 0.199,
+      "classicalCredible": 0,
+      "staticApplicable": true,
+      "staticShare": 0.46,
+      "staticIoU": 0.774,
+      "staticMinIoU": 0.567,
+      "ms": 10523
+    },
+    {
+      "id": "AntiqueCamera",
+      "split": "acceptance",
+      "background": "car.jpg",
+      "classicalIoU": 0,
+      "classicalCredible": 0,
+      "staticApplicable": true,
+      "staticShare": 0.91,
+      "staticIoU": 0.621,
+      "staticMinIoU": 0.521,
+      "ms": 9099
+    },
+    {
+      "id": "Avocado",
+      "split": "acceptance",
+      "background": "chair.jpg",
+      "classicalIoU": 0.556,
+      "classicalCredible": 0,
+      "staticApplicable": true,
+      "staticShare": 0.88,
+      "staticIoU": 0.808,
+      "staticMinIoU": 0.584,
+      "ms": 4098
+    },
+    {
+      "id": "Corset",
+      "split": "acceptance",
+      "background": "bus.jpg",
+      "classicalIoU": 0.231,
+      "classicalCredible": 0,
+      "staticApplicable": true,
+      "staticShare": 0.91,
+      "staticIoU": 0.69,
+      "staticMinIoU": 0.591,
+      "ms": 3824
+    },
+    {
+      "id": "MaterialsVariantsShoe",
+      "split": "acceptance",
+      "background": "excavator.jpg",
+      "classicalIoU": 0.438,
+      "classicalCredible": 0,
+      "staticApplicable": true,
+      "staticShare": 0.56,
+      "staticIoU": 0.729,
+      "staticMinIoU": 0.48,
+      "ms": 8909
+    },
+    {
+      "id": "GlamVelvetSofa",
+      "split": "acceptance",
+      "background": "porsche-911.jpg",
+      "classicalIoU": 0.499,
+      "classicalCredible": 4,
+      "staticApplicable": true,
+      "staticShare": 0.92,
+      "staticIoU": 0.001,
+      "staticMinIoU": 0,
+      "ms": 3477
+    },
+    {
+      "id": "ChairDamaskPurplegold",
+      "split": "acceptance",
+      "background": "skoda-kodiaq.jpg",
+      "classicalIoU": 0.399,
+      "classicalCredible": 0,
+      "staticApplicable": true,
+      "staticShare": 0.72,
+      "staticIoU": 0.743,
+      "staticMinIoU": 0.631,
+      "ms": 7274
+    },
+    {
+      "id": "IridescenceLamp",
+      "split": "acceptance",
+      "background": "car.jpg",
+      "classicalIoU": 0,
+      "classicalCredible": 0,
+      "staticApplicable": true,
+      "staticShare": 0.99,
+      "staticIoU": 0.002,
+      "staticMinIoU": 0,
+      "ms": 1231
+    },
+    {
+      "id": "CarConcept",
+      "split": "acceptance",
+      "background": "chair.jpg",
+      "classicalIoU": 0.093,
+      "classicalCredible": 0,
+      "staticApplicable": true,
+      "staticShare": 0.85,
+      "staticIoU": 0.006,
+      "staticMinIoU": 0.002,
+      "ms": 3659
+    }
+  ]
+}

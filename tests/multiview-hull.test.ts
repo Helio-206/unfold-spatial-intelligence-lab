@@ -86,3 +86,24 @@ describe('refinamento de pose por consistência multivista', () => {
     expect(refinePoses(given, { frame, cells: 32 }).views.map((v) => v.azimuthDeg)).toEqual(given.map((v) => v.azimuthDeg));
   }, 120_000);
 });
+
+describe('câmaras perspectivas (pinhole)', () => {
+  it('com campo de visão largo, o casco com as câmaras reais é muito mais exacto do que tratá-las como ortográficas', async () => {
+    const { lookAtCamera, rasterisePinhole } = await import('../src/universal-spatial/reconstruction/multiview');
+    const gt = solid(), gtPts = samplePoints(gt, 4000, 5), res = 128, fov = 55, dist = 2.6, ring = Array.from({ length: 8 }, (_, i) => i * 45);
+    const cams = ring.map((a, i) => { const el = (i % 2 ? 30 : 0) * Math.PI / 180, az = a * Math.PI / 180; return lookAtCamera(new Vector3(Math.sin(az) * Math.cos(el) * dist, Math.sin(el) * dist, Math.cos(az) * Math.cos(el) * dist), new Vector3(), res, fov); });
+    const pin = cams.map((c, i) => ({ id: `p${i}`, res, mask: rasterisePinhole(gt, c, res), azimuthDeg: 0, elevationDeg: 0, azimuthSource: 'given' as const, camera: c }));
+    const ortho = pin.map((v, i) => ({ id: v.id, res, mask: v.mask, azimuthDeg: ring[i]!, elevationDeg: i % 2 ? 30 : 0, azimuthSource: 'given' as const }));
+    const fr: Frame = { centre: new Vector3(), half: 1.3 };
+    const err = (views: typeof pin) => chamfer(geometryPoints(reconstructHull(views, { frame: fr, cells: 56 }).geometry, 4000, 5), gtPts).symmetric;
+    const ep = err(pin), eo = err(ortho as never);
+    expect(ep).toBeLessThan(0.06); expect(ep).toBeLessThan(eo * 0.6);
+  }, 120_000);
+  it('um ponto atrás da câmara fica fora do cone (sem NaN nem casco vazio por engano)', async () => {
+    const { lookAtCamera, rasterisePinhole } = await import('../src/universal-spatial/reconstruction/multiview');
+    const gt = solid(), c = lookAtCamera(new Vector3(0, 0, 3), new Vector3(), 96, 40), m = rasterisePinhole(gt, c, 96);
+    let on = 0; for (const v of m) on += v; expect(on).toBeGreaterThan(100);
+    const h = reconstructHull([{ id: 'a', res: 96, mask: m, azimuthDeg: 0, elevationDeg: 0, azimuthSource: 'given', camera: c }], { frame: { centre: new Vector3(), half: 1.3 }, cells: 32 });
+    expect(h.stats.occupiedVoxels).toBeGreaterThan(0);
+  });
+});

@@ -12,6 +12,8 @@ export type SegmentationHint = {
   /** pixels the person marked as object / as background (original-image coordinates) */
   foreground?: readonly Point[];
   background?: readonly Point[];
+  /** dense seeds at original resolution: 1 = object, 2 = background, 0 = unknown (used by automatic initialisation, e.g. from a static background or a network) */
+  seeds?: Uint8Array;
   /** brush radius in original-image pixels for the marked points (a stroke is a trail of points) */
   brushRadius?: number;
 };
@@ -110,6 +112,7 @@ export function segmentInteractive(rgba: RGBA, hint: SegmentationHint = {}, opti
   const rad = Math.max(1, Math.round((hint.brushRadius ?? 0) * scale));
   const stamp = (pts: readonly Point[] | undefined, value: 0 | 1) => { for (const [px, py] of pts ?? []) { const cx = Math.round(px * scale), cy = Math.round(py * scale); for (let dy = -rad; dy <= rad; dy++) for (let dx = -rad; dx <= rad; dx++) { if (dx * dx + dy * dy > rad * rad) continue; const x = cx + dx, y = cy + dy; if (x >= 0 && y >= 0 && x < w && y < h) state[y * w + x] = value; } } };
   stamp(hint.background, 0); stamp(hint.foreground, 1);
+  if (hint.seeds && hint.seeds.length === W * H) for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const v = hint.seeds[Math.min(H - 1, Math.floor(((y + 0.5) / h) * H)) * W + Math.min(W - 1, Math.floor(((x + 0.5) / w) * W))]!; if (v === 1) state[y * w + x] = 1; else if (v === 2) state[y * w + x] = 0; }
   // smoothness weights: edge-aware Potts
   let beta = 0, pairs = 0;
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const p = y * w + x; if (x < w - 1) { beta += (colours[p * 3]! - colours[(p + 1) * 3]!) ** 2 + (colours[p * 3 + 1]! - colours[(p + 1) * 3 + 1]!) ** 2 + (colours[p * 3 + 2]! - colours[(p + 1) * 3 + 2]!) ** 2; pairs++; } if (y < h - 1) { beta += (colours[p * 3]! - colours[(p + w) * 3]!) ** 2 + (colours[p * 3 + 1]! - colours[(p + w) * 3 + 1]!) ** 2 + (colours[p * 3 + 2]! - colours[(p + w) * 3 + 2]!) ** 2; pairs++; } }

@@ -16,7 +16,11 @@ import { gridFor, makeView, type Grid, type View } from './silhouette';
  */
 export type Frame = { centre: Vector3; half: number };
 export type PoseSource = 'given' | 'assumed';
+/** A pinhole camera for a SQUARE image of side `res`: pixel column u = fx*Xc/Zc + cx, row w = fy*Yc/Zc + cy (row grows downward, like a photograph); [Xc,Yc,Zc] = R*p + t, R row-major world->camera. */
+export type PinholeCamera = { fx: number; fy: number; cx: number; cy: number; R: readonly number[]; t: readonly number[] };
 export type SilhouetteView = {
+  /** when present the view is a real perspective camera (poses from a dataset or from SfM); azimuth/elevation are then ignored */
+  camera?: PinholeCamera;
   id: string; res: number; mask: Uint8Array; azimuthDeg: number; elevationDeg: number; azimuthSource: PoseSource;
 };
 export type HullOptions = { frame: Frame; cells?: number; /** carve against masks grown by this many pixels, so structures thinner than a voxel are not lost (a conservative, larger hull) */ dilatePx?: number };
@@ -44,7 +48,16 @@ function validate(views: readonly SilhouetteView[]): void {
   }
 }
 
-type Basis = { right: [number, number, number]; up: [number, number, number]; s: number; half: number; res: number; centre: [number, number, number]; mask: Uint8Array };
+type Basis = { pin?: PinholeCamera; right: [number, number, number]; up: [number, number, number]; s: number; half: number; res: number; centre: [number, number, number]; mask: Uint8Array };
+/** Basis of a view: perspective when it carries a camera, orthographic orbit otherwise. */
+const basisForView = (v: SilhouetteView, frame: Frame, mask: Uint8Array): Basis => v.camera ? { pin: v.camera, right: [1, 0, 0], up: [0, 1, 0], s: v.res / (2 * frame.half), half: frame.half, res: v.res, centre: [0, 0, 0], mask } : basisOf(viewOf(v, frame), mask);
+/** Projects a world point into pixel (U, W); U = NaN when behind the camera. Writes module variables to avoid allocation in the hot loops. */
+let U = 0, W = 0;
+function proj(b: Basis, x: number, y: number, z: number): void {
+  if (b.pin) { const c = b.pin, R = c.R, X = R[0]! * x + R[1]! * y + R[2]! * z + c.t[0]!, Y = R[3]! * x + R[4]! * y + R[5]! * z + c.t[1]!, Z = R[6]! * x + R[7]! * y + R[8]! * z + c.t[2]!; if (Z <= 1e-9) { U = NaN; W = NaN; return; } U = c.fx * X / Z + c.cx; W = c.fy * Y / Z + c.cy; return; }
+  const dx = x - b.centre[0], dy = y - b.centre[1], dz = z - b.centre[2];
+  U = (dx * b.right[0] + dy * b.right[1] + dz * b.right[2] + b.half) * b.s; W = (dx * b.up[0] + dy * b.up[1] + dz * b.up[2] + b.half) * b.s;
+}
 const basisOf = (view: View, mask: Uint8Array): Basis => ({
   right: [view.right.x, view.right.y, view.right.z], up: [view.up.x, view.up.y, view.up.z], s: view.res / (2 * view.half), half: view.half, res: view.res,
   centre: [view.centre.x, view.centre.y, view.centre.z], mask,
@@ -58,9 +71,8 @@ function carveFast(grid: Grid, bases: Basis[], skip = -1): Uint8Array {
     let inside = 1;
     for (let v = 0; v < bases.length; v++) {
       if (v === skip) continue;
-      const b = bases[v]!, dx = px - b.centre[0], dy = py - b.centre[1], dz = pz - b.centre[2];
-      const u = Math.floor((dx * b.right[0] + dy * b.right[1] + dz * b.right[2] + b.half) * b.s), w = Math.floor((dx * b.up[0] + dy * b.up[1] + dz * b.up[2] + b.half) * b.s);
-      if (u < 0 || w < 0 || u >= b.res || w >= b.res || !b.mask[w * b.res + u]) { inside = 0; break; }
+      const b = bases[v]!; proj(b, px, py, pz); const u = Math.floor(U), w = Math.floor(W);
+      if (!(u >= 0) || !(w >= 0) || u >= b.res || w >= b.res || !b.mask[w * b.res + u]) { inside = 0; break; }
     }
     out[i + nx * (j + ny * k)] = inside;
   }
@@ -72,9 +84,9 @@ function splat(grid: Grid, occ: Uint8Array, b: Basis): Uint8Array {
   const [nx, ny, nz] = grid.cells, g = grid.size, out = new Uint8Array(b.res * b.res), r = Math.max(0, Math.ceil((g * b.s) / 2));
   for (let k = 0; k < nz; k++) for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
     if (!occ[i + nx * (j + ny * k)]) continue;
-    const dx = grid.min.x + (i + 0.5) * g - b.centre[0], dy = grid.min.y + (j + 0.5) * g - b.centre[1], dz = grid.min.z + (k + 0.5) * g - b.centre[2];
-    const u = Math.floor((dx * b.right[0] + dy * b.right[1] + dz * b.right[2] + b.half) * b.s), w = Math.floor((dx * b.up[0] + dy * b.up[1] + dz * b.up[2] + b.half) * b.s);
-    for (let y = Math.max(0, w - r); y <= Math.min(b.res - 1, w + r); y++) for (let x = Math.max(0, u - r); x <= Math.min(b.res - 1, u + r); x++) out[y * b.res + x] = 1;
+    proj(b, grid.min.x + (i + 0.5) * g, grid.min.y + (j + 0.5) * g, grid.min.z + (k + 0.5) * g); if (!(U >= 0)) continue;
+    const u = Math.floor(U), w = Math.floor(W), rr = b.pin ? Math.max(0, Math.ceil((g * b.pin.fx) / (2 * Math.max(1e-9, (b.pin.R[6]! * (grid.min.x + (i + 0.5) * g) + b.pin.R[7]! * (grid.min.y + (j + 0.5) * g) + b.pin.R[8]! * (grid.min.z + (k + 0.5) * g) + b.pin.t[2]!))))) : r;
+    for (let y = Math.max(0, w - rr); y <= Math.min(b.res - 1, w + rr); y++) for (let x = Math.max(0, u - rr); x <= Math.min(b.res - 1, u + rr); x++) out[y * b.res + x] = 1;
   }
   return out;
 }
@@ -108,7 +120,7 @@ export function reconstructHull(views: readonly SilhouetteView[], options: HullO
   const t0 = performance.now();
   validate(views);
   const cells = options.cells ?? 64, grid = gridFor(options.frame.centre, options.frame.half, cells);
-  const bases = views.map((v) => basisOf(viewOf(v, options.frame), dilateMask(v.mask, v.res, options.dilatePx ?? 0)));
+  const bases = views.map((v) => basisForView(v, options.frame, dilateMask(v.mask, v.res, options.dilatePx ?? 0)));
   const occupancy = carveFast(grid, bases);
   const [nx, ny, nz] = grid.cells;
   let occupied = 0, clipped = false;
@@ -127,8 +139,7 @@ export function reconstructHull(views: readonly SilhouetteView[], options: HullO
     const px = pos!.getX(i), py = pos!.getY(i), pz = pos!.getZ(i);
     let count = 0;
     for (let v = 0; v < bases.length; v++) {
-      const b = bases[v]!, dx = px - b.centre[0], dy = py - b.centre[1], dz = pz - b.centre[2];
-      const u = Math.round((dx * b.right[0] + dy * b.right[1] + dz * b.right[2] + b.half) * b.s), w = Math.round((dx * b.up[0] + dy * b.up[1] + dz * b.up[2] + b.half) * b.s);
+      const b = bases[v]!; proj(b, px, py, pz); if (!(U >= 0)) continue; const u = Math.round(U), w = Math.round(W);
       let hit = false;
       for (let y = Math.max(0, w - rad); y <= Math.min(b.res - 1, w + rad) && !hit; y++) for (let x = Math.max(0, u - rad); x <= Math.min(b.res - 1, u + rad); x++) if (contours[v]![y * b.res + x]) { hit = true; break; }
       if (hit) count++;
@@ -159,7 +170,7 @@ export function refinePoses(input: readonly SilhouetteView[], options: RefineOpt
   const grid = gridFor(options.frame.centre, options.frame.half, cells);
   const notes: string[] = [];
   let views: RefinedView[] = input.map((v) => ({ ...v, identifiable: v.azimuthSource === 'given', correctionDeg: 0 }));
-  const basesOf = (vs: SilhouetteView[]) => vs.map((v) => basisOf(viewOf(v, options.frame), v.mask));
+  const basesOf = (vs: SilhouetteView[]) => vs.map((v) => basisForView(v, options.frame, v.mask));
   const consistency = (vs: SilhouetteView[]): number => {
     const bases = basesOf(vs); let sum = 0;
     for (let v = 0; v < vs.length; v++) sum += iou(vs[v]!.mask, splat(grid, carveFast(grid, bases, v), bases[v]!));
@@ -215,7 +226,7 @@ export function refinePoses(input: readonly SilhouetteView[], options: RefineOpt
 export function leaveOneOutIoU(views: readonly SilhouetteView[], options: { frame: Frame; cells?: number }): number[] {
   validate(views);
   if (views.length < 3) return [];
-  const grid = gridFor(options.frame.centre, options.frame.half, options.cells ?? 64), bases = views.map((v) => basisOf(viewOf(v, options.frame), v.mask));
+  const grid = gridFor(options.frame.centre, options.frame.half, options.cells ?? 64), bases = views.map((v) => basisForView(v, options.frame, v.mask));
   return views.map((v, i) => iou(v.mask, splat(grid, carveFast(grid, bases, i), bases[i]!)));
 }
 
@@ -259,7 +270,7 @@ export function signedDistance2D(mask: Uint8Array, res: number): Float32Array {
  */
 export function hullField(views: readonly SilhouetteView[], frame: Frame, dilatePx = 0): (x: number, y: number, z: number) => number {
   validate(views);
-  const res = views[0]!.res, per = views.map((v) => { const b = basisOf(viewOf(v, frame), v.mask); return { b, sdf: signedDistance2D(dilateMask(v.mask, res, dilatePx), res) }; });
+  const res = views[0]!.res, per = views.map((v) => { const b = basisForView(v, frame, v.mask); return { b, sdf: signedDistance2D(dilateMask(v.mask, res, dilatePx), res) }; });
   const at = (sdf: Float32Array, u: number, w: number): number => {
     // bilinear in pixel-centre coordinates; outside the window the nearest border value plus the distance to it (always "outside" only if the border is outside)
     const fx = Math.min(res - 1, Math.max(0, u - 0.5)), fy = Math.min(res - 1, Math.max(0, w - 0.5)), x0 = Math.floor(fx), y0 = Math.floor(fy), x1 = Math.min(res - 1, x0 + 1), y1 = Math.min(res - 1, y0 + 1), tx = fx - x0, ty = fy - y0;
@@ -270,10 +281,28 @@ export function hullField(views: readonly SilhouetteView[], frame: Frame, dilate
   return (x, y, z) => {
     let m = -Infinity;
     for (const { b, sdf } of per) {
-      const dx = x - b.centre[0], dy = y - b.centre[1], dz = z - b.centre[2];
-      const value = at(sdf, (dx * b.right[0] + dy * b.right[1] + dz * b.right[2] + b.half) * b.s, (dx * b.up[0] + dy * b.up[1] + dz * b.up[2] + b.half) * b.s);
+      proj(b, x, y, z); const value = Number.isNaN(U) ? 1e6 : at(sdf, U, W); // behind the camera: outside
       if (value > m) m = value;
     }
     return m;
   };
+}
+
+/** Camera looking at `target` from `position` (world), y up; square image of side `res`, horizontal field of view `fovDeg`. Row grows downward. */
+export function lookAtCamera(position: Vector3, target: Vector3, res: number, fovDeg: number): PinholeCamera {
+  const f = new Vector3().subVectors(target, position).normalize(), right = new Vector3().crossVectors(f, new Vector3(0, 1, 0)); if (right.lengthSq() < 1e-9) right.set(1, 0, 0); right.normalize();
+  const down = new Vector3().crossVectors(f, right).normalize(); // camera Y axis points down in the image
+  const R = [right.x, right.y, right.z, down.x, down.y, down.z, f.x, f.y, f.z], t = [-right.dot(position), -down.dot(position), -f.dot(position)], focal = res / 2 / Math.tan((fovDeg * Math.PI) / 360);
+  return { fx: focal, fy: focal, cx: res / 2, cy: res / 2, R, t };
+}
+/** Rasterises triangles seen by a pinhole camera into a res x res mask (triangles clipped at the near plane are skipped). */
+export function rasterisePinhole(tris: ReadonlyArray<readonly [Vector3, Vector3, Vector3]>, cam: PinholeCamera, res: number): Uint8Array {
+  const mask = new Uint8Array(res * res), R = cam.R, P = (v: Vector3) => { const X = R[0]! * v.x + R[1]! * v.y + R[2]! * v.z + cam.t[0]!, Y = R[3]! * v.x + R[4]! * v.y + R[5]! * v.z + cam.t[1]!, Z = R[6]! * v.x + R[7]! * v.y + R[8]! * v.z + cam.t[2]!; return Z > 1e-6 ? [cam.fx * X / Z + cam.cx, cam.fy * Y / Z + cam.cy] as const : null; };
+  for (const t of tris) {
+    const a = P(t[0]), b = P(t[1]), c = P(t[2]); if (!a || !b || !c) continue;
+    const x0 = Math.max(0, Math.floor(Math.min(a[0], b[0], c[0]))), x1 = Math.min(res - 1, Math.ceil(Math.max(a[0], b[0], c[0]))), y0 = Math.max(0, Math.floor(Math.min(a[1], b[1], c[1]))), y1 = Math.min(res - 1, Math.ceil(Math.max(a[1], b[1], c[1]))), d = (b[1] - c[1]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[1] - c[1]);
+    if (Math.abs(d) < 1e-12) continue;
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const px = x + 0.5, py = y + 0.5, l1 = ((b[1] - c[1]) * (px - c[0]) + (c[0] - b[0]) * (py - c[1])) / d, l2 = ((c[1] - a[1]) * (px - c[0]) + (a[0] - c[0]) * (py - c[1])) / d; if (l1 >= -0.01 && l2 >= -0.01 && 1 - l1 - l2 >= -0.01) mask[y * res + x] = 1; }
+  }
+  return mask;
 }
