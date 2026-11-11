@@ -19,7 +19,7 @@ export type FoundryResult = CompiledSpatialPlanV2 & {
   /** synchronous full build (tests, exports); the product path uses upgrade() */
   buildAll(): string[];
 };
-export type FoundryOptions = InterpretOptions & { evidence?: ImageEvidence | null; lod?: number; maxWorkMs?: number };
+export type FoundryOptions = InterpretOptions & { evidence?: ImageEvidence | null; lod?: number; maxWorkMs?: number; /** só geometria: sem texturas procedurais (fitting). */ geometryOnly?: boolean };
 
 const count = (o: Object3D) => { let t = 0, m = 0; const seen = new Set<BufferGeometry>(); o.traverse((x) => { if (!(x instanceof Mesh)) return; m++; const g = x.geometry as BufferGeometry; seen.add(g); t += (g.index ? g.index.count : g.getAttribute('position').count) / 3; }); let bytes = 0; for (const g of seen) { for (const a of Object.values(g.attributes)) bytes += (a as { array: { byteLength: number } }).array.byteLength; if (g.index) bytes += g.index.array.byteLength; } return { triangles: Math.round(t), meshes: m, bytes }; };
 const disposeOld = (o: Object3D) => o.traverse((x) => { if (!(x instanceof Mesh)) return; (x.geometry as BufferGeometry).dispose(); for (const m of Array.isArray(x.material) ? x.material : [x.material as Material]) m.dispose(); });
@@ -36,7 +36,7 @@ export function compileFoundry(plan: SpatialPlanV2, options: FoundryOptions = {}
   for (const c of plan.components) { const g = groups.get(c.id)!; const b = boundsOf(g, g.children[0]!); bounds.set(c.id, b); const s = b.local.getSize(new Vector3()); partSizes.set(c.id, s.x * s.y * s.z); }
   const objectBox = [...bounds.values()].reduce((acc, b) => acc.union(b.world), bounds.values().next().value!.world.clone().makeEmpty()), objectSize = objectBox.getSize(new Vector3());
   const interpretation: Interpretation | null = interpret(plan, objectSize, partSizes, options);
-  const lib = interpretation ? createUniversalMaterials() : null, lod = makeLod(options.lod ?? 1);
+  const lib = interpretation ? createUniversalMaterials({ textures: !options.geometryOnly }) : null, lod = makeLod(options.lod ?? 1);
   const waiting: string[] = interpretation ? plan.components.map((c) => c.id) : [], recipe = interpretation?.recipe ?? null;
   for (const id of waiting) { const d = decisions.get(id)!; d.pending = true; d.fallback = null; d.reason = 'Drawn by V2 until the Foundry builds it.'; }
   const siblings = plan.components.map((c) => { const b = bounds.get(c.id)!.world; return { id: c.id, role: interpretation?.roles.get(c.id) ?? 'generic', box: b.clone(), centre: b.getCenter(new Vector3()), size: b.getSize(new Vector3()) }; });

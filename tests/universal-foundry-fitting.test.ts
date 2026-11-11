@@ -23,6 +23,10 @@ function carImage(body: { x0: number; y0: number; x1: number; y1: number }, cabi
 const lowLong = () => extractEvidence(carImage({ x0: 20, y0: 58, x1: 180, y1: 85 }, { x0: 70, y0: 42, x1: 120, y1: 58 }, [170, 30, 30]));
 const tallShort = () => extractEvidence(carImage({ x0: 40, y0: 55, x1: 160, y1: 85 }, { x0: 58, y0: 22, x1: 142, y1: 55 }, [30, 90, 40]));
 
+// Custo medido (CP1): ~1,5–3,5 s por fitting completo (73 avaliações geometry-only) em CPU lenta,
+// depois de eliminar as texturas PBR da avaliação (antes ~19 s). Orçamento por fitting com folga ~4x;
+// cada teste multiplica pelo número de fittings que executa.
+const FIT_BUDGET_MS = 15_000;
 describe('image-conditioned fitting (vehicle)', () => {
   it('silhuetas diferentes produzem geometria diferente e melhor que o baseline', () => {
     const plan = sedan();
@@ -49,10 +53,10 @@ describe('image-conditioned fitting (vehicle)', () => {
     const sameShapeBlue = extractEvidence(carImage({ x0: 20, y0: 58, x1: 180, y1: 85 }, { x0: 70, y0: 42, x1: 120, y1: 58 }, [30, 60, 200]));
     const b = fitGeometryToEvidence(sedan(), sameShapeBlue);
     expect(a).toEqual(b);
-  });
+  }, FIT_BUDGET_MS * 2);
   it('determinismo: mesma evidência, mesmo resultado', () => {
     expect(fitGeometryToEvidence(sedan(), tallShort())).toEqual(fitGeometryToEvidence(sedan(), tallShort()));
-  });
+  }, FIT_BUDGET_MS * 2);
   it('hipótese de câmara frontal é recusada como evidência insuficiente', () => {
     const frontal = { ...tallShort(), symmetry: 0.95, aspect: 1.1 };
     expect(fitGeometryToEvidence(sedan(), frontal)).toMatchObject({ status: 'insufficient_evidence' });

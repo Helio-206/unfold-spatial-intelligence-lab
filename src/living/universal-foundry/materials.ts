@@ -87,10 +87,16 @@ const texture = (data: Uint8Array, size: number, repeat: [number, number], name:
 
 export type UniversalMaterials = { get(spec: MaterialSpec): MeshPhysicalMaterial; materials(): MeshPhysicalMaterial[]; textures(): Texture[]; describe(kind: MaterialKind): string; dispose(): void };
 
-export function createUniversalMaterials(): UniversalMaterials {
+/**
+ * `textures:false` (modo geometria-apenas, usado pelo fitting): materiais sem mapas procedurais.
+ * A geometria não depende de texturas; gerá-las a cada avaliação custava ~60% do tempo.
+ */
+export function createUniversalMaterials(options: { textures?: boolean } = {}): UniversalMaterials {
+  const withTextures = options.textures !== false;
   const cache = new Map<string, MeshPhysicalMaterial>(), maps = new Map<MaterialKind, Maps>(), all: Texture[] = [];
   const mapsFor = (kind: MaterialKind): Maps => {
-    let m = maps.get(kind); if (m) return m; const p = PRESETS[kind], rep = p.repeat ?? [2, 2], h = heightField(kind);
+    let m = maps.get(kind); if (m) return m;
+    if (!withTextures) { m = {} as Maps; maps.set(kind, m); return m; } const p = PRESETS[kind], rep = p.repeat ?? [2, 2], h = heightField(kind);
     const rough = texture(grey(h, SIZE), SIZE, rep, `rough:${kind}`); m = { rough }; all.push(rough);
     if (p.bumpScale) { m.bump = rough; }
     if (p.normalScale) { const n = texture(normalFrom(h, SIZE, 3), SIZE, rep, `normal:${kind}`); m.normal = n; all.push(n); }

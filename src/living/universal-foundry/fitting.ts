@@ -250,7 +250,7 @@ type ObjectiveBreakdown = { objective: number; iou: number; regional: [number, n
 
 /** Objectivo ponderado e documentado: 0.55·IoU total + 0.45·média dos IoU regionais. */
 function objectiveOf(plan: SpatialPlanV2, overrides: Record<string, number>, targetMask: Uint8Array, azimuthDeg = 0): ObjectiveBreakdown | null {
-  const candidate = compileFoundry(plan, { overrides, lod: 0 });
+  const candidate = compileFoundry(plan, { overrides, lod: 0, geometryOnly: true });
   try {
     if (!candidate.root || !candidate.recipe) return null;
     candidate.buildAll(); // a silhueta mede a geometria gerada, nunca o placeholder V2

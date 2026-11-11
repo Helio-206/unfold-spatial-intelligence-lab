@@ -8,3 +8,5 @@ export * from './field';
 export * from './verification';
 export * from './canonical';
 export * from './authorization';
+export * from './evidence';
+export * from './fidelity';
