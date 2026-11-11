@@ -59,8 +59,10 @@ describe('avaliação honesta', () => {
     const twelve = evidenceFromRenders(gt, Array.from({ length: 12 }, (_, i) => [i * 30, i % 2 ? 30 : 0] as [number, number]));
     const m = buildModel(twelve), sha = await evidenceSha256(twelve), r = assessReconstruction(planFromModel(m, sha, 'T'), m, sha);
     expect(r.ledger.fidelity.class).not.toBe('faithful');
-    expect(r.benchmarkTolerance!.views).toBe(12);
-    expect(r.statements.join(' ')).toMatch(/Não validado em fotografias/);
+    expect(r.benchmarkTolerance!.views).toBe(8); // caminho do produto: só existe medição com 8 vistas de volta de mesa
+    expect(r.statements.join(' ')).toMatch(/Não validado em fotografias de câmara/);
+    const few = evidenceFromRenders(gt, ORBIT6), mf = buildModel(few), shaF = await evidenceSha256(few);
+    expect(assessReconstruction(planFromModel(mf, shaF, 'T'), mf, shaF).benchmarkTolerance).toBeNull(); // 6 vistas fotográficas: sem medição, erro desconhecido (não se extrapola)
   }, 120_000);
   it('um ledger de outra reconstrução (hash diferente) é ignorado', async () => {
     const ev = evidenceFromRenders(gt, ORBIT6), model = buildModel(ev), sha = await evidenceSha256(ev), plan = planFromModel(model, sha, 'T');

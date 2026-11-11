@@ -5,7 +5,7 @@
  * Fails closed: an unreliable segmentation, an inconsistent drawing or too few views is a coded refusal, never a quiet fallback.
  */
 import { leaveOneOutIoU, type SilhouetteView } from '../../universal-spatial/reconstruction/multiview';
-import { extractEvidence, type ImageEvidence, type RGBA } from '../universal-foundry/evidence';
+import type { RGBA } from '../universal-foundry/evidence';
 import { Vector3 } from 'three';
 import { decodeMask, encodeColour, encodeMask, REALITY_LIMITS, type RealityEvidence, type StoredView } from './evidence';
 import { FRAME_HALF_PER_DIAGONAL } from './model';
@@ -23,18 +23,70 @@ const median = (x: number[]) => { const s = [...x].sort((a, b) => a - b); return
 type Prepared = { name: string; rgba: RGBA; mask: Uint8Array; report: ViewReport };
 
 /**
- * Category-agnostic credibility of an automatic outline (the vehicle gate in fitting.ts encodes vehicle-shaped thresholds and is not reused here):
- * one coherent object, not touching the borders, a plausible share of the picture, and not degenerate inside its box.
+ * Background-colour distance threshold from how uniform the picture's border is: a clean, uniform background allows a tight threshold (so a pale object on a
+ * pale background is still separated), a noisy border needs a loose one. Bounded; the credibility gate still refuses what segmentation cannot support.
  */
-export function maskReliability(e: ImageEvidence): { reliable: boolean; reasons: string[] } {
-  const { width: w, height: h, mask, bbox } = e, reasons: string[] = [];
-  let total = 0, band = 0; const bx = Math.max(1, Math.round(w * 0.04)), by = Math.max(1, Math.round(h * 0.04));
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (mask[y * w + x]) { total++; if (x < bx || x >= w - bx || y < by || y >= h - by) band++; }
-  const fill = total / Math.max(1, (bbox.x1 - bbox.x0 + 1) * (bbox.y1 - bbox.y0 + 1));
-  if ((e.largestComponentShare ?? 0) < 0.75) reasons.push(`objecto fragmentado (maior componente ${(((e.largestComponentShare ?? 0)) * 100).toFixed(0)}% < 75%)`);
-  if (total && band / total > 0.15) reasons.push(`contaminação nas bordas (${((band / total) * 100).toFixed(0)}% > 15%)`);
-  if (e.foregroundRatio < 0.02 || e.foregroundRatio > 0.85) reasons.push(`primeiro plano fora do intervalo credível (${(e.foregroundRatio * 100).toFixed(0)}%)`);
-  if (fill < 0.12) reasons.push(`preenchimento da caixa degenerado (${(fill * 100).toFixed(0)}%)`);
+export function adaptiveThreshold(rgba: RGBA): number {
+  const { width: w, height: h, data } = rgba; let n = 0, mr = 0, mg = 0, mb = 0;
+  const each = (f: (i: number) => void) => { for (let x = 0; x < w; x++) { f((x) * 4); f(((h - 1) * w + x) * 4); } for (let y = 1; y < h - 1; y++) { f((y * w) * 4); f((y * w + w - 1) * 4); } };
+  each((i) => { mr += data[i]!; mg += data[i + 1]!; mb += data[i + 2]!; n++; });
+  mr /= n; mg /= n; mb /= n; let v = 0;
+  each((i) => { v += (data[i]! - mr) ** 2 + (data[i + 1]! - mg) ** 2 + (data[i + 2]! - mb) ** 2; });
+  const sigma = Math.sqrt(v / n);
+  return Math.max(14, Math.min(42, Math.round(3 * sigma + 12)));
+}
+
+/**
+ * Generic outline of ONE object on a plain background. Unlike the vehicle extractor (which keeps only the largest blob and fills every hole), this keeps all
+ * substantial parts of the silhouette (an object may be disconnected in a view: legs, wheels, a handle), drops specks, fills only SMALL enclosed holes
+ * (glare, reflections) and keeps large ones (the opening of a handle is real evidence). `credibility` reports what it did so the gate can still refuse.
+ */
+export type GenericSegmentation = { mask: Uint8Array; foregroundRatio: number; largestShare: number; keptShare: number; bbox: { x0: number; y0: number; x1: number; y1: number }; borderShare: number; fill: number };
+export function segmentGeneric(rgba: RGBA, threshold = adaptiveThreshold(rgba)): GenericSegmentation {
+  const { width: w, height: h, data } = rgba, hasAlpha = (() => { for (let i = 3; i < data.length; i += 4 * 17) if (data[i]! < 250) return true; return false; })();
+  // background colours from the border (dominant clusters), as the vehicle extractor does
+  const bins = new Map<number, { n: number; r: number; g: number; b: number }>(); let border = 0;
+  const take = (x: number, y: number) => { const i = (y * w + x) * 4, k = ((data[i]! >> 5) << 6) | ((data[i + 1]! >> 5) << 3) | (data[i + 2]! >> 5), b = bins.get(k) ?? { n: 0, r: 0, g: 0, b: 0 }; b.n++; b.r += data[i]!; b.g += data[i + 1]!; b.b += data[i + 2]!; bins.set(k, b); border++; };
+  for (let x = 0; x < w; x++) { take(x, 0); take(x, h - 1); } for (let y = 0; y < h; y++) { take(0, y); take(w - 1, y); }
+  const bg = [...bins.values()].filter((b) => b.n >= Math.max(4, border * 0.02)).sort((a, b) => b.n - a.n).slice(0, 6).map((b) => [b.r / b.n, b.g / b.n, b.b / b.n] as const);
+  const raw = new Uint8Array(w * h);
+  for (let k = 0; k < w * h; k++) {
+    if (hasAlpha) { raw[k] = data[k * 4 + 3]! > 24 ? 1 : 0; continue; }
+    let near = Infinity; for (const c of bg) near = Math.min(near, Math.hypot(data[k * 4]! - c[0], data[k * 4 + 1]! - c[1], data[k * 4 + 2]! - c[2]));
+    raw[k] = near <= threshold ? 0 : 1;
+  }
+  // connected components (4-neighbour) of the foreground
+  const label = new Int32Array(w * h).fill(-1), sizes: number[] = [], stack: number[] = [];
+  const flood = (start: number, id: number, on: number, arr: Uint8Array, lab: Int32Array): number => {
+    let n = 0; stack.push(start); lab[start] = id;
+    while (stack.length) { const p = stack.pop()!, x = p % w, y = (p - x) / w; n++; for (const q of [x > 0 ? p - 1 : -1, x < w - 1 ? p + 1 : -1, y > 0 ? p - w : -1, y < h - 1 ? p + w : -1]) if (q >= 0 && arr[q] === on && lab[q]! < 0) { lab[q] = id; stack.push(q); } }
+    return n;
+  };
+  for (let k = 0; k < w * h; k++) if (raw[k] && label[k]! < 0) sizes.push(flood(k, sizes.length, 1, raw, label));
+  const total = sizes.reduce((a, b) => a + b, 0) || 1, largest = Math.max(0, ...sizes), minPart = Math.max(30, Math.round(total * 0.02));
+  const keep = sizes.map((n) => n >= minPart), mask = new Uint8Array(w * h); let kept = 0;
+  for (let k = 0; k < w * h; k++) if (raw[k] && keep[label[k]!]) { mask[k] = 1; kept++; }
+  // fill small enclosed holes: background components that do not touch the border and are small relative to the object
+  const hole = new Int32Array(w * h).fill(-1), invert = mask.map((v) => 1 - v) as Uint8Array;
+  const holeLimit = Math.max(12, Math.round(kept * 0.015));
+  for (let k = 0; k < w * h; k++) if (invert[k] && hole[k]! < 0) {
+    const members: number[] = []; let touches = false; stack.push(k); hole[k] = 1;
+    while (stack.length) { const p = stack.pop()!, x = p % w, y = (p - x) / w; members.push(p); if (x === 0 || y === 0 || x === w - 1 || y === h - 1) touches = true; for (const q of [x > 0 ? p - 1 : -1, x < w - 1 ? p + 1 : -1, y > 0 ? p - w : -1, y < h - 1 ? p + w : -1]) if (q >= 0 && invert[q] && hole[q]! < 0) { hole[q] = 1; stack.push(q); } }
+    if (!touches && members.length <= holeLimit) for (const p of members) { mask[p] = 1; kept++; }
+  }
+  let x0 = w, y0 = h, x1 = -1, y1 = -1, band = 0; const bx = Math.max(1, Math.round(w * 0.04)), by = Math.max(1, Math.round(h * 0.04));
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (mask[y * w + x]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; if (x < bx || x >= w - bx || y < by || y >= h - by) band++; }
+  const boxArea = Math.max(1, (x1 - x0 + 1) * (y1 - y0 + 1));
+  return { mask, foregroundRatio: kept / (w * h), largestShare: largest / total, keptShare: kept ? sizes.reduce((a, n, i) => a + (keep[i] ? n : 0), 0) / total : 0, bbox: { x0, y0, x1, y1 }, borderShare: kept ? band / kept : 1, fill: kept / boxArea };
+}
+
+export function segmentationCredibility(g: GenericSegmentation): { reliable: boolean; reasons: string[] } {
+  const reasons: string[] = [];
+  if (g.keptShare < 0.9) reasons.push(`o primeiro plano está demasiado fragmentado (${(g.keptShare * 100).toFixed(0)}% do primeiro plano bruto em partes substanciais; maior parte ${(g.largestShare * 100).toFixed(0)}%)`);
+  if (g.largestShare < 0.5 && g.keptShare >= 0.9) reasons.push(`nenhuma parte domina o objecto (maior ${(g.largestShare * 100).toFixed(0)}%)`);
+  if (g.borderShare > 0.15) reasons.push(`contaminação nas bordas (${(g.borderShare * 100).toFixed(0)}% > 15%)`);
+  if (g.foregroundRatio < 0.008 || g.foregroundRatio > 0.85) reasons.push(`primeiro plano fora do intervalo credível (${(g.foregroundRatio * 100).toFixed(0)}%)`);
+  if (g.fill < 0.12) reasons.push(`preenchimento da caixa degenerado (${(g.fill * 100).toFixed(0)}%)`);
   return { reliable: reasons.length === 0, reasons };
 }
 
@@ -45,8 +97,8 @@ function prepare(image: IntakeImage, refusals: Refusal[]): Prepared | null {
     if (image.mask.length !== width * height) { refusals.push({ code: 'EMPTY_MASK', detail: 'confirmed mask size differs from the image', viewName: image.name }); return null; }
     mask = image.mask; source = 'confirmed';
   } else {
-    const evidence = extractEvidence(image.rgba); mask = evidence.mask; source = 'automatic';
-    const r = maskReliability(evidence); reliable = r.reliable; reasons = r.reasons;
+    const seg = segmentGeneric(image.rgba); mask = seg.mask; source = 'automatic';
+    const r = segmentationCredibility(seg); reliable = r.reliable; reasons = r.reasons;
     if (!r.reliable) { refusals.push({ code: 'MASK_UNRELIABLE', detail: `automatic segmentation is not credible (${r.reasons.join('; ')}); confirm or correct the outline`, viewName: image.name }); }
   }
   let x0 = width, y0 = height, x1 = -1, y1 = -1, count = 0;

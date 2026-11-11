@@ -137,3 +137,26 @@ describe('intake de desenho técnico (3 vistas)', () => {
     expect(intakeDrawing({ front: sheet(0, 0) }).refusals.map((x) => x.code)).toContain('MISSING_DRAWING_VIEW');
   });
 });
+
+describe('segmentação genérica de um objecto sobre fundo liso', () => {
+  const W = 200, H = 150, make = (draw: (x: number, y: number) => boolean) => { const data = new Uint8ClampedArray(W * H * 4); for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const i = (y * W + x) * 4, on = draw(x, y); data[i] = on ? 30 : 238; data[i + 1] = on ? 60 : 240; data[i + 2] = on ? 120 : 236; data[i + 3] = 255; } return { width: W, height: H, data }; };
+  it('mantém todas as partes substanciais (objecto desconexo numa vista) e descarta pontos soltos', async () => {
+    const { segmentGeneric, segmentationCredibility } = await import('../src/living/reality/intake');
+    const two = segmentGeneric(make((x, y) => (x > 30 && x < 90 && y > 40 && y < 110) || (x > 110 && x < 170 && y > 60 && y < 110) || (x === 5 && y === 5)));
+    expect(two.mask[60 * W + 60]).toBe(1); expect(two.mask[80 * W + 140]).toBe(1); expect(two.mask[5 * W + 5]).toBe(0);
+    expect(segmentationCredibility(two).reliable).toBe(true);
+  });
+  it('preenche buracos pequenos (reflexos) mas preserva a abertura grande de uma pega', async () => {
+    const { segmentGeneric } = await import('../src/living/reality/intake');
+    const r = segmentGeneric(make((x, y) => x > 40 && x < 160 && y > 30 && y < 120 && !(Math.hypot(x - 70, y - 60) < 2) && !(x > 100 && x < 140 && y > 50 && y < 100)));
+    expect(r.mask[60 * W + 70]).toBe(1); // furo minúsculo preenchido
+    expect(r.mask[75 * W + 120]).toBe(0); // abertura grande preservada
+  });
+  it('fundo ruidoso, objecto colado às bordas ou vazio: não credível', async () => {
+    const { segmentGeneric, segmentationCredibility } = await import('../src/living/reality/intake');
+    const noisy = make(() => false); for (let i = 0; i < noisy.data.length; i += 4) { const n = Math.sin(i * 12.9898) * 43758.5453 % 1; noisy.data[i] = 128 + n * 120; noisy.data[i + 1] = 128 - n * 100; noisy.data[i + 2] = 90 + n * 150; }
+    expect(segmentationCredibility(segmentGeneric(noisy)).reliable).toBe(false);
+    expect(segmentationCredibility(segmentGeneric(make((x) => x < 15))).reliable).toBe(false); // encostado à borda
+    expect(segmentationCredibility(segmentGeneric(make(() => false))).reliable).toBe(false);
+  });
+});

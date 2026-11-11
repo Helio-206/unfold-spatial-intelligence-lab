@@ -24,8 +24,7 @@ export type Refinement = { model: RealityModel; diff: RefinementDiff };
 const mean = (x: number[]) => x.reduce((s, v) => s + v, 0) / x.length;
 
 export function refineModel(prev: RealityModel, nextEvidence: RealityEvidence): Refinement {
-  const next = buildModel(nextEvidence);
-  const g = prev.solid.grid;
+  const g = prev.solid.grid, next = buildModel(nextEvidence, { cells: g.cells[0] });
   // matching by voxel overlap (same frame, same grid)
   const prevIds = prev.parts.map((p) => p.id);
   const overlap = new Map<string, number>();

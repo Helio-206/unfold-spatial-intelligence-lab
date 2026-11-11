@@ -19,7 +19,7 @@
     {
       "step": "3 Space construído com as malhas reconstruídas nos grupos do plano",
       "verdict": "PASS",
-      "detail": "1 componentes, 19372 triângulos; fidelidade: partially_verified"
+      "detail": "1 componentes, 20500 triângulos; fidelidade: partially_verified"
     },
     {
       "step": "3b nunca \"fiel\" para vistas do próprio utilizador; sessão adoptada no servidor",
@@ -29,7 +29,7 @@
     {
       "step": "4 comparação com a referência (IoU por vista)",
       "verdict": "PASS",
-      "detail": "94% 93% 94% 93% 95% 94% 94% 94%"
+      "detail": "92% 91% 94% 93% 95% 94% 94% 92%"
     },
     {
       "step": "5 pré-visualização de nova perspectiva (nada aplicado)",
@@ -49,12 +49,12 @@
     {
       "step": "8 edição tipada de uma parte pelo Spatial Core move a malha reconstruída",
       "verdict": "PASS",
-      "detail": "centro X -0.0000 -> 0.2522"
+      "detail": "centro X 0.0000 -> 0.2522"
     },
     {
       "step": "8b undo repõe o plano byte a byte e a malha volta",
       "verdict": "PASS",
-      "detail": "centro X -0.0000"
+      "detail": "centro X 0.0000"
     },
     {
       "step": "9 guardar e reabrir preserva identidade",
@@ -64,12 +64,12 @@
     {
       "step": "10 reaberto com as mesmas malhas (evidência guardada) e versão corrente",
       "verdict": "PASS",
-      "detail": "triângulos 19224, versão 2/2"
+      "detail": "triângulos 19448, versão 2/2"
     },
     {
       "step": "G1 sair do Space liberta geometrias GPU da reconstrução",
       "verdict": "PASS",
-      "detail": "geometrias 5 -> 4; triângulos desenhados no último frame 38453"
+      "detail": "geometrias 5 -> 4; triângulos desenhados no último frame 38901"
     },
     {
       "step": "V1 vídeo: fotogramas-chave escolhidos e pressupostos de pose escritos",

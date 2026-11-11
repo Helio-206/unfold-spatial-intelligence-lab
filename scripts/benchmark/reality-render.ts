@@ -41,3 +41,15 @@ type Opts = { width?: number; height?: number; fovDeg?: number; elevationDeg?: n
   const blob = new Blob(chunks, { type: 'video/webm' }), buf = new Uint8Array(await blob.arrayBuffer()); let s = ''; for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode(...buf.subarray(i, i + 0x8000));
   return btoa(s);
 };
+
+// Raw RGBA variant for in-process evaluation (no PNG round trip). Returns base64 RGBA per view.
+(window as unknown as { __renderRaw: unknown }).__renderRaw = async (url: string, azimuths: number[], opts: Opts = {}): Promise<{ width: number; height: number; rgba: string[] }> => {
+  const urls: string[] = await (window as unknown as { __render: (u: string, a: number[], o: Opts) => Promise<string[]> }).__render(url, azimuths, opts);
+  const out: string[] = []; let width = 0, height = 0;
+  for (const u of urls) {
+    const img = new Image(); img.src = u; await img.decode(); width = img.width; height = img.height;
+    const c = document.createElement('canvas'); c.width = width; c.height = height; const ctx = c.getContext('2d')!; ctx.drawImage(img, 0, 0);
+    const d = ctx.getImageData(0, 0, width, height).data; let str = ''; for (let i = 0; i < d.length; i += 0x8000) str += String.fromCharCode(...d.subarray(i, i + 0x8000)); out.push(btoa(str));
+  }
+  return { width, height, rgba: out };
+};

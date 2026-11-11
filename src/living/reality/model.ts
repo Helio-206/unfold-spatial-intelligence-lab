@@ -1,6 +1,6 @@
 import { BufferGeometry, Float32BufferAttribute, Uint32BufferAttribute, Vector3 } from 'three';
 import { surfaceNets } from '../../universal-spatial/fidelity/surface-nets';
-import { occupancyField, type Grid } from '../../universal-spatial/reconstruction/silhouette';
+import { type Grid } from '../../universal-spatial/reconstruction/silhouette';
 import { hullField, leaveOneOutIoU, orbitDirection, reconstructHull, signedDistance2D, type Frame, type HullStats, type SilhouetteView } from '../../universal-spatial/reconstruction/multiview';
 import { segmentParts, type PartOptions } from '../../universal-spatial/reconstruction/parts';
 import { decodeColour, decodeMask, validateRealityEvidence, type RealityEvidence } from './evidence';
@@ -29,7 +29,10 @@ export type RealityModel = {
   /** object-level: fraction of vertices seen by at least one view */
   observedFraction: number;
   diagonal: number;
+  /** the grid was reduced to stay within the triangle budget (declared, never silent) */
+  degraded: { fromCells: number; toCells: number; triangles: number } | null;
 };
+export const MODEL_TRIANGLE_BUDGET = 160_000;
 
 /** Convention shared with the benchmark and the intake: the orthographic window half-extent is 0.54 x the object's bounding-box diagonal. */
 export const FRAME_HALF_PER_DIAGONAL = 0.54;
@@ -39,11 +42,25 @@ export function viewsOf(evidence: RealityEvidence): SilhouetteView[] {
   return evidence.views.map((v) => ({ id: v.id, res: evidence.res, mask: decodeMask(v.maskRle, evidence.res * evidence.res), azimuthDeg: v.azimuthDeg, elevationDeg: v.elevationDeg, azimuthSource: v.azimuthSource }));
 }
 
-export function buildModel(input: RealityEvidence, options: { parts?: PartOptions } = {}): RealityModel {
-  const evidence = validateRealityEvidence(input);
+export function buildModel(input: RealityEvidence, options: { parts?: PartOptions; /** force a grid (a refinement must use the grid of the solid it is compared with) */ cells?: number; maxTriangles?: number } = {}): RealityModel {
+  const model = buildModelAt(validateRealityEvidence(input), options.cells ?? undefined, options);
+  const budget = options.maxTriangles ?? MODEL_TRIANGLE_BUDGET, total = model.parts.reduce((n, p) => n + p.indices.length / 3, 0);
+  if (options.cells !== undefined || total <= budget) return model;
+  // progressive degradation: a coarser grid with the same evidence, declared on the model
+  let cells = model.evidence.cells, best = model;
+  for (let guard = 0; guard < 3; guard++) {
+    cells = Math.max(32, Math.floor(cells * Math.sqrt(budget / Math.max(1, best.parts.reduce((n, p) => n + p.indices.length / 3, 0))) * 0.92));
+    best = buildModelAt(model.evidence, cells, options);
+    const t = best.parts.reduce((n, p) => n + p.indices.length / 3, 0);
+    if (t <= budget || cells <= 32) { best.degraded = { fromCells: model.evidence.cells, toCells: cells, triangles: t }; return best; }
+  }
+  best.degraded = { fromCells: model.evidence.cells, toCells: cells, triangles: best.parts.reduce((n, p) => n + p.indices.length / 3, 0) }; return best;
+}
+
+function buildModelAt(evidence: RealityEvidence, cellsOverride: number | undefined, options: { parts?: PartOptions }): RealityModel {
   const frame: Frame = { centre: new Vector3(...evidence.frame.centre), half: evidence.frame.half };
   const views = viewsOf(evidence);
-  const hull = reconstructHull(views, { frame, cells: evidence.cells });
+  const hull = reconstructHull(views, { frame, cells: cellsOverride ?? evidence.cells });
   const grid = hull.grid, [nx, ny] = grid.cells;
   const segmented = segmentParts(hull.occupancy, grid, options.parts);
   const dirs = views.map((v) => orbitDirection(v.azimuthDeg, v.elevationDeg));
@@ -69,15 +86,39 @@ export function buildModel(input: RealityEvidence, options: { parts?: PartOption
     return true;
   };
 
+  // exact hull values on the lattice, computed once and shared by every part's surface extraction (off-lattice samples, used for normals, fall back to the function)
+  const lx = nx + 1, ly = ny + 1, lz = grid.cells[2] + 1, lattice = new Float32Array(lx * ly * lz);
+  for (let k = 0; k < lz; k++) for (let j = 0; j < ly; j++) for (let i = 0; i < lx; i++) lattice[i + lx * (j + ly * k)] = exact(grid.min.x + i * grid.size, grid.min.y + j * grid.size, grid.min.z + k * grid.size);
+  const exactAt = (x: number, y: number, z: number): number => {
+    const fi = (x - grid.min.x) / grid.size, fj = (y - grid.min.y) / grid.size, fk = (z - grid.min.z) / grid.size, i = Math.round(fi), j = Math.round(fj), k = Math.round(fk);
+    if (Math.abs(fi - i) < 1e-6 && Math.abs(fj - j) < 1e-6 && Math.abs(fk - k) < 1e-6 && i >= 0 && j >= 0 && k >= 0 && i < lx && j < ly && k < lz) return lattice[i + lx * (j + ly * k)]!;
+    return exact(x, y, z);
+  };
   const parts: PartMesh[] = [];
   let seen = 0, total = 0;
   for (const part of segmented.parts) {
-    // Closed shell of one part: the exact hull field outside, and the interface with the other parts (smoothed label boundary) inside.
-    const otherOcc = new Uint8Array(hull.occupancy.length);
-    for (let i = 0; i < otherOcc.length; i++) if (hull.occupancy[i] && segmented.labels[i] !== part.label) otherOcc[i] = 1;
-    const other = occupancyField(grid, otherOcc, 1), interfaceScale = 2 * grid.size * s;
-    const field = (x: number, y: number, z: number) => Math.max(exact(x, y, z), -other(x, y, z) * interfaceScale);
-    const g = surfaceNets({ min: grid.min, cells: grid.cells, size: grid.size, field, maxTriangles: 120_000 });
+    // Closed shell of one part: the exact hull field outside, and the interface with the neighbouring parts inside. The interface comes from the LABELS of the
+    // voxels around each lattice point (share of this part among the labelled voxels that touch it), so it exists only where this part really meets another one;
+    // a blurred "other parts" mask would leave a thin skin of hull around every other part. Only the part's own box (plus a margin) is sampled.
+    const m = 2, i0 = Math.max(0, Math.floor((part.min.x - grid.min.x) / grid.size) - m), j0 = Math.max(0, Math.floor((part.min.y - grid.min.y) / grid.size) - m), k0 = Math.max(0, Math.floor((part.min.z - grid.min.z) / grid.size) - m);
+    const i1 = Math.min(nx, Math.ceil((part.max.x - grid.min.x) / grid.size) + m), j1 = Math.min(ny, Math.ceil((part.max.y - grid.min.y) / grid.size) + m), k1 = Math.min(grid.cells[2], Math.ceil((part.max.z - grid.min.z) / grid.size) + m);
+    const interfaceScale = 2 * grid.size * s, sx = i1 - i0 + 1, sy = j1 - j0 + 1, sz = k1 - k0 + 1, iface = new Float32Array(sx * sy * sz), nz = grid.cells[2];
+    for (let k = 0; k < sz; k++) for (let j = 0; j < sy; j++) for (let i = 0; i < sx; i++) {
+      let own = 0, other = 0;
+      for (let dk = -1; dk <= 0; dk++) for (let dj = -1; dj <= 0; dj++) for (let di = -1; di <= 0; di++) {
+        const vi = i0 + i + di, vj = j0 + j + dj, vk = k0 + k + dk; if (vi < 0 || vj < 0 || vk < 0 || vi >= nx || vj >= ny || vk >= nz) continue;
+        const l = segmented.labels[vi + nx * (vj + ny * vk)]!; if (!l) continue; if (l === part.label) own++; else other++;
+      }
+      iface[i + sx * (j + sy * k)] = (own + other ? 0.5 - own / (own + other) : -0.5) * interfaceScale;
+    }
+    const interfaceAt = (x: number, y: number, z: number): number => {
+      const fx = Math.min(sx - 1, Math.max(0, (x - grid.min.x) / grid.size - i0)), fy = Math.min(sy - 1, Math.max(0, (y - grid.min.y) / grid.size - j0)), fz = Math.min(sz - 1, Math.max(0, (z - grid.min.z) / grid.size - k0));
+      const x0 = Math.floor(fx), y0 = Math.floor(fy), z0 = Math.floor(fz), x1 = Math.min(sx - 1, x0 + 1), y1 = Math.min(sy - 1, y0 + 1), z1 = Math.min(sz - 1, z0 + 1), tx = fx - x0, ty = fy - y0, tz = fz - z0;
+      const at = (a: number, b: number, c: number) => iface[a + sx * (b + sy * c)]!, lerp = (p: number, q: number, t: number) => p + (q - p) * t;
+      return lerp(lerp(lerp(at(x0, y0, z0), at(x1, y0, z0), tx), lerp(at(x0, y1, z0), at(x1, y1, z0), tx), ty), lerp(lerp(at(x0, y0, z1), at(x1, y0, z1), tx), lerp(at(x0, y1, z1), at(x1, y1, z1), tx), ty), tz);
+    };
+    const field = (x: number, y: number, z: number) => Math.max(exactAt(x, y, z), interfaceAt(x, y, z));
+    const g = surfaceNets({ min: new Vector3(grid.min.x + i0 * grid.size, grid.min.y + j0 * grid.size, grid.min.z + k0 * grid.size), cells: [i1 - i0, j1 - j0, k1 - k0], size: grid.size, field, maxTriangles: 120_000 });
     const pos = g.getAttribute('position'), nor = g.getAttribute('normal'), idx = g.index;
     if (!pos || !idx || !pos.count) continue;
     const origin = part.centroid, count = pos.count;
@@ -111,12 +152,12 @@ export function buildModel(input: RealityEvidence, options: { parts?: PartOption
       positions, normals, indices: Uint32Array.from(idx.array as ArrayLike<number>), colours: colourOut, observed, observedFraction: count ? seenHere / count : 0,
     });
   }
-  const loo = leaveOneOutIoU(views, { frame, cells: Math.min(evidence.cells, 64) });
+  const loo = leaveOneOutIoU(views, { frame, cells: Math.min(cellsOverride ?? evidence.cells, 64) });
   return {
     evidence, frame, parts, adjacency: segmented.adjacency, hull: hull.stats, solid: { grid: hull.grid, occupancy: hull.occupancy, labels: segmented.labels }, discardedVoxels: segmented.discardedVoxels,
     heldOutIoU: loo.length ? loo.map((value, i) => ({ viewId: views[i]!.id, iou: value })) : null,
     observedFraction: total ? seen / total : 0,
-    diagonal: frame.half / FRAME_HALF_PER_DIAGONAL,
+    diagonal: frame.half / FRAME_HALF_PER_DIAGONAL, degraded: null,
   };
 }
 

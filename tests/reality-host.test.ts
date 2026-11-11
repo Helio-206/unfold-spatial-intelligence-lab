@@ -51,3 +51,20 @@ describe('compute inline e Worker dão o mesmo resultado', () => {
     await expect(compute.replay(rec, 0, aborted.signal)).rejects.toThrow(/abort/);
   }, 240_000);
 });
+
+describe('refinamento de poses assumidas na criação', () => {
+  it('corrige parte do erro de azimute quando a concordância melhora; regista-o; nunca toca em poses indicadas', async () => {
+    const truth = [0, 45, 90, 135, 180, 225, 270, 315], noise = [6, -7, 5, -6, 7, -5, 4, -4];
+    const clean = evidenceFromRenders(gt, truth.map((a, i) => [a, i % 2 ? 20 : 0] as [number, number]), { source: 'assumed', cells: 56, res: 128 });
+    const noisy = { ...clean, views: clean.views.map((v, i) => ({ ...v, azimuthDeg: v.azimuthDeg + noise[i]! })) };
+    const host = new RealityHost(null), r = await host.create(noisy, 'T');
+    const after = host.entry(r.sha256)!.record.versions[0]!.evidence;
+    const mean = (e: typeof noisy) => e.views.reduce((s, v, i) => s + Math.abs(v.azimuthDeg - truth[i]!), 0) / e.views.length;
+    expect(mean(after)).toBeLessThan(mean(noisy) * 0.85);
+    expect(after.assumptions.join(' ')).toMatch(/refinados por consistência/);
+    expect(after.views.every((v) => v.azimuthSource === 'assumed')).toBe(true); // continua a ser assumido, não medido
+    const given = { ...noisy, views: noisy.views.map((v) => ({ ...v, azimuthSource: 'given' as const })) };
+    const g = await new RealityHost(null).create(given, 'G');
+    expect(g.entry.record.versions[0]!.evidence.views.map((v) => v.azimuthDeg)).toEqual(given.views.map((v) => v.azimuthDeg));
+  }, 240_000);
+});

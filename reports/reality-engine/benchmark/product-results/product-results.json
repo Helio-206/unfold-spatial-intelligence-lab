@@ -1,0 +1,502 @@
+{
+  "generatedBy": "scripts/benchmark/reality-product-eval.ts",
+  "note": "Product path on perspective RENDERS of licensed 3D assets (automatic segmentation, assumed poses, elevation declared). Not photographs. Chamfer is % of the asset bounding-box diagonal with translation aligned (origin convention) and the known render scale.",
+  "fill": 0.55,
+  "elevationDeg": 20,
+  "turntable": [
+    0,
+    45,
+    90,
+    135,
+    180,
+    225,
+    270,
+    315
+  ],
+  "heldOutAzimuths": [
+    22.5,
+    112.5,
+    202.5,
+    292.5
+  ],
+  "results": [
+    {
+      "id": "ToyCar",
+      "kind": "vehicle",
+      "category": "mechanical",
+      "split": "development",
+      "status": "refused",
+      "refusals": [
+        "MASK_UNRELIABLE (ToyCar-0.png)",
+        "MASK_UNRELIABLE (ToyCar-180.png)",
+        "MASK_UNRELIABLE (ToyCar-270.png)",
+        "MASK_UNRELIABLE (ToyCar-315.png)"
+      ],
+      "reliability": [
+        {
+          "name": "ToyCar-0.png",
+          "reliable": false,
+          "reasons": [
+            "o primeiro plano está demasiado fragmentado (77% do primeiro plano bruto em partes substanciais; maior parte 59%)"
+          ]
+        },
+        {
+          "name": "ToyCar-45.png",
+          "reliable": true,
+          "reasons": []
+        },
+        {
+          "name": "ToyCar-90.png",
+          "reliable": true,
+          "reasons": []
+        },
+        {
+          "name": "ToyCar-135.png",
+          "reliable": true,
+          "reasons": []
+        },
+        {
+          "name": "ToyCar-180.png",
+          "reliable": false,
+          "reasons": [
+            "o primeiro plano está demasiado fragmentado (89% do primeiro plano bruto em partes substanciais; maior parte 76%)"
+          ]
+        },
+        {
+          "name": "ToyCar-225.png",
+          "reliable": true,
+          "reasons": []
+        },
+        {
+          "name": "ToyCar-270.png",
+          "reliable": false,
+          "reasons": [
+            "o primeiro plano está demasiado fragmentado (84% do primeiro plano bruto em partes substanciais; maior parte 54%)"
+          ]
+        },
+        {
+          "name": "ToyCar-315.png",
+          "reliable": false,
+          "reasons": [
+            "o primeiro plano está demasiado fragmentado (82% do primeiro plano bruto em partes substanciais; maior parte 75%)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Lantern",
+      "kind": "tool-fixture",
+      "category": "mechanical",
+      "split": "development",
+      "status": "reconstructed",
+      "views": 8,
+      "parts": 2,
+      "triangles": 6124,
+      "degraded": null,
+      "directionSign": -1,
+      "posesRefined": true,
+      "assumptions": 6,
+      "hullOnlyChamferPct": 1.061,
+      "chamferPctAligned": 1.069,
+      "accuracyPct": 0.978,
+      "completenessPct": 1.161,
+      "chamferPctUnaligned": 0.772,
+      "heldOutIoUMean": 0.8594,
+      "heldOutViews": 4,
+      "observedFraction": 0.9096,
+      "looIoUMean": 0.7411,
+      "fidelityClass": "partially_verified",
+      "computeMs": 1560
+    },
+    {
+      "id": "BoomBox",
+      "kind": "equipment",
+      "category": "mechanical",
+      "split": "development",
+      "status": "reconstructed",
+      "views": 8,
+      "parts": 1,
+      "triangles": 20702,
+      "degraded": null,
+      "directionSign": -1,
+      "posesRefined": false,
+      "assumptions": 5,
+      "hullOnlyChamferPct": 1.385,
+      "chamferPctAligned": 1.459,
+      "accuracyPct": 1.283,
+      "completenessPct": 1.635,
+      "chamferPctUnaligned": 1.81,
+      "heldOutIoUMean": 0.8916,
+      "heldOutViews": 4,
+      "observedFraction": 0.8803,
+      "looIoUMean": 0.8447,
+      "fidelityClass": "partially_verified",
+      "computeMs": 1709
+    },
+    {
+      "id": "WaterBottle",
+      "kind": "everyday",
+      "category": "non-mechanical",
+      "split": "development",
+      "status": "reconstructed",
+      "views": 8,
+      "parts": 1,
+      "triangles": 20220,
+      "degraded": null,
+      "directionSign": 1,
+      "posesRefined": false,
+      "assumptions": 5,
+      "hullOnlyChamferPct": 1.557,
+      "chamferPctAligned": 1.624,
+      "accuracyPct": 1.509,
+      "completenessPct": 1.738,
+      "chamferPctUnaligned": 1.404,
+      "heldOutIoUMean": 0.9047,
+      "heldOutViews": 4,
+      "observedFraction": 0.9173,
+      "looIoUMean": 0.9023,
+      "fidelityClass": "partially_verified",
+      "computeMs": 1370
+    },
+    {
+      "id": "SheenChair",
+      "kind": "furniture",
+      "category": "non-mechanical",
+      "split": "development",
+      "status": "reconstructed",
+      "views": 8,
+      "parts": 2,
+      "triangles": 16178,
+      "degraded": null,
+      "directionSign": -1,
+      "posesRefined": false,
+      "assumptions": 5,
+      "hullOnlyChamferPct": 2.459,
+      "chamferPctAligned": 2.388,
+      "accuracyPct": 2.181,
+      "completenessPct": 2.596,
+      "chamferPctUnaligned": 1.965,
+      "heldOutIoUMean": 0.8654,
+      "heldOutViews": 4,
+      "observedFraction": 0.7732,
+      "looIoUMean": 0.7797,
+      "fidelityClass": "partially_verified",
+      "computeMs": 1683
+    },
+    {
+      "id": "CesiumMilkTruck",
+      "kind": "vehicle",
+      "category": "mechanical",
+      "split": "development",
+      "status": "reconstructed",
+      "views": 8,
+      "parts": 11,
+      "triangles": 56082,
+      "degraded": null,
+      "directionSign": -1,
+      "posesRefined": false,
+      "assumptions": 5,
+      "hullOnlyChamferPct": 3.303,
+      "chamferPctAligned": 3.102,
+      "accuracyPct": 4.084,
+      "completenessPct": 2.121,
+      "chamferPctUnaligned": 2.735,
+      "heldOutIoUMean": 0.8867,
+      "heldOutViews": 4,
+      "observedFraction": 0.413,
+      "looIoUMean": 0.8177,
+      "fidelityClass": "partially_verified",
+      "computeMs": 1915
+    },
+    {
+      "id": "AntiqueCamera",
+      "kind": "equipment",
+      "category": "mechanical",
+      "split": "acceptance",
+      "status": "reconstructed",
+      "views": 8,
+      "parts": 2,
+      "triangles": 10608,
+      "degraded": null,
+      "directionSign": -1,
+      "posesRefined": false,
+      "assumptions": 5,
+      "hullOnlyChamferPct": 1.798,
+      "chamferPctAligned": 1.822,
+      "accuracyPct": 1.725,
+      "completenessPct": 1.919,
+      "chamferPctUnaligned": 1.541,
+      "heldOutIoUMean": 0.8273,
+      "heldOutViews": 4,
+      "observedFraction": 0.8778,
+      "looIoUMean": 0.7659,
+      "fidelityClass": "partially_verified",
+      "computeMs": 1577
+    },
+    {
+      "id": "Avocado",
+      "kind": "organic-everyday",
+      "category": "non-mechanical",
+      "split": "acceptance",
+      "status": "reconstructed",
+      "views": 8,
+      "parts": 1,
+      "triangles": 16970,
+      "degraded": null,
+      "directionSign": -1,
+      "posesRefined": false,
+      "assumptions": 5,
+      "hullOnlyChamferPct": 1.386,
+      "chamferPctAligned": 1.449,
+      "accuracyPct": 1.208,
+      "completenessPct": 1.69,
+      "chamferPctUnaligned": 1.335,
+      "heldOutIoUMean": 0.9148,
+      "heldOutViews": 4,
+      "observedFraction": 0.9583,
+      "looIoUMean": 0.857,
+      "fidelityClass": "partially_verified",
+      "computeMs": 1605
+    },
+    {
+      "id": "Corset",
+      "kind": "garment",
+      "category": "non-mechanical",
+      "split": "acceptance",
+      "status": "reconstructed",
+      "views": 8,
+      "parts": 1,
+      "triangles": 18602,
+      "degraded": null,
+      "directionSign": 1,
+      "posesRefined": false,
+      "assumptions": 5,
+      "hullOnlyChamferPct": 2.673,
+      "chamferPctAligned": 2.732,
+      "accuracyPct": 2.574,
+      "completenessPct": 2.891,
+      "chamferPctUnaligned": 3.903,
+      "heldOutIoUMean": 0.8861,
+      "heldOutViews": 4,
+      "observedFraction": 0.8064,
+      "looIoUMean": 0.8316,
+      "fidelityClass": "partially_verified",
+      "computeMs": 1509
+    },
+    {
+      "id": "MaterialsVariantsShoe",
+      "kind": "footwear",
+      "category": "non-mechanical",
+      "split": "acceptance",
+      "status": "reconstructed",
+      "views": 8,
+      "parts": 1,
+      "triangles": 10030,
+      "degraded": null,
+      "directionSign": -1,
+      "posesRefined": false,
+      "assumptions": 5,
+      "hullOnlyChamferPct": 2.165,
+      "chamferPctAligned": 2.203,
+      "accuracyPct": 1.738,
+      "completenessPct": 2.669,
+      "chamferPctUnaligned": 2.654,
+      "heldOutIoUMean": 0.8895,
+      "heldOutViews": 4,
+      "observedFraction": 0.7947,
+      "looIoUMean": 0.8013,
+      "fidelityClass": "partially_verified",
+      "computeMs": 1316
+    },
+    {
+      "id": "GlamVelvetSofa",
+      "kind": "furniture",
+      "category": "non-mechanical",
+      "split": "acceptance",
+      "status": "refused",
+      "refusals": [
+        "MASK_UNRELIABLE (GlamVelvetSofa-0.png)",
+        "MASK_UNRELIABLE (GlamVelvetSofa-180.png)"
+      ],
+      "reliability": [
+        {
+          "name": "GlamVelvetSofa-0.png",
+          "reliable": false,
+          "reasons": [
+            "o primeiro plano está demasiado fragmentado (63% do primeiro plano bruto em partes substanciais; maior parte 14%)",
+            "preenchimento da caixa degenerado (3%)"
+          ]
+        },
+        {
+          "name": "GlamVelvetSofa-45.png",
+          "reliable": true,
+          "reasons": []
+        },
+        {
+          "name": "GlamVelvetSofa-90.png",
+          "reliable": true,
+          "reasons": []
+        },
+        {
+          "name": "GlamVelvetSofa-135.png",
+          "reliable": true,
+          "reasons": []
+        },
+        {
+          "name": "GlamVelvetSofa-180.png",
+          "reliable": false,
+          "reasons": [
+            "o primeiro plano está demasiado fragmentado (34% do primeiro plano bruto em partes substanciais; maior parte 9%)",
+            "contaminação nas bordas (33% > 15%)",
+            "primeiro plano fora do intervalo credível (1%)",
+            "preenchimento da caixa degenerado (2%)"
+          ]
+        },
+        {
+          "name": "GlamVelvetSofa-225.png",
+          "reliable": true,
+          "reasons": []
+        },
+        {
+          "name": "GlamVelvetSofa-270.png",
+          "reliable": true,
+          "reasons": []
+        },
+        {
+          "name": "GlamVelvetSofa-315.png",
+          "reliable": true,
+          "reasons": []
+        }
+      ]
+    },
+    {
+      "id": "ChairDamaskPurplegold",
+      "kind": "furniture",
+      "category": "non-mechanical",
+      "split": "acceptance",
+      "status": "reconstructed",
+      "views": 8,
+      "parts": 2,
+      "triangles": 16422,
+      "degraded": null,
+      "directionSign": -1,
+      "posesRefined": false,
+      "assumptions": 5,
+      "hullOnlyChamferPct": 2.431,
+      "chamferPctAligned": 2.384,
+      "accuracyPct": 2.22,
+      "completenessPct": 2.549,
+      "chamferPctUnaligned": 1.927,
+      "heldOutIoUMean": 0.86,
+      "heldOutViews": 4,
+      "observedFraction": 0.767,
+      "looIoUMean": 0.78,
+      "fidelityClass": "partially_verified",
+      "computeMs": 1514
+    },
+    {
+      "id": "IridescenceLamp",
+      "kind": "fixture",
+      "category": "mechanical",
+      "split": "acceptance",
+      "status": "reconstructed",
+      "views": 8,
+      "parts": 2,
+      "triangles": 22566,
+      "degraded": null,
+      "directionSign": 1,
+      "posesRefined": false,
+      "assumptions": 5,
+      "hullOnlyChamferPct": 3.537,
+      "chamferPctAligned": 3.617,
+      "accuracyPct": 3.478,
+      "completenessPct": 3.756,
+      "chamferPctUnaligned": 3.049,
+      "heldOutIoUMean": 0.8526,
+      "heldOutViews": 4,
+      "observedFraction": 0.779,
+      "looIoUMean": 0.856,
+      "fidelityClass": "partially_verified",
+      "computeMs": 1383
+    },
+    {
+      "id": "CarConcept",
+      "kind": "vehicle",
+      "category": "mechanical",
+      "split": "acceptance",
+      "status": "refused",
+      "refusals": [
+        "MASK_UNRELIABLE (CarConcept-0.png)",
+        "MASK_UNRELIABLE (CarConcept-45.png)",
+        "MASK_UNRELIABLE (CarConcept-90.png)",
+        "MASK_UNRELIABLE (CarConcept-135.png)",
+        "MASK_UNRELIABLE (CarConcept-180.png)",
+        "MASK_UNRELIABLE (CarConcept-225.png)",
+        "MASK_UNRELIABLE (CarConcept-270.png)",
+        "MASK_UNRELIABLE (CarConcept-315.png)"
+      ],
+      "reliability": [
+        {
+          "name": "CarConcept-0.png",
+          "reliable": false,
+          "reasons": [
+            "o primeiro plano está demasiado fragmentado (84% do primeiro plano bruto em partes substanciais; maior parte 53%)"
+          ]
+        },
+        {
+          "name": "CarConcept-45.png",
+          "reliable": false,
+          "reasons": [
+            "o primeiro plano está demasiado fragmentado (69% do primeiro plano bruto em partes substanciais; maior parte 17%)",
+            "preenchimento da caixa degenerado (8%)"
+          ]
+        },
+        {
+          "name": "CarConcept-90.png",
+          "reliable": false,
+          "reasons": [
+            "o primeiro plano está demasiado fragmentado (68% do primeiro plano bruto em partes substanciais; maior parte 33%)"
+          ]
+        },
+        {
+          "name": "CarConcept-135.png",
+          "reliable": false,
+          "reasons": [
+            "o primeiro plano está demasiado fragmentado (61% do primeiro plano bruto em partes substanciais; maior parte 19%)",
+            "preenchimento da caixa degenerado (6%)"
+          ]
+        },
+        {
+          "name": "CarConcept-180.png",
+          "reliable": false,
+          "reasons": [
+            "o primeiro plano está demasiado fragmentado (76% do primeiro plano bruto em partes substanciais; maior parte 60%)"
+          ]
+        },
+        {
+          "name": "CarConcept-225.png",
+          "reliable": false,
+          "reasons": [
+            "o primeiro plano está demasiado fragmentado (74% do primeiro plano bruto em partes substanciais; maior parte 35%)",
+            "preenchimento da caixa degenerado (7%)"
+          ]
+        },
+        {
+          "name": "CarConcept-270.png",
+          "reliable": false,
+          "reasons": [
+            "o primeiro plano está demasiado fragmentado (74% do primeiro plano bruto em partes substanciais; maior parte 19%)"
+          ]
+        },
+        {
+          "name": "CarConcept-315.png",
+          "reliable": false,
+          "reasons": [
+            "o primeiro plano está demasiado fragmentado (63% do primeiro plano bruto em partes substanciais; maior parte 22%)",
+            "preenchimento da caixa degenerado (8%)"
+          ]
+        }
+      ]
+    }
+  ]
+}

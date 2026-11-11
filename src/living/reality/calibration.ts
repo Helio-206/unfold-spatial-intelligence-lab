@@ -28,5 +28,17 @@ export const HULL_ERROR_BY_VIEW_COUNT = [
   }
 ] as const;
 /** Held-out (leave-one-out) silhouette agreement below this is reported as a failed consistency check: min over development sets with correct poses, minus 0.05. */
+/**
+ * The PRODUCT PATH (perspective renders, automatic outlines, assumed turntable poses, declared elevation): the only configuration measured end to end.
+ * Photographs and video from a person's own camera are expected to be worse; this is the best-supported number, not a guarantee.
+ */
+export const PRODUCT_PATH_ERROR = {
+  "views": 8,
+  "assets": 5,
+  "chamferPctMedian": 1.62,
+  "chamferPctMax": 3.1,
+  "accuracyPctMax": 4.08,
+  "heldOutIoUMin": 0.859
+} as const;
 export const CONSISTENCY_THRESHOLD = 0.69;
 export const CALIBRATION_SOURCE = 'development split, rendered views, benchmark manifest v1';

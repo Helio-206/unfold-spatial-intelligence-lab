@@ -29,7 +29,8 @@ export class RealityHost {
 
   /** A new reconstruction from fresh evidence. Not persisted until the Space is saved. */
   async create(evidence: RealityEvidence, title: string, signal?: AbortSignal): Promise<{ sha256: string; plan: SpatialPlanV2; entry: RealityEntry }> {
-    const record = await newRecord(evidence), model = await this.compute.replay(record, 0, signal), plan = planFromModel(model, record.sourceSha256, title);
+    const poses = await this.compute.refinePoses(evidence, signal), refined = poses.evidence;
+    const record = await newRecord(poses.applied ? refined : poses.note ? { ...evidence, assumptions: [...evidence.assumptions, poses.note].slice(0, 16) } : evidence), model = await this.compute.replay(record, 0, signal), plan = planFromModel(model, record.sourceSha256, title);
     const entry: RealityEntry = { record, model, persisted: false };
     this.entries.set(record.sourceSha256, entry);
     return { sha256: record.sourceSha256, plan, entry };

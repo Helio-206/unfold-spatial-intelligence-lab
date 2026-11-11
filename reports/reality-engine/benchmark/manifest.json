@@ -120,7 +120,7 @@
       "licenceFile": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/CesiumMilkTruck/LICENSE.md",
       "kind": "vehicle",
       "category": "mechanical",
-      "split": "acceptance",
+      "split": "development",
       "licence": [
         "CC-BY-4.0",
         "LicenseRef-LegalMark-Cesium"
@@ -139,7 +139,8 @@
           "what": "Cesium logo"
         }
       ],
-      "sha256": "09371b34608116de5842d23abe260bf11acf3e1554daf334a647eb566eee5c49"
+      "sha256": "09371b34608116de5842d23abe260bf11acf3e1554daf334a647eb566eee5c49",
+      "splitNote": "Initially assigned to acceptance. Its product-path run exposed a segmentation weakness (near-background body colour) that was then fixed; it is therefore a development asset from that point on, and fresh acceptance assets were added."
     },
     {
       "id": "AntiqueCamera",
@@ -227,6 +228,103 @@
         }
       ],
       "sha256": "e1d7cb190382111e5a5b37b51e9a7f007f7eb2ab1b6185e0188e8d0a0d1265a7"
+    },
+    {
+      "id": "GlamVelvetSofa",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/GlamVelvetSofa/glTF-Binary/GlamVelvetSofa.glb",
+      "licenceFile": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/GlamVelvetSofa/LICENSE.md",
+      "kind": "furniture",
+      "category": "non-mechanical",
+      "split": "acceptance",
+      "licence": [
+        "CC-BY-4.0"
+      ],
+      "attribution": [
+        {
+          "artist": "Eric Chadwick",
+          "year": "2021",
+          "licence": "CC-BY-4.0",
+          "what": "Everything"
+        }
+      ],
+      "sha256": "67202c74a1a33377771f162dc7fad612a6c9bd51ee15124c488e9851d9ac5266",
+      "addedAfterTuning": true
+    },
+    {
+      "id": "ChairDamaskPurplegold",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/ChairDamaskPurplegold/glTF-Binary/ChairDamaskPurplegold.glb",
+      "licenceFile": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/ChairDamaskPurplegold/LICENSE.md",
+      "kind": "furniture",
+      "category": "non-mechanical",
+      "split": "acceptance",
+      "licence": [
+        "CC-BY-4.0"
+      ],
+      "attribution": [
+        {
+          "artist": "Eric Chadwick",
+          "year": "2021",
+          "licence": "CC-BY-4.0",
+          "what": "Models and Textures"
+        }
+      ],
+      "sha256": "9862ff753f25ca6738bf5924afbfde01b794fae73db3f94bcd8cdc7cc570d9bb",
+      "addedAfterTuning": true
+    },
+    {
+      "id": "IridescenceLamp",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/IridescenceLamp/glTF-Binary/IridescenceLamp.glb",
+      "licenceFile": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/IridescenceLamp/LICENSE.md",
+      "kind": "fixture",
+      "category": "mechanical",
+      "split": "acceptance",
+      "licence": [
+        "CC-BY-4.0"
+      ],
+      "attribution": [
+        {
+          "artist": "Eric Chadwick",
+          "year": "2022",
+          "licence": "CC-BY-4.0",
+          "what": "Everything"
+        }
+      ],
+      "sha256": "17cfdc79ec9e38fadb28db159734c5f9592ca423977b546e5057e350ba29ff13",
+      "addedAfterTuning": true
+    },
+    {
+      "id": "CarConcept",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/CarConcept/glTF-Binary/CarConcept.glb",
+      "licenceFile": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/CarConcept/LICENSE.md",
+      "kind": "vehicle",
+      "category": "mechanical",
+      "split": "acceptance",
+      "licence": [
+        "CC-BY-4.0",
+        "LicenseRef-LegalMark-Khronos"
+      ],
+      "attribution": [
+        {
+          "artist": "Eric Chadwick",
+          "year": "2024",
+          "licence": "CC-BY-4.0",
+          "what": "Model and textures"
+        },
+        {
+          "artist": "Non-copyrightable logo",
+          "year": "2015",
+          "licence": "LicenseRef-LegalMark-Khronos",
+          "what": "Khronos logo"
+        },
+        {
+          "artist": "Non-copyrightable logo",
+          "year": "2017",
+          "licence": "LicenseRef-LegalMark-Khronos",
+          "what": "3D Commerce logo"
+        }
+      ],
+      "sha256": "c272098089d78c5cd9fd9f24ff50ee8acf8d932c55f2d55fc10adb6c8998966b",
+      "addedAfterTuning": true
     }
   ]
 }

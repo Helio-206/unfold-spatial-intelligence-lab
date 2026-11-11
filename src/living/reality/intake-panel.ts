@@ -2,8 +2,7 @@ import type { SpatialPlanV2 } from '../../universal-spatial/contracts-v2';
 import { checkFile } from '../experience/intake';
 import { decodeMask, REALITY_LIMITS } from './evidence';
 import type { RealityHost } from './host';
-import { extractEvidence } from '../universal-foundry/evidence';
-import { intakeDrawing, intakeOrbit, selectKeyFrames, type IntakeImage, type IntakeResult, type Refusal } from './intake';
+import { intakeDrawing, intakeOrbit, segmentGeneric, selectKeyFrames, type IntakeImage, type IntakeResult, type Refusal } from './intake';
 
 /**
  * The /living intake for several views of one object (photographs around a turntable, photographs from declared angles, or three technical-drawing
@@ -31,7 +30,35 @@ const REFUSAL_COPY: Record<Refusal['code'], string> = {
   MISSING_DRAWING_VIEW: 'Faltam vistas: o desenho precisa de frente, lado e topo.',
 };
 
+export const IMAGE_LIMITS = { maxPixels: 40_000_000 } as const;
+/** Reads the pixel dimensions from the file header (PNG, JPEG, WebP) WITHOUT decoding, so an oversized image is refused before it can exhaust memory. */
+export function peekImageSize(b: Uint8Array): { width: number; height: number } | null {
+  const u32 = (o: number) => ((b[o]! << 24) | (b[o + 1]! << 16) | (b[o + 2]! << 8) | b[o + 3]!) >>> 0;
+  if (b.length > 24 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return { width: u32(16), height: u32(20) };
+  if (b.length > 4 && b[0] === 0xff && b[1] === 0xd8) {
+    let o = 2;
+    while (o + 9 < b.length) {
+      if (b[o] !== 0xff) { o++; continue; }
+      const marker = b[o + 1]!; if (marker === 0xd8 || (marker >= 0xd0 && marker <= 0xd7) || marker === 0x01) { o += 2; continue; }
+      const len = (b[o + 2]! << 8) | b[o + 3]!;
+      if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) return { height: (b[o + 5]! << 8) | b[o + 6]!, width: (b[o + 7]! << 8) | b[o + 8]! };
+      o += 2 + len;
+    }
+    return null;
+  }
+  if (b.length > 30 && b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) {
+    const kind = String.fromCharCode(b[12]!, b[13]!, b[14]!, b[15]!);
+    if (kind === 'VP8 ') return { width: (b[26]! | (b[27]! << 8)) & 0x3fff, height: (b[28]! | (b[29]! << 8)) & 0x3fff };
+    if (kind === 'VP8L') { const v = b[21]! | (b[22]! << 8) | (b[23]! << 16) | (b[24]! << 24); return { width: (v & 0x3fff) + 1, height: ((v >> 14) & 0x3fff) + 1 }; }
+    if (kind === 'VP8X') return { width: (b[24]! | (b[25]! << 8) | (b[26]! << 16)) + 1, height: (b[27]! | (b[28]! << 8) | (b[29]! << 16)) + 1 };
+  }
+  return null;
+}
+
 export async function decodeImageFile(file: File): Promise<IntakeImage> {
+  const head = new Uint8Array(await file.slice(0, 65_536).arrayBuffer()), size = peekImageSize(head);
+  if (!size || size.width < 1 || size.height < 1) throw new Error(`Não foi possível ler as dimensões de «${file.name}».`);
+  if (size.width * size.height > IMAGE_LIMITS.maxPixels) throw new Error(`«${file.name}» tem ${(size.width * size.height / 1e6).toFixed(0)} megapíxeis; o máximo é ${IMAGE_LIMITS.maxPixels / 1e6}.`);
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height)), w = Math.max(1, Math.round(bitmap.width * scale)), h = Math.max(1, Math.round(bitmap.height * scale));
   const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
@@ -68,7 +95,7 @@ export async function decodeVideoFile(file: File): Promise<VideoFrames> {
 
 export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDeps): { dispose(): void } {
   const decode = deps.decode ?? decodeImageFile;
-  let videoTimes: number[] = [], videoDuration = 0, mode: Mode = 'turntable', elevation = '', slots: Slot[] = [], problem: string | null = null, result: IntakeResult | null = null, busy = false, disposed = false;
+  let abort: AbortController | null = null, videoTimes: number[] = [], videoDuration = 0, mode: Mode = 'turntable', elevation = '', slots: Slot[] = [], problem: string | null = null, result: IntakeResult | null = null, busy = false, disposed = false;
   const drawingSlots = (): Slot[] => [{ key: 'front', label: 'Frente', image: null, azimuth: '', thumb: '' }, { key: 'side', label: 'Lado direito', image: null, azimuth: '', thumb: '' }, { key: 'top', label: 'Topo', image: null, azimuth: '', thumb: '' }];
   const title = () => (container.querySelector<HTMLInputElement>('#rl-title')?.value.trim() || 'Objecto reconstruído de várias vistas').slice(0, 100);
 
@@ -141,7 +168,7 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
       // key frames by silhouette diversity; azimuth from the frame's time (constant angular speed over the whole clip) - assumed, not measured
       const candidates = slots.map((s) => s.image!).filter(Boolean);
       if (candidates.length < 2) { result = intakeOrbit(candidates); return result; }
-      const masks = candidates.map((im) => ({ mask: extractEvidence(im.rgba).mask })), picks = selectKeyFrames(masks, VIDEO_LIMITS.keyFrames);
+      const masks = candidates.map((im) => ({ mask: segmentGeneric(im.rgba).mask })), picks = selectKeyFrames(masks, VIDEO_LIMITS.keyFrames);
       result = intakeOrbit(picks.map((i) => candidates[i]!), { azimuthsDeg: picks.map((i) => 360 * (videoTimes[i]! / videoDuration)), azimuthsAssumed: true, mode: 'video', ...elev() });
     } else {
       const images = slots.map((s) => s.image!).filter(Boolean);
@@ -158,11 +185,12 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
     const b = (event.target as HTMLElement).closest<HTMLElement>('[data-rl]'); if (!b) return;
     event.stopPropagation();
     const act = b.dataset.rl;
-    if (act === 'cancel') deps.onCancel();
+    if (act === 'cancel') { abort?.abort(); deps.onCancel(); }
     else if (act === 'analyse') { analyse(); paint(); }
     else if (act === 'build' && result?.evidence && !busy) {
       busy = true; paint();
-      void deps.host.create(result.evidence, title()).then((r) => { if (!disposed) deps.onDone({ sha256: r.sha256, plan: r.plan, title: r.plan.title }); }).catch(() => { problem = 'A reconstrução falhou. Nada foi construído.'; busy = false; paint(); });
+      abort = new AbortController();
+      void deps.host.create(result.evidence, title(), abort.signal).then((r) => { if (!disposed) deps.onDone({ sha256: r.sha256, plan: r.plan, title: r.plan.title }); }).catch((e) => { if (disposed || (e as DOMException)?.name === 'AbortError') return; problem = 'A reconstrução falhou. Nada foi construído.'; busy = false; paint(); });
     }
   };
   const onChange = (event: Event) => {
@@ -176,5 +204,5 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
   };
   container.addEventListener('click', onClick); container.addEventListener('change', onChange);
   paint();
-  return { dispose() { disposed = true; container.removeEventListener('click', onClick); container.removeEventListener('change', onChange); } };
+  return { dispose() { disposed = true; abort?.abort(); container.removeEventListener('click', onClick); container.removeEventListener('change', onChange); } };
 }
