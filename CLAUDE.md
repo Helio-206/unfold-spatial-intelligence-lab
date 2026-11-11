@@ -25,7 +25,8 @@ Uma migração nunca fabrica certeza: o que não se consegue recuperar fica `unk
 
 ## Regras de trabalho
 
-- Trabalhar por checkpoints. No fim de cada checkpoint: parar, resumir, mostrar resultados dos testes.
+- Trabalhar por checkpoints internos (commits/verificações). Regra geral: no fim de cada checkpoint, parar, resumir e mostrar resultados dos testes.
+  **Excepção (autorizada pelo dono do produto): na execução da FASE 01 — REALITY ENGINE a paragem por checkpoint NÃO se aplica.** A macrofase é uma unidade de entrega única; decisões técnicas normais não pedem aprovação. Mantêm-se todas as restantes regras (testes antes de commit, sem merge sem autorização, sem skip, sem mocks apresentados como prova real, segredos fora do repo).
 - Para cada defeito: primeiro um teste que falha, confirmar que falha, depois a correcção.
 - Não marcar testes como `skip` para fazer passar a suite. Se um teste antigo
   assumia comportamento inseguro, actualizá-lo com o novo código de erro esperado e explicar porquê.

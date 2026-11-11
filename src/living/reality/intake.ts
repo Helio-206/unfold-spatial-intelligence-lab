@@ -1,0 +1,187 @@
+/**
+ * Intake of real inputs for the Reality Engine: several photographs of one object (turntable or orbit), frames from a video, or orthographic views of a
+ * technical drawing. It turns them into RealityEvidence and says, in plain words, what it had to ASSUME. It never produces a pose out of nothing:
+ * poses are 'given' only when the person declared them, otherwise 'assumed' (equal turntable steps) and open to refinement by consistency.
+ * Fails closed: an unreliable segmentation, an inconsistent drawing or too few views is a coded refusal, never a quiet fallback.
+ */
+import { extractEvidence, type ImageEvidence, type RGBA } from '../universal-foundry/evidence';
+import { encodeColour, encodeMask, REALITY_LIMITS, type RealityEvidence, type StoredView } from './evidence';
+import { FRAME_HALF_PER_DIAGONAL } from './model';
+
+export type IntakeImage = { name: string; rgba: RGBA; /** a mask the person confirmed (same size as rgba); skips automatic segmentation */ mask?: Uint8Array };
+export type RefusalCode = 'TOO_FEW_VIEWS' | 'TOO_MANY_VIEWS' | 'MASK_UNRELIABLE' | 'EMPTY_MASK' | 'DRAWING_INCONSISTENT' | 'POSE_COUNT_MISMATCH' | 'MISSING_DRAWING_VIEW';
+export type Refusal = { code: RefusalCode; detail: string; viewName?: string };
+export type ViewReport = { name: string; maskSource: 'confirmed' | 'automatic'; reliable: boolean; reasons: string[]; bbox: { x0: number; y0: number; x1: number; y1: number }; foregroundRatio: number };
+export type IntakeResult = { evidence: RealityEvidence | null; refusals: Refusal[]; views: ViewReport[] };
+export type IntakeOptions = { res?: number; colourRes?: number; cells?: number };
+
+const slug = (s: string, i: number) => (s.toLowerCase().replace(/\.[a-z0-9]+$/, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'view') + `-${i + 1}`;
+const median = (x: number[]) => { const s = [...x].sort((a, b) => a - b); return s.length ? (s.length % 2 ? s[(s.length - 1) / 2]! : (s[s.length / 2 - 1]! + s[s.length / 2]!) / 2) : 0; };
+
+type Prepared = { name: string; rgba: RGBA; mask: Uint8Array; report: ViewReport };
+
+/**
+ * Category-agnostic credibility of an automatic outline (the vehicle gate in fitting.ts encodes vehicle-shaped thresholds and is not reused here):
+ * one coherent object, not touching the borders, a plausible share of the picture, and not degenerate inside its box.
+ */
+export function maskReliability(e: ImageEvidence): { reliable: boolean; reasons: string[] } {
+  const { width: w, height: h, mask, bbox } = e, reasons: string[] = [];
+  let total = 0, band = 0; const bx = Math.max(1, Math.round(w * 0.04)), by = Math.max(1, Math.round(h * 0.04));
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (mask[y * w + x]) { total++; if (x < bx || x >= w - bx || y < by || y >= h - by) band++; }
+  const fill = total / Math.max(1, (bbox.x1 - bbox.x0 + 1) * (bbox.y1 - bbox.y0 + 1));
+  if ((e.largestComponentShare ?? 0) < 0.75) reasons.push(`objecto fragmentado (maior componente ${(((e.largestComponentShare ?? 0)) * 100).toFixed(0)}% < 75%)`);
+  if (total && band / total > 0.15) reasons.push(`contaminação nas bordas (${((band / total) * 100).toFixed(0)}% > 15%)`);
+  if (e.foregroundRatio < 0.02 || e.foregroundRatio > 0.85) reasons.push(`primeiro plano fora do intervalo credível (${(e.foregroundRatio * 100).toFixed(0)}%)`);
+  if (fill < 0.12 || fill > 0.98) reasons.push(`preenchimento da caixa degenerado (${(fill * 100).toFixed(0)}%)`);
+  return { reliable: reasons.length === 0, reasons };
+}
+
+function prepare(image: IntakeImage, refusals: Refusal[]): Prepared | null {
+  const { width, height } = image.rgba;
+  let mask: Uint8Array, source: ViewReport['maskSource'], reasons: string[] = [], reliable = true;
+  if (image.mask) {
+    if (image.mask.length !== width * height) { refusals.push({ code: 'EMPTY_MASK', detail: 'confirmed mask size differs from the image', viewName: image.name }); return null; }
+    mask = image.mask; source = 'confirmed';
+  } else {
+    const evidence = extractEvidence(image.rgba); mask = evidence.mask; source = 'automatic';
+    const r = maskReliability(evidence); reliable = r.reliable; reasons = r.reasons;
+    if (!r.reliable) { refusals.push({ code: 'MASK_UNRELIABLE', detail: `automatic segmentation is not credible (${r.reasons.join('; ')}); confirm or correct the outline`, viewName: image.name }); }
+  }
+  let x0 = width, y0 = height, x1 = -1, y1 = -1, count = 0;
+  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) if (mask[y * width + x]) { count++; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  if (!count) { refusals.push({ code: 'EMPTY_MASK', detail: 'no foreground pixels', viewName: image.name }); return null; }
+  return { name: image.name, rgba: image.rgba, mask, report: { name: image.name, maskSource: source, reliable, reasons, bbox: { x0, y0, x1, y1 }, foregroundRatio: count / (width * height) } };
+}
+
+/** Samples a prepared view into the shared orthographic window. `map(X, Y)` gives the source pixel (floating) for window pixel (X, Y). */
+function resample(p: Prepared, res: number, colourRes: number, map: (X: number, Y: number, size: number) => [number, number]): { mask: Uint8Array; rgb: Uint8Array } {
+  const { width, height, data } = p.rgba, mask = new Uint8Array(res * res), rgb = new Uint8Array(colourRes * colourRes * 3);
+  const at = (sx: number, sy: number) => { const x = Math.floor(sx), y = Math.floor(sy); return x < 0 || y < 0 || x >= width || y >= height ? -1 : y * width + x; };
+  for (let Y = 0; Y < res; Y++) for (let X = 0; X < res; X++) { const [sx, sy] = map(X + 0.5, Y + 0.5, res), k = at(sx, sy); if (k >= 0 && p.mask[k]) mask[Y * res + X] = 1; }
+  for (let Y = 0; Y < colourRes; Y++) for (let X = 0; X < colourRes; X++) {
+    const [sx, sy] = map(X + 0.5, Y + 0.5, colourRes), k = at(sx, sy);
+    if (k >= 0) { rgb[(Y * colourRes + X) * 3] = data[k * 4]!; rgb[(Y * colourRes + X) * 3 + 1] = data[k * 4 + 1]!; rgb[(Y * colourRes + X) * 3 + 2] = data[k * 4 + 2]!; }
+  }
+  return { mask, rgb };
+}
+
+export type OrbitOptions = IntakeOptions & {
+  /** declared azimuths in degrees (one per image). Absent: equal steps over 360 degrees in the given order (assumed). */
+  azimuthsDeg?: number[];
+  /** declared camera elevation in degrees. Absent: 0 and recorded as an assumption (elevation is never measured here). */
+  elevationDeg?: number;
+};
+
+export function intakeOrbit(images: readonly IntakeImage[], options: OrbitOptions = {}): IntakeResult {
+  const refusals: Refusal[] = [];
+  if (images.length < 2) return { evidence: null, refusals: [{ code: 'TOO_FEW_VIEWS', detail: 'at least 2 views of the same object are needed to observe depth; one photograph stays on the AI interpretation path' }], views: [] };
+  if (images.length > REALITY_LIMITS.maxViews) return { evidence: null, refusals: [{ code: 'TOO_MANY_VIEWS', detail: `at most ${REALITY_LIMITS.maxViews} views` }], views: [] };
+  if (options.azimuthsDeg && options.azimuthsDeg.length !== images.length) return { evidence: null, refusals: [{ code: 'POSE_COUNT_MISMATCH', detail: 'one azimuth per image is required' }], views: [] };
+  const prepared = images.map((im) => prepare(im, refusals));
+  const views = prepared.filter((p): p is Prepared => !!p).map((p) => p.report);
+  if (refusals.length || prepared.some((p) => !p)) return { evidence: null, refusals, views };
+  const ps = prepared as Prepared[], res = options.res ?? 160, colourRes = options.colourRes ?? 64, cells = options.cells ?? 80;
+  const elevation = options.elevationDeg ?? 0, assumptions: string[] = [];
+  const turntable = !options.azimuthsDeg;
+  const azimuths = options.azimuthsDeg ?? ps.map((_, i) => (360 * i) / ps.length);
+  assumptions.push(turntable ? `Azimutes assumidos: passos iguais de ${(360 / ps.length).toFixed(1)}° na ordem enviada (volta completa). Não foram medidos.` : 'Azimutes indicados por si; não verificados.');
+  assumptions.push(options.elevationDeg === undefined ? 'Elevação da câmara desconhecida: assumida 0° (vista horizontal).' : `Elevação ${options.elevationDeg}° indicada por si; não verificada.`);
+  assumptions.push('Mesma distância e zoom em todas as vistas (a escala é a mesma fracção da altura da imagem); projecção ortográfica aproximada.');
+
+  // shared scale: one image height = one length unit, so the pixel size follows each image's own height
+  const heightUnits = ps.map((p) => (p.report.bbox.y1 - p.report.bbox.y0 + 1) / p.rgba.height);
+  const widthUnits = ps.map((p) => (p.report.bbox.x1 - p.report.bbox.x0 + 1) / p.rgba.height);
+  const H = median(heightUnits), Wmax = Math.max(...widthUnits);
+  const diag = Math.sqrt(H * H + 2 * Wmax * Wmax), half = FRAME_HALF_PER_DIAGONAL * diag * 1.0;
+  // rotation axis: for a full orbit the mean of the bbox centres is the axis; for a partial orbit each bbox centre is used (declared as approximate)
+  const fullOrbit = turntable || spanOf(azimuths) >= 270;
+  const centresX = ps.map((p) => (p.report.bbox.x0 + p.report.bbox.x1 + 1) / 2);
+  const axisX = fullOrbit ? centresX.map((c, i) => c / ps[i]!.rgba.height).reduce((a, b) => a + b, 0) / ps.length : null;
+  assumptions.push(fullOrbit ? 'Eixo de rotação na média dos centros horizontais das silhuetas (órbita completa).' : 'Órbita parcial: eixo de rotação assumido no centro horizontal de cada silhueta (aproximação).');
+  const medianCy = median(ps.map((p) => (p.report.bbox.y0 + p.report.bbox.y1 + 1) / 2 / p.rgba.height));
+  const storedViews: StoredView[] = ps.map((p, i) => {
+    const hImg = p.rgba.height, ppu = hImg; // pixels per length unit of this image
+    // fixed camera + rotating object (turntable): the axis and the vertical middle are the same in every view; otherwise each silhouette is centred on its own
+    const cx = (axisX === null ? centresX[i]! : axisX * hImg), cy = turntable ? medianCy * hImg : (p.report.bbox.y0 + p.report.bbox.y1 + 1) / 2;
+    const map = (X: number, Y: number, size: number): [number, number] => {
+      const u = ((X / size) * 2 - 1) * half, v = ((Y / size) * 2 - 1) * half; // v grows upward in the window
+      return [cx + u * ppu, cy - v * ppu];
+    };
+    const sampled = resample(p, res, colourRes, map);
+    return { id: slug(p.name, i), name: p.name, azimuthDeg: azimuths[i]!, elevationDeg: elevation, azimuthSource: turntable ? 'assumed' : 'given', maskRle: encodeMask(sampled.mask), colour: encodeColour(sampled.rgb, colourRes) };
+  });
+  const evidence: RealityEvidence = { contract: 'unfold.reality-evidence.v1', mode: turntable ? 'turntable' : 'orbit', res, colourRes, cells, frame: { centre: [0, 0, 0], half }, views: storedViews, assumptions };
+  return { evidence, refusals: [], views };
+}
+
+const spanOf = (az: number[]): number => { const s = [...az].map((a) => ((a % 360) + 360) % 360).sort((a, b) => a - b); let maxGap = 0; for (let i = 0; i < s.length; i++) maxGap = Math.max(maxGap, (s[(i + 1) % s.length]! - s[i]! + 360) % 360 || 360); return 360 - maxGap; };
+
+export type DrawingViews = { front: IntakeImage; side: IntakeImage; top: IntakeImage };
+export type DrawingOptions = IntakeOptions & {
+  /** relative tolerance for the shared dimensions between views (default 3%) */
+  tolerance?: number;
+  /** the side view shows the front of the object at the left (view from the right, default) or at the right */
+  sideFrontAt?: 'left' | 'right';
+};
+
+/**
+ * Three orthographic views from a technical drawing (front, right side, top), all at the same scale (drawing convention). The views share dimensions:
+ * height (front/side), width (front/top) and depth (side/top). The intake CHECKS that they agree and refuses the drawing otherwise, so an inconsistent
+ * sheet never produces a quiet, wrong solid. Top view uses the standard layout (front of the object towards the bottom of the sheet).
+ */
+export function intakeDrawing(drawing: Partial<DrawingViews>, options: DrawingOptions = {}): IntakeResult {
+  const refusals: Refusal[] = [];
+  for (const k of ['front', 'side', 'top'] as const) if (!drawing[k]) refusals.push({ code: 'MISSING_DRAWING_VIEW', detail: `missing ${k} view` });
+  if (refusals.length) return { evidence: null, refusals, views: [] };
+  const d = drawing as DrawingViews, order = [d.front, d.side, d.top] as const;
+  const prepared = order.map((im) => prepare(im, refusals));
+  if (refusals.length || prepared.some((p) => !p)) return { evidence: null, refusals, views: prepared.filter((p): p is Prepared => !!p).map((p) => p.report) };
+  const [pf, ps, pt] = prepared as [Prepared, Prepared, Prepared], reports = [pf.report, ps.report, pt.report];
+  const dim = (p: Prepared) => ({ w: p.report.bbox.x1 - p.report.bbox.x0 + 1, h: p.report.bbox.y1 - p.report.bbox.y0 + 1 });
+  const f = dim(pf), s = dim(ps), t = dim(pt), tol = options.tolerance ?? 0.03;
+  const pairs: Array<[string, number, number]> = [['height (front vs side)', f.h, s.h], ['width (front vs top)', f.w, t.w], ['depth (side vs top)', s.w, t.h]];
+  const bad = pairs.filter(([, a, b]) => Math.abs(a - b) / Math.max(a, b) > tol);
+  if (bad.length) return { evidence: null, refusals: [{ code: 'DRAWING_INCONSISTENT', detail: `the views do not share their dimensions: ${bad.map(([n, a, b]) => `${n} ${a} vs ${b} px`).join('; ')}` }], views: reports };
+  const res = options.res ?? 160, colourRes = options.colourRes ?? 64, cells = options.cells ?? 80;
+  const Wd = (f.w + t.w) / 2, Hd = (f.h + s.h) / 2, Dd = (s.w + t.h) / 2, scale = Math.max(Wd, Hd, Dd);
+  const diag = Math.sqrt(Wd * Wd + Hd * Hd + Dd * Dd), half = FRAME_HALF_PER_DIAGONAL * diag;
+  const cxOf = (p: Prepared) => (p.report.bbox.x0 + p.report.bbox.x1 + 1) / 2, cyOf = (p: Prepared) => (p.report.bbox.y0 + p.report.bbox.y1 + 1) / 2;
+  const flipSide = (options.sideFrontAt ?? 'left') === 'right';
+  const mk = (p: Prepared, sx: 1 | -1, sy: 1 | -1) => (X: number, Y: number, size: number): [number, number] => {
+    const u = ((X / size) * 2 - 1) * half * sx, v = ((Y / size) * 2 - 1) * half * sy; return [cxOf(p) + u, cyOf(p) - v];
+  };
+  const stored = (p: Prepared, id: string, az: number, el: number, map: ReturnType<typeof mk>): StoredView => {
+    const sampled = resample(p, res, colourRes, map); return { id, name: p.name, azimuthDeg: az, elevationDeg: el, azimuthSource: 'given', maskRle: encodeMask(sampled.mask), colour: encodeColour(sampled.rgb, colourRes) };
+  };
+  void scale;
+  const assumptions = [
+    'Desenho técnico: três vistas ortogonais (frente, lado direito, topo) à mesma escala; dimensões partilhadas verificadas entre vistas.',
+    `Vista lateral: a frente do objecto fica à ${flipSide ? 'direita' : 'esquerda'}. Vista de topo: frente do objecto para baixo na folha.`,
+    'Escala absoluta desconhecida: as dimensões são relativas (sem cotas lidas).',
+  ];
+  const evidence: RealityEvidence = {
+    contract: 'unfold.reality-evidence.v1', mode: 'orthographic', res, colourRes, cells, frame: { centre: [0, 0, 0], half },
+    views: [
+      stored(pf, 'front', 0, 0, mk(pf, 1, 1)),
+      stored(ps, 'side', 90, 0, mk(ps, flipSide ? -1 : 1, 1)),
+      stored(pt, 'top', 0, 90, mk(pt, -1, -1)), // standard sheet layout is the camera view rotated by 180 degrees
+    ],
+    assumptions,
+  };
+  return { evidence, refusals: [], views: reports };
+}
+
+/**
+ * Picks `count` frames of a video whose silhouettes differ most (greedy farthest-point on mask IoU), preserving temporal order. Frames are assumed to
+ * come from one slow turn of the object (equal angular speed) - declared by the caller via intakeOrbit's turntable assumption, never measured.
+ */
+export function selectKeyFrames<T extends { mask: Uint8Array }>(frames: readonly T[], count: number): number[] {
+  if (frames.length <= count) return frames.map((_, i) => i);
+  const dist = (a: Uint8Array, b: Uint8Array) => { let i = 0, u = 0; for (let k = 0; k < a.length; k++) { i += a[k]! & b[k]!; u += a[k]! | b[k]!; } return u ? 1 - i / u : 0; };
+  const picked = [0]; const d = frames.map((f) => dist(f.mask, frames[0]!.mask));
+  while (picked.length < count) {
+    let best = -1, bd = -1; for (let i = 0; i < frames.length; i++) if (!picked.includes(i) && d[i]! > bd) { bd = d[i]!; best = i; }
+    picked.push(best); for (let i = 0; i < frames.length; i++) d[i] = Math.min(d[i]!, dist(frames[i]!.mask, frames[best]!.mask));
+  }
+  return picked.sort((a, b) => a - b);
+}

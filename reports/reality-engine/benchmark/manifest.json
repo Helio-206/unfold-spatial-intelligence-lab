@@ -1,0 +1,232 @@
+{
+  "description": "Reality Engine ground-truth benchmark. 3D assets with independent licences; views are RENDERED from them with known cameras (category A: rendered views of independent geometry). They are not photographs. Split: 'development' assets may be used to tune; 'acceptance' assets are frozen and must not influence any parameter.",
+  "source": "https://github.com/KhronosGroup/glTF-Sample-Assets",
+  "assets": [
+    {
+      "id": "ToyCar",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/ToyCar/glTF-Binary/ToyCar.glb",
+      "licenceFile": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/ToyCar/LICENSE.md",
+      "kind": "vehicle",
+      "category": "mechanical",
+      "split": "development",
+      "licence": [
+        "CC0-1.0"
+      ],
+      "attribution": [
+        {
+          "artist": "Guido Odendahl",
+          "year": "2020",
+          "licence": "CC0-1.0",
+          "what": "Initial car model"
+        },
+        {
+          "artist": "Eric Chadwick",
+          "year": "2020",
+          "licence": "CC0-1.0",
+          "what": "Extensions and scene composition"
+        }
+      ],
+      "sha256": "01a60862de55cd4b9f3acfab0b0def86451800f9c42467fcd61052c16cb9838c"
+    },
+    {
+      "id": "Lantern",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/Lantern/glTF-Binary/Lantern.glb",
+      "licenceFile": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/Lantern/LICENSE.md",
+      "kind": "tool-fixture",
+      "category": "mechanical",
+      "split": "development",
+      "licence": [
+        "CC0-1.0"
+      ],
+      "attribution": [
+        {
+          "artist": "sbtron",
+          "year": "2017",
+          "licence": "CC0-1.0",
+          "what": "Initial version"
+        },
+        {
+          "artist": "Frank Galligan",
+          "year": "2018",
+          "licence": "CC0-1.0",
+          "what": "Draco compression"
+        }
+      ],
+      "sha256": "a79458c4b02d695187a952f23a63b8bf278e7bc3d316a3c2a314f2d6974181f1"
+    },
+    {
+      "id": "BoomBox",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/BoomBox/glTF-Binary/BoomBox.glb",
+      "licenceFile": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/BoomBox/LICENSE.md",
+      "kind": "equipment",
+      "category": "mechanical",
+      "split": "development",
+      "licence": [
+        "CC0-1.0"
+      ],
+      "attribution": [
+        {
+          "artist": "Microsoft",
+          "year": "2017",
+          "licence": "CC0-1.0",
+          "what": "Everything"
+        }
+      ],
+      "sha256": "f8b918445ebdd006768232205a62f5182d2208ca57f84c6ccc084943c0bc8f15"
+    },
+    {
+      "id": "WaterBottle",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/WaterBottle/glTF-Binary/WaterBottle.glb",
+      "licenceFile": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/WaterBottle/LICENSE.md",
+      "kind": "everyday",
+      "category": "non-mechanical",
+      "split": "development",
+      "licence": [
+        "CC0-1.0"
+      ],
+      "attribution": [
+        {
+          "artist": "Microsoft",
+          "year": "2017",
+          "licence": "CC0-1.0",
+          "what": "Everything"
+        }
+      ],
+      "sha256": "b337e526fd6a162013c2984aeec163f5fbb4f717252724dfc3f3458bd51df94b"
+    },
+    {
+      "id": "SheenChair",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/SheenChair/glTF-Binary/SheenChair.glb",
+      "licenceFile": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/SheenChair/LICENSE.md",
+      "kind": "furniture",
+      "category": "non-mechanical",
+      "split": "development",
+      "licence": [
+        "CC0-1.0"
+      ],
+      "attribution": [
+        {
+          "artist": "Eric Chadwick",
+          "year": "2020",
+          "licence": "CC0-1.0",
+          "what": "Everything"
+        }
+      ],
+      "sha256": "f0af2a2b102d28d540236306ae19f8fb36842df76bd38cf76f063f9bd2853399"
+    },
+    {
+      "id": "CesiumMilkTruck",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/CesiumMilkTruck/glTF-Binary/CesiumMilkTruck.glb",
+      "licenceFile": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/CesiumMilkTruck/LICENSE.md",
+      "kind": "vehicle",
+      "category": "mechanical",
+      "split": "acceptance",
+      "licence": [
+        "CC-BY-4.0",
+        "LicenseRef-LegalMark-Cesium"
+      ],
+      "attribution": [
+        {
+          "artist": "Cesium",
+          "year": "2017",
+          "licence": "CC-BY-4.0",
+          "what": "Everything"
+        },
+        {
+          "artist": "Non-copyrightable logo",
+          "year": "2015",
+          "licence": "LicenseRef-LegalMark-Cesium",
+          "what": "Cesium logo"
+        }
+      ],
+      "sha256": "09371b34608116de5842d23abe260bf11acf3e1554daf334a647eb566eee5c49"
+    },
+    {
+      "id": "AntiqueCamera",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/AntiqueCamera/glTF-Binary/AntiqueCamera.glb",
+      "licenceFile": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/AntiqueCamera/LICENSE.md",
+      "kind": "equipment",
+      "category": "mechanical",
+      "split": "acceptance",
+      "licence": [
+        "CC0-1.0",
+        "LicenseRef-LegalMark-UX3D"
+      ],
+      "attribution": [
+        {
+          "artist": "Maximillan Kamps",
+          "year": "2018",
+          "licence": "CC0-1.0",
+          "what": "Everything"
+        },
+        {
+          "artist": "Non-copyrightable logo",
+          "year": "2017",
+          "licence": "LicenseRef-LegalMark-UX3D",
+          "what": "UX3D logo"
+        }
+      ],
+      "sha256": "ae89695479ad997f09ebea8060a5ad01312ad8fe7ffb92f73b4e895109feecd2"
+    },
+    {
+      "id": "Avocado",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/Avocado/glTF-Binary/Avocado.glb",
+      "licenceFile": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/Avocado/LICENSE.md",
+      "kind": "organic-everyday",
+      "category": "non-mechanical",
+      "split": "acceptance",
+      "licence": [
+        "CC0-1.0"
+      ],
+      "attribution": [
+        {
+          "artist": "Microsoft",
+          "year": "2017",
+          "licence": "CC0-1.0",
+          "what": "Everything"
+        }
+      ],
+      "sha256": "ccc9c3ce56423720b09399c2351537207cd5a65f859f9e6e2f30922762f3abd4"
+    },
+    {
+      "id": "Corset",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/Corset/glTF-Binary/Corset.glb",
+      "licenceFile": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/Corset/LICENSE.md",
+      "kind": "garment",
+      "category": "non-mechanical",
+      "split": "acceptance",
+      "licence": [
+        "CC0-1.0"
+      ],
+      "attribution": [
+        {
+          "artist": "Microsoft",
+          "year": "2017",
+          "licence": "CC0-1.0",
+          "what": "Everything"
+        }
+      ],
+      "sha256": "9582c0dc0dee813be77f60e6ddf7213987c7e11497bf3cc66fd7b18957ae0d26"
+    },
+    {
+      "id": "MaterialsVariantsShoe",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/MaterialsVariantsShoe/glTF-Binary/MaterialsVariantsShoe.glb",
+      "licenceFile": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/MaterialsVariantsShoe/LICENSE.md",
+      "kind": "footwear",
+      "category": "non-mechanical",
+      "split": "acceptance",
+      "licence": [
+        "CC-BY-4.0"
+      ],
+      "attribution": [
+        {
+          "artist": "Shopify",
+          "year": "2021",
+          "licence": "CC-BY-4.0",
+          "what": "Everthing"
+        }
+      ],
+      "sha256": "e1d7cb190382111e5a5b37b51e9a7f007f7eb2ab1b6185e0188e8d0a0d1265a7"
+    }
+  ]
+}

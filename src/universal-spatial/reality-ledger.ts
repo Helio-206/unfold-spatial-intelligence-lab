@@ -11,6 +11,20 @@ import type { ValueOrigin } from './contracts';
 
 export type FieldEvidence = { kind: EvidenceKind; humanConfirmed: boolean; reason: string };
 export type ComponentEvidence = { id: string; label: string; geometry: FieldEvidence; transform: FieldEvidence; material: FieldEvidence };
+/**
+ * Evidence about a reconstruction the plan was derived from (multi-view hull). It may only be used when its source hash is the plan's own: otherwise it is
+ * ignored and the plan is read by its own provenance. It refines HOW a field is known (APPROXIMATED from silhouettes) without ever exceeding the evidence
+ * the reconstruction itself has; it cannot make a value OBSERVED or MEASURED.
+ */
+export type ReconstructionEvidence = {
+  sourceSha256: string;
+  geometry: Extract<EvidenceKind, 'approximated' | 'inferred' | 'unknown'>;
+  /** fraction of the surface seen by at least one view (appearance and shape observed there) */
+  observedFraction: number;
+  /** per-component fraction seen by at least one view */
+  observedByComponent?: Record<string, number>;
+  basis: string;
+};
 export type RealityLedger = {
   sourceKind: 'text' | 'image'; sourceSha256: string;
   components: ComponentEvidence[];
@@ -36,16 +50,25 @@ function fieldEvidence(origin: ValueOrigin, evidenceText: string, plan: SpatialP
   }
 }
 
-export function buildRealityLedger(plan: SpatialPlanV2, opts: { validations?: readonly ValidationRecord[]; policy?: FidelityPolicy } = {}): RealityLedger {
+export function buildRealityLedger(plan: SpatialPlanV2, opts: { validations?: readonly ValidationRecord[]; policy?: FidelityPolicy; reconstruction?: ReconstructionEvidence } = {}): RealityLedger {
+  const rec = opts.reconstruction && opts.reconstruction.sourceSha256 === plan.source.sha256 ? opts.reconstruction : null;
+  const refined = (own: FieldEvidence, c: SpatialPlanV2['components'][number]): FieldEvidence => {
+    if (!rec) return own;
+    // never above what the reconstruction has, never above 'approximated', and only for fields the plan itself calls inferred
+    if (own.kind !== 'inferred' || kindRank(rec.geometry) <= kindRank(own.kind)) return own;
+    const seen = rec.observedByComponent?.[c.id] ?? rec.observedFraction;
+    return seen > 0 ? { kind: rec.geometry, humanConfirmed: own.humanConfirmed, reason: `${rec.basis} (${(seen * 100).toFixed(0)}% da superfície vista por alguma vista).` } : own;
+  };
   const components: ComponentEvidence[] = plan.components.map((c) => ({
     id: c.id, label: c.label,
-    geometry: fieldEvidence(c.provenance.geometry, c.provenance.evidence, plan, c.id),
-    transform: fieldEvidence(c.provenance.transform, c.provenance.evidence, plan, c.id),
+    geometry: refined(fieldEvidence(c.provenance.geometry, c.provenance.evidence, plan, c.id), c),
+    transform: refined(fieldEvidence(c.provenance.transform, c.provenance.evidence, plan, c.id), c),
     material: fieldEvidence(c.provenance.material, c.provenance.evidence, plan, c.id),
   }));
   // Suporte = geometria E posição sustentadas por observação/medição (a forma sem a posição não localiza a parte).
   const supportedCount = components.filter((c) => kindRank(c.geometry.kind) >= kindRank('measured') && kindRank(c.transform.kind) >= kindRank('measured')).length;
-  const supportedFraction = components.length ? supportedCount / components.length : 0;
+  // With a reconstruction, "supported by observation" is the surface actually seen by a view; without, the share of components pinned by observed/measured evidence.
+  const supportedFraction = rec ? rec.observedFraction : components.length ? supportedCount / components.length : 0;
   const fidelity = classifyFidelity({ components: components.map((c) => ({ id: c.id, geometry: c.geometry.kind })), validations: opts.validations ?? [], supportedFraction }, opts.policy);
   return {
     sourceKind: plan.source.kind, sourceSha256: plan.source.sha256, components,
