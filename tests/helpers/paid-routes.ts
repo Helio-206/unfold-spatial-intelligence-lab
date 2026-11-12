@@ -54,6 +54,7 @@ export function paidRouteCases(): Record<string, PaidRouteCase> {
       },
       upstreamText: JSON.stringify({ schema: 'spatial_agent_result.v1', kind: 'PROPOSE_ACTION', text: 'Proponho aumentar a parede seleccionada em 30 cm.', basis: 'scene', evidenceIds: ['wall-a'], question: null, action: { kind: 'Resize', target: { reference: 'selected', label: null, ordinal: null }, value: 0.3, valueMode: 'increase_by', unit: 'm', axis: null, opening: null } }),
     },
+    '/api/living/agent': { body: { contract: 'unfold.living-agent-request.v1', question: 'Que peça é esta?', step: 0, context: { título: 'Fan' }, toolResults: [], tools: [{ name: 'list_components', kind: 'read', description: 'x', args: {} }] }, upstreamText: JSON.stringify({ kind: 'answer', toolCalls: [], statements: [{ text: 'Não há informação suficiente.', category: 'unknown', refs: [] }], limitations: [] }) },
     '/api/spatial/question': { body: { question: 'Para que serve?', selectedId: 'hub', revision: 'hub:1', title: 'Fan', components: [{ id: 'hub', label: 'Hub' }], relations: [], unknowns: [], history: [] }, upstreamText: JSON.stringify({ answer: 'O cubo liga as pás.', limitations: 'Identificação não verificada.' }) },
     '/api/spatial/plan': {
       body: { sourceKind: 'text', instruction: 'Cria uma forma conceptual.' },

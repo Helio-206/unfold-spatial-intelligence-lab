@@ -10,6 +10,7 @@ import {
   parseKinematicOperation,
 } from '../src/ai-kinematic-experiment';
 import { adaptMechanicalGraph, type KinematicAssemblyV1 } from '../src/kinematic-assembly';
+import { AGENT_REPLY_CONTRACT, AGENT_REPLY_JSON_SCHEMA, buildAgentPrompt, parseModelReply, validateAgentRequest } from '../src/living/intelligence/agent-protocol';
 import { MetaApiError, requestMetaStructuredImage, requestMetaStructuredText, requestMetaText, sanitizeMetaEvidenceExcerpt, type MetaCallLog } from '../src/meta';
 import type { MechanicalGraphV1 } from '../src/mechanical-graph';
 import { technicalAdapters } from '../src/technical-document';
@@ -89,6 +90,7 @@ export const PAID_ROUTES = [
   '/api/conversation',
   '/api/spatial-agent',
   '/api/spatial/question',
+  '/api/living/agent',
   '/api/living/reconstruction',
   '/api/spatial/plan',
   '/api/spatial/v2/plan',
@@ -1162,6 +1164,21 @@ export function createMetaServer(options: ServerOptions = {}): MetaServer {
         const sceneSummary = { entityCount: plan.entities.length, operators: [...new Set(plan.entities.map((item) => item.geometry.operator))], provenanceCounts: Object.fromEntries(['observed', 'inferred', 'user_provided', 'design_approximation', 'unknown'].map((key) => [key, plan.entities.filter((item) => item.origin === key).length])) };
         console.info(JSON.stringify({ event: 'spatial.plan.completed', sourceKind: source.kind, entityCount: plan.entities.length, httpStatus: result.log.httpStatus, latencyMs: result.log.latencyMs, requestId: result.log.requestId, estimatedCostUsd: result.log.estimatedCostUsd }));
         writeJson(response, 200, { contract: 'unfold.spatial-plan.v1', sessionId, revision: 0, plan, sceneSummary, constructionEvents: spatialConstructionEvents(plan), meta: result.log, limitations: ['A cena é uma composição conceptual por primitivas; não é reconstrução métrica ou fiel.', ...(source.kind === 'image' ? ['A fotografia não fornece escala física; dimensões físicas permanecem desconhecidas.'] : [])] }, origin);
+        return;
+      }
+      if (request.url === '/api/living/agent') {
+        let agentRequest, prompt: string;
+        try { agentRequest = validateAgentRequest(body); prompt = buildAgentPrompt(agentRequest); if (prompt.length > 23_500) throw new Error('AGENT_PROMPT_TOO_LARGE'); } catch { writeJson(response, 400, { error: { code: 'INVALID_LIVING_AGENT_REQUEST', message: 'Pedido ou contexto do agente inválido ou demasiado grande.' } }, origin); return; }
+        const abort = new AbortController();
+        request.once('aborted', () => abort.abort());
+        response.once('close', () => { if (!response.writableEnded) abort.abort(); });
+        reserveMetaCall();
+        try {
+          const result = await requestMetaStructuredText(prompt, apiKey, AGENT_REPLY_JSON_SCHEMA as unknown as Record<string, unknown>, options.fetchImpl, 1_400, 'medium', 'living_agent_reply_v1', abort.signal);
+          if (abort.signal.aborted) return;
+          const reply = parseModelReply(result.text);
+          writeJson(response, 200, { contract: AGENT_REPLY_CONTRACT, reply, source: 'meta', meta: result.log }, origin);
+        } catch { if (!abort.signal.aborted) writeJson(response, 502, { error: { code: 'LIVING_AGENT_UNAVAILABLE', message: 'O agente está indisponível ou a resposta é inválida. Nada foi alterado.' } }, origin); }
         return;
       }
       if (request.url === '/api/spatial/question') {
