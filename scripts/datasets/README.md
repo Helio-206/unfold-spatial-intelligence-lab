@@ -20,6 +20,12 @@
 ```
 Pillow converts masks: `Image.open('mask.png').convert('L').save('00000000.pgm')`. DTU object masks are not part of the raw DTU release; they come from derived sets (e.g. the masks shipped with common neural-reconstruction preprocessings) and their own licence applies.
 
+## Ingesting data you downloaded by hand (no network needed here)
+Put the files anywhere on disk and convert them to the layout above with `scripts/datasets/import-local.ts`:
+- **COLMAP text model** (ETH3D and any SfM output): `npx tsx scripts/datasets/import-local.ts --format colmap --cameras cameras.txt --images images.txt --masks <dir of PNG|PGM named like the images> --reference ref.ply --out <dir> --dataset ETH3D --scan kicker --licence "<text copied from the source page>"`
+- **MVSNet cameras** (DTU derived sets): `--format mvsnet --cams <dir of *_cam.txt> --masks <dir, same order> --width W --height H ...`
+The licence text is mandatory and is copied into `meta.json`; lens distortion (OPENCV/RADIAL models) is **reported in `meta.json`, not corrected**; images without a mask are listed under `skipped`. Tested end to end with a synthetic COLMAP scan (`tests/dataset-import-local.test.ts`).
+
 ## Protocol (fixed in advance)
 1. Download, read the licence on the source page, write it in `meta.json`. **Licences are not asserted in this repository.**
 2. Tune on `development` scans only (`splits.json`). Freeze the configuration (commit hash).
