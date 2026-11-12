@@ -192,9 +192,56 @@ Leitura honesta: BoomBox e AntiqueCamera são reconhecíveis (corpo, tripé, cor
 5. Medição em GPU real e orçamento de desempenho por dispositivo.
 O contrato estrutural (ids estáveis, transformações, proveniência, versões da evidência, pontos de preparação) está pronto para a Fase 02 consumir; nada de movimento funcional foi implementado.
 
-## Addendum — automatic-first intake (uncommitted-run record)
+## 11. Continuação (12 nov) — validação, componentes, reconstrução, Visual Foundry
 
-- `analyse()` in the intake panel is now async: images without a person's outline get the best automatic one (`autoOutlines`: static background, salient network if `npm run models` fetched it, graph cut, colour), stored as `maskSource: 'automatic'` with the method and the cross-strategy agreement shown per view ("confirme visualmente"). The editor's "suggest" uses the same pipeline.
-- Integrated automatic-first evaluation on real-photo backgrounds (`BG=real AUTO=1`) crashed on the 8th asset (page navigation during render, not a pipeline result), so only 7 assets completed — log in `benchmark/product-eval-auto-partial.log`. Of those 7: 2 `partially_verified`, 5 `unvalidated`. The held-out check refuses to promote the bad ones, which is the intended failure mode, but automatic segmentation alone is NOT sufficient on complex real backgrounds; manual correction remains necessary. Not re-run to completion; a clean rerun is open.
-- `npm test`: 3 failures, all in `spatial-persistence-failures` / `spatial-review-binding-transition`; they fail identically on the stashed clean tree (container runs as root, so read-only-directory failure injection does not trigger). Unrelated to Reality.
-- Verdict unchanged: NO-GO.
+**Estado: NO-GO mantido.** Esta secção só afirma o que foi medido; cada número tem o ficheiro que o gerou em `reports/reality-engine/benchmark/`.
+
+### 11.1 Validação da segmentação (prioridade 1)
+- **A interrupção da última avaliação** ("Execution context was destroyed") não era do pipeline: o servidor Vite da avaliação tinha HMR/watch e recarregava a página de render quando eu escrevia ficheiros ou usava `git stash` durante a corrida. Corrigido (`hmr:false, watch:null`); a avaliação completa corre agora de ponta a ponta (14 activos).
+- **Referência independente:** o alpha exacto do renderizador (nenhum algoritmo de segmentação o vê). Entradas: renders dos 14 activos sobre fotografias reais em três condições — `fixed` (um fundo por captura), `varied` (um fundo diferente por vista, volta à mão), `degraded` (varied + exposição, ruído, desfoque). Scripts: `segmentation-validation.ts` (browser, rede ao vivo), `seg-composites.py` + `seg-cached.ts` (cache, iteração rápida), `product-eval-cached.ts` (caminho de produto de ponta a ponta).
+- **Resultado (política final do produto, `segmentation-cached.json`):**
+
+| condição | vistas | IoU médio dos contornos aceites | aceites errados (IoU < 0,8) | melhor escolha possível entre os mesmos candidatos |
+|---|---|---|---|---|
+| fixed | 112 | **0,754** (era 0,610 antes de esta sessão) | 48% | 0,815 |
+| varied | 109 | 0,606 | 59% | 0,642 |
+| degraded | 109 | 0,590 | 67% | 0,614 |
+
+  A segmentação automática **continua insuficiente fora de câmara fixa**: com fundo a mudar, mais de metade dos contornos aceites estão errados e nem a escolha óptima entre candidatos (oráculo) o resolve — o conjunto de candidatos é que não chega. Alternativas medidas e rejeitadas (`segmentation-candidates.json`, 56 vistas): U²-Net-P 0,49; SAM ViT-B com caixa larga 0,42; SAM caixa+ponto 0,51; GrabCut com caixa central 0,48–0,51; escolha de candidato por concordância geométrica com o casco das outras vistas: **AUC 0,23–0,31 (pior que o acaso)**, porque os erros são consistentes entre vistas (o mesmo objecto saliente de fundo) e o casco de uma região estática é um prisma perfeitamente "consistente". Não foi adoptada.
+- **Melhorias adoptadas (medidas):** (1) fundo estático passa a ter prioridade quando credível (0,61 → 0,75 em `fixed`); (2) o fundo estático já não declara fundo as ilhas estáticas encerradas pelo objecto nem os pixels estáticos junto dele, e re-estima o fundo por pixel nas vistas onde ficou descoberto (teste sintético com referência exacta: 0,75 → 0,92 de IoU médio).
+- **Segurança do resultado (`product-eval-cached.json`, caminho de produto):** em `varied` 2 de 14 recusados e 3 `partially_verified`; em `degraded` 3 recusados e 1 `partially_verified`; **nenhum** resultado com geometria má (> 6% da diagonal) foi chamado `partially_verified` nessas condições. Em `fixed` 12/14 são `partially_verified` e um deles (AntiqueCamera, 6,1%) tem geometria má: concordância entre vistas não prova forma quando todos os contornos erram da mesma maneira. **Nenhum contorno automático recebe agora tolerância de erro** (`outlineMethod` registado na evidência; só contornos de cor clássica em fundo liso ou confirmados à mão a recebem).
+- **Corrigido:** contornos inconsistentes esvaziavam o casco e o construtor do plano falhava com `SPATIAL_V2_PLAN_INVALID_FIELDS` (teste falhou primeiro). Agora `REALITY_EMPTY_RECONSTRUCTION` com mensagem a dizer que há contornos errados.
+- Fora do âmbito sintético: **fotografias reais de objectos em fundo real com contorno de referência** continuam a ser a validação que falta (só há 1 conjunto pequeno em `tests/fixtures/photos-real`).
+
+### 11.2 Compreensão das peças (prioridade 2)
+Harness `component-eval.ts` no caminho de produto (8 renders, contornos exactos), dois referenciais: **nós glTF** (decisão do autor; muitas vezes são grupos de material, não peças) e **cascas físicas** (componentes conexos de cada nó, mais próximo de "peça física"). Métricas só em voxels a ≤ 1,5 voxel da superfície GT. `reconstruction/appearance-parts.ts`, `reconstruction/multiview-parts.ts` (propostas SAM elevadas a 3D por afinidade Jaccard ponderada) e uma decomposição convexa aproximada (só no harness) foram medidos:
+
+| método | nós (dev / acc recuperadas) | cascas (dev / acc recuperadas) | ARI cascas acc | pureza cascas acc |
+|---|---|---|---|---|
+| watershed (actual) | 7/11 · 8/27 | 6/18 · 4/45 | 0,042 | 0,491 |
+| cor (2-means por parte) | 7/11 · 10/27 (ARI acc 0,53→0,31) | 6/18 · 6/45 | 0,106 | 0,511 |
+| SAM elevado a 3D | 5/11 · 6/27 | 5/18 · 4/45 | 0,101 | 0,541 |
+| cor ∧ SAM (consenso) | 7/11 · 9/27 | 6/18 · 5/45 | 0,062 | 0,508 |
+| decomposição convexa (τ 0,10) | 5/11 · 6/27 | **8/18 · 6/45** | 0,146 | 0,556 |
+
+**Conclusão honesta:** nenhum método melhora os dois referenciais; os ganhos num referencial são perdas no outro (a cor e a decomposição convexa dividem peças que o autor modelou como um só nó). Nenhum foi ligado por defeito. O limite é estrutural: um casco de silhuetas funde o que está entre pernas/braços e os nós GT misturam material com forma. Recuperação de peças continua **7/25 nos activos de aceitação com o watershed e sem método melhor demonstrado**; as partes continuam apresentadas como hipótese editável (rever/renomear/fundir). Um referencial de peças com anotação humana independente é dependência externa.
+
+### 11.3 Para além do casco (prioridade 3)
+- **Câmara perspectiva** (`orbitPinhole`, FOV estimado por concordância held-out; renders a 40° e 65°, `recon-perspective-fov*.json`): com o FOV verdadeiro a mediana do chamfer desce 23% (40°) / 28% (65°); com o FOV **estimado** só 17% / 8% (a concordância held-out é um mau selector em vários activos). Com portão de 0,04 de ganho de concordância não piorou nenhum activo a 65° (4 melhores, 0 piores) mas o ganho médio é ~5% (≈0,15 pontos percentuais da diagonal). **Não integrado** (tocaria cor, visibilidade, refinamento e revisão, todos ortográficos, por um ganho dentro do ruído). O benchmark só tinha FOV 12°; passa a ter 12°, 40° e 65°, e a hipótese ortográfica custa ≤ 3,5% da diagonal até 65°.
+- **Carving por foto-consistência** (`reconstruction/photo-carve.ts`, `carve-fov12.json`): mediana do chamfer 2,00 → 2,00–2,03 (variantes), com perdas em WaterBottle. Sem ganho demonstrável; **não integrado**.
+- O casco continua o motor; nenhum motor redundante foi introduzido. Câmaras pinhole calibradas (DTU/ETH3D) continuam suportadas e testadas com dados sintéticos.
+
+### 11.4 Visual Foundry e editor (prioridade 4)
+- **LOD** (`lod.ts`): agrupamento de vértices, erro medido e limitado pela célula (deslocamento máximo ≤ diagonal da célula, verificado em teste), nada inventado (`observed`, cores dentro do intervalo, vértices dentro da caixa original). O palco usa um nó `LOD` para cascas grandes e o relatório do `RealityGeometry` indica níveis, triângulos e erro (% da diagonal da parte).
+- **Material:** o acabamento brilhante (clearcoat) inventava reflexos que nenhuma fotografia mostrou; passou a mate (`roughness 0,92`, `metalness 0`, `clearcoat 0`) com a base declarada em `userData.realityMaterialBasis` ("assumed-matte"). **Não há materiais PBR fundamentados**: as fotografias não medem reflectância, e a cor amostrada tem a iluminação cozida.
+- **Normais:** auditoria em teste (unitárias, finitas, concordam com o enrolamento, volume com sinal positivo) — passa em todas as cascas.
+- **Editor, medido (não só presença de elementos):** nomes acessíveis, contraste ≥ 4,5:1 calculado a partir dos estilos (pior 6,24:1), alvos ≥ 24 px, 25 paragens de Tab com indicador de foco, sem sobreposição nem oclusão (`elementFromPoint`) e área de desenho ≥ 240×240 a 1500×1000, 1280×680 e 390×800. A medição apanhou **três defeitos reais** que a inspecção anterior não viu: barra de ferramentas a sobrepor o rodapé, a doca do prompt a cobrir «Calcular/Usar este contorno» e o canvas colapsado a 0 em ecrã de telemóvel (+ raio de círculo negativo com canvas pequeno: teste falhou primeiro). Corrigidos; capturas em `reports/reality-engine/e2e-capture/02f-*.png`.
+
+### 11.5 Datasets externos (preparado, não executado)
+`scripts/datasets/`: split congelado por função pura do nome (`splits.json`, teste que o recalcula), carregador de directoria de scan + avaliação pinhole (`scan-directory.ts`, `dataset-eval.ts`, testados com um scan sintético escrito e lido do disco), protocolo e README. **Licenças não afirmadas** (marcadas UNVERIFIED); **os datasets não foram descarregados** (política de rede). Nenhum número DTU/ETH3D existe.
+
+### 11.6 Dependências externas que continuam a bloquear a decisão de aceitação
+1. DTU/ETH3D (rede) · 2. fotografias reais de objectos com contorno de referência em fundos reais variados · 3. anotação humana independente de peças · 4. revisão visual por pessoa independente · 5. GPU real e orçamento por dispositivo · 6. (opcional) SAM de produção no servidor: o encoder ViT-B tem 359 MB e não serve no navegador.
+
+### 11.7 Ambiente
+`npm test`: 3 falhas, as mesmas de sempre (`spatial-persistence-failures` ×2, `spatial-review-binding-transition`), falham igualmente sem as minhas alterações porque o contentor corre como root. `npm run build` passa.

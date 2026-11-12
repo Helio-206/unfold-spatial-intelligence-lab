@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { RealityHost } from '../src/living/reality/host';
+import { encodeMask } from '../src/living/reality/evidence';
 import { evidenceFromRenders, solid, ORBIT6 } from './helpers/reality-fixtures';
 
 const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => { m.set(k, v); }, removeItem: (k: string) => { m.delete(k); }, raw: m }; };
@@ -67,4 +68,11 @@ describe('refinamento de poses assumidas na criação', () => {
     const g = await new RealityHost(null).create(given, 'G');
     expect(g.entry.record.versions[0]!.evidence.views.map((v) => v.azimuthDeg)).toEqual(given.views.map((v) => v.azimuthDeg));
   }, 240_000);
+
+  it('vistas inconsistentes entre si (um contorno errado esvazia o casco): recusa com código claro em vez de um erro opaco do plano', async () => {
+    const ev = evidenceFromRenders(gt, ORBIT6), res = ev.res;
+    const blob = (x0: number) => { const m = new Uint8Array(res * res); for (let y = 40; y < 90; y++) for (let x = x0; x < x0 + 20; x++) m[y * res + x] = 1; return encodeMask(m); };
+    const broken = { ...ev, views: ev.views.map((v, i) => ({ ...v, maskRle: blob(i % 2 ? 4 : res - 24) })) }; // silhouettes that cannot belong to one object
+    await expect(new RealityHost(null).create(broken, 'Vazio')).rejects.toMatchObject({ code: 'REALITY_EMPTY_RECONSTRUCTION' });
+  });
 });

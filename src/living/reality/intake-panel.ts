@@ -235,7 +235,7 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
     else if (act === 'build' && result?.evidence && !busy) {
       busy = true; paint();
       abort = new AbortController();
-      void deps.host.create(result.evidence, title(), abort.signal).then((r) => { if (!disposed) deps.onDone({ sha256: r.sha256, plan: r.plan, title: r.plan.title }); }).catch((e) => { if (disposed || (e as DOMException)?.name === 'AbortError') return; problem = 'A reconstrução falhou. Nada foi construído.'; busy = false; paint(); });
+      void deps.host.create(result.evidence, title(), abort.signal).then((r) => { if (!disposed) deps.onDone({ sha256: r.sha256, plan: r.plan, title: r.plan.title }); }).catch((e) => { if (disposed || (e as DOMException)?.name === 'AbortError') return; problem = (e as { code?: string })?.code === 'REALITY_EMPTY_RECONSTRUCTION' ? 'As vistas não são consistentes entre si: o casco ficou vazio. Quase de certeza um ou mais contornos estão errados (ou a ordem das imagens não é a da volta). Abra «Ajustar contorno» nas vistas marcadas e volte a analisar. Nada foi construído.' : 'A reconstrução falhou. Nada foi construído.'; busy = false; paint(); });
     }
   };
   const onChange = (event: Event) => {

@@ -1,0 +1,166 @@
+{
+  "frozenAt": "2026-11-12",
+  "rule": "sha256('<dataset>:<scan>')[0] % 2 === 0 -> development, else acceptance. A pure function of the name: no scan can be moved after results are seen.",
+  "protocol": [
+    "Choose every parameter on development scans only.",
+    "Evaluate acceptance scans once per frozen configuration; report every acceptance scan, including the bad ones.",
+    "Never copy an acceptance scan into development, never re-roll the rule.",
+    "Licences are NOT asserted here: they are recorded in each scan's meta.json by whoever downloads the data, from the source page, and checked before any redistribution."
+  ],
+  "datasets": {
+    "DTU": {
+      "listProvenance": "Standard DTU evaluation scans used by MVS benchmarks; list written from the public benchmark description, to be checked against the downloaded archive.",
+      "licence": "UNVERIFIED — read the licence on the dataset page before download and record it in meta.json",
+      "access": "NOT DOWNLOADED: outbound network policy of the build environment blocks the dataset hosts; see scripts/datasets/README.md",
+      "scans": [
+        {
+          "scan": "scan1",
+          "split": "development"
+        },
+        {
+          "scan": "scan4",
+          "split": "acceptance"
+        },
+        {
+          "scan": "scan9",
+          "split": "development"
+        },
+        {
+          "scan": "scan10",
+          "split": "acceptance"
+        },
+        {
+          "scan": "scan11",
+          "split": "acceptance"
+        },
+        {
+          "scan": "scan12",
+          "split": "acceptance"
+        },
+        {
+          "scan": "scan13",
+          "split": "acceptance"
+        },
+        {
+          "scan": "scan15",
+          "split": "development"
+        },
+        {
+          "scan": "scan23",
+          "split": "acceptance"
+        },
+        {
+          "scan": "scan24",
+          "split": "development"
+        },
+        {
+          "scan": "scan29",
+          "split": "acceptance"
+        },
+        {
+          "scan": "scan32",
+          "split": "development"
+        },
+        {
+          "scan": "scan33",
+          "split": "development"
+        },
+        {
+          "scan": "scan34",
+          "split": "development"
+        },
+        {
+          "scan": "scan48",
+          "split": "development"
+        },
+        {
+          "scan": "scan49",
+          "split": "acceptance"
+        },
+        {
+          "scan": "scan62",
+          "split": "acceptance"
+        },
+        {
+          "scan": "scan75",
+          "split": "development"
+        },
+        {
+          "scan": "scan77",
+          "split": "development"
+        },
+        {
+          "scan": "scan110",
+          "split": "acceptance"
+        },
+        {
+          "scan": "scan114",
+          "split": "acceptance"
+        },
+        {
+          "scan": "scan118",
+          "split": "acceptance"
+        }
+      ]
+    },
+    "ETH3D": {
+      "listProvenance": "ETH3D high-resolution multi-view training scenes (reference laser scans available); list written from the public benchmark description, to be checked against the downloaded archive.",
+      "licence": "UNVERIFIED — read the licence on the dataset page before download and record it in meta.json",
+      "access": "NOT DOWNLOADED: outbound network policy of the build environment blocks the dataset hosts; see scripts/datasets/README.md",
+      "scans": [
+        {
+          "scan": "courtyard",
+          "split": "development"
+        },
+        {
+          "scan": "delivery_area",
+          "split": "acceptance"
+        },
+        {
+          "scan": "electro",
+          "split": "development"
+        },
+        {
+          "scan": "facade",
+          "split": "acceptance"
+        },
+        {
+          "scan": "kicker",
+          "split": "development"
+        },
+        {
+          "scan": "meadow",
+          "split": "acceptance"
+        },
+        {
+          "scan": "office",
+          "split": "acceptance"
+        },
+        {
+          "scan": "pipes",
+          "split": "acceptance"
+        },
+        {
+          "scan": "playground",
+          "split": "acceptance"
+        },
+        {
+          "scan": "relief",
+          "split": "development"
+        },
+        {
+          "scan": "relief_2",
+          "split": "development"
+        },
+        {
+          "scan": "terrace",
+          "split": "acceptance"
+        },
+        {
+          "scan": "terrains",
+          "split": "development"
+        }
+      ]
+    }
+  }
+}

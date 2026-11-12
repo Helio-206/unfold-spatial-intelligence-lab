@@ -1,0 +1,960 @@
+{
+  "generatedBy": "scripts/benchmark/product-eval-cached.ts",
+  "note": "Product automatic-outline path on cached composites (renders over real photographs), fidelity class from the product assessment. badGeometry = hull chamfer > 6% of the object diagonal.",
+  "summary": {
+    "fixed": {
+      "assets": 14,
+      "refused": 0,
+      "medianChamferPct": 5.075,
+      "medianSegIoU": 0.772,
+      "badGeometryOver6pct": 1,
+      "partiallyVerified": 12,
+      "badButPartiallyVerified": 1,
+      "withToleranceStated": 0
+    },
+    "varied": {
+      "assets": 14,
+      "refused": 2,
+      "medianChamferPct": 3.878,
+      "medianSegIoU": 0.638,
+      "badGeometryOver6pct": 3,
+      "partiallyVerified": 3,
+      "badButPartiallyVerified": 0,
+      "withToleranceStated": 0
+    },
+    "degraded": {
+      "assets": 14,
+      "refused": 3,
+      "medianChamferPct": 4.35,
+      "medianSegIoU": 0.62,
+      "badGeometryOver6pct": 2,
+      "partiallyVerified": 1,
+      "badButPartiallyVerified": 0,
+      "withToleranceStated": 0
+    }
+  },
+  "rows": [
+    {
+      "id": "ToyCar",
+      "split": "development",
+      "cond": "fixed",
+      "methods": [
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background"
+      ],
+      "segIoUMean": 0.872,
+      "wrongViews": 0,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 5.332,
+      "fidelityClass": "partially_verified",
+      "toleranceStated": false
+    },
+    {
+      "id": "ToyCar",
+      "split": "development",
+      "cond": "varied",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network"
+      ],
+      "segIoUMean": 0.62,
+      "wrongViews": 4,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 6.844,
+      "fidelityClass": "unvalidated",
+      "toleranceStated": false
+    },
+    {
+      "id": "ToyCar",
+      "split": "development",
+      "cond": "degraded",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        null,
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.471,
+      "wrongViews": 4,
+      "refusedViews": 1,
+      "status": "refused",
+      "refusals": [
+        "MASK_UNRELIABLE"
+      ]
+    },
+    {
+      "id": "Lantern",
+      "split": "development",
+      "cond": "fixed",
+      "methods": [
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background"
+      ],
+      "segIoUMean": 0.418,
+      "wrongViews": 8,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 3.98,
+      "fidelityClass": "unvalidated",
+      "toleranceStated": false
+    },
+    {
+      "id": "Lantern",
+      "split": "development",
+      "cond": "varied",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.101,
+      "wrongViews": 8,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 17.255,
+      "fidelityClass": "unvalidated",
+      "toleranceStated": false
+    },
+    {
+      "id": "Lantern",
+      "split": "development",
+      "cond": "degraded",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.111,
+      "wrongViews": 8,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 10.38,
+      "fidelityClass": "unvalidated",
+      "toleranceStated": false
+    },
+    {
+      "id": "BoomBox",
+      "split": "development",
+      "cond": "fixed",
+      "methods": [
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background"
+      ],
+      "segIoUMean": 0.952,
+      "wrongViews": 0,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 1.561,
+      "fidelityClass": "partially_verified",
+      "toleranceStated": false
+    },
+    {
+      "id": "BoomBox",
+      "split": "development",
+      "cond": "varied",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.661,
+      "wrongViews": 5,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 4.854,
+      "fidelityClass": "unvalidated",
+      "toleranceStated": false
+    },
+    {
+      "id": "BoomBox",
+      "split": "development",
+      "cond": "degraded",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.657,
+      "wrongViews": 7,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 4.628,
+      "fidelityClass": "unvalidated",
+      "toleranceStated": false
+    },
+    {
+      "id": "WaterBottle",
+      "split": "development",
+      "cond": "fixed",
+      "methods": [
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background"
+      ],
+      "segIoUMean": 0.927,
+      "wrongViews": 0,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 1.62,
+      "fidelityClass": "partially_verified",
+      "toleranceStated": false
+    },
+    {
+      "id": "WaterBottle",
+      "split": "development",
+      "cond": "varied",
+      "methods": [
+        "classical-colour",
+        "salient-network+graphcut",
+        null,
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        null,
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.347,
+      "wrongViews": 5,
+      "refusedViews": 2,
+      "status": "refused",
+      "refusals": [
+        "MASK_UNRELIABLE"
+      ]
+    },
+    {
+      "id": "WaterBottle",
+      "split": "development",
+      "cond": "degraded",
+      "methods": [
+        null,
+        "salient-network+graphcut",
+        "classical-colour",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.477,
+      "wrongViews": 5,
+      "refusedViews": 1,
+      "status": "refused",
+      "refusals": [
+        "MASK_UNRELIABLE"
+      ]
+    },
+    {
+      "id": "SheenChair",
+      "split": "development",
+      "cond": "fixed",
+      "methods": [
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background"
+      ],
+      "segIoUMean": 0.738,
+      "wrongViews": 6,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 5.143,
+      "fidelityClass": "partially_verified",
+      "toleranceStated": false
+    },
+    {
+      "id": "SheenChair",
+      "split": "development",
+      "cond": "varied",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.595,
+      "wrongViews": 6,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 3.229,
+      "fidelityClass": "unvalidated",
+      "toleranceStated": false
+    },
+    {
+      "id": "SheenChair",
+      "split": "development",
+      "cond": "degraded",
+      "methods": [
+        "salient-network+graphcut",
+        "classical-colour",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.599,
+      "wrongViews": 5,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 3.018,
+      "fidelityClass": "unvalidated",
+      "toleranceStated": false
+    },
+    {
+      "id": "CesiumMilkTruck",
+      "split": "development",
+      "cond": "fixed",
+      "methods": [
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background"
+      ],
+      "segIoUMean": 0.772,
+      "wrongViews": 2,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 5.598,
+      "fidelityClass": "partially_verified",
+      "toleranceStated": false
+    },
+    {
+      "id": "CesiumMilkTruck",
+      "split": "development",
+      "cond": "varied",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.851,
+      "wrongViews": 2,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 2.777,
+      "fidelityClass": "partially_verified",
+      "toleranceStated": false
+    },
+    {
+      "id": "CesiumMilkTruck",
+      "split": "development",
+      "cond": "degraded",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.766,
+      "wrongViews": 5,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 3.457,
+      "fidelityClass": "unvalidated",
+      "toleranceStated": false
+    },
+    {
+      "id": "AntiqueCamera",
+      "split": "acceptance",
+      "cond": "fixed",
+      "methods": [
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background"
+      ],
+      "segIoUMean": 0.512,
+      "wrongViews": 8,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 6.139,
+      "fidelityClass": "partially_verified",
+      "toleranceStated": false
+    },
+    {
+      "id": "AntiqueCamera",
+      "split": "acceptance",
+      "cond": "varied",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.129,
+      "wrongViews": 8,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 16.785,
+      "fidelityClass": "unvalidated",
+      "toleranceStated": false
+    },
+    {
+      "id": "AntiqueCamera",
+      "split": "acceptance",
+      "cond": "degraded",
+      "methods": [
+        null,
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.139,
+      "wrongViews": 7,
+      "refusedViews": 1,
+      "status": "refused",
+      "refusals": [
+        "MASK_UNRELIABLE"
+      ]
+    },
+    {
+      "id": "Avocado",
+      "split": "acceptance",
+      "cond": "fixed",
+      "methods": [
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background"
+      ],
+      "segIoUMean": 0.841,
+      "wrongViews": 2,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 3.612,
+      "fidelityClass": "partially_verified",
+      "toleranceStated": false
+    },
+    {
+      "id": "Avocado",
+      "split": "acceptance",
+      "cond": "varied",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.638,
+      "wrongViews": 5,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 3.878,
+      "fidelityClass": "unvalidated",
+      "toleranceStated": false
+    },
+    {
+      "id": "Avocado",
+      "split": "acceptance",
+      "cond": "degraded",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "classical-colour",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "classical-colour",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.599,
+      "wrongViews": 4,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 4.414,
+      "fidelityClass": "unvalidated",
+      "toleranceStated": false
+    },
+    {
+      "id": "Corset",
+      "split": "acceptance",
+      "cond": "fixed",
+      "methods": [
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background"
+      ],
+      "segIoUMean": 0.868,
+      "wrongViews": 2,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 2.817,
+      "fidelityClass": "partially_verified",
+      "toleranceStated": false
+    },
+    {
+      "id": "Corset",
+      "split": "acceptance",
+      "cond": "varied",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.597,
+      "wrongViews": 5,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 2.792,
+      "fidelityClass": "unvalidated",
+      "toleranceStated": false
+    },
+    {
+      "id": "Corset",
+      "split": "acceptance",
+      "cond": "degraded",
+      "methods": [
+        "salient-network+graphcut",
+        "classical-colour",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.462,
+      "wrongViews": 8,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 6.111,
+      "fidelityClass": "unvalidated",
+      "toleranceStated": false
+    },
+    {
+      "id": "MaterialsVariantsShoe",
+      "split": "acceptance",
+      "cond": "fixed",
+      "methods": [
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background"
+      ],
+      "segIoUMean": 0.74,
+      "wrongViews": 4,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 5.33,
+      "fidelityClass": "partially_verified",
+      "toleranceStated": false
+    },
+    {
+      "id": "MaterialsVariantsShoe",
+      "split": "acceptance",
+      "cond": "varied",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.74,
+      "wrongViews": 4,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 2.692,
+      "fidelityClass": "unvalidated",
+      "toleranceStated": false
+    },
+    {
+      "id": "MaterialsVariantsShoe",
+      "split": "acceptance",
+      "cond": "degraded",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.732,
+      "wrongViews": 4,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 2.377,
+      "fidelityClass": "unvalidated",
+      "toleranceStated": false
+    },
+    {
+      "id": "GlamVelvetSofa",
+      "split": "acceptance",
+      "cond": "fixed",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "static-background",
+        "salient-network+graphcut",
+        "static-background",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "static-background"
+      ],
+      "segIoUMean": 0.564,
+      "wrongViews": 4,
+      "refusedViews": 0,
+      "status": "plan-error",
+      "error": "SPATIAL_V2_PLAN_INVALID_FIELDS (parts 0)"
+    },
+    {
+      "id": "GlamVelvetSofa",
+      "split": "acceptance",
+      "cond": "varied",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.902,
+      "wrongViews": 1,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 2.668,
+      "fidelityClass": "partially_verified",
+      "toleranceStated": false
+    },
+    {
+      "id": "GlamVelvetSofa",
+      "split": "acceptance",
+      "cond": "degraded",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.885,
+      "wrongViews": 2,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 2.703,
+      "fidelityClass": "partially_verified",
+      "toleranceStated": false
+    },
+    {
+      "id": "ChairDamaskPurplegold",
+      "split": "acceptance",
+      "cond": "fixed",
+      "methods": [
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background"
+      ],
+      "segIoUMean": 0.704,
+      "wrongViews": 8,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 5.075,
+      "fidelityClass": "partially_verified",
+      "toleranceStated": false
+    },
+    {
+      "id": "ChairDamaskPurplegold",
+      "split": "acceptance",
+      "cond": "varied",
+      "methods": [
+        "salient-network+graphcut",
+        null,
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.499,
+      "wrongViews": 6,
+      "refusedViews": 1,
+      "status": "refused",
+      "refusals": [
+        "MASK_UNRELIABLE"
+      ]
+    },
+    {
+      "id": "ChairDamaskPurplegold",
+      "split": "acceptance",
+      "cond": "degraded",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.62,
+      "wrongViews": 6,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 2.916,
+      "fidelityClass": "unvalidated",
+      "toleranceStated": false
+    },
+    {
+      "id": "IridescenceLamp",
+      "split": "acceptance",
+      "cond": "fixed",
+      "methods": [
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background",
+        "static-background"
+      ],
+      "segIoUMean": 0.731,
+      "wrongViews": 8,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 5.132,
+      "fidelityClass": "partially_verified",
+      "toleranceStated": false
+    },
+    {
+      "id": "IridescenceLamp",
+      "split": "acceptance",
+      "cond": "varied",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.661,
+      "wrongViews": 4,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 3.504,
+      "fidelityClass": "unvalidated",
+      "toleranceStated": false
+    },
+    {
+      "id": "IridescenceLamp",
+      "split": "acceptance",
+      "cond": "degraded",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.626,
+      "wrongViews": 6,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 4.379,
+      "fidelityClass": "unvalidated",
+      "toleranceStated": false
+    },
+    {
+      "id": "CarConcept",
+      "split": "acceptance",
+      "cond": "fixed",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.913,
+      "wrongViews": 2,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 4.195,
+      "fidelityClass": "partially_verified",
+      "toleranceStated": false
+    },
+    {
+      "id": "CarConcept",
+      "split": "acceptance",
+      "cond": "varied",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.909,
+      "wrongViews": 1,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 4.259,
+      "fidelityClass": "partially_verified",
+      "toleranceStated": false
+    },
+    {
+      "id": "CarConcept",
+      "split": "acceptance",
+      "cond": "degraded",
+      "methods": [
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut",
+        "salient-network+graphcut"
+      ],
+      "segIoUMean": 0.896,
+      "wrongViews": 2,
+      "refusedViews": 0,
+      "status": "reconstructed",
+      "chamferPct": 4.35,
+      "fidelityClass": "unvalidated",
+      "toleranceStated": false
+    }
+  ]
+}

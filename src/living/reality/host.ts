@@ -1,7 +1,7 @@
 import type { SpatialPlanV2 } from '../../universal-spatial/contracts-v2';
 import type { StorageLike } from '../spatial-space/store';
 import { assessReconstruction, type RealityAssessment } from './assessment';
-import type { RealityEvidence } from './evidence';
+import { RealityEvidenceError, type RealityEvidence } from './evidence';
 import { inlineCompute, replayInline, type RealityCompute } from './compute';
 import type { RealityModel } from './model';
 import { planFromModel } from './plan';
@@ -31,7 +31,10 @@ export class RealityHost {
   /** A new reconstruction from fresh evidence. Not persisted until the Space is saved. */
   async create(evidence: RealityEvidence, title: string, signal?: AbortSignal): Promise<{ sha256: string; plan: SpatialPlanV2; entry: RealityEntry }> {
     const poses = await this.compute.refinePoses(evidence, signal), refined = poses.evidence;
-    const record = await newRecord(poses.applied ? refined : poses.note ? { ...evidence, assumptions: [...evidence.assumptions, poses.note].slice(0, 16) } : evidence), model = await this.compute.replay(record, 0, signal), plan = planFromModel(model, record.sourceSha256, title);
+    const record = await newRecord(poses.applied ? refined : poses.note ? { ...evidence, assumptions: [...evidence.assumptions, poses.note].slice(0, 16) } : evidence), model = await this.compute.replay(record, 0, signal);
+    // Silhouettes that cannot belong to one object (a wrong outline, a wrong order) carve the hull to nothing: say so, instead of letting the plan builder fail opaquely.
+    if (!model.parts.length) throw new RealityEvidenceError('REALITY_EMPTY_RECONSTRUCTION', 'as vistas não são consistentes entre si: o casco ficou vazio');
+    const plan = planFromModel(model, record.sourceSha256, title);
     const entry: RealityEntry = { record, model, persisted: false };
     this.entries.set(record.sourceSha256, entry);
     return { sha256: record.sourceSha256, plan, entry };
