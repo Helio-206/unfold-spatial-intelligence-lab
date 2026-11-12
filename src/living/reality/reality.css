@@ -1,12 +1,13 @@
 /* Reality Engine panels (outline editor). Tokens only; no shadows, no gradients; mono for what is measured. */
-.rl-ed { pointer-events: auto; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: var(--space-3); width: min(1120px, 100%); height: min(88dvh, 780px); padding: var(--space-4); background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-lg); color: var(--ink); }
+.rl-ed { pointer-events: auto; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: var(--space-3); width: min(1120px, 100%); height: min(calc(100dvh - 150px), 780px); /* leaves room for the dock under the dialog */ padding: var(--space-4); background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-lg); color: var(--ink); }
 .rl-ed *, .rl-ed *::before, .rl-ed *::after { box-sizing: border-box; }
 .rl-ed-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
 .rl-ed-head h1 { margin: 0; font-size: var(--type-title-size); line-height: var(--type-title-line); font-weight: 600; letter-spacing: var(--type-title-tracking); }
 .rl-ed-sub { color: var(--ink-muted); font: 12px/16px var(--font-mono); }
-.rl-ed-body { display: grid; grid-template-columns: 56px minmax(0, 1fr) 248px; gap: var(--space-3); min-height: 0; }
-.rl-ed-tools { display: flex; flex-direction: column; gap: var(--space-2); align-items: stretch; }
-.rl-ed-tools hr { width: 100%; border: 0; border-top: 1px solid var(--line); margin: var(--space-1) 0; }
+.rl-ed-body { display: grid; grid-template-columns: auto minmax(0, 1fr) 248px; gap: var(--space-3); min-height: 0; }
+.rl-ed-tools { display: flex; flex-direction: column; flex-wrap: wrap; gap: var(--space-2); align-items: stretch; align-content: flex-start; height: 100%; min-height: 0; overflow-y: auto; } /* tools wrap into further columns when the window is short, never over the footer */
+.rl-ed-tools > .rl-tool { width: 44px; flex: 0 0 auto; }
+.rl-ed-tools hr { width: 44px; flex: 0 0 auto; border: 0; border-top: 1px solid var(--line); margin: var(--space-1) 0; }
 .rl-tool { display: grid; place-items: center; width: 56px; height: 44px; padding: 0; border: 1px solid var(--ink-muted); border-radius: var(--radius-sm); background: transparent; color: var(--ink); cursor: pointer; }
 .rl-tool svg { width: 20px; height: 20px; stroke: currentColor; fill: none; pointer-events: none; }
 .rl-tool:hover:not(:disabled) { border-color: var(--ink); }
@@ -44,4 +45,4 @@
 .rl-ed-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .rl-keys { font: 12px/18px var(--font-mono); color: var(--ink-muted); }
 .rl-keys kbd { font: inherit; padding: 0 5px; border: 1px solid var(--ink-muted); border-radius: 3px; color: var(--ink); }
-@media (max-width: 900px) { .rl-ed { height: min(94dvh, 900px); } .rl-ed-body { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr) auto; } .rl-ed-tools { flex-direction: row; flex-wrap: wrap; } .rl-ed-tools hr { display: none; } .rl-tool { width: 44px; } .rl-ed-side { max-height: 30dvh; } }
+@media (max-width: 900px) { .rl-ed { height: auto; max-height: calc(100dvh - 130px); overflow-y: auto; grid-template-rows: auto auto auto; } .rl-ed-body { grid-template-columns: 1fr; grid-template-rows: auto minmax(260px, 46dvh) auto; } .rl-ed-tools { flex-direction: row; flex-wrap: wrap; height: auto; overflow-y: visible; } .rl-ed-tools hr { display: none; } .rl-ed-tools > .rl-tool { width: 44px; } .rl-ed-side { max-height: none; overflow: visible; } }

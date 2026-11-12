@@ -1,0 +1,736 @@
+{
+  "note": "Voxel-surface chamfer (% of object diagonal, translation-aligned) of the visual hull vs photo-consistency carving variants. Renders, exact alpha masks, 8 turntable views.",
+  "fov": 12,
+  "summary": {
+    "hull": {
+      "development": {
+        "median": 1.999,
+        "mean": 1.955
+      },
+      "acceptance": {
+        "median": 2.077,
+        "mean": 2.03
+      },
+      "all": {
+        "median": 2.003,
+        "mean": 1.998
+      }
+    },
+    "thr10": {
+      "development": {
+        "median": 2.025,
+        "mean": 1.902
+      },
+      "acceptance": {
+        "median": 2.058,
+        "mean": 2.006
+      },
+      "all": {
+        "median": 2.025,
+        "mean": 1.961
+      }
+    },
+    "thr14": {
+      "development": {
+        "median": 2.004,
+        "mean": 1.904
+      },
+      "acceptance": {
+        "median": 2.073,
+        "mean": 2.02
+      },
+      "all": {
+        "median": 2.004,
+        "mean": 1.97
+      }
+    },
+    "thr20": {
+      "development": {
+        "median": 2,
+        "mean": 1.909
+      },
+      "acceptance": {
+        "median": 2.077,
+        "mean": 2.03
+      },
+      "all": {
+        "median": 2.024,
+        "mean": 1.978
+      }
+    },
+    "thr14-m2": {
+      "development": {
+        "median": 2.047,
+        "mean": 1.91
+      },
+      "acceptance": {
+        "median": 2.042,
+        "mean": 1.986
+      },
+      "all": {
+        "median": 2.042,
+        "mean": 1.953
+      }
+    },
+    "thr14-p1": {
+      "development": {
+        "median": 2.004,
+        "mean": 1.934
+      },
+      "acceptance": {
+        "median": 2.072,
+        "mean": 2.021
+      },
+      "all": {
+        "median": 2.004,
+        "mean": 1.984
+      }
+    },
+    "thr28": {
+      "development": {
+        "median": 1.999,
+        "mean": 1.929
+      },
+      "acceptance": {
+        "median": 2.077,
+        "mean": 2.032
+      },
+      "all": {
+        "median": 2.021,
+        "mean": 1.988
+      }
+    }
+  },
+  "rows": [
+    {
+      "id": "ToyCar",
+      "split": "development",
+      "hull": {
+        "chamferPct": 4.072,
+        "accuracyPct": 4.363,
+        "completenessPct": 3.781
+      },
+      "thr10": {
+        "chamferPct": 3.512,
+        "accuracyPct": 3.926,
+        "completenessPct": 3.098,
+        "removedShare": 0.0582
+      },
+      "thr14": {
+        "chamferPct": 3.612,
+        "accuracyPct": 4.024,
+        "completenessPct": 3.201,
+        "removedShare": 0.0375
+      },
+      "thr20": {
+        "chamferPct": 3.783,
+        "accuracyPct": 4.164,
+        "completenessPct": 3.402,
+        "removedShare": 0.0177
+      },
+      "thr14-m2": {
+        "chamferPct": 3.256,
+        "accuracyPct": 3.726,
+        "completenessPct": 2.787,
+        "removedShare": 0.076
+      },
+      "thr14-p1": {
+        "chamferPct": 3.885,
+        "accuracyPct": 4.226,
+        "completenessPct": 3.543,
+        "removedShare": 0.0202
+      },
+      "thr28": {
+        "chamferPct": 3.925,
+        "accuracyPct": 4.269,
+        "completenessPct": 3.581,
+        "removedShare": 0.0061
+      }
+    },
+    {
+      "id": "Lantern",
+      "split": "development",
+      "hull": {
+        "chamferPct": 1.324,
+        "accuracyPct": 1.187,
+        "completenessPct": 1.461
+      },
+      "thr10": {
+        "chamferPct": 1.324,
+        "accuracyPct": 1.187,
+        "completenessPct": 1.46,
+        "removedShare": 0.0007
+      },
+      "thr14": {
+        "chamferPct": 1.324,
+        "accuracyPct": 1.187,
+        "completenessPct": 1.461,
+        "removedShare": 0
+      },
+      "thr20": {
+        "chamferPct": 1.324,
+        "accuracyPct": 1.187,
+        "completenessPct": 1.461,
+        "removedShare": 0
+      },
+      "thr14-m2": {
+        "chamferPct": 1.34,
+        "accuracyPct": 1.204,
+        "completenessPct": 1.477,
+        "removedShare": 0.0099
+      },
+      "thr14-p1": {
+        "chamferPct": 1.324,
+        "accuracyPct": 1.187,
+        "completenessPct": 1.461,
+        "removedShare": 0
+      },
+      "thr28": {
+        "chamferPct": 1.324,
+        "accuracyPct": 1.187,
+        "completenessPct": 1.461,
+        "removedShare": 0
+      }
+    },
+    {
+      "id": "BoomBox",
+      "split": "development",
+      "hull": {
+        "chamferPct": 1.098,
+        "accuracyPct": 1.156,
+        "completenessPct": 1.041
+      },
+      "thr10": {
+        "chamferPct": 1.1,
+        "accuracyPct": 1.16,
+        "completenessPct": 1.041,
+        "removedShare": 0.0021
+      },
+      "thr14": {
+        "chamferPct": 1.098,
+        "accuracyPct": 1.155,
+        "completenessPct": 1.042,
+        "removedShare": 0.0007
+      },
+      "thr20": {
+        "chamferPct": 1.096,
+        "accuracyPct": 1.153,
+        "completenessPct": 1.038,
+        "removedShare": 0.0003
+      },
+      "thr14-m2": {
+        "chamferPct": 1.125,
+        "accuracyPct": 1.195,
+        "completenessPct": 1.056,
+        "removedShare": 0.0053
+      },
+      "thr14-p1": {
+        "chamferPct": 1.097,
+        "accuracyPct": 1.154,
+        "completenessPct": 1.041,
+        "removedShare": 0.0006
+      },
+      "thr28": {
+        "chamferPct": 1.097,
+        "accuracyPct": 1.154,
+        "completenessPct": 1.039,
+        "removedShare": 0.0001
+      }
+    },
+    {
+      "id": "WaterBottle",
+      "split": "development",
+      "hull": {
+        "chamferPct": 1.139,
+        "accuracyPct": 1.236,
+        "completenessPct": 1.042
+      },
+      "thr10": {
+        "chamferPct": 1.354,
+        "accuracyPct": 1.524,
+        "completenessPct": 1.185,
+        "removedShare": 0.0173
+      },
+      "thr14": {
+        "chamferPct": 1.293,
+        "accuracyPct": 1.439,
+        "completenessPct": 1.147,
+        "removedShare": 0.0075
+      },
+      "thr20": {
+        "chamferPct": 1.16,
+        "accuracyPct": 1.263,
+        "completenessPct": 1.056,
+        "removedShare": 0.0005
+      },
+      "thr14-m2": {
+        "chamferPct": 1.548,
+        "accuracyPct": 1.79,
+        "completenessPct": 1.305,
+        "removedShare": 0.0222
+      },
+      "thr14-p1": {
+        "chamferPct": 1.208,
+        "accuracyPct": 1.325,
+        "completenessPct": 1.091,
+        "removedShare": 0.0052
+      },
+      "thr28": {
+        "chamferPct": 1.139,
+        "accuracyPct": 1.236,
+        "completenessPct": 1.042,
+        "removedShare": 0
+      }
+    },
+    {
+      "id": "SheenChair",
+      "split": "development",
+      "hull": {
+        "chamferPct": 1.999,
+        "accuracyPct": 2.009,
+        "completenessPct": 1.989
+      },
+      "thr10": {
+        "chamferPct": 2.025,
+        "accuracyPct": 2.037,
+        "completenessPct": 2.014,
+        "removedShare": 0.0035
+      },
+      "thr14": {
+        "chamferPct": 2.004,
+        "accuracyPct": 2.015,
+        "completenessPct": 1.994,
+        "removedShare": 0.0012
+      },
+      "thr20": {
+        "chamferPct": 2,
+        "accuracyPct": 2.01,
+        "completenessPct": 1.989,
+        "removedShare": 0.0003
+      },
+      "thr14-m2": {
+        "chamferPct": 2.047,
+        "accuracyPct": 2.06,
+        "completenessPct": 2.034,
+        "removedShare": 0.0098
+      },
+      "thr14-p1": {
+        "chamferPct": 2.004,
+        "accuracyPct": 2.014,
+        "completenessPct": 1.993,
+        "removedShare": 0.0008
+      },
+      "thr28": {
+        "chamferPct": 1.999,
+        "accuracyPct": 2.009,
+        "completenessPct": 1.989,
+        "removedShare": 0.0002
+      }
+    },
+    {
+      "id": "CesiumMilkTruck",
+      "split": "development",
+      "hull": {
+        "chamferPct": 2.098,
+        "accuracyPct": 2.02,
+        "completenessPct": 2.177
+      },
+      "thr10": {
+        "chamferPct": 2.097,
+        "accuracyPct": 2.047,
+        "completenessPct": 2.147,
+        "removedShare": 0.0137
+      },
+      "thr14": {
+        "chamferPct": 2.093,
+        "accuracyPct": 2.027,
+        "completenessPct": 2.159,
+        "removedShare": 0.0083
+      },
+      "thr20": {
+        "chamferPct": 2.09,
+        "accuracyPct": 2.015,
+        "completenessPct": 2.165,
+        "removedShare": 0.0052
+      },
+      "thr14-m2": {
+        "chamferPct": 2.143,
+        "accuracyPct": 2.092,
+        "completenessPct": 2.194,
+        "removedShare": 0.0173
+      },
+      "thr14-p1": {
+        "chamferPct": 2.084,
+        "accuracyPct": 2.019,
+        "completenessPct": 2.15,
+        "removedShare": 0.0052
+      },
+      "thr28": {
+        "chamferPct": 2.089,
+        "accuracyPct": 2.01,
+        "completenessPct": 2.168,
+        "removedShare": 0.004
+      }
+    },
+    {
+      "id": "AntiqueCamera",
+      "split": "acceptance",
+      "hull": {
+        "chamferPct": 1.186,
+        "accuracyPct": 1.039,
+        "completenessPct": 1.333
+      },
+      "thr10": {
+        "chamferPct": 1.184,
+        "accuracyPct": 1.039,
+        "completenessPct": 1.328,
+        "removedShare": 0.0009
+      },
+      "thr14": {
+        "chamferPct": 1.185,
+        "accuracyPct": 1.04,
+        "completenessPct": 1.331,
+        "removedShare": 0.0002
+      },
+      "thr20": {
+        "chamferPct": 1.186,
+        "accuracyPct": 1.039,
+        "completenessPct": 1.333,
+        "removedShare": 0
+      },
+      "thr14-m2": {
+        "chamferPct": 1.173,
+        "accuracyPct": 1.028,
+        "completenessPct": 1.318,
+        "removedShare": 0.0065
+      },
+      "thr14-p1": {
+        "chamferPct": 1.185,
+        "accuracyPct": 1.04,
+        "completenessPct": 1.331,
+        "removedShare": 0.0002
+      },
+      "thr28": {
+        "chamferPct": 1.186,
+        "accuracyPct": 1.039,
+        "completenessPct": 1.333,
+        "removedShare": 0
+      }
+    },
+    {
+      "id": "Avocado",
+      "split": "acceptance",
+      "hull": {
+        "chamferPct": 1.166,
+        "accuracyPct": 1.107,
+        "completenessPct": 1.225
+      },
+      "thr10": {
+        "chamferPct": 1.09,
+        "accuracyPct": 1.078,
+        "completenessPct": 1.103,
+        "removedShare": 0.0175
+      },
+      "thr14": {
+        "chamferPct": 1.124,
+        "accuracyPct": 1.094,
+        "completenessPct": 1.155,
+        "removedShare": 0.0081
+      },
+      "thr20": {
+        "chamferPct": 1.148,
+        "accuracyPct": 1.102,
+        "completenessPct": 1.194,
+        "removedShare": 0.0027
+      },
+      "thr14-m2": {
+        "chamferPct": 1.074,
+        "accuracyPct": 1.072,
+        "completenessPct": 1.076,
+        "removedShare": 0.0214
+      },
+      "thr14-p1": {
+        "chamferPct": 1.142,
+        "accuracyPct": 1.095,
+        "completenessPct": 1.189,
+        "removedShare": 0.0048
+      },
+      "thr28": {
+        "chamferPct": 1.162,
+        "accuracyPct": 1.105,
+        "completenessPct": 1.22,
+        "removedShare": 0.0005
+      }
+    },
+    {
+      "id": "Corset",
+      "split": "acceptance",
+      "hull": {
+        "chamferPct": 2.357,
+        "accuracyPct": 2.383,
+        "completenessPct": 2.331
+      },
+      "thr10": {
+        "chamferPct": 2.343,
+        "accuracyPct": 2.371,
+        "completenessPct": 2.316,
+        "removedShare": 0.0104
+      },
+      "thr14": {
+        "chamferPct": 2.356,
+        "accuracyPct": 2.383,
+        "completenessPct": 2.329,
+        "removedShare": 0.0042
+      },
+      "thr20": {
+        "chamferPct": 2.355,
+        "accuracyPct": 2.381,
+        "completenessPct": 2.33,
+        "removedShare": 0.0009
+      },
+      "thr14-m2": {
+        "chamferPct": 2.312,
+        "accuracyPct": 2.331,
+        "completenessPct": 2.293,
+        "removedShare": 0.0299
+      },
+      "thr14-p1": {
+        "chamferPct": 2.358,
+        "accuracyPct": 2.385,
+        "completenessPct": 2.331,
+        "removedShare": 0.0032
+      },
+      "thr28": {
+        "chamferPct": 2.355,
+        "accuracyPct": 2.381,
+        "completenessPct": 2.329,
+        "removedShare": 0.0004
+      }
+    },
+    {
+      "id": "MaterialsVariantsShoe",
+      "split": "acceptance",
+      "hull": {
+        "chamferPct": 1.959,
+        "accuracyPct": 1.681,
+        "completenessPct": 2.236
+      },
+      "thr10": {
+        "chamferPct": 1.906,
+        "accuracyPct": 1.65,
+        "completenessPct": 2.161,
+        "removedShare": 0.0043
+      },
+      "thr14": {
+        "chamferPct": 1.939,
+        "accuracyPct": 1.671,
+        "completenessPct": 2.207,
+        "removedShare": 0.0015
+      },
+      "thr20": {
+        "chamferPct": 1.957,
+        "accuracyPct": 1.68,
+        "completenessPct": 2.234,
+        "removedShare": 0.0005
+      },
+      "thr14-m2": {
+        "chamferPct": 1.858,
+        "accuracyPct": 1.613,
+        "completenessPct": 2.103,
+        "removedShare": 0.0068
+      },
+      "thr14-p1": {
+        "chamferPct": 1.945,
+        "accuracyPct": 1.675,
+        "completenessPct": 2.216,
+        "removedShare": 0.0014
+      },
+      "thr28": {
+        "chamferPct": 1.958,
+        "accuracyPct": 1.681,
+        "completenessPct": 2.235,
+        "removedShare": 0.0002
+      }
+    },
+    {
+      "id": "GlamVelvetSofa",
+      "split": "acceptance",
+      "hull": {
+        "chamferPct": 2.077,
+        "accuracyPct": 1.94,
+        "completenessPct": 2.214
+      },
+      "thr10": {
+        "chamferPct": 2.058,
+        "accuracyPct": 1.943,
+        "completenessPct": 2.172,
+        "removedShare": 0.0086
+      },
+      "thr14": {
+        "chamferPct": 2.073,
+        "accuracyPct": 1.939,
+        "completenessPct": 2.206,
+        "removedShare": 0.0013
+      },
+      "thr20": {
+        "chamferPct": 2.077,
+        "accuracyPct": 1.94,
+        "completenessPct": 2.215,
+        "removedShare": 0.0001
+      },
+      "thr14-m2": {
+        "chamferPct": 2.042,
+        "accuracyPct": 1.93,
+        "completenessPct": 2.154,
+        "removedShare": 0.0062
+      },
+      "thr14-p1": {
+        "chamferPct": 2.072,
+        "accuracyPct": 1.938,
+        "completenessPct": 2.206,
+        "removedShare": 0.001
+      },
+      "thr28": {
+        "chamferPct": 2.077,
+        "accuracyPct": 1.94,
+        "completenessPct": 2.214,
+        "removedShare": 0
+      }
+    },
+    {
+      "id": "ChairDamaskPurplegold",
+      "split": "acceptance",
+      "hull": {
+        "chamferPct": 2.003,
+        "accuracyPct": 2.028,
+        "completenessPct": 1.979
+      },
+      "thr10": {
+        "chamferPct": 1.962,
+        "accuracyPct": 2.007,
+        "completenessPct": 1.918,
+        "removedShare": 0.0723
+      },
+      "thr14": {
+        "chamferPct": 1.989,
+        "accuracyPct": 2.026,
+        "completenessPct": 1.953,
+        "removedShare": 0.0392
+      },
+      "thr20": {
+        "chamferPct": 2.024,
+        "accuracyPct": 2.049,
+        "completenessPct": 1.998,
+        "removedShare": 0.015
+      },
+      "thr14-m2": {
+        "chamferPct": 1.972,
+        "accuracyPct": 2.044,
+        "completenessPct": 1.9,
+        "removedShare": 0.0956
+      },
+      "thr14-p1": {
+        "chamferPct": 1.973,
+        "accuracyPct": 2.003,
+        "completenessPct": 1.943,
+        "removedShare": 0.0239
+      },
+      "thr28": {
+        "chamferPct": 2.021,
+        "accuracyPct": 2.046,
+        "completenessPct": 1.996,
+        "removedShare": 0.0036
+      }
+    },
+    {
+      "id": "IridescenceLamp",
+      "split": "acceptance",
+      "hull": {
+        "chamferPct": 2.572,
+        "accuracyPct": 2.671,
+        "completenessPct": 2.473
+      },
+      "thr10": {
+        "chamferPct": 2.578,
+        "accuracyPct": 2.675,
+        "completenessPct": 2.481,
+        "removedShare": 0.0007
+      },
+      "thr14": {
+        "chamferPct": 2.573,
+        "accuracyPct": 2.672,
+        "completenessPct": 2.475,
+        "removedShare": 0.0001
+      },
+      "thr20": {
+        "chamferPct": 2.572,
+        "accuracyPct": 2.671,
+        "completenessPct": 2.473,
+        "removedShare": 0
+      },
+      "thr14-m2": {
+        "chamferPct": 2.506,
+        "accuracyPct": 2.616,
+        "completenessPct": 2.397,
+        "removedShare": 0.0055
+      },
+      "thr14-p1": {
+        "chamferPct": 2.573,
+        "accuracyPct": 2.671,
+        "completenessPct": 2.474,
+        "removedShare": 0.0001
+      },
+      "thr28": {
+        "chamferPct": 2.572,
+        "accuracyPct": 2.671,
+        "completenessPct": 2.473,
+        "removedShare": 0
+      }
+    },
+    {
+      "id": "CarConcept",
+      "split": "acceptance",
+      "hull": {
+        "chamferPct": 2.919,
+        "accuracyPct": 1.559,
+        "completenessPct": 4.28
+      },
+      "thr10": {
+        "chamferPct": 2.926,
+        "accuracyPct": 1.588,
+        "completenessPct": 4.265,
+        "removedShare": 0.0166
+      },
+      "thr14": {
+        "chamferPct": 2.921,
+        "accuracyPct": 1.572,
+        "completenessPct": 4.271,
+        "removedShare": 0.0086
+      },
+      "thr20": {
+        "chamferPct": 2.919,
+        "accuracyPct": 1.565,
+        "completenessPct": 4.273,
+        "removedShare": 0.0044
+      },
+      "thr14-m2": {
+        "chamferPct": 2.949,
+        "accuracyPct": 1.629,
+        "completenessPct": 4.268,
+        "removedShare": 0.0217
+      },
+      "thr14-p1": {
+        "chamferPct": 2.92,
+        "accuracyPct": 1.565,
+        "completenessPct": 4.275,
+        "removedShare": 0.0059
+      },
+      "thr28": {
+        "chamferPct": 2.922,
+        "accuracyPct": 1.565,
+        "completenessPct": 4.279,
+        "removedShare": 0.002
+      }
+    }
+  ]
+}

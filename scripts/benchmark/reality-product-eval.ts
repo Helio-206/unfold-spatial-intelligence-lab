@@ -37,7 +37,7 @@ const FILL = 0.55, ELEV = 20, TURN = Array.from({ length: 8 }, (_, i) => i * 45)
 const round = (n: number, d = 4) => +n.toFixed(d);
 const iou = (a: Uint8Array, b: Uint8Array) => { let i = 0, u = 0; for (let k = 0; k < a.length; k++) { i += a[k]! & b[k]!; u += a[k]! | b[k]!; } return u ? i / u : 1; };
 
-const vite = await createServer({ server: { host: '127.0.0.1', port: 5398, strictPort: true }, logLevel: 'error' }); await vite.listen();
+const vite = await createServer({ server: { host: '127.0.0.1', port: 5398, strictPort: true, hmr: false, watch: null }, logLevel: 'error' }); // no HMR/watch: a file written during a long run (or a git operation) used to reload the render page mid-evaluation ("Execution context was destroyed") await vite.listen();
 const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH ?? '/usr/bin/google-chrome', args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--no-sandbox'] });
 const page = await browser.newPage({ viewport: { width: 500, height: 400 } });
 await page.goto('http://127.0.0.1:5398/scripts/benchmark/reality-render.html');

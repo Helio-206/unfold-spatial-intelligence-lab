@@ -43,3 +43,9 @@ describe('zoom e deslocamento', () => {
     const v = panBy(fitView(800, 400, 600, 400), 1e6, -1e6, 800, 400, 600, 400); expect(v.tx).toBeLessThanOrEqual(600 - 48); expect(v.ty).toBeGreaterThanOrEqual(48 - 400 * v.scale);
   });
 });
+
+describe('fitView on a canvas smaller than its margin (a narrow phone, a collapsing stage)', () => {
+  it('never returns a zero or negative scale, so no drawing radius or coordinate flips sign', () => {
+    for (const [cw, ch] of [[20, 20], [24, 400], [400, 10], [0, 0]]) { const v = fitView(640, 480, cw, ch, 16); expect(v.scale).toBeGreaterThan(0); expect(Number.isFinite(v.tx) && Number.isFinite(v.ty)).toBe(true); }
+  });
+});

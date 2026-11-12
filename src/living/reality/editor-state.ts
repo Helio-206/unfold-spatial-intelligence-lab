@@ -44,7 +44,7 @@ export function erase(e: Edit, p: Point, radius: number): Edit {
 export type View = { scale: number; tx: number; ty: number };
 export const MIN_ZOOM = 0.25, MAX_ZOOM = 16;
 /** Scale and offset that fit an image of `iw x ih` inside a `cw x ch` viewport with a margin. */
-export function fitView(iw: number, ih: number, cw: number, ch: number, margin = 12): View { const scale = Math.min((cw - 2 * margin) / iw, (ch - 2 * margin) / ih); return { scale, tx: (cw - iw * scale) / 2, ty: (ch - ih * scale) / 2 }; }
+export function fitView(iw: number, ih: number, cw: number, ch: number, margin = 12): View { const scale = Math.max(1e-3, Math.min((cw - 2 * margin) / iw, (ch - 2 * margin) / ih)); return { scale, tx: (cw - iw * scale) / 2, ty: (ch - ih * scale) / 2 }; }
 export const toImage = (v: View, sx: number, sy: number): Point => [(sx - v.tx) / v.scale, (sy - v.ty) / v.scale];
 export const toScreen = (v: View, ix: number, iy: number): Point => [ix * v.scale + v.tx, iy * v.scale + v.ty];
 /** Zoom by `factor` keeping the image point under the screen position (sx, sy) fixed. */

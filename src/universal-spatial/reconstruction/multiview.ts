@@ -306,3 +306,15 @@ export function rasterisePinhole(tris: ReadonlyArray<readonly [Vector3, Vector3,
   }
   return mask;
 }
+
+/**
+ * Perspective camera of an orbit view in the SAME window convention as the orthographic one (window pixel (X, Y), Y growing upward, `half` = half window in length
+ * units, one length unit = one image height measured at the rotation axis). The camera sits at distance D = 1 / (2 tan(fov / 2)) from the frame centre on the
+ * orbit direction, so the axis plane keeps scale 1 image height per unit and `fovDeg` -> 0 converges to the orthographic window.
+ */
+export function orbitPinhole(azimuthDeg: number, elevationDeg: number, fovDeg: number, res: number, half: number, centre: Vector3 = new Vector3()): PinholeCamera {
+  const d = orbitDirection(azimuthDeg, elevationDeg), worldUp = Math.abs(d.y) > 0.98 ? new Vector3(0, 0, 1) : new Vector3(0, 1, 0);
+  const right = new Vector3().crossVectors(worldUp, d).normalize(), up = new Vector3().crossVectors(d, right).normalize(), f = d.clone().multiplyScalar(-1);
+  const D = 1 / (2 * Math.tan((fovDeg * Math.PI) / 360)), pos = centre.clone().addScaledVector(d, D), focal = D * (res / (2 * half));
+  return { fx: focal, fy: focal, cx: res / 2, cy: res / 2, R: [right.x, right.y, right.z, up.x, up.y, up.z, f.x, f.y, f.z], t: [-right.dot(pos), -up.dot(pos), -f.dot(pos)] };
+}

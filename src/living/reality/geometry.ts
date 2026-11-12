@@ -1,7 +1,8 @@
-import { Mesh, MeshPhysicalMaterial, Group, type BufferGeometry } from 'three';
+import { Mesh, MeshPhysicalMaterial, Group, LOD, type BufferGeometry } from 'three';
 import type { SpatialPlanV2 } from '../../universal-spatial/contracts-v2';
 import { compileSpatialPlanV2, type CompiledSpatialPlanV2 } from '../../universal-spatial/geometry-compiler-v2';
 import { partGeometry, type PartMesh, type RealityModel } from './model';
+import { buildLods } from './lod';
 import { displayScale } from './plan';
 
 /**
@@ -10,7 +11,7 @@ import { displayScale } from './plan';
  * the report says so: no silent fallback to a prettier object.
  */
 export const REALITY_TRIANGLE_BUDGET = 160_000;
-export type RealityReport = { engine: 'reality-engine'; status: 'shells' | 'proxies_no_evidence' | 'proxies_over_budget'; sourceSha256: string; components: Array<{ id: string; drawn: 'shell' | 'proxy' | 'none'; triangles: number; observedFraction: number }>; triangles: number };
+export type RealityReport = { engine: 'reality-engine'; status: 'shells' | 'proxies_no_evidence' | 'proxies_over_budget'; sourceSha256: string; components: Array<{ id: string; drawn: 'shell' | 'proxy' | 'none'; triangles: number; observedFraction: number; /** levels of detail with their measured worst vertex displacement, % of the part's diagonal (level 0 = the shell itself) */ lod?: Array<{ level: number; triangles: number; maxDisplacementPct: number }> }>; triangles: number };
 
 export class RealityGeometry {
   private last: RealityReport | null = null;
@@ -36,19 +37,23 @@ export class RealityGeometry {
         report.push({ id: component.id, drawn: 'none', triangles: 0, observedFraction: 0 }); continue;
       }
       if (!group || !part) { report.push({ id: component.id, drawn: 'proxy', triangles: 0, observedFraction: 0 }); continue; }
-      const old = group.children[0]!;
-      const geometry = partGeometry(part);
-      const positions = geometry.getAttribute('position'); for (let i = 0; i < positions.count; i++) positions.setXYZ(i, positions.getX(i) * k, positions.getY(i) * k, positions.getZ(i) * k);
-      positions.needsUpdate = true; geometry.computeBoundingSphere();
-      const material = new MeshPhysicalMaterial({ vertexColors: true, roughness: 0.58, metalness: 0.04, clearcoat: 0.08, clearcoatRoughness: 0.5 });
-      material.name = 'reality:evidence-colour'; material.userData.realityHypothesisColour = true;
+      const old = group.children[0]!, levels = buildLods(part), diag = Math.hypot(...part.size) || 1;
+      // The appearance is the colour the photographs show (shading and highlights already baked in), so the surface is matte and unlit by specular terms: a glossy
+      // coat would invent highlights that no photograph showed. Roughness/metalness are assumptions, declared in the material's userData, not measurements.
+      const material = new MeshPhysicalMaterial({ vertexColors: true, roughness: 0.92, metalness: 0, clearcoat: 0 });
+      material.name = 'reality:evidence-colour'; material.userData.realityHypothesisColour = true; material.userData.realityMaterialBasis = 'assumed-matte (no photographed reflectance)';
       const shell = new Group(); shell.userData = { ...old.userData, spatialSubcomponentKey: component.geometry.key, realityShell: true };
-      const mesh = new Mesh(geometry, material); mesh.castShadow = true; mesh.receiveShadow = true; mesh.userData = { spatialEntityId: component.id, spatialSubcomponentKey: component.geometry.key };
-      shell.add(mesh);
+      const meshes = levels.map((lv) => {
+        const geometry = partGeometry({ ...part, ...lv.mesh } as PartMesh), positions = geometry.getAttribute('position'); for (let i = 0; i < positions.count; i++) positions.setXYZ(i, positions.getX(i) * k, positions.getY(i) * k, positions.getZ(i) * k);
+        positions.needsUpdate = true; geometry.computeBoundingSphere(); this.owned.push(geometry);
+        const mesh = new Mesh(geometry, material); mesh.castShadow = true; mesh.receiveShadow = true; mesh.userData = { spatialEntityId: component.id, spatialSubcomponentKey: component.geometry.key, realityLod: lv.level }; return mesh;
+      });
+      if (meshes.length === 1) shell.add(meshes[0]!);
+      else { const lod = new LOD(), radius = (meshes[0]!.geometry.boundingSphere?.radius ?? 1); lod.userData = { spatialEntityId: component.id }; meshes.forEach((m, i) => lod.addLevel(m, i === 0 ? 0 : radius * 14 * i)); shell.add(lod); }
       group.remove(old); disposeObject(old); group.add(shell); group.children.splice(0, 0, group.children.pop()!);
-      this.owned.push(geometry, material);
+      this.owned.push(material);
       const triangles = part.indices.length / 3; drawnTriangles += triangles;
-      report.push({ id: component.id, drawn: 'shell', triangles, observedFraction: part.observedFraction });
+      report.push({ id: component.id, drawn: 'shell', triangles, observedFraction: part.observedFraction, lod: levels.map((lv) => ({ level: lv.level, triangles: lv.triangles, maxDisplacementPct: +((lv.maxDisplacement / diag) * 100).toFixed(2) })) });
     }
     compiled.root.updateMatrixWorld(true);
     this.last = { engine: 'reality-engine', status: 'shells', sourceSha256: sha, components: report, triangles: drawnTriangles };

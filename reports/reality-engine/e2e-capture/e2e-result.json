@@ -13,6 +13,36 @@
       "detail": "0 vistas recusadas, estratégia silhouette-hull, rotulado automático true"
     },
     {
+      "step": "2b editor acessível (overlay): nomes, contraste ≥ 4.5:1 (texto), alvos ≥ 24 px, região de estado",
+      "verdict": "PASS",
+      "detail": "sem nome 0, contraste fraco nenhum (pior 6.24 «Usar este contorno»), alvos pequenos nenhum"
+    },
+    {
+      "step": "2b editor acessível (compare): nomes, contraste ≥ 4.5:1 (texto), alvos ≥ 24 px, região de estado",
+      "verdict": "PASS",
+      "detail": "sem nome 0, contraste fraco nenhum (pior 6.24 «Usar este contorno»), alvos pequenos nenhum"
+    },
+    {
+      "step": "2c editor por teclado: cada paragem de Tab mostra indicador de foco visível",
+      "verdict": "PASS",
+      "detail": "25 controlos alcançados por Tab, 0 sem indicador de foco"
+    },
+    {
+      "step": "2d editor sem sobreposição nem fuga a 1500×1000",
+      "verdict": "PASS",
+      "detail": "sobreposições nenhuma, fora do diálogo nenhum, scroll horizontal false"
+    },
+    {
+      "step": "2d editor sem sobreposição nem fuga a 1280×680",
+      "verdict": "PASS",
+      "detail": "sobreposições nenhuma, fora do diálogo nenhum, scroll horizontal false"
+    },
+    {
+      "step": "2d editor sem sobreposição nem fuga a 390×800",
+      "verdict": "PASS",
+      "detail": "sobreposições nenhuma, fora do diálogo nenhum, scroll horizontal false"
+    },
+    {
       "step": "2a editor: undo/redo, zoom e modos de visualização operam sem erros",
       "verdict": "PASS",
       "detail": "sobreposição, recorte, antes/depois, desfazer/refazer, zoom"

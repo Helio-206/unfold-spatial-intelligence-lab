@@ -1,0 +1,506 @@
+{
+  "note": "Hull chamfer (% of object diagonal, translation-aligned) with the orthographic assumption vs perspective cameras (oracle FOV / FOV estimated by held-out consistency). Renders, exact alpha masks.",
+  "fov": 40,
+  "candidates": [
+    0,
+    15,
+    25,
+    40,
+    55,
+    70
+  ],
+  "summary": {
+    "development": {
+      "ortho": {
+        "median": 3.03,
+        "mean": 2.528
+      },
+      "oracle": {
+        "median": 2.139,
+        "mean": 2.245
+      },
+      "estimated": {
+        "median": 2.25,
+        "mean": 2.283
+      }
+    },
+    "acceptance": {
+      "ortho": {
+        "median": 3.005,
+        "mean": 2.615
+      },
+      "oracle": {
+        "median": 2.444,
+        "mean": 2.487
+      },
+      "estimated": {
+        "median": 2.742,
+        "mean": 2.514
+      }
+    },
+    "all": {
+      "ortho": {
+        "median": 3.005,
+        "mean": 2.578
+      },
+      "oracle": {
+        "median": 2.327,
+        "mean": 2.383
+      },
+      "estimated": {
+        "median": 2.506,
+        "mean": 2.415
+      }
+    }
+  },
+  "rows": [
+    {
+      "id": "ToyCar",
+      "split": "development",
+      "trueFov": 40,
+      "ortho": {
+        "chamferPct": 4.262,
+        "accuracyPct": 4.317,
+        "completenessPct": 4.208,
+        "loo": 0.8257
+      },
+      "oracle": {
+        "chamferPct": 4.201,
+        "accuracyPct": 4.026,
+        "completenessPct": 4.375,
+        "loo": 0.765
+      },
+      "oracleFovBestDy": {
+        "dy": -6,
+        "chamferPct": 4.198,
+        "accuracyPct": 3.993,
+        "completenessPct": 4.402,
+        "loo": 0.7777
+      },
+      "estimatedFov": 0,
+      "estimatedDy": 0,
+      "estimated": {
+        "chamferPct": 4.262,
+        "accuracyPct": 4.317,
+        "completenessPct": 4.208,
+        "loo": 0.8257
+      }
+    },
+    {
+      "id": "Lantern",
+      "split": "development",
+      "trueFov": 40,
+      "ortho": {
+        "chamferPct": 1.026,
+        "accuracyPct": 0.879,
+        "completenessPct": 1.172,
+        "loo": 0.7343
+      },
+      "oracle": {
+        "chamferPct": 0.997,
+        "accuracyPct": 0.961,
+        "completenessPct": 1.033,
+        "loo": 0.7694
+      },
+      "oracleFovBestDy": {
+        "dy": 0,
+        "chamferPct": 0.997,
+        "accuracyPct": 0.961,
+        "completenessPct": 1.033,
+        "loo": 0.7694
+      },
+      "estimatedFov": 25,
+      "estimatedDy": 2,
+      "estimated": {
+        "chamferPct": 0.983,
+        "accuracyPct": 0.925,
+        "completenessPct": 1.041,
+        "loo": 0.7714
+      }
+    },
+    {
+      "id": "BoomBox",
+      "split": "development",
+      "trueFov": 40,
+      "ortho": {
+        "chamferPct": 1.426,
+        "accuracyPct": 1.349,
+        "completenessPct": 1.503,
+        "loo": 0.8728
+      },
+      "oracle": {
+        "chamferPct": 1.54,
+        "accuracyPct": 1.499,
+        "completenessPct": 1.582,
+        "loo": 0.8225
+      },
+      "oracleFovBestDy": {
+        "dy": 8,
+        "chamferPct": 1.53,
+        "accuracyPct": 1.494,
+        "completenessPct": 1.567,
+        "loo": 0.8335
+      },
+      "estimatedFov": 0,
+      "estimatedDy": 0,
+      "estimated": {
+        "chamferPct": 1.426,
+        "accuracyPct": 1.349,
+        "completenessPct": 1.503,
+        "loo": 0.8728
+      }
+    },
+    {
+      "id": "WaterBottle",
+      "split": "development",
+      "trueFov": 40,
+      "ortho": {
+        "chamferPct": 1.488,
+        "accuracyPct": 1.538,
+        "completenessPct": 1.437,
+        "loo": 0.9266
+      },
+      "oracle": {
+        "chamferPct": 1.379,
+        "accuracyPct": 1.412,
+        "completenessPct": 1.347,
+        "loo": 0.8779
+      },
+      "oracleFovBestDy": {
+        "dy": 6,
+        "chamferPct": 1.486,
+        "accuracyPct": 1.491,
+        "completenessPct": 1.481,
+        "loo": 0.8843
+      },
+      "estimatedFov": 0,
+      "estimatedDy": 0,
+      "estimated": {
+        "chamferPct": 1.488,
+        "accuracyPct": 1.538,
+        "completenessPct": 1.437,
+        "loo": 0.9266
+      }
+    },
+    {
+      "id": "SheenChair",
+      "split": "development",
+      "trueFov": 40,
+      "ortho": {
+        "chamferPct": 3.03,
+        "accuracyPct": 2.807,
+        "completenessPct": 3.252,
+        "loo": 0.752
+      },
+      "oracle": {
+        "chamferPct": 2.139,
+        "accuracyPct": 2.02,
+        "completenessPct": 2.258,
+        "loo": 0.7699
+      },
+      "oracleFovBestDy": {
+        "dy": 6,
+        "chamferPct": 2.25,
+        "accuracyPct": 2.117,
+        "completenessPct": 2.382,
+        "loo": 0.7704
+      },
+      "estimatedFov": 40,
+      "estimatedDy": 6,
+      "estimated": {
+        "chamferPct": 2.25,
+        "accuracyPct": 2.117,
+        "completenessPct": 2.382,
+        "loo": 0.7704
+      }
+    },
+    {
+      "id": "CesiumMilkTruck",
+      "split": "development",
+      "trueFov": 40,
+      "ortho": {
+        "chamferPct": 3.937,
+        "accuracyPct": 4.057,
+        "completenessPct": 3.818,
+        "loo": 0.7703
+      },
+      "oracle": {
+        "chamferPct": 3.214,
+        "accuracyPct": 3.231,
+        "completenessPct": 3.198,
+        "loo": 0.8342
+      },
+      "oracleFovBestDy": {
+        "dy": 4,
+        "chamferPct": 3.291,
+        "accuracyPct": 3.29,
+        "completenessPct": 3.291,
+        "loo": 0.8362
+      },
+      "estimatedFov": 40,
+      "estimatedDy": 4,
+      "estimated": {
+        "chamferPct": 3.291,
+        "accuracyPct": 3.29,
+        "completenessPct": 3.291,
+        "loo": 0.8362
+      }
+    },
+    {
+      "id": "AntiqueCamera",
+      "split": "acceptance",
+      "trueFov": 40,
+      "ortho": {
+        "chamferPct": 1.481,
+        "accuracyPct": 1.205,
+        "completenessPct": 1.756,
+        "loo": 0.7622
+      },
+      "oracle": {
+        "chamferPct": 1.552,
+        "accuracyPct": 1.426,
+        "completenessPct": 1.677,
+        "loo": 0.7563
+      },
+      "oracleFovBestDy": {
+        "dy": 8,
+        "chamferPct": 1.591,
+        "accuracyPct": 1.497,
+        "completenessPct": 1.685,
+        "loo": 0.763
+      },
+      "estimatedFov": 25,
+      "estimatedDy": 4,
+      "estimated": {
+        "chamferPct": 1.519,
+        "accuracyPct": 1.375,
+        "completenessPct": 1.663,
+        "loo": 0.7645
+      }
+    },
+    {
+      "id": "Avocado",
+      "split": "acceptance",
+      "trueFov": 40,
+      "ortho": {
+        "chamferPct": 1.441,
+        "accuracyPct": 1.285,
+        "completenessPct": 1.596,
+        "loo": 0.8719
+      },
+      "oracle": {
+        "chamferPct": 1.44,
+        "accuracyPct": 1.282,
+        "completenessPct": 1.598,
+        "loo": 0.8572
+      },
+      "oracleFovBestDy": {
+        "dy": 6,
+        "chamferPct": 1.47,
+        "accuracyPct": 1.31,
+        "completenessPct": 1.629,
+        "loo": 0.8605
+      },
+      "estimatedFov": 0,
+      "estimatedDy": 0,
+      "estimated": {
+        "chamferPct": 1.441,
+        "accuracyPct": 1.285,
+        "completenessPct": 1.596,
+        "loo": 0.8719
+      }
+    },
+    {
+      "id": "Corset",
+      "split": "acceptance",
+      "trueFov": 40,
+      "ortho": {
+        "chamferPct": 3.181,
+        "accuracyPct": 3.056,
+        "completenessPct": 3.305,
+        "loo": 0.8678
+      },
+      "oracle": {
+        "chamferPct": 3.141,
+        "accuracyPct": 3.1,
+        "completenessPct": 3.183,
+        "loo": 0.8388
+      },
+      "oracleFovBestDy": {
+        "dy": -2,
+        "chamferPct": 3.125,
+        "accuracyPct": 3.082,
+        "completenessPct": 3.168,
+        "loo": 0.8456
+      },
+      "estimatedFov": 0,
+      "estimatedDy": 0,
+      "estimated": {
+        "chamferPct": 3.181,
+        "accuracyPct": 3.056,
+        "completenessPct": 3.305,
+        "loo": 0.8678
+      }
+    },
+    {
+      "id": "MaterialsVariantsShoe",
+      "split": "acceptance",
+      "trueFov": 40,
+      "ortho": {
+        "chamferPct": 2.347,
+        "accuracyPct": 1.91,
+        "completenessPct": 2.783,
+        "loo": 0.7096
+      },
+      "oracle": {
+        "chamferPct": 2.327,
+        "accuracyPct": 1.928,
+        "completenessPct": 2.727,
+        "loo": 0.8001
+      },
+      "oracleFovBestDy": {
+        "dy": 0,
+        "chamferPct": 2.327,
+        "accuracyPct": 1.928,
+        "completenessPct": 2.727,
+        "loo": 0.8001
+      },
+      "estimatedFov": 25,
+      "estimatedDy": 8,
+      "estimated": {
+        "chamferPct": 2.506,
+        "accuracyPct": 2.106,
+        "completenessPct": 2.906,
+        "loo": 0.8121
+      }
+    },
+    {
+      "id": "GlamVelvetSofa",
+      "split": "acceptance",
+      "trueFov": 40,
+      "ortho": {
+        "chamferPct": 3.026,
+        "accuracyPct": 2.768,
+        "completenessPct": 3.284,
+        "loo": 0.6899
+      },
+      "oracle": {
+        "chamferPct": 2.772,
+        "accuracyPct": 2.351,
+        "completenessPct": 3.193,
+        "loo": 0.7796
+      },
+      "oracleFovBestDy": {
+        "dy": 4,
+        "chamferPct": 2.805,
+        "accuracyPct": 2.433,
+        "completenessPct": 3.176,
+        "loo": 0.7888
+      },
+      "estimatedFov": 25,
+      "estimatedDy": 8,
+      "estimated": {
+        "chamferPct": 2.742,
+        "accuracyPct": 2.563,
+        "completenessPct": 2.921,
+        "loo": 0.7896
+      }
+    },
+    {
+      "id": "ChairDamaskPurplegold",
+      "split": "acceptance",
+      "trueFov": 40,
+      "ortho": {
+        "chamferPct": 3.005,
+        "accuracyPct": 2.804,
+        "completenessPct": 3.206,
+        "loo": 0.7568
+      },
+      "oracle": {
+        "chamferPct": 2.129,
+        "accuracyPct": 2.012,
+        "completenessPct": 2.246,
+        "loo": 0.773
+      },
+      "oracleFovBestDy": {
+        "dy": 6,
+        "chamferPct": 2.282,
+        "accuracyPct": 2.158,
+        "completenessPct": 2.407,
+        "loo": 0.7735
+      },
+      "estimatedFov": 40,
+      "estimatedDy": 6,
+      "estimated": {
+        "chamferPct": 2.282,
+        "accuracyPct": 2.158,
+        "completenessPct": 2.407,
+        "loo": 0.7735
+      }
+    },
+    {
+      "id": "IridescenceLamp",
+      "split": "acceptance",
+      "trueFov": 40,
+      "ortho": {
+        "chamferPct": 2.987,
+        "accuracyPct": 2.854,
+        "completenessPct": 3.121,
+        "loo": 0.9123
+      },
+      "oracle": {
+        "chamferPct": 2.444,
+        "accuracyPct": 2.401,
+        "completenessPct": 2.487,
+        "loo": 0.861
+      },
+      "oracleFovBestDy": {
+        "dy": -4,
+        "chamferPct": 2.465,
+        "accuracyPct": 2.424,
+        "completenessPct": 2.505,
+        "loo": 0.8644
+      },
+      "estimatedFov": 0,
+      "estimatedDy": 0,
+      "estimated": {
+        "chamferPct": 2.987,
+        "accuracyPct": 2.854,
+        "completenessPct": 3.121,
+        "loo": 0.9123
+      }
+    },
+    {
+      "id": "CarConcept",
+      "split": "acceptance",
+      "trueFov": 40,
+      "ortho": {
+        "chamferPct": 3.456,
+        "accuracyPct": 2.081,
+        "completenessPct": 4.832,
+        "loo": 0.841
+      },
+      "oracle": {
+        "chamferPct": 4.093,
+        "accuracyPct": 2.114,
+        "completenessPct": 6.072,
+        "loo": 0.8087
+      },
+      "oracleFovBestDy": {
+        "dy": -2,
+        "chamferPct": 4.109,
+        "accuracyPct": 2.107,
+        "completenessPct": 6.11,
+        "loo": 0.8251
+      },
+      "estimatedFov": 0,
+      "estimatedDy": 0,
+      "estimated": {
+        "chamferPct": 3.456,
+        "accuracyPct": 2.081,
+        "completenessPct": 4.832,
+        "loo": 0.841
+      }
+    }
+  ]
+}

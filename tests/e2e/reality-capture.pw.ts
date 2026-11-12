@@ -46,6 +46,7 @@ await maker.close();
 record('0 entradas', files.length === 8, `${files.length} renders de ${asset} sobre a fotografia real ${bgFile}`);
 
 const page = await browser.newPage({ viewport: { width: 1500, height: 1000 } });
+await page.addInitScript('window.__name = (f) => f;'); // tsx wraps named functions with __name; the page has no such helper
 const errors: string[] = []; page.on('pageerror', (e) => errors.push(e.message));
 await page.goto(`http://127.0.0.1:${port}/living?debug-living=1&rm=1`, { waitUntil: 'domcontentloaded' });
 await page.waitForSelector('[data-space="open"]', { timeout: 60_000 }); await page.click('[data-space="open"]'); await page.click('[data-sp="reality"]');
@@ -83,6 +84,54 @@ for (let i = 0; i < 8; i++) {
     await page.check('input[name="rl-view-mode"][value="overlay"]', { force: true });
     // undo/redo and zoom keep working
     await page.click('[data-ed="undo"]'); await page.click('[data-ed="redo"]'); await page.click('[data-ed="zoom-in"]'); await page.click('[data-ed="fit"]');
+    // measured accessibility of the editor (computed styles, not the mere presence of elements): names, contrast (WCAG 1.4.3 / 1.4.11), target size (2.5.8), focus visibility (2.4.7), live status
+    for (const mode of ['overlay', 'compare']) {
+      await page.check(`input[name="rl-view-mode"][value="${mode}"]`, { force: true });
+      const audit = await page.evaluate(() => {
+        const root = document.querySelector('.rl-ed') as HTMLElement; const parse = (c: string) => { const m = c.match(/rgba?\(([^)]+)\)/); if (!m) return [0, 0, 0, 0]; const v = m[1]!.split(',').map((x) => parseFloat(x)); return [v[0]!, v[1]!, v[2]!, v[3] ?? 1]; };
+        const over = (top: number[], bottom: number[]) => { const a = top[3]!; return [top[0]! * a + bottom[0]! * (1 - a), top[1]! * a + bottom[1]! * (1 - a), top[2]! * a + bottom[2]! * (1 - a), 1]; };
+        const bgOf = (el: Element | null): number[] => { const chain: number[][] = []; for (let e = el; e; e = e.parentElement) { const c = parse(getComputedStyle(e).backgroundColor); if (c[3]! > 0) chain.push(c); if (c[3] === 1) break; } let acc = [255, 255, 255, 1]; for (const c of chain.reverse()) acc = over(c, acc); return acc; };
+        const lum = (c: number[]) => { const f = (v: number) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c[0]!) + 0.7152 * f(c[1]!) + 0.0722 * f(c[2]!); };
+        const ratio = (a: number[], b: number[]) => { const l1 = lum(a), l2 = lum(b); return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05); };
+        const visible = (e: Element) => { const r = (e as HTMLElement).getBoundingClientRect(), cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && (e as HTMLElement).closest('[hidden]') === null; };
+        const unnamed: string[] = [], lowText: string[] = [], small: string[] = [];
+        for (const e of root.querySelectorAll('button, input, select, textarea, [role="button"], [role="radio"]')) {
+          if (!visible(e) && !(e as HTMLInputElement).type?.match(/radio/)) continue; const el = e as HTMLInputElement, id = el.id, label = el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || (id && root.querySelector(`label[for="${id}"]`)?.textContent) || el.closest('label')?.textContent || el.textContent || el.getAttribute('title') || '';
+          if (!label.trim()) unnamed.push(el.outerHTML.slice(0, 80));
+          const r = el.getBoundingClientRect(); if (visible(el) && el.type !== 'radio' && (r.width < 24 || r.height < 24)) small.push(`${(el.getAttribute('aria-label') || el.textContent || el.id).trim().slice(0, 24)} ${Math.round(r.width)}x${Math.round(r.height)}`);
+        }
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let worst = { ratio: 99, text: '' };
+        for (let n = walker.nextNode(); n; n = walker.nextNode()) { const t = (n.textContent ?? '').trim(); if (!t) continue; const el = n.parentElement!; if (!visible(el)) continue; const cs = getComputedStyle(el), fg = over(parse(cs.color), bgOf(el)), r = ratio(fg, bgOf(el)), size = parseFloat(cs.fontSize), bold = parseInt(cs.fontWeight) >= 700, need = size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5; if (r < need) lowText.push(`${t.slice(0, 28)} ${r.toFixed(2)}<${need}`); if (r < worst.ratio) worst = { ratio: r, text: t.slice(0, 28) }; }
+        return { unnamed, lowText, small, worst, status: !!root.querySelector('[role="status"], [aria-live]') };
+      });
+      record(`2b editor acessível (${mode}): nomes, contraste ≥ 4.5:1 (texto), alvos ≥ 24 px, região de estado`, audit.unnamed.length === 0 && audit.lowText.length === 0 && audit.small.length === 0 && audit.status, `sem nome ${audit.unnamed.length}, contraste fraco ${audit.lowText.slice(0, 4).join('; ') || 'nenhum'} (pior ${audit.worst.ratio.toFixed(2)} «${audit.worst.text}»), alvos pequenos ${audit.small.slice(0, 4).join('; ') || 'nenhum'}`);
+    }
+    // keyboard: Tab walks the controls and every stop shows a visible focus indicator
+    await page.locator('.rl-ed').first().evaluate((r) => (r.querySelector('button') as HTMLElement | null)?.focus());
+    let stops = 0, noRing = 0; const seen = new Set<string>();
+    for (let t = 0; t < 40; t++) { await page.keyboard.press('Tab'); const info = await page.evaluate(() => { const a = document.activeElement as HTMLElement | null; if (!a || !a.closest('.rl-ed')) return null; const cs = getComputedStyle(a); return { id: a.id || a.getAttribute('aria-label') || a.getAttribute('data-ed') || a.textContent?.trim().slice(0, 16) || a.tagName, ring: (cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) >= 2) || (cs.boxShadow && cs.boxShadow !== 'none') }; }); if (!info) continue; if (seen.has(info.id as string)) continue; seen.add(info.id as string); stops++; if (!info.ring) noRing++; }
+    record('2c editor por teclado: cada paragem de Tab mostra indicador de foco visível', stops >= 8 && noRing === 0, `${stops} controlos alcançados por Tab, ${noRing} sem indicador de foco`);
+    await page.locator('.rl-ed').first().evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    // layout measured at three viewports: no control may overlap another control or leave the dialog (this is what the 1500x1000 screenshot once showed going wrong)
+    const original = page.viewportSize()!;
+    for (const [w, h] of [[1500, 1000], [1280, 680], [390, 800]] as const) {
+      await page.setViewportSize({ width: w, height: h }); await page.waitForTimeout(250);
+      const geo = await page.evaluate(() => {
+        const root = document.querySelector('.rl-ed') as HTMLElement, rr = root.getBoundingClientRect(), items = [...root.querySelectorAll('button, input:not([type="radio"]), select, summary')].filter((e) => { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && !e.closest('[hidden]') && !e.closest('details:not([open])>*:not(summary)'); }) as HTMLElement[];
+        const clipped = (e: HTMLElement) => { for (let p = e.parentElement; p && p !== root; p = p.parentElement) { const cs = getComputedStyle(p); if (/(auto|scroll|hidden)/.test(cs.overflowY) && p !== root) { const pr = p.getBoundingClientRect(), r = e.getBoundingClientRect(); if (r.bottom > pr.bottom + 1 || r.top < pr.top - 1) return true; } } return false; };
+        const rects = items.map((e) => ({ e, r: e.getBoundingClientRect() })), overlaps: string[] = [], outside: string[] = [];
+        for (let i = 0; i < rects.length; i++) { const a = rects[i]!; const rootScrolls = root.scrollHeight > root.clientHeight + 1; if (!clipped(a.e) && (a.r.left < rr.left - 1 || a.r.right > rr.right + 1 || (!rootScrolls && (a.r.top < rr.top - 1 || a.r.bottom > rr.bottom + 1)))) outside.push((a.e.getAttribute('aria-label') || a.e.textContent || a.e.id).trim().slice(0, 20));
+          for (let j = i + 1; j < rects.length; j++) { const b = rects[j]!; if (a.e.contains(b.e) || b.e.contains(a.e) || clipped(a.e) || clipped(b.e)) continue; const ox = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left), oy = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top); if (ox > 2 && oy > 2) overlaps.push(`${(a.e.getAttribute('aria-label') || a.e.textContent || '').trim().slice(0, 14)}×${(b.e.getAttribute('aria-label') || b.e.textContent || '').trim().slice(0, 14)}`); } }
+        // occlusion: the element at the centre of every control must be that control (something else drawn over it, e.g. the page's prompt dock, makes it unusable)
+        const covered: string[] = []; for (const { e, r } of rects) { if (clipped(e)) continue; const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); if (top && top !== e && !e.contains(top) && !top.contains(e)) covered.push(`${(e.getAttribute('aria-label') || e.textContent || e.id).trim().slice(0, 18)} por ${top.tagName}.${String(top.className).slice(0, 18)}`); }
+        const st = (root.querySelector('.rl-ed-stage') as HTMLElement).getBoundingClientRect(); if (st.width < 240 || st.height < 240) overlaps.push(`área de desenho demasiado pequena ${Math.round(st.width)}×${Math.round(st.height)}`);
+        const hscroll = document.documentElement.scrollWidth > window.innerWidth + 1;
+        return { overlaps: [...overlaps, ...covered], outside, hscroll };
+      });
+      if (w === 1280 || w === 390) await page.screenshot({ path: resolve(out, `02f-editor-${w}x${h}.png`) });
+      record(`2d editor sem sobreposição nem fuga a ${w}×${h}`, geo.overlaps.length === 0 && geo.outside.length === 0 && !geo.hscroll, `sobreposições ${geo.overlaps.slice(0, 3).join('; ') || 'nenhuma'}, fora do diálogo ${geo.outside.slice(0, 3).join('; ') || 'nenhum'}, scroll horizontal ${geo.hscroll}`);
+    }
+    await page.setViewportSize(original); await page.waitForTimeout(250);
     record('2a editor: undo/redo, zoom e modos de visualização operam sem erros', true, 'sobreposição, recorte, antes/depois, desfazer/refazer, zoom');
   }
   await page.click('[data-ed="accept"]'); editedOk++;
