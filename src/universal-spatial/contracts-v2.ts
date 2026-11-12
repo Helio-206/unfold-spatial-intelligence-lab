@@ -1,3 +1,4 @@
+import { Euler, Matrix4, Quaternion, Vector3 } from 'three';
 import { MAX_SPATIAL_ENTITIES, type Source, type ValueOrigin } from './contracts';
 
 export const SPATIAL_PLAN_V2_CONTRACT = 'unfold.spatial-plan.v2' as const;
@@ -47,7 +48,15 @@ export type SpatialPlanV2 = {
 export type SpatialOperationV2 = {
   contract: 'unfold.spatial-operation.v2';
   operationId: string;
-  kind: 'set-transform' | 'set-geometry' | 'set-material' | 'set-repeat';
+  /**
+   * set-* edit one component in place. The structural kinds change WHICH components exist, as one transactional step (preview -> authorisation -> commit, one undo):
+   *  add-component    componentId = new id; value = the full component                                   (nothing else changes)
+   *  remove-component componentId = the component; value = { children: 'reparent' | 'remove' }          (relations/constraints that mention it go with it)
+   *  merge-components componentId = target; value = { sourceIds: string[] }                              (sources' geometry joins the target's; references move to the target)
+   *  split-component  componentId = source; value = { newId, label, childKeys: string[] }                (a group's direct children become a new component; both keep their ids/poses)
+   * Components not named by the operation keep their ids, geometry, transforms and provenance byte for byte.
+   */
+  kind: 'set-transform' | 'set-geometry' | 'set-material' | 'set-repeat' | 'add-component' | 'remove-component' | 'merge-components' | 'split-component';
   componentId: string;
   nodeKey: string | null;
   value: unknown;
@@ -411,6 +420,7 @@ export function spatialPlanV1ToV2(plan: import('./contracts').SpatialPlan): Spat
 }
 
 export function applySpatialOperationV2(plan: SpatialPlanV2, operation: SpatialOperationV2, provenance: { origin: 'user_provided' | 'inferred'; evidence: string }): SpatialPlanV2 {
+  if (STRUCTURAL_KINDS.has(operation.kind)) return applyStructuralOperationV2(plan, operation, provenance);
   if (operation.contract !== 'unfold.spatial-operation.v2' || !/^[a-zA-Z0-9-]{1,80}$/.test(operation.operationId) || !['set-transform', 'set-geometry', 'set-material', 'set-repeat'].includes(operation.kind) || !ID.test(operation.componentId) || ![null, ...plan.components.flatMap((component) => collectNodeKeys(component.geometry))].includes(operation.nodeKey)) fail('SPATIAL_V2_OPERATION_INVALID');
   if (!['user_provided', 'inferred'].includes(provenance.origin) || !provenance.evidence.trim() || provenance.evidence.length > 500) fail('SPATIAL_V2_OPERATION_PROVENANCE_INVALID');
   const component = plan.components.find((item) => item.id === operation.componentId);
@@ -456,3 +466,73 @@ export function applySpatialOperationV2(plan: SpatialPlanV2, operation: SpatialO
 }
 
 function collectNodeKeys(node: GeometryNodeV2): string[] { return [node.key, ...(node.type === 'group' ? node.children.flatMap(collectNodeKeys) : [])]; }
+
+
+// ------------------------------------------------------------------------------------------------ structural operations
+const STRUCTURAL_KINDS = new Set<string>(['add-component', 'remove-component', 'merge-components', 'split-component']);
+type PlanComponent = SpatialPlanV2['components'][number];
+/** how certain a value's origin is; a merged component is only as certain as its least certain member (merging never promotes) */
+const ORIGIN_RANK: Record<ValueOrigin, number> = { unknown: 0, design_approximation: 1, inferred: 2, observed: 3, user_provided: 4 };
+const weakest = (a: ValueOrigin, b: ValueOrigin): ValueOrigin => (ORIGIN_RANK[a]! <= ORIGIN_RANK[b]! ? a : b);
+const matrixOf = (t: GeometryTransformV2) => new Matrix4().compose(new Vector3(...t.position), new Quaternion().setFromEuler(new Euler(...t.rotationRad, 'XYZ')), new Vector3(...t.scale));
+function transformOf(m: Matrix4): GeometryTransformV2 {
+  const p = new Vector3(), q = new Quaternion(), sc = new Vector3(); m.decompose(p, q, sc); const e = new Euler().setFromQuaternion(q, 'XYZ');
+  const out: GeometryTransformV2 = { position: [p.x, p.y, p.z], rotationRad: [e.x, e.y, e.z], scale: [sc.x, sc.y, sc.z] };
+  // a relative transform with shear (rotation under non-uniform scale) cannot be expressed as position/rotation/scale: refuse instead of distorting the part
+  const back = matrixOf(out).elements; for (let i = 0; i < 16; i++) if (Math.abs(back[i]! - m.elements[i]!) > 1e-6) fail('SPATIAL_V2_MERGE_TRANSFORM_NOT_REPRESENTABLE');
+  return out;
+}
+const rekey = (node: GeometryNodeV2, prefix: string, taken: Set<string>): GeometryNodeV2 => {
+  let key = `${prefix}-${node.key}`.slice(0, 48).replace(/-+$/, ''); for (let n = 2; taken.has(key); n++) key = `${prefix}-${node.key}`.slice(0, 44) + `-${n}`; taken.add(key);
+  return node.type === 'group' ? { ...node, key, children: node.children.map((c) => rekey(c, prefix, taken)) } : { ...node, key };
+};
+function reference(plan: SpatialPlanV2, from: string, into: string | null): Pick<SpatialPlanV2, 'relations' | 'constraints'> {
+  const relations = plan.relations.map((r) => ({ ...r, fromId: r.fromId === from ? (into ?? '') : r.fromId, toId: r.toId === from ? (into ?? '') : r.toId })).filter((r) => r.fromId && r.toId && r.fromId !== r.toId);
+  const seen = new Set<string>(), deduped = relations.filter((r) => { const k = `${r.fromId}|${r.toId}|${r.kind}`; if (seen.has(k)) return false; seen.add(k); return true; });
+  const constraints = plan.constraints.map((c) => ({ ...c, componentIds: c.componentIds.map((id) => (id === from ? (into ?? '') : id)).filter((id, i, a) => id && a.indexOf(id) === i) })).filter((c) => c.componentIds.length >= (c.kind === 'distributed_around' || c.kind === 'connected_by_curve' ? 3 : 2));
+  return { relations: deduped, constraints };
+}
+export function applyStructuralOperationV2(plan: SpatialPlanV2, operation: SpatialOperationV2, provenance: { origin: 'user_provided' | 'inferred'; evidence: string }): SpatialPlanV2 {
+  if (operation.contract !== 'unfold.spatial-operation.v2' || !/^[a-zA-Z0-9-]{1,80}$/.test(operation.operationId) || !STRUCTURAL_KINDS.has(operation.kind) || !ID.test(operation.componentId) || operation.nodeKey !== null) fail('SPATIAL_V2_OPERATION_INVALID');
+  if (!['user_provided', 'inferred'].includes(provenance.origin) || !provenance.evidence.trim() || provenance.evidence.length > 500) fail('SPATIAL_V2_OPERATION_PROVENANCE_INVALID');
+  const evidence = provenance.evidence.slice(0, 500), byId = new Map(plan.components.map((c) => [c.id, c])), value = operation.value as Record<string, unknown> | null;
+  if (operation.kind === 'add-component') {
+    if (byId.has(operation.componentId)) fail('SPATIAL_V2_STRUCTURE_ID_EXISTS');
+    const c = value as PlanComponent | null; if (!c || typeof c !== 'object' || c.id !== operation.componentId) fail('SPATIAL_V2_STRUCTURE_VALUE_INVALID');
+    if (c!.parentId !== null && !byId.has(c!.parentId)) fail('SPATIAL_V2_STRUCTURE_PARENT_NOT_FOUND');
+    // a new component is what the operation's author says it is: its provenance is the operation's, never "observed"
+    const origin = provenance.origin as ValueOrigin;
+    return validateSpatialPlanV2({ ...plan, components: [...plan.components, { ...c!, provenance: { geometry: origin, transform: origin, material: origin, evidence } }] });
+  }
+  const target = byId.get(operation.componentId); if (!target) fail('SPATIAL_V2_OPERATION_COMPONENT_NOT_FOUND');
+  const me = target!;
+  if (operation.kind === 'remove-component') {
+    const mode = (value as { children?: string } | null)?.children; if (mode !== 'reparent' && mode !== 'remove') fail('SPATIAL_V2_STRUCTURE_VALUE_INVALID');
+    if (plan.components.length < 2) fail('SPATIAL_V2_STRUCTURE_LAST_COMPONENT');
+    const doomed = new Set<string>([me.id]); if (mode === 'remove') { let grew = true; while (grew) { grew = false; for (const c of plan.components) if (c.parentId && doomed.has(c.parentId) && !doomed.has(c.id)) { doomed.add(c.id); grew = true; } } }
+    let next: SpatialPlanV2 = { ...plan, components: plan.components.filter((c) => !doomed.has(c.id)).map((c) => (c.parentId === me.id ? { ...c, parentId: me.parentId } : c)) };
+    for (const id of doomed) next = { ...next, ...reference(next, id, null) };
+    return validateSpatialPlanV2(next);
+  }
+  if (operation.kind === 'merge-components') {
+    const sourceIds = (value as { sourceIds?: unknown } | null)?.sourceIds;
+    if (!Array.isArray(sourceIds) || !sourceIds.length || sourceIds.some((id) => typeof id !== 'string' || !byId.has(id) || id === me.id) || new Set(sourceIds).size !== sourceIds.length) fail('SPATIAL_V2_STRUCTURE_VALUE_INVALID');
+    const sources = (sourceIds as string[]).map((id) => byId.get(id)!), inv = matrixOf(me.transform).invert(), taken = new Set<string>(), keep = rekey(me.geometry, 'a', taken);
+    const parts: GeometryNodeV2[] = [keep, ...sources.map((s, i) => { const rel = transformOf(inv.clone().multiply(matrixOf(s.transform))); return { type: 'group' as const, key: `m${i + 1}-${s.id}`.slice(0, 48), transform: rel, repeat: null, children: [rekey(s.geometry, `m${i + 1}`, taken)] }; })];
+    const merged: PlanComponent = { ...me, geometry: { type: 'group', key: `${me.id}-merged`.slice(0, 48), transform: { position: [0, 0, 0], rotationRad: [0, 0, 0], scale: [1, 1, 1] }, repeat: null, children: parts }, provenance: { geometry: sources.reduce((o, s) => weakest(o, s.provenance.geometry), me.provenance.geometry), transform: me.provenance.transform, material: sources.reduce((o, s) => weakest(o, s.provenance.material), me.provenance.material), evidence: `Fusão de ${sources.map((s) => s.id).join(', ')} em ${me.id}: ${evidence}`.slice(0, 500) } };
+    const gone = new Set(sourceIds as string[]);
+    let next: SpatialPlanV2 = { ...plan, components: plan.components.filter((c) => !gone.has(c.id)).map((c) => (c.id === me.id ? merged : gone.has(c.parentId ?? '') ? { ...c, parentId: me.id } : c)) };
+    for (const id of gone) next = { ...next, ...reference(next, id, me.id) };
+    return validateSpatialPlanV2(next);
+  }
+  // split-component
+  const v = value as { newId?: unknown; label?: unknown; childKeys?: unknown } | null;
+  if (!v || typeof v.newId !== 'string' || !ID.test(v.newId) || byId.has(v.newId) || typeof v.label !== 'string' || !v.label.trim() || v.label.length > 100 || !Array.isArray(v.childKeys) || !v.childKeys.length) fail('SPATIAL_V2_STRUCTURE_VALUE_INVALID');
+  if (me.geometry.type !== 'group') fail('SPATIAL_V2_SPLIT_REQUIRES_GROUP');
+  const group = me.geometry as Extract<GeometryNodeV2, { type: 'group' }>, move = new Set(v!.childKeys as string[]), moved = group.children.filter((c) => move.has(c.key)), stay = group.children.filter((c) => !move.has(c.key));
+  if (moved.length !== move.size || !stay.length) fail('SPATIAL_V2_SPLIT_CHILDREN_INVALID');
+  const born: PlanComponent = { ...me, id: v!.newId as string, label: String(v!.label), geometry: { ...group, key: `${v!.newId}-group`.slice(0, 48), children: moved }, provenance: { ...me.provenance, evidence: `Dividido de ${me.id}: ${evidence}`.slice(0, 500) } };
+  const rest: PlanComponent = { ...me, geometry: { ...group, children: stay } };
+  const components = plan.components.map((c) => (c.id === me.id ? rest : c)); components.splice(components.findIndex((c) => c.id === me.id) + 1, 0, born);
+  return validateSpatialPlanV2({ ...plan, components, relations: [...plan.relations, { id: `split-${born.id}`.slice(0, 48), fromId: born.id, toId: me.id, kind: 'attached_to', origin: provenance.origin as ValueOrigin, evidence: `Dividido de ${me.id}; a ligação entre as duas metades é a da origem comum, não uma ligação observada.`.slice(0, 300) }] });
+}
