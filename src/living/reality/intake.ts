@@ -120,7 +120,27 @@ function resample(p: Prepared, res: number, colourRes: number, map: (X: number, 
   return { mask, rgb };
 }
 
+export const CAMERA_CANDIDATES_FOV = [25, 40, 55, 70], CAMERA_SHIFTS_PX = [-6, -3, 0, 3, 6], CAMERA_MIN_GAIN = 0.04, CAMERA_MIN_VIEWS = 6;
+/**
+ * Camera model of a capture. Declared field of view: used as given (source 'declared'), only the principal-point shift is searched. Otherwise the field of view is
+ * ESTIMATED from the views themselves — the candidate (or the orthographic model) with the best held-out consistency — and adopted only if it beats the
+ * orthographic model by CAMERA_MIN_GAIN: below that the benchmark says the gain is within noise, so the orthographic assumption stays. An estimate is never a measurement.
+ */
+export function chooseCamera(views: readonly StoredView[], res: number, half: number, declaredFov?: number): RealityEvidence['camera'] | null {
+  if (views.length < CAMERA_MIN_VIEWS) return null;
+  const frame = { centre: new Vector3(0, 0, 0), half }, loo = (fov: number, shift: number) => { const vs: SilhouetteView[] = views.map((v) => ({ id: v.id, res, mask: decodeMask(v.maskRle, res * res), azimuthDeg: v.azimuthDeg, elevationDeg: v.elevationDeg, azimuthSource: 'assumed', ...(fov ? { fovDeg: fov, principalShiftPx: shift } : {}) })); const l = leaveOneOutIoU(vs, { frame, cells: 40 }); return l.length ? l.reduce((a, b) => a + b, 0) / l.length : 0; };
+  const ortho = loo(0, 0), fovs = declaredFov ? [declaredFov] : CAMERA_CANDIDATES_FOV; let best: { fov: number; shift: number; v: number } | null = null;
+  for (const f of fovs) for (const sh of CAMERA_SHIFTS_PX) { const v = loo(f, sh); if (!best || v > best.v) best = { fov: f, shift: sh, v }; }
+  if (!best) return null;
+  if (declaredFov) return { fovDeg: declaredFov, principalShiftPx: best.shift, source: 'declared' };
+  return best.v - ortho >= CAMERA_MIN_GAIN ? { fovDeg: best.fov, principalShiftPx: best.shift, source: 'estimated', gain: +(best.v - ortho).toFixed(4) } : null;
+}
+
 export type OrbitOptions = IntakeOptions & {
+  /** field of view (degrees) declared by the person; absent = estimated when the views support it, else orthographic */
+  fovDeg?: number;
+  /** never estimate a camera (orthographic assumption only) */
+  orthographicOnly?: boolean;
   /** declared azimuths in degrees (one per image). Absent: equal steps over 360 degrees in the given order (assumed). */
   azimuthsDeg?: number[];
   /** declared camera elevation in degrees. Absent: 0 and recorded as an assumption (elevation is never measured here). */
@@ -182,7 +202,9 @@ export function intakeOrbit(images: readonly IntakeImage[], options: OrbitOption
     else if (plus > minus + 0.02) assumptions.push(`Sentido da volta escolhido pela evidência (${(plus * 100).toFixed(0)}% contra ${(minus * 100).toFixed(0)}% no sentido contrário).`);
     else assumptions.push(elevation === 0 ? 'Sentido da volta não identificável: a elevação 0° não distingue um objecto do seu espelho (e um objecto simétrico não precisa). A reconstrução pode estar espelhada (esquerda/direita trocadas); inverta a ordem das imagens se for o caso. Com a câmara elevada isto deixa de ser ambíguo.' : 'Sentido da volta não identificável a partir das silhuetas (objecto aproximadamente simétrico): mantido o sentido por defeito.');
   }
-  const evidence: RealityEvidence = { contract: 'unfold.reality-evidence.v1', mode: options.mode === 'video' ? 'video' : turntable ? 'turntable' : 'orbit', res, colourRes, cells, frame: { centre: [0, 0, 0], half }, views: viewsOut, framing: { axisXFrac: axisX, cyFrac: assumed ? medianCy : null }, assumptions };
+  const camera = options.orthographicOnly ? null : chooseCamera(viewsOut, res, half, options.fovDeg);
+  if (camera) assumptions.push(camera.source === 'declared' ? `Campo de visão ${camera.fovDeg}° indicado por si (não verificado); deslocamento do eixo óptico ${camera.principalShiftPx}px estimado pela concordância entre vistas.` : `Campo de visão ESTIMADO em ${camera.fovDeg}° a partir da concordância entre as próprias vistas (ganho ${(camera.gain! * 100).toFixed(1)} pontos sobre a hipótese ortográfica). NÃO foi medido: não vem de EXIF nem de calibração.`);
+  const evidence: RealityEvidence = { ...(camera ? { camera } : {}), contract: 'unfold.reality-evidence.v1', mode: options.mode === 'video' ? 'video' : turntable ? 'turntable' : 'orbit', res, colourRes, cells, frame: { centre: [0, 0, 0], half }, views: viewsOut, framing: { axisXFrac: axisX, cyFrac: assumed ? medianCy : null }, assumptions };
   // quality and coverage are assessed on the FINAL poses (direction already chosen) so the advice names the right sectors
   const captureViews: CaptureView[] = ps.map((p, i) => ({ azimuthDeg: viewsOut[i]!.azimuthDeg, elevationDeg: viewsOut[i]!.elevationDeg, quality: viewQuality(p.rgba, p.mask), mask: p.mask, width: p.rgba.width, height: p.rgba.height, bboxSide: Math.max(p.report.bbox.x1 - p.report.bbox.x0 + 1, p.report.bbox.y1 - p.report.bbox.y0 + 1) }));
   return { evidence, refusals: [], views, capture: assessCapture(captureViews) };

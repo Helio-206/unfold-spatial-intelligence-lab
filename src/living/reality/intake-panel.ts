@@ -120,7 +120,7 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
     return `<div data-rl-strategy="${st.id}"><p class="u-label">Estratégia escolhida: <b>${st.id}</b> · tecto de fidelidade: ${st.ceiling}${st.certified ? ' · configuração medida no benchmark' : ' · não certificada'}</p><ul>${[...st.reasons, ...st.limits].map((t) => `<li class="u-small">${esc(t)}</li>`).join('')}</ul>${st.requires.length ? `<p class="u-small"><b>Para melhorar:</b> ${st.requires.map(esc).join(' ')}</p>` : ''}</div>`;
   };
   const qualityHtml = (r: IntakeResult | null) => !r?.capture ? '' : `<div data-rl-capture><p class="u-label">Cobertura: ${r.capture.coverage.views} vistas · maior sector sem vista ${r.capture.coverage.azimuthMaxGapDeg.toFixed(0)}° · elevação ${r.capture.coverage.elevationMinDeg.toFixed(0)}° a ${r.capture.coverage.elevationMaxDeg.toFixed(0)}°</p>${r.capture.issues.length ? `<ul class="sp-list" aria-label="Qualidade e cobertura">${r.capture.issues.map((i) => `<li class="sp-comp" data-rl-issue="${i.code}" data-severity="${i.severity}"><div class="sp-comp-head"><b>${esc(i.message)}</b></div><p class="u-small">${esc(i.advice)}</p></li>`).join('')}</ul>` : '<p class="u-small">Sem avisos de qualidade ou cobertura. (Limiares heurísticos, não calibrados em fotografias reais.)</p>'}</div>`;
-  let ackLow = false, partsOpen = false, partEdits: StoredPartEdit[] = [], partsModel: RealityModel | null = null, partsBusy = false;
+  let fov = '', ackLow = false, partsOpen = false, partEdits: StoredPartEdit[] = [], partsModel: RealityModel | null = null, partsBusy = false;
   const rebuildParts = () => { if (!result?.evidence) { partsModel = null; return; } partsModel = buildModel({ ...result.evidence, ...(partEdits.length ? { partEdits } : {}) }); };
   const partsHtml = () => {
     if (!result?.evidence) return '';
@@ -154,7 +154,8 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
     ${mode === 'drawing'
       ? `<div class="sp-row">${slots.map((s, i) => `<label class="sp-drop"><input type="file" data-rl-file-slot="${i}" accept="image/png,image/jpeg,image/webp"><span>${esc(s.label)}${s.image ? ` · ${esc(s.image.name)}` : ''}</span></label>`).join('')}</div>`
       : mode === 'video'
-      ? `<label class="sp-drop"><input id="rl-video" type="file" accept="video/mp4,video/webm"><span>${slots.length ? `${slots.length} fotogramas candidatos · escolher outro vídeo` : '<u>escolha um vídeo</u>'}</span><span class="u-label">MP4 ou WebM · até ${VIDEO_LIMITS.maxBytes / 1e6} MB e ${VIDEO_LIMITS.maxSeconds} s · uma volta completa · os ${VIDEO_LIMITS.keyFrames} fotogramas com silhuetas mais diferentes são usados</span></label><label class="u-label">elevação da câmara (°) <input id="rl-elev" type="number" min="-90" max="90" step="1" value="${esc(elevation)}" style="width:84px"></label>`
+      ? `<label class="sp-drop"><input id="rl-video" type="file" accept="video/mp4,video/webm"><span>${slots.length ? `${slots.length} fotogramas candidatos · escolher outro vídeo` : '<u>escolha um vídeo</u>'}</span><span class="u-label">MP4 ou WebM · até ${VIDEO_LIMITS.maxBytes / 1e6} MB e ${VIDEO_LIMITS.maxSeconds} s · uma volta completa · os ${VIDEO_LIMITS.keyFrames} fotogramas com silhuetas mais diferentes são usados</span></label><label class="u-label">elevação da câmara (°) <input id="rl-elev" type="number" min="-90" max="90" step="1" value="${esc(elevation)}" style="width:84px"></label>
+         <label class="u-label">campo de visão horizontal (°) — só se souber; vazio = estimado a partir das vistas (e dito como estimado) <input id="rl-fov" type="number" min="5" max="120" step="1" value="${esc(fov)}" style="width:84px"></label>`
       : `<label class="sp-drop"><input id="rl-files" type="file" multiple accept="image/png,image/jpeg,image/webp"><span>${slots.length ? `${slots.length} vista(s) · escolher outras` : '<u>escolha 2 a 24 imagens</u>'}</span><span class="u-label">PNG, JPEG ou WebP · fundo liso ou transparente · mesma distância e zoom</span></label>
          <label class="u-label">elevação da câmara (°) — deixe vazio se não sabe (assume-se 0° e fica registado) <input id="rl-elev" type="number" min="-90" max="90" step="1" value="${esc(elevation)}" style="width:84px"></label>
          ${mode === 'orbit' ? `<ul class="sp-list">${slots.map((s, i) => `<li class="sp-comp"><div class="sp-comp-head"><b>${esc(s.image?.name ?? s.label)}</b><label class="u-label">azimute (°) <input type="number" data-rl-az="${i}" value="${esc(s.azimuth)}" min="-360" max="360" step="1" style="width:84px"></label></div></li>`).join('')}</ul>` : ''}`}
@@ -201,6 +202,7 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
     busy = false; paint();
   };
 
+  const fovOpt = (): { fovDeg?: number } => { const f = fov.trim() === '' ? NaN : Number(fov); return Number.isFinite(f) && f >= 5 && f <= 120 ? { fovDeg: f } : {}; };
   const elev = (): { elevationDeg?: number } => { const e = elevation.trim() === '' ? NaN : Number(elevation); return Number.isFinite(e) ? { elevationDeg: Math.max(-90, Math.min(90, e)) } : {}; };
   const takeVideo = async (file: File) => {
     problem = null; result = null; busy = true; paint();
@@ -238,8 +240,8 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
       if (mode === 'orbit') {
         const az = slots.map((s) => Number(s.azimuth));
         if (az.some((a) => !Number.isFinite(a))) { problem = REFUSAL_COPY.POSE_COUNT_MISMATCH; result = null; return null; }
-        result = intakeOrbit(images, { azimuthsDeg: az, ...elev() });
-      } else result = intakeOrbit(images, elev());
+        result = intakeOrbit(images, { azimuthsDeg: az, ...elev(), ...fovOpt() });
+      } else result = intakeOrbit(images, { ...elev(), ...fovOpt() });
     }
     return result;
   };
@@ -295,6 +297,7 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
     else if (t.dataset.rlFileSlot !== undefined && t.files?.[0]) void take([t.files[0]], Number(t.dataset.rlFileSlot));
     else if (t.id === 'rl-split-at') { const v = container.querySelector('#rl-split-at-v'); if (v) v.textContent = `${t.value}%`; }
     else if (t.id === 'rl-ack-low') { ackLow = t.checked; paint(); }
+    else if (t.id === 'rl-fov') { fov = t.value; result = null; ackLow = false; }
     else if (t.id === 'rl-elev') { elevation = t.value; result = null; ackLow = false; }
     else if (t.dataset.rlAz !== undefined) { slots[Number(t.dataset.rlAz)]!.azimuth = t.value; result = null; }
   };

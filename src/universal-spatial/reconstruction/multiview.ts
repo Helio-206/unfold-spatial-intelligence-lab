@@ -21,6 +21,10 @@ export type PinholeCamera = { fx: number; fy: number; cx: number; cy: number; R:
 export type SilhouetteView = {
   /** when present the view is a real perspective camera (poses from a dataset or from SfM); azimuth/elevation are then ignored */
   camera?: PinholeCamera;
+  /** orbit view seen through a perspective camera of this horizontal field of view (degrees), rebuilt from the view's own azimuth/elevation every time, so pose refinement stays consistent; absent = orthographic */
+  fovDeg?: number;
+  /** vertical shift of the principal point in window pixels (the window is centred on the silhouettes, not on the optical axis); only with fovDeg */
+  principalShiftPx?: number;
   id: string; res: number; mask: Uint8Array; azimuthDeg: number; elevationDeg: number; azimuthSource: PoseSource;
 };
 export type HullOptions = { frame: Frame; cells?: number; /** carve against masks grown by this many pixels, so structures thinner than a voxel are not lost (a conservative, larger hull) */ dilatePx?: number };
@@ -50,7 +54,20 @@ function validate(views: readonly SilhouetteView[]): void {
 
 type Basis = { pin?: PinholeCamera; right: [number, number, number]; up: [number, number, number]; s: number; half: number; res: number; centre: [number, number, number]; mask: Uint8Array };
 /** Basis of a view: perspective when it carries a camera, orthographic orbit otherwise. */
-const basisForView = (v: SilhouetteView, frame: Frame, mask: Uint8Array): Basis => v.camera ? { pin: v.camera, right: [1, 0, 0], up: [0, 1, 0], s: v.res / (2 * frame.half), half: frame.half, res: v.res, centre: [0, 0, 0], mask } : basisOf(viewOf(v, frame), mask);
+const cameraOf = (v: SilhouetteView, frame: Frame): PinholeCamera | undefined => { if (v.camera) return v.camera; if (!v.fovDeg) return undefined; const c = orbitPinhole(v.azimuthDeg, v.elevationDeg, v.fovDeg, v.res, frame.half, frame.centre); return v.principalShiftPx ? { ...c, cy: c.cy + v.principalShiftPx } : c; };
+const basisForView = (v: SilhouetteView, frame: Frame, mask: Uint8Array): Basis => { const cam = cameraOf(v, frame); return cam ? { pin: cam, right: [1, 0, 0], up: [0, 1, 0], s: v.res / (2 * frame.half), half: frame.half, res: v.res, centre: [0, 0, 0], mask } : basisOf(viewOf(v, frame), mask); };
+/**
+ * What every consumer of a view needs, orthographic or perspective: where a world point lands in the view's pixels, and the unit vector from that point toward the
+ * camera (constant for an orthographic orbit, point-dependent for a perspective one). Colour sampling, visibility and predicted silhouettes use this instead of
+ * assuming parallel rays.
+ */
+export type ViewProjector = { project(x: number, y: number, z: number): [number, number] | null; towardCamera(x: number, y: number, z: number, out?: Vector3): Vector3 };
+export function viewProjector(v: SilhouetteView, frame: Frame): ViewProjector {
+  const b = basisForView(v, frame, v.mask), cam = b.pin, d = orbitDirection(v.azimuthDeg, v.elevationDeg), res = v.res;
+  if (!cam) return { project: (x, y, z) => { proj(b, x, y, z); return Number.isNaN(U) ? null : [U, W]; }, towardCamera: (_x, _y, _z, out = new Vector3()) => out.copy(d) };
+  const R = cam.R, pos = new Vector3(-(R[0]! * cam.t[0]! + R[3]! * cam.t[1]! + R[6]! * cam.t[2]!), -(R[1]! * cam.t[0]! + R[4]! * cam.t[1]! + R[7]! * cam.t[2]!), -(R[2]! * cam.t[0]! + R[5]! * cam.t[1]! + R[8]! * cam.t[2]!));
+  return { project: (x, y, z) => { proj(b, x, y, z); return Number.isNaN(U) || U < -res || W < -res || U > 2 * res || W > 2 * res ? null : [U, W]; }, towardCamera: (x, y, z, out = new Vector3()) => out.set(pos.x - x, pos.y - y, pos.z - z).normalize() };
+}
 /** Projects a world point into pixel (U, W); U = NaN when behind the camera. Writes module variables to avoid allocation in the hot loops. */
 let U = 0, W = 0;
 function proj(b: Basis, x: number, y: number, z: number): void {
@@ -191,7 +208,7 @@ export function refinePoses(input: readonly SilhouetteView[], options: RefineOpt
       const bases = basesOf(views), reference = carveFast(grid, bases, v);
       let any = false; for (const x of reference) if (x) { any = true; break; }
       if (!any) { notes.push(`${views[v]!.id}: vistas restantes sem casco comum`); continue; }
-      const score = (az: number) => iou(views[v]!.mask, splat(grid, reference, basisOf(viewOf({ ...views[v]!, azimuthDeg: az }, options.frame), views[v]!.mask)));
+      const score = (az: number) => iou(views[v]!.mask, splat(grid, reference, basisForView({ ...views[v]!, azimuthDeg: az }, options.frame, views[v]!.mask)));
       const nominal = input[v]!.azimuthDeg;
       // identificabilidade: amplitude da curva de consistência à volta do valor nominal
       if (round === 0) {
@@ -231,9 +248,8 @@ export function leaveOneOutIoU(views: readonly SilhouetteView[], options: { fram
 }
 
 /** Silhouette of an occupancy grid as seen by a pose (voxel-footprint splat): what the current solid predicts for a view. */
-export function hullSilhouette(grid: Grid, occupancy: Uint8Array, pose: Pick<SilhouetteView, 'azimuthDeg' | 'elevationDeg' | 'res'>, frame: Frame): Uint8Array {
-  const v = makeView(orbitDirection(pose.azimuthDeg, pose.elevationDeg), frame.centre, frame.half, pose.res);
-  return splat(grid, occupancy, basisOf(v, new Uint8Array(pose.res * pose.res)));
+export function hullSilhouette(grid: Grid, occupancy: Uint8Array, pose: Pick<SilhouetteView, 'azimuthDeg' | 'elevationDeg' | 'res'> & Partial<Pick<SilhouetteView, 'fovDeg' | 'principalShiftPx' | 'camera'>>, frame: Frame): Uint8Array {
+  return splat(grid, occupancy, basisForView({ id: 'p', mask: new Uint8Array(pose.res * pose.res), azimuthSource: 'given', ...pose }, frame, new Uint8Array(pose.res * pose.res)));
 }
 export const maskIoUFast = iou;
 

@@ -1,0 +1,451 @@
+{
+  "note": "Product intake with estimated perspective camera (gated by held-out gain >= 0.04) vs forced orthographic; hull chamfer % of object diagonal on renders with exact masks.",
+  "summary": {
+    "12": {
+      "assets": 14,
+      "adopted": 0,
+      "medianOrtho": 2.392,
+      "medianProduct": 2.392,
+      "meanOrtho": 2.249,
+      "meanProduct": 2.249,
+      "better": 0,
+      "worse": 0
+    },
+    "40": {
+      "assets": 14,
+      "adopted": 3,
+      "medianOrtho": 3.005,
+      "medianProduct": 2.987,
+      "meanOrtho": 2.578,
+      "meanProduct": 2.552,
+      "better": 2,
+      "worse": 1
+    },
+    "65": {
+      "assets": 14,
+      "adopted": 6,
+      "medianOrtho": 3.48,
+      "medianProduct": 3.163,
+      "meanOrtho": 3.101,
+      "meanProduct": 2.89,
+      "better": 5,
+      "worse": 0
+    }
+  },
+  "rows": [
+    {
+      "fov": 12,
+      "id": "ToyCar",
+      "split": "development",
+      "camera": null,
+      "orthoChamferPct": 4.352,
+      "productChamferPct": 4.352,
+      "intakeMs": 1255
+    },
+    {
+      "fov": 12,
+      "id": "Lantern",
+      "split": "development",
+      "camera": null,
+      "orthoChamferPct": 0.913,
+      "productChamferPct": 0.913,
+      "intakeMs": 987
+    },
+    {
+      "fov": 12,
+      "id": "BoomBox",
+      "split": "development",
+      "camera": null,
+      "orthoChamferPct": 1.371,
+      "productChamferPct": 1.371,
+      "intakeMs": 1179
+    },
+    {
+      "fov": 12,
+      "id": "WaterBottle",
+      "split": "development",
+      "camera": null,
+      "orthoChamferPct": 1.495,
+      "productChamferPct": 1.495,
+      "intakeMs": 1005
+    },
+    {
+      "fov": 12,
+      "id": "SheenChair",
+      "split": "development",
+      "camera": null,
+      "orthoChamferPct": 2.416,
+      "productChamferPct": 2.416,
+      "intakeMs": 1170
+    },
+    {
+      "fov": 12,
+      "id": "CesiumMilkTruck",
+      "split": "development",
+      "camera": null,
+      "orthoChamferPct": 2.489,
+      "productChamferPct": 2.489,
+      "intakeMs": 1060
+    },
+    {
+      "fov": 12,
+      "id": "AntiqueCamera",
+      "split": "acceptance",
+      "camera": null,
+      "orthoChamferPct": 1.68,
+      "productChamferPct": 1.68,
+      "intakeMs": 759
+    },
+    {
+      "fov": 12,
+      "id": "Avocado",
+      "split": "acceptance",
+      "camera": null,
+      "orthoChamferPct": 1.326,
+      "productChamferPct": 1.326,
+      "intakeMs": 996
+    },
+    {
+      "fov": 12,
+      "id": "Corset",
+      "split": "acceptance",
+      "camera": null,
+      "orthoChamferPct": 2.623,
+      "productChamferPct": 2.623,
+      "intakeMs": 1030
+    },
+    {
+      "fov": 12,
+      "id": "MaterialsVariantsShoe",
+      "split": "acceptance",
+      "camera": null,
+      "orthoChamferPct": 2.257,
+      "productChamferPct": 2.257,
+      "intakeMs": 805
+    },
+    {
+      "fov": 12,
+      "id": "GlamVelvetSofa",
+      "split": "acceptance",
+      "camera": null,
+      "orthoChamferPct": 2.392,
+      "productChamferPct": 2.392,
+      "intakeMs": 948
+    },
+    {
+      "fov": 12,
+      "id": "ChairDamaskPurplegold",
+      "split": "acceptance",
+      "camera": null,
+      "orthoChamferPct": 2.349,
+      "productChamferPct": 2.349,
+      "intakeMs": 880
+    },
+    {
+      "fov": 12,
+      "id": "IridescenceLamp",
+      "split": "acceptance",
+      "camera": null,
+      "orthoChamferPct": 2.747,
+      "productChamferPct": 2.747,
+      "intakeMs": 1068
+    },
+    {
+      "fov": 12,
+      "id": "CarConcept",
+      "split": "acceptance",
+      "camera": null,
+      "orthoChamferPct": 3.071,
+      "productChamferPct": 3.071,
+      "intakeMs": 1091
+    },
+    {
+      "fov": 40,
+      "id": "ToyCar",
+      "split": "development",
+      "camera": null,
+      "orthoChamferPct": 4.262,
+      "productChamferPct": 4.262,
+      "intakeMs": 1012
+    },
+    {
+      "fov": 40,
+      "id": "Lantern",
+      "split": "development",
+      "camera": null,
+      "orthoChamferPct": 1.026,
+      "productChamferPct": 1.026,
+      "intakeMs": 737
+    },
+    {
+      "fov": 40,
+      "id": "BoomBox",
+      "split": "development",
+      "camera": null,
+      "orthoChamferPct": 1.426,
+      "productChamferPct": 1.426,
+      "intakeMs": 978
+    },
+    {
+      "fov": 40,
+      "id": "WaterBottle",
+      "split": "development",
+      "camera": null,
+      "orthoChamferPct": 1.488,
+      "productChamferPct": 1.488,
+      "intakeMs": 935
+    },
+    {
+      "fov": 40,
+      "id": "SheenChair",
+      "split": "development",
+      "camera": null,
+      "orthoChamferPct": 3.03,
+      "productChamferPct": 3.03,
+      "intakeMs": 941
+    },
+    {
+      "fov": 40,
+      "id": "CesiumMilkTruck",
+      "split": "development",
+      "camera": {
+        "fovDeg": 25,
+        "shift": 6,
+        "gain": 0.0655
+      },
+      "orthoChamferPct": 3.937,
+      "productChamferPct": 3.747,
+      "intakeMs": 955
+    },
+    {
+      "fov": 40,
+      "id": "AntiqueCamera",
+      "split": "acceptance",
+      "camera": null,
+      "orthoChamferPct": 1.481,
+      "productChamferPct": 1.481,
+      "intakeMs": 733
+    },
+    {
+      "fov": 40,
+      "id": "Avocado",
+      "split": "acceptance",
+      "camera": null,
+      "orthoChamferPct": 1.441,
+      "productChamferPct": 1.441,
+      "intakeMs": 1041
+    },
+    {
+      "fov": 40,
+      "id": "Corset",
+      "split": "acceptance",
+      "camera": null,
+      "orthoChamferPct": 3.181,
+      "productChamferPct": 3.181,
+      "intakeMs": 972
+    },
+    {
+      "fov": 40,
+      "id": "MaterialsVariantsShoe",
+      "split": "acceptance",
+      "camera": {
+        "fovDeg": 25,
+        "shift": 3,
+        "gain": 0.0989
+      },
+      "orthoChamferPct": 2.347,
+      "productChamferPct": 2.41,
+      "intakeMs": 846
+    },
+    {
+      "fov": 40,
+      "id": "GlamVelvetSofa",
+      "split": "acceptance",
+      "camera": {
+        "fovDeg": 40,
+        "shift": 3,
+        "gain": 0.0949
+      },
+      "orthoChamferPct": 3.026,
+      "productChamferPct": 2.786,
+      "intakeMs": 931
+    },
+    {
+      "fov": 40,
+      "id": "ChairDamaskPurplegold",
+      "split": "acceptance",
+      "camera": null,
+      "orthoChamferPct": 3.005,
+      "productChamferPct": 3.005,
+      "intakeMs": 847
+    },
+    {
+      "fov": 40,
+      "id": "IridescenceLamp",
+      "split": "acceptance",
+      "camera": null,
+      "orthoChamferPct": 2.987,
+      "productChamferPct": 2.987,
+      "intakeMs": 1200
+    },
+    {
+      "fov": 40,
+      "id": "CarConcept",
+      "split": "acceptance",
+      "camera": null,
+      "orthoChamferPct": 3.456,
+      "productChamferPct": 3.456,
+      "intakeMs": 1130
+    },
+    {
+      "fov": 65,
+      "id": "ToyCar",
+      "split": "development",
+      "camera": null,
+      "orthoChamferPct": 4.365,
+      "productChamferPct": 4.365,
+      "intakeMs": 998
+    },
+    {
+      "fov": 65,
+      "id": "Lantern",
+      "split": "development",
+      "camera": {
+        "fovDeg": 70,
+        "shift": -3,
+        "gain": 0.1025
+      },
+      "orthoChamferPct": 1.308,
+      "productChamferPct": 1.15,
+      "intakeMs": 678
+    },
+    {
+      "fov": 65,
+      "id": "BoomBox",
+      "split": "development",
+      "camera": null,
+      "orthoChamferPct": 3.192,
+      "productChamferPct": 3.192,
+      "intakeMs": 1019
+    },
+    {
+      "fov": 65,
+      "id": "WaterBottle",
+      "split": "development",
+      "camera": null,
+      "orthoChamferPct": 1.77,
+      "productChamferPct": 1.77,
+      "intakeMs": 991
+    },
+    {
+      "fov": 65,
+      "id": "SheenChair",
+      "split": "development",
+      "camera": {
+        "fovDeg": 55,
+        "shift": 0,
+        "gain": 0.1269
+      },
+      "orthoChamferPct": 3.477,
+      "productChamferPct": 2.918,
+      "intakeMs": 876
+    },
+    {
+      "fov": 65,
+      "id": "CesiumMilkTruck",
+      "split": "development",
+      "camera": {
+        "fovDeg": 70,
+        "shift": -6,
+        "gain": 0.1864
+      },
+      "orthoChamferPct": 4.951,
+      "productChamferPct": 3.549,
+      "intakeMs": 905
+    },
+    {
+      "fov": 65,
+      "id": "AntiqueCamera",
+      "split": "acceptance",
+      "camera": null,
+      "orthoChamferPct": 1.577,
+      "productChamferPct": 1.577,
+      "intakeMs": 755
+    },
+    {
+      "fov": 65,
+      "id": "Avocado",
+      "split": "acceptance",
+      "camera": null,
+      "orthoChamferPct": 1.614,
+      "productChamferPct": 1.614,
+      "intakeMs": 1079
+    },
+    {
+      "fov": 65,
+      "id": "Corset",
+      "split": "acceptance",
+      "camera": null,
+      "orthoChamferPct": 3.677,
+      "productChamferPct": 3.677,
+      "intakeMs": 967
+    },
+    {
+      "fov": 65,
+      "id": "MaterialsVariantsShoe",
+      "split": "acceptance",
+      "camera": {
+        "fovDeg": 55,
+        "shift": 3,
+        "gain": 0.1827
+      },
+      "orthoChamferPct": 2.495,
+      "productChamferPct": 2.476,
+      "intakeMs": 878
+    },
+    {
+      "fov": 65,
+      "id": "GlamVelvetSofa",
+      "split": "acceptance",
+      "camera": {
+        "fovDeg": 40,
+        "shift": 0,
+        "gain": 0.1498
+      },
+      "orthoChamferPct": 3.495,
+      "productChamferPct": 3.163,
+      "intakeMs": 815
+    },
+    {
+      "fov": 65,
+      "id": "ChairDamaskPurplegold",
+      "split": "acceptance",
+      "camera": {
+        "fovDeg": 55,
+        "shift": 0,
+        "gain": 0.1225
+      },
+      "orthoChamferPct": 3.48,
+      "productChamferPct": 2.985,
+      "intakeMs": 874
+    },
+    {
+      "fov": 65,
+      "id": "IridescenceLamp",
+      "split": "acceptance",
+      "camera": null,
+      "orthoChamferPct": 3.632,
+      "productChamferPct": 3.632,
+      "intakeMs": 1094
+    },
+    {
+      "fov": 65,
+      "id": "CarConcept",
+      "split": "acceptance",
+      "camera": null,
+      "orthoChamferPct": 4.387,
+      "productChamferPct": 4.387,
+      "intakeMs": 1259
+    }
+  ]
+}

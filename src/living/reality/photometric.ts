@@ -3,20 +3,19 @@
  * the stored views, and compare with that view's colours inside the outline. It measures how faithful the appearance (not the shape) is on views never used.
  * Orthographic, unlit, nearest-depth: a controlled check, not a rendering.
  */
-import { Vector3 } from 'three';
-import { orbitDirection } from '../../universal-spatial/reconstruction/multiview';
+import { orbitDirection, viewProjector } from '../../universal-spatial/reconstruction/multiview';
 import { decodeColour, decodeMask, type RealityEvidence, type StoredView } from './evidence';
 import type { RealityModel } from './model';
 
 export type PhotometricResult = { /** mean absolute difference per channel on a 0..255 scale, over pixels both the view and the model cover */ meanAbsError: number; /** share of the view's outline pixels the model covers with colour */ coverage: number; compared: number };
 
 export function renderModelColours(model: RealityModel, azimuthDeg: number, elevationDeg: number, size: number): { rgb: Float32Array; covered: Uint8Array } {
-  const d = orbitDirection(azimuthDeg, elevationDeg), worldUp = Math.abs(d.y) > 0.98 ? new Vector3(0, 0, 1) : new Vector3(0, 1, 0), right = new Vector3().crossVectors(worldUp, d).normalize(), up = new Vector3().crossVectors(d, right).normalize();
-  const half = model.frame.half, s = size / (2 * half), depth = new Float32Array(size * size).fill(-Infinity), rgb = new Float32Array(size * size * 3), covered = new Uint8Array(size * size);
+  const d = orbitDirection(azimuthDeg, elevationDeg);
+  const half = model.frame.half, cam = model.evidence.camera, frame = { centre: model.frame.centre, half }, projector = viewProjector({ id: 'p', res: size, mask: new Uint8Array(size * size), azimuthDeg, elevationDeg, azimuthSource: 'given', ...(cam ? { fovDeg: cam.fovDeg, principalShiftPx: cam.principalShiftPx * (size / model.evidence.res) } : {}) }, frame), depth = new Float32Array(size * size).fill(-Infinity), rgb = new Float32Array(size * size * 3), covered = new Uint8Array(size * size);
   const k = model.evidence.frame.half / model.frame.half; void k;
   for (const part of model.parts) {
     const P = part.positions, C = part.colours, I = part.indices, o = part.origin;
-    const proj = (v: number) => { const x = P[v * 3]! + o[0] - model.frame.centre.x, y = P[v * 3 + 1]! + o[1] - model.frame.centre.y, z = P[v * 3 + 2]! + o[2] - model.frame.centre.z; return [(x * right.x + y * right.y + z * right.z + half) * s, (x * up.x + y * up.y + z * up.z + half) * s, x * d.x + y * d.y + z * d.z] as const; };
+    const proj = (v: number) => { const X = P[v * 3]! + o[0], Y = P[v * 3 + 1]! + o[1], Z = P[v * 3 + 2]! + o[2], uv = projector.project(X, Y, Z) ?? [-1e6, -1e6], t = (X - model.frame.centre.x) * d.x + (Y - model.frame.centre.y) * d.y + (Z - model.frame.centre.z) * d.z; return [uv[0], uv[1], t] as const; };
     for (let t = 0; t < I.length; t += 3) {
       const a = I[t]!, b = I[t + 1]!, c = I[t + 2]!, pa = proj(a), pb = proj(b), pc = proj(c), det = (pb[1] - pc[1]) * (pa[0] - pc[0]) + (pc[0] - pb[0]) * (pa[1] - pc[1]);
       if (Math.abs(det) < 1e-9) continue;

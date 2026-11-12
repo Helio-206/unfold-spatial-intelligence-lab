@@ -5,7 +5,7 @@
  * constraint the solver enforces, and none names what a part IS.
  */
 import { Vector3 } from 'three';
-import { orbitDirection } from '../../universal-spatial/reconstruction/multiview';
+import { orbitDirection, viewProjector } from '../../universal-spatial/reconstruction/multiview';
 import type { RealityModel } from './model';
 
 export type Contact = { a: string; b: string; /** shared face area as a fraction of the smaller part's surface */ areaFraction: number };
@@ -77,8 +77,9 @@ export function analyseStructure(model: RealityModel): Structure {
   const visibility: Visibility[] = model.parts.map((p) => ({ partId: p.id, perView: [], observedViews: 0, status: 'unobserved' as const }));
   const res = 128, half = model.frame.half, s = res / (2 * half), size = grid.size;
   for (const v of model.evidence.views) {
-    const d = orbitDirection(v.azimuthDeg, v.elevationDeg), worldUp = Math.abs(d.y) > 0.98 ? new Vector3(0, 0, 1) : new Vector3(0, 1, 0), right = new Vector3().crossVectors(worldUp, d).normalize(), up = new Vector3().crossVectors(d, right).normalize();
-    const depth = new Float32Array(res * res).fill(-Infinity), proj = (i: number, j: number, k: number) => { const x = grid.min.x + (i + 0.5) * size - model.frame.centre.x, y = grid.min.y + (j + 0.5) * size - model.frame.centre.y, z = grid.min.z + (k + 0.5) * size - model.frame.centre.z; return { u: (x * right.x + y * right.y + z * right.z + half) * s, w: (x * up.x + y * up.y + z * up.z + half) * s, t: x * d.x + y * d.y + z * d.z }; };
+    const cam = model.evidence.camera, pj = viewProjector({ id: v.id, res, mask: new Uint8Array(res * res), azimuthDeg: v.azimuthDeg, elevationDeg: v.elevationDeg, azimuthSource: 'given', ...(cam ? { fovDeg: cam.fovDeg, principalShiftPx: cam.principalShiftPx * (res / model.evidence.res) } : {}) }, { centre: model.frame.centre, half });
+    const d = orbitDirection(v.azimuthDeg, v.elevationDeg);
+    const depth = new Float32Array(res * res).fill(-Infinity), proj = (i: number, j: number, k: number) => { const x = grid.min.x + (i + 0.5) * size - model.frame.centre.x, y = grid.min.y + (j + 0.5) * size - model.frame.centre.y, z = grid.min.z + (k + 0.5) * size - model.frame.centre.z; const uv = pj.project(x + model.frame.centre.x, y + model.frame.centre.y, z + model.frame.centre.z) ?? [-1e6, -1e6]; return { u: uv[0], w: uv[1], t: x * d.x + y * d.y + z * d.z }; };
     const r = Math.max(1, Math.ceil((size * s) / 2));
     for (const sv of surface) { const { u, w, t } = proj(sv.i, sv.j, sv.k); for (let yy = Math.max(0, Math.floor(w) - r); yy <= Math.min(res - 1, Math.floor(w) + r); yy++) for (let xx = Math.max(0, Math.floor(u) - r); xx <= Math.min(res - 1, Math.floor(u) + r); xx++) if (t > depth[yy * res + xx]!) depth[yy * res + xx] = t; }
     const seen = new Map<number, number>();

@@ -1,7 +1,7 @@
 import { BufferGeometry, Float32BufferAttribute, Uint32BufferAttribute, Vector3 } from 'three';
 import { surfaceNets } from '../../universal-spatial/fidelity/surface-nets';
 import { type Grid } from '../../universal-spatial/reconstruction/silhouette';
-import { hullField, leaveOneOutIoU, orbitDirection, reconstructHull, signedDistance2D, type Frame, type HullStats, type SilhouetteView } from '../../universal-spatial/reconstruction/multiview';
+import { hullField, leaveOneOutIoU, reconstructHull, signedDistance2D, viewProjector, type Frame, type HullStats, type SilhouetteView } from '../../universal-spatial/reconstruction/multiview';
 import { applyPartEdits, segmentParts, type PartEditReport, type PartOptions } from '../../universal-spatial/reconstruction/parts';
 import { decodeColour, decodeMask, validateRealityEvidence, type RealityEvidence } from './evidence';
 
@@ -42,7 +42,7 @@ export const FRAME_HALF_PER_DIAGONAL = 0.54;
 export const UNOBSERVED_COLOUR: [number, number, number] = [0.42, 0.48, 0.56];
 
 export function viewsOf(evidence: RealityEvidence): SilhouetteView[] {
-  return evidence.views.map((v) => ({ id: v.id, res: evidence.res, mask: decodeMask(v.maskRle, evidence.res * evidence.res), azimuthDeg: v.azimuthDeg, elevationDeg: v.elevationDeg, azimuthSource: v.azimuthSource }));
+  return evidence.views.map((v) => ({ id: v.id, res: evidence.res, mask: decodeMask(v.maskRle, evidence.res * evidence.res), azimuthDeg: v.azimuthDeg, elevationDeg: v.elevationDeg, azimuthSource: v.azimuthSource, ...(evidence.camera ? { fovDeg: evidence.camera.fovDeg, principalShiftPx: evidence.camera.principalShiftPx } : {}) }));
 }
 
 /** default 'robust-median': measured on the development assets it lowers the novel-view colour error on every asset (reports/reality-engine/benchmark) */
@@ -69,24 +69,19 @@ function buildModelAt(evidence: RealityEvidence, cellsOverride: number | undefin
   const grid = hull.grid, [nx, ny] = grid.cells;
   const automatic = segmentParts(hull.occupancy, grid, options.parts);
   const edited = evidence.partEdits?.length ? applyPartEdits(automatic, hull.occupancy, grid, evidence.partEdits) : null, segmented = edited ?? automatic;
-  const dirs = views.map((v) => orbitDirection(v.azimuthDeg, v.elevationDeg));
+  const projectors = views.map((v) => viewProjector(v, frame)), toward = new Vector3();
   const colours = evidence.views.map((v) => (v.colour ? decodeColour(v.colour, evidence.colourRes) : null));
   const s = evidence.res / (2 * frame.half), exact = hullField(views, frame);
   // A hull is larger than the object, so a surface point can project onto the BACKGROUND of a view. Colour is only taken where the point lands well
   // inside that view's silhouette (>= COLOUR_MARGIN_PX from its edge); otherwise that view does not speak for the point's appearance.
   const sdf = views.map((v) => signedDistance2D(v.mask, evidence.res));
   const COLOUR_MARGIN_PX = 2.5;
-  const bases = dirs.map((d) => {
-    const worldUp = Math.abs(d.y) > 0.98 ? new Vector3(0, 0, 1) : new Vector3(0, 1, 0);
-    const right = new Vector3().crossVectors(worldUp, d).normalize(), up = new Vector3().crossVectors(d, right).normalize();
-    return { d, right, up };
-  });
   const occupied = (x: number, y: number, z: number): boolean => {
     const i = Math.floor((x - grid.min.x) / grid.size), j = Math.floor((y - grid.min.y) / grid.size), k = Math.floor((z - grid.min.z) / grid.size);
     return i >= 0 && j >= 0 && k >= 0 && i < nx && j < ny && k < grid.cells[2] && hull.occupancy[i + nx * (j + ny * k)] === 1;
   };
   const visible = (p: Vector3, n: Vector3, v: number): boolean => {
-    const d = dirs[v]!; if (n.dot(d) < 0.15) return false;
+    const d = projectors[v]!.towardCamera(p.x, p.y, p.z, toward); if (n.dot(d) < 0.15) return false;
     const step = grid.size * 0.7;
     for (let t = grid.size * 2; t < frame.half * 2.2; t += step) if (occupied(p.x + d.x * t, p.y + d.y * t, p.z + d.z * t)) return false;
     return true;
@@ -139,12 +134,11 @@ function buildModelAt(evidence: RealityEvidence, cellsOverride: number | undefin
         if (!visible(p, n, v)) continue;
         any = true;
         const rgb = colours[v]; if (!rgb) continue;
-        const base = bases[v]!, dx = p.x - frame.centre.x, dy = p.y - frame.centre.y, dz = p.z - frame.centre.z;
-        const u = (dx * base.right.x + dy * base.right.y + dz * base.right.z + frame.half) * s, w = (dx * base.up.x + dy * base.up.y + dz * base.up.z + frame.half) * s;
+        const uv = projectors[v]!.project(p.x, p.y, p.z); if (!uv) continue; const u = uv[0], w = uv[1];
         const mu = Math.min(evidence.res - 1, Math.max(0, Math.floor(u))), mw = Math.min(evidence.res - 1, Math.max(0, Math.floor(w)));
         if (sdf[v]![mw * evidence.res + mu]! > -COLOUR_MARGIN_PX) continue;
         const cu = Math.min(evidence.colourRes - 1, Math.max(0, Math.floor((u / evidence.res) * evidence.colourRes))), cw = Math.min(evidence.colourRes - 1, Math.max(0, Math.floor((w / evidence.res) * evidence.colourRes)));
-        const q = (cw * evidence.colourRes + cu) * 3, weight = Math.pow(Math.max(0, n.dot(dirs[v]!)), 4);
+        const q = (cw * evidence.colourRes + cu) * 3, weight = Math.pow(Math.max(0, n.dot(projectors[v]!.towardCamera(p.x, p.y, p.z, toward))), 4);
         if (weight > 0) samples.push({ w: weight, c: [rgb[q]!, rgb[q + 1]!, rgb[q + 2]!] });
       }
       let wsum = 0, r = 0, gg = 0, b = 0;

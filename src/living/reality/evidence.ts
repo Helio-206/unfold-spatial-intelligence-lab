@@ -27,6 +27,12 @@ export type StoredPartEdit = PartEdit & { by: 'person' };
 export type RealityEvidence = {
   /** corrections of the automatic part structure, applied in order on top of it; absent = the automatic structure as computed */
   partEdits?: StoredPartEdit[];
+  /**
+   * Perspective camera model shared by all views. ABSENT = the orthographic assumption (every older evidence). `source` says where the number came from and is never
+   * upgraded: 'declared' = the person gave the field of view; 'estimated' = chosen by held-out consistency of the views themselves (NOT a measurement of the lens).
+   * `principalShiftPx` is the vertical offset of the optical axis in window pixels (always estimated).
+   */
+  camera?: { fovDeg: number; principalShiftPx: number; source: 'declared' | 'estimated'; /** held-out consistency gain over the orthographic model, when estimated */ gain?: number };
   contract: typeof REALITY_EVIDENCE_CONTRACT;
   mode: 'turntable' | 'orbit' | 'orthographic' | 'video';
   res: number; colourRes: number; cells: number;
@@ -94,6 +100,7 @@ export function validateRealityEvidence(value: unknown): RealityEvidence {
     try { decodeMask(v.maskRle, res * res); } catch { fail('REALITY_MASK_INVALID', v.id); }
     if (v.colour !== undefined) { try { decodeColour(v.colour, colourRes); } catch { fail('REALITY_COLOUR_INVALID', v.id); } }
   }
+  if (e.camera !== undefined) { const c = e.camera; if (!c || !(c.fovDeg > 4 && c.fovDeg <= 120) || !Number.isFinite(c.principalShiftPx) || Math.abs(c.principalShiftPx) > 32 || (c.source !== 'declared' && c.source !== 'estimated')) fail('REALITY_CAMERA', 'invalid camera'); }
   if (e.partEdits !== undefined) {
     const pt = (q: unknown) => Array.isArray(q) && q.length === 3 && q.every(Number.isFinite);
     if (!Array.isArray(e.partEdits) || e.partEdits.length > 32) fail('REALITY_PART_EDITS', 'at most 32 part edits');

@@ -72,7 +72,9 @@ export function assessReconstruction(plan: SpatialPlanV2, model: RealityModel, s
   if (ledger.fidelity.class === 'partially_verified' && !axes.independentVisualEvidence.pass) {
     ledger.fidelity = { ...ledger.fidelity, class: 'unvalidated', label: 'Resultado não validado', reasons: [...ledger.fidelity.reasons, `Concordância entre vistas ${(looMean! * 100).toFixed(0)}% passa, mas só ${(groundedShare * 100).toFixed(0)}% dos contornos são verificados (confirmados por si ou de fundo liso); o resto são propostas automáticas. Vistas que repetem o mesmo erro concordam entre si: concordância não é evidência.`], blockers: [...ledger.fidelity.blockers, `Confirme os contornos (botão «O contorno está certo» ou «Ajustar contorno») em pelo menos ${Math.ceil(GROUNDED_SHARE_REQUIRED * views.length)} de ${views.length} vistas.`] };
   }
+  const cam = model.evidence.camera, cameraStatement = cam ? (cam.source === 'declared' ? `Câmara: campo de visão ${cam.fovDeg}° INDICADO por si, não verificado (sem EXIF nem calibração).` : `Câmara: campo de visão ESTIMADO em ${cam.fovDeg}° pelas próprias vistas, não medido; o ganho de concordância sobre a hipótese ortográfica foi ${((cam.gain ?? 0) * 100).toFixed(1)} pontos.`) : 'Câmara: projecção ortográfica assumida (campo de visão desconhecido).';
   const statements = [
+    cameraStatement,
     `${model.evidence.views.length} vistas; profundidade ${model.hull.depthObserved ? 'observada por vistas distintas' : 'NÃO observada (vistas quase paralelas)'}.`,
     `${(model.observedFraction * 100).toFixed(0)}% da superfície é vista por alguma vista; o resto (azul-acinzentado) é hipótese.`,
     tolerance
