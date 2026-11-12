@@ -77,6 +77,10 @@ describe('avaliação honesta', () => {
     const withViews = (outline: 'automatic' | 'confirmed', method?: string) => ({ ...base, mode: 'turntable' as const, views: base.views.map((v) => ({ ...v, outline, ...(method ? { outlineMethod: method } : {}) })) });
     const run = async (ev: typeof base) => { const m = buildModel(ev), sha = await evidenceSha256(ev); return assessReconstruction(planFromModel(m, sha, 'T'), m, sha); };
     const learned = await run(withViews('automatic', 'salient-network+graphcut')), still = await run(withViews('automatic', 'static-background')), classical = await run(withViews('automatic', 'classical-colour')), confirmed = await run(withViews('confirmed', 'salient-network'));
+    // consistency alone never lifts the class: the same geometry is "unvalidated" with unconfirmed learned/static outlines and "partially verified" once outlines are grounded
+    for (const r of [learned, still]) { expect(r.axes.internalConsistency.pass).toBe(true); expect(r.axes.independentVisualEvidence.pass).toBe(false); expect(r.ledger.fidelity.class).toBe('unvalidated'); expect(r.ledger.fidelity.blockers.join(' ')).toMatch(/Confirme os contornos/); }
+    for (const r of [classical, confirmed]) { expect(r.axes.independentVisualEvidence.pass).toBe(true); expect(r.ledger.fidelity.class).toBe('partially_verified'); }
+    expect(confirmed.axes.independentVisualEvidence.confirmedByPerson).toBe(8); expect(learned.axes.geometricFidelity.status).toBe('not_demonstrated');
     expect(learned.benchmarkTolerance).toBeNull(); expect(learned.statements.join(' ')).toMatch(/nenhuma tolerância de erro é afirmada/);
     expect(still.benchmarkTolerance).toBeNull();
     expect(classical.benchmarkTolerance).not.toBeNull();

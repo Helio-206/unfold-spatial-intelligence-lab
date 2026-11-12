@@ -60,6 +60,7 @@ await page.waitForSelector('[data-rl-canvas="7"]', { timeout: 60_000 });
 const refusals = await page.locator('[data-rl-refusal]').count();
 await page.screenshot({ path: resolve(out, '01-intake-analysed.png') });
 record('1 intake local analisa 8 vistas (contornos visíveis, pressupostos escritos)', refusals === 0 && await page.locator('[data-rl-canvas]').count() === 8, `${refusals} recusas`);
+if (await page.locator('#rl-ack-low').count()) await page.check('#rl-ack-low'); // low-confidence captures must be acknowledged
 await page.click('[data-rl="build"]');
 await page.waitForSelector('.sp-root[data-phase="review"]', { timeout: 120_000 });
 const reviewText = (await page.locator('.sp-root').innerText()).slice(0, 400);
@@ -155,6 +156,7 @@ record('G1 sair do Space liberta geometrias GPU da reconstrução', gpuAfter.geo
   await vid.screenshot({ path: resolve(out, '08-video-analysed.png') });
   const assumptionText = await vid.locator('details').first().innerText();
   record('V1 vídeo: fotogramas-chave escolhidos e pressupostos de pose escritos', nViews === 8 && refused === 0 && /instante de cada fotograma/.test(assumptionText), `${nViews} vistas, ${refused} recusas`);
+  if (await vid.locator('#rl-ack-low').count()) await vid.check('#rl-ack-low');
   await vid.click('[data-rl="build"]'); await vid.waitForSelector('.sp-root[data-phase="review"]', { timeout: 120_000 });
   await vid.click('[data-sp="keep-all"]'); await vid.check('#sp-ack'); await vid.click('[data-sp="build"]');
   await vid.waitForFunction(() => (window as never as { __workspace: { spaceActive: boolean } }).__workspace.spaceActive, null, { timeout: 120_000 });

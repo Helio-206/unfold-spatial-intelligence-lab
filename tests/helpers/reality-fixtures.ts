@@ -21,7 +21,7 @@ export function evidenceFromRenders(tris: Tri[], poses: Array<[number, number]>,
     views: poses.map(([az, el], i) => {
       const mask = rasterise(tris, makeView(orbitDirection(az, el), b.c, half, res)), rgb = new Uint8Array(colourRes * colourRes * 3);
       for (let Y = 0; Y < colourRes; Y++) for (let X = 0; X < colourRes; X++) { const k = (Y * colourRes + X) * 3; rgb[k] = 200; rgb[k + 1] = 80 + (X * 3) % 100; rgb[k + 2] = 60; }
-      return { id: `v${i + 1}`, name: `render-${az}-${el}`, azimuthDeg: az, elevationDeg: el, azimuthSource: opts.source ?? 'given', maskRle: encodeMask(mask), ...(opts.withColour === false ? {} : { colour: encodeColour(rgb, colourRes) }) };
+      return { id: `v${i + 1}`, name: `render-${az}-${el}`, azimuthDeg: az, elevationDeg: el, azimuthSource: opts.source ?? 'given', outline: 'confirmed' as const, maskRle: encodeMask(mask), ...(opts.withColour === false ? {} : { colour: encodeColour(rgb, colourRes) }) };
     }),
     assumptions: ['Vistas renderizadas com câmaras conhecidas (teste).'],
   };

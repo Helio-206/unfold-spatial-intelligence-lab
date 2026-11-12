@@ -151,6 +151,10 @@ const refusedAfter = await page.locator('[data-rl-refusal]').count(), strategy =
 const sources = await page.locator('.sp-comp-head .u-label', { hasText: 'contorno confirmado por si' }).count();
 await page.screenshot({ path: resolve(out, '03-after-edit-analysis.png') });
 record('3 depois do ajuste: sem recusas, estratégia casco, orientação de captura presente', refusedAfter === 0 && strategy === 'silhouette-hull' && issues.includes('NO_ELEVATION_VARIETY') && sources >= 8, `recusas ${refusedAfter}, estratégia ${strategy}, avisos [${issues.join(',')}], contornos confirmados ${sources}`);
+// the capture still lacks a top view (and has a blurry frame): the system must say so and refuse to continue silently
+const gateLevel = await page.getAttribute('[data-rl-gate]', 'data-rl-gate'), gateCodes = await page.locator('[data-rl-gate-item]').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.rlGateItem)), buildDisabledBefore = await page.locator('[data-rl="build"]').isDisabled();
+record('3b captura sem vista de cima: o sistema diz o que falta e o botão de reconstruir fica bloqueado até reconhecer a baixa confiança', gateLevel === 'low-confidence' && gateCodes.includes('NO_ELEVATION_VARIETY') && buildDisabledBefore, `nível ${gateLevel}, itens ${gateCodes.join(',')}, botão bloqueado ${buildDisabledBefore}`);
+await page.check('#rl-ack-low'); record('3c depois de reconhecer, o botão abre e passa a dizer «baixa confiança»', !(await page.locator('[data-rl="build"]').isDisabled()) && /baixa confiança/.test(await page.locator('[data-rl="build"]').innerText()), await page.locator('[data-rl="build"]').innerText());
 await page.click('[data-rl="build"]'); await page.waitForSelector('.sp-root[data-phase="review"]', { timeout: 180_000 });
 await page.click('[data-sp="keep-all"]'); await page.check('#sp-ack'); await page.click('[data-sp="build"]');
 await page.waitForFunction(() => (window as never as { __workspace: { spaceActive: boolean } }).__workspace.spaceActive, null, { timeout: 180_000 });
@@ -158,6 +162,8 @@ await page.waitForSelector('[data-reality-review]', { timeout: 30_000 }); await 
 await page.screenshot({ path: resolve(out, '04-built.png') });
 const guidance = await page.locator('[data-rr-guidance]').innerText(), structure = await page.locator('[data-rr-structure]').count(), fidelity = await page.getAttribute('[data-reality-review] [data-fidelity]', 'data-fidelity');
 record('4 Space construído; revisão mostra o que fotografar a seguir e a estrutura medida; nunca "fiel"', /elevad|cima|45/.test(guidance) && structure === 1 && fidelity !== 'faithful', `fidelidade ${fidelity}`);
+const axisPass = await page.locator('[data-rr-axes] [data-axis]').evaluateAll((els) => els.map((e) => `${(e as HTMLElement).dataset.axis}:${(e as HTMLElement).dataset.pass}`));
+record('4b a revisão separa consistência, evidência visual independente e fidelidade geométrica', axisPass.join(',') === 'consistency:true,visual:true,geometry:false', axisPass.join(','));
 record('5 nenhuma chamada paga', providerCalls === 0, `provider=${providerCalls}`);
 record('6 sem erros de browser', errors.length === 0, errors.join(' | ') || 'limpo');
 writeFileSync(resolve(out, 'e2e-result.json'), JSON.stringify({ asset, background: bgFile, results }, null, 2));

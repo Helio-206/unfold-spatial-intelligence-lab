@@ -8,8 +8,8 @@
       "medianChamferPct": 5.075,
       "medianSegIoU": 0.772,
       "badGeometryOver6pct": 1,
-      "partiallyVerified": 12,
-      "badButPartiallyVerified": 1,
+      "partiallyVerified": 0,
+      "badButPartiallyVerified": 0,
       "withToleranceStated": 0
     },
     "varied": {
@@ -18,7 +18,7 @@
       "medianChamferPct": 3.878,
       "medianSegIoU": 0.638,
       "badGeometryOver6pct": 3,
-      "partiallyVerified": 3,
+      "partiallyVerified": 0,
       "badButPartiallyVerified": 0,
       "withToleranceStated": 0
     },
@@ -28,7 +28,7 @@
       "medianChamferPct": 4.35,
       "medianSegIoU": 0.62,
       "badGeometryOver6pct": 2,
-      "partiallyVerified": 1,
+      "partiallyVerified": 0,
       "badButPartiallyVerified": 0,
       "withToleranceStated": 0
     }
@@ -53,7 +53,7 @@
       "refusedViews": 0,
       "status": "reconstructed",
       "chamferPct": 5.332,
-      "fidelityClass": "partially_verified",
+      "fidelityClass": "unvalidated",
       "toleranceStated": false
     },
     {
@@ -185,7 +185,7 @@
       "refusedViews": 0,
       "status": "reconstructed",
       "chamferPct": 1.561,
-      "fidelityClass": "partially_verified",
+      "fidelityClass": "unvalidated",
       "toleranceStated": false
     },
     {
@@ -251,7 +251,7 @@
       "refusedViews": 0,
       "status": "reconstructed",
       "chamferPct": 1.62,
-      "fidelityClass": "partially_verified",
+      "fidelityClass": "unvalidated",
       "toleranceStated": false
     },
     {
@@ -317,7 +317,7 @@
       "refusedViews": 0,
       "status": "reconstructed",
       "chamferPct": 5.143,
-      "fidelityClass": "partially_verified",
+      "fidelityClass": "unvalidated",
       "toleranceStated": false
     },
     {
@@ -383,7 +383,7 @@
       "refusedViews": 0,
       "status": "reconstructed",
       "chamferPct": 5.598,
-      "fidelityClass": "partially_verified",
+      "fidelityClass": "unvalidated",
       "toleranceStated": false
     },
     {
@@ -405,7 +405,7 @@
       "refusedViews": 0,
       "status": "reconstructed",
       "chamferPct": 2.777,
-      "fidelityClass": "partially_verified",
+      "fidelityClass": "unvalidated",
       "toleranceStated": false
     },
     {
@@ -449,7 +449,7 @@
       "refusedViews": 0,
       "status": "reconstructed",
       "chamferPct": 6.139,
-      "fidelityClass": "partially_verified",
+      "fidelityClass": "unvalidated",
       "toleranceStated": false
     },
     {
@@ -515,7 +515,7 @@
       "refusedViews": 0,
       "status": "reconstructed",
       "chamferPct": 3.612,
-      "fidelityClass": "partially_verified",
+      "fidelityClass": "unvalidated",
       "toleranceStated": false
     },
     {
@@ -581,7 +581,7 @@
       "refusedViews": 0,
       "status": "reconstructed",
       "chamferPct": 2.817,
-      "fidelityClass": "partially_verified",
+      "fidelityClass": "unvalidated",
       "toleranceStated": false
     },
     {
@@ -647,7 +647,7 @@
       "refusedViews": 0,
       "status": "reconstructed",
       "chamferPct": 5.33,
-      "fidelityClass": "partially_verified",
+      "fidelityClass": "unvalidated",
       "toleranceStated": false
     },
     {
@@ -733,7 +733,7 @@
       "refusedViews": 0,
       "status": "reconstructed",
       "chamferPct": 2.668,
-      "fidelityClass": "partially_verified",
+      "fidelityClass": "unvalidated",
       "toleranceStated": false
     },
     {
@@ -755,7 +755,7 @@
       "refusedViews": 0,
       "status": "reconstructed",
       "chamferPct": 2.703,
-      "fidelityClass": "partially_verified",
+      "fidelityClass": "unvalidated",
       "toleranceStated": false
     },
     {
@@ -777,7 +777,7 @@
       "refusedViews": 0,
       "status": "reconstructed",
       "chamferPct": 5.075,
-      "fidelityClass": "partially_verified",
+      "fidelityClass": "unvalidated",
       "toleranceStated": false
     },
     {
@@ -843,7 +843,7 @@
       "refusedViews": 0,
       "status": "reconstructed",
       "chamferPct": 5.132,
-      "fidelityClass": "partially_verified",
+      "fidelityClass": "unvalidated",
       "toleranceStated": false
     },
     {
@@ -909,7 +909,7 @@
       "refusedViews": 0,
       "status": "reconstructed",
       "chamferPct": 4.195,
-      "fidelityClass": "partially_verified",
+      "fidelityClass": "unvalidated",
       "toleranceStated": false
     },
     {
@@ -931,7 +931,7 @@
       "refusedViews": 0,
       "status": "reconstructed",
       "chamferPct": 4.259,
-      "fidelityClass": "partially_verified",
+      "fidelityClass": "unvalidated",
       "toleranceStated": false
     },
     {

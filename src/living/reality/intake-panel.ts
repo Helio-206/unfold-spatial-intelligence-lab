@@ -1,5 +1,6 @@
 import type { SpatialPlanV2 } from '../../universal-spatial/contracts-v2';
 import { checkFile } from '../experience/intake';
+import { assessGate } from './capture-gate';
 import { autoOutlines } from './auto-segmentation';
 import { createSodRunner, type SodRunner } from './sod';
 import { selectStrategy, type StrategyInput } from './strategy';
@@ -115,6 +116,14 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
     return `<div data-rl-strategy="${st.id}"><p class="u-label">Estratégia escolhida: <b>${st.id}</b> · tecto de fidelidade: ${st.ceiling}${st.certified ? ' · configuração medida no benchmark' : ' · não certificada'}</p><ul>${[...st.reasons, ...st.limits].map((t) => `<li class="u-small">${esc(t)}</li>`).join('')}</ul>${st.requires.length ? `<p class="u-small"><b>Para melhorar:</b> ${st.requires.map(esc).join(' ')}</p>` : ''}</div>`;
   };
   const qualityHtml = (r: IntakeResult | null) => !r?.capture ? '' : `<div data-rl-capture><p class="u-label">Cobertura: ${r.capture.coverage.views} vistas · maior sector sem vista ${r.capture.coverage.azimuthMaxGapDeg.toFixed(0)}° · elevação ${r.capture.coverage.elevationMinDeg.toFixed(0)}° a ${r.capture.coverage.elevationMaxDeg.toFixed(0)}°</p>${r.capture.issues.length ? `<ul class="sp-list" aria-label="Qualidade e cobertura">${r.capture.issues.map((i) => `<li class="sp-comp" data-rl-issue="${i.code}" data-severity="${i.severity}"><div class="sp-comp-head"><b>${esc(i.message)}</b></div><p class="u-small">${esc(i.advice)}</p></li>`).join('')}</ul>` : '<p class="u-small">Sem avisos de qualidade ou cobertura. (Limiares heurísticos, não calibrados em fotografias reais.)</p>'}</div>`;
+  let ackLow = false;
+  const gate = () => assessGate({ result, mode, elevationDeclared: elevation.trim() !== '' });
+  const gateHtml = () => {
+    if (!result?.evidence) return ''; const g = gate(), real = g.items.filter((i) => i.severity !== 'info'), info = g.items.filter((i) => i.severity === 'info');
+    if (!real.length && !info.length) return '';
+    return `<div data-rl-gate="${g.level}" class="sp-card"><p class="u-label"><b>${g.level === 'ok' ? 'Captura suficiente para a configuração medida' : 'Falta informação para uma reconstrução de confiança'}</b></p>${real.length ? `<ul>${real.map((i) => `<li class="u-small" data-rl-gate-item="${esc(i.code)}">${esc(i.what)} <b>O que fazer:</b> ${esc(i.how)}</li>`).join('')}</ul>` : ''}${info.map((i) => `<p class="u-small" data-rl-gate-item="${esc(i.code)}">${esc(i.what)} <b>Para reduzir:</b> ${esc(i.how)}</p>`).join('')}${g.level === 'low-confidence' ? `<label class="u-small"><input type="checkbox" id="rl-ack-low" ${ackLow ? 'checked' : ''}> Percebo que falta informação e quero reconstruir mesmo assim, com baixa confiança (fica registado na evidência).</label>` : ''}</div>`;
+  };
+  const buildAllowed = () => { const g = gate(); return g.level === 'ok' || (g.level === 'low-confidence' && ackLow); };
   const html = () => `<div class="sp-card sp-card--review" data-reality-intake>
     <div class="sp-head"><h1 class="sp-h1">Reconstruir a partir de várias vistas</h1><p class="u-label">reconstrução local · sem chamada à IA · nada sai do seu navegador</p></div>
     <p class="u-small">Dê várias imagens do mesmo objecto. O UNFOLD extrai o contorno de cada uma, cruza-os e constrói o sólido que todas permitem — um <b>limite superior</b> da forma. Concavidades e o que nenhuma vista mostra ficam como hipótese, e o que foi preciso assumir fica escrito.</p>
@@ -135,10 +144,11 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
     ${problem ? `<p class="sp-problem" role="alert">${esc(problem)}</p>` : ''}
     ${qualityHtml(result)}
     ${strategyHtml(result)}
+    ${gateHtml()}
     ${result ? `<ul class="sp-list" aria-label="Contornos extraídos">${thumbs(result)}</ul>${result.refusals.map((r) => `<p class="sp-problem" role="alert" data-rl-refusal="${r.code}">${esc(REFUSAL_COPY[r.code])}${r.viewName ? ` (${esc(r.viewName)})` : ''} <span class="u-label">${esc(r.detail)}</span></p>`).join('')}${result.evidence ? `<details open><summary class="u-label">O que foi assumido</summary><ul>${result.evidence.assumptions.map((a) => `<li class="u-small">${esc(a)}</li>`).join('')}</ul></details>` : ''}` : ''}
     <div class="sp-row"><button class="u-btn u-btn--outline" type="button" data-rl="cancel">Voltar</button><span class="sp-grow"></span>
       <button class="u-btn u-btn--outline" type="button" data-rl="analyse" ${busy ? 'disabled' : ''}>Analisar vistas</button>
-      <button class="u-btn u-btn--primary" type="button" data-rl="build" ${busy || !result?.evidence ? 'disabled' : ''}>Reconstruir</button></div></div>`;
+      <button class="u-btn u-btn--primary" type="button" data-rl="build" ${busy || !result?.evidence || !buildAllowed() ? 'disabled' : ''}>${result?.evidence && gate().level === 'low-confidence' ? 'Reconstruir (baixa confiança)' : 'Reconstruir'}</button></div></div>`;
 
   const paint = () => {
     if (disposed) return;
@@ -189,7 +199,7 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
     return out;
   };
   const analyse = async (): Promise<IntakeResult | null> => {
-    problem = null; busy = true; paint();
+    problem = null; busy = true; ackLow = false; paint();
     try { return await analyseNow(); } finally { busy = false; }
   };
   const analyseNow = async (): Promise<IntakeResult | null> => {
@@ -241,10 +251,12 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
     const act = b.dataset.rl;
     if (act === 'cancel') { abort?.abort(); deps.onCancel(); }
     else if (act === 'analyse') { void analyse().then(() => paint()); }
-    else if (act === 'build' && result?.evidence && !busy) {
+    else if (act === 'build' && result?.evidence && !busy && buildAllowed()) {
+      const lowItems = gate().items.filter((i) => i.severity === 'low-confidence').map((i) => i.code);
+      if (lowItems.length) result = { ...result, evidence: { ...result.evidence, assumptions: [...result.evidence.assumptions, `Reconstruído com baixa confiança, reconhecido por si: ${lowItems.join(', ')}.`].slice(0, 16) } };
       busy = true; paint();
       abort = new AbortController();
-      void deps.host.create(result.evidence, title(), abort.signal).then((r) => { if (!disposed) deps.onDone({ sha256: r.sha256, plan: r.plan, title: r.plan.title }); }).catch((e) => { if (disposed || (e as DOMException)?.name === 'AbortError') return; problem = (e as { code?: string })?.code === 'REALITY_EMPTY_RECONSTRUCTION' ? 'As vistas não são consistentes entre si: o casco ficou vazio. Quase de certeza um ou mais contornos estão errados (ou a ordem das imagens não é a da volta). Abra «Ajustar contorno» nas vistas marcadas e volte a analisar. Nada foi construído.' : 'A reconstrução falhou. Nada foi construído.'; busy = false; paint(); });
+      void deps.host.create(result.evidence!, title(), abort.signal).then((r) => { if (!disposed) deps.onDone({ sha256: r.sha256, plan: r.plan, title: r.plan.title }); }).catch((e) => { if (disposed || (e as DOMException)?.name === 'AbortError') return; problem = (e as { code?: string })?.code === 'REALITY_EMPTY_RECONSTRUCTION' ? 'As vistas não são consistentes entre si: o casco ficou vazio. Quase de certeza um ou mais contornos estão errados (ou a ordem das imagens não é a da volta). Abra «Ajustar contorno» nas vistas marcadas e volte a analisar. Nada foi construído.' : 'A reconstrução falhou. Nada foi construído.'; busy = false; paint(); });
     }
   };
   const onChange = (event: Event) => {
@@ -253,7 +265,8 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
     else if (t.id === 'rl-files' && t.files) void take([...t.files]);
     else if (t.id === 'rl-video' && t.files?.[0]) void takeVideo(t.files[0]);
     else if (t.dataset.rlFileSlot !== undefined && t.files?.[0]) void take([t.files[0]], Number(t.dataset.rlFileSlot));
-    else if (t.id === 'rl-elev') { elevation = t.value; result = null; }
+    else if (t.id === 'rl-ack-low') { ackLow = t.checked; paint(); }
+    else if (t.id === 'rl-elev') { elevation = t.value; result = null; ackLow = false; }
     else if (t.dataset.rlAz !== undefined) { slots[Number(t.dataset.rlAz)]!.azimuth = t.value; result = null; }
   };
   container.addEventListener('click', onClick); container.addEventListener('change', onChange);

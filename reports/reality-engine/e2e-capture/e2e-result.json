@@ -63,9 +63,24 @@
       "detail": "recusas 0, estratégia silhouette-hull, avisos [BLURRY,NO_ELEVATION_VARIETY], contornos confirmados 8"
     },
     {
+      "step": "3b captura sem vista de cima: o sistema diz o que falta e o botão de reconstruir fica bloqueado até reconhecer a baixa confiança",
+      "verdict": "PASS",
+      "detail": "nível low-confidence, itens BLURRY,NO_ELEVATION_VARIETY,CAMERA_UNCALIBRATED, botão bloqueado true"
+    },
+    {
+      "step": "3c depois de reconhecer, o botão abre e passa a dizer «baixa confiança»",
+      "verdict": "PASS",
+      "detail": "Reconstruir (baixa confiança)"
+    },
+    {
       "step": "4 Space construído; revisão mostra o que fotografar a seguir e a estrutura medida; nunca \"fiel\"",
       "verdict": "PASS",
       "detail": "fidelidade partially_verified"
+    },
+    {
+      "step": "4b a revisão separa consistência, evidência visual independente e fidelidade geométrica",
+      "verdict": "PASS",
+      "detail": "consistency:true,visual:true,geometry:false"
     },
     {
       "step": "5 nenhuma chamada paga",
