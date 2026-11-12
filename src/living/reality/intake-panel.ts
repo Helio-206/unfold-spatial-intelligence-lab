@@ -106,7 +106,7 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
   const drawingSlots = (): Slot[] => [{ key: 'front', label: 'Frente', image: null, azimuth: '', thumb: '' }, { key: 'side', label: 'Lado direito', image: null, azimuth: '', thumb: '' }, { key: 'top', label: 'Topo', image: null, azimuth: '', thumb: '' }];
   const title = () => (container.querySelector<HTMLInputElement>('#rl-title')?.value.trim() || 'Objecto reconstruído de várias vistas').slice(0, 100);
 
-  const thumbs = (r: IntakeResult | null) => (r ? r.views : []).map((v, i) => `<li class="sp-comp" data-rl-view="${i}"><div class="sp-comp-head"><b>${esc(v.name)}</b><span class="u-label">contorno ${v.maskSource === 'confirmed' ? 'confirmado' : `automático${v.maskMethod ? ` (${esc(v.maskMethod)}) · confirme visualmente` : ''}`} · ${v.reliable ? 'credível' : 'NÃO credível'} · ${(v.foregroundRatio * 100).toFixed(0)}% da imagem</span></div>${v.reasons.length ? `<p class="u-small">${esc(v.reasons.join('; '))}</p>` : ''}<canvas data-rl-canvas="${i}" width="120" height="90" aria-label="Contorno extraído de ${esc(v.name)}"></canvas></li>`).join('');
+  const thumbs = (r: IntakeResult | null) => (r ? r.views : []).map((v, i) => `<li class="sp-comp" data-rl-view="${i}"><div class="sp-comp-head"><b>${esc(v.name)}</b><span class="u-label">contorno ${v.maskSource === 'confirmed' ? 'confirmado' : `automático${v.maskMethod ? ` (${esc(v.maskMethod)}) · confirme visualmente` : ''}`} · ${v.reliable ? 'credível' : 'NÃO credível'} · ${(v.foregroundRatio * 100).toFixed(0)}% da imagem</span></div>${v.reasons.length ? `<p class="u-small">${esc(v.reasons.join('; '))}</p>` : ''}<canvas data-rl-canvas="${i}" width="120" height="90" aria-label="Contorno extraído de ${esc(v.name)}"></canvas>${v.maskSource === 'automatic' && v.reliable && mode !== 'video' && mode !== 'drawing' ? `<button class="u-btn u-btn--outline" type="button" data-rl-confirm="${i}" aria-label="Confirmar que o contorno de ${esc(v.name)} está certo">O contorno está certo</button>` : ''}</li>`).join('');
   const strategyHtml = (r: IntakeResult | null) => {
     if (!r) return '';
     const kind: StrategyInput['kind'] = mode === 'drawing' ? 'drawing-3view' : mode === 'video' ? 'video' : 'multi-image';
@@ -179,6 +179,8 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
     busy = false; paint();
   };
   let sodRunner: SodRunner | null = null;
+  /** the images of the last analysis (with their automatic outlines) and the slot each came from, so a person can confirm an automatic outline as it is */
+  let lastImages: IntakeImage[] = [], lastSlots: number[] = [];
   /** Gives every image without a person's outline the best automatic one (static background, salient network, colour), recording the method; the rest is left for the gate and the editor. */
   const withAutoOutlines = async (images: IntakeImage[]): Promise<IntakeImage[]> => {
     const todo = images.map((im, i) => (im.mask ? -1 : i)).filter((i) => i >= 0); if (!todo.length) return images;
@@ -202,6 +204,7 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
       result = intakeOrbit(picks.map((i) => candidates[i]!), { azimuthsDeg: picks.map((i) => 360 * (videoTimes[i]! / videoDuration)), azimuthsAssumed: true, mode: 'video', ...elev() });
     } else {
       const images = await withAutoOutlines(slots.map((s) => s.image!).filter(Boolean));
+      lastImages = images; lastSlots = slots.map((s, i) => (s.image ? i : -1)).filter((i) => i >= 0);
       if (mode === 'orbit') {
         const az = slots.map((s) => Number(s.azimuth));
         if (az.some((a) => !Number.isFinite(a))) { problem = REFUSAL_COPY.POSE_COUNT_MISMATCH; result = null; return null; }
@@ -227,6 +230,12 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
   const onClick = (event: Event) => {
     const ed = (event.target as HTMLElement).closest<HTMLElement>('[data-rl-edit]');
     if (ed) { event.stopPropagation(); openEditor(Number(ed.dataset.rlEdit)); return; }
+    const cf = (event.target as HTMLElement).closest<HTMLElement>('[data-rl-confirm]');
+    if (cf) { // a person looked at the outline and says it is right: that is HUMAN CONFIRMATION (a different category from the automatic proposal)
+      event.stopPropagation(); const k = Number(cf.dataset.rlConfirm), slotIndex = lastSlots[k], img = lastImages[k];
+      if (slotIndex !== undefined && img?.mask) { slots[slotIndex]!.image = { ...img, maskSource: 'confirmed' }; delete (slots[slotIndex]!.image as { maskMethod?: string }).maskMethod; result = null; void analyse().then(() => paint()); }
+      return;
+    }
     const b = (event.target as HTMLElement).closest<HTMLElement>('[data-rl]'); if (!b) return;
     event.stopPropagation();
     const act = b.dataset.rl;

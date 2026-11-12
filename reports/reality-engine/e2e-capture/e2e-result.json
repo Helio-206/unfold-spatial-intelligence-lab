@@ -13,6 +13,11 @@
       "detail": "0 vistas recusadas, estratégia silhouette-hull, rotulado automático true"
     },
     {
+      "step": "1b «O contorno está certo» converte só essa vista em confirmação humana",
+      "verdict": "PASS",
+      "detail": "1 confirmada, 7 automáticas de 8"
+    },
+    {
       "step": "2b editor acessível (overlay): nomes, contraste ≥ 4.5:1 (texto), alvos ≥ 24 px, região de estado",
       "verdict": "PASS",
       "detail": "sem nome 0, contraste fraco nenhum (pior 6.24 «Usar este contorno»), alvos pequenos nenhum"
@@ -25,7 +30,7 @@
     {
       "step": "2c editor por teclado: cada paragem de Tab mostra indicador de foco visível",
       "verdict": "PASS",
-      "detail": "25 controlos alcançados por Tab, 0 sem indicador de foco"
+      "detail": "26 controlos alcançados por Tab, 0 sem indicador de foco"
     },
     {
       "step": "2d editor sem sobreposição nem fuga a 1500×1000",

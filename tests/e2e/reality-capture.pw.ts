@@ -60,6 +60,15 @@ const autoText = await page.locator('.rl-panel, [data-rl-strategy]').first().eva
 const autoLabelled = /automático \(/.test(autoText) && /confirme visualmente/.test(autoText);
 record('1 contorno automático: ou recusado (fail-closed) com «Ajustar contorno», ou aceite e rotulado «automático» com método e «confirme visualmente»', (refusedAuto >= 4 && strategyAuto === 'needs-input' && /Ajustar contorno/.test(await page.locator('[data-rl-strategy]').innerText())) || (refusedAuto < 4 && autoLabelled), `${refusedAuto} vistas recusadas, estratégia ${strategyAuto}, rotulado automático ${autoLabelled}`);
 
+// 1b. a person can confirm an automatic outline as it is: that view becomes HUMAN-confirmed, the others stay automatic (the categories are not mixed)
+const confirmable = await page.locator('[data-rl-confirm]').count();
+if (confirmable > 0) {
+  await page.click('[data-rl-confirm="0"]');
+  await page.waitForFunction(() => /confirmado/.test(document.querySelector('[data-rl-view="0"] .u-label')?.textContent ?? ''), null, { timeout: 60_000 });
+  const heads = await page.locator('[data-rl-view] .u-label').allInnerTexts(), confirmedNow = heads.filter((t) => /contorno confirmado/.test(t)).length, automaticNow = heads.filter((t) => /contorno autom/.test(t)).length;
+  record('1b «O contorno está certo» converte só essa vista em confirmação humana', confirmedNow === 1 && automaticNow === heads.length - 1, `${confirmedNow} confirmada, ${automaticNow} automáticas de ${heads.length}`);
+} else record('1b «O contorno está certo» converte só essa vista em confirmação humana', true, 'nenhum contorno automático credível para confirmar neste cenário (todos recusados)');
+
 // 2. interactive editor on every view: box around the object, one brush stroke inside (object) and one outside (background), compute, accept
 let editedOk = 0;
 for (let i = 0; i < 8; i++) {
