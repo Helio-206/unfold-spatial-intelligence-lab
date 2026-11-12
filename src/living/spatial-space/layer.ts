@@ -1,4 +1,4 @@
-import { Box3, Color, Group, Mesh, Quaternion, Raycaster, Vector3, type Camera, type Material, type Object3D, type Vector2 } from 'three';
+import { Box3, Color, Group, Matrix4, Mesh, Quaternion, Raycaster, Vector3, type Camera, type Material, type Object3D, type Vector2 } from 'three';
 import { analyzeAssembly, describeDefect, refineAssembly, type AssemblyAnalysis } from '../../universal-spatial/assembly-analysis';
 import { applySpatialOperationV2, type GeometryNodeV2, type SpatialOperationV2, type SpatialPlanV2, type SpatialReviewPrecondition } from '../../universal-spatial/contracts-v2';
 import { collectWorldPoints, heroAzimuth, normalizeForPresentation } from '../../universal-spatial/framing';
@@ -175,6 +175,34 @@ export class PlanSpaceLayer implements SpaceLayer {
     return true;
   }
 
+  private rigidOriginals = new Map<string, { target: Object3D; matrix: Matrix4; auto: boolean; restWorld: Matrix4 }>();
+  /**
+   * Rigid-body poses from the mechanism solver, in PLAN coordinates: each component's world transform becomes D * rest (D = displacement from the rest pose), applied parent-first
+   * so nested components do not double-move. Presentation only: the plan, its revision and its history are untouched; rebuild/dispose/clear restores exactly.
+   */
+  applyTransientPoses(poses: Record<string, number[]>): boolean {
+    if (this.disposed || !this.compiled || !this.wrapper) return false;
+    this.root.updateMatrixWorld(true);
+    const rootWorld = new Matrix4().copy(this.compiled.matrixWorld), rootInv = rootWorld.clone().invert(), depth = (id: string): number => { let d = 0; for (let c = this.plan.components.find((x) => x.id === id); c?.parentId && d < 32; d++) c = this.plan.components.find((x) => x.id === c!.parentId); return d; };
+    const ids = Object.keys(poses).filter((id) => this.componentGroup(id)).sort((a, b) => depth(a) - depth(b) || (a < b ? -1 : 1));
+    // the rest state of EVERY posed group is captured before any of them moves (a child's rest world matrix depends on its parent not having moved yet)
+    for (const id of ids) { const group = this.componentGroup(id)!; if (!this.rigidOriginals.has(id)) { group.updateWorldMatrix(true, false); this.rigidOriginals.set(id, { target: group, matrix: group.matrix.clone(), auto: group.matrixAutoUpdate, restWorld: group.matrixWorld.clone() }); } }
+    for (const id of ids) {
+      const group = this.componentGroup(id)!;
+      const o = this.rigidOriginals.get(id)!, D = new Matrix4().fromArray(poses[id]!), desired = rootWorld.clone().multiply(D).multiply(rootInv).multiply(o.restWorld);
+      group.parent?.updateWorldMatrix(true, false); const local = group.parent ? group.parent.matrixWorld.clone().invert().multiply(desired) : desired;
+      group.matrixAutoUpdate = false; group.matrix.copy(local); group.matrixWorldNeedsUpdate = true;
+    }
+    this.root.updateMatrixWorld(true); this.host.redraw(); return true;
+  }
+  clearRigidPoses(): void {
+    for (const o of this.rigidOriginals.values()) { o.target.matrix.copy(o.matrix); o.target.matrixAutoUpdate = o.auto; o.target.matrixWorldNeedsUpdate = true; }
+    this.rigidOriginals.clear(); if (!this.disposed) { this.root.updateMatrixWorld(true); this.host.redraw(); }
+  }
+  get hasRigidPoses(): boolean { return this.rigidOriginals.size > 0; }
+  /** world-space centre of a component group at rest or as currently posed (for tests and measurements) */
+  componentWorldCentre(id: string): [number, number, number] | null { const g = this.componentGroup(id); if (!g) return null; this.root.updateMatrixWorld(true); const b = new Box3(); g.traverse((o) => { if (o instanceof Mesh && o.userData.spatialEntityId === id) b.expandByObject(o); }); if (b.isEmpty()) return null; const c = b.getCenter(new Vector3()); return [c.x, c.y, c.z]; }
+
   clearTransientPoses(): void {
     for (const { target, quaternion } of this.transientOriginals.values()) target.quaternion.copy(quaternion);
     this.transientOriginals.clear();
@@ -182,7 +210,7 @@ export class PlanSpaceLayer implements SpaceLayer {
   }
 
   private build(): ReturnType<typeof compileSpatialPlanV2>['stats'] {
-    this.transientOriginals.clear(); // groups are rebuilt below; transient poses never survive a rebuild
+    this.transientOriginals.clear(); this.rigidOriginals.clear(); // groups are rebuilt below; transient poses never survive a rebuild
     this.explanationVersion++;
     this.release();
     this.routed?.retire?.(); this.cancelContinuation(); // results asked for by the previous plan version can no longer be used
@@ -528,6 +556,17 @@ export class PlanSpaceLayer implements SpaceLayer {
     this.pending = { label, before: 'colocação actual', after: `${new Set(operations.map((op) => op.componentId)).size} componentes: ${[...new Set(operations.map((op) => op.kind === 'set-geometry' ? 'geometria' : op.kind === 'set-transform' ? 'posição, rotação e escala' : op.kind === 'set-material' ? 'material' : 'padrão'))].join(', ')}`, operations, needsAuthorization: true, source: 'solver', evidence, ...(options?.authorisationGuard ? { authorisationGuard: options.authorisationGuard } : {}), ...(options?.reviewBinding ? { reviewBinding: options.reviewBinding } : {}) }; this.authorised = false;
     this.applyPaint(); this.host.changed(); return true;
   }
+  /**
+   * A STRUCTURAL change (add / remove / merge / split components) as one previewed step. It is validated against a copy first; it is applied only when a person authorises it,
+   * as one transaction (server revision + one undo). Components the operation does not name keep their ids, geometry, transforms and provenance.
+   */
+  proposeStructural(operations: SpatialOperationV2[], label: string, origin: 'person' | 'ai', evidence: string): boolean {
+    if (this.disposed || !operations.length || this.isBusy) return false;
+    let probe = this.plan; try { for (const operation of operations) probe = applySpatialOperationV2(probe, operation, { origin: 'inferred', evidence: 'preview' }); } catch { return false; }
+    const before = this.plan.components.map((c) => c.id), after = probe.components.map((c) => c.id), gone = before.filter((id) => !after.includes(id)), born = after.filter((id) => !before.includes(id));
+    this.pending = { label, before: `${before.length} componentes`, after: `${after.length} componentes${gone.length ? ` · sai: ${gone.join(', ')}` : ''}${born.length ? ` · entra: ${born.join(', ')}` : ''}`, operations, needsAuthorization: true, source: origin === 'ai' ? 'meta' : 'person', evidence };
+    this.authorised = false; this.applyPaint(); this.host.changed(); return true;
+  }
   cancelPending(): void { this.pending = null; this.authorised = false; this.host.changed(); }
   get selectedId(): string | null { return this.selected; }
 
@@ -603,7 +642,7 @@ export class PlanSpaceLayer implements SpaceLayer {
   }
 
   dispose(): void {
-    this.disposed = true; this.clearTransientPoses(); this.pending = null; this.routed?.retire?.(); this.routed = null; this.cancelContinuation();
+    this.disposed = true; this.clearTransientPoses(); this.clearRigidPoses(); this.pending = null; this.routed?.retire?.(); this.routed = null; this.cancelContinuation();
     this.director?.dispose(); this.director = null; this.release();
     this.releaseRetiredMaterials();
   }

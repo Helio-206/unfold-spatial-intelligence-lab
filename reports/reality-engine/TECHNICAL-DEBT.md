@@ -15,6 +15,9 @@ Gerado por `npx tsx scripts/reality-debt-report.ts` a partir de `src/living/real
 | D9-materials-grounded | 3 | Materiais PBR fundamentados em evidência | >= 0.7 (correlação com os factores de material do GT) | — | **blocked** — depende de: método de estimação ainda não existe (investigar com referência de material) |
 | D10-device-budget | 3 | Orçamento de desempenho em GPU real por dispositivo | <= 16.7 (ms por fotograma no dispositivo-alvo) | — | **blocked** — depende de: GPU real |
 | D11-structure-on-built-space | 2 | Alterar a estrutura de um Space já construído | >= 1 (operações add/remove-component existem (1 = sim)) | 1.000 | **met** |
+| D12-functional-inference-accuracy | 2 | Exactidão da inferência funcional contra mecanismos anotados | >= 0.8 (F1 das juntas propostas contra anotação humana) | — | **blocked** — depende de: conjunto de objectos com mecanismos anotados por pessoas independentes |
+| D13-muse-spark-real-validation | 2 | Validação real da integração com o Muse Spark no agente espacial | >= 1 (chamadas reais gravadas e verificadas contra o grounding) | — | **blocked** — depende de: credenciais e orçamento autorizados (MODEL_API_KEY no servidor) |
+| D14-dynamics-closed-loops | 3 | Dinâmica com laços fechados, contactos e atrito | >= 1 (o motor aceita laços fechados (1 = sim)) | 0.000 | **open** |
 
 ## Porquê cada uma importa
 - **D1-geometry-real-photos** — Todo o benchmark é de renders; nenhuma afirmação sobre fotografias é sustentada.
@@ -28,3 +31,6 @@ Gerado por `npx tsx scripts/reality-debt-report.ts` a partir de `src/living/real
 - **D9-materials-grounded** — A reflectância não é medida; o material é mate assumido.
 - **D10-device-budget** — Medições feitas em renderização por software.
 - **D11-structure-on-built-space** — Cumprido na Fase 02: o Spatial Core tem operações estruturais transaccionais (acrescentar, remover, fundir, dividir), testadas também pelo servidor real. Medição: `src/universal-spatial/contracts-v2.ts`.
+- **D12-functional-inference-accuracy** — As regras heurísticas de juntas só foram testadas em exemplos; não há referência independente de mecanismos reais.
+- **D13-muse-spark-real-validation** — Só o planeador simulado e um fetch contado foram exercitados; nenhuma chamada real foi feita.
+- **D14-dynamics-closed-loops** — O motor dinâmico só trata cadeias abertas. Medição: `src/living/intelligence/dynamics.ts`.

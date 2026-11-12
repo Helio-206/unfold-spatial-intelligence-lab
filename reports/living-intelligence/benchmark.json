@@ -1,0 +1,39 @@
+{
+  "generatedBy": "scripts/benchmark/intelligence-bench.ts",
+  "node": "v22.23.4",
+  "accuracy": {
+    "forwardKinematics2R_maxErrorUnits": 2.713253228986198e-11,
+    "fourBarVsIndependentSolver_maxErrorUnits": 7.437345528278855e-11,
+    "sliderCrankVsClosedForm_maxErrorUnits": 5.411893155837788e-11,
+    "pendulumVsEllipticPeriod": [
+      {
+        "amplitudeRad": 0.1,
+        "periodRelativeError": 3.182329569305025e-10,
+        "energyDrift": 4.2425322793579794e-14
+      },
+      {
+        "amplitudeRad": 1,
+        "periodRelativeError": 1.5532062668330022e-10,
+        "energyDrift": 1.0523978795630796e-11
+      },
+      {
+        "amplitudeRad": 2.5,
+        "periodRelativeError": 3.2960235043444536e-11,
+        "energyDrift": 7.342199482445454e-11
+      }
+    ]
+  },
+  "determinism": {
+    "identicalAcrossRuns": true
+  },
+  "resources": {
+    "fourBarSolveMs": 0.22717902000000095,
+    "chain12Joints2InputsSolveMs": 0.974382700000001,
+    "fourBarSweep100PositionsMs": 15.2084022,
+    "pendulumDynamics5sAt500HzMs": 213.07800799999995,
+    "structuralMergeOf4In80Components_ms": 0.6540564500000073,
+    "structuralRemoveIn80Components_ms": 0.386798449999992,
+    "unaffectedComponentsByteIdenticalAfterMerge": true,
+    "heapMB": 40
+  }
+}

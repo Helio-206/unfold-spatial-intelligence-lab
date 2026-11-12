@@ -71,7 +71,8 @@ export function validateMechanism(value: unknown): Mechanism {
   return m as Mechanism;
 }
 
-export const mechanismHash = (m: Mechanism): string => sha256Hex(canonicalize({ ...m, events: m.events.map((e) => ({ kind: e.kind, target: e.target, by: e.by })) })); // times do not enter the hash: the same mechanism hashes the same
+/** The hash identifies what the SOLVER sees (parts, ground, joints, couplings, physics), not the provenance log (and, for purely kinematic experiments, not the physical parameters they never read): confirming a joint or undoing a structural edit does not make the same computation a different one. */
+export const mechanismHash = (m: Mechanism, options: { physics?: boolean } = {}): string => sha256Hex(canonicalize({ ...m, units: options.physics === false ? null : m.units, events: [], joints: m.joints.map(({ claim: _c, ...rest }) => rest), couplings: m.couplings.map(({ claim: _c, ...rest }) => rest), physics: options.physics === false ? null : { gravity: m.physics.gravity, hypothetical: m.physics.parts.some((p) => p.claim.evidence.startsWith('HIPOTÉTICO:')), parts: m.physics.parts.map(({ claim: _c, ...rest }) => rest) } }));
 /** A joint is confirmed when a person stated it, or a person accepted it after it was proposed/extracted — and no later rejection/edit undid that. */
 export function isConfirmed(m: Mechanism, jointId: string): boolean {
   const j = m.joints.find((x) => x.id === jointId); if (!j) return false;

@@ -1,0 +1,89 @@
+{
+  "results": [
+    {
+      "step": "0 Space construído a partir de vistas, painel «Inteligência do objecto» presente na mesma cena",
+      "verdict": "PASS",
+      "detail": "3 componentes"
+    },
+    {
+      "step": "1a mecanismo proposto pela geometria: todas as juntas são «hipótese», nenhuma confirmada",
+      "verdict": "PASS",
+      "detail": "3 juntas propostas, categorias hypothesis"
+    },
+    {
+      "step": "1b junta definida pelo utilizador aparece como «indicado/confirmado por si»",
+      "verdict": "PASS",
+      "detail": "u-part-1-part-2-1 · user"
+    },
+    {
+      "step": "2 mover a junta no Space move só o filho, e o deslocamento segue a rotação analítica (razão das cordas)",
+      "verdict": "PASS",
+      "detail": "razão medida 1.9713 vs 1.9775, pai deslocado 0.0e+0, estado solved"
+    },
+    {
+      "step": "2b o painel diz que é cinemática e não simulação física, e em que se baseia",
+      "verdict": "PASS",
+      "detail": "Válido (cinemática) · 1 GL · resíduo 2.4e-12 Partes sem ligação ao chão ficam no sítio: part-3. Movimento cinemático: não é uma simulação fí"
+    },
+    {
+      "step": "3 fora dos limites (40°): estado «limit_violated» visível, com o limite",
+      "verdict": "PASS",
+      "detail": "limit_violated · Fora dos limites · 1 GL · resíduo 4.8e-12 u-part-1-part-2-1 fora de [-0.70, 0.70] Partes sem ligação"
+    },
+    {
+      "step": "3b repor devolve a posição original exactamente",
+      "verdict": "PASS",
+      "detail": "desvio 0.0e+0"
+    },
+    {
+      "step": "4a experiência de varrimento corre e REPRODUZ com resultado idêntico",
+      "verdict": "PASS",
+      "detail": "reproduzida: resultado idêntico"
+    },
+    {
+      "step": "4b dinâmica sem parâmetros não corre como física e diz o que falta",
+      "verdict": "PASS",
+      "detail": "Dinâmica precisa de: vetor da gravidade (use [0,-9.81,0] ou outro, e a unidade de comprimento); massa, centro de massa e inércia da parte «p"
+    },
+    {
+      "step": "4c com massa assumida a experiência fica marcada HIPOTÉTICA",
+      "verdict": "PASS",
+      "detail": "etiqueta presente"
+    },
+    {
+      "step": "5 pergunta ao objecto: resposta calculada e fundamentada, rotulada SIMULADO (não é o Muse Spark)",
+      "verdict": "PASS",
+      "detail": "computed:true"
+    },
+    {
+      "step": "5b uma proposta de movimento fica pendente: nada é aplicado ao Space",
+      "verdict": "PASS",
+      "detail": "1 proposta(s), plano idêntico true"
+    },
+    {
+      "step": "6a remover um componente é uma transacção do Spatial Core (pré-visualização, autorização, commit) e o mecanismo acompanha",
+      "verdict": "PASS",
+      "detail": "componentes 3 → 2, partes do mecanismo 2"
+    },
+    {
+      "step": "6b desfazer repõe o componente removido",
+      "verdict": "PASS",
+      "detail": "componentes de novo 3"
+    },
+    {
+      "step": "7 guardar e reabrir: o mecanismo (com a origem das juntas) e as experiências voltam, e a experiência ainda reproduz",
+      "verdict": "PASS",
+      "detail": "save=true reopen=true juntas 1 (utilizador 1) experiências 3 · reproduzida: resultado idêntico"
+    },
+    {
+      "step": "8 sem erros de browser",
+      "verdict": "PASS",
+      "detail": "limpo"
+    },
+    {
+      "step": "9 nenhuma chamada paga (o agente correu simulado)",
+      "verdict": "PASS",
+      "detail": "provider=0"
+    }
+  ]
+}

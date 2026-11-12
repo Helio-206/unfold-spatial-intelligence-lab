@@ -49,12 +49,12 @@ export function runExperiment(m: Mechanism, spec: ExperimentSpec, meta: { id: st
   }
   const hypothetical = isHypotheticalPhysics(m) && spec.kind === 'dynamics'; if (hypothetical) limitations.unshift(`${HYPOTHETICAL_PREFIX} parâmetros assumidos para esta experiência; o resultado não é uma previsão sobre o objecto real.`);
   const result: ExperimentResult = { status, summary, series, collisions: collisions.filter((c, i, a) => a.findIndex((d) => d.a === c.a && d.b === c.b) === i), violations, missing };
-  return { contract: EXPERIMENT_CONTRACT, id: meta.id, name: meta.name, spec, hypothetical, objectVersion: { planSha256: m.planSha256, planFingerprint: meta.planFingerprint, mechanismHash: mechanismHash(m) }, basis: basisOf(m), physicsParameters: spec.kind === 'dynamics' ? m.physics : null, boxesUsed: !!meta.boxes, result, resultHash: sha256Hex(canonicalize(result)), limitations: [...new Set(limitations)], createdAt: meta.createdAt ?? Date.now() };
+  return { contract: EXPERIMENT_CONTRACT, id: meta.id, name: meta.name, spec, hypothetical, objectVersion: { planSha256: m.planSha256, planFingerprint: meta.planFingerprint, mechanismHash: mechanismHash(m, { physics: spec.kind === 'dynamics' }) }, basis: basisOf(m), physicsParameters: spec.kind === 'dynamics' ? m.physics : null, boxesUsed: !!meta.boxes, result, resultHash: sha256Hex(canonicalize(result)), limitations: [...new Set(limitations)], createdAt: meta.createdAt ?? Date.now() };
 }
 export type Reproduction = { reproduced: true } | { reproduced: false; reason: 'object_changed' | 'result_differs'; detail: string };
 /** Runs the stored experiment again on `m` and says whether it reproduces: only on the same object version, and only if the result hash is identical. */
 export function reproduce(exp: Experiment, m: Mechanism, planFingerprint: string, boxes?: PartBox[]): Reproduction {
-  if (exp.objectVersion.planSha256 !== m.planSha256 || exp.objectVersion.planFingerprint !== planFingerprint || exp.objectVersion.mechanismHash !== mechanismHash(m)) return { reproduced: false, reason: 'object_changed', detail: 'O objecto (plano ou mecanismo) mudou desde a experiência: não é uma reprodução, é outra experiência.' };
+  if (exp.objectVersion.planSha256 !== m.planSha256 || exp.objectVersion.planFingerprint !== planFingerprint || exp.objectVersion.mechanismHash !== mechanismHash(m, { physics: exp.spec.kind === 'dynamics' })) return { reproduced: false, reason: 'object_changed', detail: 'O objecto (plano ou mecanismo) mudou desde a experiência: não é uma reprodução, é outra experiência.' };
   const again = runExperiment(m, exp.spec, { id: exp.id, name: exp.name, planFingerprint, ...(exp.boxesUsed ? { boxes: boxes ?? [] } : {}), createdAt: exp.createdAt });
   return again.resultHash === exp.resultHash ? { reproduced: true } : { reproduced: false, reason: 'result_differs', detail: `hash ${again.resultHash.slice(0, 12)} ≠ ${exp.resultHash.slice(0, 12)}` };
 }

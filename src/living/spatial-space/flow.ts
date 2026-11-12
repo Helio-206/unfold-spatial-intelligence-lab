@@ -20,6 +20,9 @@ import type { RealityHost } from '../reality/host';
 import { RealityGeometry } from '../reality/geometry';
 import { mountRealityIntake } from '../reality/intake-panel';
 import { mountRealityReview } from '../reality/review-panel';
+import { IntelligenceController } from '../intelligence/controller';
+import { IntelligenceStore } from '../intelligence/store';
+import { mountIntelligencePanel } from '../intelligence/panel';
 import { browserStorage, SpaceStore, type SpaceListing, type SpaceRecord, type StoreProblem } from './store';
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -120,6 +123,7 @@ export class SpaceFlow {
   private geometry: GeometrySeam | null = null;
   private realityIntake: { dispose(): void } | null = null;
   private realityReview: { refresh(): void; dispose(): void } | null = null;
+  private intelligence: { refresh(): void; dispose(): void } | null = null;
   /** The reply on review was produced by the Reality Engine (source hash = its evidence hash). */
   private realityDraft: string | null = null;
   private savedPlanJson: string | null = null;
@@ -212,7 +216,7 @@ export class SpaceFlow {
   dispose(): void { this.abort?.abort(); clearInterval(this.tick); this.geometry?.dispose(); this.geometry = null; this.layer = null; this.panel.remove(); }
 
   private dropScene(): void {
-    this.realityReview?.dispose(); this.realityReview = null;
+    this.realityReview?.dispose(); this.realityReview = null; this.intelligence?.dispose(); this.intelligence = null;
     this.geometry?.dispose(); this.geometry = null;
     if (this.layer || this.atlas) { this.layer = null; this.atlas = null; this.options.workspace.clearMachine({ brandLabel: 'laboratório vazio', notices: [], extraTools: [] }); }
     this.session = null; this.syncNote = null; this.presentationNotice = null; this.relationReview = null;
@@ -330,7 +334,7 @@ export class SpaceFlow {
     const reality = this.options.reality, realityHere = !!reality && plan.source.kind === 'image' && reality.has(plan.source.sha256);
     const geometry: GeometrySeam = realityHere ? new RealityGeometry(reality!.modelFor) : this.options.geometry ? this.options.geometry() : new ProductGeometry(); this.geometry = geometry;
     const layer = new PlanSpaceLayer(plan, {
-      changed: () => { this.refreshContext(); workspace.spaceChanged(); },
+      changed: () => { this.refreshContext(); workspace.spaceChanged(); this.intelligence?.refresh(); },
       redraw: () => workspace.redraw(),
       cue: (cue) => { workspace.requestSpaceView(cue.view, cue.durationMs); },
       presentationChanged: (state) => { const notice = state.notice; if (notice !== this.presentationNotice) { this.presentationNotice = notice; this.refreshContext(); } },
@@ -354,6 +358,17 @@ export class SpaceFlow {
       const sha = plan.source.sha256;
       this.realityReview = mountRealityReview({ host: reality!, sourceSha256: sha, plan: () => layer.currentPlan, onChanged: () => { layer.regenerate(); workspace.spaceChanged(); this.refreshContext(); } });
     }
+    // Living Intelligence: mechanism, movement, experiments and the agent, on THIS scene, inspector and transaction system
+    this.intelligence?.dispose();
+    let storage: Storage | null = null; try { storage = window.localStorage; } catch { storage = null; }
+    let refreshPanel: () => void = () => undefined;
+    const controller = new IntelligenceController({
+      plan: () => layer.currentPlan, selectedId: () => layer.selectedId, store: new IntelligenceStore(storage), applyPoses: (poses) => layer.applyTransientPoses(poses), clearPoses: () => layer.clearRigidPoses(),
+      proposeStructural: (ops, label, origin, evidence) => layer.proposeStructural(ops, label, origin, evidence), onChange: () => refreshPanel(),
+      view: (action, ids) => { if (action === 'isolate') layer.isolate(ids[0] ?? null); else if (action === 'explode') layer.setExploded(true); else if (action === 'reset') { layer.isolate(null); layer.setExploded(false); } else return false; return true; },
+    });
+    const panel = mountIntelligencePanel({ controller, plan: () => layer.currentPlan, selectedId: () => layer.selectedId, allowPaidAgent: !!this.session, ...(this.options.fetchImpl ? { fetchImpl: this.options.fetchImpl } : {}), onStructural: (op, label) => layer.proposeStructural([op], label, 'person', 'Operação estrutural pedida por si no painel de inteligência.') }); refreshPanel = () => panel.refresh(); this.intelligence = panel;
+    if (/debug-living=1/.test(window.location.search)) (window as unknown as { __intelligence?: IntelligenceController }).__intelligence = controller;
     void this.adopt(plan);
   }
 
