@@ -167,7 +167,7 @@ export function intakeOrbit(images: readonly IntakeImage[], options: OrbitOption
       return [cx + u * ppu, cy - v * ppu];
     };
     const sampled = resample(p, res, colourRes, map);
-    return { id: slug(p.name, i), name: p.name, azimuthDeg: azimuths[i]!, elevationDeg: elevation, azimuthSource: assumed ? 'assumed' : 'given', outline: p.report.maskSource, maskRle: encodeMask(sampled.mask), colour: encodeColour(sampled.rgb, colourRes) };
+    return { id: slug(p.name, i), name: p.name, azimuthDeg: azimuths[i]!, elevationDeg: elevation, azimuthSource: assumed ? 'assumed' : 'given', outline: p.report.maskSource, ...(p.report.maskSource === 'automatic' && p.report.maskMethod ? { outlineMethod: p.report.maskMethod.split(' · ')[0]! } : {}), maskRle: encodeMask(sampled.mask), colour: encodeColour(sampled.rgb, colourRes), window: { cx, cy, ppu } };
   });
   // Turntable direction is not known from the order of the files. Wrong direction makes the cones inconsistent (the hull collapses), right direction is
   // consistent, so the sign is CHOSEN BY EVIDENCE; a symmetric object cannot tell and keeps the default, which is then harmless and declared.
@@ -276,6 +276,6 @@ export function intakeAddView(evidence: RealityEvidence, image: IntakeImage, pos
   const map = (X: number, Y: number, size: number): [number, number] => [cx + ((X / size) * 2 - 1) * half * hImg, cy - ((Y / size) * 2 - 1) * half * hImg];
   const sampled = resample(p, evidence.res, evidence.colourRes, map);
   const used = new Set(evidence.views.map((v) => v.id)); let id = slug(p.name, evidence.views.length); while (used.has(id)) id += 'x';
-  const view: StoredView = { id, name: p.name, azimuthDeg: pose.azimuthDeg, elevationDeg: pose.elevationDeg ?? 0, azimuthSource: 'given', outline: p.report.maskSource, maskRle: encodeMask(sampled.mask), colour: encodeColour(sampled.rgb, evidence.colourRes) };
+  const view: StoredView = { id, name: p.name, azimuthDeg: pose.azimuthDeg, elevationDeg: pose.elevationDeg ?? 0, azimuthSource: 'given', outline: p.report.maskSource, ...(p.report.maskSource === 'automatic' && p.report.maskMethod ? { outlineMethod: p.report.maskMethod.split(' · ')[0]! } : {}), maskRle: encodeMask(sampled.mask), colour: encodeColour(sampled.rgb, evidence.colourRes), window: { cx, cy, ppu: hImg } };
   return { evidence: { ...evidence, views: [...evidence.views, view], assumptions: [...evidence.assumptions, `Vista adicionada «${p.name}» com azimute ${pose.azimuthDeg}° indicado por si; não verificado.`].slice(0, REALITY_LIMITS.maxAssumptions) }, refusals: [], view: p.report };
 }

@@ -25,11 +25,33 @@ export function segmentStaticBackground(frames: readonly RGBA[]): StaticBackgrou
   // the object's total extent = bounding box of the non-static pixels
   let x0 = W, y0 = H, x1 = 0, y1 = 0; for (let p = 0; p < px; p++) if (maxDev[p]! > tStatic) { const x = p % W, y = (p - x) / W; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
   const pad = Math.round(0.02 * Math.max(W, H)), box = { x0: Math.max(0, x0 - pad), y0: Math.max(0, y0 - pad), x1: Math.min(W, x1 + pad), y1: Math.min(H, y1 + pad) };
-  const masks: Uint8Array[] = [];
-  for (let i = 0; i < n; i++) {
-    const seeds = new Uint8Array(px);
-    for (let p = 0; p < px; p++) seeds[p] = maxDev[p]! <= tStatic ? 2 : dev[p * n + i]! > tObject ? 1 : 0;
-    masks.push(segmentInteractive(frames[i]!, { box, seeds }).mask);
-  }
+  // Static pixels are sure background ONLY when they are far from every changing pixel AND connect to the picture border through such pixels. Static pixels next
+  // to the object (a part of the object that never changes, a pocket enclosed by it) are left to the colour models: a static test cannot tell an unchanging part of the
+  // object from the background it touches.
+  const r = Math.max(3, Math.round(0.025 * Math.max(W, H))); let near = new Uint8Array(px); for (let p = 0; p < px; p++) near[p] = maxDev[p]! > tStatic ? 1 : 0;
+  for (let it = 0; it < r; it++) { const nx = near.slice(); for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const p = y * W + x; if (near[p]) { if (x > 0) nx[p - 1] = 1; if (x < W - 1) nx[p + 1] = 1; if (y > 0) nx[p - W] = 1; if (y < H - 1) nx[p + W] = 1; } } near = nx; }
+  const outside = new Uint8Array(px), stack: number[] = [], push = (p: number) => { if (!outside[p] && !near[p]) { outside[p] = 1; stack.push(p); } };
+  for (let x = 0; x < W; x++) { push(x); push((H - 1) * W + x); } for (let y = 0; y < H; y++) { push(y * W); push(y * W + W - 1); }
+  while (stack.length) { const p = stack.pop()!, x = p % W; if (x > 0) push(p - 1); if (x < W - 1) push(p + 1); if (p >= W) push(p - W); if (p < px - W) push(p + W); }
+  const run = (bgOf: (p: number, c: number) => number, known: Uint8Array | null): Uint8Array[] => {
+    const out: Uint8Array[] = [];
+    for (let i = 0; i < n; i++) {
+      const seeds = new Uint8Array(px), d = frames[i]!.data;
+      for (let p = 0; p < px; p++) {
+        if (outside[p]) { seeds[p] = 2; continue; }
+        const dv = Math.max(Math.abs(d[p * 4]! - bgOf(p, 0)), Math.abs(d[p * 4 + 1]! - bgOf(p, 1)), Math.abs(d[p * 4 + 2]! - bgOf(p, 2)));
+        seeds[p] = dv > tObject ? 1 : known && known[p] && dv <= tStatic ? 2 : 0;
+      }
+      out.push(segmentInteractive(frames[i]!, { box, seeds }).mask);
+    }
+    return out;
+  };
+  let masks = run((p, c) => median[p * 3 + c]!, null);
+  // Second pass: the median is wrong where the object covers a pixel in half of the frames or more (it IS the object there). Re-estimate the background of every pixel
+  // from the frames where the first pass found it uncovered (at least 2 of them) and decide again with that background.
+  const bg2 = new Float32Array(px * 3), have = new Uint8Array(px), col = new Float32Array(n);
+  for (let p = 0; p < px; p++) { let m = 0; for (let i = 0; i < n; i++) if (!masks[i]![p]) m++; if (m < 2) continue; have[p] = 1; for (let c = 0; c < 3; c++) { let k = 0; for (let i = 0; i < n; i++) if (!masks[i]![p]) col[k++] = frames[i]!.data[p * 4 + c]!; const s = Array.from(col.subarray(0, k)).sort((a, b) => a - b); bg2[p * 3 + c] = s[Math.floor(k / 2)]!; } }
+  const refined = run((p, c) => (have[p] ? bg2[p * 3 + c]! : median[p * 3 + c]!), have);
+  masks = refined;
   return { masks, staticShare: share, applicable: true, reason: `${(share * 100).toFixed(0)}% da imagem estática em todas as vistas: fundo separado por diferença temporal`, staticThreshold: tStatic };
 }

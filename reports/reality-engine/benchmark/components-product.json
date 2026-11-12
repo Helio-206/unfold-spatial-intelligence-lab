@@ -1,0 +1,355 @@
+{
+  "note": "Product path (8 perspective renders at 20 deg elevation, exact-alpha masks, assumed poses) vs GT glTF nodes. Recovered = GT part (>=3% voxels) matched with IoU >= 0.5.",
+  "variants": [
+    "baseline",
+    "app"
+  ],
+  "aggregate": {
+    "baseline": {
+      "development": {
+        "assets": 6,
+        "recovered": 7,
+        "significant": 11,
+        "meanARI": 0.512,
+        "meanWeightedIoU": 0.809,
+        "meanPurity": 0.872
+      },
+      "acceptance": {
+        "assets": 8,
+        "recovered": 8,
+        "significant": 27,
+        "meanARI": 0.528,
+        "meanWeightedIoU": 0.727,
+        "meanPurity": 0.756
+      }
+    },
+    "app": {
+      "development": {
+        "assets": 6,
+        "recovered": 7,
+        "significant": 11,
+        "meanARI": 0.559,
+        "meanWeightedIoU": 0.811,
+        "meanPurity": 0.888
+      },
+      "acceptance": {
+        "assets": 8,
+        "recovered": 10,
+        "significant": 27,
+        "meanARI": 0.308,
+        "meanWeightedIoU": 0.649,
+        "meanPurity": 0.77
+      }
+    }
+  },
+  "rows": [
+    {
+      "id": "ToyCar",
+      "split": "development",
+      "gtParts": 3,
+      "mirror": 0,
+      "baseline": {
+        "gtSignificantParts": 2,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.584,
+        "gtPartsRecovered": 1,
+        "purity": 0.705
+      },
+      "app": {
+        "gtSignificantParts": 2,
+        "ourParts": 2,
+        "ari": 0.274,
+        "weightedBestIoU": 0.632,
+        "gtPartsRecovered": 1,
+        "purity": 0.772
+      }
+    },
+    {
+      "id": "Lantern",
+      "split": "development",
+      "gtParts": 3,
+      "mirror": 2,
+      "baseline": {
+        "gtSignificantParts": 2,
+        "ourParts": 2,
+        "ari": 1,
+        "weightedBestIoU": 1,
+        "gtPartsRecovered": 2,
+        "purity": 1
+      },
+      "app": {
+        "gtSignificantParts": 2,
+        "ourParts": 3,
+        "ari": 0.991,
+        "weightedBestIoU": 0.975,
+        "gtPartsRecovered": 2,
+        "purity": 1
+      }
+    },
+    {
+      "id": "BoomBox",
+      "split": "development",
+      "gtParts": 1,
+      "mirror": 0,
+      "baseline": {
+        "gtSignificantParts": 1,
+        "ourParts": 1,
+        "ari": 1,
+        "weightedBestIoU": 1,
+        "gtPartsRecovered": 1,
+        "purity": 1
+      },
+      "app": {
+        "gtSignificantParts": 1,
+        "ourParts": 1,
+        "ari": 1,
+        "weightedBestIoU": 1,
+        "gtPartsRecovered": 1,
+        "purity": 1
+      }
+    },
+    {
+      "id": "WaterBottle",
+      "split": "development",
+      "gtParts": 1,
+      "mirror": 2,
+      "baseline": {
+        "gtSignificantParts": 1,
+        "ourParts": 1,
+        "ari": 1,
+        "weightedBestIoU": 1,
+        "gtPartsRecovered": 1,
+        "purity": 1
+      },
+      "app": {
+        "gtSignificantParts": 1,
+        "ourParts": 1,
+        "ari": 1,
+        "weightedBestIoU": 1,
+        "gtPartsRecovered": 1,
+        "purity": 1
+      }
+    },
+    {
+      "id": "SheenChair",
+      "split": "development",
+      "gtParts": 4,
+      "mirror": 1,
+      "baseline": {
+        "gtSignificantParts": 2,
+        "ourParts": 2,
+        "ari": 0.071,
+        "weightedBestIoU": 0.458,
+        "gtPartsRecovered": 1,
+        "purity": 0.631
+      },
+      "app": {
+        "gtSignificantParts": 2,
+        "ourParts": 3,
+        "ari": 0.087,
+        "weightedBestIoU": 0.448,
+        "gtPartsRecovered": 1,
+        "purity": 0.658
+      }
+    },
+    {
+      "id": "CesiumMilkTruck",
+      "split": "development",
+      "gtParts": 3,
+      "mirror": 0,
+      "baseline": {
+        "gtSignificantParts": 3,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.81,
+        "gtPartsRecovered": 1,
+        "purity": 0.897
+      },
+      "app": {
+        "gtSignificantParts": 3,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.81,
+        "gtPartsRecovered": 1,
+        "purity": 0.897
+      }
+    },
+    {
+      "id": "AntiqueCamera",
+      "split": "acceptance",
+      "gtParts": 2,
+      "mirror": 0,
+      "baseline": {
+        "gtSignificantParts": 2,
+        "ourParts": 2,
+        "ari": 0.953,
+        "weightedBestIoU": 0.976,
+        "gtPartsRecovered": 2,
+        "purity": 0.988
+      },
+      "app": {
+        "gtSignificantParts": 2,
+        "ourParts": 2,
+        "ari": 0.953,
+        "weightedBestIoU": 0.976,
+        "gtPartsRecovered": 2,
+        "purity": 0.988
+      }
+    },
+    {
+      "id": "Avocado",
+      "split": "acceptance",
+      "gtParts": 1,
+      "mirror": 0,
+      "baseline": {
+        "gtSignificantParts": 1,
+        "ourParts": 1,
+        "ari": 1,
+        "weightedBestIoU": 1,
+        "gtPartsRecovered": 1,
+        "purity": 1
+      },
+      "app": {
+        "gtSignificantParts": 1,
+        "ourParts": 2,
+        "ari": 0,
+        "weightedBestIoU": 0.64,
+        "gtPartsRecovered": 1,
+        "purity": 1
+      }
+    },
+    {
+      "id": "Corset",
+      "split": "acceptance",
+      "gtParts": 1,
+      "mirror": 2,
+      "baseline": {
+        "gtSignificantParts": 1,
+        "ourParts": 1,
+        "ari": 1,
+        "weightedBestIoU": 1,
+        "gtPartsRecovered": 1,
+        "purity": 1
+      },
+      "app": {
+        "gtSignificantParts": 1,
+        "ourParts": 1,
+        "ari": 1,
+        "weightedBestIoU": 1,
+        "gtPartsRecovered": 1,
+        "purity": 1
+      }
+    },
+    {
+      "id": "MaterialsVariantsShoe",
+      "split": "acceptance",
+      "gtParts": 1,
+      "mirror": 0,
+      "baseline": {
+        "gtSignificantParts": 1,
+        "ourParts": 1,
+        "ari": 1,
+        "weightedBestIoU": 1,
+        "gtPartsRecovered": 1,
+        "purity": 1
+      },
+      "app": {
+        "gtSignificantParts": 1,
+        "ourParts": 2,
+        "ari": 0,
+        "weightedBestIoU": 0.57,
+        "gtPartsRecovered": 1,
+        "purity": 1
+      }
+    },
+    {
+      "id": "GlamVelvetSofa",
+      "split": "acceptance",
+      "gtParts": 3,
+      "mirror": 0,
+      "baseline": {
+        "gtSignificantParts": 1,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.986,
+        "gtPartsRecovered": 1,
+        "purity": 0.986
+      },
+      "app": {
+        "gtSignificantParts": 1,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.986,
+        "gtPartsRecovered": 1,
+        "purity": 0.986
+      }
+    },
+    {
+      "id": "ChairDamaskPurplegold",
+      "split": "acceptance",
+      "gtParts": 11,
+      "mirror": 0,
+      "baseline": {
+        "gtSignificantParts": 5,
+        "ourParts": 2,
+        "ari": 0.27,
+        "weightedBestIoU": 0.395,
+        "gtPartsRecovered": 1,
+        "purity": 0.452
+      },
+      "app": {
+        "gtSignificantParts": 5,
+        "ourParts": 3,
+        "ari": 0.277,
+        "weightedBestIoU": 0.445,
+        "gtPartsRecovered": 2,
+        "purity": 0.48
+      }
+    },
+    {
+      "id": "IridescenceLamp",
+      "split": "acceptance",
+      "gtParts": 3,
+      "mirror": 1,
+      "baseline": {
+        "gtSignificantParts": 3,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.396,
+        "gtPartsRecovered": 1,
+        "purity": 0.522
+      },
+      "app": {
+        "gtSignificantParts": 3,
+        "ourParts": 2,
+        "ari": 0.233,
+        "weightedBestIoU": 0.507,
+        "gtPartsRecovered": 2,
+        "purity": 0.609
+      }
+    },
+    {
+      "id": "CarConcept",
+      "split": "acceptance",
+      "gtParts": 97,
+      "mirror": 0,
+      "baseline": {
+        "gtSignificantParts": 13,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.065,
+        "gtPartsRecovered": 0,
+        "purity": 0.097
+      },
+      "app": {
+        "gtSignificantParts": 13,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.065,
+        "gtPartsRecovered": 0,
+        "purity": 0.097
+      }
+    }
+  ]
+}

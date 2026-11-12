@@ -1,0 +1,535 @@
+{
+ "summary": {
+  "u2netp": {
+   "meanIoU": 0.4904,
+   "share>=0.8": 0.232,
+   "share<0.5": 0.536
+  },
+  "u2netp-centred": {
+   "meanIoU": 0.4911,
+   "share>=0.8": 0.232,
+   "share<0.5": 0.536
+  },
+  "sam-loose-box": {
+   "meanIoU": 0.4236,
+   "share>=0.8": 0.054,
+   "share<0.5": 0.625
+  },
+  "sam-box-from-u2netp-centred": {
+   "meanIoU": 0.3834,
+   "share>=0.8": 0.089,
+   "share<0.5": 0.679
+  },
+  "sam-centre-point+box": {
+   "meanIoU": 0.5145,
+   "share>=0.8": 0.107,
+   "share<0.5": 0.375
+  }
+ },
+ "rows": [
+  {
+   "asset": "ToyCar",
+   "view": 0,
+   "u2netp": 0.171,
+   "u2netp-centred": 0.171,
+   "sam-loose-box": 0.731,
+   "sam-box-from-u2netp-centred": 0.192,
+   "sam-centre-point+box": 0.624
+  },
+  {
+   "asset": "ToyCar",
+   "view": 2,
+   "u2netp": 0.233,
+   "u2netp-centred": 0.233,
+   "sam-loose-box": 0.78,
+   "sam-box-from-u2netp-centred": 0.26,
+   "sam-centre-point+box": 0.701
+  },
+  {
+   "asset": "ToyCar",
+   "view": 4,
+   "u2netp": 0.175,
+   "u2netp-centred": 0.171,
+   "sam-loose-box": 0.732,
+   "sam-box-from-u2netp-centred": 0.192,
+   "sam-centre-point+box": 0.659
+  },
+  {
+   "asset": "ToyCar",
+   "view": 6,
+   "u2netp": 0.223,
+   "u2netp-centred": 0.207,
+   "sam-loose-box": 0.736,
+   "sam-box-from-u2netp-centred": 0.202,
+   "sam-centre-point+box": 0.583
+  },
+  {
+   "asset": "Lantern",
+   "view": 0,
+   "u2netp": 0.111,
+   "u2netp-centred": 0.111,
+   "sam-loose-box": 0.105,
+   "sam-box-from-u2netp-centred": 0.003,
+   "sam-centre-point+box": 0.094
+  },
+  {
+   "asset": "Lantern",
+   "view": 2,
+   "u2netp": 0.21,
+   "u2netp-centred": 0.216,
+   "sam-loose-box": 0.141,
+   "sam-box-from-u2netp-centred": 0.138,
+   "sam-centre-point+box": 0.211
+  },
+  {
+   "asset": "Lantern",
+   "view": 4,
+   "u2netp": 0.063,
+   "u2netp-centred": 0.063,
+   "sam-loose-box": 0.019,
+   "sam-box-from-u2netp-centred": 0.02,
+   "sam-centre-point+box": 0.008
+  },
+  {
+   "asset": "Lantern",
+   "view": 6,
+   "u2netp": 0.105,
+   "u2netp-centred": 0.105,
+   "sam-loose-box": 0.082,
+   "sam-box-from-u2netp-centred": 0.027,
+   "sam-centre-point+box": 0.095
+  },
+  {
+   "asset": "BoomBox",
+   "view": 0,
+   "u2netp": 0.436,
+   "u2netp-centred": 0.449,
+   "sam-loose-box": 0.45,
+   "sam-box-from-u2netp-centred": 0.34,
+   "sam-centre-point+box": 0.629
+  },
+  {
+   "asset": "BoomBox",
+   "view": 2,
+   "u2netp": 0.59,
+   "u2netp-centred": 0.591,
+   "sam-loose-box": 0.534,
+   "sam-box-from-u2netp-centred": 0.402,
+   "sam-centre-point+box": 0.641
+  },
+  {
+   "asset": "BoomBox",
+   "view": 4,
+   "u2netp": 0.259,
+   "u2netp-centred": 0.259,
+   "sam-loose-box": 0.314,
+   "sam-box-from-u2netp-centred": 0.196,
+   "sam-centre-point+box": 0.548
+  },
+  {
+   "asset": "BoomBox",
+   "view": 6,
+   "u2netp": 0.934,
+   "u2netp-centred": 0.934,
+   "sam-loose-box": 0.499,
+   "sam-box-from-u2netp-centred": 0.681,
+   "sam-centre-point+box": 0.664
+  },
+  {
+   "asset": "WaterBottle",
+   "view": 0,
+   "u2netp": 0.594,
+   "u2netp-centred": 0.595,
+   "sam-loose-box": 0.466,
+   "sam-box-from-u2netp-centred": 0.45,
+   "sam-centre-point+box": 0.701
+  },
+  {
+   "asset": "WaterBottle",
+   "view": 2,
+   "u2netp": 0.221,
+   "u2netp-centred": 0.222,
+   "sam-loose-box": 0.428,
+   "sam-box-from-u2netp-centred": 0.176,
+   "sam-centre-point+box": 0.618
+  },
+  {
+   "asset": "WaterBottle",
+   "view": 4,
+   "u2netp": 0.488,
+   "u2netp-centred": 0.488,
+   "sam-loose-box": 0.335,
+   "sam-box-from-u2netp-centred": 0.385,
+   "sam-centre-point+box": 0.508
+  },
+  {
+   "asset": "WaterBottle",
+   "view": 6,
+   "u2netp": 0.59,
+   "u2netp-centred": 0.59,
+   "sam-loose-box": 0.468,
+   "sam-box-from-u2netp-centred": 0.452,
+   "sam-centre-point+box": 0.668
+  },
+  {
+   "asset": "SheenChair",
+   "view": 0,
+   "u2netp": 0.579,
+   "u2netp-centred": 0.579,
+   "sam-loose-box": 0.492,
+   "sam-box-from-u2netp-centred": 0.445,
+   "sam-centre-point+box": 0.573
+  },
+  {
+   "asset": "SheenChair",
+   "view": 2,
+   "u2netp": 0.18,
+   "u2netp-centred": 0.18,
+   "sam-loose-box": 0.168,
+   "sam-box-from-u2netp-centred": 0.135,
+   "sam-centre-point+box": 0.45
+  },
+  {
+   "asset": "SheenChair",
+   "view": 4,
+   "u2netp": 0.428,
+   "u2netp-centred": 0.429,
+   "sam-loose-box": 0.437,
+   "sam-box-from-u2netp-centred": 0.223,
+   "sam-centre-point+box": 0.635
+  },
+  {
+   "asset": "SheenChair",
+   "view": 6,
+   "u2netp": 0.332,
+   "u2netp-centred": 0.332,
+   "sam-loose-box": 0.398,
+   "sam-box-from-u2netp-centred": 0.284,
+   "sam-centre-point+box": 0.513
+  },
+  {
+   "asset": "CesiumMilkTruck",
+   "view": 0,
+   "u2netp": 0.573,
+   "u2netp-centred": 0.573,
+   "sam-loose-box": 0.596,
+   "sam-box-from-u2netp-centred": 0.498,
+   "sam-centre-point+box": 0.818
+  },
+  {
+   "asset": "CesiumMilkTruck",
+   "view": 2,
+   "u2netp": 0.933,
+   "u2netp-centred": 0.933,
+   "sam-loose-box": 0.761,
+   "sam-box-from-u2netp-centred": 0.756,
+   "sam-centre-point+box": 0.782
+  },
+  {
+   "asset": "CesiumMilkTruck",
+   "view": 4,
+   "u2netp": 0.994,
+   "u2netp-centred": 0.994,
+   "sam-loose-box": 0.725,
+   "sam-box-from-u2netp-centred": 0.826,
+   "sam-centre-point+box": 0.808
+  },
+  {
+   "asset": "CesiumMilkTruck",
+   "view": 6,
+   "u2netp": 0.823,
+   "u2netp-centred": 0.823,
+   "sam-loose-box": 0.743,
+   "sam-box-from-u2netp-centred": 0.688,
+   "sam-centre-point+box": 0.761
+  },
+  {
+   "asset": "AntiqueCamera",
+   "view": 0,
+   "u2netp": 0.052,
+   "u2netp-centred": 0.052,
+   "sam-loose-box": 0.048,
+   "sam-box-from-u2netp-centred": 0.041,
+   "sam-centre-point+box": 0.081
+  },
+  {
+   "asset": "AntiqueCamera",
+   "view": 2,
+   "u2netp": 0.076,
+   "u2netp-centred": 0.076,
+   "sam-loose-box": 0.073,
+   "sam-box-from-u2netp-centred": 0.028,
+   "sam-centre-point+box": 0.078
+  },
+  {
+   "asset": "AntiqueCamera",
+   "view": 4,
+   "u2netp": 0.122,
+   "u2netp-centred": 0.122,
+   "sam-loose-box": 0.102,
+   "sam-box-from-u2netp-centred": 0.035,
+   "sam-centre-point+box": 0.093
+  },
+  {
+   "asset": "AntiqueCamera",
+   "view": 6,
+   "u2netp": 0.065,
+   "u2netp-centred": 0.065,
+   "sam-loose-box": 0.061,
+   "sam-box-from-u2netp-centred": 0.05,
+   "sam-centre-point+box": 0.119
+  },
+  {
+   "asset": "Avocado",
+   "view": 0,
+   "u2netp": 0.615,
+   "u2netp-centred": 0.642,
+   "sam-loose-box": 0.378,
+   "sam-box-from-u2netp-centred": 0.439,
+   "sam-centre-point+box": 0.49
+  },
+  {
+   "asset": "Avocado",
+   "view": 2,
+   "u2netp": 0.504,
+   "u2netp-centred": 0.504,
+   "sam-loose-box": 0.369,
+   "sam-box-from-u2netp-centred": 0.355,
+   "sam-centre-point+box": 0.645
+  },
+  {
+   "asset": "Avocado",
+   "view": 4,
+   "u2netp": 0.29,
+   "u2netp-centred": 0.29,
+   "sam-loose-box": 0.56,
+   "sam-box-from-u2netp-centred": 0.223,
+   "sam-centre-point+box": 0.567
+  },
+  {
+   "asset": "Avocado",
+   "view": 6,
+   "u2netp": 0.354,
+   "u2netp-centred": 0.354,
+   "sam-loose-box": 0.246,
+   "sam-box-from-u2netp-centred": 0.159,
+   "sam-centre-point+box": 0.311
+  },
+  {
+   "asset": "Corset",
+   "view": 0,
+   "u2netp": 0.87,
+   "u2netp-centred": 0.87,
+   "sam-loose-box": 0.178,
+   "sam-box-from-u2netp-centred": 0.583,
+   "sam-centre-point+box": 0.542
+  },
+  {
+   "asset": "Corset",
+   "view": 2,
+   "u2netp": 0.173,
+   "u2netp-centred": 0.173,
+   "sam-loose-box": 0.216,
+   "sam-box-from-u2netp-centred": 0.13,
+   "sam-centre-point+box": 0.251
+  },
+  {
+   "asset": "Corset",
+   "view": 4,
+   "u2netp": 0.151,
+   "u2netp-centred": 0.151,
+   "sam-loose-box": 0.127,
+   "sam-box-from-u2netp-centred": 0.115,
+   "sam-centre-point+box": 0.439
+  },
+  {
+   "asset": "Corset",
+   "view": 6,
+   "u2netp": 0.825,
+   "u2netp-centred": 0.825,
+   "sam-loose-box": 0.108,
+   "sam-box-from-u2netp-centred": 0.51,
+   "sam-centre-point+box": 0.457
+  },
+  {
+   "asset": "MaterialsVariantsShoe",
+   "view": 0,
+   "u2netp": 0.903,
+   "u2netp-centred": 0.903,
+   "sam-loose-box": 0.673,
+   "sam-box-from-u2netp-centred": 0.674,
+   "sam-centre-point+box": 0.634
+  },
+  {
+   "asset": "MaterialsVariantsShoe",
+   "view": 2,
+   "u2netp": 0.35,
+   "u2netp-centred": 0.35,
+   "sam-loose-box": 0.751,
+   "sam-box-from-u2netp-centred": 0.301,
+   "sam-centre-point+box": 0.564
+  },
+  {
+   "asset": "MaterialsVariantsShoe",
+   "view": 4,
+   "u2netp": 0.744,
+   "u2netp-centred": 0.743,
+   "sam-loose-box": 0.579,
+   "sam-box-from-u2netp-centred": 0.582,
+   "sam-centre-point+box": 0.563
+  },
+  {
+   "asset": "MaterialsVariantsShoe",
+   "view": 6,
+   "u2netp": 0.988,
+   "u2netp-centred": 0.99,
+   "sam-loose-box": 0.565,
+   "sam-box-from-u2netp-centred": 0.717,
+   "sam-centre-point+box": 0.662
+  },
+  {
+   "asset": "GlamVelvetSofa",
+   "view": 0,
+   "u2netp": 0.975,
+   "u2netp-centred": 0.975,
+   "sam-loose-box": 0.173,
+   "sam-box-from-u2netp-centred": 0.796,
+   "sam-centre-point+box": 0.035
+  },
+  {
+   "asset": "GlamVelvetSofa",
+   "view": 2,
+   "u2netp": 0.677,
+   "u2netp-centred": 0.679,
+   "sam-loose-box": 0.842,
+   "sam-box-from-u2netp-centred": 0.607,
+   "sam-centre-point+box": 0.834
+  },
+  {
+   "asset": "GlamVelvetSofa",
+   "view": 4,
+   "u2netp": 0.799,
+   "u2netp-centred": 0.799,
+   "sam-loose-box": 0.431,
+   "sam-box-from-u2netp-centred": 0.691,
+   "sam-centre-point+box": 0.495
+  },
+  {
+   "asset": "GlamVelvetSofa",
+   "view": 6,
+   "u2netp": 0.986,
+   "u2netp-centred": 0.986,
+   "sam-loose-box": 0.785,
+   "sam-box-from-u2netp-centred": 0.815,
+   "sam-centre-point+box": 0.816
+  },
+  {
+   "asset": "ChairDamaskPurplegold",
+   "view": 0,
+   "u2netp": 0.39,
+   "u2netp-centred": 0.39,
+   "sam-loose-box": 0.25,
+   "sam-box-from-u2netp-centred": 0.306,
+   "sam-centre-point+box": 0.475
+  },
+  {
+   "asset": "ChairDamaskPurplegold",
+   "view": 2,
+   "u2netp": 0.594,
+   "u2netp-centred": 0.595,
+   "sam-loose-box": 0.383,
+   "sam-box-from-u2netp-centred": 0.451,
+   "sam-centre-point+box": 0.528
+  },
+  {
+   "asset": "ChairDamaskPurplegold",
+   "view": 4,
+   "u2netp": 0.78,
+   "u2netp-centred": 0.781,
+   "sam-loose-box": 0.612,
+   "sam-box-from-u2netp-centred": 0.593,
+   "sam-centre-point+box": 0.645
+  },
+  {
+   "asset": "ChairDamaskPurplegold",
+   "view": 6,
+   "u2netp": 0.304,
+   "u2netp-centred": 0.304,
+   "sam-loose-box": 0.235,
+   "sam-box-from-u2netp-centred": 0.201,
+   "sam-centre-point+box": 0.547
+  },
+  {
+   "asset": "IridescenceLamp",
+   "view": 0,
+   "u2netp": 0.174,
+   "u2netp-centred": 0.174,
+   "sam-loose-box": 0.105,
+   "sam-box-from-u2netp-centred": 0.148,
+   "sam-centre-point+box": 0.494
+  },
+  {
+   "asset": "IridescenceLamp",
+   "view": 2,
+   "u2netp": 0.304,
+   "u2netp-centred": 0.304,
+   "sam-loose-box": 0.265,
+   "sam-box-from-u2netp-centred": 0.196,
+   "sam-centre-point+box": 0.613
+  },
+  {
+   "asset": "IridescenceLamp",
+   "view": 4,
+   "u2netp": 0.36,
+   "u2netp-centred": 0.36,
+   "sam-loose-box": 0.374,
+   "sam-box-from-u2netp-centred": 0.295,
+   "sam-centre-point+box": 0.572
+  },
+  {
+   "asset": "IridescenceLamp",
+   "view": 6,
+   "u2netp": 0.176,
+   "u2netp-centred": 0.176,
+   "sam-loose-box": 0.092,
+   "sam-box-from-u2netp-centred": 0.149,
+   "sam-centre-point+box": 0.489
+  },
+  {
+   "asset": "CarConcept",
+   "view": 0,
+   "u2netp": 0.982,
+   "u2netp-centred": 0.982,
+   "sam-loose-box": 0.924,
+   "sam-box-from-u2netp-centred": 0.934,
+   "sam-centre-point+box": 0.896
+  },
+  {
+   "asset": "CarConcept",
+   "view": 2,
+   "u2netp": 0.994,
+   "u2netp-centred": 0.994,
+   "sam-loose-box": 0.583,
+   "sam-box-from-u2netp-centred": 0.828,
+   "sam-centre-point+box": 0.416
+  },
+  {
+   "asset": "CarConcept",
+   "view": 4,
+   "u2netp": 0.996,
+   "u2netp-centred": 0.996,
+   "sam-loose-box": 0.938,
+   "sam-box-from-u2netp-centred": 0.919,
+   "sam-centre-point+box": 0.896
+  },
+  {
+   "asset": "CarConcept",
+   "view": 6,
+   "u2netp": 0.651,
+   "u2netp-centred": 0.65,
+   "sam-loose-box": 0.556,
+   "sam-box-from-u2netp-centred": 0.631,
+   "sam-centre-point+box": 0.278
+  }
+ ]
+}

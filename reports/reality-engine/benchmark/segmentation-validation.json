@@ -1,0 +1,641 @@
+{
+  "generatedBy": "scripts/benchmark/segmentation-validation.ts",
+  "sod": "rede de saliência u2netp ACTIVA",
+  "reference": "renderer exact alpha (independent of every segmentation algorithm)",
+  "acceptedWrongDefinition": "accepted mask with IoU < 0.8",
+  "summary": {
+    "fixed": {
+      "views": 112,
+      "accepted": 108,
+      "refused": 4,
+      "acceptedWrong": 65,
+      "acceptedWrongRate": 0.602,
+      "meanIoUAccepted": 0.5849,
+      "meanIoUAll": 0.564
+    },
+    "varied": {
+      "views": 112,
+      "accepted": 109,
+      "refused": 3,
+      "acceptedWrong": 69,
+      "acceptedWrongRate": 0.633,
+      "meanIoUAccepted": 0.6026,
+      "meanIoUAll": 0.5864
+    },
+    "degraded": {
+      "views": 112,
+      "accepted": 109,
+      "refused": 3,
+      "acceptedWrong": 74,
+      "acceptedWrongRate": 0.679,
+      "meanIoUAccepted": 0.5829,
+      "meanIoUAll": 0.5673
+    }
+  },
+  "rows": [
+    {
+      "asset": "ToyCar",
+      "split": "development",
+      "condition": "fixed",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 5,
+      "meanIoUAccepted": 0.5367,
+      "meanIoUAll": 0.5367,
+      "methods": {
+        "salient-network+graphcut": 7,
+        "static-background": 1
+      }
+    },
+    {
+      "asset": "ToyCar",
+      "split": "development",
+      "condition": "varied",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 4,
+      "meanIoUAccepted": 0.5853,
+      "meanIoUAll": 0.5853,
+      "methods": {
+        "salient-network+graphcut": 8
+      }
+    },
+    {
+      "asset": "ToyCar",
+      "split": "development",
+      "condition": "degraded",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 4,
+      "meanIoUAccepted": 0.586,
+      "meanIoUAll": 0.586,
+      "methods": {
+        "salient-network+graphcut": 8
+      }
+    },
+    {
+      "asset": "Lantern",
+      "split": "development",
+      "condition": "fixed",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 8,
+      "meanIoUAccepted": 0.1164,
+      "meanIoUAll": 0.1164,
+      "methods": {
+        "salient-network+graphcut": 8
+      }
+    },
+    {
+      "asset": "Lantern",
+      "split": "development",
+      "condition": "varied",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 8,
+      "meanIoUAccepted": 0.0965,
+      "meanIoUAll": 0.0965,
+      "methods": {
+        "salient-network+graphcut": 7,
+        "salient-network": 1
+      }
+    },
+    {
+      "asset": "Lantern",
+      "split": "development",
+      "condition": "degraded",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 8,
+      "meanIoUAccepted": 0.1172,
+      "meanIoUAll": 0.1172,
+      "methods": {
+        "salient-network+graphcut": 7,
+        "salient-network": 1
+      }
+    },
+    {
+      "asset": "BoomBox",
+      "split": "development",
+      "condition": "fixed",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 8,
+      "meanIoUAccepted": 0.5209,
+      "meanIoUAll": 0.5209,
+      "methods": {
+        "salient-network+graphcut": 8
+      }
+    },
+    {
+      "asset": "BoomBox",
+      "split": "development",
+      "condition": "varied",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 5,
+      "meanIoUAccepted": 0.6812,
+      "meanIoUAll": 0.6812,
+      "methods": {
+        "salient-network+graphcut": 8
+      }
+    },
+    {
+      "asset": "BoomBox",
+      "split": "development",
+      "condition": "degraded",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 5,
+      "meanIoUAccepted": 0.6831,
+      "meanIoUAll": 0.6831,
+      "methods": {
+        "salient-network+graphcut": 8
+      }
+    },
+    {
+      "asset": "WaterBottle",
+      "split": "development",
+      "condition": "fixed",
+      "views": 8,
+      "accepted": 4,
+      "refused": 4,
+      "acceptedWrong": 4,
+      "meanIoUAccepted": 0.1668,
+      "meanIoUAll": 0.0834,
+      "methods": {
+        "classical-colour": 4
+      }
+    },
+    {
+      "asset": "WaterBottle",
+      "split": "development",
+      "condition": "varied",
+      "views": 8,
+      "accepted": 6,
+      "refused": 2,
+      "acceptedWrong": 5,
+      "meanIoUAccepted": 0.46,
+      "meanIoUAll": 0.345,
+      "methods": {
+        "classical-colour": 1,
+        "salient-network+graphcut": 5
+      }
+    },
+    {
+      "asset": "WaterBottle",
+      "split": "development",
+      "condition": "degraded",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 6,
+      "meanIoUAccepted": 0.4972,
+      "meanIoUAll": 0.4972,
+      "methods": {
+        "classical-colour": 1,
+        "salient-network+graphcut": 7
+      }
+    },
+    {
+      "asset": "SheenChair",
+      "split": "development",
+      "condition": "fixed",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 8,
+      "meanIoUAccepted": 0.4937,
+      "meanIoUAll": 0.4937,
+      "methods": {
+        "salient-network+graphcut": 7,
+        "static-background": 1
+      }
+    },
+    {
+      "asset": "SheenChair",
+      "split": "development",
+      "condition": "varied",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 6,
+      "meanIoUAccepted": 0.5732,
+      "meanIoUAll": 0.5732,
+      "methods": {
+        "salient-network+graphcut": 8
+      }
+    },
+    {
+      "asset": "SheenChair",
+      "split": "development",
+      "condition": "degraded",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 7,
+      "meanIoUAccepted": 0.559,
+      "meanIoUAll": 0.559,
+      "methods": {
+        "salient-network+graphcut": 7,
+        "classical-colour": 1
+      }
+    },
+    {
+      "asset": "CesiumMilkTruck",
+      "split": "development",
+      "condition": "fixed",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 7,
+      "meanIoUAccepted": 0.7143,
+      "meanIoUAll": 0.7143,
+      "methods": {
+        "salient-network+graphcut": 8
+      }
+    },
+    {
+      "asset": "CesiumMilkTruck",
+      "split": "development",
+      "condition": "varied",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 3,
+      "meanIoUAccepted": 0.8432,
+      "meanIoUAll": 0.8432,
+      "methods": {
+        "salient-network+graphcut": 8
+      }
+    },
+    {
+      "asset": "CesiumMilkTruck",
+      "split": "development",
+      "condition": "degraded",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 3,
+      "meanIoUAccepted": 0.8114,
+      "meanIoUAll": 0.8114,
+      "methods": {
+        "salient-network+graphcut": 8
+      }
+    },
+    {
+      "asset": "AntiqueCamera",
+      "split": "acceptance",
+      "condition": "fixed",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 8,
+      "meanIoUAccepted": 0.0763,
+      "meanIoUAll": 0.0763,
+      "methods": {
+        "salient-network+graphcut": 7,
+        "salient-network": 1
+      }
+    },
+    {
+      "asset": "AntiqueCamera",
+      "split": "acceptance",
+      "condition": "varied",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 8,
+      "meanIoUAccepted": 0.1544,
+      "meanIoUAll": 0.1544,
+      "methods": {
+        "salient-network+graphcut": 7,
+        "salient-network": 1
+      }
+    },
+    {
+      "asset": "AntiqueCamera",
+      "split": "acceptance",
+      "condition": "degraded",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 8,
+      "meanIoUAccepted": 0.1574,
+      "meanIoUAll": 0.1574,
+      "methods": {
+        "salient-network": 1,
+        "salient-network+graphcut": 6,
+        "classical-colour": 1
+      }
+    },
+    {
+      "asset": "Avocado",
+      "split": "acceptance",
+      "condition": "fixed",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 5,
+      "meanIoUAccepted": 0.6064,
+      "meanIoUAll": 0.6064,
+      "methods": {
+        "salient-network+graphcut": 5,
+        "static-background": 3
+      }
+    },
+    {
+      "asset": "Avocado",
+      "split": "acceptance",
+      "condition": "varied",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 5,
+      "meanIoUAccepted": 0.6235,
+      "meanIoUAll": 0.6235,
+      "methods": {
+        "salient-network+graphcut": 7,
+        "salient-network": 1
+      }
+    },
+    {
+      "asset": "Avocado",
+      "split": "acceptance",
+      "condition": "degraded",
+      "views": 8,
+      "accepted": 7,
+      "refused": 1,
+      "acceptedWrong": 4,
+      "meanIoUAccepted": 0.6757,
+      "meanIoUAll": 0.5912,
+      "methods": {
+        "salient-network+graphcut": 7
+      }
+    },
+    {
+      "asset": "Corset",
+      "split": "acceptance",
+      "condition": "fixed",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 1,
+      "meanIoUAccepted": 0.8818,
+      "meanIoUAll": 0.8818,
+      "methods": {
+        "salient-network+graphcut": 8
+      }
+    },
+    {
+      "asset": "Corset",
+      "split": "acceptance",
+      "condition": "varied",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 6,
+      "meanIoUAccepted": 0.6075,
+      "meanIoUAll": 0.6075,
+      "methods": {
+        "salient-network+graphcut": 8
+      }
+    },
+    {
+      "asset": "Corset",
+      "split": "acceptance",
+      "condition": "degraded",
+      "views": 8,
+      "accepted": 7,
+      "refused": 1,
+      "acceptedWrong": 6,
+      "meanIoUAccepted": 0.4982,
+      "meanIoUAll": 0.4359,
+      "methods": {
+        "salient-network+graphcut": 6,
+        "classical-colour": 1
+      }
+    },
+    {
+      "asset": "MaterialsVariantsShoe",
+      "split": "acceptance",
+      "condition": "fixed",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 1,
+      "meanIoUAccepted": 0.8621,
+      "meanIoUAll": 0.8621,
+      "methods": {
+        "static-background": 5,
+        "salient-network+graphcut": 3
+      }
+    },
+    {
+      "asset": "MaterialsVariantsShoe",
+      "split": "acceptance",
+      "condition": "varied",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 4,
+      "meanIoUAccepted": 0.7208,
+      "meanIoUAll": 0.7208,
+      "methods": {
+        "salient-network+graphcut": 8
+      }
+    },
+    {
+      "asset": "MaterialsVariantsShoe",
+      "split": "acceptance",
+      "condition": "degraded",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 5,
+      "meanIoUAccepted": 0.7166,
+      "meanIoUAll": 0.7166,
+      "methods": {
+        "salient-network+graphcut": 8
+      }
+    },
+    {
+      "asset": "GlamVelvetSofa",
+      "split": "acceptance",
+      "condition": "fixed",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 0,
+      "meanIoUAccepted": 0.9079,
+      "meanIoUAll": 0.9079,
+      "methods": {
+        "salient-network+graphcut": 8
+      }
+    },
+    {
+      "asset": "GlamVelvetSofa",
+      "split": "acceptance",
+      "condition": "varied",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 2,
+      "meanIoUAccepted": 0.8791,
+      "meanIoUAll": 0.8791,
+      "methods": {
+        "salient-network+graphcut": 8
+      }
+    },
+    {
+      "asset": "GlamVelvetSofa",
+      "split": "acceptance",
+      "condition": "degraded",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 2,
+      "meanIoUAccepted": 0.8557,
+      "meanIoUAll": 0.8557,
+      "methods": {
+        "salient-network+graphcut": 7,
+        "classical-colour": 1
+      }
+    },
+    {
+      "asset": "ChairDamaskPurplegold",
+      "split": "acceptance",
+      "condition": "fixed",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 8,
+      "meanIoUAccepted": 0.353,
+      "meanIoUAll": 0.353,
+      "methods": {
+        "salient-network+graphcut": 8
+      }
+    },
+    {
+      "asset": "ChairDamaskPurplegold",
+      "split": "acceptance",
+      "condition": "varied",
+      "views": 8,
+      "accepted": 7,
+      "refused": 1,
+      "acceptedWrong": 7,
+      "meanIoUAccepted": 0.5598,
+      "meanIoUAll": 0.4899,
+      "methods": {
+        "salient-network+graphcut": 7
+      }
+    },
+    {
+      "asset": "ChairDamaskPurplegold",
+      "split": "acceptance",
+      "condition": "degraded",
+      "views": 8,
+      "accepted": 7,
+      "refused": 1,
+      "acceptedWrong": 7,
+      "meanIoUAccepted": 0.5488,
+      "meanIoUAll": 0.4802,
+      "methods": {
+        "salient-network+graphcut": 7
+      }
+    },
+    {
+      "asset": "IridescenceLamp",
+      "split": "acceptance",
+      "condition": "fixed",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 0,
+      "meanIoUAccepted": 0.8298,
+      "meanIoUAll": 0.8298,
+      "methods": {
+        "salient-network+graphcut": 8
+      }
+    },
+    {
+      "asset": "IridescenceLamp",
+      "split": "acceptance",
+      "condition": "varied",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 4,
+      "meanIoUAccepted": 0.7043,
+      "meanIoUAll": 0.7043,
+      "methods": {
+        "salient-network+graphcut": 8
+      }
+    },
+    {
+      "asset": "IridescenceLamp",
+      "split": "acceptance",
+      "condition": "degraded",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 6,
+      "meanIoUAccepted": 0.6087,
+      "meanIoUAll": 0.6087,
+      "methods": {
+        "salient-network+graphcut": 8
+      }
+    },
+    {
+      "asset": "CarConcept",
+      "split": "acceptance",
+      "condition": "fixed",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 2,
+      "meanIoUAccepted": 0.9132,
+      "meanIoUAll": 0.9132,
+      "methods": {
+        "salient-network+graphcut": 8
+      }
+    },
+    {
+      "asset": "CarConcept",
+      "split": "acceptance",
+      "condition": "varied",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 2,
+      "meanIoUAccepted": 0.9062,
+      "meanIoUAll": 0.9062,
+      "methods": {
+        "salient-network+graphcut": 8
+      }
+    },
+    {
+      "asset": "CarConcept",
+      "split": "acceptance",
+      "condition": "degraded",
+      "views": 8,
+      "accepted": 8,
+      "refused": 0,
+      "acceptedWrong": 3,
+      "meanIoUAccepted": 0.843,
+      "meanIoUAll": 0.843,
+      "methods": {
+        "salient-network+graphcut": 8
+      }
+    }
+  ]
+}

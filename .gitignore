@@ -16,3 +16,4 @@ input/
 # Private test fixtures (origin/licence not confirmed)
 .local-fixtures/
 public/models/
+scripts/benchmark/cache/

@@ -42,13 +42,17 @@ export function assessReconstruction(plan: SpatialPlanV2, model: RealityModel, s
     validations,
     reconstruction: { sourceSha256, geometry: 'approximated', observedFraction: model.observedFraction, observedByComponent: byComponent, basis: 'Casco visual de silhuetas (limite superior da forma)' },
   });
-  const confirmed = model.evidence.views.filter((v) => v.outline === 'confirmed').length, tolerance = benchmarkToleranceFor(model.evidence.views.length, model.evidence.mode === 'orthographic' ? 'orthographic' : confirmed > model.evidence.views.length / 2 ? 'photographic-assisted' : 'photographic');
+  // The measured tolerances come from plain-background automatic outlines (classical colour) or hand-confirmed ones. Outlines from the salient network or the static
+  // background were validated separately on cluttered composites (most of the learned ones were wrong there): they carry NO error tolerance until the person confirms them.
+  const nViews = model.evidence.views.length, confirmed = model.evidence.views.filter((v) => v.outline === 'confirmed').length;
+  const ungrounded = model.evidence.views.filter((v) => v.outline === 'automatic' && v.outlineMethod !== undefined && v.outlineMethod !== 'classical-colour').length;
+  const tolerance = model.evidence.mode !== 'orthographic' && ungrounded > nViews / 2 && confirmed <= nViews / 2 ? null : benchmarkToleranceFor(nViews, model.evidence.mode === 'orthographic' ? 'orthographic' : confirmed > nViews / 2 ? 'photographic-assisted' : 'photographic');
   const statements = [
     `${model.evidence.views.length} vistas; profundidade ${model.hull.depthObserved ? 'observada por vistas distintas' : 'NÃO observada (vistas quase paralelas)'}.`,
     `${(model.observedFraction * 100).toFixed(0)}% da superfície é vista por alguma vista; o resto (azul-acinzentado) é hipótese.`,
     tolerance
       ? `Medido contra activos 3D independentes (${tolerance.source}), com ≥ ${tolerance.views} vistas: erro médio de superfície tipicamente ${tolerance.chamferPctMedian}% da diagonal (máx. ${tolerance.chamferPctMax}%; p95 até ${tolerance.p95AccuracyPctMax}%). Não validado em fotografias de câmara.`
-      : 'Sem medição de erro para este número de vistas e este tipo de entrada: o erro é desconhecido.',
+      : ungrounded > nViews / 2 && confirmed <= nViews / 2 ? 'Os contornos são automáticos (rede de saliência / fundo estático) e não foram confirmados: nos testes com fundos reais mais de metade destes contornos estavam errados, por isso nenhuma tolerância de erro é afirmada. Confirme os contornos vista a vista.' : 'Sem medição de erro para este número de vistas e este tipo de entrada: o erro é desconhecido.',
     loo ? `Concordância entre vistas (cada vista contra as restantes): ${((loo.reduce((s, x) => s + x.iou, 0) / loo.length) * 100).toFixed(0)}% IoU. Prova coerência entre vistas, não forma 3D.` : 'Menos de 3 vistas: não há vista de controlo; a forma não foi verificada contra nenhuma vista retida.',
     ...(model.degraded ? [`Resolução reduzida de ${model.degraded.fromCells} para ${model.degraded.toCells} células para caber no orçamento de triângulos (${model.degraded.triangles.toLocaleString('pt-PT')} triângulos): detalhe fino perdido, declarado.`] : []),
     ...(model.hull.clippedByFrame ? ['A silhueta tocou a janela de reconstrução: a forma pode estar cortada.'] : []),

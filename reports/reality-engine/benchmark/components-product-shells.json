@@ -1,0 +1,748 @@
+{
+  "note": "Product path (8 perspective renders at 20 deg elevation, exact-alpha masks, assumed poses) vs GT glTF nodes. Recovered = GT part (>=3% voxels) matched with IoU >= 0.5.",
+  "variants": [
+    "baseline",
+    "app",
+    "app∧sam-0.1",
+    "app∧sam-0.2",
+    "app∧sam-0.3"
+  ],
+  "aggregate": {
+    "baseline": {
+      "development": {
+        "assets": 6,
+        "recovered": 6,
+        "significant": 18,
+        "meanARI": 0.059,
+        "meanWeightedIoU": 0.59,
+        "meanPurity": 0.664
+      },
+      "acceptance": {
+        "assets": 8,
+        "recovered": 4,
+        "significant": 45,
+        "meanARI": 0.042,
+        "meanWeightedIoU": 0.423,
+        "meanPurity": 0.491
+      }
+    },
+    "app": {
+      "development": {
+        "assets": 6,
+        "recovered": 6,
+        "significant": 18,
+        "meanARI": 0.106,
+        "meanWeightedIoU": 0.605,
+        "meanPurity": 0.675
+      },
+      "acceptance": {
+        "assets": 8,
+        "recovered": 6,
+        "significant": 45,
+        "meanARI": 0.106,
+        "meanWeightedIoU": 0.423,
+        "meanPurity": 0.511
+      }
+    },
+    "app∧sam-0.1": {
+      "development": {
+        "assets": 6,
+        "recovered": 6,
+        "significant": 18,
+        "meanARI": 0.059,
+        "meanWeightedIoU": 0.59,
+        "meanPurity": 0.664
+      },
+      "acceptance": {
+        "assets": 8,
+        "recovered": 5,
+        "significant": 45,
+        "meanARI": 0.062,
+        "meanWeightedIoU": 0.438,
+        "meanPurity": 0.508
+      }
+    },
+    "app∧sam-0.2": {
+      "development": {
+        "assets": 6,
+        "recovered": 6,
+        "significant": 18,
+        "meanARI": 0.059,
+        "meanWeightedIoU": 0.59,
+        "meanPurity": 0.664
+      },
+      "acceptance": {
+        "assets": 8,
+        "recovered": 5,
+        "significant": 45,
+        "meanARI": 0.062,
+        "meanWeightedIoU": 0.438,
+        "meanPurity": 0.508
+      }
+    },
+    "app∧sam-0.3": {
+      "development": {
+        "assets": 6,
+        "recovered": 6,
+        "significant": 18,
+        "meanARI": 0.059,
+        "meanWeightedIoU": 0.59,
+        "meanPurity": 0.664
+      },
+      "acceptance": {
+        "assets": 8,
+        "recovered": 5,
+        "significant": 45,
+        "meanARI": 0.062,
+        "meanWeightedIoU": 0.438,
+        "meanPurity": 0.508
+      }
+    }
+  },
+  "rows": [
+    {
+      "id": "ToyCar",
+      "split": "development",
+      "gtParts": 26,
+      "mirror": 0,
+      "baseline": {
+        "gtSignificantParts": 2,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.59,
+        "gtPartsRecovered": 1,
+        "purity": 0.703
+      },
+      "app": {
+        "gtSignificantParts": 2,
+        "ourParts": 2,
+        "ari": 0.293,
+        "weightedBestIoU": 0.659,
+        "gtPartsRecovered": 1,
+        "purity": 0.755
+      },
+      "app∧sam-0.1": {
+        "gtSignificantParts": 2,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.59,
+        "gtPartsRecovered": 1,
+        "purity": 0.703
+      },
+      "app∧sam-0.2": {
+        "gtSignificantParts": 2,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.59,
+        "gtPartsRecovered": 1,
+        "purity": 0.703
+      },
+      "app∧sam-0.3": {
+        "gtSignificantParts": 2,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.59,
+        "gtPartsRecovered": 1,
+        "purity": 0.703
+      }
+    },
+    {
+      "id": "Lantern",
+      "split": "development",
+      "gtParts": 17,
+      "mirror": 2,
+      "baseline": {
+        "gtSignificantParts": 5,
+        "ourParts": 2,
+        "ari": 0.097,
+        "weightedBestIoU": 0.36,
+        "gtPartsRecovered": 1,
+        "purity": 0.458
+      },
+      "app": {
+        "gtSignificantParts": 5,
+        "ourParts": 3,
+        "ari": 0.095,
+        "weightedBestIoU": 0.348,
+        "gtPartsRecovered": 1,
+        "purity": 0.458
+      },
+      "app∧sam-0.1": {
+        "gtSignificantParts": 5,
+        "ourParts": 2,
+        "ari": 0.097,
+        "weightedBestIoU": 0.36,
+        "gtPartsRecovered": 1,
+        "purity": 0.458
+      },
+      "app∧sam-0.2": {
+        "gtSignificantParts": 5,
+        "ourParts": 2,
+        "ari": 0.097,
+        "weightedBestIoU": 0.36,
+        "gtPartsRecovered": 1,
+        "purity": 0.458
+      },
+      "app∧sam-0.3": {
+        "gtSignificantParts": 5,
+        "ourParts": 2,
+        "ari": 0.097,
+        "weightedBestIoU": 0.36,
+        "gtPartsRecovered": 1,
+        "purity": 0.458
+      }
+    },
+    {
+      "id": "BoomBox",
+      "split": "development",
+      "gtParts": 14,
+      "mirror": 0,
+      "baseline": {
+        "gtSignificantParts": 2,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.814,
+        "gtPartsRecovered": 1,
+        "purity": 0.888
+      },
+      "app": {
+        "gtSignificantParts": 2,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.814,
+        "gtPartsRecovered": 1,
+        "purity": 0.888
+      },
+      "app∧sam-0.1": {
+        "gtSignificantParts": 2,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.814,
+        "gtPartsRecovered": 1,
+        "purity": 0.888
+      },
+      "app∧sam-0.2": {
+        "gtSignificantParts": 2,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.814,
+        "gtPartsRecovered": 1,
+        "purity": 0.888
+      },
+      "app∧sam-0.3": {
+        "gtSignificantParts": 2,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.814,
+        "gtPartsRecovered": 1,
+        "purity": 0.888
+      }
+    },
+    {
+      "id": "WaterBottle",
+      "split": "development",
+      "gtParts": 3,
+      "mirror": 2,
+      "baseline": {
+        "gtSignificantParts": 2,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.557,
+        "gtPartsRecovered": 1,
+        "purity": 0.671
+      },
+      "app": {
+        "gtSignificantParts": 2,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.557,
+        "gtPartsRecovered": 1,
+        "purity": 0.671
+      },
+      "app∧sam-0.1": {
+        "gtSignificantParts": 2,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.557,
+        "gtPartsRecovered": 1,
+        "purity": 0.671
+      },
+      "app∧sam-0.2": {
+        "gtSignificantParts": 2,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.557,
+        "gtPartsRecovered": 1,
+        "purity": 0.671
+      },
+      "app∧sam-0.3": {
+        "gtSignificantParts": 2,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.557,
+        "gtPartsRecovered": 1,
+        "purity": 0.671
+      }
+    },
+    {
+      "id": "SheenChair",
+      "split": "development",
+      "gtParts": 51,
+      "mirror": 1,
+      "baseline": {
+        "gtSignificantParts": 6,
+        "ourParts": 2,
+        "ari": 0.255,
+        "weightedBestIoU": 0.413,
+        "gtPartsRecovered": 1,
+        "purity": 0.462
+      },
+      "app": {
+        "gtSignificantParts": 6,
+        "ourParts": 3,
+        "ari": 0.248,
+        "weightedBestIoU": 0.45,
+        "gtPartsRecovered": 1,
+        "purity": 0.475
+      },
+      "app∧sam-0.1": {
+        "gtSignificantParts": 6,
+        "ourParts": 2,
+        "ari": 0.255,
+        "weightedBestIoU": 0.413,
+        "gtPartsRecovered": 1,
+        "purity": 0.462
+      },
+      "app∧sam-0.2": {
+        "gtSignificantParts": 6,
+        "ourParts": 2,
+        "ari": 0.255,
+        "weightedBestIoU": 0.413,
+        "gtPartsRecovered": 1,
+        "purity": 0.462
+      },
+      "app∧sam-0.3": {
+        "gtSignificantParts": 6,
+        "ourParts": 2,
+        "ari": 0.255,
+        "weightedBestIoU": 0.413,
+        "gtPartsRecovered": 1,
+        "purity": 0.462
+      }
+    },
+    {
+      "id": "CesiumMilkTruck",
+      "split": "development",
+      "gtParts": 13,
+      "mirror": 0,
+      "baseline": {
+        "gtSignificantParts": 1,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.804,
+        "gtPartsRecovered": 1,
+        "purity": 0.804
+      },
+      "app": {
+        "gtSignificantParts": 1,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.804,
+        "gtPartsRecovered": 1,
+        "purity": 0.804
+      },
+      "app∧sam-0.1": {
+        "gtSignificantParts": 1,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.804,
+        "gtPartsRecovered": 1,
+        "purity": 0.804
+      },
+      "app∧sam-0.2": {
+        "gtSignificantParts": 1,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.804,
+        "gtPartsRecovered": 1,
+        "purity": 0.804
+      },
+      "app∧sam-0.3": {
+        "gtSignificantParts": 1,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.804,
+        "gtPartsRecovered": 1,
+        "purity": 0.804
+      }
+    },
+    {
+      "id": "AntiqueCamera",
+      "split": "acceptance",
+      "gtParts": 94,
+      "mirror": 0,
+      "baseline": {
+        "gtSignificantParts": 16,
+        "ourParts": 2,
+        "ari": 0.088,
+        "weightedBestIoU": 0.107,
+        "gtPartsRecovered": 0,
+        "purity": 0.16
+      },
+      "app": {
+        "gtSignificantParts": 16,
+        "ourParts": 2,
+        "ari": 0.088,
+        "weightedBestIoU": 0.107,
+        "gtPartsRecovered": 0,
+        "purity": 0.16
+      },
+      "app∧sam-0.1": {
+        "gtSignificantParts": 16,
+        "ourParts": 2,
+        "ari": 0.088,
+        "weightedBestIoU": 0.107,
+        "gtPartsRecovered": 0,
+        "purity": 0.16
+      },
+      "app∧sam-0.2": {
+        "gtSignificantParts": 16,
+        "ourParts": 2,
+        "ari": 0.088,
+        "weightedBestIoU": 0.107,
+        "gtPartsRecovered": 0,
+        "purity": 0.16
+      },
+      "app∧sam-0.3": {
+        "gtSignificantParts": 16,
+        "ourParts": 2,
+        "ari": 0.088,
+        "weightedBestIoU": 0.107,
+        "gtPartsRecovered": 0,
+        "purity": 0.16
+      }
+    },
+    {
+      "id": "Avocado",
+      "split": "acceptance",
+      "gtParts": 2,
+      "mirror": 0,
+      "baseline": {
+        "gtSignificantParts": 2,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.787,
+        "gtPartsRecovered": 1,
+        "purity": 0.879
+      },
+      "app": {
+        "gtSignificantParts": 2,
+        "ourParts": 2,
+        "ari": 0.238,
+        "weightedBestIoU": 0.68,
+        "gtPartsRecovered": 1,
+        "purity": 0.879
+      },
+      "app∧sam-0.1": {
+        "gtSignificantParts": 2,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.787,
+        "gtPartsRecovered": 1,
+        "purity": 0.879
+      },
+      "app∧sam-0.2": {
+        "gtSignificantParts": 2,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.787,
+        "gtPartsRecovered": 1,
+        "purity": 0.879
+      },
+      "app∧sam-0.3": {
+        "gtSignificantParts": 2,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.787,
+        "gtPartsRecovered": 1,
+        "purity": 0.879
+      }
+    },
+    {
+      "id": "Corset",
+      "split": "acceptance",
+      "gtParts": 59,
+      "mirror": 2,
+      "baseline": {
+        "gtSignificantParts": 4,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.26,
+        "gtPartsRecovered": 0,
+        "purity": 0.353
+      },
+      "app": {
+        "gtSignificantParts": 4,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.26,
+        "gtPartsRecovered": 0,
+        "purity": 0.353
+      },
+      "app∧sam-0.1": {
+        "gtSignificantParts": 4,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.26,
+        "gtPartsRecovered": 0,
+        "purity": 0.353
+      },
+      "app∧sam-0.2": {
+        "gtSignificantParts": 4,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.26,
+        "gtPartsRecovered": 0,
+        "purity": 0.353
+      },
+      "app∧sam-0.3": {
+        "gtSignificantParts": 4,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.26,
+        "gtPartsRecovered": 0,
+        "purity": 0.353
+      }
+    },
+    {
+      "id": "MaterialsVariantsShoe",
+      "split": "acceptance",
+      "gtParts": 25,
+      "mirror": 0,
+      "baseline": {
+        "gtSignificantParts": 3,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.541,
+        "gtPartsRecovered": 1,
+        "purity": 0.685
+      },
+      "app": {
+        "gtSignificantParts": 3,
+        "ourParts": 2,
+        "ari": 0.112,
+        "weightedBestIoU": 0.469,
+        "gtPartsRecovered": 1,
+        "purity": 0.685
+      },
+      "app∧sam-0.1": {
+        "gtSignificantParts": 3,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.541,
+        "gtPartsRecovered": 1,
+        "purity": 0.685
+      },
+      "app∧sam-0.2": {
+        "gtSignificantParts": 3,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.541,
+        "gtPartsRecovered": 1,
+        "purity": 0.685
+      },
+      "app∧sam-0.3": {
+        "gtSignificantParts": 3,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.541,
+        "gtPartsRecovered": 1,
+        "purity": 0.685
+      }
+    },
+    {
+      "id": "GlamVelvetSofa",
+      "split": "acceptance",
+      "gtParts": 28,
+      "mirror": 0,
+      "baseline": {
+        "gtSignificantParts": 1,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.987,
+        "gtPartsRecovered": 1,
+        "purity": 0.987
+      },
+      "app": {
+        "gtSignificantParts": 1,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.987,
+        "gtPartsRecovered": 1,
+        "purity": 0.987
+      },
+      "app∧sam-0.1": {
+        "gtSignificantParts": 1,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.987,
+        "gtPartsRecovered": 1,
+        "purity": 0.987
+      },
+      "app∧sam-0.2": {
+        "gtSignificantParts": 1,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.987,
+        "gtPartsRecovered": 1,
+        "purity": 0.987
+      },
+      "app∧sam-0.3": {
+        "gtSignificantParts": 1,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.987,
+        "gtPartsRecovered": 1,
+        "purity": 0.987
+      }
+    },
+    {
+      "id": "ChairDamaskPurplegold",
+      "split": "acceptance",
+      "gtParts": 51,
+      "mirror": 0,
+      "baseline": {
+        "gtSignificantParts": 5,
+        "ourParts": 2,
+        "ari": 0.25,
+        "weightedBestIoU": 0.415,
+        "gtPartsRecovered": 1,
+        "purity": 0.454
+      },
+      "app": {
+        "gtSignificantParts": 5,
+        "ourParts": 3,
+        "ari": 0.254,
+        "weightedBestIoU": 0.473,
+        "gtPartsRecovered": 2,
+        "purity": 0.481
+      },
+      "app∧sam-0.1": {
+        "gtSignificantParts": 5,
+        "ourParts": 2,
+        "ari": 0.25,
+        "weightedBestIoU": 0.415,
+        "gtPartsRecovered": 1,
+        "purity": 0.454
+      },
+      "app∧sam-0.2": {
+        "gtSignificantParts": 5,
+        "ourParts": 2,
+        "ari": 0.25,
+        "weightedBestIoU": 0.415,
+        "gtPartsRecovered": 1,
+        "purity": 0.454
+      },
+      "app∧sam-0.3": {
+        "gtSignificantParts": 5,
+        "ourParts": 2,
+        "ari": 0.25,
+        "weightedBestIoU": 0.415,
+        "gtPartsRecovered": 1,
+        "purity": 0.454
+      }
+    },
+    {
+      "id": "IridescenceLamp",
+      "split": "acceptance",
+      "gtParts": 13,
+      "mirror": 1,
+      "baseline": {
+        "gtSignificantParts": 7,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.212,
+        "gtPartsRecovered": 0,
+        "purity": 0.311
+      },
+      "app": {
+        "gtSignificantParts": 7,
+        "ourParts": 2,
+        "ari": 0.157,
+        "weightedBestIoU": 0.338,
+        "gtPartsRecovered": 1,
+        "purity": 0.444
+      },
+      "app∧sam-0.1": {
+        "gtSignificantParts": 7,
+        "ourParts": 2,
+        "ari": 0.157,
+        "weightedBestIoU": 0.338,
+        "gtPartsRecovered": 1,
+        "purity": 0.444
+      },
+      "app∧sam-0.2": {
+        "gtSignificantParts": 7,
+        "ourParts": 2,
+        "ari": 0.157,
+        "weightedBestIoU": 0.338,
+        "gtPartsRecovered": 1,
+        "purity": 0.444
+      },
+      "app∧sam-0.3": {
+        "gtSignificantParts": 7,
+        "ourParts": 2,
+        "ari": 0.157,
+        "weightedBestIoU": 0.338,
+        "gtPartsRecovered": 1,
+        "purity": 0.444
+      }
+    },
+    {
+      "id": "CarConcept",
+      "split": "acceptance",
+      "gtParts": 322,
+      "mirror": 0,
+      "baseline": {
+        "gtSignificantParts": 7,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.071,
+        "gtPartsRecovered": 0,
+        "purity": 0.101
+      },
+      "app": {
+        "gtSignificantParts": 7,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.071,
+        "gtPartsRecovered": 0,
+        "purity": 0.101
+      },
+      "app∧sam-0.1": {
+        "gtSignificantParts": 7,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.071,
+        "gtPartsRecovered": 0,
+        "purity": 0.101
+      },
+      "app∧sam-0.2": {
+        "gtSignificantParts": 7,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.071,
+        "gtPartsRecovered": 0,
+        "purity": 0.101
+      },
+      "app∧sam-0.3": {
+        "gtSignificantParts": 7,
+        "ourParts": 1,
+        "ari": 0,
+        "weightedBestIoU": 0.071,
+        "gtPartsRecovered": 0,
+        "purity": 0.101
+      }
+    }
+  ]
+}

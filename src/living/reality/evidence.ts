@@ -12,10 +12,14 @@ export type StoredView = {
   id: string; name: string; azimuthDeg: number; elevationDeg: number; azimuthSource: 'given' | 'assumed';
   /** where this outline came from: the automatic background segmentation or one the person drew/confirmed (absent in older evidence = unknown) */
   outline?: 'automatic' | 'confirmed';
+  /** which automatic strategy drew an 'automatic' outline (classical-colour, static-background, salient-network, salient-network+graphcut); absent = classical colour segmentation (older evidence) */
+  outlineMethod?: string;
   /** run-length mask: alternating run lengths, starting with background, base-36, comma-separated */
   maskRle: string;
   /** RGB565 little-endian, colourRes x colourRes, base64; absent when the view carries no colour (masks only) */
   colour?: string;
+  /** where the shared orthographic window sits in this view's SOURCE image (centre in source pixels, source pixels per length unit): lets later evidence (part proposals) be resampled identically */
+  window?: { cx: number; cy: number; ppu: number };
 };
 export type RealityEvidence = {
   contract: typeof REALITY_EVIDENCE_CONTRACT;
@@ -80,6 +84,8 @@ export function validateRealityEvidence(value: unknown): RealityEvidence {
     if (v.azimuthSource !== 'given' && v.azimuthSource !== 'assumed') fail('REALITY_POSE_SOURCE', 'azimuthSource must be given or assumed');
     if (typeof v.maskRle !== 'string' || typeof v.name !== 'string') fail('REALITY_VIEW', 'invalid view');
     if (v.outline !== undefined && v.outline !== 'automatic' && v.outline !== 'confirmed') fail('REALITY_OUTLINE', 'outline must be automatic or confirmed');
+    if (v.outlineMethod !== undefined && !/^[a-z+-]{3,40}$/.test(v.outlineMethod)) fail('REALITY_OUTLINE_METHOD', v.id);
+    if (v.window !== undefined && !(Number.isFinite(v.window.cx) && Number.isFinite(v.window.cy) && v.window.ppu > 0)) fail('REALITY_WINDOW', v.id);
     try { decodeMask(v.maskRle, res * res); } catch { fail('REALITY_MASK_INVALID', v.id); }
     if (v.colour !== undefined) { try { decodeColour(v.colour, colourRes); } catch { fail('REALITY_COLOUR_INVALID', v.id); } }
   }

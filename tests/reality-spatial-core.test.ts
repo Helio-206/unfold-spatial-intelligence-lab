@@ -72,6 +72,16 @@ describe('avaliação honesta', () => {
     expect(a.source).toMatch(/ajustados à mão/); expect(b.source).toMatch(/contornos automáticos/);
     expect(a.chamferPctMax).toBeGreaterThanOrEqual(b.chamferPctMax);
   }, 120_000);
+  it('contornos automáticos de rede de saliência/fundo estático sem confirmação NÃO recebem tolerância; confirmados ou de cor clássica recebem', async () => {
+    const base = evidenceFromRenders(gt, Array.from({ length: 8 }, (_, i) => [i * 45, i % 2 ? 40 : 0] as [number, number]), { cells: 48, res: 128 });
+    const withViews = (outline: 'automatic' | 'confirmed', method?: string) => ({ ...base, mode: 'turntable' as const, views: base.views.map((v) => ({ ...v, outline, ...(method ? { outlineMethod: method } : {}) })) });
+    const run = async (ev: typeof base) => { const m = buildModel(ev), sha = await evidenceSha256(ev); return assessReconstruction(planFromModel(m, sha, 'T'), m, sha); };
+    const learned = await run(withViews('automatic', 'salient-network+graphcut')), still = await run(withViews('automatic', 'static-background')), classical = await run(withViews('automatic', 'classical-colour')), confirmed = await run(withViews('confirmed', 'salient-network'));
+    expect(learned.benchmarkTolerance).toBeNull(); expect(learned.statements.join(' ')).toMatch(/nenhuma tolerância de erro é afirmada/);
+    expect(still.benchmarkTolerance).toBeNull();
+    expect(classical.benchmarkTolerance).not.toBeNull();
+    expect(confirmed.benchmarkTolerance).not.toBeNull(); expect(confirmed.benchmarkTolerance!.source).toMatch(/ajustados à mão/);
+  }, 120_000);
   it('um ledger de outra reconstrução (hash diferente) é ignorado', async () => {
     const ev = evidenceFromRenders(gt, ORBIT6), model = buildModel(ev), sha = await evidenceSha256(ev), plan = planFromModel(model, sha, 'T');
     const wrong = assessReconstruction(plan, model, 'f'.repeat(64));

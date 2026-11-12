@@ -34,6 +34,10 @@ export function selectOutline(candidates: readonly Candidate[], width: number, h
   if (!credible.length) return { mask: null, method: null, credible: false, consensus: 0, considered, note: 'Nenhuma estratégia automática produziu um contorno credível: use «Ajustar contorno».' };
   const agree = credible.map((c) => ({ c, a: credible.length > 1 ? credible.filter((o) => o !== c).reduce((s, o) => s + iou(c.mask, o.mask), 0) / (credible.length - 1) : 0.5 }));
   for (const e of agree) considered.find((x) => x.method === e.c.method)!.agreement = +e.a.toFixed(3);
+  // A credible static-background outline is a PHYSICAL cue (pixels that never change are not the object); it is kept over learned strategies. Measured on the
+  // validation composites (fixed background): mean IoU 0.61 -> 0.75 against 0.79 for the oracle choice among the same candidates (reports/reality-engine/benchmark/segmentation-cached.json).
+  const stat = agree.find((e) => e.c.method === 'static-background');
+  if (stat) return { mask: stat.c.mask, method: 'static-background', credible: true, consensus: +stat.a.toFixed(3), considered, note: 'Fundo estático: o que não muda entre as fotografias não é o objecto.' };
   // consensus wins; candidates within 0.05 of the best agreement are ordered by method preference
   const best = Math.max(...agree.map((e) => e.a)), top = agree.filter((e) => e.a >= best - 0.05).sort((p, q) => PREFERENCE.indexOf(p.c.method) - PREFERENCE.indexOf(q.c.method))[0]!;
   const lone = credible.length === 1;
@@ -47,14 +51,19 @@ const refine = (rgba: RGBA, soft: Float32Array, hi = 0.9, lo = 0.1): Uint8Array 
   return segmentInteractive(rgba, { box: { x0: Math.max(0, x0 - pad * W), y0: Math.max(0, y0 - pad * H), x1: Math.min(W, x1 + pad * W), y1: Math.min(H, y1 + pad * H) }, seeds }).mask;
 };
 
-/** Runs every available strategy on a set of images (same size = a turntable / fixed camera) and picks one outline per image. */
-export async function autoOutlines(images: readonly RGBA[], deps: { sod?: SodRunner | null; useStaticBackground?: boolean } = {}): Promise<AutoOutline[]> {
+/** Every strategy's outline for every image (same size = a turntable / fixed camera), before any decision. */
+export async function candidateOutlines(images: readonly RGBA[], deps: { sod?: SodRunner | null; useStaticBackground?: boolean } = {}): Promise<Candidate[][]> {
   const n = images.length, cands: Candidate[][] = images.map((im) => [{ method: 'classical-colour', mask: segmentGeneric(im).mask }]);
   if (deps.useStaticBackground !== false && n >= 3 && images.every((im) => im.width === images[0]!.width && im.height === images[0]!.height)) { const st = segmentStaticBackground(images); if (st.applicable) st.masks.forEach((m, i) => cands[i]!.push({ method: 'static-background', mask: m })); }
   if (deps.sod && (await deps.sod.available())) for (let i = 0; i < n; i++) {
     const im = images[i]!, soft = await deps.sod.run(im as never), raw = new Uint8Array(im.width * im.height); for (let k = 0; k < raw.length; k++) raw[k] = soft[k]! >= 0.5 ? 1 : 0;
     cands[i]!.push({ method: 'salient-network', mask: raw }); const gc = refine(im, soft); if (gc) cands[i]!.push({ method: 'salient-network+graphcut', mask: gc });
   }
+  return cands;
+}
+/** Runs every available strategy on a set of images and picks one outline per image. */
+export async function autoOutlines(images: readonly RGBA[], deps: { sod?: SodRunner | null; useStaticBackground?: boolean } = {}): Promise<AutoOutline[]> {
+  const cands = await candidateOutlines(images, deps);
   return images.map((im, i) => selectOutline(cands[i]!, im.width, im.height));
 }
 export { segmentationCredibility };
