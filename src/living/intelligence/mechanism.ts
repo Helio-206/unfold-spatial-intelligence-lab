@@ -81,7 +81,7 @@ export function isConfirmed(m: Mechanism, jointId: string): boolean {
 }
 /** What a result depends on: 'confirmed' only if every moving joint it uses is confirmed; otherwise it rests on hypotheses and must say so. */
 export function basisOf(m: Mechanism, jointIds?: string[]): 'confirmed' | 'hypothesis' | 'mixed' {
-  const ids = (jointIds ?? m.joints.filter((j) => j.kind !== 'fixed').map((j) => j.id)); if (!ids.length) return 'confirmed';
+  const ids = (jointIds ?? m.joints.map((j) => j.id)); /* a joint assumed RIGID is a hypothesis too: unconfirmed rigidity is as unconfirmed as an unconfirmed hinge */ if (!ids.length) return 'confirmed';
   const c = ids.filter((id) => isConfirmed(m, id)).length; return c === ids.length ? 'confirmed' : c === 0 ? 'hypothesis' : 'mixed';
 }
 export function withEvent(m: Mechanism, e: Omit<MechanismEvent, 'at'>, at = Date.now()): Mechanism { return { ...m, events: [...m.events, { ...e, at }] }; }

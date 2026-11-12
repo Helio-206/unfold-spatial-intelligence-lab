@@ -25,9 +25,13 @@ export function validateProposalSet(value: unknown, evidenceSha256: string): Pro
   }
   return v as ProposalSet;
 }
-/** The person accepts a proposal: it becomes THEIR edit. The AI's authorship is not carried into the evidence as confirmation. */
-export function acceptProposal(p: AiPartProposal): StoredPartEdit {
-  if (p.kind === 'rename') return { kind: 'rename', seed: p.seed, name: p.name, by: 'person' };
-  if (p.kind === 'merge') return { kind: 'merge', seeds: p.seeds, by: 'person' };
-  return { kind: 'split', seed: p.seed, axis: p.axis, at: p.at, by: 'person' };
+/**
+ * The person accepts a proposal. The edit is THEIR decision (`by: 'person'`, `acceptedAt`), and the idea keeps its origin: `origin: 'ai_proposal'` with the model, the proposal
+ * id and the rationale. Acceptance never rewrites who proposed it; the evidence can always tell "a person decided this" from "a person decided this because an AI suggested it".
+ */
+export function acceptProposal(p: AiPartProposal, model: string, now = Date.now()): StoredPartEdit {
+  const proposal = { kind: 'ai' as const, model, proposalId: p.id, rationale: p.rationale, ...(p.confidence !== undefined ? { confidence: p.confidence } : {}) }, meta = { by: 'person' as const, origin: 'ai_proposal' as const, proposal, acceptedAt: now };
+  if (p.kind === 'rename') return { kind: 'rename', seed: p.seed, name: p.name, ...meta };
+  if (p.kind === 'merge') return { kind: 'merge', seeds: p.seeds, ...meta };
+  return { kind: 'split', seed: p.seed, axis: p.axis, at: p.at, ...meta };
 }

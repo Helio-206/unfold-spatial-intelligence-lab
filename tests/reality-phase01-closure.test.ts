@@ -35,7 +35,7 @@ describe('AI proposals (Phase 02 seam): never confirmation, never stale, accepte
     expect(() => validateProposalSet(set({ proposals: [{ id: 'p1', kind: 'rename', seed: [0, 0, 0], name: 'a', rationale: 'x', confidence: 3 }] }), sha)).toThrow('AI_PROPOSAL_INVALID');
   });
   it('accepting turns the proposal into a PERSON edit that the evidence contract accepts; an AI-authored edit is refused by the contract', () => {
-    const edit = acceptProposal(set().proposals[0]!); expect(edit.by).toBe('person'); const ev = evidenceFromRenders(solid(), ORBIT6);
-    expect(validateRealityEvidence({ ...ev, partEdits: [edit] }).partEdits).toHaveLength(1); expect(() => validateRealityEvidence({ ...ev, partEdits: [{ ...edit, by: 'ai' }] } as never)).toThrow();
+    const edit = acceptProposal(set().proposals[0]!, 'muse-spark', 123); expect(edit.by).toBe('person'); expect(edit.origin).toBe('ai_proposal'); expect(edit.proposal).toMatchObject({ kind: 'ai', model: 'muse-spark', proposalId: 'p1', rationale: 'parece uma perna' }); expect(edit.acceptedAt).toBe(123); const ev = evidenceFromRenders(solid(), ORBIT6);
+    expect(validateRealityEvidence({ ...ev, partEdits: [edit] }).partEdits).toHaveLength(1); expect(() => validateRealityEvidence({ ...ev, partEdits: [{ ...edit, by: 'ai' }] } as never)).toThrow(); expect(() => validateRealityEvidence({ ...ev, partEdits: [{ ...edit, proposal: undefined }] } as never)).toThrow(); expect(() => validateRealityEvidence({ ...ev, partEdits: [{ ...edit, origin: 'person' }] } as never)).toThrow(); // an AI origin cannot be dropped or disguised
   });
 });

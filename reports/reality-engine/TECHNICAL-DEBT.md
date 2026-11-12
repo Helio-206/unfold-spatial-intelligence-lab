@@ -14,7 +14,7 @@ Gerado por `npx tsx scripts/reality-debt-report.ts` a partir de `src/living/real
 | D8-human-evaluation | 1 | Avaliação humana independente | >= 3 (avaliadores independentes por scan) | — | **blocked** — depende de: pessoas independentes (reports/reality-engine/HUMAN-EVALUATION-PROTOCOL.md) |
 | D9-materials-grounded | 3 | Materiais PBR fundamentados em evidência | >= 0.7 (correlação com os factores de material do GT) | — | **blocked** — depende de: método de estimação ainda não existe (investigar com referência de material) |
 | D10-device-budget | 3 | Orçamento de desempenho em GPU real por dispositivo | <= 16.7 (ms por fotograma no dispositivo-alvo) | — | **blocked** — depende de: GPU real |
-| D11-structure-on-built-space | 2 | Alterar a estrutura de um Space já construído | >= 1 (operações add/remove-component existem (1 = sim)) | 0.000 | **open** |
+| D11-structure-on-built-space | 2 | Alterar a estrutura de um Space já construído | >= 1 (operações add/remove-component existem (1 = sim)) | 1.000 | **met** |
 
 ## Porquê cada uma importa
 - **D1-geometry-real-photos** — Todo o benchmark é de renders; nenhuma afirmação sobre fotografias é sustentada.
@@ -27,4 +27,4 @@ Gerado por `npx tsx scripts/reality-debt-report.ts` a partir de `src/living/real
 - **D8-human-evaluation** — Requisito de aceitação que não pode ser simulado.
 - **D9-materials-grounded** — A reflectância não é medida; o material é mate assumido.
 - **D10-device-budget** — Medições feitas em renderização por software.
-- **D11-structure-on-built-space** — O Spatial Core não tem operações de acrescentar/remover componentes. Medição: `src/universal-spatial/contracts-v2.ts`.
+- **D11-structure-on-built-space** — Cumprido na Fase 02: o Spatial Core tem operações estruturais transaccionais (acrescentar, remover, fundir, dividir), testadas também pelo servidor real. Medição: `src/universal-spatial/contracts-v2.ts`.

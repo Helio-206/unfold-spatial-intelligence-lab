@@ -69,7 +69,7 @@ export function rankOf(rows: number[][], relTol = 1e-7): number {
 
 export function solveMechanism(m: Mechanism, options: SolveOptions = {}): SolveResult {
   const g = buildGraph(m), movable = [...m.joints].filter((j) => j.kind !== 'fixed').sort((a, b) => (a.id < b.id ? -1 : 1)), ids = movable.map((j) => j.id), inputs = options.inputs ?? {}, notes: string[] = [];
-  const unreachable = m.parts.filter((p) => !g.reached.has(p)), basis = basisOf(m, ids.filter((id) => g.reached.has(m.joints.find((j) => j.id === id)!.child) || true));
+  const unreachable = m.parts.filter((p) => !g.reached.has(p)), basis = basisOf(m);
   const bad = Object.keys(inputs).filter((k) => !ids.includes(k) || !Number.isFinite(inputs[k]!));
   const emptyMob: MobilityReport = { numerical: 0, gruebler: gruebler(m), variables: ids.length, constraintRank: 0, note: '' };
   if (bad.length) return { status: 'invalid_input', q: {}, poses: forwardPoses(m, {}, g), residual: NaN, iterations: 0, trace: [], mobility: emptyMob, violations: [{ kind: 'inputs', detail: `entradas desconhecidas ou não finitas: ${bad.join(', ')}` }], freeDofAtSolution: 0, singular: false, unreachableParts: unreachable, notes, basis };

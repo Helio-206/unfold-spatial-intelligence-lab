@@ -23,7 +23,12 @@ export type StoredView = {
   window?: { cx: number; cy: number; ppu: number };
 };
 /** a correction of the part structure made by a person (see applyPartEdits): human confirmation, kept apart from the automatic structure */
-export type StoredPartEdit = PartEdit & { by: 'person' };
+export type PartEditProposal = { kind: 'ai'; model: string; proposalId: string; rationale: string; confidence?: number };
+/**
+ * `by` is who DECIDED (always a person: nothing enters the evidence without a human act). `origin` is where the idea came from and is never rewritten by the acceptance:
+ * an accepted AI proposal stays `origin: 'ai_proposal'` with the model, the proposal id and its rationale, and the human acceptance is the edit itself (`acceptedAt`).
+ */
+export type StoredPartEdit = PartEdit & { by: 'person'; origin?: 'person' | 'ai_proposal'; proposal?: PartEditProposal; acceptedAt?: number };
 export type RealityEvidence = {
   /** corrections of the automatic part structure, applied in order on top of it; absent = the automatic structure as computed */
   partEdits?: StoredPartEdit[];
@@ -105,6 +110,7 @@ export function validateRealityEvidence(value: unknown): RealityEvidence {
     const pt = (q: unknown) => Array.isArray(q) && q.length === 3 && q.every(Number.isFinite);
     if (!Array.isArray(e.partEdits) || e.partEdits.length > 32) fail('REALITY_PART_EDITS', 'at most 32 part edits');
     for (const x of e.partEdits as Array<Record<string, unknown>>) {
+      const originOk = x?.origin === undefined || x.origin === 'person' || (x.origin === 'ai_proposal' && !!x.proposal && (x.proposal as { kind?: string }).kind === 'ai' && typeof (x.proposal as { model?: unknown }).model === 'string' && typeof (x.proposal as { proposalId?: unknown }).proposalId === 'string' && typeof (x.proposal as { rationale?: unknown }).rationale === 'string'); if (!originOk || (x?.origin !== 'ai_proposal' && x?.proposal !== undefined)) fail('REALITY_PART_EDIT_ORIGIN', 'proposal and origin disagree');
       const ok = x?.by === 'person' && ((x.kind === 'merge' && Array.isArray(x.seeds) && x.seeds.length === 2 && x.seeds.every(pt)) || (x.kind === 'split' && pt(x.seed) && ['x', 'y', 'z'].includes(x.axis as string) && Number.isFinite(x.at)) || (x.kind === 'rename' && pt(x.seed) && typeof x.name === 'string' && x.name.trim().length > 0 && (x.name as string).length <= 60));
       if (!ok) fail('REALITY_PART_EDIT_INVALID', 'invalid part edit');
     }
