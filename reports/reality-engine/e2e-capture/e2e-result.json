@@ -73,6 +73,11 @@
       "detail": "Reconstruir (baixa confiança)"
     },
     {
+      "step": "3d correcção assistida das partes (dividir, nomear, desfazer) antes de construir",
+      "verdict": "PASS",
+      "detail": "4 → 5 partes, Dividir por plano x = -0.173 · aplicada desfazer, píxeis desenhados 1467/1835/1770"
+    },
+    {
       "step": "4 Space construído; revisão mostra o que fotografar a seguir e a estrutura medida; nunca \"fiel\"",
       "verdict": "PASS",
       "detail": "fidelidade partially_verified"
@@ -81,6 +86,11 @@
       "step": "4b a revisão separa consistência, evidência visual independente e fidelidade geométrica",
       "verdict": "PASS",
       "detail": "consistency:true,visual:true,geometry:false"
+    },
+    {
+      "step": "4c o Space construído tem as partes corrigidas, com o nome dado por si e proveniência humana",
+      "verdict": "PASS",
+      "detail": "5 componentes na revisão (esperado 5), nome presente true"
     },
     {
       "step": "5 nenhuma chamada paga",

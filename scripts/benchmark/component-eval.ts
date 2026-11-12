@@ -12,6 +12,7 @@ import { reconstructHull } from '../../src/universal-spatial/reconstruction/mult
 import { intakeOrbit, type IntakeImage } from '../../src/living/reality/intake';
 import { buildModel, viewsOf, type RealityModel } from '../../src/living/reality/model';
 import { VARIANTS } from './component-variants';
+import { applyPartEdits, segmentParts, type PartEdit } from '../../src/universal-spatial/reconstruction/parts';
 import { gtVoxelLabels, scoreLabels } from './component-metrics';
 
 const W = 480, H = 360, FILL = 0.55, arg = (n: string) => (process.argv.includes(n) ? process.argv[process.argv.indexOf(n) + 1]! : null);
@@ -46,7 +47,20 @@ for (const asset of manifest.assets) {
   const gtParts = (GT === 'shells' ? shellsOf(parts) : parts).map((p) => ({ tris: norm(p.tris, best.m).map((t) => t.map((q) => q.clone().sub(best.shift)) as Tri) }));
   const gtLab = gtVoxelLabels(gtParts, model.solid.grid, model.solid.occupancy, model.solid.occupancy, Number(arg('--near') ?? Infinity) * model.solid.grid.size);
   const row: Record<string, unknown> = { id: asset.id, split: asset.split, gtParts: gtParts.length, mirror: best.m };
-  for (const v of variants) { const labels = VARIANTS[v]!(model, intake.evidence, photos); row[v] = scoreLabels(gtLab, labels); }
+  for (const v of variants) {
+    if (v.startsWith('assisted')) { // ORACLE-SIMULATED user (reference known): greedy best correction among merges and axis-plane splits, at most K edits. Not a real user.
+      const K = Number(v.split('-')[1] ?? 4), grid = model.solid.grid, occ = model.solid.occupancy, base = segmentParts(occ, grid); let cur = applyPartEdits(base, occ, grid, []), best = scoreLabels(gtLab, cur.labels).ari; const edits: PartEdit[] = [];
+      const seedOf = (id: string): [number, number, number] | null => { const part = cur.parts.find((p) => p.id === id); if (!part) return null; const [nx, ny] = grid.cells, l = part.label; let bd = Infinity, o: [number, number, number] | null = null; for (let i = 0; i < cur.labels.length; i++) if (cur.labels[i] === l) { const x = grid.min.x + ((i % nx) + 0.5) * grid.size, y = grid.min.y + ((Math.floor(i / nx) % ny) + 0.5) * grid.size, z = grid.min.z + (Math.floor(i / (nx * ny)) + 0.5) * grid.size, d = (x - part.centroid.x) ** 2 + (y - part.centroid.y) ** 2 + (z - part.centroid.z) ** 2; if (d < bd) { bd = d; o = [x, y, z]; } } return o; };
+      for (let step = 0; step < K; step++) {
+        let cand: { edit: PartEdit; ari: number } | null = null;
+        for (const [a, b] of cur.adjacency) { const sa = seedOf(a), sb = seedOf(b); if (!sa || !sb) continue; const e: PartEdit = { kind: 'merge', seeds: [sa, sb] }, r = applyPartEdits(base, occ, grid, [...edits, e]), ari = scoreLabels(gtLab, r.labels).ari; if (!cand || ari > cand.ari) cand = { edit: e, ari }; }
+        for (const part of cur.parts) { const sd = seedOf(part.id); if (!sd) continue; for (const [axis, ax] of [['x', 0], ['y', 1], ['z', 2]] as const) for (const f of [0.25, 0.4, 0.5, 0.6, 0.75]) { const lo = [part.min.x, part.min.y, part.min.z][ax]!, hi = [part.max.x, part.max.y, part.max.z][ax]!, e: PartEdit = { kind: 'split', seed: sd, axis, at: lo + f * (hi - lo) }, r = applyPartEdits(base, occ, grid, [...edits, e]); if (r.reports.at(-1)!.applied) { const ari = scoreLabels(gtLab, r.labels).ari; if (!cand || ari > cand.ari) cand = { edit: e, ari }; } } }
+        if (!cand || cand.ari < best + 0.01) break; edits.push(cand.edit); best = cand.ari; cur = applyPartEdits(base, occ, grid, edits);
+      }
+      row[v] = { ...scoreLabels(gtLab, cur.labels), edits: edits.length }; continue;
+    }
+    const labels = VARIANTS[v]!(model, intake.evidence, photos); row[v] = scoreLabels(gtLab, labels);
+  }
   if (process.env.CONT) { for (const v of variants) { const labels = VARIANTS[v]!(model, intake.evidence, photos), c = new Map<string, number>(); for (let i = 0; i < gtLab.length; i++) if (gtLab[i]! >= 0) c.set(`gt${gtLab[i]}→${v}${labels[i]}`, (c.get(`gt${gtLab[i]}→${v}${labels[i]}`) ?? 0) + 1); console.log(asset.id, v, [...c.entries()].sort().map(([k, n]) => `${k}:${n}`).join('  ')); } console.log('gt names', parts.map((p, i) => `${i}:${(p as { name?: string }).name ?? '?'}(${p.tris.length})`).join(' ')); }
   rows.push(row); console.log(JSON.stringify(row));
 }

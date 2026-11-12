@@ -2,12 +2,9 @@
   "note": "Product path (8 perspective renders at 20 deg elevation, exact-alpha masks, assumed poses) vs GT glTF nodes. Recovered = GT part (>=3% voxels) matched with IoU >= 0.5.",
   "variants": [
     "baseline",
-    "app",
-    "sam-s70",
-    "sam-sh06",
-    "app∧sam-0.2",
-    "acd-t10",
-    "acd-t25"
+    "assisted-2",
+    "assisted-4",
+    "assisted-8"
   ],
   "aggregate": {
     "baseline": {
@@ -28,112 +25,58 @@
         "meanPurity": 0.756
       }
     },
-    "app": {
+    "assisted-2": {
       "development": {
         "assets": 6,
-        "recovered": 7,
+        "recovered": 9,
         "significant": 11,
-        "meanARI": 0.559,
-        "meanWeightedIoU": 0.811,
-        "meanPurity": 0.888
+        "meanARI": 0.75,
+        "meanWeightedIoU": 0.887,
+        "meanPurity": 0.95
       },
       "acceptance": {
         "assets": 8,
         "recovered": 10,
         "significant": 27,
-        "meanARI": 0.308,
-        "meanWeightedIoU": 0.649,
-        "meanPurity": 0.77
-      }
-    },
-    "sam-s70": {
-      "development": {
-        "assets": 6,
-        "recovered": 5,
-        "significant": 11,
-        "meanARI": 0.363,
-        "meanWeightedIoU": 0.65,
-        "meanPurity": 0.872
-      },
-      "acceptance": {
-        "assets": 8,
-        "recovered": 6,
-        "significant": 27,
-        "meanARI": 0.514,
-        "meanWeightedIoU": 0.689,
-        "meanPurity": 0.769
-      }
-    },
-    "sam-sh06": {
-      "development": {
-        "assets": 6,
-        "recovered": 5,
-        "significant": 10,
-        "meanARI": 0.354,
-        "meanWeightedIoU": 0.695,
-        "meanPurity": 0.874
-      },
-      "acceptance": {
-        "assets": 8,
-        "recovered": 7,
-        "significant": 27,
-        "meanARI": 0.516,
-        "meanWeightedIoU": 0.651,
-        "meanPurity": 0.767
-      }
-    },
-    "app∧sam-0.2": {
-      "development": {
-        "assets": 6,
-        "recovered": 7,
-        "significant": 11,
-        "meanARI": 0.512,
-        "meanWeightedIoU": 0.809,
-        "meanPurity": 0.872
-      },
-      "acceptance": {
-        "assets": 8,
-        "recovered": 9,
-        "significant": 27,
-        "meanARI": 0.557,
+        "meanARI": 0.601,
         "meanWeightedIoU": 0.741,
-        "meanPurity": 0.767
+        "meanPurity": 0.806
       }
     },
-    "acd-t10": {
+    "assisted-4": {
       "development": {
         "assets": 6,
-        "recovered": 5,
+        "recovered": 9,
         "significant": 11,
-        "meanARI": 0.42,
-        "meanWeightedIoU": 0.692,
-        "meanPurity": 0.917
+        "meanARI": 0.777,
+        "meanWeightedIoU": 0.913,
+        "meanPurity": 0.95
       },
       "acceptance": {
         "assets": 8,
-        "recovered": 6,
+        "recovered": 10,
         "significant": 27,
-        "meanARI": 0.203,
-        "meanWeightedIoU": 0.509,
-        "meanPurity": 0.763
+        "meanARI": 0.696,
+        "meanWeightedIoU": 0.778,
+        "meanPurity": 0.818
       }
     },
-    "acd-t25": {
+    "assisted-8": {
       "development": {
         "assets": 6,
-        "recovered": 6,
+        "recovered": 9,
         "significant": 11,
-        "meanARI": 0.364,
-        "meanWeightedIoU": 0.729,
-        "meanPurity": 0.872
+        "meanARI": 0.777,
+        "meanWeightedIoU": 0.913,
+        "meanPurity": 0.95
       },
       "acceptance": {
         "assets": 8,
-        "recovered": 7,
+        "recovered": 11,
         "significant": 27,
-        "meanARI": 0.368,
-        "meanWeightedIoU": 0.634,
-        "meanPurity": 0.761
+        "meanARI": 0.706,
+        "meanWeightedIoU": 0.787,
+        "meanPurity": 0.831
       }
     }
   },
@@ -151,53 +94,32 @@
         "gtPartsRecovered": 1,
         "purity": 0.705
       },
-      "app": {
+      "assisted-2": {
         "gtSignificantParts": 2,
         "ourParts": 2,
-        "ari": 0.274,
-        "weightedBestIoU": 0.632,
-        "gtPartsRecovered": 1,
-        "purity": 0.772
+        "ari": 0.902,
+        "weightedBestIoU": 0.947,
+        "gtPartsRecovered": 2,
+        "purity": 0.967,
+        "edits": 1
       },
-      "sam-s70": {
+      "assisted-4": {
         "gtSignificantParts": 2,
         "ourParts": 2,
-        "ari": -0.055,
-        "weightedBestIoU": 0.547,
-        "gtPartsRecovered": 1,
-        "purity": 0.705
+        "ari": 0.902,
+        "weightedBestIoU": 0.947,
+        "gtPartsRecovered": 2,
+        "purity": 0.967,
+        "edits": 1
       },
-      "sam-sh06": {
+      "assisted-8": {
         "gtSignificantParts": 2,
-        "ourParts": 1,
-        "ari": 0,
-        "weightedBestIoU": 0.584,
-        "gtPartsRecovered": 1,
-        "purity": 0.705
-      },
-      "app∧sam-0.2": {
-        "gtSignificantParts": 2,
-        "ourParts": 1,
-        "ari": 0,
-        "weightedBestIoU": 0.584,
-        "gtPartsRecovered": 1,
-        "purity": 0.705
-      },
-      "acd-t10": {
-        "gtSignificantParts": 2,
-        "ourParts": 3,
-        "ari": 0.389,
-        "weightedBestIoU": 0.577,
-        "gtPartsRecovered": 1,
-        "purity": 0.933
-      },
-      "acd-t25": {
-        "gtSignificantParts": 2,
-        "ourParts": 1,
-        "ari": 0,
-        "weightedBestIoU": 0.584,
-        "gtPartsRecovered": 1,
-        "purity": 0.705
+        "ourParts": 2,
+        "ari": 0.902,
+        "weightedBestIoU": 0.947,
+        "gtPartsRecovered": 2,
+        "purity": 0.967,
+        "edits": 1
       }
     },
     {
@@ -213,53 +135,32 @@
         "gtPartsRecovered": 2,
         "purity": 1
       },
-      "app": {
-        "gtSignificantParts": 2,
-        "ourParts": 3,
-        "ari": 0.991,
-        "weightedBestIoU": 0.975,
-        "gtPartsRecovered": 2,
-        "purity": 1
-      },
-      "sam-s70": {
-        "gtSignificantParts": 2,
-        "ourParts": 4,
-        "ari": 0.182,
-        "weightedBestIoU": 0.673,
-        "gtPartsRecovered": 2,
-        "purity": 1
-      },
-      "sam-sh06": {
-        "gtSignificantParts": 1,
-        "ourParts": 3,
-        "ari": 0,
-        "weightedBestIoU": 0.653,
-        "gtPartsRecovered": 1,
-        "purity": 1
-      },
-      "app∧sam-0.2": {
+      "assisted-2": {
         "gtSignificantParts": 2,
         "ourParts": 2,
         "ari": 1,
         "weightedBestIoU": 1,
         "gtPartsRecovered": 2,
-        "purity": 1
+        "purity": 1,
+        "edits": 0
       },
-      "acd-t10": {
+      "assisted-4": {
         "gtSignificantParts": 2,
-        "ourParts": 6,
-        "ari": 0.065,
-        "weightedBestIoU": 0.388,
-        "gtPartsRecovered": 1,
-        "purity": 1
-      },
-      "acd-t25": {
-        "gtSignificantParts": 2,
-        "ourParts": 4,
-        "ari": 0.137,
-        "weightedBestIoU": 0.574,
+        "ourParts": 2,
+        "ari": 1,
+        "weightedBestIoU": 1,
         "gtPartsRecovered": 2,
-        "purity": 1
+        "purity": 1,
+        "edits": 0
+      },
+      "assisted-8": {
+        "gtSignificantParts": 2,
+        "ourParts": 2,
+        "ari": 1,
+        "weightedBestIoU": 1,
+        "gtPartsRecovered": 2,
+        "purity": 1,
+        "edits": 0
       }
     },
     {
@@ -275,53 +176,32 @@
         "gtPartsRecovered": 1,
         "purity": 1
       },
-      "app": {
+      "assisted-2": {
         "gtSignificantParts": 1,
         "ourParts": 1,
         "ari": 1,
         "weightedBestIoU": 1,
         "gtPartsRecovered": 1,
-        "purity": 1
+        "purity": 1,
+        "edits": 0
       },
-      "sam-s70": {
+      "assisted-4": {
         "gtSignificantParts": 1,
         "ourParts": 1,
         "ari": 1,
         "weightedBestIoU": 1,
         "gtPartsRecovered": 1,
-        "purity": 1
+        "purity": 1,
+        "edits": 0
       },
-      "sam-sh06": {
+      "assisted-8": {
         "gtSignificantParts": 1,
         "ourParts": 1,
         "ari": 1,
         "weightedBestIoU": 1,
         "gtPartsRecovered": 1,
-        "purity": 1
-      },
-      "app∧sam-0.2": {
-        "gtSignificantParts": 1,
-        "ourParts": 1,
-        "ari": 1,
-        "weightedBestIoU": 1,
-        "gtPartsRecovered": 1,
-        "purity": 1
-      },
-      "acd-t10": {
-        "gtSignificantParts": 1,
-        "ourParts": 1,
-        "ari": 1,
-        "weightedBestIoU": 1,
-        "gtPartsRecovered": 1,
-        "purity": 1
-      },
-      "acd-t25": {
-        "gtSignificantParts": 1,
-        "ourParts": 1,
-        "ari": 1,
-        "weightedBestIoU": 1,
-        "gtPartsRecovered": 1,
-        "purity": 1
+        "purity": 1,
+        "edits": 0
       }
     },
     {
@@ -337,53 +217,32 @@
         "gtPartsRecovered": 1,
         "purity": 1
       },
-      "app": {
+      "assisted-2": {
         "gtSignificantParts": 1,
         "ourParts": 1,
         "ari": 1,
         "weightedBestIoU": 1,
         "gtPartsRecovered": 1,
-        "purity": 1
+        "purity": 1,
+        "edits": 0
       },
-      "sam-s70": {
+      "assisted-4": {
         "gtSignificantParts": 1,
         "ourParts": 1,
         "ari": 1,
         "weightedBestIoU": 1,
         "gtPartsRecovered": 1,
-        "purity": 1
+        "purity": 1,
+        "edits": 0
       },
-      "sam-sh06": {
+      "assisted-8": {
         "gtSignificantParts": 1,
         "ourParts": 1,
         "ari": 1,
         "weightedBestIoU": 1,
         "gtPartsRecovered": 1,
-        "purity": 1
-      },
-      "app∧sam-0.2": {
-        "gtSignificantParts": 1,
-        "ourParts": 1,
-        "ari": 1,
-        "weightedBestIoU": 1,
-        "gtPartsRecovered": 1,
-        "purity": 1
-      },
-      "acd-t10": {
-        "gtSignificantParts": 1,
-        "ourParts": 1,
-        "ari": 1,
-        "weightedBestIoU": 1,
-        "gtPartsRecovered": 1,
-        "purity": 1
-      },
-      "acd-t25": {
-        "gtSignificantParts": 1,
-        "ourParts": 1,
-        "ari": 1,
-        "weightedBestIoU": 1,
-        "gtPartsRecovered": 1,
-        "purity": 1
+        "purity": 1,
+        "edits": 0
       }
     },
     {
@@ -399,53 +258,32 @@
         "gtPartsRecovered": 1,
         "purity": 0.631
       },
-      "app": {
-        "gtSignificantParts": 2,
-        "ourParts": 3,
-        "ari": 0.087,
-        "weightedBestIoU": 0.448,
-        "gtPartsRecovered": 1,
-        "purity": 0.658
-      },
-      "sam-s70": {
-        "gtSignificantParts": 2,
-        "ourParts": 4,
-        "ari": 0.068,
-        "weightedBestIoU": 0.363,
-        "gtPartsRecovered": 0,
-        "purity": 0.627
-      },
-      "sam-sh06": {
-        "gtSignificantParts": 2,
-        "ourParts": 4,
-        "ari": 0.073,
-        "weightedBestIoU": 0.354,
-        "gtPartsRecovered": 0,
-        "purity": 0.64
-      },
-      "app∧sam-0.2": {
+      "assisted-2": {
         "gtSignificantParts": 2,
         "ourParts": 2,
-        "ari": 0.071,
-        "weightedBestIoU": 0.458,
-        "gtPartsRecovered": 1,
-        "purity": 0.631
+        "ari": 0.49,
+        "weightedBestIoU": 0.733,
+        "gtPartsRecovered": 2,
+        "purity": 0.833,
+        "edits": 2
       },
-      "acd-t10": {
+      "assisted-4": {
         "gtSignificantParts": 2,
-        "ourParts": 6,
-        "ari": 0.066,
-        "weightedBestIoU": 0.379,
-        "gtPartsRecovered": 0,
-        "purity": 0.675
+        "ourParts": 2,
+        "ari": 0.49,
+        "weightedBestIoU": 0.733,
+        "gtPartsRecovered": 2,
+        "purity": 0.833,
+        "edits": 2
       },
-      "acd-t25": {
+      "assisted-8": {
         "gtSignificantParts": 2,
-        "ourParts": 4,
-        "ari": 0.047,
-        "weightedBestIoU": 0.405,
-        "gtPartsRecovered": 0,
-        "purity": 0.631
+        "ourParts": 2,
+        "ari": 0.49,
+        "weightedBestIoU": 0.733,
+        "gtPartsRecovered": 2,
+        "purity": 0.833,
+        "edits": 2
       }
     },
     {
@@ -461,53 +299,32 @@
         "gtPartsRecovered": 1,
         "purity": 0.897
       },
-      "app": {
-        "gtSignificantParts": 3,
-        "ourParts": 1,
-        "ari": 0,
-        "weightedBestIoU": 0.81,
-        "gtPartsRecovered": 1,
-        "purity": 0.897
-      },
-      "sam-s70": {
-        "gtSignificantParts": 3,
-        "ourParts": 8,
-        "ari": -0.017,
-        "weightedBestIoU": 0.32,
-        "gtPartsRecovered": 0,
-        "purity": 0.897
-      },
-      "sam-sh06": {
+      "assisted-2": {
         "gtSignificantParts": 3,
         "ourParts": 3,
-        "ari": 0.049,
-        "weightedBestIoU": 0.58,
+        "ari": 0.108,
+        "weightedBestIoU": 0.643,
         "gtPartsRecovered": 1,
-        "purity": 0.897
+        "purity": 0.897,
+        "edits": 2
       },
-      "app∧sam-0.2": {
+      "assisted-4": {
         "gtSignificantParts": 3,
-        "ourParts": 1,
-        "ari": 0,
-        "weightedBestIoU": 0.81,
+        "ourParts": 3,
+        "ari": 0.269,
+        "weightedBestIoU": 0.798,
         "gtPartsRecovered": 1,
-        "purity": 0.897
+        "purity": 0.901,
+        "edits": 4
       },
-      "acd-t10": {
+      "assisted-8": {
         "gtSignificantParts": 3,
-        "ourParts": 1,
-        "ari": 0,
-        "weightedBestIoU": 0.81,
+        "ourParts": 3,
+        "ari": 0.269,
+        "weightedBestIoU": 0.798,
         "gtPartsRecovered": 1,
-        "purity": 0.897
-      },
-      "acd-t25": {
-        "gtSignificantParts": 3,
-        "ourParts": 1,
-        "ari": 0,
-        "weightedBestIoU": 0.81,
-        "gtPartsRecovered": 1,
-        "purity": 0.897
+        "purity": 0.901,
+        "edits": 4
       }
     },
     {
@@ -523,53 +340,32 @@
         "gtPartsRecovered": 2,
         "purity": 0.988
       },
-      "app": {
+      "assisted-2": {
         "gtSignificantParts": 2,
         "ourParts": 2,
         "ari": 0.953,
         "weightedBestIoU": 0.976,
         "gtPartsRecovered": 2,
-        "purity": 0.988
+        "purity": 0.988,
+        "edits": 0
       },
-      "sam-s70": {
-        "gtSignificantParts": 2,
-        "ourParts": 5,
-        "ari": 0.646,
-        "weightedBestIoU": 0.67,
-        "gtPartsRecovered": 1,
-        "purity": 0.968
-      },
-      "sam-sh06": {
-        "gtSignificantParts": 2,
-        "ourParts": 5,
-        "ari": 0.646,
-        "weightedBestIoU": 0.67,
-        "gtPartsRecovered": 1,
-        "purity": 0.968
-      },
-      "app∧sam-0.2": {
+      "assisted-4": {
         "gtSignificantParts": 2,
         "ourParts": 2,
         "ari": 0.953,
         "weightedBestIoU": 0.976,
         "gtPartsRecovered": 2,
-        "purity": 0.988
+        "purity": 0.988,
+        "edits": 0
       },
-      "acd-t10": {
+      "assisted-8": {
         "gtSignificantParts": 2,
-        "ourParts": 8,
-        "ari": 0.363,
-        "weightedBestIoU": 0.396,
-        "gtPartsRecovered": 1,
-        "purity": 0.988
-      },
-      "acd-t25": {
-        "gtSignificantParts": 2,
-        "ourParts": 7,
-        "ari": 0.666,
-        "weightedBestIoU": 0.667,
-        "gtPartsRecovered": 1,
-        "purity": 0.988
+        "ourParts": 2,
+        "ari": 0.953,
+        "weightedBestIoU": 0.976,
+        "gtPartsRecovered": 2,
+        "purity": 0.988,
+        "edits": 0
       }
     },
     {
@@ -585,53 +381,32 @@
         "gtPartsRecovered": 1,
         "purity": 1
       },
-      "app": {
-        "gtSignificantParts": 1,
-        "ourParts": 2,
-        "ari": 0,
-        "weightedBestIoU": 0.64,
-        "gtPartsRecovered": 1,
-        "purity": 1
-      },
-      "sam-s70": {
+      "assisted-2": {
         "gtSignificantParts": 1,
         "ourParts": 1,
         "ari": 1,
         "weightedBestIoU": 1,
         "gtPartsRecovered": 1,
-        "purity": 1
+        "purity": 1,
+        "edits": 0
       },
-      "sam-sh06": {
+      "assisted-4": {
         "gtSignificantParts": 1,
         "ourParts": 1,
         "ari": 1,
         "weightedBestIoU": 1,
         "gtPartsRecovered": 1,
-        "purity": 1
+        "purity": 1,
+        "edits": 0
       },
-      "app∧sam-0.2": {
+      "assisted-8": {
         "gtSignificantParts": 1,
         "ourParts": 1,
         "ari": 1,
         "weightedBestIoU": 1,
         "gtPartsRecovered": 1,
-        "purity": 1
-      },
-      "acd-t10": {
-        "gtSignificantParts": 1,
-        "ourParts": 1,
-        "ari": 1,
-        "weightedBestIoU": 1,
-        "gtPartsRecovered": 1,
-        "purity": 1
-      },
-      "acd-t25": {
-        "gtSignificantParts": 1,
-        "ourParts": 1,
-        "ari": 1,
-        "weightedBestIoU": 1,
-        "gtPartsRecovered": 1,
-        "purity": 1
+        "purity": 1,
+        "edits": 0
       }
     },
     {
@@ -647,53 +422,32 @@
         "gtPartsRecovered": 1,
         "purity": 1
       },
-      "app": {
+      "assisted-2": {
         "gtSignificantParts": 1,
         "ourParts": 1,
         "ari": 1,
         "weightedBestIoU": 1,
         "gtPartsRecovered": 1,
-        "purity": 1
+        "purity": 1,
+        "edits": 0
       },
-      "sam-s70": {
+      "assisted-4": {
         "gtSignificantParts": 1,
         "ourParts": 1,
         "ari": 1,
         "weightedBestIoU": 1,
         "gtPartsRecovered": 1,
-        "purity": 1
+        "purity": 1,
+        "edits": 0
       },
-      "sam-sh06": {
+      "assisted-8": {
         "gtSignificantParts": 1,
         "ourParts": 1,
         "ari": 1,
         "weightedBestIoU": 1,
         "gtPartsRecovered": 1,
-        "purity": 1
-      },
-      "app∧sam-0.2": {
-        "gtSignificantParts": 1,
-        "ourParts": 1,
-        "ari": 1,
-        "weightedBestIoU": 1,
-        "gtPartsRecovered": 1,
-        "purity": 1
-      },
-      "acd-t10": {
-        "gtSignificantParts": 1,
-        "ourParts": 3,
-        "ari": 0,
-        "weightedBestIoU": 0.575,
-        "gtPartsRecovered": 1,
-        "purity": 1
-      },
-      "acd-t25": {
-        "gtSignificantParts": 1,
-        "ourParts": 2,
-        "ari": 0,
-        "weightedBestIoU": 0.575,
-        "gtPartsRecovered": 1,
-        "purity": 1
+        "purity": 1,
+        "edits": 0
       }
     },
     {
@@ -709,53 +463,32 @@
         "gtPartsRecovered": 1,
         "purity": 1
       },
-      "app": {
-        "gtSignificantParts": 1,
-        "ourParts": 2,
-        "ari": 0,
-        "weightedBestIoU": 0.57,
-        "gtPartsRecovered": 1,
-        "purity": 1
-      },
-      "sam-s70": {
+      "assisted-2": {
         "gtSignificantParts": 1,
         "ourParts": 1,
         "ari": 1,
         "weightedBestIoU": 1,
         "gtPartsRecovered": 1,
-        "purity": 1
+        "purity": 1,
+        "edits": 0
       },
-      "sam-sh06": {
+      "assisted-4": {
         "gtSignificantParts": 1,
         "ourParts": 1,
         "ari": 1,
         "weightedBestIoU": 1,
         "gtPartsRecovered": 1,
-        "purity": 1
+        "purity": 1,
+        "edits": 0
       },
-      "app∧sam-0.2": {
+      "assisted-8": {
         "gtSignificantParts": 1,
         "ourParts": 1,
         "ari": 1,
         "weightedBestIoU": 1,
         "gtPartsRecovered": 1,
-        "purity": 1
-      },
-      "acd-t10": {
-        "gtSignificantParts": 1,
-        "ourParts": 3,
-        "ari": 0,
-        "weightedBestIoU": 0.793,
-        "gtPartsRecovered": 1,
-        "purity": 1
-      },
-      "acd-t25": {
-        "gtSignificantParts": 1,
-        "ourParts": 1,
-        "ari": 1,
-        "weightedBestIoU": 1,
-        "gtPartsRecovered": 1,
-        "purity": 1
+        "purity": 1,
+        "edits": 0
       }
     },
     {
@@ -771,53 +504,32 @@
         "gtPartsRecovered": 1,
         "purity": 0.986
       },
-      "app": {
+      "assisted-2": {
         "gtSignificantParts": 1,
-        "ourParts": 1,
-        "ari": 0,
-        "weightedBestIoU": 0.986,
+        "ourParts": 3,
+        "ari": 0.068,
+        "weightedBestIoU": 0.771,
         "gtPartsRecovered": 1,
-        "purity": 0.986
+        "purity": 0.994,
+        "edits": 2
       },
-      "sam-s70": {
-        "gtSignificantParts": 1,
-        "ourParts": 1,
-        "ari": 0,
-        "weightedBestIoU": 0.986,
-        "gtPartsRecovered": 1,
-        "purity": 0.986
-      },
-      "sam-sh06": {
+      "assisted-4": {
         "gtSignificantParts": 1,
         "ourParts": 2,
-        "ari": 0.006,
-        "weightedBestIoU": 0.625,
+        "ari": 0.724,
+        "weightedBestIoU": 0.994,
         "gtPartsRecovered": 1,
-        "purity": 0.986
+        "purity": 0.994,
+        "edits": 3
       },
-      "app∧sam-0.2": {
-        "gtSignificantParts": 1,
-        "ourParts": 1,
-        "ari": 0,
-        "weightedBestIoU": 0.986,
-        "gtPartsRecovered": 1,
-        "purity": 0.986
-      },
-      "acd-t10": {
+      "assisted-8": {
         "gtSignificantParts": 1,
         "ourParts": 2,
-        "ari": 0,
-        "weightedBestIoU": 0.499,
-        "gtPartsRecovered": 0,
-        "purity": 0.986
-      },
-      "acd-t25": {
-        "gtSignificantParts": 1,
-        "ourParts": 1,
-        "ari": 0,
-        "weightedBestIoU": 0.986,
+        "ari": 0.724,
+        "weightedBestIoU": 0.994,
         "gtPartsRecovered": 1,
-        "purity": 0.986
+        "purity": 0.994,
+        "edits": 3
       }
     },
     {
@@ -833,53 +545,32 @@
         "gtPartsRecovered": 1,
         "purity": 0.452
       },
-      "app": {
-        "gtSignificantParts": 5,
-        "ourParts": 3,
-        "ari": 0.277,
-        "weightedBestIoU": 0.445,
-        "gtPartsRecovered": 2,
-        "purity": 0.48
-      },
-      "sam-s70": {
-        "gtSignificantParts": 5,
-        "ourParts": 5,
-        "ari": 0.263,
-        "weightedBestIoU": 0.348,
-        "gtPartsRecovered": 1,
-        "purity": 0.51
-      },
-      "sam-sh06": {
+      "assisted-2": {
         "gtSignificantParts": 5,
         "ourParts": 4,
-        "ari": 0.26,
-        "weightedBestIoU": 0.387,
-        "gtPartsRecovered": 1,
-        "purity": 0.497
+        "ari": 0.465,
+        "weightedBestIoU": 0.575,
+        "gtPartsRecovered": 3,
+        "purity": 0.652,
+        "edits": 2
       },
-      "app∧sam-0.2": {
-        "gtSignificantParts": 5,
-        "ourParts": 2,
-        "ari": 0.27,
-        "weightedBestIoU": 0.395,
-        "gtPartsRecovered": 1,
-        "purity": 0.452
-      },
-      "acd-t10": {
+      "assisted-4": {
         "gtSignificantParts": 5,
         "ourParts": 6,
-        "ari": 0.263,
-        "weightedBestIoU": 0.35,
-        "gtPartsRecovered": 1,
-        "purity": 0.512
+        "ari": 0.503,
+        "weightedBestIoU": 0.59,
+        "gtPartsRecovered": 3,
+        "purity": 0.707,
+        "edits": 4
       },
-      "acd-t25": {
+      "assisted-8": {
         "gtSignificantParts": 5,
-        "ourParts": 4,
-        "ari": 0.278,
-        "weightedBestIoU": 0.383,
-        "gtPartsRecovered": 1,
-        "purity": 0.498
+        "ourParts": 7,
+        "ari": 0.516,
+        "weightedBestIoU": 0.591,
+        "gtPartsRecovered": 3,
+        "purity": 0.747,
+        "edits": 5
       }
     },
     {
@@ -895,53 +586,32 @@
         "gtPartsRecovered": 1,
         "purity": 0.522
       },
-      "app": {
-        "gtSignificantParts": 3,
-        "ourParts": 2,
-        "ari": 0.233,
-        "weightedBestIoU": 0.507,
-        "gtPartsRecovered": 2,
-        "purity": 0.609
-      },
-      "sam-s70": {
-        "gtSignificantParts": 3,
-        "ourParts": 4,
-        "ari": 0.181,
-        "weightedBestIoU": 0.407,
-        "gtPartsRecovered": 0,
-        "purity": 0.539
-      },
-      "sam-sh06": {
+      "assisted-2": {
         "gtSignificantParts": 3,
         "ourParts": 3,
-        "ari": 0.198,
-        "weightedBestIoU": 0.43,
+        "ari": 0.249,
+        "weightedBestIoU": 0.485,
         "gtPartsRecovered": 1,
-        "purity": 0.539
+        "purity": 0.616,
+        "edits": 2
       },
-      "app∧sam-0.2": {
+      "assisted-4": {
         "gtSignificantParts": 3,
-        "ourParts": 2,
-        "ari": 0.233,
-        "weightedBestIoU": 0.507,
-        "gtPartsRecovered": 2,
-        "purity": 0.609
-      },
-      "acd-t10": {
-        "gtSignificantParts": 3,
-        "ourParts": 1,
-        "ari": 0,
-        "weightedBestIoU": 0.396,
+        "ourParts": 3,
+        "ari": 0.249,
+        "weightedBestIoU": 0.485,
         "gtPartsRecovered": 1,
-        "purity": 0.522
+        "purity": 0.616,
+        "edits": 2
       },
-      "acd-t25": {
+      "assisted-8": {
         "gtSignificantParts": 3,
-        "ourParts": 1,
-        "ari": 0,
-        "weightedBestIoU": 0.396,
+        "ourParts": 3,
+        "ari": 0.249,
+        "weightedBestIoU": 0.485,
         "gtPartsRecovered": 1,
-        "purity": 0.522
+        "purity": 0.616,
+        "edits": 2
       }
     },
     {
@@ -957,53 +627,32 @@
         "gtPartsRecovered": 0,
         "purity": 0.097
       },
-      "app": {
+      "assisted-2": {
         "gtSignificantParts": 13,
-        "ourParts": 1,
-        "ari": 0,
-        "weightedBestIoU": 0.065,
+        "ourParts": 3,
+        "ari": 0.071,
+        "weightedBestIoU": 0.121,
         "gtPartsRecovered": 0,
-        "purity": 0.097
+        "purity": 0.196,
+        "edits": 2
       },
-      "sam-s70": {
+      "assisted-4": {
         "gtSignificantParts": 13,
-        "ourParts": 2,
-        "ari": 0.02,
-        "weightedBestIoU": 0.097,
+        "ourParts": 5,
+        "ari": 0.141,
+        "weightedBestIoU": 0.178,
         "gtPartsRecovered": 0,
-        "purity": 0.147
+        "purity": 0.241,
+        "edits": 4
       },
-      "sam-sh06": {
+      "assisted-8": {
         "gtSignificantParts": 13,
-        "ourParts": 2,
-        "ari": 0.02,
-        "weightedBestIoU": 0.097,
-        "gtPartsRecovered": 0,
-        "purity": 0.147
-      },
-      "app∧sam-0.2": {
-        "gtSignificantParts": 13,
-        "ourParts": 1,
-        "ari": 0,
-        "weightedBestIoU": 0.065,
-        "gtPartsRecovered": 0,
-        "purity": 0.097
-      },
-      "acd-t10": {
-        "gtSignificantParts": 13,
-        "ourParts": 1,
-        "ari": 0,
-        "weightedBestIoU": 0.065,
-        "gtPartsRecovered": 0,
-        "purity": 0.097
-      },
-      "acd-t25": {
-        "gtSignificantParts": 13,
-        "ourParts": 1,
-        "ari": 0,
-        "weightedBestIoU": 0.065,
-        "gtPartsRecovered": 0,
-        "purity": 0.097
+        "ourParts": 9,
+        "ari": 0.208,
+        "weightedBestIoU": 0.247,
+        "gtPartsRecovered": 1,
+        "purity": 0.305,
+        "edits": 8
       }
     }
   ]

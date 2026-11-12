@@ -1,6 +1,10 @@
 import type { SpatialPlanV2 } from '../../universal-spatial/contracts-v2';
 import { checkFile } from '../experience/intake';
 import { assessGate } from './capture-gate';
+import { buildModel, type RealityModel } from './model';
+import { analyseStructure } from './structure';
+import { PART_COLOURS, partSeed, renderPartsPreview } from './parts-preview';
+import type { StoredPartEdit } from './evidence';
 import { autoOutlines } from './auto-segmentation';
 import { createSodRunner, type SodRunner } from './sod';
 import { selectStrategy, type StrategyInput } from './strategy';
@@ -116,7 +120,21 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
     return `<div data-rl-strategy="${st.id}"><p class="u-label">Estratégia escolhida: <b>${st.id}</b> · tecto de fidelidade: ${st.ceiling}${st.certified ? ' · configuração medida no benchmark' : ' · não certificada'}</p><ul>${[...st.reasons, ...st.limits].map((t) => `<li class="u-small">${esc(t)}</li>`).join('')}</ul>${st.requires.length ? `<p class="u-small"><b>Para melhorar:</b> ${st.requires.map(esc).join(' ')}</p>` : ''}</div>`;
   };
   const qualityHtml = (r: IntakeResult | null) => !r?.capture ? '' : `<div data-rl-capture><p class="u-label">Cobertura: ${r.capture.coverage.views} vistas · maior sector sem vista ${r.capture.coverage.azimuthMaxGapDeg.toFixed(0)}° · elevação ${r.capture.coverage.elevationMinDeg.toFixed(0)}° a ${r.capture.coverage.elevationMaxDeg.toFixed(0)}°</p>${r.capture.issues.length ? `<ul class="sp-list" aria-label="Qualidade e cobertura">${r.capture.issues.map((i) => `<li class="sp-comp" data-rl-issue="${i.code}" data-severity="${i.severity}"><div class="sp-comp-head"><b>${esc(i.message)}</b></div><p class="u-small">${esc(i.advice)}</p></li>`).join('')}</ul>` : '<p class="u-small">Sem avisos de qualidade ou cobertura. (Limiares heurísticos, não calibrados em fotografias reais.)</p>'}</div>`;
-  let ackLow = false;
+  let ackLow = false, partsOpen = false, partEdits: StoredPartEdit[] = [], partsModel: RealityModel | null = null, partsBusy = false;
+  const rebuildParts = () => { if (!result?.evidence) { partsModel = null; return; } partsModel = buildModel({ ...result.evidence, ...(partEdits.length ? { partEdits } : {}) }); };
+  const partsHtml = () => {
+    if (!result?.evidence) return '';
+    if (!partsOpen || !partsModel) return `<div data-rl-parts-closed><button class="u-btn u-btn--outline" type="button" data-rl="parts-open" ${partsBusy ? 'disabled' : ''}>Ver e corrigir as partes</button> <span class="u-small">As partes são hipóteses calculadas só pela forma. Pode confirmá-las, fundi-las, dividi-las ou dar-lhes nome antes de construir.</span></div>`;
+    const m = partsModel, st = analyseStructure(m), total = m.parts.reduce((n, p) => n + p.voxels, 0) || 1, opts = m.parts.map((p, i) => `<option value="${esc(p.id)}">Parte ${i + 1} · ${esc(m.partNames[p.id] ?? p.id)}</option>`).join('');
+    const rows = m.parts.map((p, i) => { const vis = st.visibility.find((v) => v.partId === p.id); return `<li class="u-small" data-rl-part="${esc(p.id)}"><span style="display:inline-block;width:12px;height:12px;background:rgb(${PART_COLOURS[(Number(p.id.replace('part-', '')) - 1) % PART_COLOURS.length]!.join(',')});margin-right:6px"></span><b>Parte ${i + 1}</b>${m.partNames[p.id] ? ` «${esc(m.partNames[p.id]!)}» (nome dado por si)` : ''} · ${(p.voxels / total * 100).toFixed(0)}% do volume · vista por ${vis?.observedViews ?? '?'} vista(s)${vis && vis.status !== 'observed' ? ' — <b>pouca evidência</b>' : ''}</li>`; }).join('');
+    const edits = partEdits.map((e, i) => { const r = m.partEditReports[i]; return `<li class="u-small" data-rl-edit-entry="${i}">${esc(e.kind === 'merge' ? 'Fundir duas partes' : e.kind === 'split' ? `Dividir por plano ${e.axis} = ${e.at.toFixed(3)}` : `Nome «${e.name}»`)} · <b>${r?.applied ? 'aplicada' : `NÃO aplicada: ${esc(r?.reason ?? 'sem efeito')}`}</b> <button class="u-btn u-btn--outline" type="button" data-rl-part-undo="${i}" aria-label="Desfazer esta correcção">desfazer</button></li>`; }).join('');
+    return `<div data-rl-parts class="sp-card"><p class="u-label"><b>Partes</b> — ${m.parts.length} (hipótese calculada pela forma${partEdits.length ? `, com ${partEdits.length} correcção(ões) sua(s)` : ''}). Nada disto é reconhecimento: é onde a forma se separa.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${[0, 90, 180].map((a, k) => `<canvas data-rl-parts-canvas="${k}" width="120" height="120" aria-label="Partes vistas a ${a}°" style="background:#111;border:1px solid #444"></canvas>`).join('')}</div><ul>${rows}</ul>
+      <div class="sp-row"><label class="u-small">fundir <select id="rl-merge-a">${opts}</select> com <select id="rl-merge-b">${opts}</select></label><button class="u-btn u-btn--outline" type="button" data-rl="part-merge">Fundir</button></div>
+      <div class="sp-row"><label class="u-small">dividir <select id="rl-split-part">${opts}</select> no eixo <select id="rl-split-axis"><option value="x">x</option><option value="y" selected>y (altura)</option><option value="z">z</option></select> a <input id="rl-split-at" type="range" min="15" max="85" value="50" aria-label="Posição do plano em percentagem da parte"> <span id="rl-split-at-v">50%</span></label><button class="u-btn u-btn--outline" type="button" data-rl="part-split">Dividir</button></div>
+      <div class="sp-row"><label class="u-small">dar nome a <select id="rl-name-part">${opts}</select> <input id="rl-name" type="text" maxlength="60" placeholder="ex.: perna"></label><button class="u-btn u-btn--outline" type="button" data-rl="part-rename">Dar nome</button></div>
+      ${edits ? `<ul>${edits}</ul>` : ''}<p class="u-small">As correcções ficam gravadas na evidência como <b>feitas por si</b>, em separado da estrutura automática; «desfazer» devolve-a tal como foi calculada.</p></div>`;
+  };
   const gate = () => assessGate({ result, mode, elevationDeclared: elevation.trim() !== '' });
   const gateHtml = () => {
     if (!result?.evidence) return ''; const g = gate(), real = g.items.filter((i) => i.severity !== 'info'), info = g.items.filter((i) => i.severity === 'info');
@@ -145,6 +163,7 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
     ${qualityHtml(result)}
     ${strategyHtml(result)}
     ${gateHtml()}
+    ${partsHtml()}
     ${result ? `<ul class="sp-list" aria-label="Contornos extraídos">${thumbs(result)}</ul>${result.refusals.map((r) => `<p class="sp-problem" role="alert" data-rl-refusal="${r.code}">${esc(REFUSAL_COPY[r.code])}${r.viewName ? ` (${esc(r.viewName)})` : ''} <span class="u-label">${esc(r.detail)}</span></p>`).join('')}${result.evidence ? `<details open><summary class="u-label">O que foi assumido</summary><ul>${result.evidence.assumptions.map((a) => `<li class="u-small">${esc(a)}</li>`).join('')}</ul></details>` : ''}` : ''}
     <div class="sp-row"><button class="u-btn u-btn--outline" type="button" data-rl="cancel">Voltar</button><span class="sp-grow"></span>
       <button class="u-btn u-btn--outline" type="button" data-rl="analyse" ${busy ? 'disabled' : ''}>Analisar vistas</button>
@@ -156,6 +175,7 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
     container.innerHTML = html();
     const input = container.querySelector<HTMLInputElement>('#rl-title'); if (input) input.value = keepTitle;
     result?.views.forEach((_, i) => drawMask(container.querySelector<HTMLCanvasElement>(`[data-rl-canvas="${i}"]`), i));
+    if (partsOpen && partsModel) [0, 90, 180].forEach((a, k) => { const c = container.querySelector<HTMLCanvasElement>(`[data-rl-parts-canvas="${k}"]`); if (c) { const ctx = c.getContext('2d')!, img = ctx.createImageData(120, 120); img.data.set(renderPartsPreview(partsModel!, a, 20, 120)); ctx.putImageData(img, 0, 0); } });
 
   };
   const drawMask = (canvas: HTMLCanvasElement | null, i: number) => {
@@ -199,7 +219,7 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
     return out;
   };
   const analyse = async (): Promise<IntakeResult | null> => {
-    problem = null; busy = true; ackLow = false; paint();
+    problem = null; busy = true; ackLow = false; partsOpen = false; partEdits = []; partsModel = null; paint();
     try { return await analyseNow(); } finally { busy = false; }
   };
   const analyseNow = async (): Promise<IntakeResult | null> => {
@@ -240,6 +260,8 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
   const onClick = (event: Event) => {
     const ed = (event.target as HTMLElement).closest<HTMLElement>('[data-rl-edit]');
     if (ed) { event.stopPropagation(); openEditor(Number(ed.dataset.rlEdit)); return; }
+    const pu = (event.target as HTMLElement).closest<HTMLElement>('[data-rl-part-undo]');
+    if (pu) { event.stopPropagation(); partEdits.splice(Number(pu.dataset.rlPartUndo), 1); rebuildParts(); paint(); return; }
     const cf = (event.target as HTMLElement).closest<HTMLElement>('[data-rl-confirm]');
     if (cf) { // a person looked at the outline and says it is right: that is HUMAN CONFIRMATION (a different category from the automatic proposal)
       event.stopPropagation(); const k = Number(cf.dataset.rlConfirm), slotIndex = lastSlots[k], img = lastImages[k];
@@ -249,11 +271,17 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
     const b = (event.target as HTMLElement).closest<HTMLElement>('[data-rl]'); if (!b) return;
     event.stopPropagation();
     const act = b.dataset.rl;
+    const val = (id: string) => container.querySelector<HTMLSelectElement | HTMLInputElement>(`#${id}`)?.value ?? '';
+    if (act === 'parts-open') { partsBusy = true; paint(); setTimeout(() => { partsOpen = true; partsBusy = false; rebuildParts(); paint(); }, 20); return; }
+    if (act === 'part-merge' && partsModel) { const a = partSeed(partsModel, val('rl-merge-a')), c = partSeed(partsModel, val('rl-merge-b')); if (a && c) { partEdits.push({ kind: 'merge', seeds: [a, c], by: 'person' }); rebuildParts(); paint(); } return; }
+    if (act === 'part-split' && partsModel) { const id = val('rl-split-part'), seed = partSeed(partsModel, id), part = partsModel.parts.find((p) => p.id === id), axis = val('rl-split-axis') as 'x' | 'y' | 'z'; if (seed && part) { const ax = axis === 'x' ? 0 : axis === 'y' ? 1 : 2, lo = part.origin[ax]! - part.size[ax]! / 2, at = lo + (Number(val('rl-split-at')) / 100) * part.size[ax]!; partEdits.push({ kind: 'split', seed, axis, at, by: 'person' }); rebuildParts(); paint(); } return; }
+    if (act === 'part-rename' && partsModel) { const seed = partSeed(partsModel, val('rl-name-part')), name = val('rl-name').trim(); if (seed && name) { partEdits.push({ kind: 'rename', seed, name, by: 'person' }); rebuildParts(); paint(); } return; }
     if (act === 'cancel') { abort?.abort(); deps.onCancel(); }
     else if (act === 'analyse') { void analyse().then(() => paint()); }
     else if (act === 'build' && result?.evidence && !busy && buildAllowed()) {
       const lowItems = gate().items.filter((i) => i.severity === 'low-confidence').map((i) => i.code);
       if (lowItems.length) result = { ...result, evidence: { ...result.evidence, assumptions: [...result.evidence.assumptions, `Reconstruído com baixa confiança, reconhecido por si: ${lowItems.join(', ')}.`].slice(0, 16) } };
+      if (partEdits.length) result = { ...result, evidence: { ...result.evidence!, partEdits: [...partEdits], assumptions: [...result.evidence!.assumptions, `Estrutura de partes corrigida por si (${partEdits.length} correcção(ões)); a estrutura automática é hipótese.`].slice(0, 16) } };
       busy = true; paint();
       abort = new AbortController();
       void deps.host.create(result.evidence!, title(), abort.signal).then((r) => { if (!disposed) deps.onDone({ sha256: r.sha256, plan: r.plan, title: r.plan.title }); }).catch((e) => { if (disposed || (e as DOMException)?.name === 'AbortError') return; problem = (e as { code?: string })?.code === 'REALITY_EMPTY_RECONSTRUCTION' ? 'As vistas não são consistentes entre si: o casco ficou vazio. Quase de certeza um ou mais contornos estão errados (ou a ordem das imagens não é a da volta). Abra «Ajustar contorno» nas vistas marcadas e volte a analisar. Nada foi construído.' : 'A reconstrução falhou. Nada foi construído.'; busy = false; paint(); });
@@ -265,6 +293,7 @@ export function mountRealityIntake(container: HTMLElement, deps: RealityIntakeDe
     else if (t.id === 'rl-files' && t.files) void take([...t.files]);
     else if (t.id === 'rl-video' && t.files?.[0]) void takeVideo(t.files[0]);
     else if (t.dataset.rlFileSlot !== undefined && t.files?.[0]) void take([t.files[0]], Number(t.dataset.rlFileSlot));
+    else if (t.id === 'rl-split-at') { const v = container.querySelector('#rl-split-at-v'); if (v) v.textContent = `${t.value}%`; }
     else if (t.id === 'rl-ack-low') { ackLow = t.checked; paint(); }
     else if (t.id === 'rl-elev') { elevation = t.value; result = null; ackLow = false; }
     else if (t.dataset.rlAz !== undefined) { slots[Number(t.dataset.rlAz)]!.azimuth = t.value; result = null; }

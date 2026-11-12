@@ -155,6 +155,17 @@ record('3 depois do ajuste: sem recusas, estratégia casco, orientação de capt
 const gateLevel = await page.getAttribute('[data-rl-gate]', 'data-rl-gate'), gateCodes = await page.locator('[data-rl-gate-item]').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.rlGateItem)), buildDisabledBefore = await page.locator('[data-rl="build"]').isDisabled();
 record('3b captura sem vista de cima: o sistema diz o que falta e o botão de reconstruir fica bloqueado até reconhecer a baixa confiança', gateLevel === 'low-confidence' && gateCodes.includes('NO_ELEVATION_VARIETY') && buildDisabledBefore, `nível ${gateLevel}, itens ${gateCodes.join(',')}, botão bloqueado ${buildDisabledBefore}`);
 await page.check('#rl-ack-low'); record('3c depois de reconhecer, o botão abre e passa a dizer «baixa confiança»', !(await page.locator('[data-rl="build"]').isDisabled()) && /baixa confiança/.test(await page.locator('[data-rl="build"]').innerText()), await page.locator('[data-rl="build"]').innerText());
+// 3d. assisted structure correction before building: split a part by a plane, name it, undo one, keep the rest; the built Space must carry exactly that
+await page.click('[data-rl="parts-open"]'); await page.waitForSelector('[data-rl-parts]');
+const partsBefore = await page.locator('[data-rl-part]').count();
+await page.selectOption('#rl-split-axis', 'x'); await page.click('[data-rl="part-split"]'); await page.waitForFunction((n) => document.querySelectorAll('[data-rl-part]').length === (n as number) + 1, partsBefore, { timeout: 30_000 });
+const partsAfterSplit = await page.locator('[data-rl-part]').count(), splitStatus = await page.locator('[data-rl-edit-entry="0"]').innerText();
+await page.fill('#rl-name', 'Carcaça'); await page.click('[data-rl="part-rename"]'); await page.waitForSelector('[data-rl-edit-entry="1"]');
+await page.click('[data-rl-part-undo="1"]'); await page.waitForFunction(() => document.querySelectorAll('[data-rl-edit-entry]').length === 1);
+await page.fill('#rl-name', 'Carcaça'); await page.click('[data-rl="part-rename"]'); await page.waitForSelector('[data-rl-edit-entry="1"]');
+const canvases = await page.locator('[data-rl-parts-canvas]').evaluateAll((cs) => cs.map((c) => { const k = c as HTMLCanvasElement, d = k.getContext('2d')!.getImageData(0, 0, k.width, k.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i]! > 0) n++; return n; }));
+await page.screenshot({ path: resolve(out, '03d-parts-editing.png') });
+record('3d correcção assistida das partes (dividir, nomear, desfazer) antes de construir', partsAfterSplit === partsBefore + 1 && /aplicada/.test(splitStatus) && !/NÃO/.test(splitStatus) && canvases.every((n) => n > 500), `${partsBefore} → ${partsAfterSplit} partes, ${splitStatus.replace(/\s+/g, ' ').slice(0, 70)}, píxeis desenhados ${canvases.join('/')}`);
 await page.click('[data-rl="build"]'); await page.waitForSelector('.sp-root[data-phase="review"]', { timeout: 180_000 });
 await page.click('[data-sp="keep-all"]'); await page.check('#sp-ack'); await page.click('[data-sp="build"]');
 await page.waitForFunction(() => (window as never as { __workspace: { spaceActive: boolean } }).__workspace.spaceActive, null, { timeout: 180_000 });
@@ -164,6 +175,8 @@ const guidance = await page.locator('[data-rr-guidance]').innerText(), structure
 record('4 Space construído; revisão mostra o que fotografar a seguir e a estrutura medida; nunca "fiel"', /elevad|cima|45/.test(guidance) && structure === 1 && fidelity !== 'faithful', `fidelidade ${fidelity}`);
 const axisPass = await page.locator('[data-rr-axes] [data-axis]').evaluateAll((els) => els.map((e) => `${(e as HTMLElement).dataset.axis}:${(e as HTMLElement).dataset.pass}`));
 record('4b a revisão separa consistência, evidência visual independente e fidelidade geométrica', axisPass.join(',') === 'consistency:true,visual:true,geometry:false', axisPass.join(','));
+const reviewText = await page.locator('[data-reality-review]').evaluate((e) => e.textContent ?? ''), builtParts = (reviewText.match(/forma\s+\S+\s+·\s+posição/g) ?? []).length;
+record('4c o Space construído tem as partes corrigidas, com o nome dado por si e proveniência humana', /Carcaça \(nome dado por si\)/.test(reviewText) && builtParts === partsAfterSplit, `${builtParts} componentes na revisão (esperado ${partsAfterSplit}), nome presente ${/Carcaça \(nome dado por si\)/.test(reviewText)}`);
 record('5 nenhuma chamada paga', providerCalls === 0, `provider=${providerCalls}`);
 record('6 sem erros de browser', errors.length === 0, errors.join(' | ') || 'limpo');
 writeFileSync(resolve(out, 'e2e-result.json'), JSON.stringify({ asset, background: bgFile, results }, null, 2));

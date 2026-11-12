@@ -164,3 +164,48 @@ export function segmentParts(occ: Uint8Array, grid: Grid, options: PartOptions =
   void ny; void nz;
   return { discardedVoxels: discarded, labels, parts, adjacency: adjacency.filter((p, i, arr) => i === 0 || p[0] !== arr[i - 1]![0] || p[1] !== arr[i - 1]![1]) };
 }
+
+
+/**
+ * A correction a PERSON made to the automatic part structure. Parts are named by a world-space seed point INSIDE them, not by label number, so an edit keeps its
+ * meaning when the grid or the evidence changes. Applied on top of the automatic segmentation, in order, deterministically; the automatic result is never overwritten
+ * (remove the edit and the automatic structure is back). An edit that cannot be applied (seed in empty space, a side too small) is reported, never guessed.
+ */
+export type PartEdit =
+  | { kind: 'merge'; seeds: [[number, number, number], [number, number, number]] }
+  | { kind: 'split'; seed: [number, number, number]; axis: 'x' | 'y' | 'z'; at: number }
+  | { kind: 'rename'; seed: [number, number, number]; name: string };
+export type PartEditReport = { index: number; kind: PartEdit['kind']; applied: boolean; reason?: string };
+export type EditedParts = PartsResult & { names: Map<string, string>; reports: PartEditReport[] };
+
+export function applyPartEdits(base: PartsResult, occ: Uint8Array, grid: Grid, edits: readonly PartEdit[], minVoxels = 12): EditedParts {
+  const [nx, ny, nz] = grid.cells, labels = Uint16Array.from(base.labels), reports: PartEditReport[] = [], renames: Array<{ seed: [number, number, number]; name: string }> = [];
+  const at = (p: readonly number[]): number => { // label of the voxel holding p, or of the nearest labelled voxel within 2 voxels
+    const i = Math.floor((p[0]! - grid.min.x) / grid.size), j = Math.floor((p[1]! - grid.min.y) / grid.size), k = Math.floor((p[2]! - grid.min.z) / grid.size);
+    for (let r = 0; r <= 2; r++) for (let dk = -r; dk <= r; dk++) for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) { if (Math.max(Math.abs(di), Math.abs(dj), Math.abs(dk)) !== r) continue; const a = i + di, b = j + dj, c = k + dk; if (a < 0 || b < 0 || c < 0 || a >= nx || b >= ny || c >= nz) continue; const l = labels[a + nx * (b + ny * c)]!; if (l) return l; }
+    return 0;
+  };
+  let next = 0; for (const l of labels) if (l > next) next = l; next++;
+  edits.forEach((e, index) => {
+    const rep = (applied: boolean, reason?: string) => reports.push({ index, kind: e.kind, applied, ...(reason ? { reason } : {}) });
+    if (e.kind === 'merge') { const a = at(e.seeds[0]), b = at(e.seeds[1]); if (!a || !b) return rep(false, 'um dos pontos não está dentro de nenhuma parte'); if (a === b) return rep(false, 'os dois pontos estão na mesma parte'); for (let i = 0; i < labels.length; i++) if (labels[i] === b) labels[i] = a; return rep(true); }
+    if (e.kind === 'rename') { if (!at(e.seed)) return rep(false, 'o ponto não está dentro de nenhuma parte'); renames.push({ seed: e.seed, name: e.name }); return rep(true); }
+    const l = at(e.seed); if (!l) return rep(false, 'o ponto não está dentro de nenhuma parte');
+    const ax = e.axis === 'x' ? 0 : e.axis === 'y' ? 1 : 2; let lo = 0, hi = 0; const hiIdx: number[] = [];
+    for (let id = 0; id < labels.length; id++) { if (labels[id] !== l) continue; const i = id % nx, j = Math.floor(id / nx) % ny, k = Math.floor(id / (nx * ny)), c = ax === 0 ? grid.min.x + (i + 0.5) * grid.size : ax === 1 ? grid.min.y + (j + 0.5) * grid.size : grid.min.z + (k + 0.5) * grid.size; if (c < e.at) lo++; else { hi++; hiIdx.push(id); } }
+    if (lo < minVoxels || hi < minVoxels) return rep(false, `o plano deixaria um lado com menos de ${minVoxels} voxels (${lo}/${hi})`);
+    for (const id of hiIdx) labels[id] = next; next++; rep(true);
+  });
+  void ny; void nz;
+  // stable ids by position again (same rule as the automatic segmentation), voxel statistics recomputed
+  const acc = new Map<number, { n: number; sx: number; sy: number; sz: number; min: Vector3; max: Vector3 }>();
+  for (let id = 0; id < labels.length; id++) { const l = labels[id]!; if (!l || !occ[id]) continue; const i = id % nx, j = Math.floor(id / nx) % ny, k = Math.floor(id / (nx * ny)), x = grid.min.x + (i + 0.5) * grid.size, y = grid.min.y + (j + 0.5) * grid.size, z = grid.min.z + (k + 0.5) * grid.size;
+    let a = acc.get(l); if (!a) { a = { n: 0, sx: 0, sy: 0, sz: 0, min: new Vector3(Infinity, Infinity, Infinity), max: new Vector3(-Infinity, -Infinity, -Infinity) }; acc.set(l, a); } a.n++; a.sx += x; a.sy += y; a.sz += z; a.min.min(new Vector3(x, y, z)); a.max.max(new Vector3(x, y, z)); }
+  const ordered = [...acc.entries()].map(([l, a]) => ({ l, a, c: new Vector3(a.sx / a.n, a.sy / a.n, a.sz / a.n) })).sort((p, q) => p.c.x - q.c.x || p.c.y - q.c.y || p.c.z - q.c.z || p.l - q.l), remap = new Map<number, number>(ordered.map((o, idx) => [o.l, idx + 1]));
+  for (let id = 0; id < labels.length; id++) if (labels[id]) labels[id] = remap.get(labels[id]!) ?? 0;
+  const parts: Part[] = ordered.map((o, idx) => ({ id: `part-${idx + 1}`, label: idx + 1, voxels: o.a.n, centroid: o.c, min: o.a.min.clone().subScalar(grid.size / 2), max: o.a.max.clone().addScalar(grid.size / 2), peakDistance: 0 }));
+  const adj = new Set<string>(); for (let id = 0; id < labels.length; id++) { const l = labels[id]!; if (!l) continue; const i = id % nx, j = Math.floor(id / nx) % ny, k = Math.floor(id / (nx * ny)); for (const [dx, dy, dz] of [[1, 0, 0], [0, 1, 0], [0, 0, 1]] as const) { const a = i + dx, b = j + dy, c = k + dz; if (a >= nx || b >= ny || c >= nz) continue; const o = labels[a + nx * (b + ny * c)]!; if (o && o !== l) adj.add(l < o ? `${l}|${o}` : `${o}|${l}`); } }
+  const adjacency = [...adj].map((q) => q.split('|').map(Number) as [number, number]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map(([a, b]) => [`part-${a}`, `part-${b}`] as [string, string]);
+  const names = new Map<string, string>(); for (const r of renames) { const l = (() => { const i = Math.floor((r.seed[0] - grid.min.x) / grid.size), j = Math.floor((r.seed[1] - grid.min.y) / grid.size), k = Math.floor((r.seed[2] - grid.min.z) / grid.size); for (let d = 0; d <= 2; d++) for (let dk = -d; dk <= d; dk++) for (let dj = -d; dj <= d; dj++) for (let di = -d; di <= d; di++) { if (Math.max(Math.abs(di), Math.abs(dj), Math.abs(dk)) !== d) continue; const a = i + di, b = j + dj, c = k + dk; if (a < 0 || b < 0 || c < 0 || a >= nx || b >= ny || c >= nz) continue; const v = labels[a + nx * (b + ny * c)]!; if (v) return v; } return 0; })(); if (l) names.set(`part-${l}`, r.name); }
+  return { labels, parts, adjacency, discardedVoxels: base.discardedVoxels, names, reports };
+}

@@ -22,7 +22,7 @@ export function planFromModel(model: RealityModel, sha256: string, title: string
   return validateSpatialPlanV2({
     contract: 'unfold.spatial-plan.v2', source: { kind: 'image', sha256 }, title: title.slice(0, 100), units: 'unitless', presentationProfile: 'neutral',
     components: model.parts.map((p, i) => ({
-      id: p.id, label: `Parte ${i + 1} (hipótese de estrutura)`, parentId: null,
+      id: p.id, label: model.partNames[p.id] ? `${model.partNames[p.id]} (nome dado por si)`.slice(0, 100) : model.evidence.partEdits?.length ? `Parte ${i + 1} (estrutura corrigida por si)` : `Parte ${i + 1} (hipótese de estrutura)`, parentId: null,
       geometry: { type: 'shape' as const, key: `${p.id}-shell`, operator: 'box' as const, parameters: { dimensions: p.size.map((v) => Math.max(0.02, v * k)) }, transform: T([0, 0, 0]), repeat: null, material: { profile: 'neutral' as const, color: '#8793a3', roughness: 0.55, metalness: 0, clearcoat: 0 } },
       transform: T(p.origin.map((v) => v * k) as [number, number, number]),
       provenance: { geometry: 'inferred' as const, transform: 'inferred' as const, material: 'unknown' as const, evidence },

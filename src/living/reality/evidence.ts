@@ -1,3 +1,4 @@
+import type { PartEdit } from '../../universal-spatial/reconstruction/parts';
 /**
  * Reality evidence: the ORIGINAL evidence a multi-view reconstruction was made from, in a compact, versioned, checksummed form.
  * The reconstruction is a deterministic function of this record (tests assert byte-identical results), so saving the evidence is saving the object:
@@ -21,7 +22,11 @@ export type StoredView = {
   /** where the shared orthographic window sits in this view's SOURCE image (centre in source pixels, source pixels per length unit): lets later evidence (part proposals) be resampled identically */
   window?: { cx: number; cy: number; ppu: number };
 };
+/** a correction of the part structure made by a person (see applyPartEdits): human confirmation, kept apart from the automatic structure */
+export type StoredPartEdit = PartEdit & { by: 'person' };
 export type RealityEvidence = {
+  /** corrections of the automatic part structure, applied in order on top of it; absent = the automatic structure as computed */
+  partEdits?: StoredPartEdit[];
   contract: typeof REALITY_EVIDENCE_CONTRACT;
   mode: 'turntable' | 'orbit' | 'orthographic' | 'video';
   res: number; colourRes: number; cells: number;
@@ -88,6 +93,14 @@ export function validateRealityEvidence(value: unknown): RealityEvidence {
     if (v.window !== undefined && !(Number.isFinite(v.window.cx) && Number.isFinite(v.window.cy) && v.window.ppu > 0)) fail('REALITY_WINDOW', v.id);
     try { decodeMask(v.maskRle, res * res); } catch { fail('REALITY_MASK_INVALID', v.id); }
     if (v.colour !== undefined) { try { decodeColour(v.colour, colourRes); } catch { fail('REALITY_COLOUR_INVALID', v.id); } }
+  }
+  if (e.partEdits !== undefined) {
+    const pt = (q: unknown) => Array.isArray(q) && q.length === 3 && q.every(Number.isFinite);
+    if (!Array.isArray(e.partEdits) || e.partEdits.length > 32) fail('REALITY_PART_EDITS', 'at most 32 part edits');
+    for (const x of e.partEdits as Array<Record<string, unknown>>) {
+      const ok = x?.by === 'person' && ((x.kind === 'merge' && Array.isArray(x.seeds) && x.seeds.length === 2 && x.seeds.every(pt)) || (x.kind === 'split' && pt(x.seed) && ['x', 'y', 'z'].includes(x.axis as string) && Number.isFinite(x.at)) || (x.kind === 'rename' && pt(x.seed) && typeof x.name === 'string' && x.name.trim().length > 0 && (x.name as string).length <= 60));
+      if (!ok) fail('REALITY_PART_EDIT_INVALID', 'invalid part edit');
+    }
   }
   if (e.framing !== undefined && (typeof e.framing !== 'object' || e.framing === null || !['number', 'object'].includes(typeof e.framing.axisXFrac) || !['number', 'object'].includes(typeof e.framing.cyFrac))) fail('REALITY_FRAMING', 'invalid framing');
   if (!Array.isArray(e.assumptions) || e.assumptions.length > REALITY_LIMITS.maxAssumptions || !e.assumptions.every((a) => typeof a === 'string' && a.length <= 300)) fail('REALITY_ASSUMPTIONS', 'invalid assumptions');

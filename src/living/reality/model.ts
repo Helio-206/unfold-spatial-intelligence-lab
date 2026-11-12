@@ -2,7 +2,7 @@ import { BufferGeometry, Float32BufferAttribute, Uint32BufferAttribute, Vector3 
 import { surfaceNets } from '../../universal-spatial/fidelity/surface-nets';
 import { type Grid } from '../../universal-spatial/reconstruction/silhouette';
 import { hullField, leaveOneOutIoU, orbitDirection, reconstructHull, signedDistance2D, type Frame, type HullStats, type SilhouetteView } from '../../universal-spatial/reconstruction/multiview';
-import { segmentParts, type PartOptions } from '../../universal-spatial/reconstruction/parts';
+import { applyPartEdits, segmentParts, type PartEditReport, type PartOptions } from '../../universal-spatial/reconstruction/parts';
 import { decodeColour, decodeMask, validateRealityEvidence, type RealityEvidence } from './evidence';
 
 /**
@@ -24,6 +24,9 @@ export type RealityModel = {
   /** the solid and its part labels, kept so a refinement can be compared with and matched to this one */
   solid: { grid: Grid; occupancy: Uint8Array; labels: Uint16Array };
   discardedVoxels: number;
+  /** names a person gave to parts (by part id) and what became of each correction they made */
+  partNames: Record<string, string>;
+  partEditReports: PartEditReport[];
   /** IoU of each view's silhouette with the hull of the OTHER views (null when fewer than 3 views) */
   heldOutIoU: Array<{ viewId: string; iou: number }> | null;
   /** object-level: fraction of vertices seen by at least one view */
@@ -64,7 +67,8 @@ function buildModelAt(evidence: RealityEvidence, cellsOverride: number | undefin
   const views = viewsOf(evidence);
   const hull = reconstructHull(views, { frame, cells: cellsOverride ?? evidence.cells });
   const grid = hull.grid, [nx, ny] = grid.cells;
-  const segmented = segmentParts(hull.occupancy, grid, options.parts);
+  const automatic = segmentParts(hull.occupancy, grid, options.parts);
+  const edited = evidence.partEdits?.length ? applyPartEdits(automatic, hull.occupancy, grid, evidence.partEdits) : null, segmented = edited ?? automatic;
   const dirs = views.map((v) => orbitDirection(v.azimuthDeg, v.elevationDeg));
   const colours = evidence.views.map((v) => (v.colour ? decodeColour(v.colour, evidence.colourRes) : null));
   const s = evidence.res / (2 * frame.half), exact = hullField(views, frame);
@@ -163,7 +167,7 @@ function buildModelAt(evidence: RealityEvidence, cellsOverride: number | undefin
   }
   const loo = leaveOneOutIoU(views, { frame, cells: Math.min(cellsOverride ?? evidence.cells, 64) });
   return {
-    evidence, frame, parts, adjacency: segmented.adjacency, hull: hull.stats, solid: { grid: hull.grid, occupancy: hull.occupancy, labels: segmented.labels }, discardedVoxels: segmented.discardedVoxels,
+    evidence, frame, parts, adjacency: segmented.adjacency, hull: hull.stats, solid: { grid: hull.grid, occupancy: hull.occupancy, labels: segmented.labels }, discardedVoxels: segmented.discardedVoxels, partNames: edited ? Object.fromEntries(edited.names) : {}, partEditReports: edited?.reports ?? [],
     heldOutIoU: loo.length ? loo.map((value, i) => ({ viewId: views[i]!.id, iou: value })) : null,
     observedFraction: total ? seen / total : 0,
     diagonal: frame.half / FRAME_HALF_PER_DIAGONAL, degraded: null,
